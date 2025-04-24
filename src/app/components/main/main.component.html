@@ -1,0 +1,18 @@
+<main class="mx-auto px-4 sm:px-6 lg:px-6 py-6 text-center">
+  <div class="w-full sm:w-4/5 md:w-2/3 mx-auto my-8
+  text-base sm:text-lg md:text-xl leading-relaxed text-gray-300"  [ngClass]="{'hidden': isResume}">
+    <p>
+      I am a multi-faceted <a href="https://en.wikipedia.org/wiki/Web_application_development" rel="nofollow"
+                              target="_blank" class="hover:underline" title="Application Developer">application developer</a> with
+      degrees in both Computer Science and Information Technology as well as a degree in Audio Engineering.
+      Over the last twenty years, I have worked in many creative capacities including application development,
+      server administration, the music and entertainment industry, and audio/video mixing.
+      I've won three Grammy awards for my engineering work and have created successful projects for clients and employers.
+    </p>
+  </div>
+  <button class="hover:underline" (click)="toggleResume()">{{ isResume ? 'Hide' :  'Show' }} Resume</button>
+  <section [ngClass]="{'hidden': !isResume}" class="animated animate-fadeIn">
+      <app-resume></app-resume>
+  </section>
+
+</main>
