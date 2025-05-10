@@ -1,0 +1,15 @@
+<div class="cli-container">
+  <div class="cli-output" [ngClass]="'typing-' + currentMode">
+    <pre>{{ typedText }}</pre>
+  </div>
+  <div class="cli-input">
+    <span>&gt;</span>
+    <input #input
+           [(ngModel)]="userInput"
+           onblur="setTimeout(() => this.focus(), 10);"
+           (keydown.enter)="handleInput()"
+           (keydown.arrowUp)="navigateHistory(1)"
+           (keydown.arrowDown)="navigateHistory(-1)"
+           (keydown)="triggerClick()" autofocus/>
+  </div>
+</div>
