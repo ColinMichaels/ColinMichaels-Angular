@@ -2,7 +2,7 @@
 import { Component, HostListener, Signal, computed, effect, signal } from '@angular/core';
 import { TerminalWindowManagerService } from '../../services/terminal-window-manager.service';
 import {NgForOf, NgIf} from '@angular/common';
-import {ClockDisplayComponent} from '../game/system/clock-display/clock-display.component';
+import {ClockDisplayComponent} from '../clock-display/clock-display.component';
 
 @Component({
   selector: 'app-system-tray',

@@ -15,7 +15,7 @@ export function patternMatcher(segments: UrlSegment[]): { consumed: UrlSegment[]
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
-  { path: 'leet', pathMatch: 'full', loadComponent: () => import('./components/desktop/desktop.component').then(m => m.DesktopComponent) },
+  { path: 'leet', pathMatch: 'full', loadComponent: () => import('./components/game/desktop/desktop.component').then(m => m.DesktopComponent) },
   {path: 'home', loadComponent: ()=> import('./components/main/main.component').then(m => m.MainComponent) },
   { path: '**', redirectTo: '/home' }
 ];
