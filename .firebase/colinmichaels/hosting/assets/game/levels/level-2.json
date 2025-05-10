@@ -1,0 +1,17 @@
+{
+  "id": "level-2",
+  "name": "Deeper Dive",
+  "unlockedCommands": ["trace", "decrypt", "cd"],
+  "logFiles": [
+    { "name": "trace.log", "content": "Source unknown. Spoofed node found at 10.0.7.23" }
+  ],
+  "storage": ["user"],
+  "steps": [
+    {
+      "id": 1,
+      "type": "question",
+      "params": ["question", "answer"]
+    }
+  ],
+  "theme": "glitch"
+}

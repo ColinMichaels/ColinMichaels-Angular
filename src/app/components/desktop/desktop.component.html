@@ -1,0 +1,16 @@
+<div class="h-full">
+  <app-system-tray />
+  <app-intro-overlay *ngIf="showIntro;" (begin)="onBeginInvestigation()"></app-intro-overlay>
+  <app-image-overlay />
+  <app-level-loader
+    (loaded)="onLevelLoaded($event)"
+    (failed)="onLevelLoadFailed($event)"
+  ></app-level-loader>
+  <ng-container *ngFor="let term of terminalManager.openTerminals">
+    <app-terminal-window
+      [id]="term.id"
+      [title]="term.title"
+      [embeddedComponent]="term.component"
+    ></app-terminal-window>
+  </ng-container>
+</div>

@@ -1,0 +1,31 @@
+{
+  "id": "level-1",
+  "name": "Initial Breach",
+  "unlockedCommands": ["whoami", "help", "ls", "cat", "leet", "aichat", "su"],
+  "logFiles": [
+    {
+      "name": "boot.log",
+      "content": "System breach detected...\n Logging out",
+      "action": "alarm"
+    },
+    {
+      "name": "clue1.txt",
+      "content": "Start where the anomalies began.",
+      "action": "good"
+    },
+    {
+      "name": "doNotOpen.txt",
+      "content": "installed the new command `aichat` to access.",
+      "action": "good"
+    }
+  ],
+  "storage": ["user"],
+  "steps": [
+    {
+      "id": 1,
+      "type": "question",
+      "params": ["question", "answer"]
+    }
+  ],
+  "theme": "glitch"
+}
