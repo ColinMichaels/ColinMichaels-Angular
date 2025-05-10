@@ -1,17 +1,17 @@
 import {Component, OnInit} from '@angular/core';
-import {ImageOverlayComponent} from "../overlay/overlay.component";
-import {IntroOverlayComponent} from "../intro-overlay/intro-overlay.component";
+import {ImageOverlayComponent} from "../utils/overlay/overlay.component";
+import {IntroOverlayComponent} from "../templates/intro-overlay/intro-overlay.component";
 import {NgForOf, NgIf} from "@angular/common";
-import {LevelLoaderComponent} from '../level-loader/level-loader.component';
-import {TerminalWindowComponent} from '../terminal-window/terminal-window.component';
-import {GameLevel} from '../../services/game-config.service';
-import {TypewriterService} from '../../services/typewriter.service';
-import {SoundService} from '../../services/sound.service';
-import {User, UserService} from '../../services/user.service';
-import {OverlayService} from '../../services/overlay.service';
-import {TerminalWindowManagerService} from '../../services/terminal-window-manager.service';
+import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
+import {TerminalWindowComponent} from '../templates/terminal-window/terminal-window.component';
+import {GameLevel} from '../services/game-config.service';
+import {TypewriterService} from '../services/typewriter.service';
+import {SoundService} from '../services/sound.service';
+import {User, UserService} from '../services/user.service';
+import {OverlayService} from '../services/overlay.service';
+import {TerminalWindowManagerService} from '../services/terminal-window-manager.service';
 import {CliGameComponent} from '../cli-game/cli-game.component';
-import {SystemTrayComponent} from '../system-tray/system-tray.component';
+import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 
 @Component({
   selector: 'app-desktop',

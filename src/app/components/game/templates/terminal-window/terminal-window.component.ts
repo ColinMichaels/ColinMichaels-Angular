@@ -1,7 +1,7 @@
 // terminal-window.component.ts
 import {Component, ElementRef, ViewChild, Input, AfterViewInit, ViewContainerRef, Type} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {CliGameComponent} from '../cli-game/cli-game.component';
+import {CliGameComponent} from '../../cli-game/cli-game.component';
 import {TerminalWindowManagerService} from '../../services/terminal-window-manager.service';
 
 @Component({

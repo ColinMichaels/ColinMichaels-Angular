@@ -1,14 +1,14 @@
 import {Component, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {TypewriterService, TypingMode} from '../../services/typewriter.service';
-import {SoundService} from '../../services/sound.service';
-import {IntroOverlayComponent} from '../intro-overlay/intro-overlay.component';
+import {TypewriterService, TypingMode} from '../services/typewriter.service';
+import {SoundService} from '../services/sound.service';
+import {IntroOverlayComponent} from '../templates/intro-overlay/intro-overlay.component';
 import {NgClass, NgIf} from '@angular/common';
-import { User, UserService} from '../../services/user.service';
-import {CLIService} from '../../services/cli.service';
-import {OverlayService} from '../../services/overlay.service';
-import {AiChatService} from '../../services/ai-chat.service';
-import {GameConfigService} from '../../services/game-config.service';
+import { User, UserService} from '../services/user.service';
+import {CLIService} from '../services/cli.service';
+import {OverlayService} from '../services/overlay.service';
+import {AiChatService} from '../services/ai-chat.service';
+import {GameConfigService} from '../services/game-config.service';
 
 export interface ITerminalMessage {
   text: string;

@@ -1,7 +1,7 @@
 // clock-display.component.ts
 import {Component, computed, inject, signal} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ClockService } from '../../../../services/clock.service';
+import { ClockService } from '../../services/clock.service';
 
 @Component({
   selector: 'app-clock-display',
