@@ -1,18 +1,30 @@
 <!-- terminal-window.component.html -->
-<div *ngIf="isVisible && !isMinimized" #terminal class="fixed top-10 left-10 w-[600px] max-w-full shadow-lg rounded-md border border-gray-700 bg-[#1e1e1e]">
+<div *ngIf="isVisible && !isMinimized" #terminal
+     (mousedown)="bringToFront()"
+     class="terminal-window fixed max-w-full rounded-lg border border-white/10 shadow-lg"
+     [ngClass]="[
+       autoFit ? 'w-fit' : defaultWidth,
+       autoFit ? '' : defaultHeight
+     ]">
   <!-- Title Bar -->
-  <div #header class="flex items-center justify-between px-3 py-1.5 bg-[#2e2e2e] rounded-t-md cursor-move select-none">
-    <div class="flex space-x-2">
-      <div class="w-3 h-3 bg-red-500 rounded-full cursor-pointer" (click)="closeWindow()"></div>
-      <div class="w-3 h-3 bg-yellow-400 rounded-full cursor-pointer" (click)="collapseWindow()"></div>
-      <div class="w-3 h-3 bg-green-500 rounded-full cursor-pointer" (click)="minimizeToDock()"></div>
+  <div #header class="terminal-header flex items-center justify-between px-3 py-1  rounded-t-lg cursor-move select-none">
+    <div class="flex space-x-2" (mouseenter)="showSizeIcons = !showSizeIcons" (mouseleave)="showSizeIcons = false">
+      <div class="relative w-3 h-3 bg-red-500 rounded-full cursor-pointer" (click)="closeWindow()">
+          <i class="fa fa-times text-[9px] absolute left-0.5 top-0.5  text-black/70" [class.hidden]="!showSizeIcons"></i>
+      </div>
+      <div class="relative w-3 h-3 bg-yellow-400 rounded-full cursor-pointer" (click)="collapseWindow()">
+        <i class="fa fa-minus text-[8px] top-0.5 left-0.5   absolute text-black/70 " [class.hidden]="!showSizeIcons"></i>
+      </div>
+      <div class="relative w-3 h-3 bg-green-500 rounded-full cursor-pointer" (click)="minimizeToDock()">
+        <i class="fa-solid fa-up-right-and-down-left-from-center top-0.5 left-0.5 text-[8px] absolute text-black/70" [class.hidden]="!showSizeIcons"></i>
+      </div>
     </div>
     <div class="text-sm text-gray-300 font-medium truncate">{{ title }}</div>
     <div class="w-12"></div>
   </div>
 
   <!-- CLI Content Area -->
-  <div class="overflow-y-auto" [class.h-0]="isCollapsed" [class.h-[400px]]="!isCollapsed">
+  <div  [ngClass]="[autoFit ? 'overflow-y-hidden': 'overflow-y-auto' ]" [class.h-0]="isCollapsed" [class.h-[400px]]="!isCollapsed">
     <ng-container #terminalContent></ng-container>
   </div>
 

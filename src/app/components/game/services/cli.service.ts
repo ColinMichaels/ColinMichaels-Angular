@@ -9,19 +9,27 @@ export interface CLIResponse {
   followUp?: () => void;
 }
 
-interface CLICommand {
+export interface CLICommand {
   name: string;
   aliases?: string[];
   description: string;
+  levelRequired?: number;
   execute: (args: string[]) => CLIResponse;
 }
+
+
 
 @Injectable({ providedIn: 'root' })
 export class CLIService {
   private commands = new Map<string, CLICommand>();
 
   constructor(private config: GameConfigService, private userService: UserService) {
-    this.config.loadConfig().then(() => this.registerBuiltins());
+     this.config.loadLevelsForProgress().then((levels) => {
+       levels.subscribe((level) => {
+         console.warn('level', level);
+       });
+       this.registerBuiltins();
+     });
   }
 
   private registerBuiltins() {
@@ -29,35 +37,63 @@ export class CLIService {
       name: 'help',
       description: 'List available commands',
       execute: () => {
-        const commands = '\n ' + this.config.getAvailableCommands().join('\n ');
+        console.warn('commands', this.commands.keys());
+        const commands = '\n ' + Array.from(this.commands.keys()).join('\n ');
         return {
           status: commands ? 200 : 404,
           output: `Available commands: ${commands}`
         };
       }
     });
-
     this.registerCommand({
       name: 'whoami',
       description: 'Returns user identity',
       execute: () => ({
           status: localStorage.getItem('user') ? 200 : 404,
-        output: localStorage.getItem('user') || 'Unknown' }
+          output: localStorage.getItem('user') || 'Unknown'
+        }
       )
     });
-
+    this.registerCommand({
+      name: 'exit',
+      aliases: ['quit'],
+      description: 'Quit the game.',
+      execute: (args: string[]) => {
+        return {
+          status: -1,
+          output: 'Goodbye!'
+        };
+      },
+    });
+    this.registerCommand({
+        name: 'clear',
+        aliases: ['clear'],
+        description: 'clear the screen.',
+        execute: (args: string[]) => {
+          return {
+            status: -2,
+            output: 'Clearing console!'
+          };
+        },
+      });
     this.registerCommand({
       name: 'leet',
       description: 'Convert text to leet speak',
       execute: (args: string[]) => {
-        const text = args.join(' ');
+        console.warn('args', args);
+        if (!args.length) {
+          return {
+            status: 400,
+            output: 'Usage: leet <text>'
+          };
+        }
+        const [text] = args;
         return {
           status: text ? 200 : 404,
           output: text.replace(/[aeiou]/gi, '3').replace(/[AEIOU]/gi, '3')
         };
       }
-    })
-
+    });
     this.registerCommand({
       name: 'ls',
       description: 'List accessible files',
@@ -70,15 +106,15 @@ export class CLIService {
         };
       }
     });
-
     this.registerCommand({
       name: 'cat',
       description: 'View contents of a file',
+      aliases: ['view', 'read'],
       execute: (args: string[]) => {
         if (!args[0]) return {
           status: 200,
           output: 'Usage: cat <filename>'
-         };
+        };
         const content = this.config.getFileContent(args[0]);
         return {
           status: content ? 200 : 404,
@@ -86,51 +122,81 @@ export class CLIService {
         };
       }
     });
-
-    this.registerCommand({
-      name: 'aichat',
-      description: 'Experimental AI ChatBot Service',
-      execute: (args: string[]) => {
-        return {
-          status: 200,
-          output: 'aichat > '
-        }
-      }
-    });
-
     this.registerCommand({
       name: 'su',
       description: 'switch user',
+      aliases: ['switch-user', 'user'],
       execute: (args: string[]) => {
-        if (!args[0]) return { output: 'Usage: su <username>' };
-        const user = args[0];
-        if(user === 'admin'){
-          if(!args[2] || !args[1] || args[2] !== '1234'){
+        const [username, password] = args;
+        if (!username) return {
+          status: 400,
+          output: 'Usage: su <username> [password]'
+        };
+        if (username === 'admin' || username === 'root') {
+          if (!password) return {
+            status: 400,
+            output: 'Usage: su <username> [password]'
+          };
+          const isAuthorized = (password: string) => {
+            return password === '1234';
+          } // implement secure validation
+          if (!isAuthorized) {
             return {
               status: 401,
-              output: `Unauthorized`
+              output: 'Unauthorized'
             };
           }
-          else if(args[2] === '1234'){
-            this.userService.setUserName(user);
+          if (this.userService.user.name === 'admin') {
             return {
-              status: 200,
-              output: `Switched to admin: ${user}`
+              status: 400,
+              output: `Already logged in as admin.`
             };
           }
+          this.userService.updateUser({name: username, level: 2, score: this.userService.user.score + 1});
           return {
-            status: 401,
-            output: `Unauthorized`
+            status: 201,
+            output: `Switched to user: ${username}`
           };
         }
-        this.userService.resetUser();
-        this.userService.setUserName(user);
+        this.userService.updateUser({name: username, level: 1, score: 0});
         return {
-          status: 200,
-          output: `Switched to user: ${user}`
+          status: 201,
+          output: `Switched to user: ${username}`
         };
       }
     })
+    this.registerCommand({
+      name: 'user',
+      aliases: ['user'],
+      description: 'Get user info.',
+      execute: (args: string[]) => {
+        const [param, value] = args;
+        const username = this.userService.user.name;
+        if (!param) return {
+          status: 400,
+          output: 'Usage: user <param> [value]'
+        };
+        if (username !== 'admin' && username !== 'root') {
+          return {
+            status: 401,
+            output: 'Unauthorized!'
+          };
+        } else {
+          this.userService.updateUser({[param]: value});
+          this.userService.updateUser({name: 'unknown'});
+          return {
+            status: 200,
+            output: `Updated user: ${param} to ${value}`
+          };
+        }
+      },
+    })
+  }
+
+  getAvailableCommands(currentLevel: number): CLICommand[] {
+    return Array.from(this.commands.values()).filter(cmd =>
+      cmd.levelRequired == null || cmd.levelRequired <= currentLevel
+    );
   }
 
   registerCommand(command: CLICommand) {

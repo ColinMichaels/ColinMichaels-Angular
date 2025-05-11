@@ -1,0 +1,47 @@
+<ng-container *ngIf="media?.content as content">
+
+  <!-- Image rendering -->
+  <img *ngIf="isImage()"
+       [src]="imageUrl"
+       [alt]="altText"
+       class="media-image w-full h-full" />
+
+  <!-- Icon rendering -->
+  <ng-container *ngIf="isIcon() && icon">
+    <!-- Material Icons -->
+<!--    <mat-icon *ngIf="icon.type === 'material'"
+              [ngClass]="icon.className"
+              [style.color]="icon.color"
+              [style.fontSize.px]="icon.size || 24">
+      {{ icon.name }}
+    </mat-icon>-->
+
+    <!-- FontAwesome Icons -->
+    <i *ngIf="icon.type === 'fontawesome'"
+       [class]="icon.className || icon.name">
+    </i>
+
+    <!-- Custom Icons -->
+    <i *ngIf="icon.type === 'custom'"
+       [class]="icon.className || icon.name"
+       [style.color]="icon.color"
+       [style.font-size.px]="icon.size || 24">
+    </i>
+
+    <!-- Inline SVG -->
+    <div *ngIf="icon.type === 'svg'"
+         [innerHTML]="icon.svgPath"
+         [style.color]="icon.color"
+         class="media-svg"
+         [style.width.px]="icon.size || 24"
+         [style.height.px]="icon.size || 24">
+    </div>
+  </ng-container>
+
+</ng-container>
+
+<!-- Optional fallback -->
+<ng-container *ngIf="!media?.content">
+  <i class="fa fa-bell text-sm"></i>
+ <!-- <span class="media-unknown">[ No media content ]</span>-->
+</ng-container>

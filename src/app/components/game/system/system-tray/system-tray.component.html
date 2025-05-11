@@ -1,62 +1,118 @@
 <!-- system-tray.component.html -->
 <div
-  class="fixed top-0 left-0 w-full z-50 transform transition-transform duration-300"
+  class="fixed top-0 left-0 w-full z-50
+  shadow-2xl
+  transform transition-transform duration-300 border-b border-white/10"
   [class.-translate-y-full]="!isVisible()"
   [class.translate-y-0]="isVisible()"
+  (mouseleave)="toggleMenu('')"
 >
   <div class="h-8 bg-black/50 text-white flex items-center justify-between px-4">
-    <div class="flex space-x-4 text-sm">
-      <div class="cursor-pointer" (click)="toggleMenu('apple')"><i class="fa fa-apple"></i></div>
+    <div class="flex space-x-4 text-xs">
+      <section class="relative">
+        <div class="cursor-pointer" (click)="toggleMenu('apple')"><i class="fa fa-apple"></i></div>
+        <div
+          *ngIf="menuOpen() === 'apple'"
+          class="menu-dropdown absolute top-full mt-1"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('about')">About This App</div>
+          <hr class="menu-separator" />
+          <div class="hover:bg-gray-600 p-1 rounded">System Settings</div>
+          <hr class="menu-separator" />
+          <div class="hover:bg-gray-600 p-1 rounded" [routerLink]="['/']">Shut Down</div>
+        </div>
+      </section>
+      <section class="relative">
       <div class="cursor-pointer" (click)="toggleMenu('file')">File</div>
+      <div
+        *ngIf="menuOpen() === 'file'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+        <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('finder')">New Window</div>
+        <div class="hover:bg-gray-600 p-1 rounded">Close All</div>
+      </div>
+      </section>
+      <section class="relative">
       <div class="cursor-pointer" (click)="toggleMenu('view')">View</div>
+        <div
+        *ngIf="menuOpen() === 'view'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+        <div class="hover:bg-gray-600 p-1 rounded">Full Screen</div>
+        <div class="hover:bg-gray-600 p-1 rounded">Zoom</div>
+      </div>
+      </section>
+      <section class="relative">
       <div class="cursor-pointer" (click)="toggleMenu('apps')">Apps</div>
+        <div
+        *ngIf="menuOpen() === 'apps'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+          <div *ngFor="let app of terminalManager.availableApps">
+            <div *ngIf="app.installed" (click)="openApp(app.id)" class="hover:bg-gray-600 p-1 truncate cursor-pointer">
+              {{ app.title }}
+            </div>
+          </div>
+      </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer" (click)="toggleMenu('help')">Help</div>
+        <div
+          *ngIf="menuOpen() === 'help'"
+          class="menu-dropdown absolute top-full mt-1"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('about')">About This App</div>
+        </div>
+      </section>
     </div>
-    <div class="text-xs text-gray-300">Memory: {{ usedMemory }} / 512 MB</div>
-    <div class="flex space-x-2">
+
+    <section class="flex space-x-2">
       <ng-container *ngFor="let app of runningApps">
         <div class="px-2 py-1 bg-gray-700 rounded text-xs flex items-center space-x-1">
           <span>{{ app.title }}</span>
           <button class="text-red-400" (click)="closeApp(app.id)">×</button>
         </div>
       </ng-container>
+    </section>
+    <div class="w-20"></div>
+
+    <div class="flex space-x-4 justify-items-end align-middle">
+      <section #memory class="relative text-[10px] text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
+        <i class="fa fa-memory text-xs"></i>: {{ usedMemory }} / {{totalMemory}} <span class="">MB</span>
+
+          <div
+            *ngIf="menuOpen() === 'memory'"
+            class="bg-black/50 absolute top-full mt-1"
+            (mouseenter)="isHoveringMenu.set(true)"
+            (mouseleave)="isHoveringMenu.set(false)"
+          >
+            <ng-container *ngFor="let app of runningApps">
+              <div class="p-1 rounded">
+                {{ app.title }} | {{ app.memory }} MB
+              </div>
+            </ng-container>
+
+          </div>
+
+        </section>
+        <section class="flex space-x-2 self-center">
+          <i class="fa fa-battery-half text-xs" [title]="batteryLevel + '%'"></i>
+        </section>
+      <section class="flex space-x-2 self-center">
+        <app-clock-display/>
+      </section>
+
     </div>
-    <div class="text-xs text-white"><app-clock-display/></div>
-  </div>
-  <div
-    *ngIf="menuOpen() === 'apple'"
-    class="absolute top-10 left-0 bg-[#333] text-white p-2 text-xs shadow-md"
-    (mouseenter)="isHoveringMenu.set(true)"
-    (mouseleave)="isHoveringMenu.set(false)"
-  >
-    <div class="hover:bg-gray-600 p-1 rounded">About This Mac</div>
-    <div class="hover:bg-gray-600 p-1 rounded">System Settings</div>
-    <div class="hover:bg-gray-600 p-1 rounded">Shut Down</div>
-  </div>
-  <div
-    *ngIf="menuOpen() === 'file'"
-    class="absolute top-10 left-12 bg-[#333] text-white p-2 text-xs shadow-md"
-    (mouseenter)="isHoveringMenu.set(true)"
-    (mouseleave)="isHoveringMenu.set(false)"
-  >
-    <div class="hover:bg-gray-600 p-1 rounded">New Window</div>
-    <div class="hover:bg-gray-600 p-1 rounded">Close All</div>
-  </div>
-  <div
-    *ngIf="menuOpen() === 'view'"
-    class="absolute top-10 left-24 bg-[#333] text-white p-2 text-xs shadow-md"
-    (mouseenter)="isHoveringMenu.set(true)"
-    (mouseleave)="isHoveringMenu.set(false)"
-  >
-    <div class="hover:bg-gray-600 p-1 rounded">Full Screen</div>
-    <div class="hover:bg-gray-600 p-1 rounded">Zoom</div>
-  </div>
-  <div
-    *ngIf="menuOpen() === 'apps'"
-    class="absolute top-10 left-40 bg-[#333] text-white p-2 text-xs shadow-md"
-    (mouseenter)="isHoveringMenu.set(true)"
-    (mouseleave)="isHoveringMenu.set(false)"
-  >
-    <div class="hover:bg-gray-600 p-1 rounded">CLI</div>
-    <div class="hover:bg-gray-600 p-1 rounded">File Manager</div>
+
   </div>
 </div>

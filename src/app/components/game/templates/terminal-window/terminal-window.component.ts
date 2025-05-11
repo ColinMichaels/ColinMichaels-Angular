@@ -1,7 +1,7 @@
 // terminal-window.component.ts
-import {Component, ElementRef, ViewChild, Input, AfterViewInit, ViewContainerRef, Type} from '@angular/core';
+import {Component, ElementRef, ViewChild, Input, AfterViewInit, ViewContainerRef, Type, OnDestroy} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {CliGameComponent} from '../../cli-game/cli-game.component';
+import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
 import {TerminalWindowManagerService} from '../../services/terminal-window-manager.service';
 
 @Component({
@@ -15,6 +15,7 @@ import {TerminalWindowManagerService} from '../../services/terminal-window-manag
     display: block;
     position: relative;
     z-index: 10;
+    transform: translate3d(40px, 40px, 0);
   }
 
   :host ::ng-deep div[draggable] {
@@ -22,43 +23,40 @@ import {TerminalWindowManagerService} from '../../services/terminal-window-manag
     -webkit-user-drag: none;
     -webkit-app-region: drag;
   }
-
-  .h-0 {
-    height: 0 !important;
-  }
-
-  .h-\\[400px\\] {
-    height: 400px !important;
-  }`
+`
 })
-export class TerminalWindowComponent implements AfterViewInit {
+export class TerminalWindowComponent implements AfterViewInit, OnDestroy {
   @ViewChild('terminal') terminalRef!: ElementRef<HTMLDivElement>;
   @ViewChild('header') headerRef!: ElementRef<HTMLDivElement>;
   @ViewChild('resizeHandle') resizeRef!: ElementRef<HTMLDivElement>;
   @ViewChild('dock') dockRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('terminalContent', { read: ViewContainerRef }) contentRef!: ViewContainerRef;
+  @ViewChild('terminalContent', { read: ViewContainerRef }) containerRef!: ViewContainerRef;
 
   @Input() id!: string;
   @Input() title: string = 'Terminal';
+  @Input() defaultWidth = 'w-[640px]';
+  @Input() defaultHeight = 'h-auto';
+  @Input() autoFit = false;
 
   @Input() embeddedComponent: Type<any> = CliGameComponent;
   isCollapsed = false;
   isVisible = true;
   isMinimized = false;
 
+  showSizeIcons = false;
+
   private isDragging = false;
   private isResizing = false;
-  private offsetX = 0;
-  private offsetY = 0;
+  private offsetX = 40;
+  private offsetY = 40;
   private startWidth = 0;
   private startHeight = 0;
 
-  constructor(private terminalManager: TerminalWindowManagerService ) {
+  constructor(private terminalManager: TerminalWindowManagerService) {
 
   }
 
   ngAfterViewInit(): void {
-    const terminal = this.terminalRef.nativeElement;
     const header = this.headerRef.nativeElement;
     const resizer = this.resizeRef.nativeElement;
 
@@ -69,8 +67,8 @@ export class TerminalWindowComponent implements AfterViewInit {
     resizer.addEventListener('pointerdown', this.onResizeStart);
 
     if (this.embeddedComponent) {
-      this.contentRef.clear();
-      this.contentRef.createComponent(this.embeddedComponent);
+      this.containerRef.clear();
+      this.containerRef.createComponent(this.embeddedComponent);
     }
   }
 
@@ -113,6 +111,7 @@ export class TerminalWindowComponent implements AfterViewInit {
   }
 
   closeWindow() {
+    this.terminalManager.closeTerminal(this.id);
     this.isVisible = false;
   }
 
@@ -126,5 +125,13 @@ export class TerminalWindowComponent implements AfterViewInit {
 
   restoreFromDock() {
     this.isMinimized = false;
+  }
+
+  bringToFront() {
+    this.terminalManager.setFocus(this.id, this.offsetX, this.offsetY);
+  }
+
+  ngOnDestroy() {
+
   }
 }

@@ -1,7 +1,7 @@
 {
   "id": "level-2",
   "name": "Deeper Dive",
-  "unlockedCommands": ["trace", "decrypt", "cd"],
+  "unlockedCommands": ["trace", "decrypt", "cd", "help"],
   "logFiles": [
     { "name": "trace.log", "content": "Source unknown. Spoofed node found at 10.0.7.23" }
   ],

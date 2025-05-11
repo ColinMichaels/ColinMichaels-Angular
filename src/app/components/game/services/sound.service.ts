@@ -31,6 +31,7 @@ export class SoundService {
 
   constructor() {
     this.bootAudio();
+    this.detectMobileAndMute();
   }
 
   bootAudio(): void {
@@ -51,6 +52,14 @@ export class SoundService {
       .catch(err => {
         console.warn('[SoundService] bootAudio() failed:', err.message);
       });
+  }
+
+  private detectMobileAndMute(): void {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile) {
+      this.setMute(true);
+      console.log('[SoundService] Mobile device detected. Sound muted.');
+    }
   }
 
   playVariant(poolKey: string, options: SoundOptions = {}) {
