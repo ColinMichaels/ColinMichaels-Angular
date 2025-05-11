@@ -1,7 +1,7 @@
 {
   "id": "level-1",
   "name": "Initial Breach",
-  "unlockedCommands": ["whoami", "help", "ls", "cat", "leet", "aichat", "su"],
+  "unlockedCommands": ["whoami", "help", "ls", "cat", "leet", "su", "exit", "user", "clear", "aichat"],
   "logFiles": [
     {
       "name": "boot.log",
@@ -10,7 +10,7 @@
     },
     {
       "name": "clue1.txt",
-      "content": "Start where the anomalies began.",
+      "content": "Access admin user to continue. Password from Spaceballs",
       "action": "good"
     },
     {

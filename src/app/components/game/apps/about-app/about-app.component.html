@@ -1,0 +1,38 @@
+<!-- about.component.html -->
+<div class="flex flex-col items-center justify-start min-h-screen h-0  text-white">
+  <div class="bg-zinc-800 shadow-lg p-6 w-[320px] h-full text-center">
+    <div class="mb-4">
+     <i class="fa fa-computer"></i>
+    </div>
+    <h1 class="text-2xl font-semibold">{{ systemInfo.model }}</h1>
+    <p class="text-sm text-zinc-400">{{ systemInfo.screen }}</p>
+
+    <div class="my-4 space-y-1 text-left text-sm">
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Chip</span>
+        <span>{{ systemInfo.chip }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Memory</span>
+        <span>{{ systemInfo.memory }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Serial number</span>
+        <span>{{systemInfo.serial}}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">colinOS</span>
+        <span>{{ systemInfo.os }}</span>
+      </div>
+    </div>
+
+    <button class="mt-4 px-4 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-sm">
+      More Info…
+    </button>
+
+    <div class="mt-6 text-xs text-zinc-500">
+      <p>Regulatory Certification</p>
+      <p class="mt-1">{{ appInfo.copyright }} All Rights Reserved.</p>
+    </div>
+  </div>
+</div>

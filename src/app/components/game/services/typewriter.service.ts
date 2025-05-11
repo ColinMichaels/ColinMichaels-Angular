@@ -19,7 +19,6 @@ interface TypewriterLine {
 @Injectable({ providedIn: 'root' })
 export class TypewriterService {
   public typedText$ = new BehaviorSubject<string>('');
-  public curUser = new User();
   public lineCompleted$ = new Subject<any>();
   private queue: TypewriterLine[] = [];
   private currentIndex = 0;
@@ -28,12 +27,9 @@ export class TypewriterService {
   public activeMode$ = new BehaviorSubject<TypingMode>('default');
 
   constructor(private soundService: SoundService, private userService: UserService) {
-    this.userService.user$.subscribe(user => {
-      this.curUser = user;
       if(this.queue.length > 0) {
         this.processNextLine();
       }
-    })
   }
 
   enqueueLine(line: TypewriterLine) {
@@ -49,7 +45,7 @@ export class TypewriterService {
     this.lineBuffer = '';
     const mode = line.mode ?? 'default';
     this.activeMode$.next(mode);
-    const userName = this.curUser.name.toLowerCase() || 'unknown';
+    const userName = this.userService.user.name.toLowerCase() || 'unknown';
     const currenPath = `${userName}@root:/ `;
     line.text = currenPath + line.text;
 

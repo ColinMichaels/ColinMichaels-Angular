@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {firstValueFrom, forkJoin, Observable} from 'rxjs';
+import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of} from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {UserService} from './user.service';
 
 export interface LogFile {
   name: string;
@@ -22,62 +24,51 @@ export interface GameLevel {
   storage?: string[];
   steps?: Step[];
   theme?: string;
+  commandFiles?: string[];  // New field
 }
 
-export interface GameLevel {
-  id: string;
-  name: string;
-  unlockedCommands: string[];
-  logFiles?: LogFile[];
-  theme?: string;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class GameConfigService {
   private levels: GameLevel[] = [];
+  private levelsSubject = new BehaviorSubject<GameLevel[]>([]);
+  levels$ = this.levelsSubject.asObservable();
   private currentLevelIndex = 0;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private userService: UserService) {
+  }
 
-  loadLevelsForProgress(currentLevel: number, preloadNext: number = 1): Observable<GameLevel[]> {
+  async loadLevelsForProgress(currentLevel = this.currentLevelIndex, preloadNext: number = 0): Promise<Observable<GameLevel[]>> {
     const levelFiles = [];
 
-    for (let i = 0; i <= currentLevel + preloadNext; i++) {
-      levelFiles.push(this.http.get<GameLevel>(`/assets/game/levels/level-${i + 1}.json`));
+    for (let i = 0; i <= currentLevel; i++) {
+      levelFiles.push(
+        this.http.get<GameLevel>(`/assets/game/levels/level-${i + 1}.json`).pipe(
+          catchError(error => {
+            console.warn(`Failed to load level ${i + 1}:`, error);
+            return of(null); // Return null for failed levels
+          })
+        )
+      );
     }
 
-    return forkJoin(levelFiles);
+    return forkJoin(levelFiles).pipe(
+      map(levels => levels.filter((level): level is GameLevel => level !== null))
+    );
   }
 
   setLevels(levels: GameLevel[]) {
     this.levels = levels;
   }
 
-  getLevelById(id: string): GameLevel | undefined {
-    return this.levels.find(l => l.id === id);
-  }
-
-  getAllLevels(): GameLevel[] {
-    return this.levels;
-  }
-
-  getLevelByIndex(index: number): GameLevel | undefined {
-    return this.levels[index];
-  }
-
-  async loadConfig(): Promise<void> {
-    const data = await firstValueFrom(this.http.get<{ levels: GameLevel[] }>('assets/config/game-levels.json'));
-    this.levels = data.levels;
-  }
-
   getCurrentLevel(): GameLevel {
     return this.levels[this.currentLevelIndex];
   }
 
-  advanceLevel(): void {
-    if (this.currentLevelIndex < this.levels.length - 1) {
-      this.currentLevelIndex++;
-    }
+  async loadLevels(): Promise<GameLevel[]> {
+    const levels = await firstValueFrom(
+      this.http.get<GameLevel[]>(`/assets/game/levels/level-${this.userService.user.level}.json`));
+    this.levelsSubject.next(levels);
+    return levels;
   }
 
   getAvailableCommands(): string[] {

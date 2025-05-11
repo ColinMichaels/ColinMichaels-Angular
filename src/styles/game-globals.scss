@@ -1,14 +1,16 @@
 /* Hazy glass style */
 .menu-dropdown {
-  @apply bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-lg rounded-md;
-  color: white;
-  padding: 0.5rem;
-  font-size: 0.75rem;
+  @apply bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-lg rounded-md text-white p-0.5 text-xs;
+  @apply min-w-[8rem] max-w-[14rem] overflow-hidden whitespace-nowrap text-ellipsis;
 }
 
 /* Apply same style to terminal and dock borders */
-.terminal-window {
-  @apply bg-white/5 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-xl rounded-md;
+.terminal-window, .glass-back {
+  @apply bg-white/5 backdrop-blur-md backdrop-saturate-150 border border-white/50 shadow-xl rounded-xl;
+}
+
+.terminal-header{
+  @apply bg-white/5 backdrop-blur-md backdrop-saturate-150  rounded-t-lg;
 }
 
 .dock-icon {
@@ -17,7 +19,11 @@
 
 /* Style for buttons and inputs with macOS glass feel */
 .mac-button {
-  @apply px-3 py-1 text-sm text-white bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 rounded hover:bg-white/20 transition;
+  @apply px-3 py-1 w-full text-xs text-white bg-white/10
+  backdrop-blur-md backdrop-saturate-150 shadow-lg active:bg-white/40
+    focus:outline-none focus:ring-2 focus:ring-white/30
+    active:shadow-2xl
+  hover:shadow-inner border border-white/10 rounded hover:bg-white/20 transition;
 }
 
 .mac-input {
