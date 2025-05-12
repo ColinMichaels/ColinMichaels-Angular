@@ -1,7 +1,7 @@
 {
   "id": "level-1",
   "name": "Initial Breach",
-  "unlockedCommands": ["whoami", "help", "ls", "cat", "leet", "su", "exit", "user", "clear"],
+  "unlockedCommands": ["whoami", "help", "ls", "cat", "leet", "su", "exit", "user", "clear", "aichat"],
   "logFiles": [
     {
       "name": "boot.log",

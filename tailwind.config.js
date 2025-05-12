@@ -4,7 +4,11 @@ module.exports = {
     "./src/**/*.{html,ts}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      boxShadow: ['hover'], // Ensure hover state for shadow is added
+      scale: ['hover'], // Ensure hover state scaling is supported
+    },
+
   },
   plugins: [],
 }

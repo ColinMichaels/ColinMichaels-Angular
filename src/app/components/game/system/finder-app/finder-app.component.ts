@@ -3,11 +3,22 @@ import { CommonModule } from '@angular/common';
 import {FileEntry, FileSystemService} from '../../services/file-system.service';
 import { FinderWindowComponent } from '../finder-window/finder-window.component';
 import {FormsModule} from '@angular/forms';
+import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
+import {
+  faChevronRight,
+  faFolder,
+  faList,
+  faTableCellsLarge,
+  faTableColumns,
+  faFile,
+  faChevronLeft, faSearch, faPlus
+} from '@fortawesome/free-solid-svg-icons';
+
 
 @Component({
   selector: 'app-finder-app',
   standalone: true,
-  imports: [CommonModule, FinderWindowComponent, FormsModule],
+  imports: [CommonModule, FinderWindowComponent, FormsModule, FontAwesomeModule],
   templateUrl: './finder-app.component.html',
   styles:`.input, select {
     @apply bg-zinc-800 text-white border border-zinc-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500;
@@ -82,4 +93,14 @@ export class FinderAppComponent {
   getDirName(currentPath: string) {
     return currentPath.split('/').pop();
   }
+
+  protected readonly faList = faList;
+  protected readonly faTableCellsLarge = faTableCellsLarge;
+  protected readonly faTableColumns = faTableColumns;
+  protected readonly faChevronRight = faChevronRight;
+  protected readonly faFolder = faFolder;
+  protected readonly faFile = faFile;
+  protected readonly faChevronLeft = faChevronLeft;
+  protected readonly faSearch = faSearch;
+  protected readonly faPlus = faPlus;
 }

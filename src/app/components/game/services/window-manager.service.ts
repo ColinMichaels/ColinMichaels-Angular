@@ -4,8 +4,9 @@ import {FinderAppComponent} from '../system/finder-app/finder-app.component';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {AboutAppComponent} from '../apps/about-app/about-app.component';
 import {PlayerConfiguratorComponent} from '../apps/player-configurator/player-configurator.component';
-import {INotification, NotificationService} from './notification.service';
-import {IMediaItem} from './media.service';
+import {NotificationService} from './notification.service';
+import {IMediaItem, MediaItem} from './media.service';
+import {faBomb} from '@fortawesome/free-solid-svg-icons';
 
 export interface TerminalInstance {
   id: string;
@@ -29,10 +30,9 @@ export interface AppEntry {
 }
 
 @Injectable({ providedIn: 'root' })
-export class TerminalWindowManagerService {
+export class WindowManagerService {
   private terminals: TerminalInstance[] = [];
   private appRegistry: AppEntry[] = [];
-  private maxInstances = 5;
   private maxMemory = 512; // MB
   private focusedWindowId = new BehaviorSubject<string | null>(null);
 
@@ -110,12 +110,24 @@ export class TerminalWindowManagerService {
     if (!app) return false;
 
     if (this.usedMemory + app.memory > this.maxMemory) {
-        this.notify.show({
-          message: "Cannot open terminal. Memory limit exceeded.",
-          title: "Memory Error",
-          type: "error"
-        });
-        return false;
+      this.notify.show({
+        message: "Cannot open terminal. Memory limit exceeded.",
+        title: "Memory Error",
+        media: new MediaItem({
+          title: 'error',
+          id: 'error',
+          content: {
+            type: 'icon',
+            data: {
+              name: "fa fa-thumbs-down text-base",
+              type: "fontawesome",
+              svgPath: faBomb
+            }
+          }
+        }),
+        type: "error"
+      });
+      return false;
     }
 
     const lastTerminal = this.terminals[this.terminals.length - 1];
@@ -123,48 +135,49 @@ export class TerminalWindowManagerService {
     const DEFAULT_OFFSET = 40;
 
     const newOffsetX = lastTerminal?.offsetX !== undefined
-        ? lastTerminal.offsetX + DEFAULT_OFFSET
-        : DEFAULT_OFFSET;
+      ? lastTerminal.offsetX + DEFAULT_OFFSET
+      : DEFAULT_OFFSET;
 
     const newOffsetY = lastTerminal?.offsetY !== undefined
-        ? lastTerminal.offsetY + DEFAULT_OFFSET
-        : DEFAULT_OFFSET;
+      ? lastTerminal.offsetY + DEFAULT_OFFSET
+      : DEFAULT_OFFSET;
 
-    const existingTerminal = this.terminals.find(t => t.id === id);
-    if (!existingTerminal) {
-        this.terminals.push({
-            id,
-            title: app.title,
-            component: app.component,
-            memory: app.memory !== undefined ? app.memory : 64,
-            autofit: app.autofit ?? false,
-            offsetX: newOffsetX, // Explicitly set the offset here
-            offsetY: newOffsetY, // Explicitly set the offset here
-        });
+    const isNewInstanceNeeded = !!this.terminals.find(t => t.id === id);
+    const newTerminalId = isNewInstanceNeeded ? `${id}_instance` : id;
 
-        const focusSuccessful = this.setFocus(id, newOffsetX, newOffsetY);
+    this.terminals.push(this.createTerminalInstance(newTerminalId, app, newOffsetX, newOffsetY));
 
-        if (!focusSuccessful) {
-          this.notify.show({
-            message: `Failed to set focus for terminal with id: ${id}`,
-            title: "Terminal Error",
-            type: "error",
-            media: this.notifyTemplate,
-          });
-          return false;
-        }
+    const focusSuccessful = this.setFocus(newTerminalId, newOffsetX, newOffsetY);
+
+    if (!focusSuccessful) {
+      this.notify.show({
+        message: `Failed to set focus for terminal with id: ${newTerminalId}`,
+        title: "Terminal Error",
+        type: "error",
+        media: this.notifyTemplate,
+      });
+      return false;
+    }
+    return true;
+  }
+
+// Helper method for terminal creation
+  private createTerminalInstance(id: string, app: AppEntry, offsetX: number, offsetY: number): TerminalInstance {
+      return {
+        id: id,
+        title: app.title,
+        component: app.component,
+        memory: app.memory || 64,
+        autofit: app.autofit ?? false,
+        offsetX: offsetX,
+        offsetY: offsetY,
+      };
     }
 
-    return true;
 
-}
 
   closeTerminal(id: string) {
     this.terminals = this.terminals.filter(t => t.id !== id);
-  }
-
-  clearAll() {
-    this.terminals = [];
   }
 
   setFocus(id: string, offsetX?: number, offsetY?: number): boolean {

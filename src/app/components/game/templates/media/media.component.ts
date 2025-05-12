@@ -1,12 +1,15 @@
 import { Component, Input } from '@angular/core';
 import {IconDefinition, IMediaItem, MediaItem} from '../../services/media.service';
 import {NgIf} from '@angular/common';
+import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 // Move to shared/models
 
 @Component({
   selector: 'app-media',
   templateUrl: './media.component.html',
+  standalone: true,
   imports: [
+    FontAwesomeModule,
     NgIf
   ],
   styles: `.media-image {

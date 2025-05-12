@@ -5,11 +5,13 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {delay} from 'rxjs';
 import {MediaComponent} from '../../templates/media/media.component';
 import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
+import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
+import {faTimes} from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-notification-server',
   standalone: true,
-  imports: [CommonModule, MediaComponent, TimeAgoPipe],
+  imports: [CommonModule, MediaComponent, TimeAgoPipe,FontAwesomeModule],
   templateUrl: './notifications-server.component.html',
   styles: ``
 })
@@ -52,4 +54,5 @@ export class NotificationServerComponent implements OnInit {
 
   protected readonly setTimeout = setTimeout;
   protected readonly delay = delay;
+  protected readonly faTimes = faTimes;
 }

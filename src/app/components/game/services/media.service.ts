@@ -8,7 +8,7 @@ export interface IconDefinition {
   type: IconType;
   name: string;          // icon name/id within the library
   className?: string;    // optional CSS classes
-  svgPath?: string;     // for SVG icons
+  svgPath?: any;     // for SVG icons
   color?: string;       // optional color override
   size?: string | number; // optional size override
 }

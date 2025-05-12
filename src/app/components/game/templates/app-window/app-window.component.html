@@ -1,0 +1,44 @@
+<!-- app-window.component.html -->
+<div *ngIf="isVisible && !isMinimized" #terminal
+     (mousedown)="bringToFront()"
+     class="terminal-window fixed flex flex-col max-w-full rounded-lg border border-white/10 shadow-lg overflow-hidden"
+     [class.window-unfocused]="!isFocused"
+     [ngClass]="[
+       autoFit ? 'w-fit' : defaultWidth,
+       autoFit ? '' : defaultHeight
+     ]">
+  <!-- Title Bar -->
+  <div #header
+       class="terminal-header flex items-center justify-between px-3 py-1  rounded-t-lg cursor-move select-none">
+    <div class="flex space-x-1 text-zinc-700 cursor-pointer text-[6px]" (mouseenter)="showSizeIcons = !showSizeIcons"
+         (mouseleave)="showSizeIcons = false">
+      <fa-stack (click)="closeWindow()">
+        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-red-500"></fa-icon>
+        <fa-icon [icon]="faTimes" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
+      </fa-stack>
+
+      <fa-stack (click)="collapseWindow()">
+        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-yellow-400"></fa-icon>
+        <fa-icon [icon]="faMinus" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
+      </fa-stack>
+
+      <fa-stack (click)="minimizeToDock()">
+        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-green-500"></fa-icon>
+        <fa-icon [icon]="faUpRightAndDownLeftFromCenter" stackItemSize="1x" [class.hidden]="!showSizeIcons"></fa-icon>
+      </fa-stack>
+    </div>
+    <div class="title text-xs text-white/90 font-medium truncate" [class.title-unfocused]="!isFocused">{{ title }}</div>
+    <div class="w-12"></div>
+  </div>
+
+  <!-- CLI Content Area -->
+  <!-- Add h-full and flex layout -->
+  <div [class.h-0]="isCollapsed" [class.h-[400px]]="!isCollapsed" [class.window-unfocused]="!isFocused"
+       class="overflow-hidden">
+    <ng-container #terminalContent></ng-container>
+  </div>
+
+  <!-- Resize Handle -->
+  <div #resizeHandle [class.cursor-nwse-resize]="!autoFit"
+       class="absolute bottom-0 right-0 w-4 h-4 bg-transparent"></div>
+</div>

@@ -8,10 +8,11 @@ import {CLIService, CLIResponse} from '../../services/cli.service';
 import {AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {TerminalWindowManagerService} from '../../services/terminal-window-manager.service';
+import {WindowManagerService} from '../../services/window-manager.service';
 import {take} from 'rxjs';
 import {NotificationService} from '../../services/notification.service';
 import {MediaItem} from '../../services/media.service';
+import {faThumbsUp} from '@fortawesome/free-solid-svg-icons';
 
 
 export interface ITerminalMessage {
@@ -56,7 +57,7 @@ export class CliGameComponent implements OnInit {
     private soundService: SoundService,
     private cli: CLIService,
     private gameConfig: GameConfigService,
-    private terminalManager: TerminalWindowManagerService,
+    private terminalManager: WindowManagerService,
     private aiChat: AiChatService,
     private userService: UserService,
     private notify: NotificationService,
@@ -271,8 +272,9 @@ export class CliGameComponent implements OnInit {
               content: {
                 type: 'icon',
                 data: {
+                  name: "fa fa-thumbs-up",
                   type: "fontawesome",
-                  name: "fa fa-trophy text-base"
+                  svgPath: faThumbsUp
                 }
               }
             }),
@@ -292,8 +294,9 @@ export class CliGameComponent implements OnInit {
               content: {
                 type: 'icon',
                 data: {
+                  name: "fa fa-thumbs-down text-base",
                   type: "fontawesome",
-                  name: "fa fa-thumbs-down text-base"
+                  svgPath: faThumbsUp
                 }
               }
             }),

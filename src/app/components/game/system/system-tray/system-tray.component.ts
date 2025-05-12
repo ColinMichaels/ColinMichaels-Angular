@@ -1,9 +1,13 @@
 // system-tray.component.ts
 import { Component, HostListener, Signal, computed, effect, signal } from '@angular/core';
-import { TerminalWindowManagerService } from '../../services/terminal-window-manager.service';
+import { WindowManagerService } from '../../services/window-manager.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {ClockDisplayComponent} from '../clock-display/clock-display.component';
 import {RouterLink} from '@angular/router';
+import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
+import {faApple} from '@fortawesome/free-brands-svg-icons';
+import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
+
 
 @Component({
   selector: 'app-system-tray',
@@ -13,6 +17,7 @@ import {RouterLink} from '@angular/router';
     NgIf,
     NgForOf,
     ClockDisplayComponent,
+    FontAwesomeModule,
     RouterLink
   ],
   styles: `
@@ -34,9 +39,9 @@ import {RouterLink} from '@angular/router';
     }`
 })
 export class SystemTrayComponent {
-  isVisible = signal(true);
+  isVisible = signal(false);
   cursorY = signal(1000);
-  hoverThreshold = 30;
+  hoverThreshold = 40;
   autoHide = signal(false);
   isHoveringMenu = signal(false);
 
@@ -44,7 +49,7 @@ export class SystemTrayComponent {
   batteryLevel: string = '66';
 
   constructor(
-    public terminalManager: TerminalWindowManagerService) {
+    public terminalManager: WindowManagerService) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
         this.isVisible.set(true);
@@ -53,7 +58,6 @@ export class SystemTrayComponent {
           this.isVisible.set(false);
           this.menuOpen.set('');
         }
-
       }
     });
   }
@@ -86,4 +90,8 @@ export class SystemTrayComponent {
   openApp(id: string){
     this.terminalManager.openTerminal(id );
   }
+
+  protected readonly faApple = faApple;
+  protected readonly faMemory = faMemory;
+  protected readonly faBatteryHalf = faBatteryHalf;
 }

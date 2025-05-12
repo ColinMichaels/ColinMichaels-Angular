@@ -3,29 +3,33 @@ import {ImageOverlayComponent} from "../utils/overlay/overlay.component";
 import {IntroOverlayComponent} from "../templates/intro-overlay/intro-overlay.component";
 import {NgForOf, NgIf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
-import {TerminalWindowComponent} from '../templates/terminal-window/terminal-window.component';
+import {AppWindowComponent} from '../templates/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
 import {TypewriterService} from '../services/typewriter.service';
 import {SoundService} from '../services/sound.service';
 import {UserService} from '../services/user.service';
 import {OverlayService} from '../services/overlay.service';
-import {TerminalWindowManagerService} from '../services/terminal-window-manager.service';
+import {WindowManagerService} from '../services/window-manager.service';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 import {NotificationServerComponent} from '../utils/notifications-server/notifications-server.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
+import {DockComponent} from '../system/dock/dock.component';
+import {faInfo, faTrophy} from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-desktop',
+  standalone: true,
   imports: [
+    AppWindowComponent,
     ImageOverlayComponent,
     IntroOverlayComponent,
     NgIf,
     LevelLoaderComponent,
-    TerminalWindowComponent,
     NgForOf,
     SystemTrayComponent,
     NotificationServerComponent,
+    DockComponent,
   ],
   templateUrl: './desktop.component.html',
   styles: ``
@@ -37,7 +41,7 @@ export class DesktopComponent implements OnInit {
 
 
   constructor(private typewriter: TypewriterService,
-              public terminalManager: TerminalWindowManagerService,
+              public terminalManager: WindowManagerService,
               private soundService: SoundService,
               private overlay: OverlayService,
               private notify: NotificationService,
@@ -65,22 +69,47 @@ export class DesktopComponent implements OnInit {
           type: 'icon',
           data: {
             type: "fontawesome",
-            name: "fa fa-trophy text-base"
+            name: "fa fa-trophy text-base",
+            svgPath: faTrophy
           }
         }
       }),
       duration: 12 * 1000
     });
     this.notify.show({
-      title: 'Try the new Test Buttons',
-      message: 'this is just temporary.',
+      title: 'Dock and Icons ',
+      message: 'Working new app icons and dock functionality.',
       type: 'info',
+      media: new MediaItem({
+        id: '',
+        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        content: {
+          type: 'icon',
+          data: {
+            type: "fontawesome",
+            name: "text-base",
+            svgPath: faInfo
+          }
+        }
+      }),
       duration: 5 * 1000
     });
     this.notify.show({
-      title: 'New Player Config App',
-      message: 'now available check it out',
+      title: 'Game Play Mechanics',
+      message: 'More functionality being added.',
       type: 'info',
+      media: new MediaItem({
+        id: '',
+        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        content: {
+          type: 'icon',
+          data: {
+            type: "fontawesome",
+            name: "text-base",
+            svgPath: faInfo
+          }
+        }
+      }),
       duration: 5 * 1000
     });
     if(!this.userService.user.name){

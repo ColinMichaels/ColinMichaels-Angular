@@ -3,6 +3,13 @@ import {BehaviorSubject} from 'rxjs';
 import {faker} from '@faker-js/faker';
 import {IMediaItem} from './media.service';
 import {MediaItem} from './media.service';
+import {
+  faCheckCircle,
+  faCircle,
+  faExclamationCircle,
+  faExclamationTriangle,
+  faFaceAngry
+} from '@fortawesome/free-solid-svg-icons';
 
 export interface INotification {
   id: string;
@@ -44,8 +51,8 @@ export class NotificationService {
 
   generateRandomNotification() {
     const types: INotification['type'][] = ['info', 'success', 'warning'];
-    const randomFaIcons = ['fa fa-info-circle', 'fa fa-check-circle',
-      'fa fa-exclamation-circle', 'fa fa-exclamation-triangle', "fa fa-check-circle"];
+    const randomFaIcons = [faCircle, faCheckCircle,
+      faExclamationCircle, faExclamationTriangle, faFaceAngry];
     const randomType = faker.helpers.arrayElement(types);
     const randomTitle = faker.hacker.phrase();
     const randomMessage = faker.lorem.sentences(faker.number.int({ min: 1, max: 3 }));
@@ -69,7 +76,8 @@ export class NotificationService {
         type: 'icon',
         data: {
           type: "fontawesome",
-          name: faker.helpers.arrayElement(randomFaIcons)
+          name: "fontawesome",
+          svgPath: faker.helpers.arrayElement(randomFaIcons)
         }
       }
     });
