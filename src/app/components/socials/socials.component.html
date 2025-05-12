@@ -1,17 +1,40 @@
 <div class="flex flex-wrap justify-center gap-4 text-gray-600">
-  <a href="https://www.youtube.com/CaptainColin" target="_blank" title="Youtube CaptainColin" class="hover:text-red-600">
-    <i class="fa fa-youtube"></i>
+  <a href="https://www.youtube.com/CaptainColin"
+     target="_blank"
+     title="Youtube CaptainColin"
+     class="hover:text-red-600">
+    <fa-icon [icon]="faYoutube"></fa-icon>
   </a>
-  <a href="https://twitter.com/colinmichaels" target="_blank" title="Twitter" class="hover:text-blue-400">
-    <i class="fa fa-twitter"></i>
+  <a href="https://twitter.com/colinmichaels"
+     target="_blank"
+     title="Twitter"
+     class="hover:text-white">
+    <fa-icon [icon]="faXTwitter"></fa-icon>
   </a>
-  <a href="https://github.com/ColinMichaels" target="_blank" title="GitHub" class="hover:text-white">
-    <i class="fa fa-github"></i>
+  <a href="https://github.com/ColinMichaels"
+     target="_blank"
+     title="GitHub"
+     class="hover:text-white dela">
+    <fa-icon [icon]="faGithub"></fa-icon>
   </a>
-  <a href="https://instagram.com/captaincolinfpv" target="_blank" title="Instagram" class="hover:text-pink-600">
-    <i class="fa fa-instagram"></i>
+  <a href="https://instagram.com/captaincolinfpv"
+     target="_blank"
+     title="Instagram"
+     class="hover:text-pink-600">
+    <fa-icon [icon]="faInstagram"></fa-icon>
   </a>
-  <a href="https://www.linkedin.com/in/colinmichaels/" target="_blank" title="LinkedIn" class="hover:text-blue-700">
-    <i class="fa fa-linkedin"></i>
+  <a href="https://www.linkedin.com/in/colinmichaels/"
+     target="_blank"
+     title="LinkedIn"
+     class="hover:text-blue-700">
+    <fa-icon [icon]="faLinkedin"></fa-icon>
+  </a>
+  <a [routerLink]="['/leet']"
+     [routerLinkActive]="['text-green-600', 'active']"
+     target="_self"
+     title="game"
+     class="group hover:text-green-600">
+    <fa-icon [icon]="faGamepad"></fa-icon>
+    <span class="absolute py-0.5 px-1 -top-6 -right-1 bg-green-400 rounded-full text-black/70 text-xs font-bold  hidden group-hover:block">New</span>
   </a>
 </div>

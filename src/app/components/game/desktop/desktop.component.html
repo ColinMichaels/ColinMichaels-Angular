@@ -1,0 +1,19 @@
+<app-notification-server/>
+<div class="min-h-screen w-full gradient-desktop-bg">
+  <app-system-tray />
+  <app-intro-overlay *ngIf="showIntro;" (begin)="onBeginInvestigation()"></app-intro-overlay>
+  <app-image-overlay />
+  <app-level-loader
+    (loaded)="onLevelLoaded($event)"
+    (failed)="onLevelLoadFailed($event)"
+  ></app-level-loader>
+  <ng-container *ngFor="let term of terminalManager.openTerminals">
+    <app-window
+      [id]="term.id"
+      [title]="term.title"
+      [embeddedComponent]="term.component"
+      [autoFit]="term.autofit"
+    ></app-window>
+  </ng-container>
+  <app-dock/>
+</div>

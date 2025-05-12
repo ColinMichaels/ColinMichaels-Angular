@@ -1,0 +1,35 @@
+{
+  "levels": [
+    {
+      "id": "level-1",
+      "name": "Initial Breach",
+      "unlockedCommands": ["whoami", "help", "ls", "cat", "leet"],
+      "logFiles": [
+        { "name": "boot.log", "content": "System breach detected...",
+          "action": "alarm"
+        },
+        { "name": "clue1.txt", "content": "Start where the anomalies began.",
+          "action": "good"
+        }
+      ],
+      "storage": ["user"],
+      "steps": [
+        {
+          "id": 1,
+          "type": "question",
+          "params": ["question", "answer"]
+        }
+      ],
+      "theme": "glitch"
+    },
+    {
+      "id": "level-2",
+      "name": "Deeper Dive",
+      "unlockedCommands": ["trace", "decrypt", "cd"],
+      "logFiles": [
+        { "name": "trace.log", "content": "Source unknown. Spoofed node found at 10.0.7.23" }
+      ],
+      "theme": "system"
+    }
+  ]
+}

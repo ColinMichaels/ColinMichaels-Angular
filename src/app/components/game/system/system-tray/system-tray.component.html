@@ -1,0 +1,111 @@
+<!-- system-tray.component.html -->
+<div
+  class="fixed top-0 left-0 w-full z-50
+  shadow-2xl
+  transform transition-transform duration-500  border-b border-white/10"
+  [class.-translate-y-full]="!isVisible()"
+  [class.translate-y-0]="isVisible()"
+  (blur)="isVisible.set(false)"
+  (mouseout)="isVisible.set(false)"
+  (mouseleave)="toggleMenu('')"
+>
+  <div class="h-8 bg-black/50 text-white flex items-center justify-between px-4">
+    <div class="flex space-x-4 text-xs">
+      <section class="relative">
+        <div class="cursor-pointer" (click)="toggleMenu('apple')"><fa-icon [icon]="faApple" size="1x"></fa-icon></div>
+        <div
+          *ngIf="menuOpen() === 'apple'"
+          class="menu-dropdown absolute top-full mt-1"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('about')">About This App</div>
+          <hr class="menu-separator" />
+          <div class="hover:bg-gray-600 p-1 rounded">System Settings</div>
+          <hr class="menu-separator" />
+          <div class="hover:bg-gray-600 p-1 rounded" [routerLink]="['/']">Shut Down</div>
+        </div>
+      </section>
+      <section class="relative">
+      <div class="cursor-pointer" (click)="toggleMenu('file')">File</div>
+      <div
+        *ngIf="menuOpen() === 'file'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+        <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('finder')">New Window</div>
+        <div class="hover:bg-gray-600 p-1 rounded">Close All</div>
+      </div>
+      </section>
+      <section class="relative">
+      <div class="cursor-pointer" (click)="toggleMenu('view')">View</div>
+        <div
+        *ngIf="menuOpen() === 'view'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+        <div class="hover:bg-gray-600 p-1 rounded">Full Screen</div>
+        <div class="hover:bg-gray-600 p-1 rounded">Zoom</div>
+      </div>
+      </section>
+      <section class="relative">
+      <div class="cursor-pointer" (click)="toggleMenu('apps')">Apps</div>
+        <div
+        *ngIf="menuOpen() === 'apps'"
+        class="menu-dropdown absolute top-full mt-1"
+        (mouseenter)="isHoveringMenu.set(true)"
+        (mouseleave)="isHoveringMenu.set(false)"
+      >
+          <div *ngFor="let app of terminalManager.availableApps">
+            <div *ngIf="app.installed" (click)="openApp(app.id)" class="hover:bg-gray-600 p-1 truncate cursor-pointer">
+              {{ app.title }}
+            </div>
+          </div>
+      </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer" (click)="toggleMenu('help')">Help</div>
+        <div
+          *ngIf="menuOpen() === 'help'"
+          class="menu-dropdown absolute top-full mt-1"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="hover:bg-gray-600 p-1 rounded" (click)="openApp('about')">About This App</div>
+        </div>
+      </section>
+    </div>
+
+
+    <div class="flex space-x-4 justify-items-end align-middle">
+      <section #memory class="relative text-[10px] text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
+        <fa-icon [icon]="faMemory"></fa-icon>: {{ usedMemory }} / {{totalMemory}} <span class="">MB</span>
+
+          <div
+            *ngIf="menuOpen() === 'memory'"
+            class="bg-black/50 absolute top-full mt-1"
+            (mouseenter)="isHoveringMenu.set(true)"
+            (mouseleave)="isHoveringMenu.set(false)"
+          >
+            <ng-container *ngFor="let app of runningApps">
+              <div class="p-1 rounded">
+                {{ app.title }} | {{ app.memory }} MB
+              </div>
+            </ng-container>
+
+          </div>
+
+        </section>
+        <section class="flex space-x-2 self-center text-xs text-zinc-300">
+          <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"></fa-icon>
+        </section>
+      <section class="flex space-x-2 self-center">
+        <app-clock-display/>
+      </section>
+
+    </div>
+
+  </div>
+</div>
