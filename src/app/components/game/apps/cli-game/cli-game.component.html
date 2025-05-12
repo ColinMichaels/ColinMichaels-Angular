@@ -1,0 +1,14 @@
+<div class="cli-container h-full overflow-y-auto">
+  <div class="cli-output" [ngClass]="'typing-' + currentMode">
+    <pre>{{ typedText }}</pre>
+  </div>
+  <div class="cli-input">
+    <span>&gt;</span>
+    <input #input
+           [(ngModel)]="userInput"
+           (keydown.enter)="handleInput()"
+           (keydown.arrowUp)="navigateHistory(1)"
+           (keydown.arrowDown)="navigateHistory(-1)"
+           (keydown)="triggerClick()" autofocus/>
+  </div>
+</div>

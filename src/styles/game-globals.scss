@@ -1,0 +1,63 @@
+/* Hazy glass style */
+.menu-dropdown {
+  @apply bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-lg rounded-md text-white p-0.5 text-xs;
+  @apply min-w-[8rem] max-w-[14rem] overflow-hidden whitespace-nowrap text-ellipsis;
+}
+
+/* Apply same style to terminal and dock borders */
+.terminal-window, .glass-back {
+  @apply bg-white/5 backdrop-blur-md backdrop-saturate-150 border border-white/50 shadow-xl rounded-xl;
+}
+
+.terminal-header, .dock-back{
+  @apply bg-black/30 backdrop-blur-md backdrop-saturate-150  rounded-t-lg;
+}
+
+/* Style for buttons and inputs with macOS glass feel */
+.mac-button {
+  @apply px-3 py-1 w-full text-xs text-white bg-white/10
+  backdrop-blur-md backdrop-saturate-150 shadow-lg active:bg-white/40
+    focus:outline-none focus:ring-2 focus:ring-white/30
+    active:shadow-2xl
+  hover:shadow-inner border border-white/10 rounded hover:bg-white/20 transition;
+}
+
+.mac-input {
+  @apply px-3 py-1 text-sm text-white placeholder-white/60 bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/30;
+}
+
+.gradient-desktop-bg {
+  @apply bg-gradient-to-b from-zinc-900 via-stone-700 to-zinc-700
+}
+
+.gradient-terminal-bg {
+  @apply bg-gradient-to-b from-zinc-900 via-stone-700 to-zinc-700
+}
+
+.gradient-dock-icon-bg {
+  @apply bg-gradient-to-tr from-red-500 via-amber-300 to-zinc-600
+}
+
+::selection {
+  @apply bg-transparent;
+}
+
+/* macOS-style scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  transition: background-color 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}

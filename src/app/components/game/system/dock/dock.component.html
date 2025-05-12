@@ -1,0 +1,21 @@
+<div class="fixed bottom-0 w-full flex justify-center mx-auto ">
+  <div class="cursor-pointer dock-back w-full mx-8 h-10 rounded-lg rounded-b-none p-5 shadow-2xl
+  border border-white/10 flex items-center justify-end pointer-events-none">
+
+    <section class="flex space-x-2 pointer-events-auto">
+      <ng-container *ngFor="let app of annotatedApps">
+        <div (dblclick)="closeApp(app.id)" (click)="openApp(app.id)"
+         class="dock-icon dock-animation pointer-events-auto bg-zinc-500" [ngClass]="{ 'bg-blue-500/50': app.running}">
+          <span>{{ app.title | abbreviation }}</span>
+        </div>
+      </ng-container>
+    </section>
+    <section class="w-px h-8 mx-4 bg-white/20 backdrop-blur-sm rounded"></section>
+    <section class="flex space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
+      <fa-icon [icon]="faCog" class="dock-animation" (click)="openApp('settings')"></fa-icon>
+      <fa-icon [icon]="faBell" class="dock-animation text-yellow-400/50 hover:text-yellow-500" (click)="notify()"></fa-icon>
+      <fa-icon [icon]="faPowerOff" class="dock-animation text-green-600/50 hover:text-red-500" [routerLink]="['/']"></fa-icon>
+      <fa-icon [icon]="faTrashCan" class="dock-animation text-zinc-500/50 hover:text-white/50" (click)="trash('user')" (dblclick)="openApp('trash')"></fa-icon>
+    </section>
+  </div>
+</div>
