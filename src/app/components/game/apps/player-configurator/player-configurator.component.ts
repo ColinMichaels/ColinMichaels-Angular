@@ -2,6 +2,8 @@ import {Component, OnInit} from '@angular/core';
 import {UserService, User} from '../../services/user.service';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {NotificationService} from '../../services/notification.service';
+import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import {faUserInjured} from '@fortawesome/free-solid-svg-icons';
 
 
 export class Player extends User {
@@ -19,7 +21,8 @@ export class Player extends User {
 @Component({
   selector: 'app-player-configurator',
   imports: [
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    FaIconComponent
   ],
   templateUrl: './player-configurator.component.html',
   styles: `.input-field {
@@ -104,4 +107,6 @@ export class PlayerConfiguratorComponent implements OnInit {
   onReset(): void {
     this.form.reset(this.form.value); // or reset to initialPlayer if stored
   }
+
+  protected readonly faUserInjured = faUserInjured;
 }

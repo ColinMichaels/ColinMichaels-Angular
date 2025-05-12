@@ -1,8 +1,12 @@
 import {Component, Input} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
+import {faComputer, faLaptop} from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-about-app',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule, FontAwesomeModule],
   templateUrl: './about-app.component.html',
   styles: ``
 })
@@ -22,4 +26,6 @@ export class AboutAppComponent {
     copyright: '© 1983–2025 ColinMichaels Inc.'
   };
 
+  protected readonly faComputer = faComputer;
+  protected readonly faLaptop = faLaptop;
 }

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TerminalWindowComponent } from './terminal-window.component';
+import { DockComponent } from './dock.component';
 
-describe('TerminalWindowComponent', () => {
-  let component: TerminalWindowComponent;
-  let fixture: ComponentFixture<TerminalWindowComponent>;
+describe('DockComponent', () => {
+  let component: DockComponent;
+  let fixture: ComponentFixture<DockComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TerminalWindowComponent]
+      imports: [DockComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TerminalWindowComponent);
+    fixture = TestBed.createComponent(DockComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

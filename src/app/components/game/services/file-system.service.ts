@@ -217,7 +217,7 @@ export class FileSystemService {
     }
 
     return {
-      name: faker.name.jobType(),
+      name: faker.person.jobType(),
       path: `${path}`.replace(/\/+/g, '/'), // Normalize the path
       created: new Date().toISOString(),
       modified: new Date().toISOString(),

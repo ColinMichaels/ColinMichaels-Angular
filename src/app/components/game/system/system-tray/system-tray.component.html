@@ -2,15 +2,17 @@
 <div
   class="fixed top-0 left-0 w-full z-50
   shadow-2xl
-  transform transition-transform duration-300 border-b border-white/10"
+  transform transition-transform duration-500  border-b border-white/10"
   [class.-translate-y-full]="!isVisible()"
   [class.translate-y-0]="isVisible()"
+  (blur)="isVisible.set(false)"
+  (mouseout)="isVisible.set(false)"
   (mouseleave)="toggleMenu('')"
 >
   <div class="h-8 bg-black/50 text-white flex items-center justify-between px-4">
     <div class="flex space-x-4 text-xs">
       <section class="relative">
-        <div class="cursor-pointer" (click)="toggleMenu('apple')"><i class="fa fa-apple"></i></div>
+        <div class="cursor-pointer" (click)="toggleMenu('apple')"><fa-icon [icon]="faApple" size="1x"></fa-icon></div>
         <div
           *ngIf="menuOpen() === 'apple'"
           class="menu-dropdown absolute top-full mt-1"
@@ -76,19 +78,10 @@
       </section>
     </div>
 
-    <section class="flex space-x-2">
-      <ng-container *ngFor="let app of runningApps">
-        <div class="px-2 py-1 bg-gray-700 rounded text-xs flex items-center space-x-1">
-          <span>{{ app.title }}</span>
-          <button class="text-red-400" (click)="closeApp(app.id)">×</button>
-        </div>
-      </ng-container>
-    </section>
-    <div class="w-20"></div>
 
     <div class="flex space-x-4 justify-items-end align-middle">
       <section #memory class="relative text-[10px] text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
-        <i class="fa fa-memory text-xs"></i>: {{ usedMemory }} / {{totalMemory}} <span class="">MB</span>
+        <fa-icon [icon]="faMemory"></fa-icon>: {{ usedMemory }} / {{totalMemory}} <span class="">MB</span>
 
           <div
             *ngIf="menuOpen() === 'memory'"
@@ -105,8 +98,8 @@
           </div>
 
         </section>
-        <section class="flex space-x-2 self-center">
-          <i class="fa fa-battery-half text-xs" [title]="batteryLevel + '%'"></i>
+        <section class="flex space-x-2 self-center text-xs text-zinc-300">
+          <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"></fa-icon>
         </section>
       <section class="flex space-x-2 self-center">
         <app-clock-display/>

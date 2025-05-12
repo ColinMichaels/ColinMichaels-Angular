@@ -17,9 +17,9 @@
     </mat-icon>-->
 
     <!-- FontAwesome Icons -->
-    <i *ngIf="icon.type === 'fontawesome'"
-       [class]="icon.className || icon.name">
-    </i>
+    <fa-icon *ngIf="icon.type === 'fontawesome'"
+       [icon]="icon.className || icon.svgPath">
+    </fa-icon>
 
     <!-- Custom Icons -->
     <i *ngIf="icon.type === 'custom'"
