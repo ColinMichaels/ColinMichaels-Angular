@@ -33,6 +33,10 @@ export const FILE_TYPE_ICONS: FileTypeIcon[] = [
   {name: 'app', type: 'custom', ext: 'app', label: 'Application', icon: '🧩'},
 ];
 
+export enum VIEW_MODES  {
+  list= 'list', columns = 'columns', grid ='grid'
+}
+
 @Injectable({providedIn: 'root'})
 export class FileSystemService {
   private root: FileEntry = {
@@ -69,12 +73,20 @@ export class FileSystemService {
   private currentDirSubject = new BehaviorSubject<FileEntry>(this.root);
   public currentDir$ = this.currentDirSubject.asObservable();
 
-  public viewMode: 'list' | 'grid' | 'columns' = 'list';
+  private selectedFileSubject = new BehaviorSubject<FileEntry | undefined>(undefined);
+  public selectedFile$ = this.selectedFileSubject.asObservable();
+
+
+  private viewMode =  new BehaviorSubject<VIEW_MODES>(VIEW_MODES.list);
+  public viewMode$ = this.viewMode.asObservable();
 
   constructor(private http: HttpClient) {
     this.loadFromAssets();
   }
 
+  setViewMode(mode: VIEW_MODES) {
+    this.viewMode.next(mode);
+  }
 
   sortFiles(files: FileEntry[] | undefined): FileEntry[] | undefined {
     return files ? [...files].sort((a, b) => {

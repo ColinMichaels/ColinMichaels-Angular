@@ -1,5 +1,7 @@
-@use "styles/animations";
 @use "styles/game-globals";
+@use 'styles/scrollbars.scss';
+@use 'styles/animations.scss';
+@use 'styles/gradients.scss';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

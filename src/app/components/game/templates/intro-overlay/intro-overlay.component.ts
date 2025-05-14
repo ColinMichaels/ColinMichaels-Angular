@@ -22,7 +22,7 @@ export class IntroOverlayComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.scheduleRandomFlicker();
+
   }
 
   startGame() {

@@ -18,7 +18,8 @@ $font-size: 0.75rem;
   .cli-input {
     display: flex;
     align-items: center;
-    margin-top: 1rem;
+    margin-right: 4px;
+    font-size: $font-size !important;
     input {
       background: transparent;
       border: none;
