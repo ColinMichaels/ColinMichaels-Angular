@@ -1,12 +1,11 @@
 import {Component, effect, signal} from '@angular/core';
 import {CommonModule} from "@angular/common";
-import {WindowManagerService} from '../../services/window-manager.service';
+import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCog, faTrashCan, faBell, faPowerOff} from '@fortawesome/free-solid-svg-icons';
+import {faCog, faTrashCan, faBell} from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
-import {RouterLink} from '@angular/router';
-
+import {TooltipDirective} from '../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-dock',
@@ -15,7 +14,7 @@ import {RouterLink} from '@angular/router';
     CommonModule,
     AbbreviationPipe,
     FontAwesomeModule,
-    RouterLink
+    TooltipDirective
   ],
   templateUrl: './dock.component.html',
   styles: `
@@ -62,7 +61,7 @@ export class DockComponent {
   menuOpen = signal('');
 
   constructor(
-    private terminalManager: WindowManagerService,
+    private appManager: ApplicationManagerService,
     private notificationService: NotificationService
     ) {
     effect(() => {
@@ -77,34 +76,32 @@ export class DockComponent {
     });
   }
 
-  get runningAnnotatedApps() {
-    return this.annotatedApps.filter(app => app.running);
-  }
-
-  get annotatedApps() {
-    const runningAppNames = new Set(this.runningApps.map(app => app.title)); // Collect running app names into a set.
-
-    // Annotate availableApps with a running property
-    return this.availableApps.map(app => ({
-      ...app,
-      running: runningAppNames.has(app.title) // Check if the app is in the runningApps list
-    }));
-  }
-
   get runningApps() {
-    return this.terminalManager.openTerminals;
+    return this.appManager.openApplications;
+  }
+
+  get systemApps() {
+   return this.appManager.getApps('system');
+  }
+
+  get generalApps() {
+    return this.appManager.getApps('app');
+  }
+
+  get runningGeneralApps() {
+    return this.appManager.getRunningApps('app');
   }
 
   get availableApps() {
-    return this.terminalManager.availableApps;
+    return this.appManager.registeredApps;
   }
 
   closeApp(id: string) {
-    this.terminalManager.closeTerminal(id);
+    this.appManager.closeApplication(id);
   }
 
   openApp(id: string) {
-    this.terminalManager.openTerminal(id);
+    this.appManager.openApplication(id);
   }
 
   trash(key: string) {
@@ -119,5 +116,4 @@ export class DockComponent {
 
   protected readonly faTrashCan = faTrashCan;
   protected readonly faBell = faBell;
-  protected readonly faPowerOff = faPowerOff;
 }

@@ -1,0 +1,58 @@
+<div class="h-screen w-screen bg-cover bg-center relative" [style]="`background-image: url(${backgroundImage})`">
+  <!-- Blurred overlay -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center">
+
+    <!-- Login Box -->
+    <div class="flex flex-col items-center text-white space-y-4">
+      <!-- Avatar -->
+      <div class=" overflow-hidden">
+        <fa-stack [size]="'1x'">
+          <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-zinc-50/50  shadow-xl"></fa-icon>
+          <fa-icon [icon]="faUser" stackItemSize="1x" class="text-white"></fa-icon>
+        </fa-stack>
+      </div>
+
+      <!-- Username label (optional if prefilled) -->
+      <div class="text-lg font-semibold">Welcome</div>
+
+      <!-- Input -->
+      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-row justify-center space-x-2 items-center text-xs">
+        <input type="text"
+               formControlName="username"
+               placeholder="Enter username"
+               class="text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <div>
+          <button type="submit"
+                  (keyup.enter)="submit()"
+                  (click)="submit()"
+                  class="w-6 h-6 rounded-full py-1 bg-white/10 text-white/50 hover:text-white/90 text transition font-semibold">
+            <fa-icon [icon]="faChevronRight"></fa-icon>
+          </button>
+        </div>
+
+      </form>
+      <!-- Error -->
+      <div *ngIf="form.get('username')?.invalid && form.get('username')?.touched"
+           class="text-red-400 text-xs">
+        Invalid name – only letters allowed
+      </div>
+
+
+    </div>
+  </div>
+</div>
+
+<div class="absolute bottom-6 inset-x-0 flex justify-center space-x-12 text-white/70 text-xs">
+  <div class="flex flex-col items-center hover:text-white/90">
+    <fa-icon [icon]="faMoon" class="text-lg"></fa-icon>
+    <span>Sleep</span>
+  </div>
+  <div class="flex flex-col items-center hover:text-white/90">
+    <fa-icon [icon]="faRedo" class="text-lg"></fa-icon>
+    <span>Restart</span>
+  </div>
+  <div class="flex flex-col items-center hover:text-white/90">
+    <fa-icon [icon]="faPowerOff" class="text-lg"></fa-icon>
+    <span>Shut Down</span>
+  </div>
+</div>

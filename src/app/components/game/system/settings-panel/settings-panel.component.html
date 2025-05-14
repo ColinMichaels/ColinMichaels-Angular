@@ -1,0 +1,33 @@
+<!-- settings-panel.component.html -->
+<div class="flex h-full w-full overflow-hidden text-white bg-zinc-900">
+  <!-- Sidebar Navigation -->
+  <aside class="w-64 flex-shrink-0 border-r border-white/10 bg-zinc-950 p-4 overflow-y-auto">
+    <div class="mb-4 text-sm font-semibold px-2">{{ userName }}</div>
+    <ul class="space-y-1">
+      <li *ngFor="let item of settingsMenu" (click)="selectPanel(item)"
+          class="flex items-center space-x-2 p-2 rounded-lg cursor-pointer hover:bg-white/10"
+          [ngClass]="{ 'bg-blue-600': activePanel.key === item.key }">
+        <fa-icon [icon]="item.icon"></fa-icon>
+        <span class="truncate">{{ item.label }}</span>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Settings Content -->
+  <main class="flex-1 overflow-y-auto p-6">
+    <ng-container *ngIf="activePanel">
+      <div class="mb-6">
+        <div class="flex items-center space-x-4">
+          <fa-icon [icon]="activePanel.icon" class="text-3xl"></fa-icon>
+          <div>
+            <h2 class="text-xl font-semibold">{{ activePanel.label }}</h2>
+            <p class="text-sm text-white/60">{{ activePanel.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reusable inner panel component -->
+      <app-settings-subpanel [panelKey]="activePanel.key"></app-settings-subpanel>
+    </ng-container>
+  </main>
+</div>

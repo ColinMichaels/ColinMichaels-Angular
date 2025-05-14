@@ -1,21 +1,17 @@
-import {Routes, UrlSegment} from '@angular/router';
-
-//Custom UrlMatcher function
-export function patternMatcher(segments: UrlSegment[]): { consumed: UrlSegment[], posParams?: { [key: string]: UrlSegment } } | null {
-  if (segments.length >= 2 && segments[0].path === 'leet' && /^\d+$/.test(segments[1].path)) {
-    return {
-      consumed: segments.slice(0, 2),
-      posParams: {
-        id: segments[1]
-      }
-    };
-  }
-  return null;
-}
+import {Routes} from '@angular/router';
+import {AuthGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
-  { path: 'leet', pathMatch: 'full', loadComponent: () => import('./components/game/desktop/desktop.component').then(m => m.DesktopComponent) },
   {path: 'home', loadComponent: ()=> import('./components/main/main.component').then(m => m.MainComponent) },
-  { path: '**', redirectTo: '/home' }
+  {
+    path: 'colinos',
+    pathMatch: 'full',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./components/game/desktop/desktop.component').then(m => m.DesktopComponent) },
+  {
+    path: 'login',
+    loadComponent: () => import('./components/game/system/login-screen/login-screen.component').then(m => m.LoginScreenComponent)
+  },
+  { path: '**', loadComponent: ()=> import('./components/not-found/not-found.component').then(m => m.NotFoundComponent) }
 ];
