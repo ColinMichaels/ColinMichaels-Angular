@@ -1,0 +1,64 @@
+<div class="fixed bottom-0 w-full flex justify-center mx-auto ">
+  <div class="cursor-pointer dock-back w-full mx-8 h-10 rounded-lg rounded-b-none px-4 py-6 shadow-2xl
+  border border-white/10 flex items-center justify-end pointer-events-auto">
+    <section class="flex space-x-2 overflow-hidden">
+
+      <!-- Running Apps Section -->
+      <ng-container *ngFor="let app of runningGeneralApps">
+          <div class="relative flex-1 shrink min-w-0" [tooltipShowArrow]="true" [appTooltip]="app.title" >
+            <div (click)="closeApp(app.id)" (dblclick)="openApp(app.id)"
+                 [class.dock-icon]="!app.icon"
+                 class="pointer-events-auto" [class.-translate-y-1]="app.running">
+              <div *ngIf="app.icon; else showTitle">
+                <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
+              </div>
+              <ng-template #showTitle>
+                <span>{{ app.title | abbreviation }}</span>
+              </ng-template>
+
+            </div>
+            <div *ngIf="app.running" class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-auto bg-zinc-400 h-1 w-1 rounded-full"></div>
+          </div>
+      </ng-container>
+    </section>
+
+    <!-- Divider -->
+    <section class="w-px h-8 mx-4 bg-white/20 backdrop-blur-sm rounded"></section>
+    <!-- /Divider -->
+    <section class="flex space-x-2">
+      <ng-container *ngFor="let app of generalApps">
+        <div class="relative" [tooltipShowArrow]="true" [appTooltip]="app.title">
+        <div (dblclick)="closeApp(app.id)" (click)="openApp(app.id)"
+             [class.dock-icon]="!app.icon"
+         class="pointer-events-auto" [class.-translate-y-1]="app.running">
+          <div *ngIf="app.icon; else showTitle">
+              <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
+          </div>
+          <ng-template #showTitle>
+                      <span>{{ app.title | abbreviation }}</span>
+          </ng-template>
+
+        </div>
+        <div *ngIf="app.running" class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-none bg-zinc-400 h-1 w-1 rounded-full"></div>
+        </div>
+      </ng-container>
+    </section>
+    <!-- Divider -->
+    <section class="w-px h-8 mx-4 bg-white/20 backdrop-blur-sm rounded"></section>
+    <!-- /Divider -->
+    <section class="flex space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
+      <fa-icon [icon]="faCog" class="dock-animation"
+               (click)="openApp('system-settings')" [tooltipShowArrow]="true" [appTooltip]="'System Settings'">
+      </fa-icon>
+      <fa-icon [icon]="faBell" class="dock-animation text-yellow-400/50 hover:text-yellow-500"
+               (click)="notify()" [appTooltip]="'TEST Notifications'" >
+
+      </fa-icon>
+      <fa-icon [icon]="faTrashCan" class="dock-animation text-zinc-500/50 hover:text-white/50"
+               (click)="trash('user')" (dblclick)="openApp('trash')"
+               tooltipSize="sm"
+               [appTooltip]="'Reset all Settings'">
+      </fa-icon>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,52 @@
+$font-size: 0.75rem;
+.cli-container {
+  background: #000;
+  color: #0f0;
+  font-family: 'Courier New', monospace;
+  padding: 10px;
+
+  .cli-output {
+    white-space: pre-wrap;
+    pre{
+      width: 100%;
+      text-wrap: wrap;
+      line-height: 1.5rem;
+      font-size: $font-size !important;
+    }
+  }
+
+  .cli-input {
+    display: flex;
+    align-items: center;
+    margin-right: 4px;
+    font-size: $font-size !important;
+    input {
+      background: transparent;
+      border: none;
+      color: #0f0;
+      flex: 1;
+      font-size: $font-size !important;
+      outline: none;
+    }
+  }
+}
+
+.typing-default, .default{
+  background-color: black;
+  color: #00ff00;
+}
+
+.typing-glitch, .glitch {
+  animation: glitch 0.3s infinite;
+  color: #ff00ff;
+}
+
+.typing-system, .system {
+  color: #00dfff;
+  font-weight: bold;
+}
+
+.typing-dramatic, .dramatic {
+  color: #ffcc00;
+  font-style: italic;
+}

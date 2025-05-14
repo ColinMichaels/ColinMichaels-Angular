@@ -1,0 +1,5 @@
+<!-- glass-card.component.html -->
+<div class="app-window" [ngClass]="[width, padding]">
+  <div *ngIf="title" class="text-white text-sm mb-2 font-semibold">{{ title }}</div>
+  <ng-content></ng-content>
+</div>
