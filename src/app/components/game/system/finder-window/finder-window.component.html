@@ -1,0 +1,13 @@
+<div class="finder-content">
+    <ng-container [ngSwitch]="viewMode">
+      <div *ngSwitchCase="'list'">
+        <ng-content select="[list-view]"></ng-content>
+      </div>
+      <div *ngSwitchCase="'grid'">
+        <ng-content select="[grid-view]"></ng-content>
+      </div>
+      <div *ngSwitchCase="'columns'">
+        <ng-content select="[columns-view]"></ng-content>
+      </div>
+    </ng-container>
+</div>

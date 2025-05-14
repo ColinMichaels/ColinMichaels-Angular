@@ -1,0 +1,58 @@
+{
+  "name": "/",
+  "path": "/",
+  "type": "folder",
+  "isDir": true,
+  "children": [
+    {
+      "name": "Photos",
+      "path": "/Photos",
+      "type": "folder",
+      "isDir": true,
+      "children": [
+        {
+          "name": "sunset.jpg",
+          "path": "/Photos/sunset.jpg",
+          "type": "image",
+          "isDir": false
+        },
+        {
+          "name": "mountains.jpg",
+          "path": "/Photos/mountains.jpg",
+          "type": "image",
+          "isDir": false
+        },
+        {
+          "name": "beach.png",
+          "path": "/Photos/beach.png",
+          "type": "image",
+          "isDir": false
+        },
+        {
+          "name": "family-photo.jpg",
+          "path": "/Photos/family-photo.jpg",
+          "type": "image",
+          "isDir": false
+        },
+        {
+          "name": "vacation2023.jpg",
+          "path": "/Photos/vacation2023.jpg",
+          "type": "image",
+          "isDir": false
+        },
+        {
+          "name": "profile-pic.png",
+          "path": "/Photos/profile-pic.png",
+          "type": "image",
+          "isDir": false
+        }
+      ]
+    },
+    {
+      "name": "resume.pdf",
+      "path": "/resume.pdf",
+      "type": "document",
+      "isDir": false
+    }
+  ]
+}

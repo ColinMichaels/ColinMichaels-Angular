@@ -1,0 +1,139 @@
+<!-- system-tray.component.html -->
+<div
+  class="fixed top-0 left-0 w-full z-50
+  shadow-2xl
+  transform transition-transform duration-500  border-b border-white/10"
+  [class.-translate-y-full]="!isVisible() && !menuOpen()"
+  [class.translate-y-0]="isVisible()"
+  (blur)="isVisible.set(false)"
+  (mouseout)="isVisible.set(false)"
+  (mouseleave)="toggleMenu('')"
+>
+  <div class="h-8 bg-black/50 text-white flex items-center justify-between pl-2 pr-4">
+    <div class="flex items-center text-xs h-full">
+      <section class="relative">
+        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apple' }"
+             (click)="toggleMenu('apple')">
+          <fa-icon [icon]="faApple" size="1x"></fa-icon>
+        </div>
+        <div
+          *ngIf="menuOpen() === 'apple'"
+          class="menu-dropdown absolute top-6"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="menu-item" (click)="openApp('about')">About This App</div>
+          <hr class="menu-separator"/>
+          <div class="menu-item">System Settings</div>
+          <hr class="menu-separator"/>
+          <div class="menu-item" [routerLink]="['/']">Log Out {{ userName }}</div>
+        </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'file' }"
+             (click)="toggleMenu('file')">
+          File
+        </div>
+        <div
+          *ngIf="menuOpen() === 'file'"
+          class="menu-dropdown absolute -left-2 top-6"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="menu-item" (click)="openApp('finder')">New Window</div>
+          <div class="menu-item" [class.disabled]="windowsOpen()" (click)="closeAllApps()">Close All</div>
+        </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'view' }"
+             (click)="toggleMenu('view')">
+          View
+        </div>
+        <div
+          *ngIf="menuOpen() === 'view'"
+          class="menu-dropdown absolute -left-2 top-6"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.columns"
+               (click)="setViewMode(VIEW_MODES.columns)">as Icons</div>
+          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.list"
+               (click)="setViewMode(VIEW_MODES.list)">as List</div>
+          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.grid"
+               (click)="setViewMode(VIEW_MODES.grid)">as Grid</div>
+        </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apps' }"
+             (click)="toggleMenu('apps')">Apps
+        </div>
+        <div
+          *ngIf="menuOpen() === 'apps'"
+          class="menu-dropdown absolute -left-2 top-6"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <ng-container *ngFor="let app of appManager.registeredApps">
+            <div *ngIf="app.installed" (click)="openApp(app.id)" class="p-1 truncate cursor-pointer">
+              {{ app.title }}
+            </div>
+          </ng-container>
+        </div>
+      </section>
+      <section class="relative">
+        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'help' }"
+             (click)="toggleMenu('help')">
+          Help
+        </div>
+        <div
+          *ngIf="menuOpen() === 'help'"
+          class="menu-dropdown absolute -left-2 top-6"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <div class="menu-item" (click)="openApp('about')">About This App</div>
+        </div>
+      </section>
+    </div>
+
+
+    <div class="flex space-x-4 justify-items-end align-middle">
+      <section #memory class="relative text-[10px] text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
+        <fa-icon [icon]="faMemory"></fa-icon>
+        : {{ inGbs(usedMemory) }} / {{ inGbs(totalMemory) }}
+        <span class="text-[6px]">GB</span>
+
+        <div
+          *ngIf="menuOpen() === 'memory'"
+          class="menu-dropdown absolute top-full mt-1"
+          (mouseenter)="isHoveringMenu.set(true)"
+          (mouseleave)="isHoveringMenu.set(false)"
+        >
+          <ng-container *ngFor="let app of runningApps">
+            <div class="flex items-center justify-between px-2 py-1 w-full">
+              <div><span class="text-white/50">{{ app.title }}</span> | <span class="text-[8px]">{{ app.memory }}
+                MB</span></div>
+            </div>
+          </ng-container>
+
+        </div>
+
+      </section>
+
+      <section class="flex space-x-2 self-center text-xs text-zinc-300">
+        <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"></fa-icon>
+      </section>
+
+      <section class="flex space-x-2 self-center">
+        <app-clock-display/>
+      </section>
+
+    </div>
+
+  </div>
+</div>
