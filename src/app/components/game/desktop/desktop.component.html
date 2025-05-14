@@ -1,13 +1,11 @@
 <app-notification-server/>
-<div class="min-h-screen w-full gradient-desktop-bg">
+<div class="min-h-screen w-full gradient-desktop-bg overflow-hidden pointer-events-auto" (click)="clickedOnDesktop($event)">
   <app-system-tray />
-  <app-intro-overlay *ngIf="showIntro;" (begin)="onBeginInvestigation()"></app-intro-overlay>
-  <app-image-overlay />
   <app-level-loader
     (loaded)="onLevelLoaded($event)"
     (failed)="onLevelLoadFailed($event)"
   ></app-level-loader>
-  <ng-container *ngFor="let term of terminalManager.openTerminals">
+  <ng-container *ngFor="let term of appManager.openApplications">
     <app-window
       [id]="term.id"
       [title]="term.title"
@@ -15,5 +13,18 @@
       [autoFit]="term.autofit"
     ></app-window>
   </ng-container>
+  <div class="absolute top-10 right-5 flex flex-col items-center space-y-2">
+
+    <div class="flex flex-col items-center -space-y-1">
+      <fa-icon [icon]="faServer" class="text-zinc-500/90" (click)="openApp('finder')"></fa-icon>
+      <span class="text-white/90 text-[10px]">Colin HD</span>
+    </div>
+
+    <div class="flex flex-col items-center -space-y-1">
+      <fa-icon [icon]="faFile" class="text-white/90" (click)="openApp('tooltip-example')"></fa-icon>
+      <span class="text-white/90 text-[10px]">Tooltip Examples</span>
+    </div>
+
+  </div>
   <app-dock/>
 </div>

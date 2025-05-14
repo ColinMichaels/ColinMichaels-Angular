@@ -29,24 +29,23 @@
         <span class="ml-4 font-semibold truncate w-9/12">{{ getDirName(currentPath) }}</span>
       </div>
       <div class="flex space-x-2">
-        <fa-icon [icon]="faSearch" size="sm" class="hover:text-zinc-300"></fa-icon>
-        <fa-icon [icon]="faPlus" size="sm" class="hover:text-zinc-300"></fa-icon>
+        <fa-icon [icon]="faSearch" size="sm" class="hover:text-zinc-300 text-zinc-500"></fa-icon>
       </div>
       <div class="flex items-center space-x-4">
-        <select [(ngModel)]="sortBy" class="bg-zinc-800 border border-white/10 rounded px-2 py-1">
+        <select [(ngModel)]="sortBy" class="menu-dropdown">
           <option value="name">Name</option>
           <option value="type">Type</option>
           <option value="modified">Modified</option>
         </select>
         <div class="flex flex-col space-y-1 justify-items-center text-center">
           <div class="space-x-2 text-zinc-600">
-            <button (click)="setViewMode('list')" [class.text-white]="viewMode === 'list'">
+            <button (click)="setViewMode(VIEW_MODES.list)" [class.text-white]="viewMode === VIEW_MODES.list">
               <fa-icon [icon]="faList" size="sm"></fa-icon>
             </button>
-            <button (click)="setViewMode('grid')" [class.text-white]="viewMode === 'grid'">
+            <button (click)="setViewMode(VIEW_MODES.grid)" [class.text-white]="viewMode === VIEW_MODES.grid">
               <fa-icon [icon]="faTableCellsLarge" size="sm"></fa-icon>
             </button>
-            <button (click)="setViewMode('columns')" [class.text-white]="viewMode === 'columns'">
+            <button (click)="setViewMode(VIEW_MODES.columns)" [class.text-white]="viewMode === VIEW_MODES.columns">
               <fa-icon [icon]="faTableColumns"  size="sm"></fa-icon>
             </button>
           </div>

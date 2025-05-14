@@ -1,19 +1,21 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {FileEntry, FileSystemService} from '../../services/file-system.service';
-import { FinderWindowComponent } from '../finder-window/finder-window.component';
+import {Component, DestroyRef} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FileEntry, FileSystemService, VIEW_MODES} from '../../services/file-system.service';
+import {FinderWindowComponent} from '../finder-window/finder-window.component';
 import {FormsModule} from '@angular/forms';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {
+  faChevronLeft,
   faChevronRight,
+  faFile,
   faFolder,
   faList,
+  faPlus,
+  faSearch,
   faTableCellsLarge,
-  faTableColumns,
-  faFile,
-  faChevronLeft, faSearch, faPlus
+  faTableColumns
 } from '@fortawesome/free-solid-svg-icons';
-
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-finder-app',
@@ -26,15 +28,19 @@ import {
 })
 export class FinderAppComponent {
 
-  viewMode: 'list' | 'grid' | 'columns' = 'list';
   currentPath = '/'; // update as user navigate
 
   navHistory: string[] = [];
   navIndex: number = -1;
   sortBy = 'name';
   sortOrder = 'asc';
+  viewMode = VIEW_MODES.list;
+  searchTerm = '';
 
-  constructor(private fileSystemService: FileSystemService) {
+  constructor(private fileSystemService: FileSystemService, private destroyRef: DestroyRef) {
+    this.fileSystemService.viewMode$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(mode => this.viewMode = mode);
   }
 
   get favoriteDirs() {
@@ -57,8 +63,8 @@ export class FinderAppComponent {
     }
   }
 
-  setViewMode(mode: 'list' | 'grid' | 'columns') {
-    this.viewMode = mode;
+  setViewMode(mode: VIEW_MODES) {
+    this.fileSystemService.setViewMode(mode);
   }
 
   getCurrentDir(){
@@ -103,4 +109,5 @@ export class FinderAppComponent {
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faSearch = faSearch;
   protected readonly faPlus = faPlus;
+  protected readonly VIEW_MODES = VIEW_MODES;
 }
