@@ -1,0 +1,54 @@
+<!-- settings-subpanel.component.html -->
+<div class="space-y-6">
+  <ng-container [ngSwitch]="panelKey">
+
+    <!-- General Settings -->
+    <div *ngSwitchCase="'general'">
+      <h3 class="text-lg font-medium">General Preferences</h3>
+      <div class="space-y-2">
+        <label class="block">
+          <span class="text-sm text-white/70">Language</span>
+          <select class="w-full bg-zinc-800 text-white p-2 rounded">
+            <option>English</option>
+            <option>Spanish</option>
+            <option>French</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="text-sm text-white/70">Enable Notifications</span>
+          <input type="checkbox" class="ml-2" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Network Settings -->
+    <div *ngSwitchCase="'network'">
+      <h3 class="text-lg font-medium">Network Configuration</h3>
+      <div class="space-y-2">
+        <label class="block">
+          <span class="text-sm text-white/70">Wi-Fi SSID</span>
+          <input type="text" class="w-full bg-zinc-800 text-white p-2 rounded" placeholder="Network Name" />
+        </label>
+        <label class="block">
+          <span class="text-sm text-white/70">Auto-connect</span>
+          <input type="checkbox" class="ml-2" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Appearance Settings -->
+    <div *ngSwitchCase="'appearance'">
+      <h3 class="text-lg font-medium">UI Theme</h3>
+      <div class="flex items-center space-x-4">
+        <button class="bg-white text-black px-4 py-2 rounded">Light</button>
+        <button class="bg-black text-white px-4 py-2 rounded">Dark</button>
+      </div>
+    </div>
+
+    <!-- Default Placeholder -->
+    <div *ngSwitchDefault>
+      <p class="text-sm text-white/50">No settings available for this category.</p>
+    </div>
+
+  </ng-container>
+</div>

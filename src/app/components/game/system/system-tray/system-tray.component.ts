@@ -1,12 +1,15 @@
 // system-tray.component.ts
-import { Component, HostListener, Signal, computed, effect, signal } from '@angular/core';
-import { WindowManagerService } from '../../services/window-manager.service';
-import {NgForOf, NgIf} from '@angular/common';
+import {Component, HostListener, Signal, computed, effect, signal, DestroyRef} from '@angular/core';
+import { ApplicationManagerService } from '../../services/application-manager.service';
+import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {ClockDisplayComponent} from '../clock-display/clock-display.component';
 import {RouterLink} from '@angular/router';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faApple} from '@fortawesome/free-brands-svg-icons';
 import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
+import {UserService} from '../../services/user.service';
+import {FileSystemService, VIEW_MODES} from '../../services/file-system.service';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 
 @Component({
@@ -18,7 +21,8 @@ import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
     NgForOf,
     ClockDisplayComponent,
     FontAwesomeModule,
-    RouterLink
+    RouterLink,
+    NgClass
   ],
   styles: `
     /* system-tray.component.scss */
@@ -41,15 +45,24 @@ import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
 export class SystemTrayComponent {
   isVisible = signal(false);
   cursorY = signal(1000);
-  hoverThreshold = 40;
+  hoverThreshold = 30;
   autoHide = signal(false);
   isHoveringMenu = signal(false);
-
   menuOpen = signal('');
+  viewMode = signal(VIEW_MODES.list)
+  windowsOpen = computed(() => {
+    const runningApps = this.appManager.openApplications.length;
+    console.warn('running apps: ', runningApps);
+    return runningApps > 0;
+  })
   batteryLevel: string = '66';
 
   constructor(
-    public terminalManager: WindowManagerService) {
+    private userService: UserService,
+    private fileService: FileSystemService,
+    public appManager: ApplicationManagerService,
+    private destroyRef: DestroyRef
+    ) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
         this.isVisible.set(true);
@@ -60,6 +73,9 @@ export class SystemTrayComponent {
         }
       }
     });
+    this.fileService.viewMode$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(mode => this.viewMode.set(mode));
   }
 
   @HostListener('document:mousemove', ['$event'])
@@ -72,26 +88,46 @@ export class SystemTrayComponent {
   }
 
   get usedMemory(): number {
-    return this.terminalManager.usedMemory;
+    return this.appManager.usedMemory;
+  }
+
+  setViewMode(mode: VIEW_MODES) {
+    this.viewMode.set(mode);
+    this.fileService.setViewMode(mode);
+  }
+
+  inGbs(memory: number): string {
+    if(memory === 0) return '0.00';
+    return (memory / 1024).toFixed(2);
   }
 
   get totalMemory(): number {
-    return this.terminalManager.totalMemory;
+    return this.appManager.totalMemory;
   }
 
   get runningApps() {
-    return this.terminalManager.openTerminals;
+    return this.appManager.openApplications;
   }
 
   closeApp(id: string) {
-    this.terminalManager.closeTerminal(id);
+    this.appManager.closeApplication(id);
   }
 
   openApp(id: string){
-    this.terminalManager.openTerminal(id );
+    this.appManager.openApplication(id );
+  }
+
+  get userName() {
+    return this.userService.user.name;
   }
 
   protected readonly faApple = faApple;
   protected readonly faMemory = faMemory;
   protected readonly faBatteryHalf = faBatteryHalf;
+
+  closeAllApps() {
+    this.appManager.closeAllApps()
+  }
+
+  protected readonly VIEW_MODES = VIEW_MODES;
 }

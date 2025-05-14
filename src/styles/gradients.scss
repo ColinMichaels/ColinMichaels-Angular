@@ -1,0 +1,38 @@
+.gradient-desktop-bg {
+  @apply bg-gradient-to-b from-zinc-900 via-stone-700 to-zinc-700
+}
+
+.gradient-terminal-bg {
+  @apply bg-gradient-to-b from-zinc-900 via-stone-700 to-zinc-700
+}
+
+.gradient--bg-red {
+  @apply bg-gradient-to-tr from-red-500 via-amber-300 to-zinc-600;
+}
+
+.gradient--bg-blue {
+  @apply bg-gradient-to-tr from-blue-500 via-cyan-400 to-sky-300;
+}
+
+.gradient--bg-green {
+  @apply bg-gradient-to-tr from-green-600 via-lime-400 to-emerald-500;
+}
+
+.gradient--bg-purple {
+  @apply bg-gradient-to-tr from-purple-600 via-indigo-500 to-blue-300;
+}
+
+.gradient--bg-sunset {
+  @apply bg-gradient-to-tr from-pink-500 via-orange-400 to-yellow-300;
+}
+
+.gradient--bg-terminal {
+  @apply bg-gradient-to-tr from-black via-green-600 to-zinc-700;
+}
+
+.gradient--bg-mono {
+  @apply bg-gradient-to-tr from-zinc-800 via-zinc-500 to-zinc-300;
+}
+
+
+

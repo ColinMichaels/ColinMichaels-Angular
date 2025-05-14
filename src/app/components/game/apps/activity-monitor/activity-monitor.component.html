@@ -1,0 +1,117 @@
+<!-- activity-monitor.component.html -->
+<div class="w-full h-full flex flex-col bg-zinc-900 text-white text-sm rounded-lg overflow-hidden">
+
+  <!-- Tabs -->
+  <div class="flex-shrink-0 border-b border-white/10 bg-zinc-800">
+    <div class="flex">
+      <button *ngFor="let tab of tabs"
+              (click)="setTab(tab)"
+              class="px-4 py-2 border-b-2 transition-all text-xs"
+              [ngClass]="{
+                'border-blue-500 text-white': activeTab === tab,
+                'border-transparent text-gray-400 hover:text-white hover:border-white/20': activeTab !== tab
+              }">
+        {{ tab }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Scrollable Content Wrapper -->
+  <div class="flex-1 overflow-y-auto">
+    <ng-container [ngSwitch]="activeTab">
+
+      <!-- CPU Tab -->
+      <div *ngSwitchCase="'CPU'" class="flex flex-col">
+        <div class=" x-2 py-1  font-mono">
+          <table class="w-full text-left table-fixed border-collapse text-[10px]">
+            <thead class="uppercase text-white border-b border-white/10">
+            <tr  [ngClass]=" sortDirection === 'asc' ? 'cursor-n-resize' : 'cursor-s-resize'">
+              <th (click)="sortBy('name')">Name</th>
+              <th (click)="sortBy('cpu')">% CPU</th>
+              <th (click)="sortBy('cpuTime')">CPU Time</th>
+              <th (click)="sortBy('threads')">Threads</th>
+              <th (click)="sortBy('idleWakeUps')">Idle</th>
+              <th (click)="sortBy('gpu')">% GPU</th>
+              <th (click)="sortBy('gpuTime')">GPU Time</th>
+              <th (click)="sortBy('pid')">PID</th>
+              <th (click)="sortBy('user')">User</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let proc of sortedProcesses"
+                class=" hover:bg-white/20 odd:bg-zinc-600/30 even:bg-zinc-800/60 cursor-auto">
+              <td class="truncate">{{ proc.name }}</td>
+              <td class="truncate">{{ proc.cpu }}%</td>
+              <td class="truncate">{{ proc.cpuTime }}</td>
+              <td class="truncate">{{ proc.threads }}</td>
+              <td class="truncate">{{ proc.idleWakeUps }}</td>
+              <td class="truncate">{{ proc.gpu }}%</td>
+              <td class="truncate">{{ proc.gpuTime }}</td>
+              <td class="truncate">{{ proc.pid }}</td>
+              <td class="truncate">{{ proc.user }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Chart.js Realtime CPU Chart -->
+        <div class="flex flex-row bg-zinc-900 px-4 py-2 border-t border-white/10">
+          <div class="w-1/2">
+              <canvas baseChart
+                      [datasets]="cpuChartData"
+                      [labels]="cpuChartLabels"
+                      [options]="chartOptions"
+                      [legend]="false"
+                      >
+              </canvas>
+          </div>
+          <div class="w-1/2">
+            <canvas baseChart
+                    [datasets]="gpuChartData"
+                    [labels]="cpuChartLabels"
+                    [options]="chartOptions"
+                    [legend]="false"
+            >
+            </canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Tabs Placeholder -->
+      <div *ngSwitchDefault class="p-6 text-center text-gray-400 text-xs">
+        {{ activeTab }} monitoring is under development...
+      </div>
+
+
+    </ng-container>
+  </div>
+
+  <!-- Summary Footer -->
+  <div class="flex-shrink-0 bg-zinc-800 border-t border-white/50 p-2 text-[10px] items-center">
+    <div class="flex justify-around items-center border border-white/70 rounded-lg">
+      <div class="flex-auto flex flex-col items-center px-2 space-y-1   border-r border-white/70">
+        <div class="activity-monitor-stats-row">
+          System: <span class="text-red-400">{{ systemLoad.system }}%</span>
+        </div>
+        <div class="activity-monitor-stats-row">
+          User: <span class="text-blue-400">{{ systemLoad.user }}%</span>
+        </div>
+        <div class="activity-monitor-stats-row">
+          Idle: <span class="text-gray-300">{{ systemLoad.idle }}%</span>
+        </div>
+      </div>
+      <div class="flex-auto flex flex-col items-center space-y-1 px-2">
+        <div class="text-[10px] uppercase text-gray-500">CPU Load</div>
+        <div class="w-full h-6 bg-zinc-700 rounded overflow-hidden relative">
+          <div class="absolute bottom-0 left-0 h-full bg-red-500" [style.width.%]="systemLoad.system"></div>
+          <div class="absolute bottom-0 left-0 h-full bg-blue-500" [style.width.%]="systemLoad.user"></div>
+        </div>
+      </div>
+      <div class="flex-auto flex flex-col items-center px-2 border-l border-white/70">
+        <div class="flex flex-col w-full space-y-1">
+          <div class="activity-monitor-stats-row">Threads: <span>{{ systemLoad.threads }}</span></div>
+          <div class="activity-monitor-stats-row">Processes: <span>{{ systemLoad.processes }}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

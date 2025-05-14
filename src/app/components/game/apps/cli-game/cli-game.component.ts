@@ -8,11 +8,12 @@ import {CLIService, CLIResponse} from '../../services/cli.service';
 import {AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {WindowManagerService} from '../../services/window-manager.service';
+import {ApplicationManagerService} from '../../services/application-manager.service';
 import {take} from 'rxjs';
 import {NotificationService} from '../../services/notification.service';
 import {MediaItem} from '../../services/media.service';
 import {faThumbsUp} from '@fortawesome/free-solid-svg-icons';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 
 
 export interface ITerminalMessage {
@@ -25,7 +26,8 @@ export interface ITerminalMessage {
   selector: 'app-cli-game',
   imports: [
     FormsModule,
-    NgClass
+    NgClass,
+      CdkTrapFocus
   ],
   standalone: true,
   templateUrl: './cli-game.component.html',
@@ -57,7 +59,7 @@ export class CliGameComponent implements OnInit {
     private soundService: SoundService,
     private cli: CLIService,
     private gameConfig: GameConfigService,
-    private terminalManager: WindowManagerService,
+    private terminalManager: ApplicationManagerService,
     private aiChat: AiChatService,
     private userService: UserService,
     private notify: NotificationService,
@@ -99,13 +101,9 @@ export class CliGameComponent implements OnInit {
 
     const userLevelStart = this.userService.previousLevel;
     this._addUserMessageToHistory(rawUserInput, this.currentMode);
+    const response = this.cli.executeInput(inputCleaned);
+    await this._processCliResponse(response, rawUserInput, userLevelStart);
 
-    if (this.userService.user.level < 1) {
-      await this._handleInitialUserSetup(rawUserInput, inputCleaned.split(' ')[0], userLevelStart);
-    } else {
-      const response = this.cli.executeInput(inputCleaned);
-      await this._processCliResponse(response, rawUserInput, userLevelStart);
-    }
 
     this._finalizeInputHandling();
   }
@@ -130,7 +128,7 @@ export class CliGameComponent implements OnInit {
           this.soundService.play('response_good.mp3', { volume: 0.4, forceRestart: true });
         },
         onComplete: async () => {
-          this.userService.updateUser({ level: 1, name: initialCmd });
+          this.userService.updateUser({ level: 1 });
           await this.gameConfig.loadLevels();
           this.showLevelMessage(this.userService.user.level, userLevelStart);
           resolve();
@@ -234,7 +232,7 @@ export class CliGameComponent implements OnInit {
   private _handleCliConnectionError(): void {
     this.writeLine('ERROR: Could not connect to server. Please try again later.');
     this.soundService.stopAll();
-    this.terminalManager.closeTerminal('cli');
+    this.terminalManager.closeApplication('cli');
   }
 
   private _finalizeInputHandling(): void {
