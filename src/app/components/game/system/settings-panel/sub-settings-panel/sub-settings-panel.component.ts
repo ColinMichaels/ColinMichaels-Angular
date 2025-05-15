@@ -1,4 +1,13 @@
-import { Component, Input, ViewContainerRef, ViewChild, ComponentRef, inject, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  ViewContainerRef,
+  ViewChild,
+  ComponentRef,
+  inject,
+  AfterViewInit,
+  SimpleChanges
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -15,6 +24,13 @@ export class SettingsSubpanelComponent implements AfterViewInit {
   panelHost!: ViewContainerRef;
 
   private componentRef?: ComponentRef<any>;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['panelKey'] && !changes['panelKey'].isFirstChange()) {
+      this.loadPanel();
+    }
+  }
+
 
   async ngAfterViewInit() {
     await this.loadPanel();

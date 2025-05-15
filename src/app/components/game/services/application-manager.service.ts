@@ -20,6 +20,10 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {AboutAppComponent} from '../apps/about-app/about-app.component';
 import {PlayerConfiguratorComponent} from '../apps/player-configurator/player-configurator.component';
 import {TooltipExamplesComponent} from '../apps/tooltip-examples/tooltip-examples.component';
+import {MarkdownReaderComponent} from '../apps/markdown-reader/markdown-reader.component';
+import {ApplicationFactory} from '../factories/application-factory';
+import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
+import {faCss} from '@fortawesome/free-brands-svg-icons';
 /** /installed apps */
 
 export interface ApplicationInstance extends AppEntry {
@@ -63,6 +67,24 @@ export interface AppEntry {
   running?: boolean;
 }
 
+export enum AppType {
+  system = 'system',
+  app = 'app',
+  other = 'other'
+}
+
+export enum APPIDS {
+  CLI = 'cli',
+  FINDER = 'finder',
+  ABOUT = 'about',
+  PLAYER_CONFIG = 'player-config',
+  ACTIVITY_MONITOR = 'activity-monitor',
+  SYSTEM_SETTINGS = 'system-settings',
+  MARKDOWN_READER = 'markdown-reader',
+  TAILWIND_PREVIEW = 'tailwind-preview',
+  TOOLTIP_EXAMPLE = 'tooltip-example'
+}
+
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
   private applications: ApplicationInstance[] = [];
@@ -83,14 +105,17 @@ export class ApplicationManagerService {
     }
   }
 
-  constructor(private notify: NotificationService) {
+  constructor(
+    private appFactory: ApplicationFactory,
+    private notify: NotificationService
+  ) {
     this.registerApps();
     this.loadSavedApplications();
   }
 
   private registerApps() {
     this.registerApp({
-      id: 'cli',
+      id: APPIDS.CLI,
       title: 'CLI Console',
       component: CliGameComponent,
       installed: true,
@@ -100,12 +125,12 @@ export class ApplicationManagerService {
       },
       memory: 1024,
       maxInstances: 5,
-      type: 'app',
+      type: AppType.app,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'finder',
+      id: APPIDS.FINDER,
       title: 'Finder',
       component: FinderAppComponent,
       installed: true,
@@ -115,12 +140,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 5,
-      type: 'system',
+      type: AppType.system,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'about',
+      id: APPIDS.ABOUT,
       title: 'About',
       component: AboutAppComponent,
       installed: true,
@@ -131,12 +156,12 @@ export class ApplicationManagerService {
       autofit: true,
       memory: 128,
       maxInstances: 1,
-      type: 'system',
+      type: AppType.system,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'player-config',
+      id: APPIDS.PLAYER_CONFIG,
       title: 'Player Config',
       component: PlayerConfiguratorComponent,
       installed: true,
@@ -146,12 +171,12 @@ export class ApplicationManagerService {
       },
       memory: 1024,
       maxInstances: 1,
-      type: 'app',
+      type: AppType.app,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'activity-monitor',
+      id: APPIDS.ACTIVITY_MONITOR,
       title: 'Activity Monitor',
       component: ActivityMonitorComponent,
       installed: true,
@@ -161,12 +186,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'app',
+      type: AppType.app,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'system-settings',
+      id: APPIDS.SYSTEM_SETTINGS,
       title: 'System Settings',
       component: SettingsPanelComponent,
       installed: true,
@@ -176,12 +201,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'system',
+      type: AppType.system,
       instanceIndex: 1
     });
 
     this.registerApp({
-      id: 'tooltip-example',
+      id: APPIDS.TOOLTIP_EXAMPLE,
       title: 'Tooltip Example',
       component: TooltipExamplesComponent,
       installed: true,
@@ -191,7 +216,53 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'system',
+      type:AppType.system,
+      instanceIndex: 1
+    });
+
+    this.registerApp({
+      id: APPIDS.MARKDOWN_READER,
+      title: '',
+      component: MarkdownReaderComponent,
+      /**
+       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
+       * Todo: possbily pass s secondary component to render within that.
+       */
+      installed: true,
+      icon: {
+        class: '',
+        svgPath: faCogs
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.system,
+      /**
+       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
+       *
+       */
+      instanceIndex: 1
+    });
+
+    this.registerApp({
+      id: APPIDS.TAILWIND_PREVIEW,
+      title: 'Tailwind Playground',
+      component: TailwindPreviewComponent,
+      /**
+       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
+       * Todo: possbily pass s secondary component to render within that.
+       */
+      installed: true,
+      icon: {
+        class: '',
+        svgPath: faCss
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      /**
+       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
+       *
+       */
       instanceIndex: 1
     });
   }
@@ -237,7 +308,7 @@ export class ApplicationManagerService {
     }
   }
 
-  openApplication(id: string): boolean {
+  openApplication(id: string, args?: []): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
     if (!app) return false;
 
@@ -294,7 +365,10 @@ export class ApplicationManagerService {
 
     app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
 
-    this.applications.push(this.createApplicationInstance(newTerminalId, app, newOffsetX, newOffsetY));
+    this.applications.push(
+      this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY)
+    );
+
     this.saveOpenApplications();
 
     const focusSuccessful = this.setApplicationFocus(newTerminalId, newOffsetX, newOffsetY);
@@ -309,26 +383,6 @@ export class ApplicationManagerService {
       return false;
     }
     return true;
-  }
-
-// Helper method for terminal creation
-  private createApplicationInstance(id: string, app: AppEntry, offsetX: number, offsetY: number): ApplicationInstance {
-    return {
-      maxInstances: app.maxInstances,
-      type: app.type,
-      parent: app,
-      id: id,
-      title: app.title,
-      component: app.component,
-      memory: app.memory || 64,
-      autofit: app.autofit ?? false,
-      icon: app.icon,
-      offsetX: offsetX,
-      offsetY: offsetY,
-      running: app.running,
-      installed: app.installed,
-      instanceIndex: app.instanceIndex,
-    };
   }
 
   saveOpenApplications() {
@@ -379,6 +433,10 @@ export class ApplicationManagerService {
 
   getFocus$(): Observable<string | null> {
     return this.focusedAppId.asObservable();
+  }
+
+  getFocusedAppId(){
+    return this.focusedAppId.getValue();
   }
 
   closeAllApps() {
