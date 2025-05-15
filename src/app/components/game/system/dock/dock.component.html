@@ -46,19 +46,25 @@
     <!-- Divider -->
     <section class="w-px h-8 mx-4 bg-white/20 backdrop-blur-sm rounded"></section>
     <!-- /Divider -->
-    <section class="flex space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
+    <section class="flex flex-grow-0 space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
+
       <fa-icon [icon]="faCog" class="dock-animation"
                (click)="openApp('system-settings')" [tooltipShowArrow]="true" [appTooltip]="'System Settings'">
       </fa-icon>
-      <fa-icon [icon]="faBell" class="dock-animation text-yellow-400/50 hover:text-yellow-500"
-               (click)="notify()" [appTooltip]="'TEST Notifications'" >
 
-      </fa-icon>
+      <fa-stack [size]="'xs'" class="dock-animation" (click)="notify()" [tooltipShowArrow]="true"
+                [appTooltip]="'TEST Notifications'">
+        <fa-icon [icon]="faSquare" [stackItemSize]="'2x'" class="text-purple-800"></fa-icon>
+        <fa-icon [icon]="faBell" [stackItemSize]="'1x'" [inverse]="true"
+                 class="text-yellow-400 hover:text-yellow-500"></fa-icon>
+      </fa-stack>
+
       <fa-icon [icon]="faTrashCan" class="dock-animation text-zinc-500/50 hover:text-white/50"
                (click)="trash('user')" (dblclick)="openApp('trash')"
                tooltipSize="sm"
                [appTooltip]="'Reset all Settings'">
       </fa-icon>
+
     </section>
   </div>
 </div>
