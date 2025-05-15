@@ -15,6 +15,7 @@ import {MediaItem} from '../../services/media.service';
 import {faThumbsUp} from '@fortawesome/free-solid-svg-icons';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 
+const CLI_HISTORY_LIMIT = 50; // eventually move to a memory upgrade
 
 export interface ITerminalMessage {
   text: string;
@@ -27,7 +28,7 @@ export interface ITerminalMessage {
   imports: [
     FormsModule,
     NgClass,
-      CdkTrapFocus
+    CdkTrapFocus
   ],
   standalone: true,
   templateUrl: './cli-game.component.html',
@@ -43,6 +44,7 @@ export class CliGameComponent implements OnInit {
 
 
   currentMode: TypingMode = 'default';
+
 
   private readonly CLI_STATUS = {
     SUCCESS: 200,
@@ -110,31 +112,18 @@ export class CliGameComponent implements OnInit {
 
   private _addUserMessageToHistory(userInput: string, currentMode: TypingMode): void {
     if (!this.terminalMessages.find(message => message.text === userInput)) {
+      // Add the new message
       this.terminalMessages.push({
         text: userInput,
         agent: 'user',
         mode: currentMode,
       });
-    }
-  }
 
-  private async _handleInitialUserSetup(rawUserInput: string, initialCmd: string, userLevelStart: number): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.typewriter.enqueueLine({
-        text: `INPUT RECEIVED: "${rawUserInput.toUpperCase()}"`,
-        agent: 'system',
-        speed: 10,
-        onBegin: () => {
-          this.soundService.play('response_good.mp3', { volume: 0.4, forceRestart: true });
-        },
-        onComplete: async () => {
-          this.userService.updateUser({ level: 1 });
-          await this.gameConfig.loadLevels();
-          this.showLevelMessage(this.userService.user.level, userLevelStart);
-          resolve();
-        },
-      });
-    });
+      // Trim the history to keep the last 50 messages
+      if (this.terminalMessages.length > CLI_HISTORY_LIMIT) {
+        this.terminalMessages.splice(0, this.terminalMessages.length - CLI_HISTORY_LIMIT);
+      }
+    }
   }
 
   private async _processCliResponse(response: CLIResponse, rawUserInput: string, userLevelStart: number): Promise<void> {
@@ -185,42 +174,42 @@ export class CliGameComponent implements OnInit {
         commands: this.gameConfig.getAvailableCommands(),
       }
     )
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe({
-      next: (res: any) => { // Consider defining a more specific type for `res`
-        try {
-          const cleaned = res.choices[0].message.content.replace(/[\n\r]/g, '').replace('json', '');
-          const parsed = JSON.parse(cleaned);
-          if (parsed.answer && parsed.message_type) {
-            this.typewriter.enqueueLine({
-              text: parsed.answer || 'Unknown',
-              agent: 'system',
-              mode: parsed.mode || 'default',
-            });
-          } else {
-             this.typewriter.enqueueLine({
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => { // Consider defining a more specific type for `res`
+          try {
+            const cleaned = res.choices[0].message.content.replace(/[\n\r]/g, '').replace('json', '');
+            const parsed = JSON.parse(cleaned);
+            if (parsed.answer && parsed.message_type) {
+              this.typewriter.enqueueLine({
+                text: parsed.answer || 'Unknown',
+                agent: 'system',
+                mode: parsed.mode || 'default',
+              });
+            } else {
+              this.typewriter.enqueueLine({
                 text: 'AI response format is not recognized.',
                 agent: 'system',
                 mode: 'dramatic'
               });
+            }
+          } catch (e) {
+            this.typewriter.enqueueLine({
+              text: 'Unknown. Please try again. (Error parsing AI response)',
+              agent: 'system',
+              mode: 'dramatic',
+            });
           }
-        } catch (e) {
+        },
+        error: (err) => {
+          console.error('AI Chat generation failed:', err);
           this.typewriter.enqueueLine({
-            text: 'Unknown. Please try again. (Error parsing AI response)',
+            text: 'Failed to get response from AI. Please try again.',
             agent: 'system',
             mode: 'dramatic',
           });
         }
-      },
-      error: (err) => {
-        console.error('AI Chat generation failed:', err);
-        this.typewriter.enqueueLine({
-          text: 'Failed to get response from AI. Please try again.',
-          agent: 'system',
-          mode: 'dramatic',
-        });
-      }
-    });
+      });
   }
 
   private async _handleCliCreated(response: CLIResponse, userLevelStart: number): Promise<void> {
@@ -238,7 +227,7 @@ export class CliGameComponent implements OnInit {
   private _finalizeInputHandling(): void {
     this.typewriter.lineCompleted$.pipe(take(1)).subscribe(() => {
       this.input?.nativeElement?.focus();
-      this.input?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.input?.nativeElement?.scrollIntoView({behavior: 'smooth', block: 'start'});
     });
     this.userInput = '';
   }
@@ -322,10 +311,10 @@ export class CliGameComponent implements OnInit {
   navigateHistory(number: number) {
     this.chatLogIndex += number;
     const userMessages = this.terminalMessages.filter(message => message.agent === 'user');
-    if (this.chatLogIndex < 0 ) {
-       this.chatLogIndex = userMessages.length -1;
-    } else if (this.chatLogIndex > userMessages.length -1) {
-       this.chatLogIndex = 0;
+    if (this.chatLogIndex < 0) {
+      this.chatLogIndex = userMessages.length - 1;
+    } else if (this.chatLogIndex > userMessages.length - 1) {
+      this.chatLogIndex = 0;
     }
 
 

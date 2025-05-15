@@ -3,7 +3,7 @@ import {CommonModule} from "@angular/common";
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCog, faTrashCan, faBell} from '@fortawesome/free-solid-svg-icons';
+import {faCog, faTrashCan, faBell, faSquare} from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
 import {TooltipDirective} from '../../directives/tooltip.directive';
 
@@ -113,7 +113,7 @@ export class DockComponent {
   }
 
   protected readonly faCog = faCog;
-
   protected readonly faTrashCan = faTrashCan;
   protected readonly faBell = faBell;
+  protected readonly faSquare = faSquare;
 }
