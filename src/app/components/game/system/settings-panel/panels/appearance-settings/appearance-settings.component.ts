@@ -8,12 +8,10 @@ import { SettingsService, ThemeOption } from '../../../../services/settings.serv
   imports: [CommonModule],
   template: `
     <div class="space-y-4 animate-fade-in">
-      <h2 class="text-lg font-semibold">Appearance Settings</h2>
-
       <div class="space-x-4 flex items-center">
-        <button (click)="setTheme('light')" class="bg-white text-black px-4 py-2 rounded shadow">Light</button>
-        <button (click)="setTheme('dark')" class="bg-black text-white px-4 py-2 rounded shadow">Dark</button>
-        <button (click)="setTheme('system')" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-4 py-2 rounded shadow">System</button>
+        <button (click)="setTheme('light')" class="bg-white text-black px-2 py-1 rounded shadow">Light</button>
+        <button (click)="setTheme('dark')" class="bg-black text-white px-2 py-1 rounded shadow">Dark</button>
+        <button (click)="setTheme('system')" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-2 py-1 rounded shadow">System</button>
       </div>
 
       <div class="mt-4">

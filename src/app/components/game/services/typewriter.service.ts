@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {SoundService} from './sound.service';
-import {User, UserService} from './user.service';
+import {UserService} from './user.service';
 
 export type TypingMode = 'default' | 'glitch' | 'system' | 'dramatic';
 
@@ -116,14 +116,14 @@ export class TypewriterService {
       case 'dramatic':
         return {
           speed: 10,
-            charSound: (char) => {
+          charSound: () => {
               return null;
             }
         };
       case 'default':
       default:
         return {
-          speed: 40,
+          speed: 20,
           charSound: (char) => {
             if (/[a-z0-9]/i.test(char)) return 'click'; // <- just use pool key
             return null;
