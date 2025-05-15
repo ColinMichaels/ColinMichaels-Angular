@@ -16,7 +16,8 @@
 ## 2. Core Gameplay
 
 ### Interface
-- CLI (Command Line Interface)
+
+- cli (Command Line Interface)
 - GUI (File Manager, Task Manager, App Icons)
 - Pseudo-apps (Notes, Mail, Logs, AI Chat, Browser clone)
 
@@ -44,13 +45,13 @@
 
 Each level simulates a deeper system layer with new clues, puzzles, commands, and interface changes.
 
-| Level | Theme                | Unlocks                      | Puzzle Concept                    |
-|-------|----------------------|------------------------------|-----------------------------------|
-| 0     | Boot/Login           | Basic CLI access             | Guess login / brute-force trail   |
-| 1     | Data Recovery        | `open`, `decrypt`            | Corrupted file hints password     |
-| 2     | Ghost User Detected  | Chat app, new user logs      | Reverse lookup in user logs       |
-| 3     | AI Integration       | `chat ai`, dynamic hints     | AI responds to keywords only      |
-| 4     | Matrix Node          | Hidden sub-OS / game unlock  | Console reboots into fake OS      |
+| Level | Theme               | Unlocks                     | Puzzle Concept                  |
+|-------|---------------------|-----------------------------|---------------------------------|
+| 0     | Boot/Login          | Basic cli access            | Guess login / brute-force trail |
+| 1     | Data Recovery       | `open`, `decrypt`           | Corrupted file hints password   |
+| 2     | Ghost User Detected | Chat app, new user logs     | Reverse lookup in user logs     |
+| 3     | AI Integration      | `chat ai`, dynamic hints    | AI responds to keywords only    |
+| 4     | Matrix Node         | Hidden sub-OS / game unlock | Console reboots into fake OS    |
 
 ---
 
@@ -108,11 +109,11 @@ Each level simulates a deeper system layer with new clues, puzzles, commands, an
 
 ## 10. Development Phases
 
-| Phase       | Goals                                      |
-|-------------|--------------------------------------------|
-| Phase 1     | CLI shell, command parsing, level system   |
-| Phase 2     | File explorer UI, AI assistant             |
-| Phase 3     | Add puzzles, unlockables, game logic       |
-| Phase 4     | Mini-games, hidden levels, endgame shell   |
-| Phase 5     | Full polish, theme system, deployment      |
+| Phase   | Goals                                    |
+|---------|------------------------------------------|
+| Phase 1 | cli shell, command parsing, level system |
+| Phase 2 | File explorer UI, AI assistant           |
+| Phase 3 | Add puzzles, unlockables, game logic     |
+| Phase 4 | Mini-games, hidden levels, endgame shell |
+| Phase 5 | Full polish, theme system, deployment    |
 

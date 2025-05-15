@@ -11,7 +11,7 @@ import {faTimes} from '@fortawesome/free-solid-svg-icons';
 @Component({
   selector: 'app-notification-server',
   standalone: true,
-  imports: [CommonModule, MediaComponent, TimeAgoPipe,FontAwesomeModule],
+  imports: [CommonModule, MediaComponent, TimeAgoPipe, FontAwesomeModule],
   templateUrl: './notifications-server.component.html',
   styles: ``
 })

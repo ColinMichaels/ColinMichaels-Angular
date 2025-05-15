@@ -17,6 +17,7 @@ export interface INotification {
   message: string;
   timestamp?: Date;
   media?: IMediaItem;
+  classList?: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   duration?: number;
 }
@@ -93,4 +94,5 @@ export class NotificationService {
       duration: faker.number.int({ min: 3000, max: 7000 })
     });
   }
+
 }

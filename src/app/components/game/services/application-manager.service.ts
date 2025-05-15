@@ -20,6 +20,10 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {AboutAppComponent} from '../apps/about-app/about-app.component';
 import {PlayerConfiguratorComponent} from '../apps/player-configurator/player-configurator.component';
 import {TooltipExamplesComponent} from '../apps/tooltip-examples/tooltip-examples.component';
+import {MarkdownReaderComponent} from '../apps/markdown-reader/markdown-reader.component';
+import {ApplicationFactory} from '../factories/application-factory';
+import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
+import {faCss} from '@fortawesome/free-brands-svg-icons';
 /** /installed apps */
 
 export interface ApplicationInstance extends AppEntry {
@@ -63,6 +67,28 @@ export interface AppEntry {
   running?: boolean;
 }
 
+export enum AppType {
+  system = 'system',
+  app = 'app',
+  other = 'other'
+}
+
+const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
+const INSTANCE_LIMIT_ERROR_TITLE = "System Error";
+
+
+export enum APP_ID {
+  cli = 'cli',
+  finder = 'finder',
+  about = 'about',
+  player_config = 'player-config',
+  activity_monitor = 'activity-monitor',
+  system_settings = 'system-settings',
+  markdown_reader = 'markdown-reader',
+  tailwind_preview = 'tailwind-preview',
+  tooltip_example = 'tooltip-example'
+}
+
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
   private applications: ApplicationInstance[] = [];
@@ -83,15 +109,18 @@ export class ApplicationManagerService {
     }
   }
 
-  constructor(private notify: NotificationService) {
+  constructor(
+    private appFactory: ApplicationFactory,
+    private notify: NotificationService
+  ) {
     this.registerApps();
     this.loadSavedApplications();
   }
 
   private registerApps() {
     this.registerApp({
-      id: 'cli',
-      title: 'CLI Console',
+      id: APP_ID.cli,
+      title: 'cli Console',
       component: CliGameComponent,
       installed: true,
       icon: {
@@ -100,12 +129,12 @@ export class ApplicationManagerService {
       },
       memory: 1024,
       maxInstances: 5,
-      type: 'app',
-      instanceIndex: 1
+      type: AppType.app,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'finder',
+      id: APP_ID.finder,
       title: 'Finder',
       component: FinderAppComponent,
       installed: true,
@@ -115,12 +144,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 5,
-      type: 'system',
-      instanceIndex: 1
+      type: AppType.system,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'about',
+      id: APP_ID.about,
       title: 'About',
       component: AboutAppComponent,
       installed: true,
@@ -131,12 +160,12 @@ export class ApplicationManagerService {
       autofit: true,
       memory: 128,
       maxInstances: 1,
-      type: 'system',
-      instanceIndex: 1
+      type: AppType.system,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'player-config',
+      id: APP_ID.player_config,
       title: 'Player Config',
       component: PlayerConfiguratorComponent,
       installed: true,
@@ -146,12 +175,12 @@ export class ApplicationManagerService {
       },
       memory: 1024,
       maxInstances: 1,
-      type: 'app',
-      instanceIndex: 1
+      type: AppType.app,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'activity-monitor',
+      id: APP_ID.activity_monitor,
       title: 'Activity Monitor',
       component: ActivityMonitorComponent,
       installed: true,
@@ -161,12 +190,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'app',
-      instanceIndex: 1
+      type: AppType.app,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'system-settings',
+      id: APP_ID.system_settings,
       title: 'System Settings',
       component: SettingsPanelComponent,
       installed: true,
@@ -176,12 +205,12 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'system',
-      instanceIndex: 1
+      type: AppType.system,
+      instanceIndex: 0
     });
 
     this.registerApp({
-      id: 'tooltip-example',
+      id: APP_ID.tooltip_example,
       title: 'Tooltip Example',
       component: TooltipExamplesComponent,
       installed: true,
@@ -191,8 +220,54 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type: 'system',
-      instanceIndex: 1
+      type:AppType.system,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.markdown_reader,
+      title: '',
+      component: MarkdownReaderComponent,
+      /**
+       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
+       * Todo: possbily pass s secondary component to render within that.
+       */
+      installed: true,
+      icon: {
+        class: '',
+        svgPath: faCogs
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.system,
+      /**
+       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
+       *
+       */
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.tailwind_preview,
+      title: 'Tailwind Playground',
+      component: TailwindPreviewComponent,
+      /**
+       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
+       * Todo: possbily pass s secondary component to render within that.
+       */
+      installed: true,
+      icon: {
+        class: '',
+        svgPath: faCss
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      /**
+       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
+       *
+       */
+      instanceIndex: 0
     });
   }
 
@@ -237,7 +312,11 @@ export class ApplicationManagerService {
     }
   }
 
-  openApplication(id: string): boolean {
+  unregisterApp(id: string) {
+    this.appRegistry = this.appRegistry.filter(a => a.id !== id);
+  }
+
+  openApplication(id: string, args?: []): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
     if (!app) return false;
 
@@ -274,27 +353,23 @@ export class ApplicationManagerService {
       ? lastApplication.offsetY + DEFAULT_OFFSET
       : DEFAULT_OFFSET;
 
+    if (this.isInstanceLimitReached(app)) {
+      return false;
+    }
+
     const isNewInstanceNeeded = !!this.applications.find(t => t.id === id);
 
     const curAppIndex = this.applications.length + 1;
 
     const newTerminalId = isNewInstanceNeeded ? `${id}-${curAppIndex}` : id;
 
-    console.warn('app.instanceIndex', app.instanceIndex);
-
-    if (app.instanceIndex > app.maxInstances && app.type !== 'system') {
-      this.notify.show({
-        message: `Cannot open application. Maximum number of instances reached.`,
-        title: "System Error",
-        type: "error",
-        media: this.notifyTemplate,
-      });
-      return false;
-    }
 
     app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
 
-    this.applications.push(this.createApplicationInstance(newTerminalId, app, newOffsetX, newOffsetY));
+    this.applications.push(
+      this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY)
+    );
+
     this.saveOpenApplications();
 
     const focusSuccessful = this.setApplicationFocus(newTerminalId, newOffsetX, newOffsetY);
@@ -311,40 +386,51 @@ export class ApplicationManagerService {
     return true;
   }
 
-// Helper method for terminal creation
-  private createApplicationInstance(id: string, app: AppEntry, offsetX: number, offsetY: number): ApplicationInstance {
-    return {
-      maxInstances: app.maxInstances,
-      type: app.type,
-      parent: app,
-      id: id,
-      title: app.title,
-      component: app.component,
-      memory: app.memory || 64,
-      autofit: app.autofit ?? false,
-      icon: app.icon,
-      offsetX: offsetX,
-      offsetY: offsetY,
-      running: app.running,
-      installed: app.installed,
-      instanceIndex: app.instanceIndex,
-    };
+  private isInstanceLimitReached(app: AppEntry): boolean {
+    if (app.instanceIndex < app.maxInstances) {
+      app.instanceIndex += 1; // Increment instanceIndex when under limit
+      return false;
+    }
+
+    if (app.maxInstances === 1) {
+      return true;
+    }
+
+    // General case when maxInstances limit is reached
+    this.showErrorNotification(INSTANCE_LIMIT_ERROR_MESSAGE, INSTANCE_LIMIT_ERROR_TITLE);
+    return true;
   }
+
+  private showErrorNotification(message: string, title: string): void {
+    this.notify.show({
+      message,
+      title,
+      type: "error",
+      media: this.notifyTemplate,
+    });
+  }
+
 
   saveOpenApplications() {
     localStorage.setItem('applications', JSON.stringify(this.applications));
   }
 
-  closeApplication(id: string) {
+  closeApplication(id: string): void {
     const application = this.getAppByID(id);
-    if (!application) {
-      return;
-    }
+    if (!application) return;
+
+    // Mark the application as no longer running
     application.running = false;
-    if (application.parent && application.parent.instanceIndex > 2) {
-      application.parent.instanceIndex -= 1;
+
+    // Decrement the instanceIndex for the parent AppEntry
+    if (application.parent) {
+      application.parent.instanceIndex = Math.max(0, application.parent.instanceIndex - 1);
     }
-    this.applications = this.applications.filter(t => t.id !== id);
+
+    // Remove the application from the active applications list
+    this.applications = this.applications.filter(app => app.id !== id);
+
+    // Save the state of opened applications
     this.saveOpenApplications();
   }
 
@@ -381,7 +467,11 @@ export class ApplicationManagerService {
     return this.focusedAppId.asObservable();
   }
 
+  getFocusedAppId(){
+    return this.focusedAppId.getValue();
+  }
+
   closeAllApps() {
-    this.applications = [];
+    this.applications.forEach(app => this.closeApplication(app.id));
   }
 }

@@ -1,12 +1,20 @@
 <!-- settings-panel.component.html -->
-<div class="flex h-full w-full overflow-hidden text-white bg-zinc-900">
+<div class="flex h-full w-full overflow-hidden text-white bg-zinc-900/80">
   <!-- Sidebar Navigation -->
-  <aside class="w-64 flex-shrink-0 border-r border-white/10 bg-zinc-950 p-4 overflow-y-auto">
-    <div class="mb-4 text-sm font-semibold px-2">{{ userName }}</div>
+  <aside class="w-40 flex-shrink-0 border-r border-black/30 bg-neutral-800  p-4 overflow-y-auto text-xs">
+    <div class="flex justify-start justify-items-center align-middle ml-1 mb-2">
+
+      <fa-icon [icon]="faUserCircle" class="text-3xl text-zinc-200"></fa-icon>
+
+      <div class="flex flex-col items-start">
+        <div class="text-[10px] font-semibold px-2">{{ userName }}</div>
+        <div class="text-[10px] font-thin text-white/60 px-2">Account</div>
+      </div>
+    </div>
     <ul class="space-y-1">
       <li *ngFor="let item of settingsMenu" (click)="selectPanel(item)"
-          class="flex items-center space-x-2 p-2 rounded-lg cursor-pointer hover:bg-white/10"
-          [ngClass]="{ 'bg-blue-600': activePanel.key === item.key }">
+          class="flex items-center space-x-2 p-1 rounded-lg cursor-pointer "
+          [ngClass]="{ 'bg-blue-700/70': activePanel.key === item.key }">
         <fa-icon [icon]="item.icon"></fa-icon>
         <span class="truncate">{{ item.label }}</span>
       </li>
@@ -14,14 +22,14 @@
   </aside>
 
   <!-- Settings Content -->
-  <main class="flex-1 overflow-y-auto p-6">
+  <main class="flex-1 overflow-y-auto p-6 text-xs">
     <ng-container *ngIf="activePanel">
       <div class="mb-6">
-        <div class="flex items-center space-x-4">
-          <fa-icon [icon]="activePanel.icon" class="text-3xl"></fa-icon>
+        <div class="flex items-center space-x-4 bg-zinc-900/80 border border-white/10 p-2 rounded-lg shadow-lg">
+          <fa-icon [icon]="activePanel.icon" class="text-2xl"></fa-icon>
           <div>
-            <h2 class="text-xl font-semibold">{{ activePanel.label }}</h2>
-            <p class="text-sm text-white/60">{{ activePanel.description }}</p>
+            <h2 class="text-sm font-semibold">{{ activePanel.label }}</h2>
+            <p class="text-white/60">{{ activePanel.description }}</p>
           </div>
         </div>
       </div>
