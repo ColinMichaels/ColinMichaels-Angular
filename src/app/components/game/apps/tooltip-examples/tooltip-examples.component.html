@@ -1,36 +1,26 @@
-<div class="tool-tip-container flex flex-col bg-zinc-600 h-full  items-center justify-center gap-8">
+<div class="tool-tip-container flex flex-col bg-zinc-600 h-full  items-center justify-start gap-8 overflow-y-auto py-8">
 
-  <div class="grid grid-cols-2 gap-10">
-    <div class="flex flex-col items-center space-y-10 mt-4 ">
-      <div class="text-white text-lg text-center">Tooltip Default Examples</div>
-      <div class="grid grid-cols-2 gap-10">
-        <div *ngFor="let tooltip of tooltips"
-             class="w-12 h-12  bg-zinc-800 rounded text-center flex flex-col justify-center text-[10px] truncate"
-             [appTooltip]="tooltip.text"
-             [tooltipShowArrow]="true"
-             [tooltipSize]="tooltip.size ?? 'sm'"
-             [tooltipPosition]="tooltip.position ?? 'top'"
-        >
-          {{ tooltip.text }}
+  <div class="grid grid-cols-4 gap-x-8 gap-y-4" [class]="'grid-cols-' + (allTooltips.length * 2 + 1)">
+    <div *ngFor="let tooltips of allTooltips" class="flex flex-col items-center space-y-4">
+        <div class="text-white text-sm text-center">{{tooltips.title}}</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div *ngFor="let tooltip of tooltips.tooltips"
+               (click)="showNotify(
+               tooltip,
+               (tooltips.message ?? '') + buildNotifyMessage(tooltip))"
+               [class]="tooltip.cssClass ?? 'tooltip-default'"
+               class="w-12 h-12"
+               [appTooltip]="tooltip.text"
+               [tooltipShowArrow]="true"
+               [tooltipSize]="tooltip.size ?? 'sm'"
+               [tooltipPosition]="tooltip.position ?? 'top'"
+               [tooltipAutoDismiss]="tooltip.autoDismissDelay ?? 3000"
+               [tooltipHideDelay]="tooltip.hideDelay ?? 1000"
+               [tooltipClass]="tooltip.toolTipClass ?? 'bg-zinc-800'"
+          >
+            {{ tooltip.text }}
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="flex flex-col items-center space-y-10 mt-4 ">
-      <div class="text-white text-lg text-center">Tooltip Custom Examples</div>
-      <div class="grid grid-cols-2 gap-10">
-        <div *ngFor="let tooltip of customTooltips"
-             class="w-12 h-12  bg-zinc-800 rounded text-center flex flex-col justify-center text-[10px] text-wrap truncate"
-             [appTooltip]="tooltip.text"
-             [tooltipShowArrow]="true"
-             [tooltipSize]="tooltip.size ?? 'sm'"
-             [tooltipPosition]="tooltip.position ?? 'top'"
-             [tooltipAutoDismiss]="tooltip.autoDismissDelay ?? 3000"
-             [tooltipHideDelay]="tooltip.hideDelay ?? 1000"
-             [tooltipClass]="tooltip.cssClass ??  ''"
-        >
-          {{ tooltip.text }}
-        </div>
-      </div>
     </div>
 
   </div>
@@ -40,12 +30,9 @@
   </div>
 
   <ng-container *ngIf="showDocs" (click)="showDocs = false">
-    <div class="w-full h-full text-[10px] overflow-y-auto m-2 text-white px-2 bg-zinc-800 border-t-2 border-zinc-800">
-      <markdown
-        lang="markdown"
-        [src]="docs">
 
-      </markdown>
+   <div class="prose h-50 max-w-none overflow-y-auto h-full text-white px-2 bg-zinc-800 border-t-2 border-zinc-800">
+   <app-markdown-reader [filename]="docs"></app-markdown-reader>
     </div>
   </ng-container>
 

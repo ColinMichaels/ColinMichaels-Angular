@@ -1,12 +1,20 @@
 {
-  "name": "tooltip-lib",
+  "name": "cm-tooltip",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^19.2.0",
     "@angular/core": "^19.2.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "esbuild": "^0.25.4",
+    "tslib": "^2.3.0"c
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "ng-packagr": "^19.2.2"
+  },
+  "resolutions": {
+    "esbuild": "npm:@esbuild/darwin-arm64@latest"
   },
   "sideEffects": false
 }
