@@ -33,7 +33,7 @@
 
 /* Style for buttons and inputs with macOS glass feel */
 .mac-button {
-  @apply px-3 py-1 w-full text-xs text-white bg-white/10
+  @apply px-3 py-1 w-fit text-xs text-white bg-white/10
   backdrop-blur-md backdrop-saturate-150 shadow-lg active:bg-white/40
   focus:outline-none focus:ring-2 focus:ring-white/30
   active:shadow-2xl

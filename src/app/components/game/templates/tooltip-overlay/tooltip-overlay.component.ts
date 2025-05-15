@@ -10,14 +10,16 @@ import {TooltipPosition, TooltipSize, TooltipOptions} from '../../services/toolt
     <!-- Position the outer wrapper absolutely -->
     <div class="absolute z-50" [style.top.px]="coords.top" [style.left.px]="coords.left">
       <!-- Tooltip box, relatively positioned to hold the arrow -->
+      <!-- Todo: add option to show bg blur or adjust animations -->
       <div #tooltipRef
-           class="relative z-50 pointer-events-none bg-zinc-900/70 text-zinc-200
+           class="relative z-50 pointer-events-none
             rounded px-2 py-1 shadow-lg opacity-0 scale-95
              backdrop-blur-md backdrop-saturate-150
             transform transition-opacity duration-300 ease-in-out truncate w-auto max-w-xs"
            [class.opacity-100]="ready"
            [class.scale-100]="ready"
-           [ngClass]="[toolTipClass, sizeClass]"
+           [class]="toolTipClass"
+           [ngClass]="[sizeClass]"
            [style.visibility]="ready ? 'visible' : 'hidden'">
 
         <div [innerHTML]="text"></div>
@@ -27,7 +29,8 @@ import {TooltipPosition, TooltipSize, TooltipOptions} from '../../services/toolt
       <!-- Arrow pointing to host -->
       <div *ngIf="showArrow"
            [class.opacity-100]="ready"
-           class="absolute w-2 h-2 bg-zinc-900/70 opacity-0  transition-opacity transform rotate-45"
+           [class]="toolTipClass"
+           class="absolute w-2 h-2  opacity-0  transition-opacity transform rotate-45"
            [ngClass]="[arrowClass]"></div>
     </div>
   `,
