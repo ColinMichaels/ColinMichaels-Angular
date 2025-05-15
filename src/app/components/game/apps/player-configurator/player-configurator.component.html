@@ -1,24 +1,24 @@
 <form [formGroup]="form" (ngSubmit)="onSave()" class="w-full h-full max-w-2xl mx-auto text-xs
  bg-white dark:bg-zinc-800 p-6 space-y-4 pointer-events-auto flex flex-col overflow-y-auto">
 
-  <h2 class="text-2xl font-semibold text-zinc-800 dark:text-zinc-100"><fa-icon [icon]="faUserInjured" [fixedWidth]="true"></fa-icon> Player Configurator</h2>
+  <h2 class="font-semibold text-zinc-800 dark:text-zinc-100"><fa-icon [icon]="faUserInjured" [fixedWidth]="true"></fa-icon> Player Configurator</h2>
 
   <!-- Basic Info -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
-      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Name</label>
+      <label class="block text-xs font-medium text-zinc-700 dark:text-zinc-300">Name</label>
       <input formControlName="name" class="input-field" type="text" />
     </div>
     <div>
-      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Level</label>
+      <label class="block text-xs font-medium text-zinc-700 dark:text-zinc-300">Level</label>
       <input formControlName="level" class="input-field" type="number" min="1" />
     </div>
     <div>
-      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Avatar URL</label>
+      <label class="block text-xs font-medium text-zinc-700 dark:text-zinc-300">Avatar URL</label>
       <input formControlName="avatarUrl" class="input-field" type="text" />
     </div>
     <div>
-      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Preferred Role</label>
+      <label class="block text-xs font-medium text-zinc-700 dark:text-zinc-300">Preferred Role</label>
       <input formControlName="preferredRole" class="input-field" type="text" />
     </div>
   </div>
@@ -28,11 +28,11 @@
     <h3 class="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mt-2">Preferences</h3>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
       <div>
-        <label class="block text-sm text-zinc-600 dark:text-zinc-300">Sound Volume</label>
+        <label class="block text-xs text-zinc-600 dark:text-zinc-300">Sound Volume</label>
         <input type="range" formControlName="soundVolume" min="0" max="100" class="w-full" />
       </div>
       <div>
-        <label class="block text-sm text-zinc-600 dark:text-zinc-300">Graphics Quality</label>
+        <label class="block text-xs text-zinc-600 dark:text-zinc-300">Graphics Quality</label>
         <select formControlName="graphicsQuality" class="input-field">
           <option value="low">Low</option>
           <option value="medium">Medium</option>
@@ -41,7 +41,7 @@
       </div>
       <div class="flex items-center space-x-2">
         <input type="checkbox" formControlName="enableHints" class="rounded border-zinc-400" />
-        <label class="text-sm text-zinc-600 dark:text-zinc-300">Enable Hints</label>
+        <label class="text-xs text-zinc-600 dark:text-zinc-300">Enable Hints</label>
       </div>
     </div>
   </div>
@@ -51,15 +51,15 @@
     <h3 class="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mt-2">Skill Stats</h3>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
       <div>
-        <label class="block text-sm text-zinc-600 dark:text-zinc-300">Speed</label>
+        <label class="block text-xs text-zinc-600 dark:text-zinc-300">Speed</label>
         <input type="number" formControlName="speed" class="input-field" />
       </div>
       <div>
-        <label class="block text-sm text-zinc-600 dark:text-zinc-300">Intelligence</label>
+        <label class="block text-xs text-zinc-600 dark:text-zinc-300">Intelligence</label>
         <input type="number" formControlName="intelligence" class="input-field" />
       </div>
       <div>
-        <label class="block text-sm text-zinc-600 dark:text-zinc-300">Creativity</label>
+        <label class="block text-xs text-zinc-600 dark:text-zinc-300">Creativity</label>
         <input type="number" formControlName="creativity" class="input-field" />
       </div>
     </div>
@@ -67,7 +67,7 @@
 
   <!-- Actions -->
   <div class="flex justify-end space-x-4 mt-6">
-    <button type="button" (click)="onReset()" class="px-4 py-2 rounded-md border border-zinc-300 bg-white dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200">Reset</button>
-    <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold">Save</button>
+    <button type="button" (click)="onReset()" class="mac-button reset">Reset</button>
+    <button type="submit" class="mac-button save">Save</button>
   </div>
 </form>

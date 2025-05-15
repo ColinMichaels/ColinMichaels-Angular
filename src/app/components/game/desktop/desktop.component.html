@@ -1,5 +1,7 @@
 <app-notification-server/>
-<div class="min-h-screen w-full gradient-desktop-bg overflow-hidden pointer-events-auto" (click)="clickedOnDesktop($event)">
+<div class="min-h-screen w-full gradient-desktop-bg overflow-hidden pointer-events-auto"
+     (contextmenu)="onRightClick($event)"
+     (dblclick)="clickedOnDesktop($event)">
   <app-system-tray />
   <app-level-loader
     (loaded)="onLevelLoaded($event)"
@@ -23,6 +25,11 @@
     <div class="flex flex-col items-center -space-y-1">
       <fa-icon [icon]="faFile" class="text-white/90" (click)="openApp('tooltip-example')"></fa-icon>
       <span class="text-white/90 text-[10px]">Tooltip Examples</span>
+    </div>
+
+    <div class="flex flex-col items-center -space-y-1">
+      <fa-icon [icon]="faFile" class="text-white/90" (click)="openApp('markdown-reader')"></fa-icon>
+      <span class="text-white/90 text-[10px]">gameplay.doc.md</span>
     </div>
 
   </div>
