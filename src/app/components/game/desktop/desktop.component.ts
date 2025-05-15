@@ -7,17 +7,18 @@ import {TypewriterService} from '../services/typewriter.service';
 import {SoundService} from '../services/sound.service';
 import {UserService} from '../services/user.service';
 import {OverlayService} from '../services/overlay.service';
-import {APPIDS, ApplicationManagerService} from '../services/application-manager.service';
+import {APP_ID, ApplicationManagerService} from '../services/application-manager.service';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 import {NotificationServerComponent} from '../utils/notifications-server/notifications-server.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
 import {DockComponent} from '../system/dock/dock.component';
-import {faFile, faInfo, faServer, faTrophy} from '@fortawesome/free-solid-svg-icons';
-import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import {faCircle, faFile, faInfo, faServer, faTrophy} from '@fortawesome/free-solid-svg-icons';
+import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
+import {TooltipDirective} from '../directives/tooltip.directive';
 
 @Component({
   selector: 'app-desktop',
@@ -31,6 +32,9 @@ import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.s
     NotificationServerComponent,
     DockComponent,
     FaIconComponent,
+    FaStackComponent,
+    FaStackItemSizeDirective,
+    TooltipDirective,
   ],
   templateUrl: './desktop.component.html',
   styles: ``
@@ -225,7 +229,7 @@ export class DesktopComponent implements OnInit {
         .addItem({
           label: 'Open',
           action: () => {
-            this.openApp(APPIDS.FINDER);
+            this.openApp(APP_ID.finder);
           }}).addSubmenu(
             'Open With',
                   [
@@ -241,10 +245,13 @@ export class DesktopComponent implements OnInit {
       ).addItem({
           label: 'Settings',
           action: () => {
-            this.openApp(APPIDS.SYSTEM_SETTINGS);
+            this.openApp(APP_ID.system_settings);
           }
         }).build(),
       { x: event.clientX, y: event.clientY }
     );
   }
+
+  protected readonly faInfo = faInfo;
+  protected readonly faCircle = faCircle;
 }
