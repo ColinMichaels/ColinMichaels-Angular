@@ -22,7 +22,7 @@ export interface INotification {
   duration?: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class NotificationService {
   private notificationsSubject = new BehaviorSubject<INotification[]>([]);
   notifications$ = this.notificationsSubject.asObservable();
@@ -31,7 +31,7 @@ export class NotificationService {
 
   show(notification: Omit<INotification, 'id'>) {
     const id = crypto.randomUUID();
-    const newNotification: INotification = { id, ...notification };
+    const newNotification: INotification = {id, ...notification};
     this.queue.push(newNotification);
     this.notificationsSubject.next([...this.queue]);
 
@@ -56,21 +56,21 @@ export class NotificationService {
       faExclamationCircle, faExclamationTriangle, faFaceAngry];
     const randomType = faker.helpers.arrayElement(types);
     const randomTitle = faker.hacker.phrase();
-    const randomMessage = faker.lorem.sentences(faker.number.int({ min: 1, max: 3 }));
+    const randomMessage = faker.lorem.sentences(faker.number.int({min: 1, max: 3}));
 
-    const contentImage: IMediaItem =  new MediaItem({
+    const contentImage: IMediaItem = new MediaItem({
       title: randomTitle,
       id: randomTitle,
       content: {
         type: "image",
         data: faker.image.urlPicsumPhotos({
           width: 50,
-            height: 50
-         })
+          height: 50
+        })
       }
     });
 
-    const contentIcon:IMediaItem = new MediaItem({
+    const contentIcon: IMediaItem = new MediaItem({
       title: 'success',
       id: 'why',
       content: {
@@ -83,15 +83,13 @@ export class NotificationService {
       }
     });
 
-
-
     this.show({
       title: randomTitle,
       message: randomMessage,
       timestamp: faker.date.past({years: 2, refDate: new Date()}),
       type: randomType,
-      media:  (Math.random() > 0.5) ? contentImage : contentIcon,
-      duration: faker.number.int({ min: 3000, max: 7000 })
+      media: (Math.random() > 0.5) ? contentImage : contentIcon,
+      duration: faker.number.int({min: 5000, max: 12000})
     });
   }
 
