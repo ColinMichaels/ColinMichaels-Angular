@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { FinderWindowComponent } from './finder-window.component';
+import { IconPlaygroundComponent } from './icon-playground.component';
 
-describe('FinderWindowComponent', () => {
-  let component: FinderWindowComponent;
-  let fixture: ComponentFixture<FinderWindowComponent>;
+describe('IconPlaygroundComponent', () => {
+  let component: IconPlaygroundComponent;
+  let fixture: ComponentFixture<IconPlaygroundComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FinderWindowComponent]
+      imports: [IconPlaygroundComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(FinderWindowComponent);
+    fixture = TestBed.createComponent(IconPlaygroundComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

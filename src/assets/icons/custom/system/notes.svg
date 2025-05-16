@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 222.26 222.26">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: url(#linear-gradient-2);
+      }
+
+      .cls-3 {
+        fill: #dcddde;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="0" y1="111.13" x2="222.26" y2="111.13" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ececed"/>
+      <stop offset="1" stop-color="#f1f2f2"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="0" y1="30.91" x2="222.26" y2="30.91" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffc20e"/>
+      <stop offset="1" stop-color="#fd0"/>
+    </linearGradient>
+  </defs>
+  <g id="icons">
+    <g>
+      <rect class="cls-1" width="222.26" height="222.26" rx="44.45" ry="44.45"/>
+      <path class="cls-2" d="M177.81,0H44.45C20,0,0,20,0,44.45v17.37h222.26v-17.37c0-24.45-20-44.45-44.45-44.45Z"/>
+      <path class="cls-3" d="M135.58,73.8h-4.44v4.45h4.44v-4.45ZM100.02,73.8h-4.45v4.45h4.45v-4.45ZM126.69,73.8h-4.45v4.45h4.45v-4.45ZM144.47,73.8h-4.44v4.45h4.44v-4.45ZM108.91,73.8h-4.44v4.45h4.44v-4.45ZM153.36,73.8h-4.45v4.45h4.45v-4.45ZM117.8,73.8h-4.44v4.45h4.44v-4.45ZM197.81,73.8h-4.44v4.45h4.44v-4.45ZM206.7,73.8h-4.45v4.45h4.45v-4.45ZM188.92,73.8h-4.44v4.45h4.44v-4.45ZM162.25,73.8h-4.45v4.45h4.45v-4.45ZM215.59,73.8h-4.44v4.45h4.44v-4.45ZM171.14,73.8h-4.44v4.45h4.44v-4.45ZM180.03,73.8h-4.45v4.45h4.45v-4.45ZM91.13,73.8h-4.44v4.45h4.44v-4.45ZM6.59,200.93h209.08c.88-1.43,1.68-2.92,2.4-4.45H4.19c.72,1.53,1.52,3.02,2.4,4.45ZM2.22,73.8H0v4.45h2.22v-4.45ZM11.11,73.8h-4.44v4.45h4.44v-4.45ZM0,107.7h222.26v-4.45H0v4.45ZM0,154.31h222.26v-4.45H0v4.45ZM220.03,73.8v4.45h2.22v-4.45h-2.22ZM20.01,73.8h-4.44v4.45h4.44v-4.45ZM73.35,73.8h-4.44v4.45h4.44v-4.45ZM28.89,73.8h-4.44v4.45h4.44v-4.45ZM82.24,73.8h-4.44v4.45h4.44v-4.45ZM55.57,73.8h-4.44v4.45h4.44v-4.45ZM64.45,73.8h-4.44v4.45h4.44v-4.45ZM37.78,73.8h-4.44v4.45h4.44v-4.45ZM46.68,73.8h-4.44v4.45h4.44v-4.45Z"/>
+    </g>
+  </g>
+</svg>

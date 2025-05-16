@@ -2,7 +2,7 @@
 <div
   class="fixed top-0 left-0 w-full z-50
   shadow-2xl
-  transform transition-transform duration-500  border-b border-white/10"
+  transform-gpu transition-transform duration-500  border-b border-white/10"
   [class.-translate-y-full]="!isVisible() && !menuOpen()"
   [class.translate-y-0]="isVisible()"
   (blur)="isVisible.set(false)"
@@ -107,7 +107,6 @@
         <fa-icon [icon]="faMemory"></fa-icon>
         : {{ inGbs(usedMemory) }} / {{ inGbs(totalMemory) }}
         <span class="text-[6px]">GB</span>
-
         <div
           *ngIf="menuOpen() === 'memory'"
           class="menu-dropdown absolute top-full mt-1"
@@ -116,8 +115,14 @@
         >
           <ng-container *ngFor="let app of runningApps">
             <div class="flex items-center justify-between px-2 py-1 w-full">
-              <div><span class="text-white/50">{{ app.title }}</span> | <span class="text-[8px]">{{ app.memory }}
-                MB</span></div>
+              <div>
+                <span class="text-white/50">Finder</span> |
+                <span class="text-[8px]">512 MB</span>
+              </div>
+              <div>
+                <span class="text-white/50">{{ app.title }}</span> |
+                <span class="text-[8px]">{{ app.memory }} MB</span>
+              </div>
             </div>
           </ng-container>
 

@@ -7,7 +7,12 @@ import {TypewriterService} from '../services/typewriter.service';
 import {SoundService} from '../services/sound.service';
 import {UserService} from '../services/user.service';
 import {OverlayService} from '../services/overlay.service';
-import {APP_ID, ApplicationManagerService} from '../services/application-manager.service';
+import {
+  APP_ID,
+  ApplicationManagerService, WINDOW_HEIGHT_MIN,
+  WINDOW_WIDTH_MAX,
+  WINDOW_WIDTH_MIN
+} from '../services/application-manager.service';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 import {NotificationServerComponent} from '../utils/notifications-server/notifications-server.component';
 import {NotificationService} from '../services/notification.service';
@@ -42,8 +47,6 @@ import {TooltipDirective} from '../directives/tooltip.directive';
 export class DesktopComponent implements OnInit {
   showIntro = false;
   overlayImagePath = 'assets/images/overlays/cracked_corner.webp';
-  private activeLevel: GameLevel | undefined;
-
 
   constructor(private typewriter: TypewriterService,
               public appManager: ApplicationManagerService,
@@ -54,6 +57,7 @@ export class DesktopComponent implements OnInit {
               private userService: UserService,
               private route: ActivatedRoute,
               private destroyRef: DestroyRef) {
+
   }
 
   ngOnInit() {
@@ -63,13 +67,64 @@ export class DesktopComponent implements OnInit {
     this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
-        console.warn(params);
         const app = params.get('app');
         if (app) {
           this.openApp(app);
         }
       })
   }
+
+  openApp(id: string) {
+    this.appManager.openApplication(id);
+  }
+
+  /** CLICK EVENTS **/
+  onDoubleClicked(event: MouseEvent) {
+    if (event.target === event.currentTarget) {
+        this.appManager.closeAllApps();
+    }
+  }
+
+  onRightClick(event: MouseEvent) {
+    event.preventDefault();
+    this.contextMenuService.open(
+      new ContextMenuBuilder('desktop', ['admin'])
+        .addItem({
+          label: 'Open',
+          action: () => {
+            this.openApp(APP_ID.finder);
+          }}).addSubmenu(
+        'Open With',
+        [
+          {
+            label: 'TEST',
+            action: () => {}
+          },
+          {
+            label: 'TEST2',
+            action: () => {}
+          }
+        ]
+      ).addItem({
+        label: 'Settings',
+        action: () => {
+          this.openApp(APP_ID.system_settings);
+        }
+      }).build(),
+      { x: event.clientX, y: event.clientY }
+    );
+  }
+
+  onClickWindow(event: MouseEvent) {
+    if (event.target === event.currentTarget) {
+      this.appManager.setApplicationFocus('desktop', event.offsetX, event.offsetY);
+    }
+  }
+
+/*  onResize({ width, height }: { width: number; height: number }) {
+    console.log(`App resized to width: ${width}, height: ${height}`);
+    // Perform any necessary actions when resizing occurs
+  }*/
 
   onBeginInvestigation() {
     this.showIntro = false;
@@ -102,6 +157,27 @@ export class DesktopComponent implements OnInit {
       transition: 'opacity 0.3s ease-in-out'
     });
 
+  }
+
+  onLevelLoadFailed(message: string) {
+    this.typewriter.enqueueLine({
+      text: message,
+      agent: 'system',
+      mode: 'dramatic',
+      onBegin: () => {
+        this.soundService.play('beep-warning.mp3', {volume: 0.4, forceRestart: true, loop: false});
+      }
+    })
+  }
+
+  onLevelLoaded(level: GameLevel) {
+    this.typewriter.enqueueLine({
+      text: `Level ${this.userService.user.level} loaded.`,
+      agent: 'system',
+      speed: 40,
+      mode: 'system'
+    })
+    // Init game logic, commands, files, etc.
   }
 
   private showNotificationUpdates() {
@@ -179,79 +255,12 @@ export class DesktopComponent implements OnInit {
     });
   }
 
-  onLevelLoaded(level: GameLevel) {
-    this.activeLevel = level;
-    this.typewriter.enqueueLine({
-      text: `Level ${this.userService.user.level} loaded.`,
-      agent: 'system',
-      speed: 40,
-      mode: 'system'
-    })
-    // Init game logic, commands, files, etc.
-  }
-
-  onLevelLoadFailed(message: string) {
-    this.typewriter.enqueueLine({
-      text: message,
-      agent: 'system',
-      mode: 'dramatic',
-      onBegin: () => {
-        this.soundService.play('beep-warning.mp3', {volume: 0.4, forceRestart: true, loop: false});
-      }
-    })
-  }
-
-  clickedOnDesktop(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      const focusedAppId = this.appManager.getFocusedAppId();
-      console.warn('clickedOnDesktop', event, focusedAppId);
-      if (focusedAppId !== 'desktop') {
-        this.appManager.closeAllApps();
-      } else {
-        this.appManager.setApplicationFocus('desktop');
-      }
-
-    }
-
-  }
-
-  openApp(id: string) {
-    this.appManager.openApplication(id);
-  }
-
+  /* ICONS */
   protected readonly faFile = faFile;
   protected readonly faServer = faServer;
-
-  onRightClick(event: MouseEvent) {
-    event.preventDefault();
-    this.contextMenuService.open(
-      new ContextMenuBuilder('desktop', ['admin'])
-        .addItem({
-          label: 'Open',
-          action: () => {
-            this.openApp(APP_ID.finder);
-          }}).addSubmenu(
-            'Open With',
-                  [
-                    {
-                      label: 'TEST',
-                      action: () => {}
-                    },
-                    {
-                      label: 'TEST2',
-                      action: () => {}
-                    }
-                  ]
-      ).addItem({
-          label: 'Settings',
-          action: () => {
-            this.openApp(APP_ID.system_settings);
-          }
-        }).build(),
-      { x: event.clientX, y: event.clientY }
-    );
-  }
-
   protected readonly faInfo = faInfo;
   protected readonly faCircle = faCircle;
+  protected readonly WINDOW_WIDTH_MIN = WINDOW_WIDTH_MIN;
+  protected readonly WINDOW_WIDTH_MAX = WINDOW_WIDTH_MAX;
+  protected readonly WINDOW_HEIGHT_MIN = WINDOW_HEIGHT_MIN;
 }

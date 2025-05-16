@@ -6,6 +6,9 @@ import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faCog, faTrashCan, faBell, faSquare} from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
 import {TooltipDirective} from '../../directives/tooltip.directive';
+import {SvgService} from '../../services/svg.service';
+import {SvgIcons} from '../../services/file-system.service';
+import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
 
 @Component({
   selector: 'app-dock',
@@ -14,7 +17,8 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
     CommonModule,
     AbbreviationPipe,
     FontAwesomeModule,
-    TooltipDirective
+    TooltipDirective,
+    SvgIconComponent
   ],
   templateUrl: './dock.component.html',
   styles: `
@@ -62,7 +66,8 @@ export class DockComponent {
 
   constructor(
     private appManager: ApplicationManagerService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private svg: SvgService
     ) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
@@ -74,6 +79,14 @@ export class DockComponent {
         }
       }
     });
+  }
+
+  get staticApps() {
+    return this.svg.loadIcons([SvgIcons.Safari, SvgIcons.Notes, SvgIcons.Calendar, SvgIcons.Clock], 'system');
+  }
+
+  get availableApps() {
+    return this.appManager.registeredApps;
   }
 
   get runningApps() {
@@ -92,16 +105,12 @@ export class DockComponent {
     return this.appManager.getRunningApps('app');
   }
 
-  get availableApps() {
-    return this.appManager.registeredApps;
+  openApp(id: string, args?: any) {
+    this.appManager.openApplication(id, args);
   }
 
-  closeApp(id: string) {
-    this.appManager.closeApplication(id);
-  }
-
-  openApp(id: string) {
-    this.appManager.openApplication(id);
+  closeApp(id: string, args?: any) {
+    this.appManager.closeApplication(id, args);
   }
 
   trash(key: string) {
