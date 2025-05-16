@@ -1,5 +1,5 @@
-import {Component, NgIterable, OnDestroy, OnInit} from '@angular/core';
-import {NgClass, NgForOf, NgIf, NgSwitch, NgSwitchCase, NgSwitchDefault} from '@angular/common';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {NgClass, NgForOf, NgSwitch, NgSwitchCase, NgSwitchDefault} from '@angular/common';
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {UserService} from '../../services/user.service';
 import {CLIService} from '../../services/cli.service';
@@ -100,7 +100,7 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
 
   chartOptions = {
     responsive: true,
-    animation: true,
+    animation: false,
     scales: {
       y: {
         min: 0,

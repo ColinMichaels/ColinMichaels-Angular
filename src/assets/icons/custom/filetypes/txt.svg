@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 250">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: url(#linear-gradient-2);
+      }
+
+      .cls-6 {
+        isolation: isolate;
+      }
+
+      .cls-3 {
+        opacity: .3;
+      }
+
+      .cls-3, .cls-5 {
+        fill: #fff;
+      }
+
+      .cls-7 {
+        mix-blend-mode: multiply;
+        opacity: .15;
+      }
+
+      .cls-4 {
+        fill: #231f20;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="100" y1="250" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dcddde"/>
+      <stop offset=".11" stop-color="#e0e1e2"/>
+      <stop offset=".56" stop-color="#ecedee"/>
+      <stop offset="1" stop-color="#f1f2f2"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="100" y1="80" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#58595b"/>
+      <stop offset="1" stop-color="#a7a9ac"/>
+    </linearGradient>
+  </defs>
+  <g class="cls-6">
+    <g id="Layer_2" data-name="Layer 2">
+      <g id="icons">
+        <g>
+          <g>
+            <polygon class="cls-1" points="200 250 0 250 0 0 140 0 200 60 200 250"/>
+            <polygon class="cls-2" points="140 0 0 0 0 80 200 80 200 60 140 0"/>
+            <polygon class="cls-3" points="140 60 200 60 140 0 140 60"/>
+            <g>
+              <path class="cls-5" d="M22.2,30h-10.25v-3.7h24.95v3.7h-10.3v30h-4.4v-30Z"/>
+              <path class="cls-5" d="M62.2,60l-4.3-7.45c-1.75-2.85-2.85-4.7-3.9-6.65h-.1c-.95,1.95-1.9,3.75-3.65,6.7l-4.05,7.4h-5l10.3-17.05-9.9-16.65h5.05l4.45,7.9c1.25,2.2,2.2,3.9,3.1,5.7h.15c.95-2,1.8-3.55,3.05-5.7l4.6-7.9h5l-10.25,16.4,10.5,17.3h-5.05Z"/>
+              <path class="cls-5" d="M81.1,30h-10.25v-3.7h24.95v3.7h-10.3v30h-4.4v-30Z"/>
+            </g>
+          </g>
+          <g class="cls-7">
+            <path class="cls-4" d="M93.32,120.73h-30.75v-11.1h74.85v11.1h-30.9v90h-13.2v-90Z"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

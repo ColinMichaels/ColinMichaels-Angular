@@ -6,7 +6,7 @@ import {
   faChartSimple,
   faCircleInfo, faCogs,
   faComputer,
-  faExclamationTriangle,
+  faExclamationTriangle, faIcons,
   faPerson
 } from '@fortawesome/free-solid-svg-icons';
 import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
@@ -24,7 +24,7 @@ import {MarkdownReaderComponent} from '../apps/markdown-reader/markdown-reader.c
 import {ApplicationFactory} from '../factories/application-factory';
 import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
 import {faCss} from '@fortawesome/free-brands-svg-icons';
-/** /installed apps */
+import {IconPlaygroundComponent} from '../apps/icon-playground/icon-playground.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -40,6 +40,8 @@ export interface ApplicationInstance extends AppEntry {
     svgPath?: any;
   },
   running?: boolean;
+  focused?: boolean;
+  args?: any;
   installed: boolean;
 }
 
@@ -65,12 +67,29 @@ export interface AppEntry {
   autofit?: boolean;
   installed: boolean;
   running?: boolean;
+  focused?: boolean;
+  args?: any;
 }
 
 export enum AppType {
   system = 'system',
   app = 'app',
   other = 'other'
+}
+
+export const WINDOW_WIDTH_MIN = 400;
+export const WINDOW_WIDTH_MAX = 600;
+export const WINDOW_HEIGHT_MIN = 300;
+export const WINDOW_HEIGHT_MAX = 500;
+
+export const DEFAULT_WINDOW_SIZE = 512;
+export const DEFAULT_WINDOW_OFFSET_Y = 40;
+export const DEFAULT_WINDOW_OFFSET_X = 40;
+
+
+export enum AppState {
+  running = 'running',
+  closed = 'closed'
 }
 
 const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
@@ -86,7 +105,8 @@ export enum APP_ID {
   system_settings = 'system-settings',
   markdown_reader = 'markdown-reader',
   tailwind_preview = 'tailwind-preview',
-  tooltip_example = 'tooltip-example'
+  tooltip_example = 'tooltip-example',
+  icon_playground = 'icon-playground'
 }
 
 @Injectable({providedIn: 'root'})
@@ -95,7 +115,6 @@ export class ApplicationManagerService {
   private appRegistry: AppEntry[] = [];
   private maxMemory = 16 * 1024; // MB
   private focusedAppId = new BehaviorSubject<string | null>(null);
-
   private readonly notifyTemplate: IMediaItem = {
     id: 'error',
     title: 'Error',
@@ -220,7 +239,7 @@ export class ApplicationManagerService {
       },
       memory: 512,
       maxInstances: 1,
-      type:AppType.system,
+      type: AppType.system,
       instanceIndex: 0
     });
 
@@ -251,22 +270,29 @@ export class ApplicationManagerService {
       id: APP_ID.tailwind_preview,
       title: 'Tailwind Playground',
       component: TailwindPreviewComponent,
-      /**
-       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
-       * Todo: possbily pass s secondary component to render within that.
-       */
       installed: true,
       icon: {
-        class: '',
+        class: 'bg-zinc-200 text-[20px] py-1 px-1.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-900',
         svgPath: faCss
       },
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      /**
-       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
-       *
-       */
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.icon_playground,
+      title: 'Icon Playground',
+      component: IconPlaygroundComponent,
+      installed: true,
+      icon: {
+        class: 'bg-purple-300 text-black/80 p-1 text-[18px] rounded-lg shadow-lg border-2 border-purple-700',
+        svgPath: faIcons
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
       instanceIndex: 0
     });
   }
@@ -318,6 +344,12 @@ export class ApplicationManagerService {
 
   openApplication(id: string, args?: []): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
+
+    const focusId = this.focusedAppId.getValue();
+
+    if (focusId === id || app?.running) {
+      return !this.setApplicationFocus(id);
+    }
     if (!app) return false;
 
     if (this.usedMemory + app.memory > this.maxMemory) {
@@ -343,15 +375,13 @@ export class ApplicationManagerService {
 
     const lastApplication = this.applications[this.applications.length - 1];
 
-    const DEFAULT_OFFSET = 40;
-
     const newOffsetX = lastApplication?.offsetX !== undefined
-      ? lastApplication.offsetX + DEFAULT_OFFSET
-      : DEFAULT_OFFSET;
+      ? lastApplication.offsetX + DEFAULT_WINDOW_OFFSET_X
+      : DEFAULT_WINDOW_OFFSET_X;
 
     const newOffsetY = lastApplication?.offsetY !== undefined
-      ? lastApplication.offsetY + DEFAULT_OFFSET
-      : DEFAULT_OFFSET;
+      ? lastApplication.offsetY + DEFAULT_WINDOW_OFFSET_Y
+      : DEFAULT_WINDOW_OFFSET_Y;
 
     if (this.isInstanceLimitReached(app)) {
       return false;
@@ -365,6 +395,7 @@ export class ApplicationManagerService {
 
 
     app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
+    app.running = true;
 
     this.applications.push(
       this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY)
@@ -415,7 +446,7 @@ export class ApplicationManagerService {
     localStorage.setItem('applications', JSON.stringify(this.applications));
   }
 
-  closeApplication(id: string): void {
+  closeApplication(id: string, args?: any): void {
     const application = this.getAppByID(id);
     if (!application) return;
 
@@ -425,7 +456,10 @@ export class ApplicationManagerService {
     // Decrement the instanceIndex for the parent AppEntry
     if (application.parent) {
       application.parent.instanceIndex = Math.max(0, application.parent.instanceIndex - 1);
+      application.parent.running = application.parent.instanceIndex > 0;
     }
+
+    application.instanceIndex = 0;
 
     // Remove the application from the active applications list
     this.applications = this.applications.filter(app => app.id !== id);
@@ -435,14 +469,16 @@ export class ApplicationManagerService {
   }
 
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
-    if (this.focusedAppId.getValue() === id) return true;
-
     const application = this.applications.find(t => t.id === id);
+    if (id === 'desktop') {
+      this.focusedAppId.next(id);
+      return true;
+    }
     if (!application) {
       return false;
     }
-
     this.focusedAppId.next(id);
+    application.focused = true;
     application.offsetX = offsetX ?? 40;
     application.offsetY = offsetY ?? 40;
 
@@ -467,7 +503,7 @@ export class ApplicationManagerService {
     return this.focusedAppId.asObservable();
   }
 
-  getFocusedAppId(){
+  getFocusedAppId() {
     return this.focusedAppId.getValue();
   }
 
