@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TooltipOverlayComponent } from './tooltip-overlay.component';
+import { GameServerComponent } from './game-server.component';
 
-describe('TooltipOverlayComponent', () => {
-  let component: TooltipOverlayComponent;
-  let fixture: ComponentFixture<TooltipOverlayComponent>;
+describe('GameServerComponent', () => {
+  let component: GameServerComponent;
+  let fixture: ComponentFixture<GameServerComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TooltipOverlayComponent]
+      imports: [GameServerComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TooltipOverlayComponent);
+    fixture = TestBed.createComponent(GameServerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
