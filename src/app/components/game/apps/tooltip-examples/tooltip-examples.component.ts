@@ -55,10 +55,10 @@ export class TooltipExamplesComponent implements OnInit{
   showDocs: any;
   docs = `tooltip.doc.md`;
 
-  defaultTooltips: TooltipOptions[] =[];
-  customTooltips: TooltipOptions[] = [];
-  customTooltips2: TooltipOptions[] = [];
-  allTooltips: TooltipExampleSet[] = [];
+  defaultTooltips: Partial<TooltipOptions>[] = [];
+  customTooltips: Partial<TooltipOptions>[] = [];
+  customTooltips2: Partial<TooltipOptions>[] = [];
+  allTooltips: any[]= [];
 
   constructor(private notify: NotificationService, private tailwindGenerator: TailwindClassGeneratorService) {
   }

@@ -2,15 +2,14 @@ import {
   ApplicationRef,
   ComponentRef,
   Injectable,
-  Renderer2,
-  RendererFactory2,
-  inject
+  Injector, createComponent, Renderer2, RendererFactory2
 } from '@angular/core';
 import {
   TooltipOverlayComponent
 } from '../templates/tooltip-overlay/tooltip-overlay.component';
 
 export interface TooltipOptions {
+  hostElement: HTMLElement;
   text: string;
   cssClass?: string;
   position?: TooltipPosition;
@@ -26,78 +25,91 @@ export type TooltipSize = 'sm' | 'md' | 'lg';
 
 @Injectable({providedIn: 'root'})
 export class TooltipService {
-  private static currentRef?: ComponentRef<TooltipOverlayComponent>;
-  private appRef = inject(ApplicationRef);
-  private renderer: Renderer2;
+  private tooltipComponentRef: ComponentRef<TooltipOverlayComponent> | null = null;
+  private renderer: Renderer2; // Store a Renderer2 instance
   private debounceTimer?: ReturnType<typeof setTimeout>;
   private hideTimer?: ReturnType<typeof setTimeout>;
   private readonly debounceDelay = 100; // ms
 
-  constructor(rendererFactory: RendererFactory2) {
-    this.renderer = rendererFactory.createRenderer(null, null);
+  constructor(
+    private injector: Injector,
+    private appRef: ApplicationRef,
+    private rendererFactory: RendererFactory2
+  ) {
+    this.renderer = this.rendererFactory.createRenderer(null, null);
   }
 
-  show({
-         host,
-         text,
-         cssClass,
-         position,
-         size,
-         autoDismissDelay,
-         showArrow,
-         toolTipClass,
-         hideDelay
-       }: {
-    host: HTMLElement,
-    text: string,
-    cssClass?: string,
-    position?: TooltipPosition,
-    size?: TooltipSize,
-    autoDismissDelay?: number | null,
-    hideDelay?: number | null,
-    showArrow?: boolean,
-    toolTipClass?: string,
-  }) {
-    clearTimeout(this.debounceTimer);
+  show(options: TooltipOptions) {
+    // If a tooltip already exists, hide it first
+    this.hide();
 
-    this.debounceTimer = setTimeout(() => {
-      this.hide(true); // force immediate
+    if (!options.hostElement) {
+      throw new Error('TooltipOptions must include a valid hostElement.');
+    }
+    // Dynamically create the tooltip component
+    this.tooltipComponentRef = createComponent(TooltipOverlayComponent, {
+      environmentInjector: this.appRef.injector, // or use appropriate EnvironmentInjector
+      elementInjector: this.injector, // Use only if local dependencies differ
+    });
 
-      const container = this.renderer.createElement('div');
-      this.renderer.appendChild(document.body, container);
 
-      const ref = this.appRef.bootstrap(TooltipOverlayComponent, container);
-      ref.instance.text = text;
-      ref.instance.toolTipClass = cssClass || 'bg-zinc-900/50 text-white';
-      ref.instance.position = position ?? 'top';
-      ref.instance.size = size ?? 'md';
-      ref.instance.hostEl = host;
-      ref.instance.autoDismissDelay = autoDismissDelay ?? null;
-      ref.instance.showArrow = showArrow ?? false;
+    // Pass options to the created component instance
+    this.tooltipComponentRef.instance.text = options.text;
+    this.tooltipComponentRef.instance.toolTipClass = options.cssClass ?? '';
+    this.tooltipComponentRef.instance.position = options.position ?? 'top';
+    this.tooltipComponentRef.instance.size = options.size ?? 'sm';
+    this.tooltipComponentRef.instance.showArrow = options.showArrow ?? true;
+    this.tooltipComponentRef.instance.hostElement = options.hostElement;
 
-      TooltipService.currentRef = ref;
-    }, this.debounceDelay);
-  }
+    // Attach the component to the app and apply positioning
+    this.appRef.attachView(this.tooltipComponentRef.hostView);
 
-  hide(force = false, delay: number | null = null): void {
-    clearTimeout(this.hideTimer);
+    const domElem = (this.tooltipComponentRef.hostView as any).rootNodes[0];
+    this.renderer.appendChild(document.body, domElem);
 
-    if (force || !delay) {
-      this._destroyTooltip();
-    } else {
-      this.hideTimer = setTimeout(() => {
-        this._destroyTooltip();
-      }, delay);
+    this.positionTooltip(options.hostElement, domElem, options.position || 'top');
+
+    // Auto-dismiss if needed
+    if (options.autoDismissDelay) {
+      setTimeout(() => this.hide(), options.autoDismissDelay);
     }
   }
 
-  private _destroyTooltip(): void {
-    if (TooltipService.currentRef) {
-      const element = TooltipService.currentRef.location.nativeElement;
-      this.appRef.detachView(TooltipService.currentRef.hostView);
-      TooltipService.currentRef.destroy();
-      this.renderer.removeChild(document.body, element);
-      TooltipService.currentRef = undefined;
+
+  hide(force = false, hideDelay = 0) {
+    // todo: add back in force and hide delay
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+    }
+    if (this.tooltipComponentRef) {
+      const domElem = (this.tooltipComponentRef.hostView as any).rootNodes[0];
+      this.renderer.removeChild(document.body, domElem);
+      this.appRef.detachView(this.tooltipComponentRef.hostView);
+      this.tooltipComponentRef.destroy();
+      this.tooltipComponentRef = null;
+    }
+
+  }
+
+
+   positionTooltip(host: HTMLElement, tooltip: HTMLElement, position: TooltipPosition) {
+    const hostRect = host.getBoundingClientRect();
+
+    // Adjust the tooltip position based on the selected direction
+    if (position === 'top') {
+      tooltip.style.top = `${hostRect.top - tooltip.offsetHeight}px`;
+      tooltip.style.left = `${hostRect.left + (host.offsetWidth - tooltip.offsetWidth) / 2}px`;
+    } else if (position === 'bottom') {
+      tooltip.style.top = `${hostRect.bottom}px`;
+      tooltip.style.left = `${hostRect.left + (host.offsetWidth - tooltip.offsetWidth) / 2}px`;
+    } else if (position === 'left') {
+      tooltip.style.top = `${hostRect.top + (host.offsetHeight - tooltip.offsetHeight) / 2}px`;
+      tooltip.style.left = `${hostRect.left - tooltip.offsetWidth}px`;
+    } else if (position === 'right') {
+      tooltip.style.top = `${hostRect.top + (host.offsetHeight - tooltip.offsetHeight) / 2}px`;
+      tooltip.style.left = `${hostRect.right}px`;
     }
   }
+
+
 }
