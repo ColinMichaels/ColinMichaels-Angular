@@ -219,7 +219,7 @@ export class ApplicationManagerService {
       component: SettingsPanelComponent,
       installed: true,
       icon: {
-        class: 'bg-zinc-200 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
+        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
         svgPath: faCogs
       },
       memory: 512,
@@ -234,7 +234,7 @@ export class ApplicationManagerService {
       component: TooltipExamplesComponent,
       installed: true,
       icon: {
-        class: 'bg-zinc-200 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
+        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
         svgPath: faCogs
       },
       memory: 512,
@@ -272,7 +272,7 @@ export class ApplicationManagerService {
       component: TailwindPreviewComponent,
       installed: true,
       icon: {
-        class: 'bg-zinc-200 text-[20px] py-1 px-1.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-900',
+        class: 'text-white/80 text-[20px] py-1 px-1.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-900',
         svgPath: faCss
       },
       memory: 512,
@@ -287,7 +287,7 @@ export class ApplicationManagerService {
       component: IconPlaygroundComponent,
       installed: true,
       icon: {
-        class: 'bg-purple-300 text-black/80 p-1 text-[18px] rounded-lg shadow-lg border-2 border-purple-700',
+        class: 'bg-purple-500 text-black/80 p-1 text-[18px] rounded-lg shadow-lg border-2 border-purple-700',
         svgPath: faIcons
       },
       memory: 512,
