@@ -1,4 +1,4 @@
-<div class="fixed bottom-0 w-full flex justify-center mx-auto ">
+<div class="fixed bottom-0 w-full flex justify-center mx-auto">
   <div class="cursor-pointer dock-back w-full mx-8 h-10 rounded-lg rounded-b-none px-4 py-6 shadow-2xl
   border border-white/10 flex items-center justify-end pointer-events-none">
 
@@ -32,18 +32,20 @@
     <section class="flex space-x-2 pointer-events-auto">
       <ng-container *ngFor="let app of generalApps">
         <div class="relative" [tooltipShowArrow]="true" [appTooltip]="app.title">
-        <div (dblclick)="openApp(app.id)"
-             [class.dock-icon]="!app.icon"
-         class="pointer-events-auto" [class.-translate-y-1]="app.running">
-          <div *ngIf="app.icon; else showTitle">
+          <div (dblclick)="openApp(app.id)"
+               (click)="focusApp(app.id)"
+               [class.dock-icon]="!app.icon"
+               class="pointer-events-auto" [class.-translate-y-1]="app.running">
+            <div *ngIf="app.icon; else showTitle">
               <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
-          </div>
-          <ng-template #showTitle>
-                      <span>{{ app.title | abbreviation }}</span>
-          </ng-template>
+            </div>
+            <ng-template #showTitle>
+              <span>{{ app.title | abbreviation }}</span>
+            </ng-template>
 
-        </div>
-        <div *ngIf="app.running" class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-none bg-zinc-400 h-1 w-1 rounded-full"></div>
+          </div>
+          <div *ngIf="app.running"
+               class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-none bg-zinc-400 h-1 w-1 rounded-full"></div>
         </div>
       </ng-container>
     </section>
@@ -52,22 +54,33 @@
     <!-- /Divider -->
     <section class="flex flex-grow-0 space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
 
-      <fa-icon [icon]="faCog" class="dock-animation"
-               (dblclick)="openApp('system-settings')" [tooltipShowArrow]="true" [appTooltip]="'System Settings'">
-      </fa-icon>
+      <div class="dock-animation">
+        <fa-icon [icon]="faCog"
+                 (dblclick)="openApp('system-settings')" [tooltipShowArrow]="true" [appTooltip]="'System Settings'">
+        </fa-icon>
+      </div>
 
-      <fa-stack [size]="'xs'" class="dock-animation" (click)="notify()" [tooltipShowArrow]="true"
-                [appTooltip]="'TEST Notifications'">
-        <fa-icon [icon]="faSquare" [stackItemSize]="'2x'" class="text-purple-800"></fa-icon>
-        <fa-icon [icon]="faBell" [stackItemSize]="'1x'" [inverse]="true"
-                 class="text-yellow-400 hover:text-yellow-500"></fa-icon>
-      </fa-stack>
-
-      <fa-icon [icon]="faTrashCan" class="dock-animation text-zinc-500/50 hover:text-white/50"
-               (click)="openApp('finder', {path: 'trash'})" (dblclick)="trash('user')"
-               tooltipSize="sm"
-               [appTooltip]="'Reset all Settings'">
-      </fa-icon>
+      <div class="dock-animation">
+        <fa-stack [size]="'xs'"
+                  (click)="notify()" [tooltipShowArrow]="true"
+                  [appTooltip]="'TEST Notifications'">
+          <fa-icon [icon]="faSquare" [stackItemSize]="'2x'" class="text-purple-800 active:text-yellow-500"></fa-icon>
+          <fa-icon [icon]="faBell" [stackItemSize]="'1x'" [inverse]="true"
+                   class="text-yellow-400 hover:text-yellow-500 active:text-purple-800"></fa-icon>
+        </fa-stack>
+      </div>
+      <div class="dock-animation">
+        <fa-icon [icon]="faRightFromBracket"
+                 (click)="logout()" [tooltipShowArrow]="true" [appTooltip]="'Log Out'">
+        </fa-icon>
+      </div>
+      <div class="dock-animation text-zinc-500/50 hover:text-white/50">
+        <fa-icon [icon]="faTrashCan"
+                 (click)="openApp('finder', {path: 'trash'})" (dblclick)="trash('user')"
+                 tooltipSize="sm"
+                 [appTooltip]="'Trash'">
+        </fa-icon>
+      </div>
 
     </section>
   </div>
