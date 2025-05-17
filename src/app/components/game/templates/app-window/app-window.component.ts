@@ -19,6 +19,7 @@ import {
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faCircle, faMinus, faTimes, faUpRightAndDownLeftFromCenter} from '@fortawesome/free-solid-svg-icons';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {WindowHeaderComponent} from './window-header/window-header.component';
 
 // Define constants for common default values
 const DEFAULT_OFFSET = 40;
@@ -62,6 +63,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   @ViewChild('resizeHandle') resizeRef!: ElementRef<HTMLDivElement>;
   @ViewChild('appWindowContent', {read: ViewContainerRef}) containerRef!: ViewContainerRef;
 
+
   /** Inputs */
   @Input() id!: string;
   @Input() title = 'Terminal';
@@ -75,7 +77,13 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   @Input() maxHeight: number = WINDOW_HEIGHT_MAX;
   @Input() focused: boolean = false;
 
-  @Output() sizeChanged = new EventEmitter<{ width: number; height: number }>();
+  @Output() sizeChanged = new EventEmitter<
+    {
+      width: number;
+      height: number,
+      left: number,
+      top: number
+    }>();
 
 
   /** Font Awesome Icons */
@@ -138,7 +146,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   private subscribeToFocusEvents(): void {
     this.appManager
       .getFocus$()
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed())
       .subscribe(focus => {
         if(focus && this.id){
           this.focused = focus?.toLowerCase() === this.id?.toLowerCase();
@@ -210,7 +218,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
       appWindow.style.height = `${newHeight}px`;
 
       // Emit size changes
-      this.sizeChanged.emit({ width: newWidth, height: newHeight });
+      this.sizeChanged.emit({ width: newWidth, height: newHeight , top: newTop, left: newLeft });
     }
 
   };

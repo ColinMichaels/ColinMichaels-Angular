@@ -28,7 +28,11 @@
         <fa-icon [icon]="faUpRightAndDownLeftFromCenter" stackItemSize="1x" [class.hidden]="!showSizeIcons"></fa-icon>
       </fa-stack>
     </div>
-    <div class="title text-xs text-white/90 font-medium truncate" [class.title-unfocused]="!focused">{{ title }}</div>
+    <div class="title text-xs text-white/90 font-medium truncate"
+         *ngIf="!autoFit"
+         [class.hidden]="isCollapsed || autoFit"
+         [class.title-unfocused]="!focused">{{ title }}
+    </div>
     <div class="w-12"></div>
   </div>
 
