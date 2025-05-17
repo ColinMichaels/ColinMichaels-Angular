@@ -42,7 +42,8 @@ testem.log
 Thumbs.db
 
 # Firebase local config
-.firebase/
+.firebase/*
 
 # env configs
-/environments/
+/environments/*
+
