@@ -1,8 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {NgClass, NgForOf, NgSwitch, NgSwitchCase, NgSwitchDefault} from '@angular/common';
 import {ApplicationManagerService} from '../../services/application-manager.service';
-import {UserService} from '../../services/user.service';
-import {CLIService} from '../../services/cli.service';
 import {BaseChartDirective} from 'ng2-charts';
 import {
   Chart,
@@ -150,9 +148,7 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    private windowManager: ApplicationManagerService,
-    private userService: UserService,
-    private cliService: CLIService
+    private applicationManager: ApplicationManagerService,
   ) {
   }
 
@@ -163,13 +159,15 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.cpuChartData = [];
+    this.gpuChartData = [];
     clearInterval(this.intervalId);
   }
 
   /** window manager */
 
   get runningApps() {
-    return this.windowManager.openApplications;
+    return this.applicationManager.openApplications;
   }
 
   setTab(tab: string) {
@@ -210,7 +208,18 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
 
     this.cpuChartData = [...this.cpuChartData]; // Trigger chart update
     this.gpuChartData = [...this.gpuChartData];
+
   }
+
+  private updateChartData(data: number[], labels: string[], value: number, label: string, maxEntries: number = 30) {
+    if (data.length >= maxEntries) {
+      data.shift();
+      labels.shift();
+    }
+    data.push(value);
+    labels.push(label);
+  }
+
 
   sortBy(column: keyof Process): void {
     if (this.sortColumn === column) {
@@ -220,4 +229,5 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
       this.sortDirection = 'desc';
     }
   }
+
 }
