@@ -1,3 +1,7 @@
-<div class=" bg-black min-h-screen">
-<router-outlet></router-outlet>
+<app-notification-server/>
+<div
+  class=" bg-zinc-800/70 min-h-screen"
+  [@routeAnimations]="prepareRoute(outlet)"
+>
+<router-outlet #outlet='outlet'></router-outlet>
 </div>
