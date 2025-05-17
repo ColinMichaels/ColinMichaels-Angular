@@ -1,6 +1,6 @@
-<app-notification-server/>
 <ng-container>
-  <div class="min-h-screen relative z-0 w-full gradient-desktop-bg overflow-hidden pointer-events-auto"
+  <div class="min-h-screen relative z-0 w-full bg-cover bg-center overflow-hidden pointer-events-auto"
+       [style]="`background-image: url(${backgroundImage})`"
        (contextmenu)="onRightClick($event)"
        (click)="onClickWindow($event)"
        (dblclick)="onDoubleClicked($event)">
