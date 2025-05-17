@@ -14,7 +14,6 @@ import {
   WINDOW_WIDTH_MIN
 } from '../services/application-manager.service';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
-import {NotificationServerComponent} from '../utils/notifications-server/notifications-server.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
 import {DockComponent} from '../system/dock/dock.component';
@@ -34,7 +33,6 @@ import {TooltipDirective} from '../directives/tooltip.directive';
     LevelLoaderComponent,
     NgForOf,
     SystemTrayComponent,
-    NotificationServerComponent,
     DockComponent,
     FaIconComponent,
     FaStackComponent,
@@ -47,6 +45,7 @@ import {TooltipDirective} from '../directives/tooltip.directive';
 export class DesktopComponent implements OnInit {
   showIntro = false;
   overlayImagePath = 'assets/images/overlays/cracked_corner.webp';
+  backgroundImage = 'assets/images/backgrounds/night.webp';
 
   constructor(private typewriter: TypewriterService,
               public appManager: ApplicationManagerService,
@@ -57,7 +56,6 @@ export class DesktopComponent implements OnInit {
               private userService: UserService,
               private route: ActivatedRoute,
               private destroyRef: DestroyRef) {
-
   }
 
   ngOnInit() {
@@ -263,4 +261,5 @@ export class DesktopComponent implements OnInit {
   protected readonly WINDOW_WIDTH_MIN = WINDOW_WIDTH_MIN;
   protected readonly WINDOW_WIDTH_MAX = WINDOW_WIDTH_MAX;
   protected readonly WINDOW_HEIGHT_MIN = WINDOW_HEIGHT_MIN;
+
 }
