@@ -9,7 +9,7 @@
          [appTooltip]="link.tooltip ?? ''"
          [tooltipHideDelay]="0"
          [tooltipAutoDismiss]="0"
-         [tooltipClass]="[link.tooltipClass,'rounded-full text-sm p-1 mb-10']"
+         [tooltipCssClass]="[link.tooltipClass,'rounded-full text-sm p-1 mb-10'].join(' ')"
       >
         <fa-icon [icon]="link.icon"></fa-icon>
       </button>
