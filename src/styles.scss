@@ -11,6 +11,18 @@ body {
   font-family: 'Arimo', sans-serif;
 }
 
+/* Remove outline for everything */
+*:focus {
+  outline: none;
+}
+
+/* Show focus outline only for accessible interactions */
+*:focus-visible {
+  outline: 2px solid #005fcc; /* Adjust style as needed */
+  border-radius: 4px; /* Optional: rounding for better visuals */
+}
+
+
 
 
 
