@@ -1,0 +1,40 @@
+.resume-section {
+  @apply rounded-xl px-6 py-4 my-4 hover:scale-[1.01] transition-transform //bg-zinc-700/50
+  shadow-xl shadow-black/50
+  bg-gradient-to-r from-stone-500/20 to-stone-800/20;
+  h2{
+    @apply text-2xl font-semibold mb-6 pb-2 w-full border-b-2 border-green-500/50;
+  }
+
+  .resume-experience{
+    @apply text-left text-sm;
+
+    h3{
+      @apply text-sm text-white/90;
+    }
+    p.r-loc-date{
+      @apply text-[12px] italic text-gray-500 leading-none mb-2;
+    }
+    ul{
+      @apply text-[12px] list-disc list-inside;
+      li{
+        @apply text-white/90 list-item;
+      }
+    }
+  }
+}
+
+.home-button{
+  @apply hover:bg-green-500 transform-gpu transition-colors hover:text-black
+  border-2 rounded-xl border-white/20 px-4 py-2.5 text-sm;
+}
+
+.animate-blink {
+  animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
