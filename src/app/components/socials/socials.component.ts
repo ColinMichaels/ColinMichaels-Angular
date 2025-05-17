@@ -1,15 +1,19 @@
 import { Component } from '@angular/core';
-import {RouterLink, RouterLinkActive} from '@angular/router';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faGithub, faInstagram, faLinkedin, faTwitter, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
+import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {faGamepad} from '@fortawesome/free-solid-svg-icons';
+import {NgForOf} from '@angular/common';
+import {TooltipDirective} from '../game/directives/tooltip.directive';
+import {RouterLink} from '@angular/router';
+
 
 @Component({
   selector: 'app-socials',
   imports: [
-    RouterLink,
-    RouterLinkActive,
-    FontAwesomeModule
+    FontAwesomeModule,
+    NgForOf,
+    TooltipDirective,
+    RouterLink
   ],
   templateUrl: './socials.component.html',
   standalone: true,
@@ -19,21 +23,81 @@ import {faGamepad} from '@fortawesome/free-solid-svg-icons';
     padding: 6px;
     width: 100%;
     background: rgba(0, 0, 0, 0.55);
-    a {
-      @apply hover:scale-[1.5] hover:-translate-y-4 delay-75 transition ease-in-out active:animate-bounce focus:animate-bounce;
-      &.active{
-        @apply shadow-lg shadow-white/20;
-      }
-    }
   }`
 })
 export class SocialsComponent {
 
-  protected readonly faYoutube = faYoutube;
-  protected readonly faTwitter = faTwitter;
-  protected readonly faGithub = faGithub;
-  protected readonly faInstagram = faInstagram;
-  protected readonly faGamepad = faGamepad;
-  protected readonly faLinkedin = faLinkedin;
-  protected readonly faXTwitter = faXTwitter;
+  path = '/external/';
+
+  links = [
+    {
+      link: "youtube.com/CaptainColin",
+      target: "_blank",
+      type: 'external',
+      title: "Youtube CaptainColin",
+      class: "hover:text-red-600",
+      icon: faYoutube,
+      tooltip: 'YouTube',
+      tooltipClass: 'bg-red-600'
+    },
+    {
+      link: "twitter.com/colinmichaels",
+      target: "_blank",
+      type: 'external',
+      title: "X",
+      class: "hover:text-white",
+      icon: faXTwitter,
+      tooltip: 'X: @colinmichaels',
+      tooltipClass: 'bg-white text-black'
+    },
+    {
+      link: "github.com/ColinMichaels",
+      target: "_blank",
+      type: 'external',
+      title: "GitHub",
+      class: "hover:text-white",
+      icon: faGithub,
+      tooltip: 'GitHub: @colinmichaels',
+      tooltipClass: 'text-black bg-white'
+    },
+    {
+      link: "instagram.com/captaincolinfpv",
+      target: "_blank",
+      type: 'external',
+      title: "Instagram",
+      class: "hover:text-pink-600",
+      icon: faInstagram,
+      tooltip: 'Instagram: @captaincolinfpv',
+      tooltipClass: 'bg-pink-600 text-black '
+    },
+    {
+      link: "linkedin.com/in/colinmichaels/",
+      target: "_blank",
+      type: 'external',
+      title: "LinkedIn",
+      class: "hover:text-blue-700",
+      icon: faLinkedin,
+      tooltip: null,
+      tooltipClass: 'bg-text-blue-700 text-black'
+    },
+    {
+      link: "/login",
+      type: 'internal',
+      target: "_self",
+      title: "game",
+      class: "group hover:text-green-600",
+      icon: faGamepad,
+      tooltip: "New", // Tooltip visible in the HTML for this link
+      tooltipClass: 'bg-green-600 text-black'
+    },
+  ];
+
+  protected encodeUrl(url: string,): string {
+    try {
+      return encodeURIComponent('https://' + url);
+    } catch (error) {
+      console.error("Error encoding URL:", error);
+      return url; // Return the original URL if encoding fails
+    }
+  }
 }
