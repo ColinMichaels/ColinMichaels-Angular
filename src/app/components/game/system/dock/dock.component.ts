@@ -3,12 +3,13 @@ import {CommonModule} from "@angular/common";
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCog, faTrashCan, faBell, faSquare} from '@fortawesome/free-solid-svg-icons';
+import {faCog, faTrashCan, faBell, faSquare, faRightFromBracket} from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
 import {TooltipDirective} from '../../directives/tooltip.directive';
 import {SvgService} from '../../services/svg.service';
 import {SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-dock',
@@ -67,7 +68,8 @@ export class DockComponent {
   constructor(
     private appManager: ApplicationManagerService,
     private notificationService: NotificationService,
-    private svg: SvgService
+    private svg: SvgService,
+    private router: Router
     ) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
@@ -82,7 +84,14 @@ export class DockComponent {
   }
 
   get staticApps() {
-    return this.svg.loadIcons([SvgIcons.Safari, SvgIcons.Notes, SvgIcons.Calendar, SvgIcons.Clock], 'system');
+    return this.svg.loadIcons([
+      SvgIcons.Safari,
+      SvgIcons.Notes,
+      SvgIcons.Calendar,
+      SvgIcons.Clock,
+      SvgIcons.Phone,
+      SvgIcons.Camera
+    ], 'system');
   }
 
   get availableApps() {
@@ -114,15 +123,29 @@ export class DockComponent {
   }
 
   trash(key: string) {
-    localStorage.removeItem(key);
+    this.router.navigate(['/']).then(() => {
+      localStorage.removeItem(key);
+    });
   }
 
   notify(){
     this.notificationService.generateRandomNotification();
   }
 
+  focusApp(id: string) {
+    this.appManager.setApplicationFocus(id);
+
+  }
+
+  logout() {
+    this.router.navigate(['/login']);
+  }
+
   protected readonly faCog = faCog;
   protected readonly faTrashCan = faTrashCan;
   protected readonly faBell = faBell;
   protected readonly faSquare = faSquare;
+  protected readonly faRightFromBracket = faRightFromBracket;
+
+
 }
