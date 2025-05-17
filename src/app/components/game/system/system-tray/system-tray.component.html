@@ -78,7 +78,9 @@
           (mouseleave)="isHoveringMenu.set(false)"
         >
           <ng-container *ngFor="let app of appManager.registeredApps">
-            <div *ngIf="app.installed" (click)="openApp(app.id)" class="p-1 truncate cursor-pointer">
+            <div *ngIf="app.installed" (click)="openApp(app.id)"
+                 [class.active]="app.running"
+                 class="p-1 menu-item truncate">
               {{ app.title }}
             </div>
           </ng-container>
@@ -103,38 +105,39 @@
 
 
     <div class="flex space-x-4 justify-items-end align-middle">
-      <section #memory class="relative text-[10px] text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
+      <section #memory class="relative text-[10px] flex-grow text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
         <fa-icon [icon]="faMemory"></fa-icon>
         : {{ inGbs(usedMemory) }} / {{ inGbs(totalMemory) }}
         <span class="text-[6px]">GB</span>
         <div
           *ngIf="menuOpen() === 'memory'"
-          class="menu-dropdown absolute top-full mt-1"
+          class="menu-dropdown absolute top-full"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
+          <div class="flex flex-col  justify-around w-full" (click)="openApp('finder')">
+            <div class="flex justify-between menu-item">
+              <span class="text-white/50">Finder</span>
+              <span class="text-[8px]">512 MB</span>
+            </div>
           <ng-container *ngFor="let app of runningApps">
-            <div class="flex items-center justify-between px-2 py-1 w-full">
-              <div>
-                <span class="text-white/50">Finder</span> |
-                <span class="text-[8px]">512 MB</span>
-              </div>
-              <div>
-                <span class="text-white/50">{{ app.title }}</span> |
+            <div class="menu-separator"></div>
+            <div class="flex justify-between menu-item" (click)="openApp(app.id)">
+                <span class="text-white/50 w-1/2 truncate">{{ app.title }}</span>
                 <span class="text-[8px]">{{ app.memory }} MB</span>
-              </div>
             </div>
           </ng-container>
+          </div>
 
         </div>
 
       </section>
 
-      <section class="flex space-x-2 self-center text-xs text-zinc-300">
+      <section class="flex self-center text-xs text-zinc-300">
         <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"></fa-icon>
       </section>
 
-      <section class="flex space-x-2 self-center">
+      <section class="flex self-center">
         <app-clock-display/>
       </section>
 
