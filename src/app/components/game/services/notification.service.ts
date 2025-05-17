@@ -89,7 +89,7 @@ export class NotificationService {
       timestamp: faker.date.past({years: 2, refDate: new Date()}),
       type: randomType,
       media: (Math.random() > 0.5) ? contentImage : contentIcon,
-      duration: faker.number.int({min: 5000, max: 12000})
+      duration: faker.number.int({min: 4000, max: 10000})
     });
   }
 
