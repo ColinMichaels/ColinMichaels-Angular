@@ -71,7 +71,7 @@ export class Transformer {
       <h5 class="font-bold mb-2">{{ this.contact['name'] }}</h5>
       <p class="text-sm text-white/90">
         <a [href]="'/#/' + this.contact['website']" class="text-green-600 hover:underline"
-           target="_blank">{{this.contact['website']}}
+           target="_self">{{ this.contact['website'] }}
         </a> |
         <a [href]="'mailto:' + this.contact['email']"  target="_blank" [appTooltip]="tooltips[3].message"
             [tooltipPosition]="'bottom'" [tooltipCssClass]="'bg-red-500/80 text-white'"
@@ -82,8 +82,8 @@ export class Transformer {
       <a
         [appTooltip]="tooltips[2].message"
         [href]="this.contact['link']"
-        target="_blank" download
-        class="mac-button animate hover:animate-ping">
+        target="_self" download
+        class="mac-button animate hover:bg-red-500 hover:animate-ping cursor-no-drop">
         Decode
       </a>
     </div>

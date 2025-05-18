@@ -1,8 +1,7 @@
 import {Injectable, Type} from '@angular/core';
 import {NotificationService} from './notification.service';
-import {IMediaItem, MediaItem} from './media.service';
+import {IMediaItem} from './media.service';
 import {
-  faBomb,
   faChartSimple,
   faCircleInfo, faCogs,
   faComputer,
@@ -41,7 +40,7 @@ export interface ApplicationInstance extends AppEntry {
   },
   running?: boolean;
   focused?: boolean;
-  args?: any;
+  params?: any;
   installed: boolean;
 }
 
@@ -68,7 +67,7 @@ export interface AppEntry {
   installed: boolean;
   running?: boolean;
   focused?: boolean;
-  args?: any;
+  params?: any;
 }
 
 export enum AppType {
@@ -78,19 +77,12 @@ export enum AppType {
 }
 
 export const WINDOW_WIDTH_MIN = 240;
-export const WINDOW_WIDTH_MAX = 480;
+export const WINDOW_WIDTH_MAX = 485;
 export const WINDOW_HEIGHT_MIN = 240;
-export const WINDOW_HEIGHT_MAX = 480;
+export const WINDOW_HEIGHT_MAX = 485;
 
-export const DEFAULT_WINDOW_SIZE = 512;
 export const DEFAULT_WINDOW_OFFSET_Y = 40;
 export const DEFAULT_WINDOW_OFFSET_X = 40;
-
-
-export enum AppState {
-  running = 'running',
-  closed = 'closed'
-}
 
 const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
 const INSTANCE_LIMIT_ERROR_TITLE = "System Error";
@@ -247,10 +239,6 @@ export class ApplicationManagerService {
       id: APP_ID.markdown_reader,
       title: '',
       component: MarkdownReaderComponent,
-      /**
-       * Todo: from register app we can pass arguments to the app when it renders for reusable components
-       * Todo: possbily pass s secondary component to render within that.
-       */
       installed: true,
       icon: {
         class: '',
@@ -259,10 +247,7 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.system,
-      /**
-       * Todo:  Add subtype or extend the type paramenter so we can do something like system desktop file or something.
-       *
-       */
+      params: {file: 'cipher.md'},
       instanceIndex: 0
     });
 
@@ -345,6 +330,8 @@ export class ApplicationManagerService {
   openApplication(id: string, args?: []): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
 
+    console.warn('args', args);
+
     const focusId = this.focusedAppId.getValue();
 
     if (focusId === id || app?.running) {
@@ -353,23 +340,7 @@ export class ApplicationManagerService {
     if (!app) return false;
 
     if (this.usedMemory + app.memory > this.maxMemory) {
-      this.notify.show({
-        message: "Cannot open terminal. Memory limit exceeded.",
-        title: "Memory Error",
-        media: new MediaItem({
-          title: 'error',
-          id: 'error',
-          content: {
-            type: 'icon',
-            data: {
-              name: "fa fa-thumbs-down text-base",
-              type: "fontawesome",
-              svgPath: faBomb
-            }
-          }
-        }),
-        type: "error"
-      });
+      this.showErrorNotification('Not enough memory to open application', 'System Error');
       return false;
     }
 
@@ -391,22 +362,24 @@ export class ApplicationManagerService {
 
     const curAppIndex = this.applications.value.length + 1;
 
-    const newTerminalId = isNewInstanceNeeded ? `${id}-${curAppIndex}` : id;
+    const newAppInstanceId = isNewInstanceNeeded ? `${id}-${curAppIndex}` : id;
 
 
     app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
     app.running = true;
 
-    this.applications.next([...this.applications.value,  this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY) ]);
+    this.applications.next([...this.applications.value, this.appFactory
+      .createInstance(newAppInstanceId, app, newOffsetX, newOffsetY)]);
 
 
     this.saveOpenApplications();
 
-    const focusSuccessful = this.setApplicationFocus(newTerminalId, newOffsetX, newOffsetY);
+    const focusSuccessful = this.setApplicationFocus(newAppInstanceId, newOffsetX, newOffsetY);
 
     if (!focusSuccessful) {
+      this.showErrorNotification(`Failed to set focus for app with id: ${newAppInstanceId}`, 'System Error');
       this.notify.show({
-        message: `Failed to set focus for terminal with id: ${newTerminalId}`,
+        message: `Failed to set focus for terminal with id: ${newAppInstanceId}`,
         title: "Terminal Error",
         type: "error",
         media: this.notifyTemplate,
@@ -448,10 +421,8 @@ export class ApplicationManagerService {
   closeApplication(id: string, args?: any): void {
     const application = this.getAppByID(id);
     if (!application) return;
-
     // Mark the application as no longer running
     application.running = false;
-
     // Decrement the instanceIndex for the parent AppEntry
     if (application.parent) {
       application.parent.instanceIndex = Math.max(0, application.parent.instanceIndex - 1);
@@ -490,7 +461,6 @@ export class ApplicationManagerService {
         application
       ]);
     }
-
     return true;
   }
 
@@ -508,5 +478,11 @@ export class ApplicationManagerService {
 
   closeAllApps() {
     this.applications.getValue().forEach(app => this.closeApplication(app.id));
+  }
+
+  getCurrentApp() {
+    // Get current focused app
+    const focusedAppId = this.getFocusedAppId();
+    return this.openApplications.find(app => app.id === focusedAppId);
   }
 }

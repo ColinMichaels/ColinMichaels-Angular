@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {debounceTime, Subject, throttleTime} from 'rxjs';
 import {MediaItem} from '../../game/services/media.service';
 import {faLaugh} from '@fortawesome/free-solid-svg-icons';
@@ -20,19 +20,17 @@ import {TooltipDirective} from '../../game/directives/tooltip.directive';
   ],
   styles: `
     .side-button {
-      @apply hover:bg-green-500 transform-gpu transition-colors
-      transition duration-300 hover:text-black
-      text-nowrap uppercase
-      border-l-0 border-r border-t  border-b
-      rounded-xl border-white/30 py-0.5 pl-2 w-full
-        -translate-x-4  hover:translate-x-2
-      ;
-    .icon{
-      @apply text-green-500 pr-2;
+      @apply
+      transition duration-500 ease-out
+      py-4 pl-2 w-full
+      -translate-x-8  hover:translate-x-0;
+
+      .icon {
+        @apply text-white/50 hover:text-emerald-500;
     }
     }`,
   template: `
-    <section class="flex flex-col space-y-4  py-2 px-2 rounded-lg">
+    <section class="flex flex-col  py-2 px-2 rounded-lg">
       <button class="side-button"
               [appTooltip]="'Enter the Matrix'"
               tooltipPosition="right"
@@ -144,7 +142,10 @@ export class JokeTrayComponent implements OnInit {
           classList: HOME_NOTIFY_CLASSES,
           media: icon,
           duration: 10 * 1000,
-        })
+        });
+        this.soundService.playVariant('drums',
+          {volume: 0.2, forceRestart: true, loop: false}
+        );
 
       }
     });
@@ -173,10 +174,9 @@ export class JokeTrayComponent implements OnInit {
             media: image,
             duration: 10 * 1000,
           }
-          this.soundService.playVariant('drums', {
-            volume: 0.3,
-            loop: false
-          });
+          this.soundService.playVariant('drums',
+            {volume: 0.2, forceRestart: true, loop: false}
+          );
           this.notificationService.show(notification);
         } else {
           this.notify('Error', 'No jokes today!');
