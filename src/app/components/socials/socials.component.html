@@ -1,20 +1,19 @@
-
-  <div class="flex flex-wrap justify-center space-x-8 items-center  text-gray-600">
-    <ng-container *ngFor="let link of links">
-     <div class="group hover:scale-[1.5] hover:-translate-y-4">
+<div class="flex flex-wrap justify-center space-x-8 items-center  text-gray-600">
+  <ng-container *ngFor="let link of links">
+    <div class="group hover:scale-[1.5] hover:-translate-y-4">
       <button
-         [routerLink]="(link.type === 'external') ? [path + encodeUrl(link.link)] : link.link"
-         [title]="link.title"
-         [class]="['group', link.class]"
-         [appTooltip]="link.tooltip ?? ''"
-         [tooltipHideDelay]="0"
-         [tooltipAutoDismiss]="0"
-         [tooltipCssClass]="[link.tooltipClass,'rounded-full text-sm p-1 mb-10'].join(' ')"
+        [routerLink]="(link.type === 'external') ? ['/external/' + encodeUrl(link.link)] : link.link"
+        [title]="link.title"
+        [class]="['group', link.class]"
+        [appTooltip]="link.tooltip"
+        [tooltipHideDelay]="0"
+        [tooltipAutoDismiss]="0"
+        [tooltipCssClass]="[link.tooltipClass,'rounded-full text-sm p-1 mb-2'].join(' ')"
       >
         <fa-icon [icon]="link.icon"></fa-icon>
       </button>
-     </div>
-    </ng-container>
-  </div>
+    </div>
+  </ng-container>
+</div>
 
 

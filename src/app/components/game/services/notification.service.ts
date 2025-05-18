@@ -12,9 +12,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 export interface INotification {
-  id: string;
   title: string;
   message: string;
+  id?: string;
   timestamp?: Date;
   media?: IMediaItem;
   classList?: string;

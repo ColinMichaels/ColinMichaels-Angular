@@ -77,10 +77,10 @@ export enum AppType {
   other = 'other'
 }
 
-export const WINDOW_WIDTH_MIN = 400;
-export const WINDOW_WIDTH_MAX = 600;
-export const WINDOW_HEIGHT_MIN = 300;
-export const WINDOW_HEIGHT_MAX = 500;
+export const WINDOW_WIDTH_MIN = 240;
+export const WINDOW_WIDTH_MAX = 480;
+export const WINDOW_HEIGHT_MIN = 240;
+export const WINDOW_HEIGHT_MAX = 480;
 
 export const DEFAULT_WINDOW_SIZE = 512;
 export const DEFAULT_WINDOW_OFFSET_Y = 40;
@@ -111,7 +111,7 @@ export enum APP_ID {
 
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
-  private applications: ApplicationInstance[] = [];
+  private applications: BehaviorSubject<ApplicationInstance[]> = new BehaviorSubject<ApplicationInstance[]>([]);
   private appRegistry: AppEntry[] = [];
   private maxMemory = 16 * 1024; // MB
   private focusedAppId = new BehaviorSubject<string | null>(null);
@@ -248,7 +248,7 @@ export class ApplicationManagerService {
       title: '',
       component: MarkdownReaderComponent,
       /**
-       * Todo: from register app we can pass arguments to the app when it renders for reuseable components
+       * Todo: from register app we can pass arguments to the app when it renders for reusable components
        * Todo: possbily pass s secondary component to render within that.
        */
       installed: true,
@@ -305,7 +305,7 @@ export class ApplicationManagerService {
   }
 
   get openApplications(): ApplicationInstance[] {
-    return this.applications;
+    return this.applications.getValue();
   }
 
   getRunningApps(type = 'app'): ApplicationInstance[] {
@@ -325,7 +325,7 @@ export class ApplicationManagerService {
   }
 
   get usedMemory(): number {
-    return this.applications.reduce((sum, t) => sum + t.memory, 16);
+    return this.applications.getValue().reduce((sum, t) => sum + t.memory, 16);
   }
 
   get registeredApps(): AppEntry[] {
@@ -373,7 +373,7 @@ export class ApplicationManagerService {
       return false;
     }
 
-    const lastApplication = this.applications[this.applications.length - 1];
+    const lastApplication = this.applications.value[this.applications.value.length - 1];
 
     const newOffsetX = lastApplication?.offsetX !== undefined
       ? lastApplication.offsetX + DEFAULT_WINDOW_OFFSET_X
@@ -387,9 +387,9 @@ export class ApplicationManagerService {
       return false;
     }
 
-    const isNewInstanceNeeded = !!this.applications.find(t => t.id === id);
+    const isNewInstanceNeeded = !!this.applications.value.find(t => t.id === id);
 
-    const curAppIndex = this.applications.length + 1;
+    const curAppIndex = this.applications.value.length + 1;
 
     const newTerminalId = isNewInstanceNeeded ? `${id}-${curAppIndex}` : id;
 
@@ -397,9 +397,8 @@ export class ApplicationManagerService {
     app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
     app.running = true;
 
-    this.applications.push(
-      this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY)
-    );
+    this.applications.next([...this.applications.value,  this.appFactory.createInstance(newTerminalId, app, newOffsetX, newOffsetY) ]);
+
 
     this.saveOpenApplications();
 
@@ -443,7 +442,7 @@ export class ApplicationManagerService {
 
 
   saveOpenApplications() {
-    localStorage.setItem('applications', JSON.stringify(this.applications));
+    localStorage.setItem('applications', JSON.stringify(this.applications.value));
   }
 
   closeApplication(id: string, args?: any): void {
@@ -462,14 +461,14 @@ export class ApplicationManagerService {
     application.instanceIndex = 0;
 
     // Remove the application from the active applications list
-    this.applications = this.applications.filter(app => app.id !== id);
+    this.applications.next(this.applications.getValue().filter(app => app.id !== id));
 
     // Save the state of opened applications
     this.saveOpenApplications();
   }
 
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
-    const application = this.applications.find(t => t.id === id);
+    const application = this.applications.value.find(t => t.id === id);
     if (id === 'desktop') {
       this.focusedAppId.next(id);
       return true;
@@ -483,20 +482,20 @@ export class ApplicationManagerService {
     application.offsetY = offsetY ?? 40;
 
     // Move application to top of stack without recreating it
-    const index = this.applications.findIndex(t => t.id === id);
+    const index = this.applications.value.findIndex(t => t.id === id);
     if (index !== -1) {
-      this.applications = [
-        ...this.applications.slice(0, index),
-        ...this.applications.slice(index + 1),
+      this.applications.next([
+        ...this.applications.value.slice(0, index),
+        ...this.applications.value.slice(index + 1),
         application
-      ];
+      ]);
     }
 
     return true;
   }
 
   getAppByID(id: string): ApplicationInstance | undefined {
-    return this.applications.find(t => t.id === id);
+    return this.applications.value.find(t => t.id === id);
   }
 
   getFocus$(): Observable<string | null> {
@@ -508,6 +507,6 @@ export class ApplicationManagerService {
   }
 
   closeAllApps() {
-    this.applications.forEach(app => this.closeApplication(app.id));
+    this.applications.getValue().forEach(app => this.closeApplication(app.id));
   }
 }

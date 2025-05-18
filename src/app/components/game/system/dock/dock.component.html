@@ -55,12 +55,6 @@
     <section class="flex flex-grow-0 space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
 
       <div class="dock-animation">
-        <fa-icon [icon]="faCog"
-                 (dblclick)="openApp('system-settings')" [tooltipShowArrow]="true" [appTooltip]="'System Settings'">
-        </fa-icon>
-      </div>
-
-      <div class="dock-animation">
         <fa-stack [size]="'xs'"
                   (click)="notify()" [tooltipShowArrow]="true"
                   [appTooltip]="'TEST Notifications'">

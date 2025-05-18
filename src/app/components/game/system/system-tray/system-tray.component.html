@@ -25,7 +25,7 @@
         >
           <div class="menu-item" (click)="openApp('about')">About This App</div>
           <hr class="menu-separator"/>
-          <div class="menu-item">System Settings</div>
+          <div class="menu-item" (click)="openApp('system-settings')">System Settings</div>
           <hr class="menu-separator"/>
           <div class="menu-item" [routerLink]="['/']">Log Out {{ userName }}</div>
         </div>
@@ -43,7 +43,7 @@
           (mouseleave)="isHoveringMenu.set(false)"
         >
           <div class="menu-item" (click)="openApp('finder')">New Window</div>
-          <div class="menu-item" [class.disabled]="windowsOpen()" (click)="closeAllApps()">Close All</div>
+          <div class="menu-item" [class.disabled]="false" (click)="closeAllApps()">Close All</div>
         </div>
       </section>
       <section class="relative">
