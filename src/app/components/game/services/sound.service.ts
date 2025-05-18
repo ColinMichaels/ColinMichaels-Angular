@@ -164,4 +164,14 @@ export class SoundService {
   getMute(): boolean {
     return this.isMuted;
   }
+
+  setVolume(fileName: string, volume: number) {
+    const path = this.basePath + fileName;
+    const audio = this.audioCache.get(path);
+    if (audio) {
+      // Convert volume from 0-100 range to 0-1 range
+      audio.volume = volume / 100;
+    }
+  }
+
 }

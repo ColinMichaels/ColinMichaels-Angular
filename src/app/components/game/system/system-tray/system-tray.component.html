@@ -7,6 +7,7 @@
   [class.translate-y-0]="isVisible()"
   (blur)="isVisible.set(false)"
   (mouseout)="isVisible.set(false)"
+  (mouseenter)="isHoveringMenu.set(true)"
   (mouseleave)="toggleMenu('')"
 >
   <div class="h-8 bg-zinc-900/50 text-white flex items-center justify-between pl-2 pr-4">
@@ -134,8 +135,12 @@
 
       </section>
 
+      <section>
+        <app-sound-player/>
+      </section>
+
       <section class="flex self-center text-xs text-zinc-300">
-        <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"></fa-icon>
+        <fa-icon [icon]="faBatteryHalf" [title]="batteryLevel + '%'"/>
       </section>
 
       <section class="flex self-center">
