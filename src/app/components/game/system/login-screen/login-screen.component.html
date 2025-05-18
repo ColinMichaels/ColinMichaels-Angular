@@ -16,15 +16,16 @@
       <div class="text-lg font-semibold">Welcome</div>
 
       <!-- Input -->
-      <form [formGroup]="form" (ngSubmit)="submit()" class="relative flex flex-row justify-center items-center text-xs">
+      <form [formGroup]="form" (ngSubmit)="submit($event)"
+            class="relative flex flex-row justify-center items-center text-xs">
         <input type="text"
                formControlName="username"
                placeholder="Enter username"
                class="text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <div>
           <button *ngIf="!form.get('username')?.invalid" type="submit"
-                  (keyup.enter)="submit()"
-                  (click)="submit()"
+                  (keyup.enter)="submit($event)"
+                  (click)="submit($event)"
                   class="absolute top-1 -right-8 w-6 h-6 rounded-full py-1 bg-white/10 text-white/50 hover:text-white/90 text transition font-semibold">
             <fa-icon [icon]="faChevronRight"></fa-icon>
           </button>

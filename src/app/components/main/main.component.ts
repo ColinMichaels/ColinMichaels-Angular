@@ -22,7 +22,7 @@ export class MainComponent implements OnInit{
 
   constructor(
     private notificationService: NotificationService,
-    private userService: UserService,
+    private userService: UserService
 
   ) {
     this.user = this.userService.user;
@@ -37,8 +37,5 @@ export class MainComponent implements OnInit{
       });
     }
   }
-
-
-
 
 }

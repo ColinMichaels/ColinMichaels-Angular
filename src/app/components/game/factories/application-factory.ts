@@ -29,6 +29,7 @@ export class ApplicationFactory {
       installed: app.installed,
       instanceIndex: app.instanceIndex,
       focused: app.focused ?? false,
+      params: app.params,
     };
   }
 }

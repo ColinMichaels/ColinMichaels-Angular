@@ -19,6 +19,7 @@
         [maxWidth]="WINDOW_WIDTH_MAX"
         [minHeight]="WINDOW_HEIGHT_MIN"
         [maxHeight]="WINDOW_WIDTH_MAX"
+        [params]="applicationInstance.params"
       ></app-window>
     </ng-container>
     <div class="absolute top-10 right-5 flex flex-col items-center space-y-2 pointer-events-auto">
@@ -39,11 +40,20 @@
       </div>
 
       <div class="flex flex-col items-center -space-y-1">
-        <fa-icon [icon]="faFile" class="text-white/90" (dblclick)="openApp('markdown-reader')"></fa-icon>
+        <fa-icon [icon]="faFile" class="text-white/90"
+                 (dblclick)="openApp('markdown-reader',{file: 'gameplay.doc.md'})"></fa-icon>
         <span class="text-white/90 text-[10px]">gameplay.doc.md</span>
       </div>
+
+      <div class="flex flex-col items-center -space-y-1">
+        <fa-icon [icon]="faFile" class="text-white/90"
+                 (dblclick)="openApp('markdown-reader',{filename: 'cifer.md'})"></fa-icon>
+        <span class="text-white/90 text-[10px] line-through">cifer.md</span>
+      </div>
+
 
     </div>
     <app-dock/>
   </div>
+
 </ng-container>

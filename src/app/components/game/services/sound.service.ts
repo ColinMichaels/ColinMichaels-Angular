@@ -84,6 +84,13 @@ export class SoundService {
     return pool[index];
   }
 
+  /* playStream(url: string, options: SoundOptions = {}) {
+     const audio = new Audio(url);
+     audio.play().catch(err => {
+       console.warn(`Audio play error for ${url}:`, err);
+     });
+   }*/
+
   play(fileName: string, options: SoundOptions = {}) {
     if (this.isMuted) return;
 
@@ -164,4 +171,22 @@ export class SoundService {
   getMute(): boolean {
     return this.isMuted;
   }
+
+  setVolume(fileName: string, volume: number) {
+    const path = this.basePath + fileName;
+    const audio = this.audioCache.get(path);
+    if (audio) {
+      // Convert volume from 0-100 range to 0-1 range
+      audio.volume = volume / 100;
+    }
+  }
+
+  /*  fadeOutVolume(fileName: string, volume: number, duration: number) {
+      const path = this.basePath + fileName;
+      const audio = this.audioCache.get(path);
+      if (audio) {
+
+      }
+    }*/
+
 }
