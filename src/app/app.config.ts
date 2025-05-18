@@ -3,7 +3,8 @@ import {provideRouter, withHashLocation} from '@angular/router';
 
 import { routes } from './app.routes';
 import {provideHttpClient} from '@angular/common/http';
-import {CLIPBOARD_OPTIONS, ClipboardButtonComponent, MARKED_OPTIONS, provideMarkdown} from 'ngx-markdown';
+import {provideMarkdown} from 'ngx-markdown';
+import {provideAnimations} from '@angular/platform-browser/animations';
 
 
 export const appConfig: ApplicationConfig = {
@@ -11,22 +12,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withHashLocation()),
-    provideMarkdown({
-        clipboardOptions: {
-          provide: CLIPBOARD_OPTIONS,
-          useValue: {
-            buttonComponent: ClipboardButtonComponent,
-          },
-        },
-      markedOptions: {
-        provide: MARKED_OPTIONS,
-        useValue: {
-          gfm: true,
-          breaks: true,
-          pedantic: false,
-        },
-      },
-      }
-    )
+    provideMarkdown(),
+    provideAnimations()
   ]
 };

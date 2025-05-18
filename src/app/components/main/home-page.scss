@@ -1,0 +1,31 @@
+.resume-section {
+  @apply w-full   py-12 odd:bg-black/30 px-2 sm:px-16 lg:px-32;
+
+  .resume-experience{
+    @apply text-left text-sm;
+
+    h3{
+      @apply text-sm text-white/90 hover:scale-[1.1] transition-transform;
+    }
+    p.r-loc-date{
+      @apply text-[12px] italic text-gray-500 leading-none mb-2;
+    }
+    ul{
+      @apply text-[12px] list-disc list-inside;
+      li{
+        @apply text-white/90 list-item;
+      }
+    }
+  }
+}
+
+
+.animate-blink {
+  animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}

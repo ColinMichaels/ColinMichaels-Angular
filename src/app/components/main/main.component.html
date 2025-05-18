@@ -1,28 +1,35 @@
-<header class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
-  <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold">
-    Colin Michaels
-  </h1>
-  <h2 class="text-lg sm:text-xl md:text-2xl text-gray-400">Full Stack Developer</h2>
-</header>
-<main class="mx-auto px-4 sm:px-6 lg:px-6 py-6 text-center">
-  <div class="w-full sm:w-4/5 md:w-2/3 mx-auto my-8
-  text-base sm:text-lg md:text-xl leading-relaxed text-gray-300"  [ngClass]="{'hidden': isResume}">
-    <p>
-      I am a multi-faceted <a href="https://en.wikipedia.org/wiki/Web_application_development" rel="nofollow"
-                              target="_blank" class="hover:underline" title="Application Developer">application developer</a> with
-      degrees in both Computer Science and Information Technology as well as a degree in Audio Engineering.
-      Over the last twenty years, I have worked in many creative capacities including application development,
-      server administration, the music and entertainment industry, and audio/video mixing.
-      I've won three Grammy awards for my engineering work and have created successful projects for clients and employers.
-    </p>
-  </div>
-  <button class="hover:underline" (click)="toggleResume()">{{ isResume ? 'Hide' :  'Show' }} Resume</button>
-  <section [ngClass]="{'hidden': !isResume}" class="animated animate-fadeIn">
-      <app-resume></app-resume>
+<app-main-header></app-main-header>
+<app-main-sub-header></app-main-sub-header>
+
+<main class="mx-auto text-center overflow-hidden bg-zinc-800/70 border-t
+border-white/20 shadow-inner shadow-black/50">
+
+  <div class="max-h-[480px] md:max-h-[640] overflow-y-auto py-12 no-scrollbar">
+  <section #terminal class="px-4 sm:px-24 lg:px-36 mb-12">
+    <ng-container>
+      <app-window-header [title]="'About'"></app-window-header>
+    </ng-container>
+    <div class="bg-black text-green-500 shadow-xl shadow-black/20
+    rounded-b-xl p-6 text-left text-xs font-mono">
+      <p class="mb-4">More about me......</p>
+      <p>Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
+        pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my
+        projects.</p>
+
+      <p>I believe in continuous learning and am always exploring new technologies and methodologies to refine my
+        craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each project
+        with enthusiasm and a commitment to excellence.
+      </p>
+      <p class="mt-4">colin&#64;colinmichaels.com ~<span class="animate-blink">%</span></p>
+    </div>
   </section>
-
+    <app-resume/>
+  </div>
+  <div class="absolute bottom-1/4 left-0">
+    <app-joke-tray/>
+  </div>
 </main>
-
 <footer>
-  <app-socials></app-socials>
+  <app-socials/>
 </footer>
+

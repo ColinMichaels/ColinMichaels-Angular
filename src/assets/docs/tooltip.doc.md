@@ -32,9 +32,9 @@ The tooltip component provides various configurable inputs for easy customizatio
    ```
   - **Details:** Sets the tooltip's size. Options are 'small', 'medium' (default), or 'large', per the TooltipSize enum.
 
-5. **hostEl**:
+5. **hostElement**:
    ```typescript
-   @Input() hostEl!: HTMLElement;
+   @Input() hostElement!: HTMLElement;
    ```
   - **Details:** References the host element for proper tooltip positioning.
 
