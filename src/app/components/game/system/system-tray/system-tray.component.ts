@@ -10,19 +10,20 @@ import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
 import {UserService} from '../../services/user.service';
 import {FileSystemService, VIEW_MODES} from '../../services/file-system.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {SoundPlayerComponent} from '../sound-player/sound-player.component';
 
 
 @Component({
   selector: 'app-system-tray',
   standalone: true,
-  templateUrl: './system-tray.component.html',
   imports: [
     NgIf,
     NgForOf,
     ClockDisplayComponent,
     FontAwesomeModule,
     RouterLink,
-    NgClass
+    NgClass,
+    SoundPlayerComponent
   ],
   styles: `
     /* system-tray.component.scss */
@@ -40,17 +41,17 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
     }
     .menu-separator {
       @apply my-1 border-t border-white/20;
-    }`
+    }`,
+  templateUrl: './system-tray.component.html'
 })
 export class SystemTrayComponent {
   isVisible = signal(false);
   cursorY = signal(1000);
-  hoverThreshold = 30;
-  autoHide = signal(false);
+  hoverThreshold = 20;
+  autoHide = signal(true);
   isHoveringMenu = signal(false);
   menuOpen = signal('');
   viewMode = signal(VIEW_MODES.list)
-  appsOpen = signal(0);
 
   batteryLevel: string = '66';
 
@@ -66,7 +67,7 @@ export class SystemTrayComponent {
         this.isVisible.set(true);
       } else {
         if(this.autoHide()){
-          this.isVisible.set(false);
+          this.isVisible.set(true);
           this.menuOpen.set('');
         }
       }

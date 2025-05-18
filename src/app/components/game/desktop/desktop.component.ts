@@ -23,6 +23,7 @@ import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
 import {TooltipDirective} from '../directives/tooltip.directive';
+import {SoundPlayerComponent} from '../system/sound-player/sound-player.component';
 
 @Component({
   selector: 'app-desktop',
@@ -38,6 +39,7 @@ import {TooltipDirective} from '../directives/tooltip.directive';
     FaStackComponent,
     FaStackItemSizeDirective,
     TooltipDirective,
+    SoundPlayerComponent,
   ],
   templateUrl: './desktop.component.html',
   styles: ``

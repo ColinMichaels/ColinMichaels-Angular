@@ -1,5 +1,9 @@
 .resume-section {
-  @apply w-full   py-12 odd:bg-black/30 px-2 sm:px-16 lg:px-32;
+  @apply w-full   py-12 odd:bg-black/30 px-2 sm:px-16 lg:px-32
+    duration-700 ease-in-out
+    shadow-black/80
+    hover:shadow-2xl
+  hover:scale-[1.1] transition-transform;
 
   .resume-experience{
     @apply text-left text-sm;
