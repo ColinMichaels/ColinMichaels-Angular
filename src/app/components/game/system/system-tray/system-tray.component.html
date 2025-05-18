@@ -78,7 +78,8 @@
           (mouseleave)="isHoveringMenu.set(false)"
         >
           <ng-container *ngFor="let app of appManager.registeredApps">
-            <div *ngIf="app.installed" (click)="openApp(app.id)"
+            <div *ngIf="app.installed"
+                 (click)="app.running ? closeApp(app.id) : openApp(app.id)"
                  [class.active]="app.running"
                  class="p-1 menu-item truncate">
               {{ app.title }}

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faApple, faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {NgForOf} from '@angular/common';
-import {TooltipDirective} from '../game/directives/tooltip.directive';
+import {TooltipDirective} from '../../game/directives/tooltip.directive';
 import {RouterLink} from '@angular/router';
 
 @Component({
