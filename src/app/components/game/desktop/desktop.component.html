@@ -1,42 +1,49 @@
-<app-notification-server/>
-<div class="min-h-screen w-full gradient-desktop-bg overflow-hidden pointer-events-auto"
-     (contextmenu)="onRightClick($event)"
-     (dblclick)="clickedOnDesktop($event)">
-  <app-system-tray />
-  <app-level-loader
-    (loaded)="onLevelLoaded($event)"
-    (failed)="onLevelLoadFailed($event)"
-  ></app-level-loader>
-  <ng-container *ngFor="let term of appManager.openApplications">
-    <app-window
-      [id]="term.id"
-      [title]="term.title"
-      [embeddedComponent]="term.component"
-      [autoFit]="term.autofit"
-    ></app-window>
-  </ng-container>
-  <div class="absolute top-10 right-5 flex flex-col items-center space-y-2">
+<ng-container>
+  <div class="min-h-screen relative z-0 w-full bg-cover bg-center overflow-hidden pointer-events-auto"
+       [style]="`background-image: url(${backgroundImage})`"
+       (contextmenu)="onRightClick($event)"
+       (click)="onClickWindow($event)"
+       (dblclick)="onDoubleClicked($event)">
+    <app-system-tray/>
+    <app-level-loader
+      (loaded)="onLevelLoaded($event)"
+      (failed)="onLevelLoadFailed($event)"
+    ></app-level-loader>
+    <ng-container *ngFor="let applicationInstance of appManager.openApplications">
+      <app-window
+        [id]="applicationInstance.id"
+        [title]="applicationInstance.title"
+        [embeddedComponent]="applicationInstance.component"
+        [autoFit]="applicationInstance.autofit"
+        [minWidth]="WINDOW_WIDTH_MIN"
+        [maxWidth]="WINDOW_WIDTH_MAX"
+        [minHeight]="WINDOW_HEIGHT_MIN"
+        [maxHeight]="WINDOW_WIDTH_MAX"
+      ></app-window>
+    </ng-container>
+    <div class="absolute top-10 right-5 flex flex-col items-center space-y-2 pointer-events-auto">
 
-    <div class="flex flex-col items-center -space-y-1">
-      <fa-icon [icon]="faServer" class="text-zinc-500/90" (click)="openApp('finder')"></fa-icon>
-      <span class="text-white/90 text-[10px]">Colin HD</span>
-    </div>
-
-    <div class="flex flex-col items-center -space-y-1">
-      <div [appTooltip]="'Tooltip Examples- Click to Open'" [tooltipPosition]="'left'">
-        <fa-stack [size]="'xs'" class="text-white/90" (click)="openApp('tooltip-example')">
-          <fa-icon [icon]="faCircle" [stackItemSize]="'2x'" class="text-blue-800/90"></fa-icon>
-          <fa-icon [icon]="faInfo" [stackItemSize]="'1x'" [inverse]="true" class="text-white/90"></fa-icon>
-        </fa-stack>
+      <div class="flex flex-col items-center -space-y-1">
+        <fa-icon [icon]="faServer" class="text-zinc-500/90" (dblclick)="openApp('finder')"></fa-icon>
+        <span class="text-white/90 text-[10px]">Colin HD</span>
       </div>
-      <span class="text-white/90 text-[10px]">Tooltip Examples</span>
-    </div>
 
-    <div class="flex flex-col items-center -space-y-1">
-      <fa-icon [icon]="faFile" class="text-white/90" (click)="openApp('markdown-reader')"></fa-icon>
-      <span class="text-white/90 text-[10px]">gameplay.doc.md</span>
-    </div>
+      <div class="flex flex-col items-center -space-y-1">
+        <div [appTooltip]="'Tooltip Examples'" [tooltipPosition]="'left'">
+          <fa-stack [size]="'xs'" class="text-white/90" (dblclick)="openApp('tooltip-example')">
+            <fa-icon [icon]="faCircle" [stackItemSize]="'2x'" class="text-blue-800/90"></fa-icon>
+            <fa-icon [icon]="faInfo" [stackItemSize]="'1x'" [inverse]="true" class="text-white/90"></fa-icon>
+          </fa-stack>
+        </div>
+        <span class="text-white/90 text-[10px]">tooltips-example.app</span>
+      </div>
 
+      <div class="flex flex-col items-center -space-y-1">
+        <fa-icon [icon]="faFile" class="text-white/90" (dblclick)="openApp('markdown-reader')"></fa-icon>
+        <span class="text-white/90 text-[10px]">gameplay.doc.md</span>
+      </div>
+
+    </div>
+    <app-dock/>
   </div>
-  <app-dock/>
-</div>
+</ng-container>

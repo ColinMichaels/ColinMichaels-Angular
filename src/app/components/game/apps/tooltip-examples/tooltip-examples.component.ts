@@ -55,15 +55,14 @@ export class TooltipExamplesComponent implements OnInit{
   showDocs: any;
   docs = `tooltip.doc.md`;
 
-  defaultTooltips: TooltipOptions[] =[];
-  customTooltips: TooltipOptions[] = [];
-  customTooltips2: TooltipOptions[] = [];
-  allTooltips: TooltipExampleSet[] = [];
+  defaultTooltips: Partial<TooltipOptions>[] = [];
+  customTooltips: Partial<TooltipOptions>[] = [];
+  customTooltips2: Partial<TooltipOptions>[] = [];
+  allTooltips: any[]= [];
 
   constructor(private notify: NotificationService, private tailwindGenerator: TailwindClassGeneratorService) {
   }
   ngOnInit() {
-    console.log('Tailwind classes ready:', this.randomTailwindColorClasses);
 
     this.registerTooltips();
   }
@@ -188,9 +187,8 @@ export class TooltipExamplesComponent implements OnInit{
   }
 
   get randomTailwindColorClasses () {
-    // Fetch the tailwind classes, or fallback to default values
+    // Fetch the tailwind classes or fallback to default values
     const tailwindClasses = this.tailwindGenerator?.randomTailwindColorClasses || 'text-default bg-default';
-    console.warn('tailwindClasses', tailwindClasses);
     return tailwindClasses;
   }
 

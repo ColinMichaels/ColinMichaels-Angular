@@ -61,7 +61,7 @@ export class MediaItem implements IMediaItem {
 type MediaType = 'video' | 'audio' | 'document';
 
 interface MediaContent {
-  type: 'image' | 'icon';
+  type: 'image' | 'icon' | 'svg' | 'custom';
   data: string | IconDefinition;
   alt?: string;
 }
@@ -80,7 +80,7 @@ export interface IMediaItem {
   title: string;
   description?: string;
   content?: {
-    type: 'image' | 'icon';
+    type: 'image' | 'icon' | 'svg' | 'custom';
     data: string | IconDefinition; // URL for images, IconDefinition for icons
     alt?: string;
   };

@@ -1,12 +1,8 @@
-$font-size: 0.75rem;
+$font-size: 10px;
 .cli-container {
-  background: #000;
-  color: #0f0;
-  font-family: 'Courier New', monospace;
-  padding: 10px;
-
+  @apply bg-black flex flex-col w-full h-full min-h-full text-green-500 p-2 overflow-y-auto;
   .cli-output {
-    white-space: pre-wrap;
+    @apply whitespace-pre;
     pre{
       width: 100%;
       text-wrap: wrap;
@@ -16,17 +12,11 @@ $font-size: 0.75rem;
   }
 
   .cli-input {
-    display: flex;
-    align-items: center;
-    margin-right: 4px;
+    @apply flex items-center mr-1;
     font-size: $font-size !important;
     input {
-      background: transparent;
-      border: none;
-      color: #0f0;
-      flex: 1;
+      @apply bg-transparent border-none text-green-500 outline-none py-1 px-2 w-full;
       font-size: $font-size !important;
-      outline: none;
     }
   }
 }

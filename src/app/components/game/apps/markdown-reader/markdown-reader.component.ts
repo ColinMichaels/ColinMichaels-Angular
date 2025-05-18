@@ -4,12 +4,17 @@ import {MarkdownComponent} from 'ngx-markdown';
 @Component({
   selector: 'app-markdown-reader',
   imports: [MarkdownComponent],
-  templateUrl: './markdown-reader.component.html',
   styles: [
     `.markdown-body {
-      @apply prose text-xs leading-5 max-w-4xl mx-auto;
+      @apply prose text-xs leading-5  mx-auto;
     }`,
   ],
+  template: `
+    <section class="bg-white">
+      <article class="markdown-body">
+        <markdown [src]="document"></markdown>
+      </article>
+    </section>`
 })
 export class MarkdownReaderComponent {
   docsPath = 'assets/docs/';
@@ -29,6 +34,5 @@ export class MarkdownReaderComponent {
 
   constructor() {
     this.document = this.docsPath + this._filename;
-    console.warn('MarkdownReaderComponent initialized', this.document, this.filename);
   }
 }

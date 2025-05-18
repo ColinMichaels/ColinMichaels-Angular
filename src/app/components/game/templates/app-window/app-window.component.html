@@ -1,15 +1,16 @@
 <!-- app-window.component.html -->
-<div *ngIf="isVisible && !isMinimized" #appWindow
-     (mousedown)="bringToFront()"
+<div tabindex="0" *ngIf="isVisible && !isMinimized" #appWindow
+     (mousedown)="bringToFront($event)"
      class="app-window fixed flex flex-col max-w-full rounded-lg border border-white/10 shadow-lg overflow-hidden"
-     [class.window-unfocused]="!isFocused"
+     [class.window-unfocused]="!focused"
      [ngClass]="[
        autoFit ? 'w-fit' : defaultWidth,
        autoFit ? '' : defaultHeight
      ]">
   <!-- Title Bar -->
   <div #header
-       class="app-window-header flex items-center justify-between px-3 py-1  rounded-t-lg cursor-move select-none">
+       (dblclick)="resetWindowSize()"
+       class="app-window-header relative flex items-center justify-between px-3 py-1  rounded-t-lg cursor-move select-none pointer-events-auto">
     <div class="flex space-x-1 text-zinc-700 cursor-pointer text-[6px]" (mouseenter)="showSizeIcons = !showSizeIcons"
          (mouseleave)="showSizeIcons = false">
       <fa-stack (click)="closeApp()">
@@ -27,14 +28,18 @@
         <fa-icon [icon]="faUpRightAndDownLeftFromCenter" stackItemSize="1x" [class.hidden]="!showSizeIcons"></fa-icon>
       </fa-stack>
     </div>
-    <div class="title text-xs text-white/90 font-medium truncate" [class.title-unfocused]="!isFocused">{{ title }}</div>
+    <div class="title text-xs text-white/90 font-medium truncate"
+         *ngIf="!autoFit"
+         [class.hidden]="isCollapsed || autoFit"
+         [class.title-unfocused]="!focused">{{ title }}
+    </div>
     <div class="w-12"></div>
   </div>
 
   <!-- Window Content Area -->
-  <div [class.h-0]="isCollapsed" [class.h-[400px]]="!isCollapsed" [class.window-unfocused]="!isFocused"
-       class="overflow-hidden">
-    <ng-container #appWindowContent></ng-container>
+  <div [class.hidden]="isCollapsed" [class.h-full]="!isCollapsed" [class.window-unfocused]="!focused"
+       class="overflow-hidden max-h-screen">
+    <ng-container #appWindowContent ></ng-container>
   </div>
 
   <!-- Resize Handle -->

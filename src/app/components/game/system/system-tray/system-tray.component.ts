@@ -50,11 +50,8 @@ export class SystemTrayComponent {
   isHoveringMenu = signal(false);
   menuOpen = signal('');
   viewMode = signal(VIEW_MODES.list)
-  windowsOpen = computed(() => {
-    const runningApps = this.appManager.openApplications.length;
-    console.warn('running apps: ', runningApps);
-    return runningApps > 0;
-  })
+  appsOpen = signal(0);
+
   batteryLevel: string = '66';
 
   constructor(
@@ -65,6 +62,7 @@ export class SystemTrayComponent {
     ) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
+        if(this.appManager.getFocusedAppId() !== 'desktop') return;
         this.isVisible.set(true);
       } else {
         if(this.autoHide()){
@@ -109,10 +107,6 @@ export class SystemTrayComponent {
     return this.appManager.openApplications;
   }
 
-  closeApp(id: string) {
-    this.appManager.closeApplication(id);
-  }
-
   openApp(id: string){
     this.appManager.openApplication(id );
   }
@@ -121,13 +115,16 @@ export class SystemTrayComponent {
     return this.userService.user.name;
   }
 
-  protected readonly faApple = faApple;
-  protected readonly faMemory = faMemory;
-  protected readonly faBatteryHalf = faBatteryHalf;
-
   closeAllApps() {
     this.appManager.closeAllApps()
   }
 
+  closeApp(id: string) {
+    this.appManager.closeApplication(id);
+  }
+
+  protected readonly faApple = faApple;
+  protected readonly faMemory = faMemory;
+  protected readonly faBatteryHalf = faBatteryHalf;
   protected readonly VIEW_MODES = VIEW_MODES;
 }

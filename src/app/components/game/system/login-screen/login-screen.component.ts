@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {UserService} from '../../services/user.service';
+import {User, UserService} from '../../services/user.service';
 import {NgIf} from '@angular/common';
 import {
   faChevronRight,
@@ -11,7 +11,8 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
-import {Router} from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
+import {SoundService} from '../../services/sound.service';
 
 @Component({
   selector: 'app-login-screen',
@@ -20,17 +21,20 @@ import {Router} from '@angular/router';
     NgIf,
     FaIconComponent,
     FaStackComponent,
-    FaStackItemSizeDirective
+    FaStackItemSizeDirective,
+    RouterLink
   ],
   templateUrl: './login-screen.component.html'
 })
-export class LoginScreenComponent {
+export class LoginScreenComponent implements OnInit {
   form: FormGroup;
-  backgroundImage = 'https://picsum.photos/500/500';
+  user = {} as User;
+  backgroundImage = 'assets/images/backgrounds/night.webp';
 
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
+    private soundService: SoundService,
     private router: Router
   ) {
     this.form = this.fb.group({
@@ -39,11 +43,19 @@ export class LoginScreenComponent {
     });
   }
 
+  ngOnInit() {
+    this.user = this.userService.user;
+    if (this.user) {
+      this.form.patchValue({username: this.user.name});
+    }
+  }
+
   submit() {
     if (this.form.valid) {
-      const username = this.form.value.username;
-      this.userService.updateUser({name: username});
-      this.router.navigate(['/colinos']);
+      this.router.navigate(['/colinos']).then( () =>{
+        const username = this.form.value.username;
+        this.userService.updateUser({name: username});
+      });
     }
   }
 
@@ -53,4 +65,15 @@ export class LoginScreenComponent {
   protected readonly faUser = faUser;
   protected readonly faChevronRight = faChevronRight;
   protected readonly faMoon = faMoon;
+
+  restart() {
+    this.router.navigate(['/boot']).then( () =>{
+      this.soundService.play('startup.mp3', {volume: 0.5, forceRestart: true});
+    });
+
+  }
+
+  sleep() {
+
+  }
 }

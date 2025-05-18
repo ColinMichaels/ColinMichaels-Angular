@@ -1,7 +1,7 @@
-<form [formGroup]="form" (ngSubmit)="onSave()" class="w-full h-full max-w-2xl mx-auto text-xs
+<form [formGroup]="form" (ngSubmit)="onSave()" class="w-full h-full max-w-4xl mx-auto text-xs
  bg-white dark:bg-zinc-800 p-6 space-y-4 pointer-events-auto flex flex-col overflow-y-auto">
 
-  <h2 class="font-semibold text-zinc-800 dark:text-zinc-100"><fa-icon [icon]="faUserInjured" [fixedWidth]="true"></fa-icon> Player Configurator</h2>
+  <h2 class="font-semibold text-zinc-800 dark:text-white/90"><fa-icon [icon]="faUserInjured" [fixedWidth]="true"></fa-icon> Player Configurator</h2>
 
   <!-- Basic Info -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -25,7 +25,7 @@
 
   <!-- Preferences -->
   <div formGroupName="settings">
-    <h3 class="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mt-2">Preferences</h3>
+    <h3 class="text-lg font-semibold text-zinc-700 dark:text-white/80 mt-2">Preferences</h3>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
       <div>
         <label class="block text-xs text-zinc-600 dark:text-zinc-300">Sound Volume</label>
@@ -48,7 +48,7 @@
 
   <!-- Stats -->
   <div formGroupName="stats">
-    <h3 class="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mt-2">Skill Stats</h3>
+    <h3 class="text-lg font-semibold text-zinc-700 dark:text-white/80 mt-2">Skill Stats</h3>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
       <div>
         <label class="block text-xs text-zinc-600 dark:text-zinc-300">Speed</label>

@@ -4,7 +4,6 @@ import {NgSwitch, NgSwitchCase} from '@angular/common';
 
 @Component({
   selector: 'app-finder-window',
-  templateUrl: './finder-window.component.html',
   styles: `.finder-window {
     @apply bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-lg rounded-md;
     display: flex;
@@ -20,14 +19,28 @@ import {NgSwitch, NgSwitchCase} from '@angular/common';
   }
 
   .finder-content {
-    @apply flex-1 overflow-auto px-2 py-0.5;
+    @apply flex-1 overflow-auto px-2 py-0.5 w-full h-full;
   }
   `,
   standalone: true,
   imports: [
     NgSwitch,
     NgSwitchCase
-  ]
+  ],
+  template: `
+    <div class="finder-content">
+      <ng-container [ngSwitch]="viewMode">
+        <div *ngSwitchCase="'list'">
+          <ng-content select="[list-view]"></ng-content>
+        </div>
+        <div *ngSwitchCase="'grid'">
+          <ng-content select="[grid-view]"></ng-content>
+        </div>
+        <div *ngSwitchCase="'columns'">
+          <ng-content select="[columns-view]"></ng-content>
+        </div>
+      </ng-container>
+    </div>`
 })
 export class FinderWindowComponent {
   @Input() title = 'Finder';
