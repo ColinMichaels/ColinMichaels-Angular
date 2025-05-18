@@ -185,7 +185,7 @@ export class DesktopComponent implements OnInit {
       type: 'warning',
       media: new MediaItem({
         id: '',
-        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        title: 'New Version',
         content: {
           type: 'icon',
           data: {
@@ -203,7 +203,7 @@ export class DesktopComponent implements OnInit {
       type: 'info',
       media: new MediaItem({
         id: '',
-        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        title: 'New Version',
         content: {
           type: 'icon',
           data: {
@@ -221,7 +221,7 @@ export class DesktopComponent implements OnInit {
       type: 'info',
       media: new MediaItem({
         id: '',
-        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        title: 'New Version',
         content: {
           type: 'icon',
           data: {
@@ -239,7 +239,7 @@ export class DesktopComponent implements OnInit {
       type: 'info',
       media: new MediaItem({
         id: '',
-        title: 'New Version', // todo wire in the media display compoment to show all types of media.
+        title: 'New Version',
         content: {
           type: 'icon',
           data: {

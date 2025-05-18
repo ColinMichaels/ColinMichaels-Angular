@@ -1,10 +1,10 @@
 <app-main-header></app-main-header>
 <app-main-sub-header></app-main-sub-header>
 
-<main class="mx-auto px-2 sm:px-16 lg:px-32 text-center overflow-hidden bg-zinc-800/70 border-t
+<main class="mx-auto text-center overflow-hidden bg-zinc-800/70 border-t
 border-white/20 shadow-inner shadow-black/50">
 
-  <div class="max-h-[450px] overflow-y-auto py-12 no-scrollbar">
+  <div class="max-h-[480px] md:max-h-[640] overflow-y-auto py-12 no-scrollbar">
   <section #terminal class="px-4 sm:px-24 lg:px-36 mb-12">
     <ng-container>
       <app-window-header [title]="'About'"></app-window-header>
@@ -20,28 +20,16 @@ border-white/20 shadow-inner shadow-black/50">
         craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each project
         with enthusiasm and a commitment to excellence.
       </p>
-      <p class="mt-4">colin&#64;colinmichaels.com ~<span (click)="handleRandomNotifyClick($event)" class="animate-blink">%</span></p>
+      <p class="mt-4">colin&#64;colinmichaels.com ~<span class="animate-blink">%</span></p>
     </div>
   </section>
-    <app-resume></app-resume>
+    <app-resume/>
+  </div>
+  <div class="absolute bottom-1/4 left-0">
+    <app-joke-tray/>
   </div>
 </main>
-
-  <section class="flex justify-around items-center space-x-4 px-2 sm:px-16 lg:px-40 py-6 bg-black/50">
-    <button class="home-button" (click)="handleRandomNotifyClick($event)">
-      Enter Matrix
-    </button>
-    <button class="home-button" routerLink="/external/https://colinmichaels.com/404">
-      404
-    </button>
-    <button class="home-button" (click)="handleJokeClick($event, 'dad')">
-      Ask Dad
-    </button>
-    <button class="home-button" (click)="handleJokeClick($event, 'chuck')">
-      Ask Chuck
-    </button>
-  </section>
-
 <footer>
-  <app-socials></app-socials>
+  <app-socials/>
 </footer>
+

@@ -107,10 +107,6 @@ export class SystemTrayComponent {
     return this.appManager.openApplications;
   }
 
-  closeApp(id: string) {
-    this.appManager.closeApplication(id);
-  }
-
   openApp(id: string){
     this.appManager.openApplication(id );
   }
@@ -119,13 +115,16 @@ export class SystemTrayComponent {
     return this.userService.user.name;
   }
 
-  protected readonly faApple = faApple;
-  protected readonly faMemory = faMemory;
-  protected readonly faBatteryHalf = faBatteryHalf;
-
   closeAllApps() {
     this.appManager.closeAllApps()
   }
 
+  closeApp(id: string) {
+    this.appManager.closeApplication(id);
+  }
+
+  protected readonly faApple = faApple;
+  protected readonly faMemory = faMemory;
+  protected readonly faBatteryHalf = faBatteryHalf;
   protected readonly VIEW_MODES = VIEW_MODES;
 }
