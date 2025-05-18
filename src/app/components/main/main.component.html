@@ -1,49 +1,46 @@
-<header class="container mx-auto px-2 sm:px-4 lg:px-6 pt-6 text-center">
-  <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
-    Colin Michaels
-  </h1>
-  <h2 class="text-lg sm:text-xl md:text-2xl text-green-600 font-mono"><a
-    href="https://en.wikipedia.org/wiki/Web_application_development" rel="nofollow" target="_blank"
-    class="hover:underline" title="Application Developer">App Developer</a></h2>
-</header>
-<main class="mx-auto px-4 sm:px-6 lg:px-6 py-4 text-center">
-  <div class="w-full sm:w-4/5 xs:px-4 md:w-2/3 mx-auto my-8
-  text-base sm:text-lg md:text-xl leading-relaxed  space-y-4" [ngClass]="{'hidden': isResume}">
-    <h3 class="text-pretty">Thriving at the intersection of technology and creativity.</h3>
-    <p class="text-sm text-white/60">With a strong foundation in software development, Specialize in crafting innovative
-      solutions that not only meet functional requirements but also deliver engaging user experiences.</p>
+<app-main-header></app-main-header>
+<app-main-sub-header></app-main-sub-header>
 
-    <div class="py-12">
-      <ng-container>
-        <app-window-header [title]="'About'"></app-window-header>
-      </ng-container>
-      <div class="bg-black text-green-500 shadow-xl shadow-black/20
-    rounded-b-xl p-4 text-left text-xs font-mono">
-        <p class="mb-4">More about me......</p>
-        <p>Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
-          pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my
-          projects.</p>
+<main class="mx-auto px-2 sm:px-16 lg:px-32 text-center overflow-hidden bg-zinc-800/70 border-t
+border-white/20 shadow-inner shadow-black/50">
 
-        <p>I believe in continuous learning and am always exploring new technologies and methodologies to refine my
-          craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each project
-          with enthusiasm and a commitment to excellence.
-        </p>
-        <p class="mt-4">colin&#64;colinmichaels.com ~<span (click)="notifyRandom()" class="animate-blink">%</span></p>
-      </div>
+  <div class="max-h-[450px] overflow-y-auto py-12 no-scrollbar">
+  <section #terminal class="px-4 sm:px-24 lg:px-36 mb-12">
+    <ng-container>
+      <app-window-header [title]="'About'"></app-window-header>
+    </ng-container>
+    <div class="bg-black text-green-500 shadow-xl shadow-black/20
+    rounded-b-xl p-6 text-left text-xs font-mono">
+      <p class="mb-4">More about me......</p>
+      <p>Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
+        pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my
+        projects.</p>
+
+      <p>I believe in continuous learning and am always exploring new technologies and methodologies to refine my
+        craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each project
+        with enthusiasm and a commitment to excellence.
+      </p>
+      <p class="mt-4">colin&#64;colinmichaels.com ~<span (click)="handleRandomNotifyClick($event)" class="animate-blink">%</span></p>
     </div>
-  </div>
-  <section class="flex justify-center items-center space-x-4">
-    <button class="home-button" (click)="toggleResume()">{{ isResume ? 'Hide' : 'Show' }}
-      Resume
-    </button>
-    <button class="home-button" (click)="notifyRandom()"> Enter Matrix
-    </button>
   </section>
-  <section [ngClass]="{'hidden': !isResume}" class="animated animate-fadeIn">
     <app-resume></app-resume>
-  </section>
-
+  </div>
 </main>
+
+  <section class="flex justify-around items-center space-x-4 px-2 sm:px-16 lg:px-40 py-6 bg-black/50">
+    <button class="home-button" (click)="handleRandomNotifyClick($event)">
+      Enter Matrix
+    </button>
+    <button class="home-button" routerLink="/external/https://colinmichaels.com/404">
+      404
+    </button>
+    <button class="home-button" (click)="handleJokeClick($event, 'dad')">
+      Ask Dad
+    </button>
+    <button class="home-button" (click)="handleJokeClick($event, 'chuck')">
+      Ask Chuck
+    </button>
+  </section>
 
 <footer>
   <app-socials></app-socials>

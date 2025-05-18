@@ -1,7 +1,7 @@
 <div class="fixed top-8 right-4 z-40 pointer-events-none h-full">
   <div class="relative space-y-2.5 h-screen min-w-[200px]">
     <div
-      (click)="dismiss(notification.id)"
+      (click)="dismiss(notification.title)"
       (mouseleave)="clearAllBtn.classList.add('hidden')"
       *ngFor="let notification of notifications"
       [class]="notification.classList ?? defaultClass"

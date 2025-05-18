@@ -1,8 +1,7 @@
-import {ChangeDetectorRef, Component, computed, DestroyRef, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, DestroyRef, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {INotification, NotificationService} from '../../services/notification.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {delay} from 'rxjs';
 import {MediaComponent} from '../../templates/media/media.component';
 import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
@@ -60,17 +59,15 @@ export class NotificationServerComponent implements OnInit {
   async clearAllWithEffect() {
     const reversed = [...this.notifications].reverse();
     for (let i = 0; i < reversed.length; i++) {
-      this.dismiss(reversed[i].id);
+        if (reversed[i].title) {
+          this.dismiss(reversed[i].title);
+        }
       await new Promise(res => setTimeout(res, 30));
     }
   }
 
   detectChanges() {
     this.cdr.detectChanges();
-  }
-
-  clearNotifications() {
-    this.notify.clear()
   }
 
   get multipleNotifications() {

@@ -1,11 +1,9 @@
 import { Component } from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
-import {faGamepad} from '@fortawesome/free-solid-svg-icons';
+import {faApple, faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {NgForOf} from '@angular/common';
 import {TooltipDirective} from '../game/directives/tooltip.directive';
 import {RouterLink} from '@angular/router';
-
 
 @Component({
   selector: 'app-socials',
@@ -26,9 +24,6 @@ import {RouterLink} from '@angular/router';
   }`
 })
 export class SocialsComponent {
-
-  path = '/external/';
-
   links = [
     {
       link: "youtube.com/CaptainColin",
@@ -37,8 +32,8 @@ export class SocialsComponent {
       title: "Youtube CaptainColin",
       class: "hover:text-red-600",
       icon: faYoutube,
-      tooltip: 'YouTube',
-      tooltipClass: 'bg-red-600'
+      tooltip: 'YouTube: @CaptainColin',
+      tooltipClass: 'bg-red-600 font-mono'
     },
     {
       link: "twitter.com/colinmichaels",
@@ -48,7 +43,7 @@ export class SocialsComponent {
       class: "hover:text-white",
       icon: faXTwitter,
       tooltip: 'X: @colinmichaels',
-      tooltipClass: 'bg-white text-black'
+      tooltipClass: 'bg-white text-black font-mono'
     },
     {
       link: "github.com/ColinMichaels",
@@ -58,7 +53,7 @@ export class SocialsComponent {
       class: "hover:text-white",
       icon: faGithub,
       tooltip: 'GitHub: @colinmichaels',
-      tooltipClass: 'text-black bg-white'
+      tooltipClass: 'text-black bg-white font-mono'
     },
     {
       link: "instagram.com/captaincolinfpv",
@@ -68,7 +63,7 @@ export class SocialsComponent {
       class: "hover:text-pink-600",
       icon: faInstagram,
       tooltip: 'Instagram: @captaincolinfpv',
-      tooltipClass: 'bg-pink-600 text-black '
+      tooltipClass: 'bg-pink-600 text-white font-mono'
     },
     {
       link: "linkedin.com/in/colinmichaels/",
@@ -77,8 +72,8 @@ export class SocialsComponent {
       title: "LinkedIn",
       class: "hover:text-blue-700",
       icon: faLinkedin,
-      tooltip: null,
-      tooltipClass: 'bg-text-blue-700 text-black'
+      tooltip: 'LinkedIn: @colinmichaels',
+      tooltipClass: 'bg-blue-700 text-white font-mono'
     },
     {
       link: "/login",
@@ -86,9 +81,9 @@ export class SocialsComponent {
       target: "_self",
       title: "game",
       class: "group hover:text-green-600",
-      icon: faGamepad,
-      tooltip: "New", // Tooltip visible in the HTML for this link
-      tooltipClass: 'bg-green-600 text-black'
+      icon: faApple,
+      tooltip: "Os Emulator", // Tooltip visible in the HTML for this link
+      tooltipClass: 'bg-green-600 text-black font-monok'
     },
   ];
 
