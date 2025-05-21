@@ -6,7 +6,7 @@
        (dblclick)="onDoubleClicked($event)">
     <app-system-tray/>
     <app-level-loader
-      (loaded)="onLevelLoaded($event)"
+      (loaded)="onLevelLoaded()"
       (failed)="onLevelLoadFailed($event)"
     ></app-level-loader>
     <ng-container *ngFor="let applicationInstance of appManager.openApplications">
