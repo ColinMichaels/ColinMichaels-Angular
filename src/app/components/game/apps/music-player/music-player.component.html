@@ -24,6 +24,9 @@
     <fa-icon *ngIf="!isPlaying" [icon]="faPlay" class="cursor-pointer" (click)="play()"></fa-icon>
     <fa-icon *ngIf="isPlaying" [icon]="faPause" class="cursor-pointer" (click)="pause()"></fa-icon>
     <fa-icon [icon]="faForward" class="cursor-pointer" (click)="nextTrack()"></fa-icon>
+    <fa-icon [icon]="faRepeat" class="cursor-pointer" (click)="toggleRepeat()"></fa-icon>
+    <fa-icon [icon]="faShuffle" class="cursor-pointer" (click)="toggleShuffle()"></fa-icon>
+    <fa-icon [icon]="faVolumeDown" class="cursor-pointer" (click)="toggleMute()"></fa-icon>
   </div>
 
   <!-- Playlist and Library -->

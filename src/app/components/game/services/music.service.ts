@@ -36,6 +36,14 @@ export const TRACKS: Track[] = [
     albumArt: 'https://picsum.photos/100/100.webp?random=3',
     url: '/assets/audio/music/ambient_3.mp3',
     duration: 240
+  },
+  {
+    id: 3,
+    title: 'Ambient 3',
+    artist: 'Colin Michaels',
+    albumArt: 'https://picsum.photos/100/100.webp?random=3',
+    url: '/assets/audio/music/ambient_4.mp3',
+    duration: 240
   }
 ]
 

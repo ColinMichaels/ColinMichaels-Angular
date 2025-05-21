@@ -2,7 +2,15 @@ import {Component, HostListener, Renderer2} from '@angular/core';
 import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {faBackward, faExpand, faForward, faPause, faPlay, faVolumeUp} from '@fortawesome/free-solid-svg-icons';
+import {
+  faBackward,
+  faExpand,
+  faForward,
+  faPause,
+  faPlay,
+  faRepeat, faShuffle, faVolumeDown,
+  faVolumeUp
+} from '@fortawesome/free-solid-svg-icons';
 import {SettingsService} from '../../services/settings.service';
 
 @Component({
@@ -16,6 +24,9 @@ import {SettingsService} from '../../services/settings.service';
   ],
 })
 export class MusicPlayerComponent {
+  toggleRepeat() {
+      throw new Error('Method not implemented.');
+  }
   currentTrack;
   trackLibrary;
   isPlaying = false;
@@ -97,4 +108,14 @@ export class MusicPlayerComponent {
   protected readonly faForward = faForward;
   protected readonly faExpand = faExpand;
   protected readonly faVolumeUp = faVolumeUp;
+  protected readonly faRepeat = faRepeat;
+  protected readonly faShuffle = faShuffle;
+  protected readonly faVolumeDown = faVolumeDown;
+
+  toggleShuffle() {
+
+  }
+
+  toggleMute() {
+  }
 }
