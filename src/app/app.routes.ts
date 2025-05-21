@@ -26,6 +26,11 @@ export const routes: Routes = [
     data: { animation : 'LoginWindow'}
   },
   {
+    path: 'sleep',
+    loadComponent: () => import('./components/game/system/sleep-screen/sleep-screen.component').then(m => m.SleepScreenComponent),
+    data: {animation: 'LoginWindow'}
+  },
+  {
     path: 'boot',
     loadComponent: () => import('./components/game/system/loading-screen/loading-screen.component').then(m => m.LoadingScreenComponent),
     data: { animation : 'LoginWindow'}

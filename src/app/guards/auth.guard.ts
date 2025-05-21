@@ -5,21 +5,18 @@ import {
   UrlTree
 } from '@angular/router';
 import { Observable } from 'rxjs';
+import {UserService} from '../components/game/services/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
-  constructor(private router: Router) {}
+  constructor(private router: Router, private usersService: UserService) {
+  }
 
   canActivate(): boolean | UrlTree | Observable<boolean | UrlTree> {
-    const user = localStorage.getItem('user');
-
-    if (!user) {
-      return this.router.parseUrl('/login');
-    }
+    const user = this.usersService.user;
 
     try {
-      const parsed = JSON.parse(user);
-      if (parsed?.name && typeof parsed.name === 'string') {
+      if (user?.name) {
         return true;
       }
     } catch (err) {

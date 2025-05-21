@@ -18,9 +18,7 @@ import {RouterLink} from '@angular/router';
   styles: `:host {
     position: fixed;
     bottom: 0;
-    padding: 6px;
     width: 100%;
-    background: rgba(0, 0, 0, 0.55);
   }`
 })
 export class SocialsComponent {

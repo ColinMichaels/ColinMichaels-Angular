@@ -1,18 +1,29 @@
 .resume-section {
-  @apply w-full   py-12 odd:bg-black/30 px-2 sm:px-16 lg:px-32;
+  @apply w-full   py-12  px-2 sm:px-32 lg:px-64
+  duration-700 ease-in-out opacity-80 hover:opacity-100
+  hover:scale-[1.1] transition-all;
 
-  .resume-experience{
-    @apply text-left text-sm;
+  .resume-experience {
+    @apply text-sm
+    flex flex-col justify-start
+    opacity-70
+    hover:opacity-100
+    transform-gpu
+    transition-opacity
+    duration-700
+    ease-in-out;
 
-    h3{
+    h3 {
       @apply text-sm text-white/90 hover:scale-[1.1] transition-transform;
     }
-    p.r-loc-date{
+
+    p.r-loc-date {
       @apply text-[12px] italic text-gray-500 leading-none mb-2;
     }
-    ul{
+
+    ul {
       @apply text-[12px] list-disc list-inside;
-      li{
+      li {
         @apply text-white/90 list-item;
       }
     }
