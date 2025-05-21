@@ -1,4 +1,4 @@
-import {Component, HostListener, Renderer2} from '@angular/core';
+import {Component, HostListener} from '@angular/core';
 import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -36,14 +36,12 @@ export class MusicPlayerComponent {
 
   constructor(
     public music: MusicService,
-    private settingsService: SettingsService,
-    private renderer: Renderer2
+    private readonly settingsService: SettingsService
   ) {
     this.currentTrack = this.music.currentTrack;
     this.trackLibrary = this.music.library;
     this.volume = this.music.volume();
     this.music.trackChanged.subscribe((track: any) => {
-      console.warn('Track Changed', track);
       this.currentTrack = track;
     });
     this.music.timeUpdated.subscribe((time: number) => {
@@ -82,7 +80,6 @@ export class MusicPlayerComponent {
 
   onVolumeChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
-    // this.volume.set(Number(value));
     const volume = Number(value) / 100;
     console.log(volume);
 

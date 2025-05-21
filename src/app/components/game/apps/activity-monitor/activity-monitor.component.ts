@@ -148,7 +148,7 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    private applicationManager: ApplicationManagerService,
+    private readonly applicationManager: ApplicationManagerService,
   ) {
   }
 

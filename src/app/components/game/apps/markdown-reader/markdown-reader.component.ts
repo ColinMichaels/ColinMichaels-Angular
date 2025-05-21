@@ -36,7 +36,7 @@ export class MarkdownReaderComponent {
     return this._filename;
   }
 
-  constructor(private appManager: ApplicationManagerService) {
+  constructor(private readonly appManager: ApplicationManagerService) {
 
     this.document = this.docsPath + this._filename;
     const currentApp = this.appManager.getCurrentApp();

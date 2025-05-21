@@ -23,6 +23,7 @@ import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
 import {TooltipDirective} from '../directives/tooltip.directive';
+import {LogService} from '../services/log.service';
 
 @Component({
   selector: 'app-desktop',
@@ -47,15 +48,16 @@ export class DesktopComponent implements OnInit {
   overlayImagePath = 'assets/images/overlays/cracked_corner.webp';
   backgroundImage = 'assets/images/backgrounds/night.webp';
 
-  constructor(private typewriter: TypewriterService,
+  constructor(private readonly typewriter: TypewriterService,
               public appManager: ApplicationManagerService,
-              private contextMenuService: ContextMenuService,
-              private soundService: SoundService,
-              private overlay: OverlayService,
-              private notify: NotificationService,
-              private userService: UserService,
-              private route: ActivatedRoute,
-              private destroyRef: DestroyRef) {
+              private readonly contextMenuService: ContextMenuService,
+              private readonly soundService: SoundService,
+              private readonly overlay: OverlayService,
+              private readonly notify: NotificationService,
+              private readonly userService: UserService,
+              private readonly route: ActivatedRoute,
+              private readonly logger: LogService,
+              private readonly destroyRef: DestroyRef) {
   }
 
   ngOnInit() {
@@ -116,11 +118,6 @@ export class DesktopComponent implements OnInit {
     }
   }
 
-/*  onResize({ width, height }: { width: number; height: number }) {
-    console.log(`App resized to width: ${width}, height: ${height}`);
-    // Perform any necessary actions when resizing occurs
-  }*/
-
   onBeginInvestigation() {
     this.showIntro = false;
     this.showNotificationUpdates();
@@ -165,7 +162,8 @@ export class DesktopComponent implements OnInit {
     })
   }
 
-  onLevelLoaded(level: GameLevel) {
+  onLevelLoaded(level?: GameLevel) {
+    this.logger.debug(`Level ${level?.id} loaded.`);
     this.typewriter.enqueueLine({
       text: `Level ${this.userService.user.level} loaded.`,
       agent: 'system',
