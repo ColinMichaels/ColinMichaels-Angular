@@ -1,0 +1,16 @@
+<!-- piano.component.html -->
+<div class="w-full max-w-4xl mx-auto flex justify-center items-end bg-zinc-800 p-4 rounded-lg shadow-lg">
+  <div
+    *ngFor="let key of keys"
+    [ngClass]="{
+      'bg-white text-black': !key.sharp,
+      'bg-black text-white absolute ml-[-0.5rem] z-10': key.sharp
+    }"
+    class="relative h-40 w-10 m-[1px] border border-zinc-600 cursor-pointer hover:opacity-90"
+    (mousedown)="playKey(key.note)"
+  >
+    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs opacity-50">
+      {{ key.label }}
+    </div>
+  </div>
+</div>
