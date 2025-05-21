@@ -1,55 +1,100 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SettingsService, ThemeOption } from '../../../../services/settings.service';
+import {Setting, SettingsService} from '../../../../services/settings.service';
+import {FormGroup, ReactiveFormsModule} from '@angular/forms';
+export type ThemeOption = 'light' | 'dark' | 'system';
 
 @Component({
   selector: 'app-appearance-settings',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="space-y-4 animate-fade-in">
-      <div class="space-x-4 flex items-center">
-        <button (click)="setTheme('light')" class="bg-white text-black px-2 py-1 rounded shadow">Light</button>
-        <button (click)="setTheme('dark')" class="bg-black text-white px-2 py-1 rounded shadow">Dark</button>
-        <button (click)="setTheme('system')" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-2 py-1 rounded shadow">System</button>
+    <div class="space-y-4  h-full">
+      <form *ngIf="formGroup" [formGroup]="formGroup" (ngSubmit)="saveSettings()">
+      <div class="space-x-4 flex items-center justify-around">
+        <span class="text-sm text-white/70">Theme</span>
+        <select formControlName="theme" class="w-1/2 bg-zinc-800 text-white p-2 rounded">
+          <ng-container *ngFor="let option of ['light', 'dark', 'system']">
+            <option [value]="option">{{option}}</option>
+          </ng-container>
+        </select>
+
+
+ <!--       <button (click)="setTheme('light')"
+                [ngClass]="getThemeClass('light')"
+                class="hover:opacity-100 hover:grayscale-0 bg-white text-black w-full px-2 py-1 rounded-full">Light</button>
+        <button (click)="setTheme('dark')"
+                [ngClass]="getThemeClass('dark')"
+                class="hover:opacity-100 hover:grayscale-0 bg-black text-white w-full px-2 py-1 rounded-full">Dark</button>
+        <button (click)="setTheme('system')"
+                [ngClass]="getThemeClass('system')"
+                class="hover:opacity-100 hover:grayscale-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white w-full px-2 py-1 rounded-full">System</button>
+                -->
       </div>
 
-      <div class="mt-4">
-        <label class="block">
+      <div class="mt-4 flex items-center justify-around">
+        <label class="flex flex-col">
           <span class="text-sm text-white/70">Accent Color</span>
-          <input type="color" [value]="accentColor" (change)="updateAccentColor($event)"
+          <input type="color" formControlName="accentColor"
                  class="w-10 h-10 rounded-full border-none bg-transparent cursor-pointer" />
         </label>
+        <label class="flex flex-col">
+          <span class="text-sm text-white/70">Auto Hide Menu Bar</span>
+          <input type="checkbox" formControlName="autoHideMenuBar" class="accent-blue-500">
+        </label>
       </div>
+      </form>
     </div>
   `,
-  styles: [
-    `
-      .animate-fade-in {
-        animation: fadeIn 0.3s ease-in-out;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-    `
-  ]
+  styles: ``
 })
 export class AppearanceSettingsComponent implements OnInit {
-  private settings = inject(SettingsService);
+  private settingsService = inject(SettingsService);
+  private readonly settingsSetId = 'appearance';
+  formGroup!: FormGroup;
   accentColor: string = '#4f46e5';
+  theme: ThemeOption = 'light';
+  autoHideMenuBar = false;
 
-  ngOnInit(): void {
-    this.settings.accentColor$.subscribe(color => this.accentColor = color);
+  appearanceOptions: Setting[] = [
+      { id: 'theme', value: 'system'},
+      { id: 'accentColor', value: '#4f46e5'},
+      { id: 'autoHideMenuBar', value: 'true'},
+    ];
+  settingKeys: string[] = [];
+
+
+  constructor() {
+    this.settingsService.registerSettingSet(this.settingsSetId, this.appearanceOptions);
   }
 
-  updateAccentColor(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.settings.setAccentColor(input.value);
+  ngOnInit(): void {
+    this.initForm();
+  }
+
+  private initForm(): void {
+    const formGroup = this.settingsService.createFormGroupForSettings(this.settingsSetId);
+
+    if (formGroup) {
+      this.formGroup = formGroup;
+      this.settingKeys = Object.keys(this.formGroup.controls);
+      this.settingsService.syncFormGroupWithSettingSet(this.formGroup, this.settingsSetId);
+    }
+
+  }
+
+  getThemeClass(theme: string){
+    if(!this.formGroup) return '';
+    const themeControl = this.formGroup.get('theme');
+    return (themeControl && themeControl.value === theme) ? 'border-2 border-blue-500 opacity-100 grayscale-0' : 'opacity-30 grayscale'
   }
 
   setTheme(theme: ThemeOption): void {
-    this.settings.setTheme(theme);
+    this.settingsService.updateSettingSetWithSingleValue(this.settingsSetId,'theme', theme);
   }
+
+  saveSettings(): void {
+    console.log('Settings saved:', this.formGroup.value);
+  }
+
 }

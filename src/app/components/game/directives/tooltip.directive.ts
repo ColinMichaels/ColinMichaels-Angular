@@ -12,12 +12,24 @@ import { TooltipService,TooltipPosition, TooltipSize } from '../services/tooltip
 })
 export class TooltipDirective {
   @Input('appTooltip') tooltipText = '';
-  @Input() tooltipClass: string = '';
+  @Input({
+    transform: (value: string | string[]): string => {
+      if(typeof value === 'string'){
+        return value ? value : 'text-white bg-black/50';
+      }
+      else {
+        return value.join(',');
+      }
+    }
+  }) toolTipClass: string = '';
   @Input() tooltipPosition: TooltipPosition = 'top';
   @Input() tooltipSize: TooltipSize = 'md';
-  @Input() tooltipAutoDismiss: number | null = null;
-  @Input() tooltipHideDelay: number | null = null;
+  @Input() tooltipfadeDuration: number | null = null;
   @Input() tooltipShowArrow: boolean = false;
+  @Input() tooltipCssClass: string = '';
+  @Input() tooltipAutoDismiss = 2000; // Default 2 seconds
+  @Input() tooltipFadeDuration = 200; // Default 200ms fade
+
 
   constructor(
     private el: ElementRef,
@@ -28,20 +40,22 @@ export class TooltipDirective {
   onMouseEnter() {
     const text = this.tooltipText.trim();
     if (!text) return;
+
     this.tooltipService.show({
-      host: this.el.nativeElement,
+      hostElement: this.el.nativeElement,
+      toolTipClass: this.toolTipClass,
       text: this.tooltipText,
-      cssClass: this.tooltipClass,
+      cssClass: this.tooltipCssClass,
       position: this.tooltipPosition,
       size: this.tooltipSize,
       autoDismissDelay: this.tooltipAutoDismiss ?? undefined,
-      hideDelay: this.tooltipHideDelay,
+      fadeDuration: this.tooltipfadeDuration,
       showArrow: this.tooltipShowArrow ?? false
     });
   }
 
   @HostListener('mouseleave')
   onMouseLeave() {
-    this.tooltipService.hide(false, this.tooltipHideDelay);
+    this.tooltipService.hide(false, this.tooltipfadeDuration ?? 0);
   }
 }

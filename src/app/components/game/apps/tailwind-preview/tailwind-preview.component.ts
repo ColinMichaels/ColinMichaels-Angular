@@ -1,5 +1,5 @@
 // tailwind-preview.component.ts
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {TailwindClassGeneratorService, TailwindVariant} from '../../services/tailwind-class-generator.service';
 import {NgClass, NgForOf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -15,7 +15,7 @@ import {NotificationService} from '../../services/notification.service';
     NgForOf
   ],
   template: `
-    <div class="p-8 space-y-4 bg-zinc-700 h-full overflow-y-auto">
+    <div class="p-8 space-y-4 bg-gray-200 dark:bg-gray-900 h-full overflow-y-auto">
       <div class="grid grid-cols-2 gap-x-2 transition-all duration-500">
         <div [class]="bgColorClass + ' relative p-4 rounded w-full text-sm text-center border border-white/30 '+ textColorClass"
         [ngClass]="[selectedVariant ? textClass + ' ' + bgClass : '']">
@@ -31,25 +31,25 @@ import {NotificationService} from '../../services/notification.service';
       <div class="flex justify-between items-center gap-x-2">
         <div class="form-field">
           <label for="selTCol" class="block mb-2">Text Color:</label>
-          <select id="selTCol" [(ngModel)]="selectedTextColor" class="form-select text-zinc-100 bg-zinc-800">
+          <select id="selTCol" [(ngModel)]="selectedTextColor" class="form-select text-white/90 bg-zinc-800">
             <option *ngFor="let v of colors" [value]="v">{{ v || 'None' }}</option>
           </select>
         </div>
         <div class="form-field">
           <label for="selTSat" class="block mb-2">Text Saturation: </label>
-          <select id="selTSat" [(ngModel)]="selectedTextSaturation" class="form-select text-zinc-100 bg-zinc-800">
+          <select id="selTSat" [(ngModel)]="selectedTextSaturation" class="form-select text-white/90 bg-zinc-800">
             <option *ngFor="let v of saturations" [value]="v">{{ v || 'None' }}</option>
           </select>
         </div>
         <div class="form-field">
           <label for="selBgCol" class="block mb-2">Bg Color:</label>
-          <select id="selBgCol" [(ngModel)]="selectedBgColor" class="form-select text-zinc-100 bg-zinc-800">
+          <select id="selBgCol" [(ngModel)]="selectedBgColor" class="form-select text-white/90 bg-zinc-800">
             <option *ngFor="let v of colors" [value]="v">{{ v || 'None' }}</option>
           </select>
         </div>
         <div class="form-field">
           <label for="selBgSat" class="block mb-2">Bg Saturation: </label>
-          <select id="selBgSat" [(ngModel)]="selectedBgSaturation" class="form-select text-zinc-100 bg-zinc-800">
+          <select id="selBgSat" [(ngModel)]="selectedBgSaturation" class="form-select text-white/90 bg-zinc-800">
             <option *ngFor="let v of saturations" [value]="v">{{ v || 'None' }}</option>
           </select>
         </div>
@@ -59,7 +59,7 @@ import {NotificationService} from '../../services/notification.service';
         <section class="text-xs space-y-2">
           <label>Random Text & Background</label>
           <div [ngClass]="[textClass, bgClass, 'relative p-4 rounded transition-all duration-500 w-full text-sm text-center border border-white/30']">
-            <div (click)="refreshTextAndBg()" class="bg-zinc-800/90 text-zinc-100 p-4 rounded text-wrap truncate">
+            <div (click)="refreshTextAndBg()" class="bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
               <pre class="text-xs">{{ textClass + ' ' + bgClass }}</pre>
             </div>
             <button class="copy-button" (click)="copy(textClass + ' ' + bgClass)">Copy</button>
@@ -68,7 +68,7 @@ import {NotificationService} from '../../services/notification.service';
         <section class="text-xs space-y-2">
           <label class="mb-1">Random Gradient Background</label>
           <div [ngClass]="[gradientClass, 'relative p-4 rounded text-white transition-all duration-500 w-full text-sm text-center border border-white/30']">
-            <div (click)="refreshGradient()" class=" bg-zinc-800/90 text-zinc-100 p-4 rounded text-wrap truncate">
+            <div (click)="refreshGradient()" class=" bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
               <pre class="text-xs">{{ gradientClass }}</pre>
             </div>
             <button class="copy-button" (click)="copy(gradientClass)">Copy</button>
@@ -79,7 +79,7 @@ import {NotificationService} from '../../services/notification.service';
       <div class="flex gap-4">
         <div class="form-field">
           <label for="selVar" class="block mb-2">Variant:</label>
-          <select id="selVar" [(ngModel)]="selectedVariant" class="form-select text-zinc-100 bg-zinc-800">
+          <select id="selVar" [(ngModel)]="selectedVariant" class="form-select text-white/90 bg-zinc-800">
             <option *ngFor="let v of variants" [value]="v">{{ v || 'None' }}</option>
           </select>
         </div>
@@ -96,7 +96,7 @@ import {NotificationService} from '../../services/notification.service';
   }
   .copy-button{
     @apply absolute -top-3 -right-2 text-[8px] p-1 bg-zinc-800 rounded-full pointer-events-auto
-    text-slate-100 border border-zinc-200 hover:bg-red-700 transition-all duration-500;
+    text-white/90 border border-zinc-200 hover:bg-red-700 transition-all duration-500;
   }`
 })
 export class TailwindPreviewComponent {

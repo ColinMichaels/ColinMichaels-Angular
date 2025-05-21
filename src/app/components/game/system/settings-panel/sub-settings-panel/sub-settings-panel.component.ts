@@ -4,9 +4,8 @@ import {
   ViewContainerRef,
   ViewChild,
   ComponentRef,
-  inject,
   AfterViewInit,
-  SimpleChanges
+  SimpleChanges, OnChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -18,7 +17,7 @@ import { CommonModule } from '@angular/common';
     <ng-container #panelHost></ng-container>
   `,
 })
-export class SettingsSubpanelComponent implements AfterViewInit {
+export class SettingsSubpanelComponent implements AfterViewInit, OnChanges {
   @Input() panelKey!: string;
   @ViewChild('panelHost', { read: ViewContainerRef, static: true })
   panelHost!: ViewContainerRef;
@@ -30,7 +29,6 @@ export class SettingsSubpanelComponent implements AfterViewInit {
       this.loadPanel();
     }
   }
-
 
   async ngAfterViewInit() {
     await this.loadPanel();

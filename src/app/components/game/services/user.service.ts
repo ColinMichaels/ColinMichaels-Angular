@@ -1,6 +1,20 @@
-import { Injectable } from '@angular/core';
-import { TypingMode } from './typewriter.service';
-import { BehaviorSubject } from 'rxjs';
+import {Injectable, OnDestroy} from '@angular/core';
+import {TypingMode} from './typewriter.service';
+import {
+  BehaviorSubject,
+  combineLatest,
+  Subject,
+  take,
+  takeUntil,
+  filter,
+  map,
+  firstValueFrom,
+  EMPTY,
+  Observable
+} from 'rxjs';
+import {SettingsService} from './settings.service';
+import {catchError} from 'rxjs/operators';
+import {LogService} from './log.service';
 
 export interface IUser {
   name: string;
@@ -21,18 +35,67 @@ export class User implements IUser {
 }
 
 @Injectable({ providedIn: 'root' })
-export class UserService {
-  $user: IUser = new User();
-  $previousUserSettings: IUser = new User();
-  private userSubject = new BehaviorSubject<User>(this.loadUser());
-  user$ = this.userSubject.asObservable();
+export class UserService implements OnDestroy {
+  private userSubject = new BehaviorSubject<User>(new User());
+  private previousUserSubject = new BehaviorSubject<User>(new User());
+  private destroy$ = new Subject<void>();
+  private initialized$ = new BehaviorSubject<boolean>(false);
 
-  constructor() {
-    this.loadUser();
+
+  constructor(private settings: SettingsService, private logger: LogService) {
+    // First register the settings set with a default user
+    this.settings.registerSettingSet('user', [new User()]);
+
+    // Then subscribe to both the initialization status and settings changes
+    combineLatest([
+      this.settings.getSettingSet<User>('user')!,
+      this.initialized$
+    ]).pipe(
+      takeUntil(this.destroy$),
+      filter(([_, initialized]) => initialized),
+      map(([users]) => users)
+    ).subscribe({
+      next: (users) => {
+        if (users?.[0]?.name) {
+          this.logger.debug(`Loading user from settings: `, users[0]);
+          this.userSubject.next(users[0]);
+        }
+      },
+      error: (error) => this.logger.error(`Error loading user: `, error)
+    });
+
+    // Load initial data from IndexedDB
+    this.settings.getSettingSet<User>('user')?.pipe(
+      take(1)
+    ).subscribe({
+      next: (users) => {
+        if (users?.[0]?.name) {
+          this.logger.debug(`Initial user load: `, users[0]);
+          this.userSubject.next(users[0]);
+        }
+        this.initialized$.next(true);
+      }
+    });
   }
 
+
+
   get user(): User {
-    return this.loadUser();
+    return this.userSubject.value;
+  }
+
+  get user$(): Observable<User> {
+    return this.userSubject.asObservable();
+  }
+
+
+  get username(): string {
+    return this.userSubject.value.name ?? '';
+  }
+
+
+  get previousLevel(): number {
+    return this.previousUserSubject.value.level;
   }
 
   get statsString() {
@@ -45,28 +108,39 @@ export class UserService {
     `;
   }
 
-  get previousLevel(): number {
-    return this.$previousUserSettings.level;
+  async updateUser(userUpdate: Partial<IUser>): Promise<User> {
+    const currentUser = this.userSubject.value;
+    const updatedUser = new User(
+      userUpdate.name ?? currentUser.name,
+      userUpdate.mode ?? currentUser.mode,
+      userUpdate.score ?? currentUser.score,
+      userUpdate.level ?? currentUser.level,
+      userUpdate.sections ?? currentUser.sections
+    );
+
+    // Update settings first to ensure persistence
+    await firstValueFrom(
+      new Observable<void>(observer => {
+        this.settings.updateSettingSet('user', [updatedUser]);
+        observer.next();
+        observer.complete();
+      }).pipe(
+        catchError(error => {
+          this.logger.error(`Failed to update user settings: ${error}`);
+          return EMPTY;
+        })
+      )
+    );
+
+    // Only update the subject after successful persistence
+    this.userSubject.next(updatedUser);
+    this.logger.debug(`User updated successfully: ${updatedUser}`);
+
+    return updatedUser;
   }
 
-
-  private loadUser(): User {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : new User();
-  }
-
-  updateUser(update: Partial<IUser>) {
-    this.$previousUserSettings = this.user;
-    Object.assign(this.$user, update);
-    this.saveUser();
-  }
-
-  saveUser() {
-    localStorage.setItem('user', JSON.stringify(this.$user));
-  }
-
-  resetUser() {
-    this.$user = new User();
-    this.saveUser();
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

@@ -2,7 +2,6 @@ import {ChangeDetectorRef, Component, DestroyRef, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {INotification, NotificationService} from '../../services/notification.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {delay} from 'rxjs';
 import {MediaComponent} from '../../templates/media/media.component';
 import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
@@ -17,11 +16,32 @@ import {faTimes} from '@fortawesome/free-solid-svg-icons';
 })
 export class NotificationServerComponent implements OnInit {
   notifications: INotification[] = [];
+  // Default notification class moved into a variable for easier maintenance
+  defaultClass = 'bg-zinc-700/95 text-white';
+
 
   constructor(
     private cdr: ChangeDetectorRef,
     private notify: NotificationService,
     private destroyRef: DestroyRef) {}
+
+
+// Extracted method to determine the notification type class
+  getNotificationTypeClass(type: string | undefined): string {
+    const typeClasses: { [key: string]: string } = {
+      info: 'bg-teal-500/30',
+      warning: 'bg-yellow-500/30',
+      success: 'bg-green-500/30',
+    };
+    return type ? typeClasses[type] : '';
+  }
+
+// Simplified the logic for clearing notifications
+  async handleClearAllClick(): Promise<void> {
+    if (this.notifications.length > 1) {
+     await this.clearAllWithEffect();
+    }
+  }
 
   ngOnInit(): void {
     this.notify.notifications$
@@ -39,8 +59,10 @@ export class NotificationServerComponent implements OnInit {
   async clearAllWithEffect() {
     const reversed = [...this.notifications].reverse();
     for (let i = 0; i < reversed.length; i++) {
-      this.dismiss(reversed[i].id);
-      await new Promise(res => setTimeout(res, 60));
+        if (reversed[i].title) {
+          this.dismiss(reversed[i].title);
+        }
+      await new Promise(res => setTimeout(res, 30));
     }
   }
 
@@ -48,11 +70,9 @@ export class NotificationServerComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  clearNotifications() {
-    this.notify.clear()
+  get multipleNotifications() {
+    return this.notifications.length > 1;
   }
 
-  protected readonly setTimeout = setTimeout;
-  protected readonly delay = delay;
   protected readonly faTimes = faTimes;
 }
