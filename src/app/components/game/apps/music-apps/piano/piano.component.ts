@@ -11,7 +11,7 @@ import {NgClass, NgForOf} from '@angular/common'; // adjust path if needed
   ],
 })
 export class PianoComponent {
-  constructor(private sound: SoundService) {}
+  constructor(private readonly sound: SoundService) {}
 
   keys = [
     { note: 'C4', label: 'C', sharp: false },

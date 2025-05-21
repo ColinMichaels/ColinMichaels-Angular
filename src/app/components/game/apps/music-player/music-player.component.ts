@@ -110,9 +110,15 @@ export class MusicPlayerComponent {
   protected readonly faVolumeDown = faVolumeDown;
 
   toggleShuffle() {
-
+    const library = this.music.library;
+    const random = Math.floor(Math.random() * library.length);
+    const track = library[random];
+     this.selectTrack(track);
   }
 
   toggleMute() {
+    const volume = this.music.volume();
+    const toggleVolume = this.volume =  volume === 0 ? 1 : 0;
+    this.music.setVolume(toggleVolume);
   }
 }
