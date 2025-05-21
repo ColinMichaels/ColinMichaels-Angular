@@ -86,7 +86,7 @@ export class SpaceXComponent {
 
   currentIndex = 0;
 
-  constructor(private spaceXService: SpacexService) {
+  constructor(private readonly spaceXService: SpacexService) {
     this.spaceXService.getAllLaunches().pipe(
       takeUntilDestroyed()
     ).subscribe((launchInfo: any) => {

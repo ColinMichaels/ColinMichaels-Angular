@@ -21,12 +21,18 @@
   <!-- Controls -->
   <div class="flex justify-center space-x-6 mt-4 text-2xl">
     <fa-icon [icon]="faBackward" class="cursor-pointer" (click)="prevTrack()"></fa-icon>
-    <fa-icon *ngIf="!isPlaying" [icon]="faPlay" class="cursor-pointer" (click)="play()"></fa-icon>
-    <fa-icon *ngIf="isPlaying" [icon]="faPause" class="cursor-pointer" (click)="pause()"></fa-icon>
-    <fa-icon [icon]="faForward" class="cursor-pointer" (click)="nextTrack()"></fa-icon>
-    <fa-icon [icon]="faRepeat" class="cursor-pointer" (click)="toggleRepeat()"></fa-icon>
-    <fa-icon [icon]="faShuffle" class="cursor-pointer" (click)="toggleShuffle()"></fa-icon>
-    <fa-icon [icon]="faVolumeDown" class="cursor-pointer" (click)="toggleMute()"></fa-icon>
+    <fa-icon *ngIf="!isPlaying" [icon]="faPlay" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="play()"></fa-icon>
+    <fa-icon *ngIf="isPlaying" [icon]="faPause" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="pause()"></fa-icon>
+    <fa-icon [icon]="faForward" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="nextTrack()"></fa-icon>
+    <fa-icon [icon]="faRepeat" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="toggleRepeat()"></fa-icon>
+    <fa-icon [icon]="faShuffle" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="toggleShuffle()"></fa-icon>
+    <fa-icon [icon]="faVolumeDown" class="cursor-pointer" (keydown)="$event.preventDefault()"
+             (click)="toggleMute()"></fa-icon>
   </div>
 
   <!-- Playlist and Library -->

@@ -62,16 +62,16 @@ export class CliGameComponent implements OnInit {
   };
 
   constructor(
-    private typewriter: TypewriterService,
-    private soundService: SoundService,
-    private cli: CLIService,
-    private gameConfig: GameConfigService,
-    private terminalManager: ApplicationManagerService,
-    private aiChat: AiChatService,
-    private userService: UserService,
-    private notify: NotificationService,
-    private logger: LogService,
-    private destroyRef: DestroyRef
+    private readonly typewriter: TypewriterService,
+    private readonly soundService: SoundService,
+    private readonly cli: CLIService,
+    private readonly gameConfig: GameConfigService,
+    private readonly terminalManager: ApplicationManagerService,
+    private readonly aiChat: AiChatService,
+    private readonly userService: UserService,
+    private readonly notify: NotificationService,
+    private readonly logger: LogService,
+    private readonly destroyRef: DestroyRef
   ) {
     this.typewriter.typedText$
       .pipe(takeUntilDestroyed(this.destroyRef))

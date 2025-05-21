@@ -5,7 +5,7 @@ import {SpaceXCrew, SpaceXLaunch, SpaceXLaunchpad, SpaceXRocket} from './models/
 
 @Injectable({providedIn: 'root'})
 export class SpacexService {
-  private baseUrl = 'https://api.spacexdata.com';
+  private readonly baseUrl = 'https://api.spacexdata.com';
 
   launches: BehaviorSubject<SpaceXLaunch[]> = new BehaviorSubject<SpaceXLaunch[]>([]);
   selectedPanel = new BehaviorSubject({});
@@ -13,7 +13,7 @@ export class SpacexService {
   selectedLaunch: BehaviorSubject<SpaceXLaunch> = new BehaviorSubject<SpaceXLaunch>({} as SpaceXLaunch);
 
 
-  constructor(private http: HttpClient) {
+  constructor(private readonly http: HttpClient) {
   }
 
   getLaunchById(id: string): Observable<SpaceXLaunch> {
