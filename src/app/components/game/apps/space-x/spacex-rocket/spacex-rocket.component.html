@@ -19,7 +19,9 @@
         <p><strong>Success Rate:</strong> {{ rocket.success_rate_pct }}%</p>
         <p><strong>Stages:</strong> {{ rocket.stages }}</p>
         <p><strong>Boosters:</strong> {{ rocket.boosters }}</p>
-        <a *ngIf="rocket.wikipedia" [href]="rocket.wikipedia" target="_blank" class="text-blue-300 hover:underline">Wikipedia</a>
+        <a *ngIf="rocket.wikipedia" [href]="rocket.wikipedia" target="_blank" class="text-blue-300 hover:underline">
+          <fa-icon [icon]="faWikipediaW" [appTooltip]="`Wikipedia`"></fa-icon>
+        </a>
       </div>
     </div>
   </div>

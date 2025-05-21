@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DatePipe, NgForOf, NgIf} from '@angular/common';
 import {
   faArrowLeftLong,
-  faArrowRightLong, faFileArchive, faForward,
+  faArrowRightLong, faChevronLeft, faChevronRight, faFileArchive, faForward,
   faThumbsDown,
   faThumbsUp
 } from '@fortawesome/free-solid-svg-icons';
@@ -86,8 +86,8 @@ export class SpaceXComponent {
     this.spaceXService.getAllLaunches().pipe(
       takeUntilDestroyed()
     ).subscribe((launchInfo: any) => {
-      this.launches = launchInfo.sort((a: any, b: any) => a.date_utc - b.date_utc)
-        .slice(0, 40).reverse() as SpaceXLaunch[];
+      this.launches = launchInfo.sort((a: any, b: any) => a.flight_number - b.flight_number)
+        .reverse() as SpaceXLaunch[];
       const launch = this.selectedLaunch = this.launches[this.currentIndex];
       this.spaceXService.setSelectLaunch(launch);
     });
@@ -100,16 +100,25 @@ export class SpaceXComponent {
   }
 
   nextLaunch(): void {
-    this.panel = 'images';
+
     this.currentIndex = (this.currentIndex + 1) % this.launches.length;
     const launch = this.selectedLaunch = this.launches[this.currentIndex];
+    this.checkDefaultPanel(launch);
     this.spaceXService.setSelectLaunch(launch);
   }
 
+  private checkDefaultPanel(launch: SpaceXLaunch) {
+    if (launch.links.flickr.original.length <= 0) {
+      this.panel = 'rocket';
+      this.itemId = launch.rocket;
+      this.spaceXService.setPanel('rocket', launch.rocket);
+    }
+  }
+
   previousLaunch(): void {
-    this.panel = 'images';
     this.currentIndex = (this.currentIndex - 1 + this.launches.length) % this.launches.length;
     const launch = this.selectedLaunch = this.launches[this.currentIndex];
+    this.checkDefaultPanel(launch);
     this.spaceXService.setSelectLaunch(launch);
   }
 
@@ -128,4 +137,6 @@ export class SpaceXComponent {
   }
 
 
+  protected readonly faChevronLeft = faChevronLeft;
+  protected readonly faChevronRight = faChevronRight;
 }

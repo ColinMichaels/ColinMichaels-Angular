@@ -91,10 +91,10 @@ export enum AppType {
   other = 'other'
 }
 
-export const WINDOW_WIDTH_MIN = 240;
-export const WINDOW_WIDTH_MAX = 485;
-export const WINDOW_HEIGHT_MIN = 240;
-export const WINDOW_HEIGHT_MAX = 485;
+export const WINDOW_WIDTH_MIN = 480;
+export const WINDOW_WIDTH_MAX = 1024
+export const WINDOW_HEIGHT_MIN = 480;
+export const WINDOW_HEIGHT_MAX = 1024;
 
 export const DEFAULT_WINDOW_OFFSET_Y = 40;
 export const DEFAULT_WINDOW_OFFSET_X = 40;
