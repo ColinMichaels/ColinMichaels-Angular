@@ -1,14 +1,15 @@
-<!-- spacex-selectedLaunch.component.html -->
-<div class="max-w-5xl mx-auto bg-black text-white px-6 py-2  shadow-lg font-sans h-full">
-  <!-- Header / Patch Image -->
-  <div class="flex flex-col md:flex-row gap-x-4 my-2">
-    <div class="flex flex-col justify-start">
-      <img [src]="selectedLaunch.links.patch.large" alt="Mission Patch" class="w-40 h-40 object-contain"/>
-    </div>
+<div class="relative">
 
-    <div class="flex-1 flex-col text-sm">
-      <div class="flex items-start justify-between">
-        <h1 class="text-3xl font-bold text-blue-400 pr-4">{{ selectedLaunch.name }}</h1>
+  <main class="col-span-4 max-w-5xl mx-auto bg-black text-white px-6 py-2  shadow-lg font-sans h-full">
+    <div class="absolute top-0 right-0 p-1 text-white/70 z-50">
+      <button class="mac-button" (click)="toggleSidebar()">
+        <fa-icon [icon]="faBars"></fa-icon>
+      </button>
+    </div>
+    <!-- Header / Patch Image -->
+    <div class="flex flex-col md:flex-row gap-x-4 my-2">
+      <div class="flex flex-col justify-between">
+        <img [src]="selectedLaunch.links.patch.large" alt="Mission Patch" class="w-40 h-40 object-contain"/>
         <!-- Media Links -->
         <div>
           <div class="flex justify-evenly space-x-4 text-blue-300">
@@ -31,94 +32,125 @@
           </div>
         </div>
       </div>
-      <div>
-        <span class="font-semibold mr-2" [class.text-green-400]="selectedLaunch.success"
-              [class.text-red-400]="!selectedLaunch.success">
-          {{ !selectedLaunch.success ? `Failed` : `Success:` }}
-        </span>
-        <fa-icon [class.hidden]="!selectedLaunch.success" [icon]="faThumbsUp" class="text-green-400"></fa-icon>
-        <fa-icon [class.hidden]="selectedLaunch.success" [icon]="faThumbsDown" class="text-red-400"></fa-icon>
-      </div>
-      <div>
-        <span class="font-semibold text-white/60 text-xs"> {{ selectedLaunch.date_utc | date:'short' }}</span>
-        <fa-icon [class.hidden]="!selectedLaunch.upcoming" [icon]="faForward" class="text-green-400"></fa-icon>
-      </div>
-      <div>
-        <p class="text-sm text-gray-400 mt-1">Flight #{{ selectedLaunch.flight_number }}</p>
-      </div>
-      <div class="max-h-[125px] min-h-[125px] overflow-y-auto ">
-        <p class="mt-2 text-white text-pretty tracking-normal font-thin">{{ selectedLaunch.details }}</p>
-      </div>
-    </div>
 
-  </div>
-  <div class="flex justify-around space-x-4 text-white/70  p-1 mb-2">
-    <button class="p-1" (click)="previousLaunch()" [disabled]="launches.length === 0">
-      <fa-icon [icon]="faChevronLeft"/>
-    </button>
-    <div>
-      <span class="text-sm">{{ currentIndex + 1 }} of {{ launches.length }}</span>
-    </div>
-    <button class="p-1" (click)="nextLaunch()" [disabled]="launches.length === 0">
-      <fa-icon [icon]="faChevronRight"/>
-    </button>
-  </div>
-  <!-- sub panel nav buttons -->
-  <div class="  flex flex-col justify-center mt-6 border-t border-gray-600 p-2">
+      <div class="flex-1 flex-col text-sm">
+        <div class="flex items-start justify-between">
+          <h1 class="text-3xl font-bold text-blue-400 pr-4">{{ selectedLaunch.name }}</h1>
 
-    <div class="flex justify-evenly space-x-2  text-sm font-light  text-white/70 ">
-      <div class="w-full" *ngIf="selectedLaunch.links.flickr.original.length > 0">
-        <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
-                [class.text-white]="panel === 'images'"
-                [class.bg-gray-900]="panel === 'images'"
-                (click)="loadPanel('images', selectedLaunch.rocket)">
-          Images
-        </button>
-      </div>
-      <div class="w-full">
-        <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
-                [class.text-white]="panel === 'rocket'"
-                [class.bg-gray-900]="panel === 'rocket'"
-                (click)="loadPanel('rocket', selectedLaunch.rocket)">
-          Rocket
-        </button>
-      </div>
-      <div class="w-full">
-        <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
-                [class.text-white]="panel === 'launchpad'"
-                [class.bg-gray-900]="panel === 'launchpad'"
-                (click)="loadPanel('launchpad', selectedLaunch.launchpad)">
-          Launch Pad
-        </button>
-      </div>
-      <div class="w-full" *ngIf="selectedLaunch.crew.length > 0">
-        <button class="font-semibold text-white border border-t-0 border-white/40  w-full py-1 px-3"
-                (click)="loadPanel('crew', selectedLaunch.crew.crew)">
-          Crew
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="h-full overflow-y-auto max-h-[550px] no-scrollbar">
-    <!-- Launch Metadata -->
-
-    <div class="h-full px-2">
-      <app-spacex-sub-panel *ngIf="panel !== 'images' || ''"></app-spacex-sub-panel>
-
-      <!-- Flickr Images -->
-      <div *ngIf="selectedLaunch.links.flickr.original.length > 0 && panel === 'images' " class="mt-6"
-           [appTooltip]="'Click to view full size'">
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <img *ngFor="let img of selectedLaunch.links.flickr.original" [src]="img"
-               (click)="openImage(img)"
-               class=" shadow-md object-fill w-full h-40" loading="lazy" alt=""/>
+        </div>
+        <div>
+          <span class="font-semibold mr-2" [class.text-green-400]="selectedLaunch.success"
+                [class.text-red-400]="!selectedLaunch.success">
+            {{ !selectedLaunch.success ? `Failed` : `Success:` }}
+          </span>
+          <fa-icon [class.hidden]="!selectedLaunch.success" [icon]="faThumbsUp" class="text-green-400"></fa-icon>
+          <fa-icon [class.hidden]="selectedLaunch.success" [icon]="faThumbsDown" class="text-red-400"></fa-icon>
+        </div>
+        <div>
+          <span class="font-semibold text-white/60 text-xs"> {{ selectedLaunch.date_utc | date:'short' }}</span>
+          <fa-icon [class.hidden]="!selectedLaunch.upcoming" [icon]="faForward" class="text-green-400"></fa-icon>
+        </div>
+        <div>
+          <p class="text-sm text-gray-400 mt-1">Flight #{{ selectedLaunch.flight_number }}</p>
+        </div>
+        <div class="max-h-[125px] min-h-[125px] overflow-y-auto ">
+          <p class="mt-2 text-white text-pretty tracking-normal font-thin">{{ selectedLaunch.details }}</p>
         </div>
       </div>
 
     </div>
+    <div class="flex justify-around space-x-4 text-white/70  p-1 mb-2">
+      <button class="p-1" (click)="previousLaunch()" [disabled]="launches.length === 0">
+        <fa-icon [icon]="faChevronLeft"/>
+      </button>
+      <div>
+        <span class="text-sm">{{ currentIndex + 1 }} of {{ launches.length }}</span>
+      </div>
+      <button class="p-1" (click)="nextLaunch()" [disabled]="launches.length === 0">
+        <fa-icon [icon]="faChevronRight"/>
+      </button>
+    </div>
+    <!-- sub panel nav buttons -->
+    <div class="  flex flex-col justify-center mt-6 border-t border-gray-600 p-2">
 
-  </div>
+      <div class="flex justify-evenly space-x-2  text-sm font-light  text-white/70 ">
+        <div class="w-full" *ngIf="selectedLaunch.links.flickr.original.length > 0">
+          <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
+                  [class.text-white]="panel === 'images'"
+                  [class.bg-gray-900]="panel === 'images'"
+                  (click)="loadPanel('images', selectedLaunch.rocket)">
+            Images
+          </button>
+        </div>
+        <div class="w-full">
+          <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
+                  [class.text-white]="panel === 'rocket'"
+                  [class.bg-gray-900]="panel === 'rocket'"
+                  (click)="loadPanel('rocket', selectedLaunch.rocket)">
+            Rocket
+          </button>
+        </div>
+        <div class="w-full">
+          <button class="uppercase hover:text-white/90 border border-t-0 border-white/40  w-full py-1 px-3"
+                  [class.text-white]="panel === 'launchpad'"
+                  [class.bg-gray-900]="panel === 'launchpad'"
+                  (click)="loadPanel('launchpad', selectedLaunch.launchpad)">
+            Launch Pad
+          </button>
+        </div>
+        <div class="w-full" *ngIf="selectedLaunch.crew.length > 0">
+          <button class="font-semibold text-white border border-t-0 border-white/40  w-full py-1 px-3"
+                  (click)="loadPanel('crew', selectedLaunch.crew.crew)">
+            Crew
+          </button>
+        </div>
 
+      </div>
+    </div>
+
+
+    <!-- scrolling panels -->
+    <div class="h-full overflow-y-auto max-h-[550px] no-scrollbar">
+      <!-- Launch Metadata -->
+
+      <div class="h-full px-2">
+        <app-spacex-sub-panel *ngIf="panel !== 'images' || ''"></app-spacex-sub-panel>
+
+        <!-- Flickr Images -->
+        <div *ngIf="selectedLaunch.links.flickr.original.length > 0 && panel === 'images' " class="mt-6"
+             [appTooltip]="'Click to view full size'">
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <img *ngFor="let img of selectedLaunch.links.flickr.original" [src]="img"
+                 (click)="openImage(img)"
+                 class=" shadow-md object-fill w-full h-40" loading="lazy" alt=""/>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <aside *ngIf="showSidebar"
+         class="absolute top-0  max-h-[800px] w-[200px] overflow-y-auto right-0 px-2 pt-8 pb-32 bg-black">
+    <h3>Launches</h3>
+    <div class=" overflow-y-auto cursor-pointer">
+      <ng-container *ngFor="let launch of launches">
+        <div class="grid grid-cols-6  gap-y-4 hover:bg-gray-600 " (click)="selectLaunch(launch)">
+          <div class="col-span-1 text-xs text-gray-400" [class.text-green-400]="launch.success"
+               [class.text-red-400]="!launch.success">
+            {{ launch.flight_number }}
+          </div>
+          <div class="col-span-4 text-sm font-semibold truncate">
+            {{ launch.name }}
+          </div>
+          <div class="col-auto text-xs text-gray-400">
+            {{ launch.date_utc | date:'y' }}
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </aside>
 </div>
+

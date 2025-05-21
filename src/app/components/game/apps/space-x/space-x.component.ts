@@ -2,8 +2,8 @@ import {Component} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DatePipe, NgForOf, NgIf} from '@angular/common';
 import {
-  faArrowLeftLong,
-  faArrowRightLong, faChevronLeft, faChevronRight, faFileArchive, faForward,
+  faBars,
+  faChevronLeft, faChevronRight, faFileArchive, faForward, faSpinner,
   faThumbsDown,
   faThumbsUp
 } from '@fortawesome/free-solid-svg-icons';
@@ -79,6 +79,10 @@ export class SpaceXComponent {
   };
   panel: string = 'images';
   itemId: string = '';
+  showSidebar = false;
+  showSubPanel = false;
+  subPanel: string = 'rocket';
+  subPanelItemId: string = '';
 
   currentIndex = 0;
 
@@ -87,7 +91,7 @@ export class SpaceXComponent {
       takeUntilDestroyed()
     ).subscribe((launchInfo: any) => {
       this.launches = launchInfo.sort((a: any, b: any) => a.flight_number - b.flight_number)
-        .reverse() as SpaceXLaunch[];
+        .slice(0, 40).reverse() as SpaceXLaunch[];
       const launch = this.selectedLaunch = this.launches[this.currentIndex];
       this.spaceXService.setSelectLaunch(launch);
     });
@@ -124,8 +128,6 @@ export class SpaceXComponent {
 
   protected readonly faThumbsUp = faThumbsUp;
   protected readonly faThumbsDown = faThumbsDown;
-  protected readonly faArrowLeftLong = faArrowLeftLong;
-  protected readonly faArrowRightLong = faArrowRightLong;
   protected readonly faYoutube = faYoutube;
   protected readonly faHackerNews = faHackerNews;
   protected readonly faFileArchive = faFileArchive;
@@ -139,4 +141,26 @@ export class SpaceXComponent {
 
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faChevronRight = faChevronRight;
+
+  selectLaunch(launch: SpaceXLaunch) {
+    this.selectedLaunch = launch;
+  }
+
+  toggleSidebar() {
+    this.showSidebar = !this.showSidebar;
+  }
+
+  toggleSubPanel() {
+    this.showSubPanel = !this.showSubPanel;
+  }
+
+  toggleSubPanelItem(panel: string, itemId: string) {
+    this.subPanel = panel;
+    this.subPanelItemId = itemId;
+    this.spaceXService.setPanel(panel, itemId);
+    this.toggleSubPanel();
+  }
+
+  protected readonly faBars = faBars;
+  protected readonly faSpinner = faSpinner;
 }
