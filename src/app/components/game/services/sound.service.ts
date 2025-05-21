@@ -1,5 +1,8 @@
-import { Injectable } from '@angular/core';
+import {Inject, Injectable, InjectionToken, OnDestroy, OnInit} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
+import {SettingsService} from './settings.service';
+import {LogService} from './log.service';
+import {PatchService} from './patch.service';
 
 interface SoundOptions {
   loop?: boolean;
@@ -8,11 +11,31 @@ interface SoundOptions {
   onEnded?: () => void;
 }
 
-@Injectable({ providedIn: 'root' })
-export class SoundService {
-  private basePath = 'assets/audio/efx/';
+export interface SoundServiceConfig {
+  debounceInterval: number;
+  maxCacheSize: number;
+  defaultVolume: number;
+  basePath: string;
+}
 
-  private audioVariantPools: Record<string, string[]> = {
+export const SOUND_SERVICE_CONFIG = new InjectionToken<SoundServiceConfig>('SOUND_SERVICE_CONFIG');
+
+export const defaultSoundConfig: SoundServiceConfig = {
+  debounceInterval: 60,
+  maxCacheSize: 20,
+  defaultVolume: 1.0,
+  basePath: 'assets/audio/efx/'
+};
+
+
+@Injectable({ providedIn: 'root' })
+export class SoundService implements OnDestroy, OnInit {
+
+  private readonly maxCacheSize = 20; // Limit cache size
+
+  private readonly basePath = 'assets/audio/efx/';
+
+  private readonly audioVariantPools: Record<string, string[]> = {
     'click': ['click-1.mp3', 'click-2.mp3', 'click-3.mp3'],
     'glitch': ['glitch-1.mp3', 'glitch-2.mp3', 'glitch-3.mp3', 'glitch-4.mp3'],
     'beep': ['digital-beep-1.mp3', 'digital-beep-2.mp3'],
@@ -22,44 +45,78 @@ export class SoundService {
 
   private audioCache = new Map<string, HTMLAudioElement>();
 
-  private isMuted = false;
-  public mute$ = new BehaviorSubject<boolean>(this.isMuted);
+  private readonly mute$ = new BehaviorSubject<boolean>(false);
 
   public isInitialized = false;
 
   private lastPlayedTimestamps: Record<string, number> = {};
   private debounceIntervalMs = 60; // Adjust as needed
 
-  constructor() {
-    this.bootAudio();
+  constructor(
+    @Inject(SOUND_SERVICE_CONFIG) private config: SoundServiceConfig,
+    private settingsService: SettingsService,
+    private readonly patchService: PatchService,
+    private readonly logger: LogService
+  ) {
+  }
+
+  ngOnInit() {
     this.detectMobileAndMute();
+    this.bootAudio().then(() => {
+      this.patchService.registerPatches();
+    });
   }
 
-  bootAudio(): void {
-    if (this.isInitialized) return;
+  async preloadAudio(fileName: string): Promise<boolean> {
+    try {
+      const audio = new Audio();
+      audio.src = `${this.basePath}${this.sanitizeFileName(fileName)}`;
 
-    const silent = new Audio(this.basePath + 'bootup.mp3');
-    silent.volume = 0.1;
-
-    silent.onerror = () => {
-      console.warn('[SoundService] Boot audio file missing or unsupported.');
-    };
-
-    silent.play()
-      .then(() => {
-        this.isInitialized = true;
-        console.log('[SoundService] Audio unlocked and ready.');
-      })
-      .catch(err => {
-        console.warn('[SoundService] bootAudio() failed:', err.message);
+      await new Promise((resolve, reject) => {
+        audio.oncanplaythrough = resolve;
+        audio.onerror = reject;
+        audio.load();
       });
+
+      this.audioCache.set(fileName, audio);
+      return true;
+    } catch (error) {
+      console.error(`Failed to preload audio: ${fileName}`, error);
+      return false;
+    }
   }
+
+
+  async bootAudio(): Promise<void> {
+    if (this.isInitialized) return Promise.resolve();
+
+    try {
+      await this.preloadAudio('bootup.mp3');
+      this.isInitialized = true;
+      this.logger.debug('[SoundService] Audio system initialized');
+    } catch (error) {
+      this.logger.error('[SoundService] Failed to initialize audio:', error);
+      throw error;
+    }
+  }
+
 
   private detectMobileAndMute(): void {
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-    if (isMobile) {
+    const hasTouch = 'ontouchstart' in window ||
+      navigator.maxTouchPoints > 0;
+    const hasLowBattery = false;
+    if ('getBattery' in navigator) {
+      (navigator as any).getBattery().then((battery: { level: number }) => {
+        if (battery.level < 0.2) {
+          this.setMute(true);
+          console.log('[SoundService] Low battery detected. Sound muted.');
+        }
+      });
+    }
+
+    if (hasTouch || hasLowBattery) {
       this.setMute(true);
-      console.log('[SoundService] Mobile device detected. Sound muted.');
+      console.log('[SoundService] Mobile/low power device detected. Sound muted.');
     }
   }
 
@@ -84,23 +141,14 @@ export class SoundService {
     return pool[index];
   }
 
-  /* playStream(url: string, options: SoundOptions = {}) {
-     const audio = new Audio(url);
-     audio.play().catch(err => {
-       console.warn(`Audio play error for ${url}:`, err);
-     });
-   }*/
-
   play(fileName: string, options: SoundOptions = {}) {
     if (this.isMuted) return;
 
     const { loop = false, volume = 1.0, forceRestart = false, onEnded } = options;
-    const path = this.basePath + fileName;
 
-    /* check if filename includes .mp3 if not include it */
-    if (!fileName.includes('.mp3')) {
-      fileName = fileName + '.mp3';
-    }
+    const sanitizedName = this.sanitizeFileName(fileName);
+
+    const path = `${this.config.basePath}${sanitizedName}`;
 
     let audio = this.audioCache.get(path);
 
@@ -130,8 +178,18 @@ export class SoundService {
     });
   }
 
+  private sanitizeFileName(fileName: string): string {
+    // Remove path traversal attempts and normalize
+    const normalized = fileName.replace(/^\/+|\/+$/g, '')
+      .replace(/\.{2,}/g, '')
+      .replace(/[^\w.-]/g, '');
+
+    return normalized.endsWith('.mp3') ? normalized : `${normalized}.mp3`;
+  }
+
+
   stop(fileName: string) {
-    const path = this.basePath + fileName;
+    const path = this.config.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       audio.pause();
@@ -141,7 +199,7 @@ export class SoundService {
   }
 
   pause(fileName: string) {
-    const path = this.basePath + fileName;
+    const path = this.config.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       audio.pause();
@@ -157,24 +215,23 @@ export class SoundService {
     });
   }
 
-  toggleMute() {
-    this.isMuted = !this.isMuted;
-    this.mute$.next(this.isMuted);
-    if (this.isMuted) this.stopAll();
+
+  get isMuted(): boolean {
+    return this.mute$.value;
   }
 
-  setMute(state: boolean) {
-    this.isMuted = state;
-    this.mute$.next(this.isMuted);
+  setMute(state: boolean): void {
+    this.mute$.next(state);
     if (state) this.stopAll();
   }
 
-  getMute(): boolean {
-    return this.isMuted;
+  toggleMute(): void {
+    this.setMute(!this.isMuted);
   }
 
+
   setVolume(fileName: string, volume: number) {
-    const path = this.basePath + fileName;
+    const path = this.config.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       // Convert volume from 0-100 range to 0-1 range
@@ -182,12 +239,11 @@ export class SoundService {
     }
   }
 
-  /*  fadeOutVolume(fileName: string, volume: number, duration: number) {
-      const path = this.basePath + fileName;
-      const audio = this.audioCache.get(path);
-      if (audio) {
 
-      }
-    }*/
+  ngOnDestroy() {
+    this.stopAll();
+    this.audioCache.clear();
+  }
+
 
 }

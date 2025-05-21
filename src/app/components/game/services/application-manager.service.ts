@@ -5,7 +5,7 @@ import {
   faChartSimple,
   faCircleInfo, faCogs,
   faComputer,
-  faExclamationTriangle, faIcons, faMusic, faNoteSticky,
+  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMusic, faNoteSticky,
   faPerson, faRocket
 } from '@fortawesome/free-solid-svg-icons';
 import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
@@ -29,6 +29,7 @@ import {MusicPlayerComponent} from '../apps/music-player/music-player.component'
 import {SpaceXComponent} from '../apps/space-x/space-x.component';
 import {LogService} from './log.service';
 import {PianoComponent} from '../apps/music-apps/piano/piano.component';
+import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -110,6 +111,7 @@ export enum APP_ID {
   about = 'about',
   player_config = 'player-config',
   music_piano = 'music-piano',
+  music_patch_editor = 'music-patch-editor',
   activity_monitor = 'activity-monitor',
   system_settings = 'system-settings',
   markdown_reader = 'markdown-reader',
@@ -224,13 +226,31 @@ export class ApplicationManagerService {
       autofit: true,
       icon: {
         class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faMusic
+        svgPath: faKeyboard
       },
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
       instanceIndex: 0
     });
+
+    this.registerApp({
+      id: APP_ID.music_patch_editor,
+      title: 'Patch Editor',
+      component: PatchEditorComponent,
+      installed: true,
+      windowSize: {height: 600, width: 600},
+      autofit: true,
+      icon: {
+        class: 'text-black bg-yellow-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faHexagonNodesBolt
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
 
     this.registerApp({
       id: APP_ID.space_x_app,
