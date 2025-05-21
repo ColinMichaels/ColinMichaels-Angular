@@ -58,7 +58,7 @@ export class CLIService {
       name: 'exit',
       aliases: ['quit'],
       description: 'Quit the game.',
-      execute: (args: string[]) => {
+      execute: () => {
         return {
           status: -1,
           output: 'Goodbye!'
@@ -69,7 +69,7 @@ export class CLIService {
         name: 'clear',
         aliases: ['clear'],
         description: 'clear the screen.',
-        execute: (args: string[]) => {
+      execute: () => {
           return {
             status: -2,
             output: 'Clearing console!'
@@ -80,7 +80,7 @@ export class CLIService {
       name: 'leet',
       description: 'Convert text to leet speak',
       execute: (args: string[]) => {
-        console.warn('args', args);
+        console.warn('params', args);
         if (!args.length) {
           return {
             status: 400,

@@ -6,8 +6,7 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type,
-  DestroyRef, ComponentRef, Output, EventEmitter, computed, OnChanges
+  Type, Output, EventEmitter, computed, OnChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
@@ -62,6 +61,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   @Input() minHeight: number = WINDOW_HEIGHT_MIN;
   @Input() maxHeight: number = WINDOW_HEIGHT_MAX;
   @Input() focused: boolean = false;
+  @Input() params: any;
 
   @Output() sizeChanged = new EventEmitter<
     {
@@ -97,8 +97,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   });
 
   constructor(
-    private appManager: ApplicationManagerService,
-    private destroyRef: DestroyRef
+    private appManager: ApplicationManagerService
   ) {
     this.subscribeToFocusEvents();
   }
@@ -118,11 +117,12 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   /** Set the initial position of the screen */
   private setInitialPosition(): void {
     const terminal = this.appWindowRef.nativeElement;
-    const app = this.embeddedApp();
     // Use offsetX and offsetY passed as inputs
     this.focused = true;
     terminal.style.left = `${this.offsetX}px`;
     terminal.style.top = `${this.offsetY}px`;
+    terminal.style.width = `${this.defaultWidth}`;
+    terminal.style.height = `${this.defaultHeight}`;
     terminal.style.position = 'fixed';
   }
 
@@ -258,8 +258,6 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
 
   resetWindowSize() {
     const appWindow = this.appWindowRef.nativeElement;
-    const viewportWidth = Math.abs(window.innerWidth / 2);
-    const viewportHeight = Math.abs(window.innerHeight / 2);
     // Ensure dimensions stay within MAX_WIDTH / MAX_HEIGHT
     const newWidth = Math.min(appWindow.offsetWidth, WINDOW_WIDTH_MAX);
     const newHeight = Math.min(appWindow.offsetHeight, WINDOW_HEIGHT_MAX);

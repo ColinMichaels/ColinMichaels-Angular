@@ -37,7 +37,7 @@ import {TooltipDirective} from '../directives/tooltip.directive';
     FaIconComponent,
     FaStackComponent,
     FaStackItemSizeDirective,
-    TooltipDirective,
+    TooltipDirective
   ],
   templateUrl: './desktop.component.html',
   styles: ``
@@ -59,9 +59,6 @@ export class DesktopComponent implements OnInit {
   }
 
   ngOnInit() {
-    if (localStorage.getItem('user') === null) {
-      this.onBeginInvestigation();
-    }
     this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
@@ -72,8 +69,8 @@ export class DesktopComponent implements OnInit {
       })
   }
 
-  openApp(id: string) {
-    this.appManager.openApplication(id);
+  openApp(id: string, params?: any) {
+    this.appManager.openApplication(id, params);
   }
 
   /** CLICK EVENTS **/
@@ -170,7 +167,7 @@ export class DesktopComponent implements OnInit {
 
   onLevelLoaded(level: GameLevel) {
     this.typewriter.enqueueLine({
-      text: `Level ${this.userService.user.level} loaded.`,
+      text: `Level ${level} loaded.`,
       agent: 'system',
       speed: 40,
       mode: 'system'

@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import {Injectable, OnDestroy} from '@angular/core';
 import { TypingMode } from './typewriter.service';
-import { BehaviorSubject } from 'rxjs';
+import {BehaviorSubject, Subject} from 'rxjs';
+import {SettingsService} from './settings.service';
 
 export interface IUser {
   name: string;
@@ -20,19 +21,32 @@ export class User implements IUser {
   ) {}
 }
 
-@Injectable({ providedIn: 'root' })
-export class UserService {
-  $user: IUser = new User();
-  $previousUserSettings: IUser = new User();
-  private userSubject = new BehaviorSubject<User>(this.loadUser());
-  user$ = this.userSubject.asObservable();
+export class UserFactory {
+  static createUser(name: string, mode: TypingMode, score: number, level: number, sections: number): User {
+    return new User(name, mode, score, level, sections);
+  }
+}
 
-  constructor() {
-    this.loadUser();
+
+@Injectable({ providedIn: 'root' })
+export class UserService implements OnDestroy {
+  private userSubject = new BehaviorSubject<User>(new User());
+  private previousUserSubject = new BehaviorSubject<User>(new User());
+  private destroy$ = new Subject<void>();
+
+  constructor(private settings: SettingsService) {
+    this.initializeUser();
+    this.settings.registerSettingSet('user', [this.userSubject.value]);
   }
 
   get user(): User {
-    return this.loadUser();
+    const user = this.userSubject.value;
+    console.warn('user', user);
+    return user;
+  }
+
+  get previousLevel(): number {
+    return this.previousUserSubject.value.level;
   }
 
   get statsString() {
@@ -45,28 +59,52 @@ export class UserService {
     `;
   }
 
-  get previousLevel(): number {
-    return this.$previousUserSettings.level;
+  private initializeUser(): void {
+    const loadedUser = this.loadUser();
+    this.userSubject.next(loadedUser);
   }
-
 
   private loadUser(): User {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : new User();
+    const settingSet = this.settings.getSettingSet('user');
+    if (!settingSet) {
+      return new User();
+    }
+
+    const userData = settingSet.value[0] as User;
+    return userData ? new User(
+      userData.name,
+      userData.mode,
+      userData.score,
+      userData.level,
+      userData.sections
+    ) : new User();
   }
 
-  updateUser(update: Partial<IUser>) {
-    this.$previousUserSettings = this.user;
-    Object.assign(this.$user, update);
+  updateUser(update: Partial<IUser>): User {
+    this.previousUserSubject.next(this.userSubject.value);
+    const updatedUser = new User(
+      update.name ?? this.userSubject.value.name,
+      update.mode ?? this.userSubject.value.mode,
+      update.score ?? this.userSubject.value.score,
+      update.level ?? this.userSubject.value.level,
+      update.sections ?? this.userSubject.value.sections
+    );
+    this.userSubject.next(updatedUser);
+    this.saveUser();
+    return updatedUser;
+  }
+
+  private saveUser(): void {
+    this.settings.updateSettingSet('user', [this.userSubject.value]);
+  }
+
+  resetUser(): void {
+    this.userSubject.next(new User());
     this.saveUser();
   }
 
-  saveUser() {
-    localStorage.setItem('user', JSON.stringify(this.$user));
-  }
-
-  resetUser() {
-    this.$user = new User();
-    this.saveUser();
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

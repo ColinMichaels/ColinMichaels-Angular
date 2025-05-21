@@ -20,7 +20,8 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
       <!-- Experience Card -->
       <div class="resume-section">
 
-        <app-resume-section-header sectionTitle="Experience" [icon]="faBriefcase"/>
+        <app-resume-section-header
+          sectionTitle="Experience" [icon]="faBriefcase"/>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-8 text-base">
           <div class="resume-experience">
@@ -75,13 +76,13 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
             </ul>
           </div>
         </div>
-
       </div>
 
       <!-- Education Card -->
       <div class="resume-section">
 
-        <app-resume-section-header sectionTitle="Education" [icon]="faSchool"/>
+        <app-resume-section-header
+          sectionTitle="Education" [icon]="faSchool"/>
 
         <ul class="list-disc list-inside text-sm">
           <li><strong>Indian River State College</strong>, AS – Computer Info Tech (2010–2012)</li>
@@ -93,7 +94,8 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
       <!-- Skills Card -->
       <div class="resume-section">
 
-        <app-resume-section-header sectionTitle="Skills" [icon]="faCheckDouble"/>
+        <app-resume-section-header
+          sectionTitle="Skills" [icon]="faCheckDouble"/>
 
         <div class="grid sm:grid-cols-2 gap-x-8 text-sm">
           <div>
@@ -124,7 +126,8 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
       <!-- Achievements Card -->
       <div class="resume-section">
 
-        <app-resume-section-header sectionTitle="Achievements" [icon]="faAward"/>
+        <app-resume-section-header
+          sectionTitle="Achievements" [icon]="faAward"/>
 
         <ul class="list-disc list-inside text-base">
           <li>Latin Grammy Winner 2006 – Album: Calle 13</li>
@@ -133,7 +136,8 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
 
       <div class="resume-section">
 
-        <app-resume-section-header sectionTitle="Contact" [icon]="faContactCard"/>
+        <app-resume-section-header
+          sectionTitle="Contact" [icon]="faContactCard"/>
 
         <!-- Contact Card --> <!-- HAS GAME PARTS -->
         <app-contact-section [hidden]="false"></app-contact-section>
