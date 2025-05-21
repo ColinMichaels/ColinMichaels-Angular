@@ -1,5 +1,5 @@
 // system-tray.component.ts
-import {Component, HostListener, Signal, computed, effect, signal, DestroyRef} from '@angular/core';
+import {Component, HostListener, effect, signal, DestroyRef} from '@angular/core';
 import { ApplicationManagerService } from '../../services/application-manager.service';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {ClockDisplayComponent} from '../clock-display/clock-display.component';
@@ -10,19 +10,20 @@ import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
 import {UserService} from '../../services/user.service';
 import {FileSystemService, VIEW_MODES} from '../../services/file-system.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {SoundPlayerComponent} from '../sound-player/sound-player.component';
 
 
 @Component({
   selector: 'app-system-tray',
   standalone: true,
-  templateUrl: './system-tray.component.html',
   imports: [
     NgIf,
     NgForOf,
     ClockDisplayComponent,
     FontAwesomeModule,
     RouterLink,
-    NgClass
+    NgClass,
+    SoundPlayerComponent
   ],
   styles: `
     /* system-tray.component.scss */
@@ -40,21 +41,18 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
     }
     .menu-separator {
       @apply my-1 border-t border-white/20;
-    }`
+    }`,
+  templateUrl: './system-tray.component.html'
 })
 export class SystemTrayComponent {
   isVisible = signal(false);
   cursorY = signal(1000);
-  hoverThreshold = 30;
-  autoHide = signal(false);
+  hoverThreshold = 20;
+  autoHide = signal(true);
   isHoveringMenu = signal(false);
   menuOpen = signal('');
   viewMode = signal(VIEW_MODES.list)
-  windowsOpen = computed(() => {
-    const runningApps = this.appManager.openApplications.length;
-    console.warn('running apps: ', runningApps);
-    return runningApps > 0;
-  })
+
   batteryLevel: string = '66';
 
   constructor(
@@ -65,10 +63,11 @@ export class SystemTrayComponent {
     ) {
     effect(() => {
       if (this.cursorY() <= this.hoverThreshold || this.isHoveringMenu()) {
+        if(this.appManager.getFocusedAppId() !== 'desktop') return;
         this.isVisible.set(true);
       } else {
         if(this.autoHide()){
-          this.isVisible.set(false);
+          this.isVisible.set(true);
           this.menuOpen.set('');
         }
       }
@@ -109,10 +108,6 @@ export class SystemTrayComponent {
     return this.appManager.openApplications;
   }
 
-  closeApp(id: string) {
-    this.appManager.closeApplication(id);
-  }
-
   openApp(id: string){
     this.appManager.openApplication(id );
   }
@@ -121,13 +116,16 @@ export class SystemTrayComponent {
     return this.userService.user.name;
   }
 
-  protected readonly faApple = faApple;
-  protected readonly faMemory = faMemory;
-  protected readonly faBatteryHalf = faBatteryHalf;
-
   closeAllApps() {
     this.appManager.closeAllApps()
   }
 
+  closeApp(id: string) {
+    this.appManager.closeApplication(id);
+  }
+
+  protected readonly faApple = faApple;
+  protected readonly faMemory = faMemory;
+  protected readonly faBatteryHalf = faBatteryHalf;
   protected readonly VIEW_MODES = VIEW_MODES;
 }

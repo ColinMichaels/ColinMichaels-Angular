@@ -1,0 +1,8 @@
+<!-- space-x.component.html -->
+<div class="min-h-screen bg-black text-white font-sans p-6">
+  <ng-container [ngSwitch]="panel">
+    <app-spacex-rocket *ngSwitchCase="'rocket'" [rocket]="rocket"></app-spacex-rocket>
+    <app-spacex-launchpad *ngSwitchCase="'launchpad'" [launchpad]="launchpad"></app-spacex-launchpad>
+    <app-spacex-crew *ngSwitchCase="'crew'" [crew]="crew"></app-spacex-crew>
+  </ng-container>
+</div>

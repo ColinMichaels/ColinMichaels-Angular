@@ -4,7 +4,7 @@
     <header class="text-zinc-500 text-xs">Favorites</header>
     <div *ngFor="let dir of favoriteDirs"
          class="flex items-center space-x-2 py-1 rounded hover:bg-white/10 cursor-pointer"
-         [class.bg-white-50]="dir.path === currentPath"
+         [class]="dir.path === currentPath ? 'bg-white/10' : ''"
          (click)="navigate(dir.path)">
       <span class="text-blue-400"><fa-icon [icon]="faFolder"></fa-icon></span>
       <span class="truncate w-9/12">{{ dir.name }}</span>

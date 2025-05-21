@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 250">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: #231f20;
+        mix-blend-mode: multiply;
+        opacity: .15;
+      }
+
+      .cls-3 {
+        fill: url(#linear-gradient-2);
+      }
+
+      .cls-6 {
+        isolation: isolate;
+      }
+
+      .cls-4 {
+        opacity: .3;
+      }
+
+      .cls-4, .cls-5 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="100" y1="250" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dcddde"/>
+      <stop offset=".11" stop-color="#e0e1e2"/>
+      <stop offset=".56" stop-color="#ecedee"/>
+      <stop offset="1" stop-color="#f1f2f2"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="100" y1="80" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7b6541"/>
+      <stop offset="1" stop-color="#ba9765"/>
+    </linearGradient>
+  </defs>
+  <g class="cls-6">
+    <g id="Layer_2" data-name="Layer 2">
+      <g id="icons">
+        <g>
+          <g>
+            <polygon class="cls-1" points="200 250 0 250 0 0 140 0 200 60 200 250"/>
+            <polygon class="cls-3" points="140 0 0 0 0 80 200 80 200 60 140 0"/>
+            <polygon class="cls-4" points="140 60 200 60 140 0 140 60"/>
+            <g>
+              <path class="cls-5" d="M21.25,49.4l-3.5,10.6h-4.5l11.45-33.7h5.25l11.5,33.7h-4.65l-3.6-10.6h-11.95ZM32.3,46l-3.3-9.7c-.75-2.2-1.25-4.2-1.75-6.15h-.1c-.5,2-1.05,4.05-1.7,6.1l-3.3,9.75h10.15Z"/>
+              <path class="cls-5" d="M53.15,60l-11-33.7h4.7l5.25,16.6c1.45,4.55,2.7,8.65,3.6,12.6h.1c.95-3.9,2.35-8.15,3.85-12.55l5.7-16.65h4.65l-12.05,33.7h-4.8Z"/>
+              <path class="cls-5" d="M80,26.3v33.7h-4.35V26.3h4.35Z"/>
+            </g>
+          </g>
+          <path class="cls-2" d="M100,108.92c-30.06,0-54.42,24.36-54.42,54.42s24.36,54.42,54.42,54.42,54.42-24.36,54.42-54.42-24.36-54.42-54.42-54.42ZM132.88,170.22l-44.99,25.97c-6.56,3.79-11.92.69-11.92-6.88v-51.95c0-7.57,5.37-10.67,11.92-6.88l44.99,25.97c6.56,3.79,6.56,9.98,0,13.77Z"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

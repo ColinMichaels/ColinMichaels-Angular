@@ -1,4 +1,5 @@
-<div class="tool-tip-container flex flex-col bg-zinc-600 h-full  items-center justify-start gap-8 overflow-y-auto py-8">
+<div class="container flex flex-col bg-zinc-800/70
+h-full w-full min-w-min  items-center justify-center gap-10 overflow-y-auto py-8">
 
   <div class="grid grid-cols-4 gap-x-8 gap-y-4" [class]="'grid-cols-' + (allTooltips.length * 2 + 1)">
     <div *ngFor="let tooltips of allTooltips" class="flex flex-col items-center space-y-4">
@@ -9,14 +10,14 @@
                tooltip,
                (tooltips.message ?? '') + buildNotifyMessage(tooltip))"
                [class]="tooltip.cssClass ?? 'tooltip-default'"
-               class="w-12 h-12"
+               class="w-20 h-20 shadow-xl shadow-black/40  active:shadow"
                [appTooltip]="tooltip.text"
                [tooltipShowArrow]="true"
                [tooltipSize]="tooltip.size ?? 'sm'"
                [tooltipPosition]="tooltip.position ?? 'top'"
                [tooltipAutoDismiss]="tooltip.autoDismissDelay ?? 3000"
-               [tooltipHideDelay]="tooltip.hideDelay ?? 1000"
-               [tooltipClass]="tooltip.toolTipClass ?? 'bg-zinc-800'"
+               [tooltipfadeDuration]="tooltip.fadeDuration ?? 1000"
+               [tooltipCssClass]="tooltip.toolTipClass ?? 'bg-zinc-800'"
           >
             {{ tooltip.text }}
           </div>
@@ -30,10 +31,9 @@
   </div>
 
   <ng-container *ngIf="showDocs" (click)="showDocs = false">
-
-   <div class="prose h-50 max-w-none overflow-y-auto h-full text-white px-2 bg-zinc-800 border-t-2 border-zinc-800">
+   <div class="prose h-full max-w-none overflow-y-auto max-h-64 bg-white px-2  border-t-2 border-zinc-800">
    <app-markdown-reader [filename]="docs"></app-markdown-reader>
-    </div>
+   </div>
   </ng-container>
 
 </div>

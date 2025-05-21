@@ -16,7 +16,8 @@ export class SoundService {
     'click': ['click-1.mp3', 'click-2.mp3', 'click-3.mp3'],
     'glitch': ['glitch-1.mp3', 'glitch-2.mp3', 'glitch-3.mp3', 'glitch-4.mp3'],
     'beep': ['digital-beep-1.mp3', 'digital-beep-2.mp3'],
-    'dramatic': ['dramatic1.mp3', 'dramatic2.mp3']
+    'dramatic': ['dramatic1.mp3', 'dramatic2.mp3'],
+    'drums' : ['drum-1.mp3', 'drum-2.mp3', "drum-3.mp3", 'drum-4.mp3', 'drum-5.mp3']
   };
 
   private audioCache = new Map<string, HTMLAudioElement>();
@@ -83,6 +84,13 @@ export class SoundService {
     return pool[index];
   }
 
+  /* playStream(url: string, options: SoundOptions = {}) {
+     const audio = new Audio(url);
+     audio.play().catch(err => {
+       console.warn(`Audio play error for ${url}:`, err);
+     });
+   }*/
+
   play(fileName: string, options: SoundOptions = {}) {
     if (this.isMuted) return;
 
@@ -98,6 +106,7 @@ export class SoundService {
 
     if (!audio || forceRestart) {
       audio = new Audio(path);
+      audio.crossOrigin = 'anonymous';
       this.audioCache.set(path, audio);
     }
 
@@ -163,4 +172,22 @@ export class SoundService {
   getMute(): boolean {
     return this.isMuted;
   }
+
+  setVolume(fileName: string, volume: number) {
+    const path = this.basePath + fileName;
+    const audio = this.audioCache.get(path);
+    if (audio) {
+      // Convert volume from 0-100 range to 0-1 range
+      audio.volume = volume / 100;
+    }
+  }
+
+  /*  fadeOutVolume(fileName: string, volume: number, duration: number) {
+      const path = this.basePath + fileName;
+      const audio = this.audioCache.get(path);
+      if (audio) {
+
+      }
+    }*/
+
 }

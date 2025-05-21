@@ -33,6 +33,55 @@ export const FILE_TYPE_ICONS: FileTypeIcon[] = [
   {name: 'app', type: 'custom', ext: 'app', label: 'Application', icon: '🧩'},
 ];
 
+export enum FileExtensions {
+  avi = 'avi',
+  css = 'css',
+  doc = 'doc',
+  gif = 'gif',
+  htm = 'htm',
+  jpg = 'jpg',
+  mov = 'mov',
+  mp3 = 'mp3',
+  pdf = 'pdf',
+  png = 'png',
+  ppt = 'ppt',
+  rar = 'rar',
+  txt = 'txt',
+  xls = 'xls',
+  zip = 'zip',
+  svg = 'svg'
+}
+
+export enum SvgIcons {
+  Calculator = "calculator",
+  Calendar = "calendar",
+  Camera = "camera",
+  Clock = "clock",
+  Gif = "gif",
+  IMessage = "imessage",
+  ITunes = "itunes",
+  Mail = "mail",
+  Notes = "notes",
+  Phone = "phone",
+  Photos = "photos",
+  Safari = "safari",
+  Weather = "weather",
+}
+
+
+export enum FileTypes {
+  folder = 'folder',
+  image = 'image',
+  video = 'video',
+  audio = 'audio',
+  document = 'document',
+  code = 'code',
+  archive = 'archive',
+  system = 'system',
+  app = 'app',
+
+}
+
 export enum VIEW_MODES  {
   list= 'list', columns = 'columns', grid ='grid'
 }

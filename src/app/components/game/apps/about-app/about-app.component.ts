@@ -15,7 +15,7 @@ export class AboutAppComponent {
     model: 'ColinBook Pro',
     screen: '14-inch, 2025',
     chip: 'Colin M6 Max',
-    memory: '64 GB',
+    memory: '16 GB',
     serial: 'CM59EJ312',
     os: 'Colinoia 15.3.2'
   };
