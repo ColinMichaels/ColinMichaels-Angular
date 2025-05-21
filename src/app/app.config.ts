@@ -5,6 +5,7 @@ import { routes } from './app.routes';
 import {provideHttpClient} from '@angular/common/http';
 import {provideMarkdown} from 'ngx-markdown';
 import {provideAnimations} from '@angular/platform-browser/animations';
+import {defaultSoundConfig, SOUND_SERVICE_CONFIG} from './components/game/services/sound.service';
 
 
 export const appConfig: ApplicationConfig = {
@@ -13,6 +14,10 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withHashLocation()),
     provideMarkdown(),
-    provideAnimations()
+    provideAnimations(),
+    {
+      provide: SOUND_SERVICE_CONFIG,
+      useValue: defaultSoundConfig
+    }
   ]
 };
