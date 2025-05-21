@@ -27,6 +27,7 @@ import {IconPlaygroundComponent} from '../apps/icon-playground/icon-playground.c
 import {TaskAppComponent} from '../apps/task-app/task-app.component';
 import {MusicPlayerComponent} from '../apps/music-player/music-player.component';
 import {SpaceXComponent} from '../apps/space-x/space-x.component';
+import {LogService} from './log.service';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -139,7 +140,8 @@ export class ApplicationManagerService {
 
   constructor(
     private appFactory: ApplicationFactory,
-    private notify: NotificationService
+    private notify: NotificationService,
+    private logger: LogService
   ) {
     this.registerApps();
     this.registerSystemApps();
@@ -403,7 +405,7 @@ export class ApplicationManagerService {
   openApplication(id: string, args?: []): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
 
-    console.warn('args', args);
+    this.logger.debug('args', args);
 
     const focusId = this.focusedAppId.getValue();
 

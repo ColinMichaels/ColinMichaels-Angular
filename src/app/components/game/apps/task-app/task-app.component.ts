@@ -10,9 +10,9 @@ import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArchive, faCheck, faPlus, faRedo, faTrash} from '@fortawesome/free-solid-svg-icons';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {LogService} from '../../services/log.service';
 
 type TaskStatus = 'all' | Task['status'];
-
 
 @Component({
   selector: 'app-task-app',
@@ -43,6 +43,7 @@ export class TaskAppComponent implements OnInit {
   constructor(
     private taskService: TaskService,
     private fb: FormBuilder,
+    private logger: LogService,
     private destroyRef: DestroyRef
   ) {
     this.taskForm = this.fb.group({
@@ -77,9 +78,7 @@ export class TaskAppComponent implements OnInit {
     ]).pipe(
       takeUntilDestroyed(this.destroyRef),
       map(([tasks, statusFilter, searchTerm, typeFilter]) => {
-        console.warn('map', tasks, statusFilter, searchTerm, typeFilter);
         return tasks.filter(task => {
-          console.warn('filter', task);
           // Null safety checks
           if (!task?.data || !task?.type) return false;
 
@@ -90,19 +89,16 @@ export class TaskAppComponent implements OnInit {
             task.data.toLowerCase().includes(searchTerm.toLowerCase()) ||
             task.type.toLowerCase().includes(searchTerm.toLowerCase())
           );
-
-          console.warn('matchesStatus', matchesStatus);
-
           return matchesStatus && matchesType && matchesSearch;
         });
       }),
       catchError(error => {
-        console.error('Error in filter stream:', error);
+        this.logger.error(`Error in filter stream: ${error?.message ?? error}`);
         return of([]);
       }),
       map(tasks => this.sortTasks(tasks)),
       catchError(error => {
-        console.error('Error filtering tasks:', error);
+        this.logger.error(`Error filtering tasks: ${error?.message ?? error}`);
         return of([]);
       })
     );
