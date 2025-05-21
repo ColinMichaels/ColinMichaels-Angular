@@ -9,11 +9,12 @@ import {AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ApplicationManagerService} from '../../services/application-manager.service';
-import {take} from 'rxjs';
+import {debounceTime, take} from 'rxjs';
 import {NotificationService} from '../../services/notification.service';
 import {MediaItem} from '../../services/media.service';
 import {faThumbsUp} from '@fortawesome/free-solid-svg-icons';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
+import {LogEntry, LogService} from '../../services/log.service';
 
 const CLI_HISTORY_LIMIT = 50; // eventually move to a memory upgrade
 
@@ -40,6 +41,10 @@ export class CliGameComponent implements OnInit {
   typedText = '';
   userInput = '';
 
+  visibleLogs: LogEntry[] = [];
+  logPage = 0;
+  logPageSize = 20;
+
   @ViewChild('input', {static: true}) input: ElementRef | undefined;
 
 
@@ -65,13 +70,39 @@ export class CliGameComponent implements OnInit {
     private aiChat: AiChatService,
     private userService: UserService,
     private notify: NotificationService,
+    private logger: LogService,
     private destroyRef: DestroyRef
   ) {
     this.typewriter.typedText$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((text) => {
         this.typedText = text;
-      })
+      });
+    this.logger.logs$.pipe(
+      debounceTime(300),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.updateLogPage();
+    });
+  }
+
+  updateLogPage(): void {
+    this.visibleLogs = this.logger.getLogsPage(this.logPage, this.logPageSize);
+  }
+
+  nextLogPage(): void {
+    const next = this.logPage + 1;
+    if (this.logger.getLogsPage(next, this.logPageSize).length > 0) {
+      this.logPage = next;
+      this.updateLogPage();
+    }
+  }
+
+  prevLogPage(): void {
+    if (this.logPage > 0) {
+      this.logPage--;
+      this.updateLogPage();
+    }
   }
 
   ngOnInit() {

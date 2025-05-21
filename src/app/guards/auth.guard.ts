@@ -9,20 +9,16 @@ import {UserService} from '../components/game/services/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
-  constructor(private router: Router, private usersService: UserService) {
+  constructor(private router: Router, private userService: UserService) {
   }
 
-  canActivate(): boolean | UrlTree | Observable<boolean | UrlTree> {
-    const user = this.usersService.user;
-
-    try {
-      if (user?.name) {
-        return true;
-      }
-    } catch (err) {
-      // If parsing fails or structure is invalid
+  canActivate(): boolean {
+    if (this.userService.user?.name) {
+      return true;
     }
 
-    return this.router.parseUrl('/login');
+    this.router.navigate(['/login']);
+    return false;
   }
+
 }

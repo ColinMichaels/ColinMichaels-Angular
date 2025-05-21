@@ -5,8 +5,8 @@ import {
   faChartSimple,
   faCircleInfo, faCogs,
   faComputer,
-  faExclamationTriangle, faIcons,
-  faPerson
+  faExclamationTriangle, faIcons, faMusic, faNoteSticky,
+  faPerson, faRocket
 } from '@fortawesome/free-solid-svg-icons';
 import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
 
@@ -24,6 +24,9 @@ import {ApplicationFactory} from '../factories/application-factory';
 import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
 import {faCss} from '@fortawesome/free-brands-svg-icons';
 import {IconPlaygroundComponent} from '../apps/icon-playground/icon-playground.component';
+import {TaskAppComponent} from '../apps/task-app/task-app.component';
+import {MusicPlayerComponent} from '../apps/music-player/music-player.component';
+import {SpaceXComponent} from '../apps/space-x/space-x.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -31,6 +34,13 @@ export interface ApplicationInstance extends AppEntry {
   parent: AppEntry | null;
   component: Type<any>;
   autofit: boolean;
+  windowSize?: {
+    width?: number;
+    height?: number;
+  };
+  maxInstances: number;
+  instanceIndex: number;
+  type: 'system' | 'other' | 'app',
   memory: number; // in MB
   offsetX?: number;
   offsetY?: number;
@@ -64,6 +74,10 @@ export interface AppEntry {
     website?: string;
   }
   autofit?: boolean;
+  windowSize?: {
+    width?: number;
+    height?: number;
+  };
   installed: boolean;
   running?: boolean;
   focused?: boolean;
@@ -96,8 +110,11 @@ export enum APP_ID {
   activity_monitor = 'activity-monitor',
   system_settings = 'system-settings',
   markdown_reader = 'markdown-reader',
+  music_player = 'music-player',
   tailwind_preview = 'tailwind-preview',
+  tasks_app = 'tasks',
   tooltip_example = 'tooltip-example',
+  space_x_app = 'space-x-app',
   icon_playground = 'icon-playground'
 }
 
@@ -125,55 +142,11 @@ export class ApplicationManagerService {
     private notify: NotificationService
   ) {
     this.registerApps();
+    this.registerSystemApps();
     this.loadSavedApplications();
   }
 
   private registerApps() {
-    this.registerApp({
-      id: APP_ID.cli,
-      title: 'cli Console',
-      component: CliGameComponent,
-      installed: true,
-      icon: {
-        class: 'bg-zinc-900 text-green-500 rounded p-1 shadow-lg border-2 border-zinc-500 text-base',
-        svgPath: faComputer
-      },
-      memory: 1024,
-      maxInstances: 5,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.finder,
-      title: 'Finder',
-      component: FinderAppComponent,
-      installed: true,
-      icon: {
-        class: 'text-[20px] gradient--bg-blue p-1 rounded shadow-lg border-2 border-zinc-600 text-black',
-        svgPath: faFaceGrin
-      },
-      memory: 512,
-      maxInstances: 5,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.about,
-      title: 'About',
-      component: AboutAppComponent,
-      installed: true,
-      icon: {
-        class: 'p-2 text-[32px]',
-        svgPath: faCircleInfo
-      },
-      autofit: true,
-      memory: 128,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
 
     this.registerApp({
       id: APP_ID.player_config,
@@ -191,13 +164,13 @@ export class ApplicationManagerService {
     });
 
     this.registerApp({
-      id: APP_ID.activity_monitor,
-      title: 'Activity Monitor',
-      component: ActivityMonitorComponent,
+      id: APP_ID.tooltip_example,
+      title: 'Tooltip Example',
+      component: TooltipExamplesComponent,
       installed: true,
       icon: {
-        class: 'bg-zinc-900 text-sm p-2 rounded-sm shadow-sm border-2 border-zinc-700 text-green-500',
-        svgPath: faChartSimple
+        class: 'text-teal-500/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faCogs
       },
       memory: 512,
       maxInstances: 1,
@@ -206,32 +179,52 @@ export class ApplicationManagerService {
     });
 
     this.registerApp({
-      id: APP_ID.system_settings,
-      title: 'System Settings',
-      component: SettingsPanelComponent,
+      id: APP_ID.tasks_app,
+      title: 'Tasks',
+      component: TaskAppComponent,
       installed: true,
+      autofit: true,
       icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
-        svgPath: faCogs
+        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faNoteSticky
       },
       memory: 512,
       maxInstances: 1,
-      type: AppType.system,
+      type: AppType.app,
       instanceIndex: 0
     });
 
     this.registerApp({
-      id: APP_ID.tooltip_example,
-      title: 'Tooltip Example',
-      component: TooltipExamplesComponent,
+      id: APP_ID.music_player,
+      title: 'Music',
+      component: MusicPlayerComponent,
       installed: true,
+      windowSize: {height: 400, width: 200},
+      autofit: true,
       icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
-        svgPath: faCogs
+        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faMusic
       },
       memory: 512,
       maxInstances: 1,
-      type: AppType.system,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.space_x_app,
+      title: 'Space X Launches',
+      component: SpaceXComponent,
+      installed: true,
+      windowSize: {height: 400, width: 200},
+      autofit: false,
+      icon: {
+        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
+        svgPath: faRocket
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
       instanceIndex: 0
     });
 
@@ -257,7 +250,7 @@ export class ApplicationManagerService {
       component: TailwindPreviewComponent,
       installed: true,
       icon: {
-        class: 'text-white/80 text-[20px] py-1 px-1.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-900',
+        class: 'text-white/80 text-[20px] py-1 px-1.5 rounded-lg border-2 border-zinc-700',
         svgPath: faCss
       },
       memory: 512,
@@ -280,6 +273,86 @@ export class ApplicationManagerService {
       type: AppType.app,
       instanceIndex: 0
     });
+  }
+
+  private registerSystemApps() {
+
+    this.registerApp({
+      id: APP_ID.activity_monitor,
+      title: 'Activity Monitor',
+      component: ActivityMonitorComponent,
+      installed: true,
+      icon: {
+        class: 'bg-zinc-900 text-sm p-2 rounded-sm shadow-sm border-2 border-zinc-700 text-green-500',
+        svgPath: faChartSimple
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.system,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.cli,
+      title: 'cli Console',
+      component: CliGameComponent,
+      installed: true,
+      icon: {
+        class: 'bg-zinc-900 text-green-500 rounded p-1 shadow-lg border-2 border-zinc-500 text-base',
+        svgPath: faComputer
+      },
+      memory: 1024,
+      maxInstances: 5,
+      type: AppType.system,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.finder,
+      title: 'Finder',
+      component: FinderAppComponent,
+      installed: true,
+      icon: {
+        class: 'text-[20px] gradient--bg-blue p-1 rounded shadow-lg border-2 border-zinc-600 text-black',
+        svgPath: faFaceGrin
+      },
+      memory: 512,
+      maxInstances: 5,
+      type: AppType.system,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.system_settings,
+      title: 'System Settings',
+      component: SettingsPanelComponent,
+      installed: true,
+      icon: {
+        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
+        svgPath: faCogs
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.system,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.about,
+      title: 'About',
+      component: AboutAppComponent,
+      installed: true,
+      icon: {
+        class: 'p-2 text-[32px]',
+        svgPath: faCircleInfo
+      },
+      autofit: true,
+      memory: 128,
+      maxInstances: 1,
+      type: AppType.system,
+      instanceIndex: 0
+    });
+
   }
 
   private loadSavedApplications() {

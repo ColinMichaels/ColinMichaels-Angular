@@ -54,11 +54,24 @@ export class SettingsService {
   // Register a new standalone setting
   registerSetting<T>(id: string, defaultValue: T): void {
     if (!this.settings.has(id)) {
-      const storedValue = this.storageService.getItem<T>(id) ?? defaultValue;
-      const subject = new BehaviorSubject<T>(storedValue);
+      const subject = new BehaviorSubject<T>(defaultValue);
+
+      this.storageService.getItem<T>(id).subscribe({
+        next: (storedValue) => {
+          if (storedValue !== null) {
+            subject.next(storedValue);
+          }
+        },
+        error: (error) => {
+          console.error(`Failed to load setting ${id}:`, error);
+          // Keep using defaultValue in case of error
+        }
+      });
+
       this.settings.set(id, subject);
     }
   }
+
 
   private showNotify(message = '', title = 'Setting') {
     this.notify.show({ title: title, message: message, type: 'error'});
@@ -83,11 +96,27 @@ export class SettingsService {
   // Register a new setting set (array of objects/values)
   registerSettingSet<T>(id: string, defaultValues: T[]): void {
     if (!this.settingSets.has(id)) {
-      const storedValues = this.storageService.getItems<T>(id) ?? defaultValues;
-      const subject = new BehaviorSubject<T[]>(storedValues);
+      const subject = new BehaviorSubject<T[]>(defaultValues);
       this.settingSets.set(id, subject);
+
+      // Get stored values asynchronously
+      this.storageService.getItems<T>(id).subscribe({
+        next: (storedValues) => {
+          if (storedValues !== null) {
+            subject.next(storedValues);
+          } else {
+            // If no stored values, store the defaults
+            this.storageService.setItems(id, defaultValues);
+          }
+        },
+        error: (error) => {
+          console.error(`Failed to load setting set ${id}:`, error);
+          // Keep using defaultValues in case of error
+        }
+      });
     }
   }
+
 
   // Get observable for a setting set
   getSettingSet<T>(id: string): BehaviorSubject<T[]> | null {

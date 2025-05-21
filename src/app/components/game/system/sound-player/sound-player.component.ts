@@ -1,10 +1,11 @@
 // sound-player.component.ts
-import {SoundService} from '../../services/sound.service';
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faPause, faPlay, faVolumeUp} from '@fortawesome/free-solid-svg-icons';
 import {Setting, SettingsService} from '../../services/settings.service';
+import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-sound-player',
@@ -22,7 +23,7 @@ import {Setting, SettingsService} from '../../services/settings.service';
           type="range"
           [value]="volume()"
           (input)="onVolumeChange($event)"
-          class="w-20 accent-blue-500"
+          class="w-20 accent-gray-300"
           min="0"
           max="100"
         >
@@ -30,40 +31,36 @@ import {Setting, SettingsService} from '../../services/settings.service';
     </div>
   `
 })
-export class SoundPlayerComponent implements OnInit {
-  private soundFiles = [
-    {
-      name: 'Ambient',
-      src: 'ambient.mp3'
-    }
-    ];
-  private soundService = inject(SoundService);
+export class SoundPlayerComponent {
+  private musicService = inject(MusicService);
   private settingsService = inject(SettingsService);
-  private readonly settingsSetId = 'audio-player';
   private settings: Setting[] = [
-    { id: 'volume', value: 50},
+    {id: 'volume', value: 0.1},
     {id: 'playing', value: false},
-    {id: 'soundFiles', value: this.soundFiles}
+    {id: 'soundFiles', value: []}
   ];
 
   constructor() {
-    this.settingsService.registerSettingSet(this.settingsSetId, this.settings);
+    this.settingsService.registerSettingSet(MUSIC_PLAYER_SETTING_ID, this.settings);
+    this.musicService.isPlayingChanged.pipe(takeUntilDestroyed()).subscribe(playing => {
+      this.isPlaying.set(playing);
+    });
   }
 
-  ngOnInit(): void {
-
+  get currentSong() {
+    return this.musicService.currentTrack;
   }
 
   isPlaying = signal(false);
-  volume = signal(50);
+  volume = signal(0.1);
 
   togglePlayPause() {
     this.isPlaying.update(v => {
-      this.settingsService.updateSettingSetWithSingleValue(this.settingsSetId, 'playing', !v);
+      this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'playing', !v);
       if(v){
-        this.soundService.pause(this.soundFiles[0].src);
+        this.musicService.pause();
       }else {
-        this.soundService.play(this.soundFiles[0].src, {loop: true, volume: this.volume()/100});
+        this.musicService.play();
       }
       return !v;
     });
@@ -73,8 +70,8 @@ export class SoundPlayerComponent implements OnInit {
   onVolumeChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.volume.set(Number(value));
-    this.settingsService.updateSettingSetWithSingleValue(this.settingsSetId, 'volume', value);
-    this.soundService.setVolume(this.soundFiles[0].src, this.volume());
+    this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', value);
+    this.musicService.setVolume(this.volume() / 100);
     // Update volume through sound service
   }
 

@@ -68,32 +68,35 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
               <li>Developed court apps with PHP, Bootstrap, MySQL.</li>
             </ul>
           </div>
-          <div class="resume-experience hidden">
-            <h3 class="font-bold">Front End Developer – Quinncom</h3>
-            <p class="r-loc-date">Jupiter, FL | Apr 2012 – Jan 2015</p>
-            <ul>
-              <li>Managed 500+ WordPress sites. Custom themes from mockups.</li>
-            </ul>
-          </div>
         </div>
       </div>
 
       <!-- Education Card -->
       <div class="resume-section">
-
         <app-resume-section-header
           sectionTitle="Education" [icon]="faSchool"/>
 
-        <ul class="list-disc list-inside text-sm">
-          <li><strong>Indian River State College</strong>, AS – Computer Info Tech (2010–2012)</li>
-          <li><strong>Full Sail</strong>, AS – Recording Arts (1998–1999)</li>
-          <li><strong>Kent State University</strong>, Marketing / Business (1996–1998)</li>
-        </ul>
+        <div class="resume-experience">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-8 text-base">
+
+            <div>
+              <h3 class="font-bold">Indian River State College</h3>
+              <p class="r-loc-date"> AS – Computer Info Tech (2010–2012)</p>
+            </div>
+
+            <div>
+              <h3 class="font-bold">Full Sail University</h3>
+              <p class="r-loc-date"> AS – Recording Arts (1998–1999)</p>
+            </div>
+
+          </div>
+
+        </div>
       </div>
 
       <!-- Skills Card -->
       <div class="resume-section">
-
         <app-resume-section-header
           sectionTitle="Skills" [icon]="faCheckDouble"/>
 
@@ -120,12 +123,12 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
               <li><strong>Tools:</strong> Photoshop, Sketch, Postman, NPM</li>
             </ul>
           </div>
+
         </div>
       </div>
 
       <!-- Achievements Card -->
       <div class="resume-section">
-
         <app-resume-section-header
           sectionTitle="Achievements" [icon]="faAward"/>
 
@@ -141,6 +144,7 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
 
         <!-- Contact Card --> <!-- HAS GAME PARTS -->
         <app-contact-section [hidden]="false"></app-contact-section>
+
       </div>
 
     </section>`

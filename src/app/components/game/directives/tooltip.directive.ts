@@ -24,10 +24,12 @@ export class TooltipDirective {
   }) toolTipClass: string = '';
   @Input() tooltipPosition: TooltipPosition = 'top';
   @Input() tooltipSize: TooltipSize = 'md';
-  @Input() tooltipAutoDismiss: number | null = null;
-  @Input() tooltipHideDelay: number | null = null;
+  @Input() tooltipfadeDuration: number | null = null;
   @Input() tooltipShowArrow: boolean = false;
   @Input() tooltipCssClass: string = '';
+  @Input() tooltipAutoDismiss = 2000; // Default 2 seconds
+  @Input() tooltipFadeDuration = 200; // Default 200ms fade
+
 
   constructor(
     private el: ElementRef,
@@ -38,6 +40,7 @@ export class TooltipDirective {
   onMouseEnter() {
     const text = this.tooltipText.trim();
     if (!text) return;
+
     this.tooltipService.show({
       hostElement: this.el.nativeElement,
       toolTipClass: this.toolTipClass,
@@ -46,13 +49,13 @@ export class TooltipDirective {
       position: this.tooltipPosition,
       size: this.tooltipSize,
       autoDismissDelay: this.tooltipAutoDismiss ?? undefined,
-      hideDelay: this.tooltipHideDelay,
+      fadeDuration: this.tooltipfadeDuration,
       showArrow: this.tooltipShowArrow ?? false
     });
   }
 
   @HostListener('mouseleave')
   onMouseLeave() {
-    this.tooltipService.hide(false, this.tooltipHideDelay ?? 0);
+    this.tooltipService.hide(false, this.tooltipfadeDuration ?? 0);
   }
 }

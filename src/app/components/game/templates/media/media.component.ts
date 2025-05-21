@@ -36,6 +36,7 @@ import {SvgIconComponent} from '../app-icon/svg-icon.component';
       <img *ngIf="isImage()"
            [src]="imageUrl"
            [alt]="altText"
+           loading="lazy"
            class="media-image w-full h-full"/>
 
       <!-- Icon rendering -->
