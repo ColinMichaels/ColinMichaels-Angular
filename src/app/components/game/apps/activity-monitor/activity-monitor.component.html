@@ -26,15 +26,15 @@
           <table class="w-full text-left table-fixed border-collapse text-[10px]">
             <thead class="uppercase text-white border-b border-white/10">
             <tr  [ngClass]=" sortDirection === 'asc' ? 'cursor-n-resize' : 'cursor-s-resize'">
-              <th (click)="sortBy('name')">Name</th>
-              <th (click)="sortBy('cpu')">% CPU</th>
-              <th (click)="sortBy('cpuTime')">CPU Time</th>
-              <th (click)="sortBy('threads')">Threads</th>
-              <th (click)="sortBy('idleWakeUps')">Idle</th>
-              <th (click)="sortBy('gpu')">% GPU</th>
-              <th (click)="sortBy('gpuTime')">GPU Time</th>
-              <th (click)="sortBy('pid')">PID</th>
-              <th (click)="sortBy('user')">User</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('name')">Name</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('cpu')">% CPU</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('cpuTime')">CPU Time</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('threads')">Threads</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('idleWakeUps')">Idle</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('gpu')">% GPU</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('gpuTime')">GPU Time</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('pid')">PID</th>
+              <th (keydown)="$event.preventDefault()" (click)="sortBy('user')">User</th>
             </tr>
             </thead>
             <tbody>

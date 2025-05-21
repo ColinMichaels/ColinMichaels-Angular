@@ -28,6 +28,7 @@ import {TaskAppComponent} from '../apps/task-app/task-app.component';
 import {MusicPlayerComponent} from '../apps/music-player/music-player.component';
 import {SpaceXComponent} from '../apps/space-x/space-x.component';
 import {LogService} from './log.service';
+import {PianoComponent} from '../apps/music-apps/piano/piano.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -108,6 +109,7 @@ export enum APP_ID {
   finder = 'finder',
   about = 'about',
   player_config = 'player-config',
+  music_piano = 'music-piano',
   activity_monitor = 'activity-monitor',
   system_settings = 'system-settings',
   markdown_reader = 'markdown-reader',
@@ -202,6 +204,23 @@ export class ApplicationManagerService {
       component: MusicPlayerComponent,
       installed: true,
       windowSize: {height: 400, width: 200},
+      autofit: true,
+      icon: {
+        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faMusic
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.music_piano,
+      title: 'Piano',
+      component: PianoComponent,
+      installed: true,
+      windowSize: {height: 400, width: 1000},
       autofit: true,
       icon: {
         class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
