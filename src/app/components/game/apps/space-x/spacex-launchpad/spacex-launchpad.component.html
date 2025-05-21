@@ -1,0 +1,38 @@
+<!-- spacex-launchpad.component.html -->
+<div class="mx-auto bg-black text-white font-sans" *ngIf="launchpad">
+  <h1 class="text-3xl font-bold text-emerald-400 mb-2">{{ launchpad.name }}</h1>
+  <p class="text-sm text-gray-400 mb-4 italic">{{ launchpad.full_name }}</p>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-300">
+    <div><strong>Locality:</strong> {{ launchpad.locality }}</div>
+    <div><strong>Region:</strong> {{ launchpad.region }}</div>
+    <div><strong>Timezone:</strong> {{ launchpad.timezone }}</div>
+    <div><strong>Status:</strong> <span
+      [ngClass]="{'text-green-400': launchpad.status === 'active', 'text-red-400': launchpad.status !== 'active'}">{{ launchpad.status }}</span>
+    </div>
+    <div><strong>Attempts:</strong> {{ launchpad.launch_attempts }}</div>
+    <div><strong>Successes:</strong> {{ launchpad.launch_successes }}</div>
+  </div>
+
+  <div class="mt-6" (click)="openMap(launchpad.latitude, launchpad.longitude)">
+    <h2 class="text-lg font-semibold text-white mb-2">Location</h2>
+    <fa-icon [icon]="faMapLocation"></fa-icon>
+    <p class="text-gray-600 text-xs">Latitude: {{ launchpad.latitude }}, Longitude: {{ launchpad.longitude }}</p>
+  </div>
+
+  <div class="mt-6">
+    <h2 class="text-lg font-semibold text-white mb-2">Associated Launches</h2>
+    <ul class="list-disc list-inside text-sm text-blue-300">
+      <li *ngFor="let id of launchpad.launches">
+        <div class="cursor-pointer" (click)="loadLaunch(id)">Launch ID: {{ id }}</div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="mt-6">
+    <h2 class="text-lg font-semibold text-white mb-2">Supported Rockets</h2>
+    <ul class="list-disc list-inside text-sm text-blue-300">
+      <li *ngFor="let id of launchpad.rockets">Rocket ID: {{ id }}</li>
+    </ul>
+  </div>
+</div>

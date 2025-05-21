@@ -1,4 +1,4 @@
-import {Component, OnInit, SecurityContext} from '@angular/core';
+import {Component, OnDestroy, OnInit, SecurityContext} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -21,6 +21,11 @@ import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fort
 import {Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
 import {DomSanitizer} from '@angular/platform-browser';
+import {MusicService} from '../../services/music.service';
+import {SettingsService} from '../../services/settings.service';
+import {Subject, takeUntil} from 'rxjs';
+import {PATH_NAMES} from '../../../../app.routes';
+import {LogService} from '../../services/log.service';
 
 @Component({
   selector: 'app-login-screen',
@@ -34,17 +39,22 @@ import {DomSanitizer} from '@angular/platform-browser';
   ],
   templateUrl: './login-screen.component.html'
 })
-export class LoginScreenComponent implements OnInit {
+export class LoginScreenComponent implements OnInit, OnDestroy {
   form: FormGroup;
-  user = {} as User;
+  user?: User;
+  private destroy$ = new Subject<void>();
+
   backgroundImage = 'assets/images/backgrounds/night.webp';
 
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
     private soundService: SoundService,
+    private musicService: MusicService,
+    private settingsService: SettingsService,
+    private logger: LogService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
   ) {
     this.form = this.fb.group({
       username: ['', [
@@ -52,38 +62,34 @@ export class LoginScreenComponent implements OnInit {
         Validators.pattern(/^[A-Za-z][A-Za-z\s'-]{1,31}$/),
         Validators.maxLength(24),
         Validators.minLength(4),
-        // Add custom validator for additional security
         this.noScriptValidator()
       ]]
     });
+
   }
-
-
-  // Custom validator to check for potential script injection
-  private noScriptValidator() {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
-      if (!value) return null;
-
-      // Check for common script injection patterns
-      const suspicious = /<script|javascript:|onclick|onerror|onload|eval\(|String\.fromCharCode|\\x[0-9A-Fa-f]{2}/i.test(value);
-      return suspicious ? {scriptDetected: true} : null;
-    };
-  }
-
 
   ngOnInit() {
-    this.user = this.userService.user;
-    this.router.events.subscribe(event => {
-      console.log('Router Event:', event);
-    });
+    // First check if there's an existing user in the settings
+    this.settingsService.getSettingSet('user')
+      ?.pipe(
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (userSettings) => {
+          if (userSettings?.[0]) {
+            this.user = userSettings[0] as User;
+            if (this.user?.name) {
+              this.form.patchValue({username: this.user.name});
+            }
+          }
+        },
+        error: (error) => {
+          this.logger.error(`Error fetching user settings: `, error);
+        }
+      });
 
-    console.warn(this.user);
-    // TODO: sanitize and clean form input domSanitizer?
     this.soundService.stopAll();
-    if (this.user) {
-      this.form.patchValue({username: this.user.name});
-    }
+    this.musicService.stopAll();
   }
 
   submit(event: { preventDefault: () => void; }) {
@@ -102,30 +108,49 @@ export class LoginScreenComponent implements OnInit {
         .replace(/"/g, '&quot;') // Encode quotes
         .replace(/'/g, '&#x27;'); // Encode single quotes
 
-      this.router.navigate(['/colinos']).then(
-        (success) => {
-          console.log('Navigation success:', success);
-          this.userService.updateUser({name: cleanUsername});
-        },
-        (error) => {
-          console.error('Navigation failed:', error);
-        }
-      );
+      this.userService.updateUser({name: cleanUsername}).then(() => {
+        this.router.navigate([`/${PATH_NAMES.OS_MAIN}`]).then(
+          (success) => {
+            this.logger.info(`'Navigation success: `, success);
+          },
+          (error) => {
+            this.logger.error(`Navigation failed:`, error);
+          }
+        );
+      });
+
 
     }
   }
 
   restart() {
-    this.router.navigate(['/boot']).then( () =>{
+    this.router.navigate([`/${PATH_NAMES.OS_BOOT}`]).then(() => {
       this.soundService.play('startup.mp3', {volume: 0.5, forceRestart: true});
     });
 
   }
 
   sleep() {
-    this.router.navigate(['/sleep']).then(() => {
+    this.router.navigate([`/${PATH_NAMES.OS_SLEEP}`]).then(() => {
       this.soundService.play('ambient.mp3', {volume: 0.1, loop: true});
     });
+  }
+
+  // Custom validator to check for potential script injection
+  private noScriptValidator() {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+
+      // Check for common script injection patterns
+      const suspicious = /<script|javascript:|onclick|onerror|onload|eval\(|String\.fromCharCode|\\x[0-9A-Fa-f]{2}/i.test(value);
+      return suspicious ? {scriptDetected: true} : null;
+    };
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   protected readonly faRedo = faRedo;

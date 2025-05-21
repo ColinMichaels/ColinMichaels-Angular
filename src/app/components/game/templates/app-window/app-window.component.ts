@@ -6,7 +6,7 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type, Output, EventEmitter, computed, OnChanges
+  Type, computed, OnChanges, ChangeDetectorRef, OnDestroy
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
@@ -39,15 +39,23 @@ const DEFAULT_HEIGHT = 'h-auto';
     .title-unfocused {
       @apply text-zinc-500;
     }
+
+    .app-window {
+      transition: width 0.05s ease-out, height 0.05s ease-out;
+    }
+
+    .app-window.resizing {
+      transition: none;
+    }
+
   `
 })
-export class AppWindowComponent implements AfterViewInit, OnChanges {
+export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   /** HTML Template References */
   @ViewChild('appWindow') appWindowRef!: ElementRef<HTMLDivElement>;
   @ViewChild('header') headerRef!: ElementRef<HTMLDivElement>;
   @ViewChild('resizeHandle') resizeRef!: ElementRef<HTMLDivElement>;
   @ViewChild('appWindowContent', {read: ViewContainerRef}) containerRef!: ViewContainerRef;
-
 
   /** Inputs */
   @Input() id!: string;
@@ -63,15 +71,6 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   @Input() focused: boolean = false;
   @Input() params: any;
 
-  @Output() sizeChanged = new EventEmitter<
-    {
-      width: number;
-      height: number,
-      left: number,
-      top: number
-    }>();
-
-
   /** Font Awesome Icons */
   faTimes = faTimes;
   faMinus = faMinus;
@@ -83,26 +82,33 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
   isVisible = true;
   isMinimized = false;
   isDragging = false;
+  private isResizing = false;
   showSizeIcons = false;
 
   /** Private Properties */
-  private isResizing = false;
+
   private offsetX = DEFAULT_OFFSET;
   private offsetY = DEFAULT_OFFSET;
-  private startWidth = WINDOW_WIDTH_MIN;
-  private startHeight = WINDOW_HEIGHT_MIN;
+
+  private startX = DEFAULT_OFFSET;
+  private startY = DEFAULT_OFFSET;
+  private initialWidth = WINDOW_WIDTH_MIN;
+  private initialHeight = WINDOW_HEIGHT_MIN;
+
 
   embeddedApp = computed(() => {
     return this.appManager.getAppByID(this.id);
   });
 
   constructor(
+    private cf: ChangeDetectorRef,
     private appManager: ApplicationManagerService
   ) {
     this.subscribeToFocusEvents();
   }
 
   ngOnChanges(changes: any) {
+    console.warn('AppWindowComponent: ngOnChanges', changes);
     if(changes.id){
       this.focused = this.embeddedApp()?.id === changes.id.currentValue;
     }
@@ -123,6 +129,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
     terminal.style.top = `${this.offsetY}px`;
     terminal.style.width = `${this.defaultWidth}`;
     terminal.style.height = `${this.defaultHeight}`;
+    terminal.style.zIndex = '49';
     terminal.style.position = 'fixed';
   }
 
@@ -166,46 +173,52 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
     document.body.style.userSelect = 'none';
   };
 
-  private onPointerUp = () => {
+  private onPointerUp = (event: PointerEvent) => {
+    if (this.isResizing) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.updateResizingClass();
+    }
+
     this.isDragging = false;
     this.isResizing = false;
     document.body.style.userSelect = '';
   };
 
+
   private onPointerMove = (event: PointerEvent) => {
+    if (!this.isDragging && !this.isResizing) return;
+
     const appWindow = this.appWindowRef.nativeElement;
 
-    const newLeft = event.clientX - this.offsetX;
-    const newTop = event.clientY - this.offsetY;
-
     if (this.isDragging) {
-      // Calculate viewport dimensions
-      const { clampedLeft , clampedTop } = this.getMaxLeftTop(appWindow, newLeft, newTop);
+      const newLeft = event.clientX - this.offsetX;
+      const newTop = event.clientY - this.offsetY;
+      const {clampedLeft, clampedTop} = this.getMaxLeftTop(appWindow, newLeft, newTop);
 
-      // Apply the clamped position
       appWindow.style.left = `${clampedLeft}px`;
       appWindow.style.top = `${clampedTop}px`;
-
     } else if (this.isResizing) {
-      let newWidth = this.startWidth + (event.clientX - this.offsetX);
-      let newHeight = this.startHeight + (event.clientY - this.offsetY);
+      // Calculate the difference from the starting position
+      const deltaX = event.clientX - this.startX;
+      const deltaY = event.clientY - this.startY;
 
-      // Enforce min/max bounds
+      // Calculate new dimensions
+      let newWidth = this.initialWidth + deltaX;
+      let newHeight = this.initialHeight + deltaY;
+
+      // Apply minimum and maximum constraints
       newWidth = Math.max(this.minWidth, Math.min(this.maxWidth, newWidth));
       newHeight = Math.max(this.minHeight, Math.min(this.maxHeight, newHeight));
 
-      appWindow.style.width = `${newWidth}px`;
-      appWindow.style.height = `${newHeight}px`;
-
-      // Emit size changes
-      this.sizeChanged.emit({
-        width: newWidth,
-        height: newHeight,
-        top: newTop,
-        left: newLeft,
+      // Update the window size
+      requestAnimationFrame(() => {
+        appWindow.style.width = `${newWidth}px`;
+        appWindow.style.height = `${newHeight}px`;
       });
     }
   };
+
 
   private getMaxLeftTop(appWindow: HTMLDivElement, newLeft = 0, newTop = 0){
     // Calculate viewport dimensions
@@ -227,13 +240,35 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
     return {clampedLeft, clampedTop};
   }
 
+  updateResizingClass() {
+    const appWindow = this.appWindowRef.nativeElement;
+    if (this.isResizing) {
+      appWindow.classList.add('resizing');
+    } else {
+      appWindow.classList.remove('resizing');
+    }
+  }
+
+
   private onResizeStart = (event: PointerEvent) => {
     if (this.autoFit) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
     this.isResizing = true;
-    this.offsetX = event.clientX;
-    this.offsetY = event.clientY;
-    this.startWidth = this.appWindowRef.nativeElement.offsetWidth;
-    this.startHeight = this.appWindowRef.nativeElement.offsetHeight;
+    this.isDragging = false;
+    this.updateResizingClass();
+
+
+    // Store the initial mouse position
+    this.startX = event.clientX;
+    this.startY = event.clientY;
+
+    // Store the initial window dimensions
+    this.initialWidth = this.appWindowRef.nativeElement.offsetWidth;
+    this.initialHeight = this.appWindowRef.nativeElement.offsetHeight;
+
     document.body.style.userSelect = 'none';
   };
 
@@ -267,4 +302,21 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
     appWindow.style.height = `${newHeight}px`;
 
   }
+
+  // Add this method to clean up event listeners
+  ngOnDestroy() {
+    const header = this.headerRef?.nativeElement;
+    const resizer = this.resizeRef?.nativeElement;
+
+    if (header) {
+      header.removeEventListener('pointerdown', this.onPointerDown);
+    }
+    if (resizer) {
+      resizer.removeEventListener('pointerdown', this.onResizeStart);
+    }
+
+    document.removeEventListener('pointerup', this.onPointerUp);
+    document.removeEventListener('pointermove', this.onPointerMove);
+  }
+
 }

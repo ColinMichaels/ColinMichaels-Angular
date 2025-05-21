@@ -29,7 +29,7 @@ export class MainComponent implements OnInit{
   }
 
   ngOnInit() {
-    if(this.user) {
+    if (this.user?.name !== '') {
       this.notificationService.show({
         title: 'Welcome back ',
         message: (this.user?.name || '') + '',

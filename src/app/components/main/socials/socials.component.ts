@@ -4,6 +4,7 @@ import {faApple, faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from 
 import {NgForOf} from '@angular/common';
 import {TooltipDirective} from '../../game/directives/tooltip.directive';
 import {RouterLink} from '@angular/router';
+import {PATH_NAMES} from '../../../app.routes';
 
 @Component({
   selector: 'app-socials',
@@ -74,7 +75,7 @@ export class SocialsComponent {
       tooltipClass: 'bg-blue-700 text-white font-mono'
     },
     {
-      link: "/login",
+      link: `/${PATH_NAMES.OS_LOGIN}`,
       type: 'internal',
       target: "_self",
       title: "game",
