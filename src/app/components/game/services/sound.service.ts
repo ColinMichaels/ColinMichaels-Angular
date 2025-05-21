@@ -106,6 +106,7 @@ export class SoundService {
 
     if (!audio || forceRestart) {
       audio = new Audio(path);
+      audio.crossOrigin = 'anonymous';
       this.audioCache.set(path, audio);
     }
 

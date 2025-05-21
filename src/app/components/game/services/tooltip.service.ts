@@ -15,7 +15,7 @@ export interface TooltipOptions {
   position?: TooltipPosition;
   size?: TooltipSize;
   autoDismissDelay?: number | null;
-  hideDelay?: number | null;
+  fadeDuration?: number | null;
   showArrow?: boolean;
   toolTipClass?: string;
 }
@@ -71,12 +71,12 @@ export class TooltipService {
 
     // Auto-dismiss if needed
     if (options.autoDismissDelay) {
-      setTimeout(() => this.hide(), options.autoDismissDelay);
+      window.setTimeout(() => this.hide(), options.autoDismissDelay);
     }
   }
 
 
-  hide(force = false, hideDelay = 0) {
+  hide(force = false, fadeDuration = 0) {
     // todo: add back in force and hide delay
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);

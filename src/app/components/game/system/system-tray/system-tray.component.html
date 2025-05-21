@@ -28,6 +28,10 @@
           <hr class="menu-separator"/>
           <div class="menu-item" (click)="openApp('system-settings')">System Settings</div>
           <hr class="menu-separator"/>
+            <div class="menu-item" [routerLink]="['/sleep']">Sleep</div>
+            <div class="menu-item" [routerLink]="['/boot']">Restart</div>
+            <div class="menu-item" [routerLink]="['/']">Shutdown</div>
+            <hr class="menu-separator"/>
           <div class="menu-item" [routerLink]="['/']">Log Out {{ userName }}</div>
         </div>
       </section>

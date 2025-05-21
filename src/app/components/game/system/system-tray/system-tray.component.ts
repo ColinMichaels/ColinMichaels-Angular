@@ -1,5 +1,5 @@
 // system-tray.component.ts
-import {Component, HostListener, Signal, computed, effect, signal, DestroyRef} from '@angular/core';
+import {Component, HostListener, effect, signal, DestroyRef} from '@angular/core';
 import { ApplicationManagerService } from '../../services/application-manager.service';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {ClockDisplayComponent} from '../clock-display/clock-display.component';

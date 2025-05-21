@@ -123,6 +123,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges {
     terminal.style.top = `${this.offsetY}px`;
     terminal.style.width = `${this.defaultWidth}`;
     terminal.style.height = `${this.defaultHeight}`;
+    terminal.style.zIndex = '49';
     terminal.style.position = 'fixed';
   }
 

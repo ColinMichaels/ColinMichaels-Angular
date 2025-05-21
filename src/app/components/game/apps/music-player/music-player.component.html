@@ -1,0 +1,63 @@
+<!-- music-player.component.html -->
+<div class="w-full max-w-xl mx-auto min-w-min bg-zinc-900 shadow-lg p-4 text-white">
+  <!-- Now Playing Section -->
+  <div class="flex items-center space-x-4">
+    <img [src]="currentTrack.albumArt" alt="Album Art" class="w-16 h-16 rounded-md object-cover"/>
+    <div class="flex-1">
+      <h2 class="text-lg font-semibold">{{ currentTrack.title }}</h2>
+      <p class="text-sm text-zinc-400">{{ currentTrack.artist }}</p>
+      <div class="w-full h-1 bg-zinc-700 rounded mt-1">
+        <div class="h-full bg-emerald-400 rounded" [style.width.%]="progress"></div>
+      </div>
+      <div class="flex justify-between text-xs mt-1 text-zinc-400">
+        <span>{{ formatTime(currentTime) }}</span>
+        <span>{{ formatTime(currentTrack.duration) }}</span>
+      </div>
+    </div>
+    <fa-icon [icon]="faExpand" class="text-zinc-500 hover:text-white cursor-pointer"></fa-icon>
+  </div>
+
+  <!-- Controls -->
+  <div class="flex justify-center space-x-6 mt-4 text-2xl">
+    <fa-icon [icon]="faBackward" class="cursor-pointer" (click)="prevTrack()"></fa-icon>
+    <fa-icon *ngIf="!isPlaying" [icon]="faPlay" class="cursor-pointer" (click)="play()"></fa-icon>
+    <fa-icon *ngIf="isPlaying" [icon]="faPause" class="cursor-pointer" (click)="pause()"></fa-icon>
+    <fa-icon [icon]="faForward" class="cursor-pointer" (click)="nextTrack()"></fa-icon>
+  </div>
+
+  <!-- Playlist and Library -->
+  <div class="grid grid-cols-2 gap-4 mt-6">
+    <div>
+      <h3 class="font-semibold text-sm mb-2 text-zinc-300">Playlists</h3>
+      <ul class="space-y-1 text-sm">
+        <li class="hover:text-emerald-400 cursor-pointer">Favorites</li>
+        <li class="hover:text-emerald-400 cursor-pointer">Recently Played</li>
+        <li class="hover:text-emerald-400 cursor-pointer">Chill Vibes</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="font-semibold text-sm mb-2 text-zinc-300">Library</h3>
+      <ul class="space-y-1 text-sm">
+        <li *ngFor="let track of trackLibrary" (click)="selectTrack(track)"
+            [class.text-emerald-400]="track.id === currentTrack.id"
+            class="cursor-pointer hover:text-emerald-300">
+          {{ track.title }}<br>
+          <span class="text-xs text-zinc-400">{{ track.artist }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div>
+    <div class="flex items-center space-x-2 text-xs">
+      <fa-icon [icon]="faVolumeUp" class="text-white/80"></fa-icon>
+      <input
+        type="range"
+        [value]="volume"
+        (mouseup)="onVolumeChange($event)"
+        class="w-20 accent-gray-300"
+        min="0"
+        max="100"
+      >
+    </div>
+  </div>
+</div>

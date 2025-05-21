@@ -1,3 +1,21 @@
+/* Optional: Add custom styles for dark mode input autofill */
+@layer base {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: theme('colors.gray.900');
+    -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.50') inset;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus {
+    -webkit-text-fill-color: theme('colors.gray.100');
+    -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.800') inset;
+  }
+}
+
+
 /* Hazy glass style */
 .menu-dropdown {
   @apply bg-zinc-800/70 z-50 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-xl shadow-black/50 rounded-md text-white p-0.5 text-xs;
