@@ -15,7 +15,7 @@ import {NotificationService} from '../../services/notification.service';
     NgForOf
   ],
   template: `
-    <div class="p-8 space-y-4 bg-zinc-700 h-full overflow-y-auto">
+    <div class="p-8 space-y-4 bg-gray-200 dark:bg-gray-900 h-full overflow-y-auto">
       <div class="grid grid-cols-2 gap-x-2 transition-all duration-500">
         <div [class]="bgColorClass + ' relative p-4 rounded w-full text-sm text-center border border-white/30 '+ textColorClass"
         [ngClass]="[selectedVariant ? textClass + ' ' + bgClass : '']">

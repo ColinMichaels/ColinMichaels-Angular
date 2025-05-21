@@ -1,10 +1,10 @@
-<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-[#0f172a] to-black">
+<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-[#0f172a] to-black pointer-events-none">
 
   <app-main-header></app-main-header>
 
   <app-main-sub-header></app-main-sub-header>
 
-  <main class="mx-auto text-center overflow-hidden">
+  <main class="container mx-auto text-center overflow-hidden pointer-events-auto">
 
     <div class="flex flex-col items-center max-h-full overflow-y-auto py-12 no-scrollbar">
 
@@ -36,7 +36,7 @@
     </div>
 
   </main>
-  <footer>
+  <footer class="pointer-events-auto">
     <app-socials/>
   </footer>
 

@@ -167,7 +167,7 @@ export class DesktopComponent implements OnInit {
 
   onLevelLoaded(level: GameLevel) {
     this.typewriter.enqueueLine({
-      text: `Level ${level} loaded.`,
+      text: `Level ${this.userService.user.level} loaded.`,
       agent: 'system',
       speed: 40,
       mode: 'system'

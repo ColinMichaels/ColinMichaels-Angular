@@ -5,7 +5,8 @@
 
   .resume-experience {
     @apply text-sm
-    flex flex-col justify-start
+    flex flex-col
+    text-left
     opacity-70
     hover:opacity-100
     transform-gpu
@@ -14,7 +15,7 @@
     ease-in-out;
 
     h3 {
-      @apply text-sm text-white/90 hover:scale-[1.1] transition-transform;
+      @apply text-sm text-white/90 hover:scale-[1.1] transition-transform duration-700 ease-in-out;
     }
 
     p.r-loc-date {
