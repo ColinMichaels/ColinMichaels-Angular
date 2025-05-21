@@ -30,7 +30,7 @@ export interface SpaceXLaunch {
   success: boolean;
   failures: any[];
   details: string;
-  crew: string[];
+  crew: any;
   ships: string[];
   capsules: string[];
   payloads: string[];
