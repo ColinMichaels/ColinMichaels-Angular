@@ -35,9 +35,9 @@ export class PlayerConfiguratorComponent implements OnInit {
   currentPlayer!: Player;
 
   constructor(
-    private fb: FormBuilder,
-    private notify: NotificationService,
-    private userService: UserService
+    private readonly fb: FormBuilder,
+    private readonly notify: NotificationService,
+    private readonly userService: UserService
   ) {}
 
   ngOnInit(): void {
@@ -66,42 +66,43 @@ export class PlayerConfiguratorComponent implements OnInit {
 
   onSave(): void {
     const updated = { ...this.currentPlayer, ...this.form.value };
-    this.userService.updateUser(updated);
-    this.notify.show({
-      title: 'Player Updated',
-      message: `Your player settings have been updated.`,
-      media: {
-        id: '',
+    this.userService.updateUser(updated).then(() => {
+      this.notify.show({
         title: 'Player Updated',
-        content: {
-          type: 'icon',
-          data: {
-            type: "fontawesome",
-            name: "fa fa-check text-base"
+        message: `Your player settings have been updated.`,
+        media: {
+          id: '',
+          title: 'Player Updated',
+          content: {
+            type: 'icon',
+            data: {
+              type: "fontawesome",
+              name: "fa fa-check text-base"
+            }
           }
-        }
-      },
-      type: 'success',
-      duration: 5 * 1000
+        },
+        type: 'success',
+        duration: 5 * 1000
+      });
+      this.notify.show({
+        title: 'New Stats',
+        message: this.userService.statsString,
+        media: {
+          id: '',
+          title: 'Player Updated',
+          content: {
+            type: 'icon',
+            data: {
+              type: "fontawesome",
+              name: "fa fa-gamepad text-base"
+            }
+          }
+        },
+        type: 'error',
+        duration: 6 * 1000
+      });
     });
 
-    this.notify.show({
-      title: 'New Stats',
-      message: this.userService.statsString,
-      media: {
-        id: '',
-        title: 'Player Updated',
-        content: {
-          type: 'icon',
-          data: {
-            type: "fontawesome",
-            name: "fa fa-gamepad text-base"
-          }
-        }
-      },
-      type: 'error',
-      duration: 6 * 1000
-    });
   }
 
   onReset(): void {

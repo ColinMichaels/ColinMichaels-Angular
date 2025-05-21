@@ -111,9 +111,9 @@ export class TailwindPreviewComponent {
   selectedBgSaturation: string = '800';
 
   constructor(
-    private tw: TailwindClassGeneratorService,
-    private notify: NotificationService,
-    private clipboard: Clipboard) {
+    private readonly tw: TailwindClassGeneratorService,
+    private readonly notify: NotificationService,
+    private readonly clipboard: Clipboard) {
     this.refreshAll();
   }
 

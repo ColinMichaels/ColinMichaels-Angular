@@ -1,8 +1,7 @@
 import {Component, DestroyRef, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {FormControl, FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Task, TaskService} from '../../services/task.service';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {catchError, map, startWith} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, debounceTime, Observable, of} from 'rxjs';
 import {TooltipDirective} from '../../directives/tooltip.directive';
@@ -25,7 +24,6 @@ export class TaskAppComponent implements OnInit {
   filteredTasks$: Observable<Task[]> | undefined;
 
   // In the component class
-
   taskForm: FormGroup;
   showNewTaskForm = true;
 
@@ -41,10 +39,10 @@ export class TaskAppComponent implements OnInit {
   filterBy!: FormControl
 
   constructor(
-    private taskService: TaskService,
-    private fb: FormBuilder,
-    private logger: LogService,
-    private destroyRef: DestroyRef
+    private readonly taskService: TaskService,
+    private readonly fb: FormBuilder,
+    private readonly logger: LogService,
+    private readonly destroyRef: DestroyRef
   ) {
     this.taskForm = this.fb.group({
       type: ['personal', Validators.required],
