@@ -53,19 +53,33 @@ export class LogService {
     this.globalMute = false;
   }
 
-  debug(message: any) {
+  debug(message: any, params?: any) {
+    message = this.prepareMessage(message, params);
     this.log('debug', message);
   }
 
-  info(message: any) {
+  info(message: any, params?: any) {
+    message = this.prepareMessage(message, params);
     this.log('info', message);
   }
 
-  warn(message: any) {
+  private prepareMessage(message: any, params?: any) {
+    if (!params) return message;
+    return `${message} (${this.parseParams(params)})`;
+  }
+
+  private parseParams(params: any) {
+    if (!params) return '';
+    return Object.keys(params).map(key => `${key}=${params[key]}`).join(', ');
+  }
+
+  warn(message: any, params?: any) {
+    message = this.prepareMessage(message, params);
     this.log('warn', message);
   }
 
-  error(message: any) {
+  error(message: any, params?: any) {
+    message = this.prepareMessage(message, params);
     this.log('error', message);
   }
 

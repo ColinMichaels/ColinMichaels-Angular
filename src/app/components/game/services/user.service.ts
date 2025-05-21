@@ -9,12 +9,12 @@ import {
   filter,
   map,
   firstValueFrom,
-  from,
   EMPTY,
   Observable
 } from 'rxjs';
 import {SettingsService} from './settings.service';
 import {catchError} from 'rxjs/operators';
+import {LogService} from './log.service';
 
 export interface IUser {
   name: string;
@@ -42,7 +42,7 @@ export class UserService implements OnDestroy {
   private initialized$ = new BehaviorSubject<boolean>(false);
 
 
-  constructor(private settings: SettingsService) {
+  constructor(private settings: SettingsService, private logger: LogService) {
     // First register the settings set with a default user
     this.settings.registerSettingSet('user', [new User()]);
 
@@ -57,11 +57,11 @@ export class UserService implements OnDestroy {
     ).subscribe({
       next: (users) => {
         if (users?.[0]?.name) {
-          console.log('Loading user from settings:', users[0]);
+          this.logger.debug(`Loading user from settings: `, users[0]);
           this.userSubject.next(users[0]);
         }
       },
-      error: (error) => console.error('Error loading user:', error)
+      error: (error) => this.logger.error(`Error loading user: `, error)
     });
 
     // Load initial data from IndexedDB
@@ -70,7 +70,7 @@ export class UserService implements OnDestroy {
     ).subscribe({
       next: (users) => {
         if (users?.[0]?.name) {
-          console.log('Initial user load:', users[0]);
+          this.logger.debug(`Initial user load: `, users[0]);
           this.userSubject.next(users[0]);
         }
         this.initialized$.next(true);
@@ -126,7 +126,7 @@ export class UserService implements OnDestroy {
         observer.complete();
       }).pipe(
         catchError(error => {
-          console.error('Failed to update user settings:', error);
+          this.logger.error(`Failed to update user settings: ${error}`);
           return EMPTY;
         })
       )
@@ -134,14 +134,9 @@ export class UserService implements OnDestroy {
 
     // Only update the subject after successful persistence
     this.userSubject.next(updatedUser);
-    console.log('User updated successfully:', updatedUser);
+    this.logger.debug(`User updated successfully: ${updatedUser}`);
 
     return updatedUser;
-  }
-
-
-  private saveUser(): void {
-    this.settings.updateSettingSet('user', [this.userSubject.value]);
   }
 
   ngOnDestroy(): void {

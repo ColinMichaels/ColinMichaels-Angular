@@ -84,7 +84,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           }
         },
         error: (error) => {
-          this.logger.error(`Error fetching user settings: ${error}`);
+          this.logger.error(`Error fetching user settings: `, error);
         }
       });
 
@@ -111,10 +111,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       this.userService.updateUser({name: cleanUsername}).then(() => {
         this.router.navigate([`/${PATH_NAMES.OS_MAIN}`]).then(
           (success) => {
-            this.logger.info(`'Navigation success: ${success}`);
+            this.logger.info(`'Navigation success: `, success);
           },
           (error) => {
-            this.logger.error(`Navigation failed:', ${error}`);
+            this.logger.error(`Navigation failed:`, error);
           }
         );
       });
