@@ -3,14 +3,14 @@ import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 
 
 @Component({
-  selector: 'app-resume-section-header',
+  selector: 'app-section-header',
   standalone: true,
   imports: [
     FaIconComponent
   ],
   styles: ``,
   template: `
-    <div class="flex w-fit  justify-center mx-auto mb-8 pb-1.5">
+    <div class=" w-fit  justify-center mx-auto mb-8 pb-1.5">
       <div class="flex space-x-2">
         <h2 class="text-2xl">{{sectionTitle}}</h2>
         <h4 class="text-base" [class.hidden]="!subTitle">{{subTitle}}</h4>
@@ -19,7 +19,7 @@ import {FaIconComponent} from '@fortawesome/angular-fontawesome';
     </div>
   `
 })
-export class ResumeSectionHeaderComponent {
+export class SectionHeaderComponent {
   @Input() sectionTitle!: string;
   @Input() subTitle!: string;
   @Input() hidden!: boolean;

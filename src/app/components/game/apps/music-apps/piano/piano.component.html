@@ -1,7 +1,7 @@
 <!-- piano.component.html -->
 <div class="w-full max-w-4xl mx-auto flex justify-center items-end bg-black p-1">
   <div
-    *ngFor="let key of buildKeys(octave,2)"
+    *ngFor="let key of buildKeys(octaves,2)"
     #pianoKey
     [ngClass]="{
     'bg-white text-black': !key.sharp && !pressedKeys.has(key.note),
