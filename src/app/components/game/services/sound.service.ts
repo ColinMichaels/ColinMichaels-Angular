@@ -178,10 +178,7 @@ export class SoundService implements OnDestroy, OnInit {
 
   private sanitizeFileName(fileName: string): string {
     // Remove path traversal attempts and normalize
-    const normalized = fileName.replace(/^(\/+)|(\/+)$/g, '')  // Group leading/trailing slashes
-      .replace(/(\.{2,})/g, '')                               // Group consecutive dots
-      .replace(/([^\w.-])/g, '');
-
+    const normalized = fileName.trim();
 
     return normalized.endsWith('.mp3') ? normalized : `${normalized}.mp3`;
   }
