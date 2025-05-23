@@ -5,20 +5,21 @@ p {
 .projects {
   @apply flex flex-col items-center space-y-2 gap-y-8;
   .project-section {
-    @apply px-4 pt-8 pb-12 grid grid-cols-1 md:grid-cols-2 grid-flow-dense md:grid-flow-col gap-4 border rounded-lg shadow-lg border-white/30;
+    @apply px-4 pt-8 pb-12 grid grid-cols-1 md:grid-cols-10 grid-flow-dense md:grid-flow-col gap-4 border
+    rounded-lg shadow-2xl  border-white/30 bg-blue-600/10;
     .project-section-header {
-      @apply flex flex-col justify-center px-4 sm:px-8;
+      @apply flex flex-col justify-center px-4 sm:px-8 col-span-4;
       h3 {
         @apply text-xl font-bold;
       }
 
       p {
-        @apply mt-2 text-base text-gray-500;
+        @apply mt-2 text-base text-gray-400;
       }
     }
 
     .project-example-container {
-      @apply mx-auto max-w-4xl;
+      @apply mx-auto max-w-4xl col-span-6;
     }
   }
 }
