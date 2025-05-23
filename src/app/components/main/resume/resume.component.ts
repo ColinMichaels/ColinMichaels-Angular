@@ -3,14 +3,14 @@ import {ContactSectionComponent} from './resume-section/contact-section.componen
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faAngular, faBitbucket, faCss3, faGithub} from '@fortawesome/free-brands-svg-icons';
 import {faAward, faBriefcase, faCheckDouble, faContactCard, faSchool} from '@fortawesome/free-solid-svg-icons';
-import {ResumeSectionHeaderComponent} from './resume-section/resume-section-header.component';
+import {SectionHeaderComponent} from './resume-section/section-header.component';
 
 @Component({
   selector: 'app-resume',
   imports: [
     ContactSectionComponent,
     FaIconComponent,
-    ResumeSectionHeaderComponent
+    SectionHeaderComponent
   ],
   standalone: true,
   styleUrl: `../home-page.scss`,
@@ -20,7 +20,7 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
       <!-- Experience Card -->
       <div class="resume-section">
 
-        <app-resume-section-header
+        <app-section-header
           sectionTitle="Experience" [icon]="faBriefcase"/>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-8 text-base">
@@ -73,12 +73,12 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
 
       <!-- Education Card -->
       <div class="resume-section">
-        <app-resume-section-header
+        <app-section-header
           sectionTitle="Education" [icon]="faSchool"/>
 
         <div class="resume-experience">
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-8 text-base">
+          <div class="flex flex-col justify-center items-center">
 
             <div>
               <h3 class="font-bold">Indian River State College</h3>
@@ -97,7 +97,7 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
 
       <!-- Skills Card -->
       <div class="resume-section">
-        <app-resume-section-header
+        <app-section-header
           sectionTitle="Skills" [icon]="faCheckDouble"/>
 
         <div class="grid sm:grid-cols-2 gap-x-8 text-sm">
@@ -129,7 +129,7 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
 
       <!-- Achievements Card -->
       <div class="resume-section">
-        <app-resume-section-header
+        <app-section-header
           sectionTitle="Achievements" [icon]="faAward"/>
 
         <ul class="list-disc list-inside text-base">
@@ -137,13 +137,13 @@ import {ResumeSectionHeaderComponent} from './resume-section/resume-section-head
         </ul>
       </div>
 
-      <div class="resume-section">
+      <div class="resume-section hidden">
 
-        <app-resume-section-header
+        <app-section-header [hidden]="true"
           sectionTitle="Contact" [icon]="faContactCard"/>
 
         <!-- Contact Card --> <!-- HAS GAME PARTS -->
-        <app-contact-section [hidden]="false"></app-contact-section>
+        <app-contact-section [hidden]="true"></app-contact-section>
 
       </div>
 

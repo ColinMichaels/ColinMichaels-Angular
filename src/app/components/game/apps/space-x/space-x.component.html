@@ -110,7 +110,7 @@
 
 
     <!-- scrolling panels -->
-    <div class="h-full overflow-y-auto max-h-[550px] no-scrollbar">
+      <div class="h-full overflow-y-auto max-h-[450px] no-scrollbar">
       <!-- Launch Metadata -->
 
       <div class="h-full px-2">
@@ -132,7 +132,7 @@
 
   </main>
 
-  <aside *ngIf="showSidebar"
+    <aside *ngIf="showSidebar" (appClickOutside)="toggleSidebar()"
          class="absolute top-0  max-h-[800px] w-[200px] overflow-y-auto right-0 px-2 pt-8 pb-32 bg-black">
     <h3>Launches</h3>
     <div class=" overflow-y-auto cursor-pointer">
