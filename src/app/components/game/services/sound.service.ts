@@ -31,8 +31,6 @@ export const defaultSoundConfig: SoundServiceConfig = {
 @Injectable({ providedIn: 'root' })
 export class SoundService implements OnDestroy, OnInit {
 
-  private readonly maxCacheSize = 20; // Limit cache size
-
   private readonly basePath = 'assets/audio/efx/';
 
   private readonly audioVariantPools: Record<string, string[]> = {
@@ -180,9 +178,7 @@ export class SoundService implements OnDestroy, OnInit {
 
   private sanitizeFileName(fileName: string): string {
     // Remove path traversal attempts and normalize
-    const normalized = fileName.replace(/^\/+|\/+$/g, '')
-      .replace(/\.{2,}/g, '')
-      .replace(/[^\w.-]/g, '');
+    const normalized = fileName.trim();
 
     return normalized.endsWith('.mp3') ? normalized : `${normalized}.mp3`;
   }
