@@ -34,7 +34,7 @@ export class GameConfigService {
   levels$ = this.levelsSubject.asObservable();
   private currentLevelIndex = 0;
 
-  constructor(private http: HttpClient, private userService: UserService) {
+  constructor(private readonly http: HttpClient, private readonly userService: UserService) {
   }
 
   async loadLevelsForProgress(currentLevel = this.currentLevelIndex, preloadNext: number = 0): Promise<Observable<GameLevel[]>> {

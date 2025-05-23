@@ -21,7 +21,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
         <fa-icon [icon]="faVolumeUp" class="text-white/80"></fa-icon>
         <input
           type="range"
-          [value]="volume()"
+          [value]="musicService.volume"
           (input)="onVolumeChange($event)"
           class="w-20 accent-gray-300"
           min="0"
@@ -32,7 +32,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   `
 })
 export class SoundPlayerComponent {
-  private musicService = inject(MusicService);
+  musicService = inject(MusicService);
   private settingsService = inject(SettingsService);
   private settings: Setting[] = [
     {id: 'volume', value: 0.1},
@@ -47,12 +47,7 @@ export class SoundPlayerComponent {
     });
   }
 
-  get currentSong() {
-    return this.musicService.currentTrack;
-  }
-
   isPlaying = signal(false);
-  volume = signal(0.1);
 
   togglePlayPause() {
     this.isPlaying.update(v => {
@@ -69,9 +64,9 @@ export class SoundPlayerComponent {
 
   onVolumeChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
-    this.volume.set(Number(value));
-    this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', value);
-    this.musicService.setVolume(this.volume() / 100);
+    const newVolume = Number(value) / 100;
+    this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', newVolume);
+    this.musicService.setVolume(newVolume);
     // Update volume through sound service
   }
 

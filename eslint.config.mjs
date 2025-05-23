@@ -2,7 +2,6 @@ import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import json from "@eslint/json";
-import css from "@eslint/css";
 import { defineConfig } from "eslint/config";
 import angular from "@analogjs/vite-plugin-angular";
 import eslint from "@eslint/css";
@@ -14,7 +13,7 @@ export default defineConfig([
   tseslint.configs.recommended,
   { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
   { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
-  { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"] },
+  {files: ["**/*.css"], plugins: {eslint}, language: "css/css", extends: ["css/recommended"]},
 ]);
 
 module.exports = tseslint.config(
