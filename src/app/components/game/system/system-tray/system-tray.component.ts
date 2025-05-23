@@ -45,10 +45,10 @@ import {SoundPlayerComponent} from '../sound-player/sound-player.component';
   templateUrl: './system-tray.component.html'
 })
 export class SystemTrayComponent {
-  isVisible = signal(false);
+  isVisible = signal(true);
   cursorY = signal(1000);
   hoverThreshold = 20;
-  autoHide = signal(true);
+  autoHide = signal(false);
   isHoveringMenu = signal(false);
   menuOpen = signal('');
   viewMode = signal(VIEW_MODES.list)

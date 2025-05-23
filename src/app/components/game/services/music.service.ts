@@ -39,7 +39,7 @@ export const TRACKS: Track[] = [
   },
   {
     id: 3,
-    title: 'Ambient 3',
+    title: 'Ambient 4',
     artist: 'Colin Michaels',
     albumArt: 'https://picsum.photos/100/100.webp?random=3',
     url: '/assets/audio/music/ambient_4.mp3',
@@ -116,7 +116,7 @@ export class MusicService {
   }
 
   setVolume(volume: number) {
-    console.warn('setVolume', volume);
+    this.player.muted = false;
     this.player.volume = (volume >= 1) ? 1 : volume;
   }
 }

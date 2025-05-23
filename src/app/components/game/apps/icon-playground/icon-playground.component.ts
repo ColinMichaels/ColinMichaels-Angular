@@ -28,8 +28,8 @@ export class IconPlaygroundComponent implements OnInit {
   iconsList!: any[];
 
   constructor(
-    private svg: SvgService,
-    private notify: NotificationService
+    private readonly svg: SvgService,
+    private readonly notify: NotificationService
     ) {}
 
   ngOnInit(): void {

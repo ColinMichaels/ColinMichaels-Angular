@@ -14,7 +14,7 @@ import {fadeToBlackAnimation} from './route-animations';
 })
 export class AppComponent {
   prepareRoute(outlet: RouterOutlet): string | null {
-    return outlet && outlet.activatedRouteData && outlet.activatedRouteData['animation'] || null;
+    return outlet?.activatedRouteData['animation'] ?? null;
   }
 
 }

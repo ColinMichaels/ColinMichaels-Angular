@@ -1,6 +1,6 @@
 /* macOS-style scrollbar */
 ::selection {
-  @apply bg-transparent;
+  @apply bg-teal-500/30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
