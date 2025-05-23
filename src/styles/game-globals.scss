@@ -4,14 +4,14 @@
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
     -webkit-text-fill-color: theme('colors.gray.900');
-    -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.50') inset;
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.50');
   }
 
   .dark input:-webkit-autofill,
   .dark input:-webkit-autofill:hover,
   .dark input:-webkit-autofill:focus {
     -webkit-text-fill-color: theme('colors.gray.100');
-    -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.800') inset;
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.800');
   }
 }
 
@@ -56,6 +56,9 @@
   focus:outline-none focus:ring-2 focus:ring-white/30
   active:shadow-2xl
   hover:shadow-inner border border-white/10 rounded hover:bg-white/20 transition;
+  &.active {
+    @apply bg-white/40 text-white;
+  }
 }
 
 .mac-input {

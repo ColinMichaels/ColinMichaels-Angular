@@ -1,7 +1,22 @@
-import {AfterViewInit, Component, ElementRef, HostListener, OnDestroy, QueryList, ViewChildren} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  OnDestroy,
+  QueryList,
+  ViewChildren
+} from '@angular/core';
 import {SoundService} from '../../../services/sound.service';
 import {NgClass, NgForOf} from '@angular/common';
-import {PatchService, PianoKeyMap} from "../../../services/patch.service";
+import {PatchService} from "../../../services/patch.service";
+
+export const PianoKeyMap: { [key: string]: string } = {
+  a: 'C', w: 'C#', s: 'D', e: 'D#', d: 'E',
+  f: 'F', t: 'F#', g: 'G', y: 'G#', h: 'A',
+  u: 'A#', j: 'B',
+};
 
 export interface PianoKey {
   note: string;
@@ -21,12 +36,13 @@ export interface PianoKey {
 export class PianoComponent implements OnDestroy, AfterViewInit {
   @ViewChildren('pianoKey') pianoKeys!: QueryList<ElementRef>;
 
+  @Input() octaves = 3;
+
   pressedKeys = new Set<string>();
   private readonly notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-  octave = 4;
 
-  buildKeys(startOctave = this.octave, numOctaves = 2): PianoKey[] {
+  buildKeys(startOctave = this.octaves, numOctaves = 2): PianoKey[] {
     const keys: PianoKey[] = [];
 
     for (let octave = startOctave; octave < startOctave + numOctaves; octave++) {
@@ -80,13 +96,13 @@ export class PianoComponent implements OnDestroy, AfterViewInit {
     }
 
     this.lastKeyPressTimestamps.set(note, now);
-    this.patchService.playPatch(note);
+    this.patchService.playCustomOscillator([note], 0.6, 'bass');
 
   }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
-    this.notePressed(PianoKeyMap[event.key.toLowerCase()]);
+    this.notePressed(PianoKeyMap[event.key.toLowerCase()] + this.octaves);
   }
 
   private notePressed(note: string) {
@@ -99,7 +115,6 @@ export class PianoComponent implements OnDestroy, AfterViewInit {
 
   @HostListener('window:keyup', ['$event'])
   handleKeyUp(event: KeyboardEvent) {
-
     const note = PianoKeyMap[event.key.toLowerCase()];
     if (note) {
       this.pressedKeys.delete(note);
@@ -116,6 +131,7 @@ export class PianoComponent implements OnDestroy, AfterViewInit {
   }
 
   onKeyDown(note: string) {
+    console.warn('key down', note);
     this.isDragging = true;
     this.notePressed(note);
     this.play(note);

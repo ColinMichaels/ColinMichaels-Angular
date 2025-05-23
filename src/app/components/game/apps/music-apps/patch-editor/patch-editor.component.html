@@ -1,0 +1,112 @@
+<div class="p-4  mx-auto bg-zinc-800 text-white rounded shadow h-full">
+  <div class="flex justify-start items-center mb-4">
+    <div class="flex flex-col justify-end space-x-4 basis-1/3 text-sm">
+      <button class="w-full bg-black text-white/90 py-1 px-2" (click)="playPreview()">Preview</button>
+    </div>
+
+    <!-- Patch Name -->
+    <div>
+      <label class="block text-[10px] text-white/70 font-thin">Patch Name</label>
+      <div class="flex h-[34px] text-sm text-white/60">
+        <input
+          class="input w-full bg-black text-white/90
+          px-3 py-1 rounded-l-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2
+          focus:ring-offset-black/80 transition-all duration-150 ease-in-out"
+          name="text"
+          type="text"
+          placeholder="Patch Name"
+          [(ngModel)]="selectedPatch.name"
+        />
+        <button
+          class="text-[#f4f4f5] px-3 py-1 rounded-r-lg border-y border-r border-r-white/10 border-y-white/10 hover:bg-zinc-800/40 transition-all duration-150 ease-in-out"
+          (click)="savePatch()"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+
+    <!-- Saved Patches -->
+    <div *ngIf="savedPatches.length > 0">
+      <h3 class="text-xs">🎹 Load Saved Patch</h3>
+      <select class="w-full bg-zinc-700 p-2 rounded mb-2" [(ngModel)]="selectedPatch">
+        <option *ngFor="let patch of savedPatches" [value]="patch.id">
+          {{ patch.name }}
+        </option>
+      </select>
+    </div>
+
+  </div>
+
+  <div class="container">
+    <style>
+      /* TODO: Move class to global style */
+      .env-container {
+        @apply grid grid-cols-4 gap-2;
+
+        label {
+          @apply text-sm font-light;
+        }
+
+        input {
+          @apply w-full text-xs bg-black text-white/90 py-1 px-2 rounded-lg;
+        }
+      }
+
+    </style>
+    <!-- Envelope -->
+    <div class="env-container">
+      <div>
+        <label class="block">Attack</label>
+        <input type="number" [(ngModel)]="selectedPatch.envelope.attack" step="0.01"/>
+      </div>
+      <div>
+        <label class="block">Decay</label>
+        <input type="number" [(ngModel)]="selectedPatch.envelope.decay" step="0.01"/>
+      </div>
+      <div>
+        <label class="block">Sustain</label>
+        <input type="number" [(ngModel)]="selectedPatch.envelope.sustain" step="0.01"/>
+      </div>
+      <div>
+        <label class="block">Release</label>
+        <input type="number" [(ngModel)]="selectedPatch.envelope.release" class="env-button" step="0.01"/>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Oscillator Controls -->
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4  my-4">
+    <div *ngFor="let osc of selectedPatch.oscillators; let i = index"
+         class="border border-white/30 bg-black/90 rounded p-3 relative">
+      <button class="absolute top-1 right-1 text-xs " (click)="removeOscillator(i)">X</button>
+      <h3 class="text-sm mb-2">Osc:{{ i + 1 }}</h3>
+
+      <div class="flex justify-center space-x-1 w-full mb-1">
+        <ng-template ngFor let-type [ngForOf]="OSCILLATOR_TYPES">
+          <button [value]="type"
+                  class="mac-button flex-1 min-w-0"
+                  [class.active]="osc.type === type"
+                  [appTooltip]="type"
+                  [tooltipCssClass]="'text-xs p-2 text-white bg-black/90 border border-white/30'"
+                  (click)="osc.type = type">
+            <div [ngSwitch]="type" class="flex justify-center">
+              <fa-icon *ngSwitchCase="'triangle'" [icon]="faTriangleCircleSquare"/>
+              <fa-icon *ngSwitchCase="'square'" [icon]="faWaveSquare"/>
+              <fa-icon *ngSwitchCase="'sawtooth'" [icon]="faTooth"/>
+              <fa-icon *ngSwitchCase="'sine'" [icon]="faSignature"/>
+            </div>
+          </button>
+        </ng-template>
+      </div>
+      <label class="block text-xs">Detune</label>
+      <input type="number" [(ngModel)]="osc.detune" class="w-full bg-zinc-700 p-0.5 rounded mb-2"/>
+      <label class="block text-xs">Volume</label>
+      <input type="number" [(ngModel)]="osc.volume" class="w-full bg-zinc-700 p-0.5 rounded" step="0.01"/>
+    </div>
+  </div>
+  <button class="mac-button " (click)="addOscillator()">+ Add Oscillator</button>
+
+
+</div>

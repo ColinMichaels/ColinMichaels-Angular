@@ -6,7 +6,7 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type, computed, OnChanges, ChangeDetectorRef, OnDestroy
+  Type, computed, OnChanges, OnDestroy
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
@@ -41,6 +41,7 @@ const DEFAULT_HEIGHT = 'h-auto';
     }
 
     .app-window {
+      @apply overflow-hidden rounded-lg shadow-lg max-h-[800px] max-w-[1200px];
       transition: width 0.05s ease-out, height 0.05s ease-out;
     }
 
@@ -101,7 +102,6 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   });
 
   constructor(
-    private cf: ChangeDetectorRef,
     private appManager: ApplicationManagerService
   ) {
     this.subscribeToFocusEvents();
