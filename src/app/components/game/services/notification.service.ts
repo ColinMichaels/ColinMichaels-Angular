@@ -40,6 +40,35 @@ export class NotificationService {
     }
   }
 
+  warn(message: string, params?: any) {
+    this.show({
+      title: 'Warning',
+      message,
+      type: 'warning',
+      duration: 5000
+    });
+  }
+
+  error(message: string, params?: any) {
+    this.show({
+      title: 'Error',
+      message,
+      type: 'error',
+    })
+  }
+
+  info(message: string, params?: any) {
+    this.show({
+      title: 'Info',
+      message,
+      type: 'info',
+      duration: 5000
+    });
+  }
+
+  success(message: string, params?: any) {
+  }
+
   dismiss(id: string) {
     this.queue = this.queue.filter(n => n.id !== id);
     this.notificationsSubject.next([...this.queue]);
