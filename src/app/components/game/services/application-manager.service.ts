@@ -3,7 +3,7 @@ import {NotificationService} from './notification.service';
 import {IMediaItem} from './media.service';
 import {
   faChartSimple,
-  faCircleInfo, faCogs,
+  faCircleInfo, faCloudSunRain, faCogs,
   faComputer,
   faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMusic, faNoteSticky,
   faPerson, faRocket
@@ -30,6 +30,7 @@ import {SpaceXComponent} from '../apps/space-x/space-x.component';
 import {LogService} from './log.service';
 import {PianoComponent} from '../apps/music-apps/piano/piano.component';
 import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
+import {WeatherComponent} from '../apps/weather/weather.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -120,7 +121,8 @@ export enum APP_ID {
   tasks_app = 'tasks',
   tooltip_example = 'tooltip-example',
   space_x_app = 'space-x-app',
-  icon_playground = 'icon-playground'
+  icon_playground = 'icon-playground',
+  weather_app = 'weather-app',
 }
 
 @Injectable({providedIn: 'root'})
@@ -210,6 +212,23 @@ export class ApplicationManagerService {
       icon: {
         class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
         svgPath: faMusic
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.weather_app,
+      title: 'Weather',
+      component: WeatherComponent,
+      installed: true,
+      windowSize: {height: 600, width: 800},
+      autofit: true,
+      icon: {
+        class: 'text-blue-900 bg-blue-400 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
+        svgPath: faCloudSunRain
       },
       memory: 512,
       maxInstances: 1,
