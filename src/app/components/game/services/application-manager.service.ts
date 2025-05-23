@@ -240,7 +240,7 @@ export class ApplicationManagerService {
       component: PatchEditorComponent,
       installed: true,
       windowSize: {height: 600, width: 600},
-      autofit: true,
+      autofit: false,
       icon: {
         class: 'text-black bg-yellow-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
         svgPath: faHexagonNodesBolt

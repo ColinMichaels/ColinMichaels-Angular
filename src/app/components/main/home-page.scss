@@ -1,3 +1,28 @@
+p {
+  @apply text-sm;
+}
+
+.projects {
+  @apply flex flex-col items-center space-y-2 gap-y-8;
+  .project-section {
+    @apply px-4 pt-8 pb-12 grid grid-cols-1 md:grid-cols-2 grid-flow-dense md:grid-flow-col gap-4 border rounded-lg shadow-lg border-white/30;
+    .project-section-header {
+      @apply flex flex-col justify-center px-4 sm:px-8;
+      h3 {
+        @apply text-xl font-bold;
+      }
+
+      p {
+        @apply mt-2 text-base text-gray-500;
+      }
+    }
+
+    .project-example-container {
+      @apply mx-auto max-w-4xl;
+    }
+  }
+}
+
 .resume-section {
   @apply w-full   py-12  px-2 sm:px-32 lg:px-64
   duration-700 ease-in-out opacity-80 hover:opacity-100
@@ -15,11 +40,11 @@
     ease-in-out;
 
     h3 {
-      @apply text-sm text-white/90 hover:scale-[1.1] transition-transform duration-700 ease-in-out;
+      @apply text-pretty text-lg text-white/90 hover:scale-[1.1] transition-transform duration-700 ease-in-out;
     }
 
     p.r-loc-date {
-      @apply text-[12px] italic text-gray-500 leading-none mb-2;
+      @apply text-[12px] italic text-gray-500 leading-none my-2;
     }
 
     ul {
