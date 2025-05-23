@@ -2,7 +2,7 @@
 <div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-[#0f172a] to-black pointer-events-none">
   <div class="fixed top-0 left-0 w-full  bg-gradient-to-b from-[#0f172a] to-transparent z-40 h-fit">
     <app-main-header/>
-    <app-main-sub-header appHideOnScroll [scrollThreshold]="70"/>
+    <app-main-sub-header appHideOnScroll [scrollThreshold]="100"/>
   </div>
 
 
@@ -45,10 +45,9 @@
         </header>
 
         <!-- Features Section -->
-        <section class="p-6">
-          <h2 class="text-3xl font-semibold mb-4">Features</h2>
+        <section class="py-6">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-gray-500/20">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
               <h3 class="text-xl font-bold text-teal-500">
                 API Integration
               </h3>
@@ -61,7 +60,7 @@
                 faster than you can say “GET request.”
               </div>
             </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-gray-500/20">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
               <h3 class="text-xl font-bold text-teal-500">
                 Modular Design
               </h3>
@@ -74,7 +73,7 @@
                 injuries.
               </div>
             </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-gray-500/20">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
               <h3 class="text-xl font-bold text-teal-500">Responsive UI</h3>
               <p class="mt-2">Enjoy a responsive design that adapts to any device.</p>
               <div class="mt-4 text-xs px-2 text-gray-500 bg-black/50 rounded-lg p-2">
@@ -177,7 +176,10 @@
                 temperature, humidity, and wind speed. It also provides users with a detailed forecast for the next few
                 days, allowing them to plan their day accordingly.</p>
             </div>
-            <span class="py-4 text-gray-500 italic" dir="ltr">Note: This component is currently under development and is not yet available.</span>
+            <div class="project-example-container">
+              <app-window-header [title]="'Weather App'" class="w-full"></app-window-header>
+              <app-weather/>
+            </div>
           </article>
         </section>
 

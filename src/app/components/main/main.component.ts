@@ -14,12 +14,13 @@ import {TooltipExamplesComponent} from '../game/apps/tooltip-examples/tooltip-ex
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {TaskAppComponent} from '../game/apps/task-app/task-app.component';
 import {HideOnScrollDirective} from '../game/directives/hide-on-scroll.directive';
+import {WeatherComponent} from '../game/apps/weather/weather.component';
 
 export const HOME_NOTIFY_CLASSES = 'bg-black/80 text-green-500 border-2 border-green-500';
 
 @Component({
   selector: 'app-main',
-  imports: [SocialsComponent, WindowHeaderComponent, MainHeaderComponent, MainSubHeaderComponent, JokeTrayComponent, SpaceXComponent, PatchEditorComponent, TailwindPreviewComponent, TooltipExamplesComponent, FaIconComponent, TaskAppComponent, HideOnScrollDirective],
+  imports: [SocialsComponent, WindowHeaderComponent, MainHeaderComponent, MainSubHeaderComponent, JokeTrayComponent, SpaceXComponent, PatchEditorComponent, TailwindPreviewComponent, TooltipExamplesComponent, FaIconComponent, TaskAppComponent, HideOnScrollDirective, WeatherComponent],
   templateUrl: './main.component.html',
   standalone: true,
   styleUrl: `./home-page.scss`
