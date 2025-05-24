@@ -3,12 +3,12 @@ p {
 }
 
 .projects {
-  @apply flex flex-col items-center space-y-2 gap-y-8;
+  @apply flex flex-col items-center space-y-2 gap-y-4;
   .project-section {
     @apply px-4 pt-8 pb-12 grid grid-cols-1 md:grid-cols-10 grid-flow-dense md:grid-flow-col gap-4 border
     rounded-lg shadow-2xl  border-white/30 bg-blue-600/10;
     .project-section-header {
-      @apply flex flex-col justify-center px-4 sm:px-8 col-span-4;
+      @apply flex flex-col justify-center px-4 sm:px-8  sm:col-span-4 text-pretty font-sans;
       h3 {
         @apply text-xl font-bold;
       }
@@ -19,7 +19,7 @@ p {
     }
 
     .project-example-container {
-      @apply mx-auto max-w-4xl col-span-6;
+      @apply flex flex-col justify-center items-center max-w-4xl sm:col-span-6 scale-75 sm:scale-90;
     }
   }
 }

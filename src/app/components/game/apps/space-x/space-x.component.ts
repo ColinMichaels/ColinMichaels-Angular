@@ -13,7 +13,7 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
 import {SpaceXLaunch} from './models/spacex-models';
 import {SpacexSubPanelComponent} from './spacex-sub-panel/spacex-sub-panel.component';
 import {SpacexService} from './spacex.service';
-import {ClickOutsideDirective} from "../../directives/click-outside.directive";
+import {ClickOutsideDirective} from "../../../../modules/scroll/directives/click-outside.directive";
 
 @Component({
   selector: 'app-space-x',
