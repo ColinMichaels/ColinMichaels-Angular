@@ -1,17 +1,20 @@
 
 <div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-[#0f172a] to-black pointer-events-none">
-  <div class="fixed top-0 left-0 w-full  bg-gradient-to-b from-[#0f172a] to-transparent z-40 h-fit">
+  <div class="fixed top-0 left-0 w-full  bg-gradient-to-b from-[#0f172a] to-transparent z-30 h-fit">
     <app-main-header/>
-    <app-main-sub-header appHideOnScroll [scrollThreshold]="100"/>
+    <app-main-sub-header appHideOnScroll [scrollThreshold]="120"/>
+
   </div>
 
 
   <main class="container mx-auto text-center pointer-events-auto mt-48">
 
-    <section #terminal class="w-full sm:w-3/5 px-8 sm:px-4 mx-auto my-12" appHideOnScroll [scrollThreshold]="220">
-      <ng-container>
-        <app-window-header [title]="'About'"></app-window-header>
-      </ng-container>
+    <section #terminal class="w-full sm:w-3/5 px-8 sm:px-4 mx-auto my-12"
+             appScrollClassToggle
+             enterClasses="blur-2xl"
+             exitClasses="blur-0"
+             [scrollThreshold]="220">
+      <app-window-header [title]="'About'"/>
       <div class="bg-black text-green-500 shadow-xl shadow-black/20
       rounded-b-xl p-6 text-left text-xs font-mono">
         <p class="mb-4 text-emerald-400">More about me......</p>
@@ -42,12 +45,29 @@
 
           <p>So, each section becomes a mini-app that’s functional, fabulous, and ready to shine in my emulator. Who
             said OS emulators can’t have personality?</p>
+          <div class="space-x-2 mt-4">
+            <button
+              class="text-white text-sm bg-black border border-teal-500 hover:bg-teal-700 font-bold py-2 px-4 rounded">
+              <a href="https://github.com/colinmichaels/" target="_blank">View on Github</a>
+            </button>
+            <button
+              class="text-white text-sm bg-black border border-teal-500 hover:bg-teal-700 font-bold py-2 px-4 rounded"
+              [routerLink]="'/login'"
+            >
+              Explore Emulator
+            </button>
+          </div>
         </header>
 
         <!-- Features Section -->
         <section class="py-6">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10"
+                     appScrollClassToggle
+                     enterClasses="blur-0"
+                     exitClasses="blur-xl"
+                     flyIn="left"
+                     leaveTo="left">
               <h3 class="text-xl font-bold text-teal-500">
                 API Integration
               </h3>
@@ -60,7 +80,12 @@
                 faster than you can say “GET request.”
               </div>
             </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10"
+                     appScrollClassToggle
+                     enterClasses="blur-0"
+                     exitClasses="blur-xl"
+                     flyIn="bottom"
+                     leaveTo="bottom">
               <h3 class="text-xl font-bold text-teal-500">
                 Modular Design
               </h3>
@@ -73,7 +98,12 @@
                 injuries.
               </div>
             </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
+            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10"
+                     appScrollClassToggle
+                     enterClasses="blur-0"
+                     exitClasses="blur-xl"
+                     flyIn="right"
+                     leaveTo="right">
               <h3 class="text-xl font-bold text-teal-500">Responsive UI</h3>
               <p class="mt-2">Enjoy a responsive design that adapts to any device.</p>
               <div class="mt-4 text-xs px-2 text-gray-500 bg-black/50 rounded-lg p-2">
@@ -85,7 +115,14 @@
           </div>
         </section>
 
-        <section class="projects">
+        <section class="projects"
+                 appScrollClassToggle
+                 enterClasses="blur-0"
+                 exitClasses="blur-xl"
+                 duration="duration-1000"
+                 flyIn="bottom"
+                 leaveTo="bottom"
+                 [scrollThreshold]="600">
           <article class="project-section">
             <div class="project-section-header">
               <h3>The SpaceX Api Demo</h3>
@@ -148,7 +185,7 @@
                 detailed report of their classes, allowing them to review their work and make adjustments as needed.</p>
 
             </div>
-            <div class="project-example-container">
+            <div class="project-example-container" dir="ltr">
               <app-window-header [title]="'Tailwind Class Generator'" class="w-full"></app-window-header>
               <app-tailwind-preview/>
             </div>
@@ -176,7 +213,7 @@
                 temperature, humidity, and wind speed. It also provides users with a detailed forecast for the next few
                 days, allowing them to plan their day accordingly.</p>
             </div>
-            <div class="project-example-container">
+            <div class="project-example-container" dir="ltr">
               <app-window-header [title]="'Weather App'" class="w-full"></app-window-header>
               <app-weather/>
             </div>
@@ -184,23 +221,37 @@
         </section>
 
       </section>
-      <section class="container mx-auto text-center pointer-events-auto gap-x-20 px-4 sm:px-24 md:px-48 m-12">
-        <h4>Disclaimer:</h4>
-        <fa-icon [icon]="faExclamationTriangle" class="text-red-500"></fa-icon>
-        <fa-icon [icon]="faPersonDigging" class="text-yellow-500"></fa-icon>
-        <fa-icon [icon]="faExclamationTriangle" class="text-red-500"></fa-icon>
+      <section class="container mx-auto text-center space-y-4 pointer-events-auto gap-x-20 px-4 sm:px-24 md:px-48 m-12">
+        <h4>
+          <fa-icon [icon]="faExclamationTriangle" class="text-red-500 text-3xl"/>
+          Disclaimer
+          <fa-icon [icon]="faExclamationTriangle" class="text-red-500 text-3xl"/>
+        </h4>
+
+        <fa-icon [icon]="faPersonDigging" class="text-yellow-500 text-5xl"></fa-icon>
+
         <p>Notice: This site is currently a work in progress and is under construction. As such, you may encounter bugs
           or incomplete features. We appreciate your understanding as we work to enhance your experience.</p>
       </section>
 
       <section class="flex flex-col items-center space-y-4 mb-24">
-        <a href="https://forms.gle/kfsZYFRzJcQYfruw9" class="text-teal-700 hover:underline" target="_blank">Report a
-          Bug!</a>
+        <a href="https://forms.gle/kfsZYFRzJcQYfruw9"
+           class="text-teal-700 hover:underline border border-white/50 p-4 rounded-lg shadow-md bg-blue-600/10"
+           appScrollClassToggle
+           enterClasses="text-teal-700"
+           exitClasses="text-red-700"
+           duration="duration-1000"
+           flyIn="top"
+           leaveTo="top"
+           [scrollThreshold]="100"
+           target="_blank">
+          Report a Bug!
+        </a>
       </section>
     </div>
 
 
-    <div class="absolute bottom-1/4 left-0">
+    <div class="fixed bottom-28 left-0">
       <app-joke-tray/>
     </div>
 
