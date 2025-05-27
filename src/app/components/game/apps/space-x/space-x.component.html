@@ -54,7 +54,7 @@
           <p class="text-sm text-gray-400 mt-1">Flight #{{ selectedLaunch.flight_number }}</p>
         </div>
         <div class="max-h-[125px] min-h-[125px] overflow-y-auto ">
-          <p class="mt-2 text-white text-pretty tracking-normal font-thin">{{ selectedLaunch.details }}</p>
+          <p class="mt-2 text-white text-pretty tracking-normal text-left font-thin">{{ selectedLaunch.details }}</p>
         </div>
       </div>
 
@@ -117,12 +117,16 @@
         <app-spacex-sub-panel *ngIf="panel !== 'images' || ''"></app-spacex-sub-panel>
 
         <!-- Flickr Images -->
-        <div *ngIf="selectedLaunch.links.flickr.original.length > 0 && panel === 'images' " class="mt-6"
-             [appTooltip]="'Click to view full size'">
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <img *ngFor="let img of selectedLaunch.links.flickr.original" [src]="img"
-                 (click)="openImage(img)"
-                 class=" shadow-md object-fill w-full h-40" loading="lazy" alt=""/>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4"
+             *ngIf="selectedLaunch.links.flickr.original.length > 0 && panel === 'images' ">
+          <div *ngFor="let img of selectedLaunch.links.flickr.original"
+               class="aspect-square relative overflow-hidden rounded shadow-md cursor-pointer"
+               (click)="openImage(img)"
+               [appTooltip]="'Click to view full size'">
+
+            <img [src]="img"
+                 class=" shadow-md object-cover w-40 h-40 "
+                 loading="lazy" alt=""/>
           </div>
         </div>
 

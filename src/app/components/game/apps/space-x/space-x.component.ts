@@ -13,7 +13,7 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
 import {SpaceXLaunch} from './models/spacex-models';
 import {SpacexSubPanelComponent} from './spacex-sub-panel/spacex-sub-panel.component';
 import {SpacexService} from './spacex.service';
-import {ClickOutsideDirective} from "../../directives/click-outside.directive";
+import {ClickOutsideDirective} from "../../../../modules/scroll/directives/click-outside.directive";
 
 @Component({
   selector: 'app-space-x',
@@ -137,7 +137,7 @@ export class SpaceXComponent {
   protected readonly faForward = faForward;
 
   openImage(img: string) {
-    window.open(img, '_blank', 'location=no width=600 height=600');
+    window.open(img, '_blank', 'location=no');
   }
 
 
@@ -164,5 +164,4 @@ export class SpaceXComponent {
   }
 
   protected readonly faBars = faBars;
-  protected readonly faSpinner = faSpinner;
 }
