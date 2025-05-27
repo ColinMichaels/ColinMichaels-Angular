@@ -1,6 +1,6 @@
 import {Injectable, OnDestroy} from '@angular/core';
 import {SettingsService} from './settings.service';
-import {customOscillators, customOscillatorTypes} from 'web-audio-oscillators';
+import {customOscillators} from 'web-audio-oscillators';
 import {LogService} from './log.service';
 
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
@@ -16,7 +16,7 @@ export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
  * - 'sawtooth': Generates a waveform that ramps up and drops sharply.
  * - 'triangle': Represents a waveform with a linear rise and fall, resembling a triangle shape.
  *
- * This variable is typically utilized in audio synthesis applications where
+ * This variable is typically used in audio synthesis applications where
  * different oscillator shapes produce varying tonal qualities.
  */
 export const OSCILLATOR_TYPES: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle'];
@@ -115,7 +115,8 @@ export class PatchService implements OnDestroy {
     this.playMultipleNotes([note], duration);
   }
 
-  playCustomOscillator(notes: string[], duration = 0.6, type: 'bass'): void {
+  playCustomOscillator(notes: string[], duration = 0.6, type: string = 'bass'): void {
+    // @ts-ignore
     const customOscillator = customOscillators[type](this.audioCtx);
     const time = this.audioCtx.currentTime;
     for (const note of notes) {
