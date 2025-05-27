@@ -23,7 +23,7 @@
 
 ### User Inputs
 - Typed commands
-- Click interactions (open files, drag apps, play games)
+- Click interactions (open files, drag apps, playNote games)
 - Password entries / brute-force / code injections
 
 ### Command System (Initial Sample)

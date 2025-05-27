@@ -137,7 +137,7 @@ export class SpaceXComponent {
   protected readonly faForward = faForward;
 
   openImage(img: string) {
-    window.open(img, '_blank', 'location=no width=600 height=600');
+    window.open(img, '_blank', 'location=no');
   }
 
 
@@ -164,5 +164,4 @@ export class SpaceXComponent {
   }
 
   protected readonly faBars = faBars;
-  protected readonly faSpinner = faSpinner;
 }

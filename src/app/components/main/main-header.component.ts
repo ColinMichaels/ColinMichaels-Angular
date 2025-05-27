@@ -8,11 +8,11 @@ import {ScrollEffectsModule} from '../../modules/scroll/scroll-effects.module';
     ScrollEffectsModule
   ],
   template: `
-    <header class="mx-auto px-2 sm:px-4 lg:px-6 py-2 text-center">
+    <header class="mx-auto text-center">
       <h1 class="text-4xl sm:text-5xl md:text-5xl font-bold "
           appScrollClassToggle
-          exitClasses="text-4xl sm:text-5xl md:text-5xl text-white"
-          enterClasses="text-lg text-teal-500/50">
+          exitClasses="text-4xl sm:text-5xl md:text-5xl text-white mt-2"
+          enterClasses="text-sm text-teal-500/30 mt-2 absolute top-0 left-2">
       Colin Michaels
     </h1>
       <h2 class="md:text-2xl text-emerald-400 text-xl font-mono" appHideOnScroll><a
