@@ -11,6 +11,7 @@ interface TypewriterLine {
   mode?: TypingMode;
   agent: 'user' | 'system';
   pauseAfter?: number;
+  showPath?: boolean;
   onCharTyped?: (char: string, index: number, mode: TypingMode) => void;
   onBegin?: () => void;
   onComplete?: () => void;
@@ -45,9 +46,16 @@ export class TypewriterService {
     this.lineBuffer = '';
     const mode = line.mode ?? 'default';
     this.activeMode$.next(mode);
-    const userName = this.userService.user.name.toLowerCase() || 'unknown';
-    const currenPath = `${userName}@root:/ `;
-    line.text = currenPath + line.text;
+    if (line.showPath)
+      this.typedText$.next(
+        this.typedText$.getValue() +
+        (line.agent === 'user' ? this.userService.user.name.toLowerCase() : 'root') +
+        '@' +
+        (line.agent === 'user' ? '' : 'root') +
+        ':' +
+        (line.agent === 'user' ? '/' : '') +
+        ' '
+      )
 
     const config = this.getTypingConfig(mode);
     this.typingInterval = setInterval(() => this.typeNextChar(line), config.speed);

@@ -1,0 +1,46 @@
+<header class=" text-white text-center px-4 m-4 border-b border-t border-teal-500 py-4">
+  <h1 class="text-4xl font-bold">{{ title }}</h1>
+  <p class="mt-2 text-lg text-teal-500 mb-4">{{ description }}</p>
+  <div class="space-y-4">
+    <p>Each section is like a puzzle piece, and I’m here turning those pieces into modular apps that fit together
+      seamlessly. My secret
+      weapons? APIs, TailwindCSS, and Angular.</p>
+
+    <p>So, each section becomes a mini-app that’s functional, fabulous, and ready to shine in my emulator. Who
+      said OS emulators can’t have personality?</p>
+  </div>
+  <div class="space-x-2 mt-4">
+    <button
+      class="text-white text-sm bg-black border border-teal-500 hover:bg-teal-700 font-bold py-2 px-4 rounded">
+      <a href="https://github.com/colinmichaels/" target="_blank">View on Github</a>
+    </button>
+    <button
+      class="text-white text-sm bg-black border border-teal-500 hover:bg-teal-700 font-bold py-2 px-4 rounded"
+      [routerLink]="'/login'"
+    >
+      Explore Emulator
+    </button>
+  </div>
+</header>
+<!-- Features Section -->
+<section class="py-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <article *ngFor="let feature of features"
+             class="border-white/50 border p-4 rounded-lg shadow-md bg-teal-950/50"
+             appScrollClassToggle
+             enterClasses="blur-0"
+             exitClasses="blur-xl"
+             [flyIn]="feature.animation"
+             [leaveTo]="feature.animation">
+      <h3 class="text-xl font-bold text-teal-500">
+        {{ feature.title }}
+      </h3>
+      <p class="mt-2">
+        {{ feature.summary }}
+      </p>
+      <div class="mt-4 text-xs px-2 text-white/70 bg-black/50 rounded-lg p-2">
+        {{ feature.details }}
+      </div>
+    </article>
+  </div>
+</section>

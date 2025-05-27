@@ -1,26 +1,40 @@
 <!-- piano.component.html -->
+<div class="flex justify-center items-center">
+  <button class="mac-button" (click)="settingsVisible = !settingsVisible">Settings</button>
+</div>
 <div class="w-full max-w-4xl mx-auto flex justify-center items-end bg-black p-1">
   <div
-    *ngFor="let key of buildKeys(octaves,2)"
+    *ngFor="let key of keyMap.slice(0, maxNumKeys)"
     #pianoKey
     [ngClass]="{
-    'bg-white text-black': !key.sharp && !pressedKeys.has(key.note),
-    'bg-black text-white': key.sharp && !pressedKeys.has(key.note),
-    'bg-blue-200': !key.sharp && pressedKeys.has(key.note),
-    'bg-blue-500': key.sharp && pressedKeys.has(key.note)
+    'bg-white text-black': !key.sharp && !pressedKeys.has(key.note + key.octave),
+    'bg-black text-white': key.sharp && !pressedKeys.has(key.note + key.octave),
+    'bg-blue-200': !key.sharp && pressedKeys.has(key.note + key.octave),
+    'bg-blue-500': key.sharp && pressedKeys.has(key.note + key.octave),
   }"
     class="relative h-40 w-10 m-[1px] border border-zinc-600 cursor-pointer select-none"
-    (mousedown)="onKeyDown(key.note)"
-    (mouseenter)="onKeyEnter(key.note)"
+    (mousedown)="onKeyDown(key.note, key.octave)"
+    (mouseenter)="onKeyEnter(key.note, key.octave)"
     (mouseup)="onKeyUp()"
-    [attr.data-note]="key.note"
+    (touchmove)="onTouchMove($event)"
+    [attr.data-note]="{note: key.note, octave: key.octave}"
   >
       <span
         class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-mono opacity-30 pointer-events-none"
         [class.bottom-10]="key.sharp"
-        [ngClass]="{ 'opacity-100 text-blue-600 font-bold': pressedKeys.has(key.note) }"
+        [ngClass]="{ 'opacity-100 text-blue-600 font-bold': pressedKeys.has(key.note + key.octave) }"
       >
-        {{ key.note }}
+        {{ key.note + key.octave }}
   </span>
   </div>
+  <div>
+    <app-piano-settings
+      [isVisible]="settingsVisible"
+      [startingOctave]="startingOctave"
+      [patches]="patches"
+      [selectedPatch]="selectedPatch"
+      (octaveChange)="setOctave($event)"
+      (close)="settingsVisible = false"/>
+  </div>
+
 </div>

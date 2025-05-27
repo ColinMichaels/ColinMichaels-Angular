@@ -3,7 +3,8 @@
   <!-- Main content -->
   <div class="flex flex-1 overflow-hidden">
     <!-- Sidebar -->
-    <div class="w-64 dark:bg-gray-800 bg-gray-50 dark:border-gray-700 border-r border-gray-200 p-4">
+    <div
+      class="w-64 hidden sm:hidden md:hidden lg:block dark:bg-gray-800 bg-gray-50 dark:border-gray-700 border-r border-gray-200 p-4">
       <div class="flex items-center space-x-2 mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
              class="w-4 h-4 text-blue-500">
@@ -17,8 +18,8 @@
       <div class="space-y-1">
         <div
           class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-md p-2 flex items-center justify-between">
-          <span class="text-xs">New York</span>
-          <span class="text-xs">72°</span>
+          <span class="text-xs">{{ currentWeather?.current?.location }}</span>
+          <span class="text-xs">{{ currentWeather?.current?.temp | number:'1.0-0' }}°</span>
         </div>
         <div
           class="dark:text-gray-300 text-gray-600 dark:hover:bg-gray-700 hover:bg-gray-100 rounded-md p-2 flex items-center justify-between">
@@ -45,9 +46,9 @@
       <div class="mt-6 pt-6 dark:border-gray-700 border-t border-gray-200">
         <div class="flex items-center justify-between dark:text-gray-400 text-gray-500 text-xs mb-2">
           <span>Last updated</span>
-          <span>Just now</span>
+          <span>{{ lastLoadDate | date: 'MMM dd hh:mm a' }}</span>
         </div>
-        <button
+        <button (click)="loadWeather()"
           class="w-full dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-100 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-md py-1.5 text-xs mt-4 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                stroke="currentColor" class="w-3 h-3 mr-1">
@@ -66,16 +67,20 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
           <div>
-            <h1 class="dark:text-gray-100 text-gray-800 text-xl font-semibold">New York</h1>
-            <p class="dark:text-gray-400 text-gray-500 text-xs">Monday, June 5 • 3:45 PM</p>
+            <h1
+              class="dark:text-gray-100 text-gray-800 text-xl font-semibold">{{ currentWeather?.current?.location }}</h1>
+            <p
+              class="dark:text-gray-400 text-gray-500 text-xs">{{ currentWeather?.forecast[0].date | date: 'MMM dd, yyyy \'at\' hh:mm a' }}</p>
           </div>
           <div class="flex space-x-2">
-            <button
-              class="dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-100 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-md px-2 py-1 text-xs">
+            <button (click)="setUnits(true)"
+                    [ngClass]="units === 'F' ? 'text-blue-500' : 'text-gray-600'"
+                    class="dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-100 bg-blue-100 hover:bg-blue-200  rounded-md px-2 py-1 text-xs">
               °F
             </button>
-            <button
-              class="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md px-2 py-1 text-xs">
+            <button (click)="setUnits(false)"
+                    [ngClass]="units === 'C' ? 'text-blue-500' : 'text-gray-600'"
+                    class="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200  rounded-md px-2 py-1 text-xs">
               °C
             </button>
           </div>
@@ -85,18 +90,17 @@
         <div
           class="dark:bg-gray-800 dark:border dark:border-gray-700 bg-white shadow-sm rounded-lg p-4 mb-4 flex items-center">
           <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1"
-                 stroke="currentColor" class="w-20 h-20 text-blue-500">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z"/>
-            </svg>
+            <fa-icon [icon]="getWeatherIcon(currentWeather?.current?.description)"></fa-icon>
             <div class="ml-4">
               <div class="flex items-baseline">
-                <span class="dark:text-gray-100 text-4xl font-light text-gray-800">72°</span>
-                <span class="ml-1 dark:text-gray-400 text-gray-500 text-sm">F</span>
+                <span
+                  class="dark:text-gray-100 text-4xl font-light text-gray-800">{{ currentWeather?.current?.temp | number: '1.0-0' }}
+                  °</span>
+                <span class="ml-1 dark:text-gray-400 text-gray-500 text-sm">{{ units }}</span>
               </div>
-              <p class="dark:text-gray-300 text-gray-700 text-sm">Partly Cloudy</p>
-              <p class="dark:text-gray-400 text-gray-500 text-xs">Feels like 75°</p>
+              <p class="dark:text-gray-300 text-gray-700 text-sm">{{ currentWeather?.current?.description }}</p>
+              <p class="dark:text-gray-400 text-gray-500 text-xs">Feels
+                like {{ currentWeather?.current?.feelsLike | number: '1.0-0' }}°</p>
             </div>
           </div>
 
@@ -111,7 +115,7 @@
               </div>
               <div>
                 <p class="dark:text-gray-400 text-gray-500 text-xs">Wind</p>
-                <p class="dark:text-gray-200 text-gray-800 text-xs">8 mph</p>
+                <p class="dark:text-gray-200 text-gray-800 text-xs">{{ currentWeather?.current?.wind?.speed }} mph</p>
               </div>
             </div>
             <div class="flex items-center">
@@ -137,7 +141,7 @@
               </div>
               <div>
                 <p class="dark:text-gray-400 text-gray-500 text-xs">Humidity</p>
-                <p class="dark:text-gray-200 text-gray-800 text-xs">72%</p>
+                <p class="dark:text-gray-200 text-gray-800 text-xs">{{ currentWeather?.current?.humidity }}%</p>
               </div>
             </div>
             <div class="flex items-center">
@@ -150,7 +154,8 @@
               </div>
               <div>
                 <p class="dark:text-gray-400 text-gray-500 text-xs">Visibility</p>
-                <p class="dark:text-gray-200 text-gray-800 text-xs">10 mi</p>
+                <p class="dark:text-gray-200 text-gray-800 text-xs">{{ currentWeather?.current?.visibility / 1000 }}
+                  mi</p>
               </div>
             </div>
           </div>
@@ -159,6 +164,18 @@
         <!-- 5-day forecast -->
         <div class="dark:bg-gray-800 dark:border dark:border-gray-700 bg-white shadow-sm rounded-lg p-4 mb-4">
           <h3 class="dark:text-gray-200 text-gray-800 text-xs font-medium mb-3">5-Day Forecast</h3>
+          <div class="grid grid-cols-5 gap-3">
+            <div *ngFor="let day of fiveDayForecast" class="dark:bg-gray-700 bg-gray-50 rounded-lg p-2 text-center"
+                 [appTooltip]="day.description" tooltipPosition="bottom">
+              <p class="dark:text-gray-400 text-gray-500 text-xs">{{ day.dayOfWeek }}</p>
+              <fa-icon [icon]="getWeatherIcon(day.description)" class="text-blue-500"></fa-icon>
+              <p class="dark:text-gray-200 text-gray-800 text-xs font-medium">{{ day.highTemp | number: '1.0-0' }}°</p>
+              <p class="dark:text-gray-400 text-gray-500 text-xs">{{ day.lowTemp | number: '1.0-0' }}°</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="old-5-day-forecast hidden">
           <div class="grid grid-cols-5 gap-3">
             <div class="dark:bg-gray-700 bg-gray-50 rounded-lg p-2 text-center">
               <p class="dark:text-gray-400 text-gray-500 text-xs">Mon</p>
@@ -212,9 +229,8 @@
             </div>
           </div>
         </div>
-
         <!-- Air Quality and Weather Details -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid-cols-2 gap-4 hidden">
           <div class="dark:bg-gray-800 dark:border dark:border-gray-700 bg-white shadow-sm rounded-lg p-4">
             <div class="flex justify-between items-center mb-3">
               <h3 class="dark:text-gray-200 text-gray-800 text-xs font-medium">Air Quality</h3>
@@ -262,10 +278,6 @@
               <div class="flex justify-between items-center">
                 <span class="dark:text-gray-400 text-gray-500 text-xs">Sunset</span>
                 <span class="dark:text-gray-200 text-gray-800 text-xs">7:53 PM</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="dark:text-gray-400 text-gray-500 text-xs">Moon Phase</span>
-                <span class="dark:text-gray-200 text-gray-800 text-xs">Waxing Crescent</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="dark:text-gray-400 text-gray-500 text-xs">Chance of Rain</span>

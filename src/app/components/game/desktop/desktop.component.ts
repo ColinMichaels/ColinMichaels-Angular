@@ -194,7 +194,7 @@ export class DesktopComponent implements OnInit {
     });
     this.notify.show({
       title: 'NEW APP: Activity Monitor',
-      message: 'Another game play mechanic is being added.',
+      message: 'Another game playNote mechanic is being added.',
       type: 'info',
       media: new MediaItem({
         id: '',

@@ -42,7 +42,7 @@ describe('DesktopComponent', () => {
   };
 
   const soundServiceMock = {
-    play: jasmine.createSpy('play'),
+    play: jasmine.createSpy('playNote'),
   };
 
   const activatedRouteMock = {
@@ -183,7 +183,7 @@ describe('DesktopComponent', () => {
     });
   });
 
-  it('should enqueue lines and play sound for onLevelLoadFailed', () => {
+  it('should enqueue lines and playNote sound for onLevelLoadFailed', () => {
     const message = 'Failed to load level';
 
     component.onLevelLoadFailed(message);

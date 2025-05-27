@@ -1,16 +1,17 @@
 <div class="container flex flex-col bg-zinc-800/70
-h-full w-full min-w-min  items-center justify-center overflow-y-auto py-8">
+h-full w-full min-w-min  items-center justify-center overflow-y-auto p-4">
 
-  <div class="grid grid-cols-4 gap-x-8 gap-y-4" [class]="'grid-cols-' + (allTooltips.length * 2 + 1)">
-    <div *ngFor="let tooltips of allTooltips" class="flex flex-col items-center space-y-4">
-        <div class="text-white text-sm text-center">{{tooltips.title}}</div>
-        <div class="grid grid-cols-2 gap-2">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+       [class]="'lg:grid-cols-' + (allTooltips.length * 2 + 1)">
+    <div *ngFor="let tooltips of allTooltips" class="flex flex-col justify-center items-center">
+      <div class="text-white text-sm text-center mb-2">{{ tooltips.title }}</div>
+      <div class="flex flex-wrap justify-center gap-4">
           <div *ngFor="let tooltip of tooltips.tooltips"
                (click)="showNotify(
                tooltip,
                (tooltips.message ?? '') + buildNotifyMessage(tooltip))"
                [class]="tooltip.cssClass ?? 'tooltip-default'"
-               class="w-20 h-20 shadow-xl shadow-black/40  active:shadow"
+               class="w-[10vw] h-[10vw] sm:w-14 sm:h-14 shadow-xl shadow-black/40  active:shadow"
                [appTooltip]="tooltip.text"
                [tooltipShowArrow]="true"
                [tooltipSize]="tooltip.size ?? 'sm'"
