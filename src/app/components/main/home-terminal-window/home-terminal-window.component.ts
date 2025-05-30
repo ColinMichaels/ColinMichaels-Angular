@@ -25,6 +25,7 @@ export class HomeTerminalWindowComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
+    this.typewriter.clear();
     this.typewriter.enqueueLine({
       text: `Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
       pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my

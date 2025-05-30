@@ -1,8 +1,7 @@
-<div class="bg-black text-white font-mono rounded-lg overflow-hidden border border-white/30" *ngIf="crew">
+<div *ngFor="let crew of crew" class="bg-black text-white font-mono  overflow-hidden border border-white/30">
   <!-- Header Section -->
   <div class="p-3 border-b border-white/30">
     <h2 class="text-xl font-semibold tracking-wide text-center">
-      <span class="text-blue-400">CREW MEMBER</span>
       <span class="text-white ml-2">{{ crew.name }}</span>
     </h2>
     <div class="flex justify-center">
@@ -30,14 +29,14 @@
         <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">ASTRONAUT DATA</h3>
 
         <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
-          <div class="col-span-1 text-blue-300 text-right">FULL NAME:</div>
-          <div class="col-span-2 text-white">{{ crew.name }}</div>
+          <div class="col-span-1 text-blue-300 text-right">NAME:</div>
+          <div class="col-span-2 text-white text-left">{{ crew.name }}</div>
 
           <div class="col-span-1 text-blue-300 text-right">AGENCY:</div>
-          <div class="col-span-2 text-white">{{ crew.agency }}</div>
+          <div class="col-span-2 text-white text-left">{{ crew.agency }}</div>
 
           <div class="col-span-1 text-blue-300 text-right">STATUS:</div>
-          <div class="col-span-2">
+          <div class="col-span-2 text-left">
             <span [class.text-green-400]="crew.status === 'active'"
                   [class.text-red-400]="crew.status !== 'active'">
               {{ crew.status | uppercase }}
@@ -45,7 +44,7 @@
           </div>
 
           <div class="col-span-1 text-blue-300 text-right">MISSIONS:</div>
-          <div class="col-span-2 text-white">{{ crew.launches.length || 0 }}</div>
+          <div class="col-span-2 text-white text-left">{{ crew.launches.length || 0 }}</div>
 
           <div *ngIf="crew.wikipedia" class="col-span-1 text-blue-300 text-right">WIKIPEDIA:</div>
           <div *ngIf="crew.wikipedia" class="col-span-2">
@@ -91,7 +90,7 @@
   </div>
 
   <!-- Footer Section -->
-  <div class="bg-gradient-to-r from-blue-900/80 to-indigo-900/80 px-3 py-2 border-t border-white/30 text-center">
+  <div class="bg-gradient-to-r from-blue-900/50 to-indigo-900/80 px-2 border-t border-white/30 text-center">
     <div class="text-[10px] text-blue-300 tracking-wide">
       CREW ID:
       <span class="text-white bg-blue-900/70 px-1.5 py-0.5 rounded">{{ crew.id }}</span>

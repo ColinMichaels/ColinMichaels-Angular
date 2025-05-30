@@ -1,6 +1,6 @@
 <div class="bg-black text-white  overflow-hidden border border-white/30">
   <!-- Header Section with Subtle Gradient Background -->
-  <div class="p-3 border-b border-white/30 relative">
+  <div class="px-6 py-2 border-b border-white/30 relative pointer-events-auto cursor-pointer">
     <div class="absolute top-2 right-2">
       <button class="text-blue-400 hover:text-blue-300 text-xs p-1 bg-blue-900/40 rounded" (click)="toggleSidebar()">
         <fa-icon [icon]="faBars"></fa-icon>
@@ -9,21 +9,21 @@
 
     <div class="flex flex-col md:flex-row gap-x-4 my-1">
       <!-- Patch Image -->
-      <div class="flex flex-col items-center space-y-2">
+      <div class="flex flex-col items-center justify-between space-y-2">
         <img *ngIf="selectedLaunch.links.patch.small; else noPatch"
              [src]="selectedLaunch.links.patch.small"
              alt="Mission Patch"
-             class="w-24 h-24 object-contain"/>
+             class="w-32 h-32 object-contain"/>
         <ng-template #noPatch>
           <div class="text-sm text-blue-300">No Patch Available</div>
         </ng-template>
 
         <!-- Media Links -->
-        <div class="flex justify-center space-x-3 text-blue-400">
+        <div class="flex justify-center space-x-3.5 text-white text-base pt-2">
           <a *ngIf="selectedLaunch.links.webcast"
              [href]="selectedLaunch.links.webcast"
              target="_blank"
-             class="hover:text-blue-300 text-xs"
+             class="hover:text-blue-300"
              [appTooltip]="'Watch Webcast'"
              tooltipPosition="bottom">
             <fa-icon [icon]="faYoutube"></fa-icon>
@@ -31,7 +31,7 @@
           <a *ngIf="selectedLaunch.links.wikipedia"
              [href]="selectedLaunch.links.wikipedia"
              target="_blank"
-             class="hover:text-blue-300 text-xs"
+             class="hover:text-blue-300"
              [appTooltip]="'Read Wikipedia'"
              tooltipPosition="bottom">
             <fa-icon [icon]="faWikipediaW"></fa-icon>
@@ -39,7 +39,7 @@
           <a *ngIf="selectedLaunch.links.presskit"
              [href]="selectedLaunch.links.presskit"
              target="_blank"
-             class="hover:text-blue-300 text-xs"
+             class="hover:text-blue-300"
              [appTooltip]="'Press Kit'"
              tooltipPosition="bottom">
             <fa-icon [icon]="faHackerNews"></fa-icon>
@@ -47,7 +47,7 @@
           <a *ngIf="selectedLaunch.links.article"
              [href]="selectedLaunch.links.article"
              target="_blank"
-             class="hover:text-blue-300 text-xs"
+             class="hover:text-blue-300"
              [appTooltip]="'Read Article'"
              tooltipPosition="bottom">
             <fa-icon [icon]="faFileArchive"></fa-icon>
@@ -57,13 +57,12 @@
 
       <!-- Launch Info -->
       <div class="flex-1 flex flex-col text-xs">
-        <h2 class="text-xl font-semibold tracking-wide">
-          <span class="text-blue-400">LAUNCHES</span>
-          <span class="text-white ml-2">{{ selectedLaunch.name }}</span>
+        <h2 class="text-xl font-semibold tracking-wide text-left">
+          <span class="text-white">{{ selectedLaunch.name }}</span>
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1 mt-2">
-          <div class="flex items-center">
+        <div class="flex flex-col items-start gap-x-3 gap-y-1 mt-2">
+          <div class="flex items-center text-left">
             <span class="text-blue-300 mr-2">STATUS:</span>
             <span [class.text-green-400]="selectedLaunch.success"
                   [class.text-red-400]="!selectedLaunch.success"
@@ -88,7 +87,7 @@
         </div>
 
         <div
-          class="mt-2 max-h-32 min-h-32 overflow-y-auto text-gray-300 text-xs border border-blue-900/30 rounded p-2 bg-blue-900/10">
+          class="mt-2 max-h-32 min-h-32 text-sm text-left overflow-y-auto text-gray-300  border border-blue-900/30 rounded py-2 bg-blue-900/10">
           {{ selectedLaunch.details || 'No mission details available.' }}
         </div>
       </div>
@@ -154,23 +153,22 @@
   </div>
 
   <!-- Other Panels with Animation -->
-  <div *ngIf="panel !== 'images'" class="min-h-[300px]">
-    <app-spacex-sub-panel>
-    </app-spacex-sub-panel>
+  <div *ngIf="panel !== 'images'" class="min-h-[300px] max-h-[500px] overflow-y-auto no-scrollbar">
+    <app-spacex-sub-panel/>
   </div>
 
 
   <!-- Content Panels with Animation -->
-  <div class="p-2 max-h-[450px] overflow-y-auto no-scrollbar">
+  <div *ngIf="panel === 'images'" class="p-4 max-h-[450px] min-h-[450px] overflow-y-auto no-scrollbar">
     <!-- Images Panel -->
-    <div *ngIf="panel === 'images'"
-         class="grid grid-cols-2 md:grid-cols-3 gap-2 animate-fadeIn">
+    <div class="grid grid-cols-3 lg:grid-cols-4 gap-2 animate-fadeIn">
       <div *ngFor="let img of selectedLaunch.links.flickr.original"
-           class="aspect-square relative overflow-hidden rounded shadow-md cursor-pointer bg-blue-900/20 border border-blue-800/50"
+           class="aspect-square relative overflow-hidden rounded shadow-md cursor-zoom-in
+           bg-blue-900/20 border border-blue-800/50"
            (click)="openImage(img)"
            [appTooltip]="'Click to view full size'">
         <img [src]="img"
-             class="w-full h-full object-cover"
+             class="w-full h-full object-cover hover:scale-150 transition-transform ease-in-out duration-500"
              loading="lazy" alt=""/>
       </div>
 
@@ -187,25 +185,25 @@
   <!-- Sidebar for Launches -->
   <aside *ngIf="showSidebar"
          (appClickOutside)="toggleSidebar()"
-         class="absolute top-0 max-h-[800px] w-[240px] overflow-y-auto right-0 pt-8 pb-32 bg-black border-l border-white/30 shadow-lg animate-slideInRight">
-    <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1 px-3 mb-2">MISSION LOG</h3>
+         class="absolute top-16 max-h-[500px] w-[240px] overflow-y-auto right-0 py-2 bg-blue-950/30 backdrop-blur-md border-l border-white/30 shadow-lg animate-slideInRight">
+    <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1 px-3 mb-2">LAUNCHES</h3>
     <div class="overflow-y-auto">
       <div *ngFor="let launch of launches; let i = index"
            class="hover:bg-blue-900/30 cursor-pointer border-b border-white/10 transition-colors"
            [class.bg-blue-900]="i === currentIndex"
-           (click)="selectLaunch(launch)">
+           (click)="selectLaunch(launch, i)">
         <div class="grid grid-cols-8 gap-1 p-2">
-          <div class="col-span-1 text-[10px] flex items-center">
+          <div class="col-span-1 text-sm flex items-center">
             <span class="w-2 h-2 rounded-full"
                   [class.bg-green-500]="launch.success"
                   [class.bg-red-500]="!launch.success"
                   [class.bg-yellow-500]="launch.upcoming">
             </span>
           </div>
-          <div class="col-span-5 text-xs font-semibold truncate">
+          <div class="col-span-5 text-sm text-left font-semibold truncate">
             {{ launch.name }}
           </div>
-          <div class="col-span-2 text-[10px] text-blue-300 text-right">
+          <div class="col-span-2 text-xs text-blue-300 text-right">
             {{ launch.date_utc | date:'y' }}
           </div>
         </div>

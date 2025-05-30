@@ -2,8 +2,7 @@
   <!-- Header Section with Subtle Gradient Background -->
   <div class="p-3 border-b border-white/30">
     <h2 class="text-xl font-semibold tracking-wide text-center">
-      <span class="text-blue-400">LAUNCHPAD</span>
-      <span class="text-white ml-2">{{ launchpad.name }}</span>
+      <span class="text-white ml-2">{{ launchpad?.name }}</span>
     </h2>
     <div class="flex justify-center">
       <span class="px-2 py-0.5 rounded-full bg-blue-900/70 text-xs tracking-wide">
@@ -22,10 +21,10 @@
 
         <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
           <div class="col-span-1 text-blue-300 text-right">REGION:</div>
-          <div class="col-span-2 text-white">{{ launchpad.region }}</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.region }}</div>
 
           <div class="col-span-1 text-blue-300 text-right">LOCALITY:</div>
-          <div class="col-span-2 text-white">{{ launchpad.locality }}</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.locality }}</div>
 
           <div class="col-span-1 text-blue-300 text-right">COORDINATES:</div>
           <div class="col-span-2 text-white flex items-center">
@@ -44,22 +43,22 @@
 
         <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
           <div class="col-span-1 text-blue-300 text-right">LAUNCH ATTEMPTS:</div>
-          <div class="col-span-2 text-white">{{ launchpad.launch_attempts }}</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.launch_attempts }}</div>
 
           <div class="col-span-1 text-blue-300 text-right">SUCCESS RATE:</div>
           <div class="col-span-2 text-white">
-            <div class="w-full bg-gray-800 rounded-full h-1.5">
+            <div class="w-3/4 bg-gray-400 rounded-full h-1.5">
               <div class="bg-blue-600 h-1.5 rounded-full"
-                   [style.width]="(launchpad.launch_successes / launchpad.launch_attempts) * 100 + '%'"></div>
+                   [style.width]="(launchpad.launch_successes / launchpad.launch_attempts) * 50 + '%'"></div>
             </div>
             <div
-              class="text-xs mt-0.5">{{ (launchpad.launch_successes / launchpad.launch_attempts) * 100 | number:'1.0-0' }}
+              class="text-xs mt-0.5 text-left">{{ (launchpad.launch_successes / launchpad.launch_attempts) * 100 | number:'1.0-0' }}
               % ({{ launchpad.launch_successes }}/{{ launchpad.launch_attempts }})
             </div>
           </div>
 
           <div class="col-span-1 text-blue-300 text-right">TIME ZONE:</div>
-          <div class="col-span-2 text-white">{{ launchpad.timezone }}</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.timezone }}</div>
         </div>
       </div>
     </div>
@@ -71,7 +70,7 @@
     </div>
 
     <!-- Launches Grid -->
-    <div class="space-y-2">
+    <div class="space-y-2 max-h-96 overflow-y-auto">
       <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">ASSOCIATED LAUNCHES</h3>
 
       <!-- Grid Layout for Launches -->
@@ -80,14 +79,13 @@
                 (click)="loadLaunch(launchId)"
                 class="group bg-blue-900/20 hover:bg-blue-800/30 border border-blue-800/50 hover:border-blue-600 rounded px-2 py-1.5 transition-all duration-200 hover:-translate-y-0.5">
           <div class="flex flex-col items-center">
-            <div class="font-mono text-[10px] text-blue-400 group-hover:text-blue-300">
+            <div class="font-mono text-sm text-blue-400 group-hover:text-blue-300">
               LAUNCH ID
             </div>
-            <div class="mt-0.5 text-white text-xs tracking-wide">
+            <div class="mt-0.5 text-white text-xs tracking-normal">
               <!-- Truncate and stylize the ID -->
-              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(0, 4) }}</span>
               <span class="text-blue-500">···</span>
-              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(launchId.length - 4) }}</span>
+              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(launchId.length - 7) }}</span>
             </div>
           </div>
         </button>
