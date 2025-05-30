@@ -7,7 +7,7 @@ import {MainHeaderComponent} from './main-header.component';
 import {MainSubHeaderComponent} from './main-sub-header.component';
 import {JokeTrayComponent} from './joke-tray/joke-tray.component';
 import {SpaceXComponent} from '../game/apps/space-x/space-x.component';
-import {faCode, faExclamationTriangle, faPersonDigging} from '@fortawesome/free-solid-svg-icons';
+import {faExclamationTriangle, faPersonDigging} from '@fortawesome/free-solid-svg-icons';
 import {PatchEditorComponent} from '../game/apps/music-apps/patch-editor/patch-editor.component';
 import {TailwindPreviewComponent} from '../game/apps/tailwind-preview/tailwind-preview.component';
 import {TooltipExamplesComponent} from '../game/apps/tooltip-examples/tooltip-examples.component';

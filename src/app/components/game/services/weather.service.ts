@@ -39,13 +39,13 @@ export interface WeatherBundle {
 export class WeatherService {
   private readonly currentUrl = 'https://api.openweathermap.org/data/2.5/weather';
   private readonly forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast';
-  private apiKey = environment.openWeatherMapApiKey;
+  private readonly apiKey = environment.openWeatherMapApiKey;
   private units: 'metric' | 'imperial' = 'metric';
 
   /** Shared, cached bundle */
   private bundle$?: Observable<WeatherBundle>;
 
-  constructor(private http: HttpClient) {
+  constructor(private readonly http: HttpClient) {
     this.setUnit(true);
   }
 
@@ -128,13 +128,13 @@ export class WeatherService {
       const highTemp = Math.max(...entries.map(entry => entry.temp));
       const lowTemp = Math.min(...entries.map(entry => entry.temp));
 
-      // Find most common description and icon
+      // Find the most common description and icon
       const descriptionCounts = new Map<string, number>();
       const iconCounts = new Map<string, number>();
 
       entries.forEach(entry => {
-        descriptionCounts.set(entry.description, (descriptionCounts.get(entry.description) || 0) + 1);
-        iconCounts.set(entry.icon, (iconCounts.get(entry.icon) || 0) + 1);
+        descriptionCounts.set(entry.description, (descriptionCounts.get(entry.description) ?? 0) + 1);
+        iconCounts.set(entry.icon, (iconCounts.get(entry.icon) ?? 0) + 1);
       });
 
       const mostCommonDescription = [...descriptionCounts.entries()]
@@ -170,16 +170,37 @@ export class WeatherService {
    * Returns a cached stream of current+forecast.
    * Emits once, then replays.
    */
+  /**
+   * Returns a cached stream of current weather and forecast data.
+   * Uses lazy initialization - only fetches data on the first subscription.
+   * Later calls return the cached result.
+   */
   getWeatherBundle(): Observable<WeatherBundle> {
     if (!this.bundle$) {
-      this.bundle$ = from(this.getUserPosition()).pipe(
-        switchMap(coords => this.fetchBundleByCoords(coords)),
-        catchError(() => throwError(() => new Error('GEO_FAILED'))),
-        shareReplay({bufferSize: 1, refCount: true})
-      );
+      this.bundle$ = this.createWeatherBundleObservable();
     }
     return this.bundle$;
   }
+
+  /**
+   * Creates an Observable that fetches the user's geolocation
+   * and uses it to retrieve weather data.
+   *
+   * @returns Observable of WeatherBundle with caching
+   * @private
+   */
+  private createWeatherBundleObservable(): Observable<WeatherBundle> {
+    return from(this.getUserPosition()).pipe(
+      switchMap(coords => this.fetchBundleByCoords(coords)),
+      catchError(error => {
+        const errorMessage = error === 'NOT_SUPPORTED' ?
+          'Geolocation is not supported by your browser' :
+          'Failed to access your location. Please check your permissions.';
+        return throwError(() => new Error(errorMessage));
+      }),
+      shareReplay({bufferSize: 1, refCount: true})
+    );
+    }
 
   /** Fallback: fetch by city */
   getBundleByCity(city: string): Observable<WeatherBundle> {
@@ -189,11 +210,11 @@ export class WeatherService {
   private getUserPosition(): Promise<GeolocationCoordinates> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        return reject('NOT_SUPPORTED');
+        return reject(new Error('NOT_SUPPORTED'));
       }
       navigator.geolocation.getCurrentPosition(
         pos => resolve(pos.coords),
-        err => reject(err)
+        err => reject(new Error(err.toString()))
       );
     });
   }
@@ -224,19 +245,7 @@ export class WeatherService {
       .set('lon', lon.toString())
       .set('appid', this.apiKey)
       .set('units', this.units);
-    return this.http.get<any>(this.currentUrl, {params}).pipe(
-      map(r => ({
-        location: r.name,
-        temp: r.main.temp,
-        feelsLike: r.main.feels_like,
-        humidity: r.main.humidity,
-        visibility: r.visibility,
-        pressure: r.main.pressure,
-        wind: r.wind,
-        description: r.weather[0].description,
-        icon: r.weather[0].icon,
-      }))
-    );
+    return this.fetchWeatherData(params);
   }
 
   private fetchCurrentByCity(city: string) {
@@ -244,6 +253,10 @@ export class WeatherService {
       .set('q', city)
       .set('appid', this.apiKey)
       .set('units', this.units);
+    return this.fetchWeatherData(params);
+  }
+
+  private fetchWeatherData(params: HttpParams) {
     return this.http.get<any>(this.currentUrl, {params}).pipe(
       map(r => ({
         location: r.name,

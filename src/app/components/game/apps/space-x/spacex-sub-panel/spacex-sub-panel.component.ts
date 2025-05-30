@@ -29,7 +29,7 @@ export class SpacexSubPanelComponent {
   itemId: string = '';
 
   constructor(
-    private spacex: SpacexService,
+    private readonly spacex: SpacexService,
   ) {
     this.spacex.selectedPanel.pipe(takeUntilDestroyed())
       .subscribe((panel: any) => {

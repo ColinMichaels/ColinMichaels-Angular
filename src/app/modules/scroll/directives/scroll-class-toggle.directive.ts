@@ -65,7 +65,9 @@ export class ScrollClassToggleDirective implements AfterViewInit {
 
   private hasEntered = false;
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {
+  constructor(
+    private readonly el: ElementRef,
+    private readonly renderer: Renderer2) {
   }
 
   ngAfterViewInit(): void {
@@ -74,14 +76,12 @@ export class ScrollClassToggleDirective implements AfterViewInit {
     if (this.flyIn) {
       this.applyClasses(this.getFlyInPreset(this.flyIn));
     }
-
     // Ensure transition classes are present
     if (this.applyTransition) {
       this.addIfMissing(this.duration);
       this.addIfMissing('transition-all');
       this.addIfMissing('ease-in-out');
     }
-
   }
 
   @HostListener('window:scroll', [])

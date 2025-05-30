@@ -10,8 +10,8 @@ import {PATH_NAMES} from '../app.routes';
 })
 export class AuthGuard implements CanActivate {
   constructor(
-    private authService: AuthService,
-    private router: Router
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {
   }
 

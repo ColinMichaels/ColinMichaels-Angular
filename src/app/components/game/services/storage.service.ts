@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {from, Observable, of, BehaviorSubject} from 'rxjs';
+import {from, Observable, of} from 'rxjs';
 import {catchError} from 'rxjs/operators';
 
 interface StorageStrategy {
