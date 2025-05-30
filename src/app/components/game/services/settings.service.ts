@@ -75,20 +75,6 @@ export class SettingsService {
   }
 
   private loadPersistedSettings(): void {
-    // Load standalone settings
-    /* this.storageService.getAllKeys().subscribe(keys => {
-       keys.forEach(key => {
-         if (!key.includes('set_')) { // Assuming sets have a prefix
-           this.storageService.getItem(key).subscribe(value => {
-             if (value !== null) {
-               const subject = new BehaviorSubject(value);
-               this.settings.set(key, subject);
-             }
-           });
-         }
-       });
-     });*/
-
     // Load setting sets
     this.storageService.getAllKeys().subscribe(keys => {
       keys.forEach(key => {

@@ -143,8 +143,8 @@ export class PianoComponent implements OnInit, AfterViewInit, OnDestroy, OnChang
 
   playNote(note: string, octave?: number, velocity = 0.6) {
     const now = Date.now();
-    const noteAdjusted = note + (octave || '');
-    const lastPlayed = this.lastKeyPressTimestamps.get(noteAdjusted) || 0;
+    const noteAdjusted = note + (octave ?? '');
+    const lastPlayed = this.lastKeyPressTimestamps.get(noteAdjusted) ?? 0;
 
     // If the same note was played very recently, skip it
     if (now - lastPlayed < this.DEBOUNCE_TIME) {

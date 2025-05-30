@@ -70,7 +70,6 @@
           <!-- Register Form -->
           <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="space-y-4">
             <div class="form-group">
-              <label for="displayName"></label>
               <input
                 type="text"
                 id="displayName"
@@ -84,7 +83,6 @@
             </div>
 
             <div class="form-group">
-              <label for="registerEmail"></label>
               <input
                 type="email"
                 id="registerEmail"
@@ -98,7 +96,6 @@
             </div>
 
             <div class="form-group">
-              <label for="registerPassword"></label>
               <input
                 type="password"
                 id="registerPassword"
@@ -112,7 +109,6 @@
             </div>
 
             <div class="form-group">
-              <label for="confirmPassword"></label>
               <input
                 type="password"
                 id="confirmPassword"
