@@ -1,6 +1,6 @@
 <!-- music-player.component.html -->
 <div
-  class="w-full max-w-xl mx-auto min-w-[600px] bg-gray-200 dark:bg-gray-900 shadow-lg p-4 text-black dark:text-white">
+  class="w-full max-w-xl mx-auto min-w-[600px] bg-gray-900 shadow-lg p-4 text-white">
   <!-- Now Playing Section -->
   <div class="flex items-center space-x-4">
     <img [src]="currentTrack.albumArt" alt="Album Art" class="w-16 h-16 rounded-md object-cover"/>
@@ -31,7 +31,7 @@
              (click)="toggleRepeat()"></fa-icon>
     <fa-icon [icon]="faShuffle" class="cursor-pointer" (keydown)="$event.preventDefault()"
              (click)="toggleShuffle()"></fa-icon>
-    <fa-icon [icon]="faVolumeDown" class="cursor-pointer" (keydown)="$event.preventDefault()"
+    <fa-icon [icon]="volume > 0 ? faVolumeDown: faVolumeMute" class="cursor-pointer" (keydown)="$event.preventDefault()"
              (click)="toggleMute()"></fa-icon>
   </div>
 

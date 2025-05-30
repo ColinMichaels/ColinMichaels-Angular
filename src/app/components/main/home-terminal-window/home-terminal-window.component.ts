@@ -18,11 +18,14 @@ export class HomeTerminalWindowComponent implements AfterViewInit {
 
   constructor(private readonly typewriter: TypewriterService
   ) {
+    this.typewriter.enableSound(false);
+    this.typewriter.setVolume(0.01);
     this.typewriter.typedText$.pipe(takeUntilDestroyed())
       .subscribe(text => this.typedText = text);
   }
 
   ngAfterViewInit() {
+    this.typewriter.clear();
     this.typewriter.enqueueLine({
       text: `Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
       pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my

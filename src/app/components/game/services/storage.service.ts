@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {from, Observable, of} from 'rxjs';
+import {from, Observable, of, BehaviorSubject} from 'rxjs';
 import {catchError} from 'rxjs/operators';
 
 interface StorageStrategy {
@@ -59,6 +59,7 @@ export class StorageService {
   }
 
 
+
   // Store multiple values as a collection (e.g., a "set")
   // Convenience methods for arrays
   setItems(key: string, values: any[]): Observable<void> {
@@ -93,10 +94,14 @@ export class StorageService {
     );
   }
 
+  getAllKeys(): Observable<string[]> {
+    const keys = Object.keys(localStorage);
+    return of(keys);
+  }
 }
 
 class IndexedDBStrategy implements StorageStrategy {
-  private db: Promise<IDBDatabase>;
+  private readonly db: Promise<IDBDatabase>;
 
   constructor(
     private dbName: string,
@@ -206,4 +211,3 @@ class LocalStorageStrategy implements StorageStrategy {
     }
   }
 }
-

@@ -1,54 +1,129 @@
-<!-- spacex-rocket.component.html -->
-<div class=" mx-auto bg-black text-white font-sans" *ngIf="rocket">
-  <div class="flex flex-col md:flex-row gap-6">
-    <!-- Rocket Images Carousel -->
-    <div class="w-full md:w-1/2">
-      <img *ngFor="let img of rocket.flickr_images" [src]="img"
-           class="rounded mb-4 w-full max-h-96 object-cover shadow-lg" alt=""/>
+<div class="bg-black text-white font-mono rounded-lg overflow-hidden border border-white/30" *ngIf="rocket">
+  <!-- Header Section -->
+  <div class="p-3 border-b border-white/30">
+    <h2 class="text-xl font-semibold tracking-wide text-center">
+      <span class="text-blue-400">ROCKET</span>
+      <span class="text-white ml-2">{{ rocket.name }}</span>
+    </h2>
+    <div class="flex justify-center">
+      <span class="px-2 py-0.5 rounded-full bg-blue-900/70 text-xs tracking-wide">
+        STATUS: {{ rocket.active ? 'ACTIVE' : 'INACTIVE' | uppercase }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="p-4 space-y-4 bg-gradient-to-b from-slate-900/50 to-black">
+    <!-- Rocket Images and Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Rocket Images -->
+      <div class="space-y-3">
+        <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">VEHICLE IMAGERY</h3>
+        <div class="h-48 overflow-hidden rounded">
+          <img *ngFor="let img of rocket.flickr_images; let i = index"
+               [src]="img"
+               [class.hidden]="i > 0"
+               class="w-full h-full object-cover" alt="Rocket image"/>
+        </div>
+      </div>
+
+      <!-- Rocket Overview -->
+      <div class="space-y-3">
+        <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">VEHICLE SPECIFICATIONS</h3>
+        <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+          <div class="col-span-1 text-blue-300 text-right">COMPANY:</div>
+          <div class="col-span-2 text-white">{{ rocket.company }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">COUNTRY:</div>
+          <div class="col-span-2 text-white">{{ rocket.country }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">FIRST FLIGHT:</div>
+          <div class="col-span-2 text-white">{{ rocket.first_flight }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">COST/LAUNCH:</div>
+          <div class="col-span-2 text-white">${{ rocket.cost_per_launch | number }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">SUCCESS RATE:</div>
+          <div class="col-span-2 text-white">
+            <div class="w-full bg-gray-800 rounded-full h-1.5">
+              <div class="bg-blue-600 h-1.5 rounded-full"
+                   [style.width]="rocket.success_rate_pct + '%'"></div>
+            </div>
+            <div class="text-xs mt-0.5">{{ rocket.success_rate_pct }}%</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Rocket Overview -->
-    <div class="md:w-1/2">
-      <h1 class="text-3xl font-bold text-blue-400 mb-2">{{ rocket.name }}</h1>
-      <p class="text-sm text-gray-400 mb-4 italic">{{ rocket.description }}</p>
-      <div class="text-sm text-gray-300 space-y-1">
-        <p><strong>Company:</strong> {{ rocket.company }}</p>
-        <p><strong>Country:</strong> {{ rocket.country }}</p>
-        <p><strong>First Flight:</strong> {{ rocket.first_flight }}</p>
-        <p><strong>Cost per Launch:</strong> ${{ rocket.cost_per_launch | number }}</p>
-        <p><strong>Success Rate:</strong> {{ rocket.success_rate_pct }}%</p>
-        <p><strong>Stages:</strong> {{ rocket.stages }}</p>
-        <p><strong>Boosters:</strong> {{ rocket.boosters }}</p>
-        <a *ngIf="rocket.wikipedia" [href]="rocket.wikipedia" target="_blank" class="text-blue-300 hover:underline">
-          <fa-icon [icon]="faWikipediaW" [appTooltip]="`Wikipedia`"></fa-icon>
-        </a>
+    <!-- Description -->
+    <div class="space-y-1">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">MISSION PROFILE</h3>
+      <p class="text-gray-300 leading-relaxed text-xs">{{ rocket.description }}</p>
+    </div>
+
+    <!-- Technical Specifications -->
+    <div class="space-y-2">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">TECHNICAL PARAMETERS</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-2">
+        <div class="bg-blue-900/20 border border-blue-800/50 rounded p-2">
+          <div class="text-[10px] text-blue-400 mb-1">DIMENSIONS</div>
+          <div class="text-xs text-white">
+            <div>H: {{ rocket.height.meters }} m / {{ rocket.height.feet }} ft</div>
+            <div>D: {{ rocket.diameter.meters }} m / {{ rocket.diameter.feet }} ft</div>
+            <div>Mass: {{ rocket.mass.kg | number }} kg</div>
+          </div>
+        </div>
+
+        <div class="bg-blue-900/20 border border-blue-800/50 rounded p-2">
+          <div class="text-[10px] text-blue-400 mb-1">PROPULSION</div>
+          <div class="text-xs text-white">
+            <div>Engines: {{ rocket.engines.number }} x {{ rocket.engines.type }}</div>
+            <div>Version: {{ rocket.engines.version }}</div>
+            <div>Thrust: {{ rocket.engines.thrust_vacuum.kN }} kN (vac)</div>
+          </div>
+        </div>
+
+        <div class="bg-blue-900/20 border border-blue-800/50 rounded p-2">
+          <div class="text-[10px] text-blue-400 mb-1">STAGING</div>
+          <div class="text-xs text-white">
+            <div>Stages: {{ rocket.stages }}</div>
+            <div>Boosters: {{ rocket.boosters }}</div>
+            <div>Fuel: {{ rocket.engines.propellant_1 }}</div>
+            <div>Oxidizer: {{ rocket.engines.propellant_2 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payload Weights -->
+    <div class="space-y-2">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">PAYLOAD CAPABILITIES</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div *ngFor="let payload of rocket.payload_weights"
+             class="bg-blue-900/20 border border-blue-800/50 rounded px-2 py-1.5">
+          <div class="text-[10px] text-blue-400 text-center">{{ payload.name | uppercase }}</div>
+          <div class="text-xs text-white text-center mt-0.5">
+            <span class="bg-blue-900/70 px-1 rounded">{{ payload.kg | number }} kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!rocket.payload_weights?.length"
+           class="text-center py-3 bg-blue-900/10 rounded border border-blue-900/30">
+        <p class="text-blue-300 text-xs">No payload data available for this rocket.</p>
       </div>
     </div>
   </div>
 
-  <!-- Specs -->
-  <div class="mt-8">
-    <h2 class="text-xl font-semibold text-white mb-4">Specifications</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-300">
-      <div><strong>Height:</strong> {{ rocket.height.meters }} m / {{ rocket.height.feet }} ft</div>
-      <div><strong>Diameter:</strong> {{ rocket.diameter.meters }} m / {{ rocket.diameter.feet }} ft</div>
-      <div><strong>Mass:</strong> {{ rocket.mass.kg | number }} kg / {{ rocket.mass.lb | number }} lb</div>
-      <div><strong>Engines:</strong> {{ rocket.engines.number }} x {{ rocket.engines.type }}
-        ({{ rocket.engines.version }})
-      </div>
-      <div><strong>Thrust (Vac):</strong> {{ rocket.engines.thrust_vacuum.kN }} kN</div>
-      <div><strong>Fuel:</strong> {{ rocket.engines.propellant_1 }} + {{ rocket.engines.propellant_2 }}</div>
+  <!-- Footer Section -->
+  <div class="bg-gradient-to-r from-blue-900/80 to-indigo-900/80 px-3 py-2 border-t border-white/30 text-center">
+    <div class="text-[10px] text-blue-300 tracking-wide flex justify-center items-center space-x-2">
+      <span>ROCKET ID: <span class="text-white bg-blue-900/70 px-1.5 py-0.5 rounded">{{ rocket.id }}</span></span>
+      <a *ngIf="rocket.wikipedia" [href]="rocket.wikipedia" target="_blank"
+         class="text-blue-300 hover:text-blue-100">
+        <fa-icon [icon]="faWikipediaW" class="text-xs"></fa-icon>
+      </a>
     </div>
-  </div>
-
-  <!-- Payload Weights -->
-  <div class="mt-8">
-    <h2 class="text-xl font-semibold text-white mb-4">Payload Capacities</h2>
-    <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-300">
-      <li *ngFor="let payload of rocket.payload_weights" class="bg-zinc-800 p-4 rounded">
-        <p class="font-bold text-white">{{ payload.name }}</p>
-        <p>{{ payload.kg | number }} kg / {{ payload.lb | number }} lb</p>
-      </li>
-    </ul>
   </div>
 </div>
