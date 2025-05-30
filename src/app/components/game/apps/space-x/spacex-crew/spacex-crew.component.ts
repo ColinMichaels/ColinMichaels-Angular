@@ -20,7 +20,7 @@ export class SpacexCrewComponent {
 
   protected readonly faExternalLink = faExternalLink;
 
-  constructor(private spacex: SpacexService) {
+  constructor(private readonly spacex: SpacexService) {
   }
 
   loadLaunch(id: string) {
