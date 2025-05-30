@@ -18,7 +18,7 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
-import {Router, RouterLink} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MusicService} from '../../services/music.service';
@@ -40,6 +40,7 @@ import {LogService} from '../../services/log.service';
   templateUrl: './login-screen.component.html'
 })
 export class LoginScreenComponent implements OnInit, OnDestroy {
+  private redirectUrl: string | null = null;
   form: FormGroup;
   user?: User;
   private destroy$ = new Subject<void>();
@@ -55,6 +56,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     private logger: LogService,
     private router: Router,
     private sanitizer: DomSanitizer,
+    private route: ActivatedRoute,
   ) {
     this.form = this.fb.group({
       username: ['', [
@@ -69,6 +71,12 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.redirectUrl = params['redirectUrl'] || null;
+      });
+
     // First check if there's an existing user in the settings
     this.settingsService.getSettingSet('user')
       ?.pipe(
@@ -109,9 +117,12 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         .replace(/'/g, '&#x27;'); // Encode single quotes
 
       this.userService.updateUser({name: cleanUsername}).then(() => {
-        this.router.navigate([`/${PATH_NAMES.OS_MAIN}`]).then(
+        // Navigate to the redirectUrl if it exists, otherwise to the main OS route
+        const destination = this.redirectUrl || `/${PATH_NAMES.OS_MAIN}`;
+
+        this.router.navigateByUrl(destination).then(
           (success) => {
-            this.logger.info(`'Navigation success: `, success);
+            this.logger.info(`Navigation success: `, success);
           },
           (error) => {
             this.logger.error(`Navigation failed:`, error);
