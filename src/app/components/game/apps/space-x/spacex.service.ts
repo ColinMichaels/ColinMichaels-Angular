@@ -51,4 +51,5 @@ export class SpacexService {
   setLaunchId(id: string) {
     this.selectedLaunchId.next(id);
   }
+
 }

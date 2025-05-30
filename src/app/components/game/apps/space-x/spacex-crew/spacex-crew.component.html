@@ -1,19 +1,100 @@
-<!-- spacex-crew.component.html -->
-<div class="max-w-md mx-auto bg-black text-white p-6 rounded-lg shadow-lg font-sans" *ngIf="crew">
-  <div class="flex flex-col items-center">
-    <img [src]="crew.image" alt="Crew Member Photo" class="w-32 h-32 rounded-full shadow mb-4 border border-zinc-700"/>
-    <h1 class="text-2xl font-bold text-blue-400 mb-1">{{ crew.name }}</h1>
-    <p class="text-sm text-gray-400 italic mb-2">{{ crew.agency }}</p>
-    <span class="text-sm text-green-400" *ngIf="crew.status === 'active'">Active</span>
-    <span class="text-sm text-red-400" *ngIf="crew.status !== 'active'">Inactive</span>
-    <a *ngIf="crew.wikipedia" [href]="crew.wikipedia" target="_blank"
-       class="text-blue-300 hover:underline mt-2 text-sm">Wikipedia</a>
+<div class="bg-black text-white font-mono rounded-lg overflow-hidden border border-white/30" *ngIf="crew">
+  <!-- Header Section -->
+  <div class="p-3 border-b border-white/30">
+    <h2 class="text-xl font-semibold tracking-wide text-center">
+      <span class="text-blue-400">CREW MEMBER</span>
+      <span class="text-white ml-2">{{ crew.name }}</span>
+    </h2>
+    <div class="flex justify-center">
+      <span class="px-2 py-0.5 rounded-full bg-blue-900/70 text-xs tracking-wide"
+            [class.bg-green-900]="crew.status === 'active'"
+            [class.bg-red-900]="crew.status !== 'active'">
+      STATUS: {{ crew.status | uppercase }}
+      </span>
+    </div>
   </div>
 
-  <div class="mt-6">
-    <h2 class="text-lg font-semibold text-white mb-2">Launches</h2>
-    <ul class="list-disc list-inside text-sm text-blue-300">
-      <li *ngFor="let launchId of crew.launches">Launch ID: {{ launchId }}</li>
-    </ul>
+  <!-- Main Content -->
+  <div class="p-4 space-y-4 bg-gradient-to-b from-slate-900/50 to-black">
+    <!-- Crew Info Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Crew Image -->
+      <div class="flex flex-col items-center justify-center">
+        <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white/20 bg-blue-900/20">
+          <img [src]="crew.image" alt="Crew Member Photo" class="w-full h-full object-cover"/>
+        </div>
+      </div>
+
+      <!-- Crew Details -->
+      <div class="space-y-3 md:col-span-2">
+        <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">ASTRONAUT DATA</h3>
+
+        <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+          <div class="col-span-1 text-blue-300 text-right">FULL NAME:</div>
+          <div class="col-span-2 text-white">{{ crew.name }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">AGENCY:</div>
+          <div class="col-span-2 text-white">{{ crew.agency }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">STATUS:</div>
+          <div class="col-span-2">
+            <span [class.text-green-400]="crew.status === 'active'"
+                  [class.text-red-400]="crew.status !== 'active'">
+              {{ crew.status | uppercase }}
+            </span>
+          </div>
+
+          <div class="col-span-1 text-blue-300 text-right">MISSIONS:</div>
+          <div class="col-span-2 text-white">{{ crew.launches.length || 0 }}</div>
+
+          <div *ngIf="crew.wikipedia" class="col-span-1 text-blue-300 text-right">WIKIPEDIA:</div>
+          <div *ngIf="crew.wikipedia" class="col-span-2">
+            <a [href]="crew.wikipedia" target="_blank"
+               class="text-blue-300 hover:text-blue-100 text-xs flex items-center">
+              <span class="underline">View Profile</span>
+              <fa-icon [icon]="faExternalLink" class="ml-1 text-[10px]"></fa-icon>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Launches Section -->
+    <div class="space-y-2">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">MISSION HISTORY</h3>
+
+      <!-- Grid Layout for Launches -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <button *ngFor="let launchId of crew.launches"
+                (click)="loadLaunch(launchId)"
+                class="group bg-blue-900/20 hover:bg-blue-800/30 border border-blue-800/50 hover:border-blue-600 rounded px-2 py-1.5 transition-all duration-200 hover:-translate-y-0.5">
+          <div class="flex flex-col items-center">
+            <div class="font-mono text-[10px] text-blue-400 group-hover:text-blue-300">
+              LAUNCH ID
+            </div>
+            <div class="mt-0.5 text-white text-xs tracking-wide">
+              <!-- Truncate and stylize the ID -->
+              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(0, 4) }}</span>
+              <span class="text-blue-500">···</span>
+              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(launchId.length - 4) }}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Empty State for No Launches -->
+      <div *ngIf="!crew.launches?.length" class="text-center py-3 bg-blue-900/10 rounded border border-blue-900/30">
+        <p class="text-blue-300 text-xs">No missions found for this crew member.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer Section -->
+  <div class="bg-gradient-to-r from-blue-900/80 to-indigo-900/80 px-3 py-2 border-t border-white/30 text-center">
+    <div class="text-[10px] text-blue-300 tracking-wide">
+      CREW ID:
+      <span class="text-white bg-blue-900/70 px-1.5 py-0.5 rounded">{{ crew.id }}</span>
+    </div>
   </div>
 </div>

@@ -1,4 +1,4 @@
-<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-teal-950/50 to-black pointer-events-none">
+<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-teal-950/50 to-black pointer-events-none overflow-x-clip">
   <header
     class="padded-container fixed top-0 left-0 w-full  bg-gradient-to-b from-teal-950/50 to-transparent z-30 h-fit pt-2">
     <app-main-header/>
@@ -9,7 +9,7 @@
 
     <section #terminal [scrollThreshold]="220"
              appScrollClassToggle
-             class="mb-12 mt-56 px-8"
+             class="mb-12 mt-64 px-8"
              enterClasses="blur-2xl"
              exitClasses="blur-0">
       <app-window-header [title]="'About'"/>

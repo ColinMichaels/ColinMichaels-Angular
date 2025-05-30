@@ -18,6 +18,8 @@ export class HomeTerminalWindowComponent implements AfterViewInit {
 
   constructor(private readonly typewriter: TypewriterService
   ) {
+    this.typewriter.enableSound(false);
+    this.typewriter.setVolume(0.01);
     this.typewriter.typedText$.pipe(takeUntilDestroyed())
       .subscribe(text => this.typedText = text);
   }
