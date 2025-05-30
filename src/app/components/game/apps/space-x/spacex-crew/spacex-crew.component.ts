@@ -16,7 +16,7 @@ import {SpacexService} from '../spacex.service';
   ]
 })
 export class SpacexCrewComponent {
-  @Input() crew: SpaceXCrew = {} as SpaceXCrew;
+  @Input() crew: SpaceXCrew[] = [];
 
   protected readonly faExternalLink = faExternalLink;
 

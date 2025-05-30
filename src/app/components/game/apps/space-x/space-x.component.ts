@@ -133,8 +133,9 @@ export class SpaceXComponent {
     window.open(img, '_blank', 'location=no');
   }
 
-  selectLaunch(launch: SpaceXLaunch) {
+  selectLaunch(launch: SpaceXLaunch, currentIndex: number = 0) {
     this.selectedLaunch = launch;
+    this.currentIndex = currentIndex;
     this.spaceXService.setSelectLaunch(launch);
   }
 

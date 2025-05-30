@@ -6,6 +6,7 @@ import {SpacexRocketComponent} from '../spacex-rocket/spacex-rocket.component';
 import {NgSwitch, NgSwitchCase} from '@angular/common';
 import {SpacexService} from '../spacex.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {take} from 'rxjs';
 
 @Component({
   selector: 'app-spacex-sub-panel',
@@ -23,12 +24,12 @@ export class SpacexSubPanelComponent {
   launch!: SpaceXLaunch;
   rocket!: SpaceXRocket;
   launchpad!: SpaceXLaunchpad;
-  crew!: SpaceXCrew;
+  crew: SpaceXCrew[] = [];
   panel: string = 'rocket';
   itemId: string = '';
 
   constructor(
-    private spacex: SpacexService
+    private spacex: SpacexService,
   ) {
     this.spacex.selectedPanel.pipe(takeUntilDestroyed())
       .subscribe((panel: any) => {
@@ -38,21 +39,26 @@ export class SpacexSubPanelComponent {
       })
   }
 
-  private loadPanelData(id: string, type: 'launch' | 'rocket' | 'launchpad' | 'crew') {
+  private loadPanelData(id: any, type: 'launch' | 'rocket' | 'launchpad' | 'crew') {
+    console.warn(id);
     if (!id) return;
 
     switch (type) {
       case 'launch':
-        this.spacex.getLaunchById(id).subscribe(data => this.launch = data);
+        this.spacex.getLaunchById(id).pipe(take(1)).subscribe(data => this.launch = data);
         break;
       case 'rocket':
-        this.spacex.getRocketById(id).subscribe(data => this.rocket = data);
+        this.spacex.getRocketById(id).pipe(take(1)).subscribe(data => this.rocket = data);
         break;
       case 'launchpad':
-        this.spacex.getLaunchpadById(id).subscribe(data => this.launchpad = data);
+        this.spacex.getLaunchpadById(id).pipe(take(1)).subscribe(data => this.launchpad = data);
         break;
       case 'crew':
-        this.spacex.getCrewById(id).subscribe(data => this.crew = data);
+        id.map((crew: any) => {
+          console.log(crew);
+          this.spacex.getCrewById(crew.crew).pipe(take(1)).subscribe((data: SpaceXCrew) => this.crew.push(data));
+        })
+
         break;
     }
   }
