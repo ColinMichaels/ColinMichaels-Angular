@@ -1,6 +1,6 @@
 <div class="cli-container">
   <div class="cli-output" [ngClass]="'typing-' + currentMode">
-    <pre>{{ typedText }}</pre>
+    <pre [innerHTML]="typedText"></pre>
   </div>
   <div class="cli-input">
     <span>&gt;</span>

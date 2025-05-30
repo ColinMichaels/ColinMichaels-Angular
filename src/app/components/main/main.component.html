@@ -1,206 +1,129 @@
-
-<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-[#0f172a] to-black pointer-events-none">
-  <div class="fixed top-0 left-0 w-full  bg-gradient-to-b from-[#0f172a] to-transparent z-40 h-fit">
+<div class="flex flex-col h-screen pt-8 bg-gradient-to-b from-teal-950/50 to-black pointer-events-none overflow-x-clip">
+  <header
+    class="padded-container fixed top-0 left-0 w-full  bg-gradient-to-b from-teal-950/50 to-transparent z-30 h-fit pt-2">
     <app-main-header/>
-    <app-main-sub-header appHideOnScroll [scrollThreshold]="100"/>
-  </div>
+    <app-main-sub-header/>
+  </header>
 
+  <main class="padded-container mx-auto text-center pointer-events-auto mt-48 max-w-7xl">
 
-  <main class="container mx-auto text-center pointer-events-auto mt-48">
-
-    <section #terminal class="w-full sm:w-3/5 px-8 sm:px-4 mx-auto my-12" appHideOnScroll [scrollThreshold]="220">
-      <ng-container>
-        <app-window-header [title]="'About'"></app-window-header>
-      </ng-container>
-      <div class="bg-black text-green-500 shadow-xl shadow-black/20
-      rounded-b-xl p-6 text-left text-xs font-mono">
-        <p class="mb-4 text-emerald-400">More about me......</p>
-        <p>Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
-          pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my
-          projects.</p>
-
-        <p>I believe in continuous learning and am always exploring new technologies and methodologies to refine my
-          craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each
-          project
-          with enthusiasm and a commitment to excellence.
-        </p>
-        <p class="mt-4">colin&#64;colinmichaels.com ~<span class="animate-blink">%</span></p>
-      </div>
+    <section #terminal [scrollThreshold]="220"
+             appScrollClassToggle
+             class="mb-12 mt-64 px-8"
+             enterClasses="blur-2xl"
+             exitClasses="blur-0">
+      <app-window-header [title]="'About'"/>
+      <app-home-terminal-window></app-home-terminal-window>
     </section>
 
     <div class="flex flex-col items-center py-4 no-scrollbar">
 
       <section class="flex flex-col items-center space-y-4">
-        <!-- Header -->
-        <header class=" text-white text-center px-4 sm:px-24 md:px-48 m-4 border-b border-t border-teal-500 py-4">
-          <h1 class="text-4xl font-bold">Current Project</h1>
-          <p class="mt-2 text-lg text-teal-500 mb-4">Building a powerful operating system emulator with modern web
-            technologies.</p>
-          <p>Let’s talk about the current projects section of my operating system emulator. Each section is like a
-            puzzle piece, and I’m here turning those pieces into modular apps that fit together seamlessly. My secret
-            weapons? APIs, TailwindCSS, and Angular.</p>
+        <!-- Projects Overview Section -->
+        <app-projects-overview
+          [features]="[
+          {
+            title: 'API Integration',
+            summary: 'Integrate various opensource APIs to enhance functionality.',
+            details: `APIs—the lifeblood of modern apps. They're like the friendly neighbors who lend you sugar (or data) when you need it. With APIs, I'm connecting to the world, pulling in functionality faster than you can say 'GET request'.`,
+            animation: 'left'
+          },
+          {
+            title: 'Modular Design',
+            summary: 'Modular components for better maintainability and reusability.',
+            details: 'Finally, Angular swoops in as the superhero framework. With its two-way data binding and slick component system, Angular makes building modular apps feel like assembling LEGO blocks—minus the accidental foot injuries.',
+            animation: 'bottom'
+          },
+          {
+            title: 'Responsive UI',
+            summary: 'Responsive first design that adapts to popular devices.',
+            details: `Now, TailwindCSS. It's the stylish friend who makes sure everything looks clean and polished. Why spend hours fiddling with CSS when you can slap on pre-built utility classes and call it a day?`,
+            animation: 'right'
+          }
+        ]"
+          description="Building a powerful operating system emulator with modern web technologies."
+          githubUrl="https://github.com/colinmichaels/"
+          title="Current Project(s)">
+        </app-projects-overview>
 
-          <p>So, each section becomes a mini-app that’s functional, fabulous, and ready to shine in my emulator. Who
-            said OS emulators can’t have personality?</p>
-        </header>
 
-        <!-- Features Section -->
-        <section class="py-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
-              <h3 class="text-xl font-bold text-teal-500">
-                API Integration
-              </h3>
-              <p class="mt-2">
-                Seamlessly integrate various APIs to enhance functionality.
-              </p>
-              <div class="mt-4 text-xs px-2 text-gray-500 bg-black/50 rounded-lg p-2">
-                First up, APIs—the lifeblood of modern apps. They’re like the friendly neighbors who lend you sugar (or
-                data) when you need it. With APIs, I’m connecting my emulator to the world, pulling in functionality
-                faster than you can say “GET request.”
-              </div>
-            </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
-              <h3 class="text-xl font-bold text-teal-500">
-                Modular Design
-              </h3>
-              <p class="mt-2">
-                Build applications using a modular approach for better maintainability.
-              </p>
-              <div class="mt-4 text-xs px-2 text-gray-500 bg-black/50 rounded-lg p-2">
-                Finally, Angular swoops in as the superhero framework. With its two-way data binding and slick component
-                system, Angular makes building modular apps feel like assembling LEGO blocks—minus the accidental foot
-                injuries.
-              </div>
-            </article>
-            <article class="border-white/50 border p-4 rounded-lg shadow-md bg-blue-600/10">
-              <h3 class="text-xl font-bold text-teal-500">Responsive UI</h3>
-              <p class="mt-2">Enjoy a responsive design that adapts to any device.</p>
-              <div class="mt-4 text-xs px-2 text-gray-500 bg-black/50 rounded-lg p-2">
-                Now, TailwindCSS. It’s the stylish friend who makes sure everything looks clean and polished. Why spend
-                hours fiddling with CSS when you can slap on pre-built utility classes and call it a day? My components
-                are not just functional; they’re runway-ready.
-              </div>
-            </article>
-          </div>
-        </section>
+        <section [scrollThreshold]="600"
+                 appScrollClassToggle
+                 class="projects"
+                 duration="duration-1000"
+                 enterClasses="blur-0"
+                 exitClasses="blur-xl"
+                 flyIn="bottom"
+                 leaveTo="bottom">
+          <app-project-item
+            title="SpaceX Launches"
+            description="The SpaceX app component is an excellent tool for accessing and exploring data related to SpaceX launches. Leveraging an open API, this component provides users with real-time information about various SpaceX missions. It serves as a gateway for enthusiasts, developers, and researchers to gain insights into the company's launch history and upcoming events.">
+            <app-window-header [title]="'Space X Api Demo'"/>
+            <app-space-x/>
+          </app-project-item>
 
-        <section class="projects">
-          <article class="project-section">
-            <div class="project-section-header">
-              <h3>The SpaceX Api Demo</h3>
-              <p>
-                The SpaceX API demo component is an excellent tool for accessing and exploring data related to SpaceX
-                launches. Leveraging an open API, this component provides users with real-time information about various
-                SpaceX missions. It serves as a gateway for enthusiasts, developers, and researchers to gain insights
-                into the company’s launch history and upcoming events.
-              </p>
-            </div>
-            <div class="project-example-container">
-              <app-window-header [title]="'Space X Api Demo'" class="w-full"></app-window-header>
-              <app-space-x></app-space-x>
-            </div>
-          </article>
 
-          <article class="project-section" dir="rtl">
-            <div class="project-section-header">
-              <h3>The Task App Component</h3>
-              <p>The Task App Component is a straightforward and efficient tool designed to help users manage their
-                tasks effortlessly. This lightweight task tracker focuses on simplicity and functionality, making it an
-                excellent choice for those who need a quick way to organize their work.</p>
+          <app-project-item
+            title="Weather App"
+            description="The Weather App is a simple and intuitive tool designed to help users track the weather in their area. It provides users with real-time information about the current weather conditions, including temperature, humidity, and wind speed. It also provides users with a detailed forecast for the next few days, allowing them to plan their day accordingly."
+            [isReversed]="true">
+            <app-window-header [title]="'Weather App'"/>
+            <app-weather/>
+          </app-project-item>
 
-              <p>Currently, the app operates without a database, storing tasks locally on the user's device. This
-                approach ensures a seamless and fast experience, while also maintaining user privacy by keeping data
-                offline. However, it's worth noting that this is a work in progress, with plans to expand its
-                capabilities in the future.</p>
+          <app-project-item
+            title="Patch Builder"
+            description="The Patch Builder is a simple and intuitive tool designed to help users create custom audio patches. It provides users with a visual interface for creating and editing audio patches, allowing them to create custom instruments or perform custom music. It also provides users with a detailed report of their patch, allowing them to review their work and make adjustments as needed.">
+            <app-window-header [title]="'Web Audio Patch Builder'"/>
+            <app-defaultPatch-editor/>
+          </app-project-item>
 
-              <p>The Task App Component is ideal for individuals seeking a no-frills solution to track their daily
-                to-dos. Its intuitive design and local storage functionality make it both accessible and reliable. As
-                development continues, we can look forward to potential enhancements, such as cloud integration or
-                advanced features, which could elevate its usability even further.</p>
-            </div>
-            <div class="project-example-container" dir="ltr">
-              <app-window-header [title]="'Task App'" class="w-full"></app-window-header>
-              <app-task-app/>
-            </div>
-          </article>
+          <app-project-item
+            title="Task App"
+            description="Task App is a straightforward and efficient tool designed to help users manage their tasks effortlessly. This lightweight task tracker focuses on simplicity and functionality, making it an excellent choice for those who need a quick way to organize their work. Currently, the app operates without a database, storing tasks locally on the user's device. This approach ensures a seamless and fast experience, while also maintaining user privacy by keeping data offline. However, it's worth noting that this is a work in progress, with plans to expand its capabilities in the future."
+            [isReversed]="true">
+            <app-window-header [title]="'Task App'"/>
+            <app-task-app/>
+          </app-project-item>
 
-          <article class="project-section">
-            <div class="project-section-header">
-              <h3>The Web Audio Patch Builder</h3>
-              <p>The Web Audio Patch Builder is a simple and intuitive tool designed to help users create custom audio
-                patches. It provides users with a visual interface for creating and editing audio patches, allowing them
-                to create custom instruments or perform custom music. It also provides users with a detailed report of
-                their patch, allowing them to review their work and make adjustments as needed.</p>
-            </div>
-            <div class="project-example-container">
-              <app-window-header [title]="'Web Audio Patch Builder'" class="w-full"></app-window-header>
-              <app-defaultPatch-editor/>
-            </div>
-          </article>
+          <app-project-item
+            title="Tooltip Examples"
+            description="The Tooltip Examples is a simple and intuitive tool designed to help users learn about the different types of tooltips available in Tailwind CSS. It provides users with a visual interface for exploring the different types of tooltips, allowing them to learn about the different types of tooltips available in Tailwind CSS.">
+            <app-window-header [title]="'Tooltips & Notifications'"/>
+            <app-tooltip-examples/>
+          </app-project-item>
 
-          <article class="project-section" dir="rtl">
-            <div class="project-section-header">
-              <h3>The Tailwind Class Generator</h3>
-              <p>The Tailwind Class Generator is a simple and intuitive tool designed to help users generate Tailwind
-                CSS utility classes. It provides users with a visual interface for generating utility classes, allowing
-                them to quickly generate classes for common layout and styling needs. It also provides users with a
-                detailed report of their classes, allowing them to review their work and make adjustments as needed.</p>
+          <app-project-item
+            title="Tailwind Class Generator"
+            description="The Tailwind Class Generator is a simple and intuitive tool designed to help users generate Tailwind CSS utility classes. It provides users with a visual interface for generating utility classes, allowing them to quickly generate classes for common layout and styling needs. It also provides users with a detailed report of their classes, allowing them to review their work and make adjustments as needed."
+            [isReversed]="true">
+            <app-window-header [title]="'Tailwind Class Generator'"/>
+            <app-tailwind-preview/>
+          </app-project-item>
 
-            </div>
-            <div class="project-example-container">
-              <app-window-header [title]="'Tailwind Class Generator'" class="w-full"></app-window-header>
-              <app-tailwind-preview/>
-            </div>
-          </article>
 
-          <article class="project-section">
-            <div class="project-section-header">
-              <h3>The Tooltip Examples</h3>
-              <p>The Tooltip Examples is a simple and intuitive tool designed to help users learn about the different
-                types of tooltips available in Tailwind CSS. It provides users with a visual interface for exploring the
-                different types of tooltips, allowing them to learn about the different types of tooltips available in
-                Tailwind CSS.</p>
-
-            </div>
-            <div class="project-example-container">
-              <app-window-header [title]="'Tooltips & Notifications'" class="w-full"></app-window-header>
-              <app-tooltip-examples/>
-            </div>
-          </article>
-          <article class="project-section" dir="rtl">
-            <div class="project-section-header">
-              <h3>The Weather App Component</h3>
-              <p>The Weather App Component is a simple and intuitive tool designed to help users track the weather in
-                their area. It provides users with real-time information about the current weather conditions, including
-                temperature, humidity, and wind speed. It also provides users with a detailed forecast for the next few
-                days, allowing them to plan their day accordingly.</p>
-            </div>
-            <div class="project-example-container">
-              <app-window-header [title]="'Weather App'" class="w-full"></app-window-header>
-              <app-weather/>
-            </div>
-          </article>
         </section>
 
       </section>
-      <section class="container mx-auto text-center pointer-events-auto gap-x-20 px-4 sm:px-24 md:px-48 m-12">
-        <h4>Disclaimer:</h4>
-        <fa-icon [icon]="faExclamationTriangle" class="text-red-500"></fa-icon>
-        <fa-icon [icon]="faPersonDigging" class="text-yellow-500"></fa-icon>
-        <fa-icon [icon]="faExclamationTriangle" class="text-red-500"></fa-icon>
-        <p>Notice: This site is currently a work in progress and is under construction. As such, you may encounter bugs
-          or incomplete features. We appreciate your understanding as we work to enhance your experience.</p>
-      </section>
+
+      <!-- Disclaimer Section -->
+      <app-disclaimer
+        [icon]="faExclamationTriangle"
+        [workIcon]="faPersonDigging"
+        message="Notice: This site is currently a work in progress and is under construction. As such, you may encounter bugs or incomplete features. We appreciate your understanding as we work to enhance your experience.">
+      </app-disclaimer>
+
 
       <section class="flex flex-col items-center space-y-4 mb-24">
-        <a href="https://forms.gle/kfsZYFRzJcQYfruw9" class="text-teal-700 hover:underline" target="_blank">Report a
-          Bug!</a>
+        <a class="text-teal-700 hover:underline border border-white/50 p-4 rounded-lg shadow-md bg-blue-600/10"
+           href="https://forms.gle/kfsZYFRzJcQYfruw9"
+           target="_blank">
+          Report a Bug!
+        </a>
       </section>
     </div>
 
-
-    <div class="absolute bottom-1/4 left-0">
+    <div class="fixed bottom-28 left-0">
       <app-joke-tray/>
     </div>
 

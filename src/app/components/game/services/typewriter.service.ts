@@ -11,6 +11,7 @@ interface TypewriterLine {
   mode?: TypingMode;
   agent: 'user' | 'system';
   pauseAfter?: number;
+  showPath?: boolean;
   onCharTyped?: (char: string, index: number, mode: TypingMode) => void;
   onBegin?: () => void;
   onComplete?: () => void;
@@ -26,11 +27,26 @@ export class TypewriterService {
   private lineBuffer = '';
   public activeMode$ = new BehaviorSubject<TypingMode>('default');
 
+  // Sound controls configuration
+  public soundEnabled$ = new BehaviorSubject<boolean>(true);
+  public volume = new BehaviorSubject(0.2);
+
   constructor(private soundService: SoundService, private userService: UserService) {
       if(this.queue.length > 0) {
         this.processNextLine();
       }
   }
+
+  // Public method to enable/disable sounds
+  enableSound(enabled?: boolean): void {
+    const newState = enabled !== undefined ? enabled : !this.soundEnabled$.value;
+    this.soundEnabled$.next(newState);
+  }
+
+  setVolume(volume: number): void {
+    this.volume.next(volume);
+  }
+
 
   enqueueLine(line: TypewriterLine) {
     this.queue.push({ ...line, mode: line.mode ?? 'default' });
@@ -45,9 +61,16 @@ export class TypewriterService {
     this.lineBuffer = '';
     const mode = line.mode ?? 'default';
     this.activeMode$.next(mode);
-    const userName = this.userService.user.name.toLowerCase() || 'unknown';
-    const currenPath = `${userName}@root:/ `;
-    line.text = currenPath + line.text;
+    if (line.showPath)
+      this.typedText$.next(
+        this.typedText$.getValue() +
+        (line.agent === 'user' ? this.userService.user.name.toLowerCase() : 'root') +
+        '@' +
+        (line.agent === 'user' ? '' : 'root') +
+        ':' +
+        (line.agent === 'user' ? '/' : '') +
+        ' '
+      )
 
     const config = this.getTypingConfig(mode);
     this.typingInterval = setInterval(() => this.typeNextChar(line), config.speed);
@@ -64,9 +87,13 @@ export class TypewriterService {
       this.typedText$.next(this.typedText$.getValue() + char);
       this.currentIndex++;
 
-      const soundKey = config.charSound(char);
-      if (soundKey) {
-        this.soundService.playVariant(soundKey, { volume: 0.2, forceRestart: true });
+      // Only play sound if sounds are enabled
+      if (this.soundEnabled$.value) {
+
+        const soundKey = config.charSound(char);
+        if (soundKey) {
+          this.soundService.playVariant(soundKey, {volume: this.volume.value, forceRestart: true});
+        }
       }
 
       line.onCharTyped?.(char, this.currentIndex, mode);
@@ -125,7 +152,7 @@ export class TypewriterService {
         return {
           speed: 20,
           charSound: (char) => {
-            if (/[a-z0-9]/i.test(char)) return 'click'; // <- just use pool key
+            if (/[a-z0-9]/i.test(char)) return 'click'; // <- use a pool key
             return null;
           }
         };

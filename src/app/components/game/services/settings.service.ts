@@ -49,7 +49,9 @@ export class SettingsService {
   private settings = new Map<string, BehaviorSubject<any>>();
   private settingSets = new Map<string, BehaviorSubject<any[]>>();
 
-  constructor(private storageService: StorageService, private notify: NotificationService) {}
+  constructor(private storageService: StorageService, private notify: NotificationService) {
+    this.loadPersistedSettings();
+  }
 
   // Register a new standalone setting
   registerSetting<T>(id: string, defaultValue: T): void {
@@ -71,6 +73,21 @@ export class SettingsService {
       this.settings.set(id, subject);
     }
   }
+
+  private loadPersistedSettings(): void {
+    // Load setting sets
+    this.storageService.getAllKeys().subscribe(keys => {
+      keys.forEach(key => {
+        this.storageService.getItems(key).subscribe(values => {
+          if (values !== null) {
+            const subject = new BehaviorSubject(values);
+            this.settingSets.set(key, subject);
+          }
+        });
+      });
+    });
+  }
+
 
 
   private showNotify(message = '', title = 'Setting') {

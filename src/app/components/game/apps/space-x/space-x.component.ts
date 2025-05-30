@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DatePipe, NgForOf, NgIf} from '@angular/common';
 import {
   faBars,
-  faChevronLeft, faChevronRight, faFileArchive, faForward, faSpinner,
+  faChevronLeft, faChevronRight, faFileArchive,
   faThumbsDown,
   faThumbsUp
 } from '@fortawesome/free-solid-svg-icons';
@@ -13,7 +13,7 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
 import {SpaceXLaunch} from './models/spacex-models';
 import {SpacexSubPanelComponent} from './spacex-sub-panel/spacex-sub-panel.component';
 import {SpacexService} from './spacex.service';
-import {ClickOutsideDirective} from "../../directives/click-outside.directive";
+import {ClickOutsideDirective} from "../../../../modules/scroll/directives/click-outside.directive";
 
 @Component({
   selector: 'app-space-x',
@@ -93,7 +93,8 @@ export class SpaceXComponent {
       takeUntilDestroyed()
     ).subscribe((launchInfo: any) => {
       this.launches = launchInfo.sort((a: any, b: any) => a.flight_number - b.flight_number)
-        .slice(0, 40).reverse() as SpaceXLaunch[];
+        .filter((launch: any) => launch.details)
+        .slice(0, 200).reverse() as SpaceXLaunch[];
       const launch = this.selectedLaunch = this.launches[this.currentIndex];
       this.spaceXService.setSelectLaunch(launch);
     });
@@ -128,24 +129,14 @@ export class SpaceXComponent {
     this.spaceXService.setSelectLaunch(launch);
   }
 
-  protected readonly faThumbsUp = faThumbsUp;
-  protected readonly faThumbsDown = faThumbsDown;
-  protected readonly faYoutube = faYoutube;
-  protected readonly faHackerNews = faHackerNews;
-  protected readonly faFileArchive = faFileArchive;
-  protected readonly faWikipediaW = faWikipediaW;
-  protected readonly faForward = faForward;
-
   openImage(img: string) {
-    window.open(img, '_blank', 'location=no width=600 height=600');
+    window.open(img, '_blank', 'location=no');
   }
 
-
-  protected readonly faChevronLeft = faChevronLeft;
-  protected readonly faChevronRight = faChevronRight;
-
-  selectLaunch(launch: SpaceXLaunch) {
+  selectLaunch(launch: SpaceXLaunch, currentIndex: number = 0) {
     this.selectedLaunch = launch;
+    this.currentIndex = currentIndex;
+    this.spaceXService.setSelectLaunch(launch);
   }
 
   toggleSidebar() {
@@ -164,5 +155,12 @@ export class SpaceXComponent {
   }
 
   protected readonly faBars = faBars;
-  protected readonly faSpinner = faSpinner;
+  protected readonly faThumbsUp = faThumbsUp;
+  protected readonly faThumbsDown = faThumbsDown;
+  protected readonly faYoutube = faYoutube;
+  protected readonly faHackerNews = faHackerNews;
+  protected readonly faFileArchive = faFileArchive;
+  protected readonly faWikipediaW = faWikipediaW;
+  protected readonly faChevronLeft = faChevronLeft;
+  protected readonly faChevronRight = faChevronRight;
 }

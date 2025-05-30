@@ -9,6 +9,7 @@ import {
 
 @Directive({
   selector: '[appHideOnScroll]',
+  standalone: false
 })
 export class HideOnScrollDirective implements OnInit {
   @Input() scrollThreshold = 100;
@@ -17,12 +18,14 @@ export class HideOnScrollDirective implements OnInit {
 
   private isHidden = false;
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {
+  constructor(
+    private readonly el: ElementRef,
+    private readonly renderer: Renderer2) {
   }
 
   ngOnInit() {
     if (this.animate) {
-      this.renderer.setStyle(this.el.nativeElement, 'transition', 'transform 0.3s ease, opacity 0.3s ease');
+      this.renderer.setStyle(this.el.nativeElement, 'transition', 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out');
     }
   }
 

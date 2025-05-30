@@ -9,6 +9,7 @@ import {
 
 @Directive({
   selector: '[appSticky]',
+  standalone: false
 })
 export class StickyDirective implements AfterViewInit {
   @Input() stickyTop: string = '0px';
@@ -17,7 +18,9 @@ export class StickyDirective implements AfterViewInit {
 
   private isStuck = false;
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {
+  constructor(
+    private readonly el: ElementRef,
+    private readonly renderer: Renderer2) {
   }
 
   ngAfterViewInit(): void {
@@ -33,9 +36,7 @@ export class StickyDirective implements AfterViewInit {
       if (!this.isStuck) {
         this.renderer.addClass(this.el.nativeElement, this.stickyClass);
         this.isStuck = true;
-      }
-    } else {
-      if (this.isStuck) {
+      } else {
         this.renderer.removeClass(this.el.nativeElement, this.stickyClass);
         this.isStuck = false;
       }

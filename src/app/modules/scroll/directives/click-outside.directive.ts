@@ -6,7 +6,7 @@ import {Directive, ElementRef, Output, EventEmitter, HostListener} from '@angula
 export class ClickOutsideDirective {
   @Output() appClickOutside = new EventEmitter<MouseEvent>();
 
-  constructor(private elementRef: ElementRef) {
+  constructor(private readonly elementRef: ElementRef) {
   }
 
   @HostListener('document:click', ['$event'])
