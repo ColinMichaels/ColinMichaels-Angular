@@ -10,6 +10,7 @@ import {SvgService} from '../../services/svg.service';
 import {SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
 import {Router} from '@angular/router';
+import {AuthService} from '../../../../services/auth.service';
 
 @Component({
   selector: 'app-dock',
@@ -68,6 +69,7 @@ export class DockComponent {
   constructor(
     private appManager: ApplicationManagerService,
     private notificationService: NotificationService,
+    private readonly authService: AuthService,
     private svg: SvgService,
     private router: Router
     ) {
@@ -138,7 +140,10 @@ export class DockComponent {
   }
 
   logout() {
-    this.router.navigate(['/login']);
+    console.warn('logging out');
+    this.authService.logout().pipe().subscribe((res) => {
+      console.warn('logged out', res);
+    });
   }
 
   protected readonly faCog = faCog;
