@@ -1,0 +1,55 @@
+<!-- settings-sidebar.component.html -->
+<div class="settings-sidebar" [class.visible]="isVisible">
+  <div class="sidebar-header">
+    <h2 class="text-sm font-bold">Settings</h2>
+    <button class="close-btn" (click)="closeSidebar()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <div class="sidebar-content">
+    <!-- Octave Control -->
+    <div class="control-group">
+      <label for="octave-control" class="block text-sm font-medium">Octave: {{ startingOctave }}</label>
+      <input
+        id="octave-control"
+        type="range"
+        min="1"
+        max="7"
+        [value]="startingOctave"
+        (input)="onOctaveChange($event)"
+        class="w-full"
+      >
+      <div class="flex justify-between text-xs">
+        <span>1</span>
+        <span>2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+        <span>6</span>
+        <span>7</span>
+      </div>
+    </div>
+
+    <!-- Patch Selection -->
+    <div class="control-group mt-2">
+      <label class="block text-sm font-medium mb-2">Patches</label>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          *ngFor="let patch of patches"
+          (click)="onPatchChange(patch)"
+          [class.selected]="patch === selectedPatch"
+          class="patch-btn p-2 text-sm rounded"
+        >
+          {{ patch.name }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Additional controls can be added here -->
+  </div>
+</div>
