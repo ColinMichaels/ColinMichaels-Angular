@@ -6,6 +6,9 @@ import {provideHttpClient} from '@angular/common/http';
 import {provideMarkdown} from 'ngx-markdown';
 import {provideAnimations} from '@angular/platform-browser/animations';
 import {defaultSoundConfig, SOUND_SERVICE_CONFIG} from './components/game/services/sound.service';
+import {initializeApp, provideFirebaseApp} from '@angular/fire/app';
+import {environment} from '../environments/environment';
+import {getAuth, provideAuth} from '@angular/fire/auth';
 
 
 export const appConfig: ApplicationConfig = {
@@ -13,6 +16,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withHashLocation()),
+    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
+    provideAuth(() => getAuth()),
     provideMarkdown(),
     provideAnimations(),
     {
