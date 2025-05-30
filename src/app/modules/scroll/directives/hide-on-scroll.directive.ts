@@ -18,7 +18,9 @@ export class HideOnScrollDirective implements OnInit {
 
   private isHidden = false;
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {
+  constructor(
+    private readonly el: ElementRef,
+    private readonly renderer: Renderer2) {
   }
 
   ngOnInit() {

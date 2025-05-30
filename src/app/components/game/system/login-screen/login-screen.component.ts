@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, SecurityContext} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -14,18 +14,17 @@ import {
   faCircle,
   faMoon,
   faPowerOff,
-  faRedo, faSpinner,
+  faRedo,
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
-import {DomSanitizer} from '@angular/platform-browser';
 import {MusicService} from '../../services/music.service';
-import {Observable, Subject, takeUntil} from 'rxjs';
+import {Subject, takeUntil} from 'rxjs';
 import {PATH_NAMES} from '../../../../app.routes';
 import {LogService} from '../../services/log.service';
-import {Auth, updateProfile, user, User} from '@angular/fire/auth';
+import {updateProfile, User} from '@angular/fire/auth';
 import {AuthService} from '../../../../services/auth.service';
 import {faGoogle} from '@fortawesome/free-brands-svg-icons';
 
@@ -66,21 +65,17 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   user?: User;
   private destroy$ = new Subject<void>();
 
-  private auth: Auth = inject(Auth); // Or using constructor injection
-  user$: Observable<User | null> = user(this.auth); // Pass the injected auth instance
-
   backgroundImage = 'assets/images/backgrounds/night.webp';
 
   constructor(
     private fb: FormBuilder,
-    private authService: AuthService,
+    private readonly authService: AuthService,
     private userService: UserService,
     private soundService: SoundService,
     private musicService: MusicService,
     private logger: LogService,
     private router: Router,
-    private sanitizer: DomSanitizer,
-    private route: ActivatedRoute,
+    private readonly route: ActivatedRoute,
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -110,16 +105,16 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        this.redirectUrl = params['redirectUrl'] || null;
+        this.redirectUrl = params['redirectUrl'] ?? null;
       });
 
     // Check for redirect results
     this.authService.handleRedirectResult()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
+      .subscribe((result: any) => {
         if (result) {
           this.userService.updateUser({
-            name: result.user.displayName || result.user.email?.split('@')[0] || 'User'
+            name: result.user.displayName ?? result.user.email?.split('@')[0] ?? 'User'
           }).then(() => {
             this.navigateToDestination();
           });
@@ -130,7 +125,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.soundService.stopAll();
     this.musicService.stopAll();
 
-    // Check if user is already logged in
+    // Check if the user is already logged in
     this.authService.user$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
@@ -153,7 +148,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   private navigateToDestination() {
-    const destination = this.redirectUrl || `/${PATH_NAMES.OS_MAIN}`;
+    const destination = this.redirectUrl ?? `/${PATH_NAMES.OS_MAIN}`;
     this.router.navigateByUrl(destination)
       .then(success => this.logger.info('Navigation success:', success))
       .catch(error => this.logger.error('Navigation failed:', error));
@@ -221,7 +216,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.authService.registerWithEmail(email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result) => {
+        next: (result: any) => {
           this.logger.info('User registered:', result.user.email);
 
           // Use the modern Firebase approach for updating the profile
@@ -254,12 +249,12 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.authService.loginWithGoogle()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result) => {
+        next: (result: any) => {
           this.logger.info('User logged in with Google:', result?.user?.email);
           // Update user service with Google user info
           this.userService.updateUser({
-            name: result?.user?.displayName ||
-              (result?.user?.email ? result.user.email.split('@')[0] : null) ||
+            name: result?.user?.displayName ??
+              (result?.user?.email ? result.user.email.split('@')[0] : null) ??
               'User'
 
           }).then(() => {
@@ -287,7 +282,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         next: () => {
           this.logger.info('Password reset email sent to:', email);
           this.error = '';
-          // Show success message
+          // TODO: Turn into modal popup or something
           alert(`Password reset email sent to ${email}`);
         },
         error: (error) => {
@@ -295,41 +290,6 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           this.logger.error('Password reset error:', error);
         }
       });
-  }
-
-
-  submit(event: { preventDefault: () => void; }) {
-    event.preventDefault();
-
-    if (this.form.valid) {
-      // Sanitize the input before using it
-      const sanitizedUsername = this.sanitizer.sanitize(SecurityContext.HTML,
-        this.form.value.username) ?? '';
-
-      // Additional cleaning
-      const cleanUsername = sanitizedUsername
-        .trim()
-        .replace(/[<>]/g, '') // Remove angle brackets
-        .replace(/&/g, '&amp;') // Encode ampersands
-        .replace(/"/g, '&quot;') // Encode quotes
-        .replace(/'/g, '&#x27;'); // Encode single quotes
-
-      this.userService.updateUser({name: cleanUsername}).then(() => {
-        // Navigate to the redirectUrl if it exists, otherwise to the main OS route
-        const destination = this.redirectUrl || `/${PATH_NAMES.OS_MAIN}`;
-
-        this.router.navigateByUrl(destination).then(
-          (success) => {
-            this.logger.info(`Navigation success: `, success);
-          },
-          (error) => {
-            this.logger.error(`Navigation failed:`, error);
-          }
-        );
-      });
-
-
-    }
   }
 
   restart() {
@@ -369,5 +329,4 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   protected readonly faChevronRight = faChevronRight;
   protected readonly faMoon = faMoon;
   protected readonly faGoogle = faGoogle;
-  protected readonly faSpinner = faSpinner;
 }

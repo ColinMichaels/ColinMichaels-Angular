@@ -13,7 +13,7 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
 })
 export class WeatherComponent implements OnInit {
   private settingsService = inject(SettingsService);
-  private weatherService = inject(WeatherService);
+  private readonly weatherService = inject(WeatherService);
   isDarkMode = signal(false);
   currentWeather: any;
   fiveDayForecast: any;
