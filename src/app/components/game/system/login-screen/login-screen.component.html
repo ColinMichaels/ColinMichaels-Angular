@@ -13,32 +13,149 @@
       </div>
 
       <!-- Username label (optional if prefilled) -->
-      <div class="text-lg font-semibold">Welcome</div>
+      <h2 class="text-center text-lg">{{ isLoginMode ? 'Login' : 'Register' }}</h2>
 
-      <!-- Input -->
-      <form [formGroup]="form" (ngSubmit)="submit($event)"
-            class="relative flex flex-row justify-center items-center text-xs">
-        <input type="text"
-               formControlName="username"
-               placeholder="Enter username"
-               class="text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <div>
-          <button *ngIf="!form.get('username')?.invalid" type="submit"
-                  (keyup.enter)="submit($event)"
-                  (click)="submit($event)"
-                  class="absolute top-1 -right-8 w-6 h-6 rounded-full py-1 bg-white/10 text-white/50 hover:text-white/90 text transition font-semibold">
-            <fa-icon [icon]="faChevronRight"></fa-icon>
-          </button>
+      <!-- src/app/components/game/system/login-screen/login-screen.component.html -->
+      <div class="login-container">
+        <div class="login-card flex flex-col justify-center items-center">
+
+
+          <!-- Error Message -->
+          <div *ngIf="error" class="error-message mb-4 p-2 text-sm bg-red-100 text-red-700 rounded">
+            {{ error }}
+          </div>
+
+          <!-- Login Form -->
+          <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-4">
+            <div class="form-group relative flex flex-col justify-center items-center">
+              <input
+                type="email"
+                id="email"
+                formControlName="email"
+                class="login-input"
+                placeholder="Enter your email">
+              <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Please enter a valid email address
+              </div>
+              <button
+                [class.hidden]="loginForm.invalid"
+                type="submit"
+                class="login-button">
+                <fa-icon [icon]="faChevronRight"></fa-icon>
+              </button>
+            </div>
+
+            <div class="form-group">
+              <input
+                type="password"
+                id="password"
+                formControlName="password"
+                class="login-input"
+                placeholder="Enter your password">
+              <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Password must be at least 6 characters
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <div class="text-center my-2">
+                <a (click)="resetPassword()" class="text-gray-500 hover:text-white cursor-pointer text-sm">Forgot
+                  password?</a>
+              </div>
+            </div>
+          </form>
+
+          <!-- Register Form -->
+          <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="space-y-4">
+            <div class="form-group">
+              <label for="displayName"></label>
+              <input
+                type="text"
+                id="displayName"
+                formControlName="displayName"
+                class="login-input"
+                placeholder="Enter your name">
+              <div *ngIf="registerForm.get('displayName')?.invalid && registerForm.get('displayName')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Display name must be at least 3 characters
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="registerEmail"></label>
+              <input
+                type="email"
+                id="registerEmail"
+                formControlName="email"
+                class="login-input"
+                placeholder="Enter your email">
+              <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Please enter a valid email address
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="registerPassword"></label>
+              <input
+                type="password"
+                id="registerPassword"
+                formControlName="password"
+                class="login-input"
+                placeholder="Create a password">
+              <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Password must be at least 6 characters
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword"></label>
+              <input
+                type="password"
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                class="login-input"
+                placeholder="Confirm password">
+              <div *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched"
+                   class="text-red-500 text-sm mt-1">
+                Passwords don't match
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                [disabled]="registerForm.invalid || loading"
+                [class.bg-green-600]="!registerForm.invalid && !loading"
+                class="w-full text-white p-2 rounded hover:bg-green-600 border border-white/30 text-sm disabled:opacity-50">
+                {{ loading ? 'Registering...' : 'Register' }}
+              </button>
+            </div>
+          </form>
+
+          <!-- Google Sign In -->
+          <div class="my-4 text-center">
+            <span class="block mb-2 text-sm text-gray-500">OR</span>
+            <button
+              (click)="loginWithGoogle()"
+              [disabled]="loading"
+              class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 ">
+              <fa-icon [icon]="faGoogle" class="text-xl"></fa-icon>
+              {{ isLoginMode ? 'Sign in with Google' : 'Sign up with Google' }}
+            </button>
+          </div>
+
+          <!-- Toggle Login/Register -->
+          <div class="text-center">
+            <a (click)="toggleMode()" class="text-gray-500 text-sm hover:text-white cursor-pointer">
+              {{ isLoginMode ? 'Need an account? Register' : 'Already have an account? Login' }}
+            </a>
+          </div>
         </div>
-
-      </form>
-      <!-- Error -->
-      <div *ngIf="form.get('username')?.invalid && form.get('username')?.touched"
-           class="text-red-400 text-xs">
-        Invalid name – only letters allowed
       </div>
-
-
     </div>
   </div>
 </div>

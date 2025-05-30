@@ -1,38 +1,109 @@
-<!-- spacex-launchpad.component.html -->
-<div class="mx-auto bg-black text-white font-sans" *ngIf="launchpad">
-  <h1 class="text-3xl font-bold text-emerald-400 mb-2">{{ launchpad.name }}</h1>
-  <p class="text-sm text-gray-400 mb-4 italic">{{ launchpad.full_name }}</p>
-
-  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-300">
-    <div><strong>Locality:</strong> {{ launchpad.locality }}</div>
-    <div><strong>Region:</strong> {{ launchpad.region }}</div>
-    <div><strong>Timezone:</strong> {{ launchpad.timezone }}</div>
-    <div><strong>Status:</strong> <span
-      [ngClass]="{'text-green-400': launchpad.status === 'active', 'text-red-400': launchpad.status !== 'active'}">{{ launchpad.status }}</span>
+<div class="bg-black text-white font-mono rounded-lg overflow-hidden border border-white/30">
+  <!-- Header Section with Subtle Gradient Background -->
+  <div class="p-3 border-b border-white/30">
+    <h2 class="text-xl font-semibold tracking-wide text-center">
+      <span class="text-white ml-2">{{ launchpad.name }}</span>
+    </h2>
+    <div class="flex justify-center">
+      <span class="px-2 py-0.5 rounded-full bg-blue-900/70 text-xs tracking-wide">
+        STATUS: {{ launchpad.status | uppercase }}
+      </span>
     </div>
-    <div><strong>Attempts:</strong> {{ launchpad.launch_attempts }}</div>
-    <div><strong>Successes:</strong> {{ launchpad.launch_successes }}</div>
   </div>
 
-  <div class="mt-6" (click)="openMap(launchpad.latitude, launchpad.longitude)">
-    <h2 class="text-lg font-semibold text-white mb-2">Location</h2>
-    <fa-icon [icon]="faMapLocation"></fa-icon>
-    <p class="text-gray-600 text-xs">Latitude: {{ launchpad.latitude }}, Longitude: {{ launchpad.longitude }}</p>
+  <!-- Main Content -->
+  <div class="p-4 space-y-4 bg-gradient-to-b from-slate-900/50 to-black">
+    <!-- Details Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Location Details -->
+      <div class="space-y-3">
+        <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">LOCATION DATA</h3>
+
+        <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+          <div class="col-span-1 text-blue-300 text-right">REGION:</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.region }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">LOCALITY:</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.locality }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">COORDINATES:</div>
+          <div class="col-span-2 text-white flex items-center">
+            {{ launchpad.latitude | number:'1.4-4' }}, {{ launchpad.longitude | number:'1.4-4' }}
+            <button (click)="openMap(launchpad.latitude, launchpad.longitude)"
+                    class="ml-2 p-0.5 bg-blue-800 hover:bg-blue-700 rounded transition">
+              <fa-icon [icon]="faMapLocation" class="text-blue-200 text-xs"></fa-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operational Details -->
+      <div class="space-y-3">
+        <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">OPERATION STATS</h3>
+
+        <div class="grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+          <div class="col-span-1 text-blue-300 text-right">LAUNCH ATTEMPTS:</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.launch_attempts }}</div>
+
+          <div class="col-span-1 text-blue-300 text-right">SUCCESS RATE:</div>
+          <div class="col-span-2 text-white">
+            <div class="w-3/4 bg-gray-400 rounded-full h-1.5">
+              <div class="bg-blue-600 h-1.5 rounded-full"
+                   [style.width]="(launchpad.launch_successes / launchpad.launch_attempts) * 50 + '%'"></div>
+            </div>
+            <div
+              class="text-xs mt-0.5 text-left">{{ (launchpad.launch_successes / launchpad.launch_attempts) * 100 | number:'1.0-0' }}
+              % ({{ launchpad.launch_successes }}/{{ launchpad.launch_attempts }})
+            </div>
+          </div>
+
+          <div class="col-span-1 text-blue-300 text-right">TIME ZONE:</div>
+          <div class="col-span-2 text-white text-left">{{ launchpad.timezone }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="space-y-1">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">MISSION BRIEF</h3>
+      <p class="text-gray-300 leading-relaxed text-xs">{{ launchpad.details }}</p>
+    </div>
+
+    <!-- Launches Grid -->
+    <div class="space-y-2 max-h-96 overflow-y-auto">
+      <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1">ASSOCIATED LAUNCHES</h3>
+
+      <!-- Grid Layout for Launches -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <button *ngFor="let launchId of launchpad.launches"
+                (click)="loadLaunch(launchId)"
+                class="group bg-blue-900/20 hover:bg-blue-800/30 border border-blue-800/50 hover:border-blue-600 rounded px-2 py-1.5 transition-all duration-200 hover:-translate-y-0.5">
+          <div class="flex flex-col items-center">
+            <div class="font-mono text-sm text-blue-400 group-hover:text-blue-300">
+              LAUNCH ID
+            </div>
+            <div class="mt-0.5 text-white text-xs tracking-normal">
+              <!-- Truncate and stylize the ID -->
+              <span class="text-blue-500">···</span>
+              <span class="bg-blue-900/70 px-1 rounded">{{ launchId.substring(launchId.length - 7) }}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Empty State for No Launches -->
+      <div *ngIf="!launchpad.launches?.length"
+           class="text-center py-3 bg-blue-900/10 rounded border border-blue-900/30">
+        <p class="text-blue-300 text-xs">No associated launches found for this launchpad.</p>
+      </div>
+    </div>
   </div>
 
-  <div class="mt-6">
-    <h2 class="text-lg font-semibold text-white mb-2">Associated Launches</h2>
-    <ul class="list-disc list-inside text-sm text-blue-300">
-      <li *ngFor="let id of launchpad.launches">
-        <div class="cursor-pointer" (click)="loadLaunch(id)">Launch ID: {{ id }}</div>
-      </li>
-    </ul>
-  </div>
-
-  <div class="mt-6">
-    <h2 class="text-lg font-semibold text-white mb-2">Supported Rockets</h2>
-    <ul class="list-disc list-inside text-sm text-blue-300">
-      <li *ngFor="let id of launchpad.rockets">Rocket ID: {{ id }}</li>
-    </ul>
+  <!-- Footer Section -->
+  <div class="bg-gradient-to-r from-blue-900/80 to-indigo-900/80 px-3 py-2 border-t border-blue-800 text-center">
+    <div class="text-[10px] text-blue-300 tracking-wide">
+      LAUNCHPAD ID:
+      <span class="text-white bg-blue-900/70 px-1.5 py-0.5 rounded">{{ launchpad.id }}</span>
+    </div>
   </div>
 </div>

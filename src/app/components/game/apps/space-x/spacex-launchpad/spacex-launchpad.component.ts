@@ -1,5 +1,5 @@
 import {Component, Input} from '@angular/core';
-import {NgClass, NgForOf, NgIf} from '@angular/common';
+import {DecimalPipe, NgForOf, NgIf, UpperCasePipe} from '@angular/common';
 import {SpaceXLaunchpad} from '../models/spacex-models';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faMapLocation} from '@fortawesome/free-solid-svg-icons';
@@ -9,10 +9,11 @@ import {SpacexService} from '../spacex.service';
   selector: 'app-spacex-launchpad',
   templateUrl: './spacex-launchpad.component.html',
   imports: [
-    NgClass,
     NgForOf,
     NgIf,
-    FaIconComponent
+    FaIconComponent,
+    UpperCasePipe,
+    DecimalPipe
   ]
 })
 export class SpacexLaunchpadComponent {
@@ -23,7 +24,7 @@ export class SpacexLaunchpadComponent {
   }
 
   openMap(latitude: number, longitude: number) {
-    window.open(this.googleMapsEndpoint + `${latitude},${longitude}`, '_blank', 'location=no width=800 height=600');
+    window.open(this.googleMapsEndpoint + `${latitude},${longitude}`, '_blank', 'location=no width=1024 height=960');
   }
 
   protected readonly faMapLocation = faMapLocation;

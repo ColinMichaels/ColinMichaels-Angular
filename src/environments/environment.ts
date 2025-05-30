@@ -3,5 +3,6 @@ export const environment = {
   title: 'Colin Michaels',
   apiUrl: 'http://localhost:3000', // your NestJS backend
   openAiApiKey: '',
-  openWeatherMapApiKey: ''
+  openWeatherMapApiKey: '',
+  firebaseConfig: {}
 };

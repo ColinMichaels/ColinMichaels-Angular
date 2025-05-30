@@ -18,7 +18,7 @@ import {CommonModule} from '@angular/common';
   `,
   styles: [`
     .project-section {
-      @apply px-4 sm:p-8 grid grid-cols-1 md:grid-cols-10 grid-flow-dense md:grid-flow-col border
+      @apply p-4 sm:p-8 grid grid-cols-1 md:grid-cols-10 grid-flow-dense md:grid-flow-col border
       rounded-lg shadow-2xl  border-white/30 bg-teal-950/30;
       .project-section-header {
         @apply flex flex-col justify-center  sm:col-span-4 text-pretty text-left font-sans;

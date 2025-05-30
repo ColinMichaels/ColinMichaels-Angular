@@ -1,4 +1,4 @@
-import {Component, HostListener} from '@angular/core';
+import {Component, DestroyRef, HostListener, OnDestroy} from '@angular/core';
 import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -8,10 +8,11 @@ import {
   faForward,
   faPause,
   faPlay,
-  faRepeat, faShuffle, faVolumeDown,
+  faRepeat, faShuffle, faVolumeDown, faVolumeMute,
   faVolumeUp
 } from '@fortawesome/free-solid-svg-icons';
 import {SettingsService} from '../../services/settings.service';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-music-player',
@@ -23,7 +24,7 @@ import {SettingsService} from '../../services/settings.service';
     NgIf
   ],
 })
-export class MusicPlayerComponent {
+export class MusicPlayerComponent implements OnDestroy {
   toggleRepeat() {
       throw new Error('Method not implemented.');
   }
@@ -36,19 +37,20 @@ export class MusicPlayerComponent {
 
   constructor(
     public music: MusicService,
-    private readonly settingsService: SettingsService
+    private readonly settingsService: SettingsService,
+    private readonly destroyRef: DestroyRef,
   ) {
     this.currentTrack = this.music.currentTrack;
     this.trackLibrary = this.music.library;
     this.volume = this.music.volume();
-    this.music.trackChanged.subscribe((track: any) => {
+    this.music.trackChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((track: any) => {
       this.currentTrack = track;
     });
-    this.music.timeUpdated.subscribe((time: number) => {
+    this.music.timeUpdated.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((time: number) => {
       this.currentTime = time;
       this.progress = (time / this.currentTrack.duration) * 100;
     });
-    this.music.isPlayingChanged.subscribe((state: boolean) => this.isPlaying = state);
+    this.music.isPlayingChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state: boolean) => this.isPlaying = state);
   }
 
   play() {
@@ -121,4 +123,10 @@ export class MusicPlayerComponent {
     const toggleVolume = this.volume =  volume === 0 ? 1 : 0;
     this.music.setVolume(toggleVolume);
   }
+
+  ngOnDestroy() {
+    this.music.stopAll();
+  }
+
+  protected readonly faVolumeMute = faVolumeMute;
 }
