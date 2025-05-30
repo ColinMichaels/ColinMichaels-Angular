@@ -165,6 +165,7 @@ export interface SpaceXLaunchpad {
   longitude: number;
   launch_attempts: number;
   launch_successes: number;
+  details: string;
   rockets: string[];
   launches: string[];
   status: 'active' | 'retired' | 'under construction' | string;
