@@ -45,5 +45,8 @@ Thumbs.db
 .firebase/*
 
 # env configs
-environments/*
+src/environments/environment.dev.ts
+src/environments/environment.local.ts
+src/environments/environment.prod.ts
+src/environments/environment.ts
 
