@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import {INotification, NotificationService} from '../../services/notification.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MediaComponent} from '../../templates/media/media.component';
-import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
+import {TimeAgoPipe} from '../../../../pipes/time-ago.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faTimes} from '@fortawesome/free-solid-svg-icons';
 
