@@ -5,7 +5,7 @@ import {
   faChartSimple,
   faCircleInfo, faCloudSunRain, faCogs,
   faComputer,
-  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMusic, faNoteSticky,
+  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMessage, faMusic, faNoteSticky,
   faPerson, faRocket
 } from '@fortawesome/free-solid-svg-icons';
 import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
@@ -31,6 +31,8 @@ import {LogService} from './log.service';
 import {PianoComponent} from '../apps/music-apps/piano/piano.component';
 import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
 import {WeatherComponent} from '../apps/weather/weather.component';
+import {MessagesComponent} from '../apps/messages/messages.component';
+import {ChatBotComponent} from '../../../modules/chat/chat.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -77,6 +79,7 @@ export interface AppEntry {
     license?: string;
     website?: string;
   }
+  status?: 'development' | 'stable' | 'deprecated' | 'obsolete'
   autofit?: boolean;
   windowSize?: {
     width?: number;
@@ -123,6 +126,8 @@ export enum APP_ID {
   space_x_app = 'space-x-app',
   icon_playground = 'icon-playground',
   weather_app = 'weather-app',
+  messages_app = 'messages-app',
+  chat_bot = 'chat-bot',
 }
 
 @Injectable({providedIn: 'root'})
@@ -216,7 +221,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -233,7 +245,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -250,7 +269,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -267,7 +293,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
 
@@ -276,11 +309,52 @@ export class ApplicationManagerService {
       title: 'Space X Launches',
       component: SpaceXComponent,
       installed: true,
-      windowSize: {height: 400, width: 200},
+      windowSize: {height: 800, width: 600},
       autofit: false,
       icon: {
         class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
         svgPath: faRocket
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
+    });
+
+    this.registerApp({
+      id: APP_ID.messages_app,
+      title: 'Messages',
+      component: MessagesComponent,
+      installed: true,
+      windowSize: {height: 800, width: 600},
+      autofit: false,
+      icon: {
+        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
+        svgPath: faMessage
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.chat_bot,
+      title: 'Chat',
+      component: ChatBotComponent,
+      installed: true,
+      windowSize: {height: 800, width: 600},
+      autofit: false,
+      icon: {
+        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
+        svgPath: faMessage
       },
       memory: 512,
       maxInstances: 1,
@@ -298,9 +372,9 @@ export class ApplicationManagerService {
         svgPath: faCogs
       },
       memory: 512,
-      maxInstances: 1,
+      maxInstances: 10,
       type: AppType.system,
-      params: {file: 'cipher.md'},
+      params: {file: 'colinos-demo.doc.md'},
       instanceIndex: 0
     });
 
@@ -316,7 +390,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({

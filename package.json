@@ -28,6 +28,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "chart.js": "^4.4.9",
     "dayjs": "^1.11.13",
+    "firebase": "^11.8.1",
     "marked": "^15.0.11",
     "ng2-charts": "^8.0.0",
     "ngx-markdown": "^19.1.1",
