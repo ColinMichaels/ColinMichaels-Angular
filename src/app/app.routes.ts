@@ -11,11 +11,16 @@ export const PATH_NAMES = {
   OS_LOGIN: 'login',
   OS_BOOT: 'boot',
   OS_EXTERNAL: 'external',
-  OS_SLEEP: 'sleep'
+  OS_SLEEP: 'sleep',
+  FS_BACKGROUND: 'background',
 }
 export const routes: Routes = [
   {
     path: '', loadComponent: () => import('./components/main/main.component').then(m => m.MainComponent)
+  },
+  {
+    path: 'background',
+    loadComponent: () => import('./components/game/system/full-screen-background/background-example.component').then(m => m.BackgroundExampleComponent)
   },
   {
     path: PATH_NAMES.OS_MAIN,
