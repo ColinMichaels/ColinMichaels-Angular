@@ -10,11 +10,11 @@ import {ApplicationManagerService} from '../../services/application-manager.serv
   encapsulation: ViewEncapsulation.None,
   styles: [
     `.markdown-body {
-      @apply prose text-xs leading-5  mx-auto;
+      @apply prose text-xs leading-5  mx-auto ;
     }`,
   ],
   template: `
-    <section class="bg-white h-full overflow-y-auto py-4">
+    <section class="bg-white h-screen overflow-y-auto py-4">
       <article class="markdown-body">
         <markdown [src]="document"></markdown>
       </article>
@@ -25,6 +25,8 @@ export class MarkdownReaderComponent {
   document!: string;
 
   private _filename: string = 'gameplay.doc.md';
+
+  @Input() params: any;
 
   @Input()
   set filename(value: string) {
@@ -38,10 +40,12 @@ export class MarkdownReaderComponent {
 
   constructor(private readonly appManager: ApplicationManagerService) {
 
-    this.document = this.docsPath + this._filename;
+
     const currentApp = this.appManager.getCurrentApp();
 
     this.filename = currentApp?.params?.file;
+    console.warn('FILE', this.filename);
+    this.document = this.docsPath + this.filename;
   }
 
 

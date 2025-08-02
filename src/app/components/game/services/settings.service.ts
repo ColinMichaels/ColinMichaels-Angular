@@ -264,6 +264,7 @@ export class SettingsService {
   syncFormGroupWithSettingSet(formGroup: FormGroup, setId: string): void {
     formGroup.valueChanges.subscribe((newValues) => {
       const settingSet = this.getSettingSet<Setting>(setId);
+      console.warn('settingSet', settingSet?.value);
       if (!settingSet) {
         console.warn(`No settings set found with ID: "${setId}".`);
         return;
