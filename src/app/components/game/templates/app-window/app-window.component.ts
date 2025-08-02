@@ -6,7 +6,7 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type, computed, OnChanges, OnDestroy
+  Type, computed, OnChanges, OnDestroy, ComponentRef
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
@@ -72,6 +72,8 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() focused: boolean = false;
   @Input() params: any;
 
+  private componentRef?: ComponentRef<any>;
+
   /** Font Awesome Icons */
   faTimes = faTimes;
   faMinus = faMinus;
@@ -108,7 +110,6 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: any) {
-    console.warn('AppWindowComponent: ngOnChanges', changes);
     if(changes.id){
       this.focused = this.embeddedApp()?.id === changes.id.currentValue;
     }
@@ -161,7 +162,8 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   private loadEmbeddedComponent(): void {
     if (this.embeddedComponent) {
       this.containerRef.clear();
-      this.containerRef.createComponent(this.embeddedComponent);
+      this.componentRef = this.containerRef.createComponent(this.embeddedComponent);
+      this.componentRef.instance.params = this.params;
     }
   }
 

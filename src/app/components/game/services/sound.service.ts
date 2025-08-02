@@ -1,8 +1,9 @@
-import {Inject, Injectable, InjectionToken, OnDestroy, OnInit} from '@angular/core';
+import {Inject, Injectable, OnDestroy, OnInit} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {SettingsService} from './settings.service';
 import {LogService} from './log.service';
 import {PatchService} from './patch.service';
+import {SOUND_SERVICE_CONFIG, SoundServiceConfig} from '../../../providers/sound/sound.module';
 
 interface SoundOptions {
   loop?: boolean;
@@ -10,22 +11,6 @@ interface SoundOptions {
   forceRestart?: boolean;
   onEnded?: () => void;
 }
-
-export interface SoundServiceConfig {
-  debounceInterval: number;
-  maxCacheSize: number;
-  defaultVolume: number;
-  basePath: string;
-}
-
-export const SOUND_SERVICE_CONFIG = new InjectionToken<SoundServiceConfig>('SOUND_SERVICE_CONFIG');
-
-export const defaultSoundConfig: SoundServiceConfig = {
-  debounceInterval: 60,
-  maxCacheSize: 20,
-  defaultVolume: 1.0,
-  basePath: 'assets/audio/efx/'
-};
 
 
 @Injectable({ providedIn: 'root' })
@@ -51,10 +36,10 @@ export class SoundService implements OnDestroy, OnInit {
   private debounceIntervalMs = 60; // Adjust as needed
 
   constructor(
-    @Inject(SOUND_SERVICE_CONFIG) private config: SoundServiceConfig,
     private settingsService: SettingsService,
     private readonly patchService: PatchService,
-    private readonly logger: LogService
+    private readonly logger: LogService,
+    @Inject(SOUND_SERVICE_CONFIG) private soundConfig: SoundServiceConfig
   ) {
   }
 
@@ -146,7 +131,7 @@ export class SoundService implements OnDestroy, OnInit {
 
     const sanitizedName = this.sanitizeFileName(fileName);
 
-    const path = `${this.config.basePath}${sanitizedName}`;
+    const path = `${this.soundConfig.basePath}${sanitizedName}`;
 
     let audio = this.audioCache.get(path);
 
@@ -185,7 +170,7 @@ export class SoundService implements OnDestroy, OnInit {
 
 
   stop(fileName: string) {
-    const path = this.config.basePath + fileName;
+    const path = this.soundConfig.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       audio.pause();
@@ -195,7 +180,7 @@ export class SoundService implements OnDestroy, OnInit {
   }
 
   pause(fileName: string) {
-    const path = this.config.basePath + fileName;
+    const path = this.soundConfig.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       audio.pause();
@@ -227,7 +212,7 @@ export class SoundService implements OnDestroy, OnInit {
 
 
   setVolume(fileName: string, volume: number) {
-    const path = this.config.basePath + fileName;
+    const path = this.soundConfig.basePath + fileName;
     const audio = this.audioCache.get(path);
     if (audio) {
       // Convert volume from 0-100 range to 0-1 range
