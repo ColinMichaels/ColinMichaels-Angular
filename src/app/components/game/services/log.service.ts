@@ -92,15 +92,12 @@ export class LogService {
     const entry: LogEntry = {level, message, timestamp: new Date()};
 
     this.firestore.saveLogEntry(
-      entry.level,
       {
         level: entry.level,
         message: typeof entry.message === 'string' ? entry.message : '',
         userId: user.name,
         metadata: 'log entry'
       },
-      'test',// Use the user ID, not the user object
-      entry.timestamp.toISOString()
     ).subscribe({
       next: () => {
         // Successfully saved log to Firestore

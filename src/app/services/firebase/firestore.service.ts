@@ -368,7 +368,9 @@ export class FirestoreService {
    * @returns Observable of void
    */
   saveUserSettings(userId: string, settings: any): Observable<void> {
-    return this.updateDocument(`users/${userId}`, 'settings', {settings});
+    return this.updateDocument('users', userId, {settings}).pipe(
+      map(() => void 0)
+    );
   }
 
   /**
@@ -377,23 +379,22 @@ export class FirestoreService {
    * @returns Observable of settings object
    */
   getUserSettings(userId: string): Observable<any> {
-    return this.getDocument<any>(`users/${userId}`, 'settings');
+    return this.getDocument<any>('users', userId).pipe(
+      map(user => user?.settings || null)
+    );
   }
 
   /**
    * Saves a log entry
-   * @param level
    * @param logEntry - Log entry object
-   * @param user
-   * @param p0
    * @returns Observable of the log entry ID
    */
-  saveLogEntry(level: string, logEntry: {
+  saveLogEntry(logEntry: {
     level: 'info' | 'warn' | 'error' | 'debug';
     message: string;
     userId?: string;
     metadata?: any;
-  }, user: unknown, p0: string): Observable<string> {
+  }): Observable<string> {
     return this.saveDocument('logs', {
       ...logEntry,
       timestamp: serverTimestamp()
@@ -475,6 +476,68 @@ export class FirestoreService {
       catchError(error => {
         console.error(`Error getting download URL for ${path}:`, error);
         return throwError(() => new Error(`Failed to get download URL: ${error.message}`));
+      })
+    );
+  }
+
+  /**
+   * Executes multiple write operations as a batch
+   * @param operations - Array of batch operations
+   * @returns Observable of void
+   */
+  executeBatch(operations: Array<{
+    type: 'set' | 'update' | 'delete';
+    collection: string;
+    id: string;
+    data?: any;
+  }>): Observable<void> {
+    const batch = writeBatch(this.firestore);
+
+    operations.forEach(operation => {
+      const docRef = doc(this.firestore, operation.collection, operation.id);
+
+      switch (operation.type) {
+        case 'set':
+          batch.set(docRef, {
+            ...operation.data,
+            updatedAt: serverTimestamp(),
+            createdAt: operation.data?.createdAt || serverTimestamp()
+          });
+          break;
+        case 'update':
+          batch.update(docRef, {
+            ...operation.data,
+            updatedAt: serverTimestamp()
+          });
+          break;
+        case 'delete':
+          batch.delete(docRef);
+          break;
+      }
+    });
+
+    return from(batch.commit()).pipe(
+      catchError(error => {
+        console.error('Error executing batch operations:', error);
+        return throwError(() => new Error(`Failed to execute batch operations: ${error.message}`));
+      })
+    );
+  }
+
+  /**
+   * Checks if a document exists
+   * @param collectionPath - Path to the collection
+   * @param id - Document ID
+   * @returns Observable of boolean
+   */
+  documentExists(collectionPath: string, id: string): Observable<boolean> {
+    const docRef = doc(this.firestore, collectionPath, id);
+
+    return from(getDoc(docRef)).pipe(
+      map(snapshot => snapshot.exists()),
+      catchError(error => {
+        console.error(`Error checking document existence in ${collectionPath}:`, error);
+        return of(false);
       })
     );
   }

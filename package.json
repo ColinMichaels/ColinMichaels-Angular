@@ -7,7 +7,7 @@
     "build": "ng build",
     "build:css": "npx tailwindcss -o ./dist/output.css --minify",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test": "ng test --include='**/'",
     "lint": "ng lint"
   },
   "private": true,
