@@ -1,4 +1,4 @@
-import {Component, DestroyRef, OnInit} from '@angular/core';
+import {AfterViewInit, Component, DestroyRef, OnInit} from '@angular/core';
 import {NgForOf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
 import {AppWindowComponent} from '../templates/app-window/app-window.component';
@@ -43,7 +43,7 @@ import {LogService} from '../services/log.service';
   templateUrl: './desktop.component.html',
   styles: ``
 })
-export class DesktopComponent implements OnInit {
+export class DesktopComponent implements OnInit, AfterViewInit {
   showIntro = false;
   overlayImagePath = 'assets/images/overlays/cracked_corner.webp';
   backgroundImage = 'assets/images/backgrounds/night.webp';
@@ -69,6 +69,10 @@ export class DesktopComponent implements OnInit {
           this.openApp(app);
         }
       })
+  }
+
+  ngAfterViewInit() {
+    this.onBeginInvestigation();
   }
 
   openApp(id: string, params?: any) {
@@ -120,9 +124,10 @@ export class DesktopComponent implements OnInit {
 
   onBeginInvestigation() {
     this.showIntro = false;
+    this.appManager.openApplication('cli');
     this.showNotificationUpdates();
     if (!this.userService.user.name) {
-      this.soundService.play('glitch-1.mp3', {volume: 0.1, forceRestart: true});
+      this.soundService.play('glitch-1.mp3', {volume: 0.3, forceRestart: true});
       this.typewriter.enqueueLine({
         text: '> who_are_you?',
         agent: 'system',
