@@ -44,9 +44,12 @@ Thumbs.db
 # Firebase local config
 .firebase/*
 
-# env configs
+# Environment files
+.env
+.env.local
+.env.*.local
 src/environments/environment.dev.ts
 src/environments/environment.local.ts
 src/environments/environment.prod.ts
-src/environments/environment.ts
+
 
