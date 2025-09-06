@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
   title: process.env['APP_TITLE'] || 'Colin Michaels',
   apiUrl: process.env['API_URL'] || 'http://localhost:3000',
   openAiApiKey: process.env['OPENAI_API_KEY'] || '',
