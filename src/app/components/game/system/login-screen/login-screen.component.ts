@@ -24,7 +24,7 @@ import {MusicService} from '../../services/music.service';
 import {Subject, takeUntil} from 'rxjs';
 import {PATH_NAMES} from '../../../../app.routes';
 import {LogService} from '../../services/log.service';
-import {updateProfile, User} from '@angular/fire/auth';
+import {updateProfile, User, UserCredential} from '@angular/fire/auth';
 import {AuthService} from '../../../../services/auth.service';
 import {faGoogle} from '@fortawesome/free-brands-svg-icons';
 
@@ -55,6 +55,7 @@ import {faGoogle} from '@fortawesome/free-brands-svg-icons';
 })
 export class LoginScreenComponent implements OnInit, OnDestroy {
   private redirectUrl: string | null = null;
+  private readonly isLocalHost = this.detectLocalHost();
   loginForm: FormGroup;
   registerForm: FormGroup;
   isLoginMode = true; // Toggle between login and register views
@@ -102,6 +103,13 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.redirectUrl = this.route.snapshot.queryParamMap.get('redirectUrl');
+
+    if (this.isLocalHost) {
+      this.navigateToDestination();
+      return;
+    }
+
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
@@ -111,7 +119,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     // Check for redirect results
     this.authService.handleRedirectResult()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((result: any) => {
+      .subscribe((result: UserCredential | null) => {
         if (result) {
           this.userService.updateUser({
             name: result.user.displayName ?? result.user.email?.split('@')[0] ?? 'User'
@@ -148,10 +156,18 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   private navigateToDestination() {
-    const destination = this.redirectUrl ?? `/${PATH_NAMES.OS_MAIN}`;
+    const destination = this.redirectUrl ?? (this.isLocalHost ? `/${PATH_NAMES.OS_MAIN}/cli` : `/${PATH_NAMES.OS_MAIN}`);
     this.router.navigateByUrl(destination)
       .then(success => this.logger.info('Navigation success:', success))
       .catch(error => this.logger.error('Navigation failed:', error));
+  }
+
+  private detectLocalHost(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    const hostname = window.location.hostname;
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   }
 
   private getErrorMessage(errorCode: string): string {
@@ -216,7 +232,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.authService.registerWithEmail(email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result: any) => {
+        next: (result: UserCredential) => {
           this.logger.info('User registered:', result.user.email);
 
           // Use the modern Firebase approach for updating the profile
@@ -249,7 +265,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.authService.loginWithGoogle()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result: any) => {
+        next: (result: UserCredential | null) => {
           this.logger.info('User logged in with Google:', result?.user?.email);
           // Update user service with Google user info
           this.userService.updateUser({

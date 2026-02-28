@@ -6,7 +6,7 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {ApplicationFactory} from '../factories/application-factory';
 import {LogService} from './log.service';
 import {ApplicationStatePersistenceService} from './application-state-persistence.service';
-import {getDefaultApplicationCatalog} from './application-catalog';
+import {ApplicationRegistryService} from './application-registry.service';
 import {
   AppEntry,
   ApplicationInstance,
@@ -22,7 +22,6 @@ const OPEN_APPS_STORAGE_KEY = 'applications';
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
   private applications: BehaviorSubject<ApplicationInstance[]> = new BehaviorSubject<ApplicationInstance[]>([]);
-  private appRegistry: AppEntry[] = [];
   private maxMemory = 16 * 1024; // MB
   private focusedAppId = new BehaviorSubject<string | null>(null);
   private readonly notifyTemplate: IMediaItem = {
@@ -42,16 +41,10 @@ export class ApplicationManagerService {
     private appFactory: ApplicationFactory,
     private notify: NotificationService,
     private logger: LogService,
-    private readonly applicationStatePersistence: ApplicationStatePersistenceService
+    private readonly applicationStatePersistence: ApplicationStatePersistenceService,
+    private readonly applicationRegistry: ApplicationRegistryService
   ) {
-    this.registerDefaultApps();
     this.loadSavedApplications();
-  }
-
-  private registerDefaultApps(): void {
-    getDefaultApplicationCatalog().forEach((app) => {
-      this.registerApp(app);
-    });
   }
 
   private loadSavedApplications() {
@@ -72,9 +65,7 @@ export class ApplicationManagerService {
   }
 
   getApps(type: AppEntry['type'] = AppType.app): AppEntry[] {
-    return this.registeredApps.filter((app) => {
-      return app.type === type;
-    });
+    return this.applicationRegistry.getApps(type);
   }
 
   get totalMemory(): number {
@@ -86,21 +77,19 @@ export class ApplicationManagerService {
   }
 
   get registeredApps(): AppEntry[] {
-    return this.appRegistry;
+    return this.applicationRegistry.registeredApps;
   }
 
   registerApp(app: AppEntry) {
-    if (!this.appRegistry.some(a => a.id === app.id)) {
-      this.appRegistry.push(app);
-    }
+    this.applicationRegistry.registerApp(app);
   }
 
   unregisterApp(id: string) {
-    this.appRegistry = this.appRegistry.filter(a => a.id !== id);
+    this.applicationRegistry.unregisterApp(id);
   }
 
   openApplication(id: string, args?: unknown): boolean {
-    const app = this.appRegistry.find(a => a.id === id && a.installed);
+    const app = this.applicationRegistry.getInstalledAppById(id);
 
     this.logger.debug('args', args);
 

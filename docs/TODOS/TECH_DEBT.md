@@ -67,6 +67,7 @@ Status legend:
   - Progress: extracted localStorage open-app persistence into `ApplicationStatePersistenceService`.
   - Progress: extracted shared app IDs/types/window constraints into `application-manager.models.ts` and updated consumers.
   - Progress: extracted static app registration definitions into `application-catalog.ts`.
+  - Progress: extracted registry storage and app lookup/query behavior into `ApplicationRegistryService`.
 
 - [~] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium
