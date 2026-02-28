@@ -1,135 +1,23 @@
-import {Injectable, Type} from '@angular/core';
+import {Injectable} from '@angular/core';
 import {NotificationService} from './notification.service';
 import {IMediaItem} from './media.service';
-import {
-  faChartSimple,
-  faCircleInfo, faCloudSunRain, faCogs,
-  faComputer,
-  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMessage, faMusic, faNoteSticky,
-  faPerson, faRocket
-} from '@fortawesome/free-solid-svg-icons';
-import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
-
-/** installed apps */
-import {ActivityMonitorComponent} from '../apps/activity-monitor/activity-monitor.component';
-import {SettingsPanelComponent} from '../system/settings-panel/settings-panel.component';
-import {CliGameComponent} from '../apps/cli-game/cli-game.component';
-import {FinderAppComponent} from '../system/finder-app/finder-app.component';
+import {faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
 import {BehaviorSubject, Observable} from 'rxjs';
-import {AboutAppComponent} from '../apps/about-app/about-app.component';
-import {PlayerConfiguratorComponent} from '../apps/player-configurator/player-configurator.component';
-import {TooltipExamplesComponent} from '../apps/tooltip-examples/tooltip-examples.component';
-import {MarkdownReaderComponent} from '../apps/markdown-reader/markdown-reader.component';
 import {ApplicationFactory} from '../factories/application-factory';
-import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
-import {faCss} from '@fortawesome/free-brands-svg-icons';
-import {IconPlaygroundComponent} from '../apps/icon-playground/icon-playground.component';
-import {TaskAppComponent} from '../apps/task-app/task-app.component';
-import {MusicPlayerComponent} from '../apps/music-player/music-player.component';
-import {SpaceXComponent} from '../apps/space-x/space-x.component';
 import {LogService} from './log.service';
-import {PianoComponent} from '../apps/music-apps/piano/piano.component';
-import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
-import {WeatherComponent} from '../apps/weather/weather.component';
-import {MessagesComponent} from '../apps/messages/messages.component';
-import {ChatBotComponent} from '../../../modules/chat/chat.component';
-
-export interface ApplicationInstance extends AppEntry {
-  id: string;
-  title: string;
-  parent: AppEntry | null;
-  component: Type<any>;
-  autofit: boolean;
-  windowSize?: {
-    width?: number;
-    height?: number;
-  };
-  maxInstances: number;
-  instanceIndex: number;
-  type: 'system' | 'other' | 'app',
-  memory: number; // in MB
-  offsetX?: number;
-  offsetY?: number;
-  icon?: {
-    class?: string;
-    svgPath?: any;
-  },
-  running?: boolean;
-  focused?: boolean;
-  params?: any;
-  installed: boolean;
-}
-
-export interface AppEntry {
-  id: string;
-  title: string;
-  description?: string;
-  component: Type<any>;
-  maxInstances: number;
-  instanceIndex: number;
-  type: 'system' | 'other' | 'app',
-  icon?: {
-    class?: string;
-    svgPath?: any;
-  }
-  memory: number;
-  metadata?: {
-    version?: string;
-    author?: string;
-    license?: string;
-    website?: string;
-  }
-  status?: 'development' | 'stable' | 'deprecated' | 'obsolete'
-  autofit?: boolean;
-  windowSize?: {
-    width?: number;
-    height?: number;
-  };
-  installed: boolean;
-  running?: boolean;
-  focused?: boolean;
-  params?: any;
-}
-
-export enum AppType {
-  system = 'system',
-  app = 'app',
-  other = 'other'
-}
-
-export const WINDOW_WIDTH_MIN = 480;
-export const WINDOW_WIDTH_MAX = 1024
-export const WINDOW_HEIGHT_MIN = 480;
-export const WINDOW_HEIGHT_MAX = 1024;
-
-export const DEFAULT_WINDOW_OFFSET_Y = 40;
-export const DEFAULT_WINDOW_OFFSET_X = 40;
+import {ApplicationStatePersistenceService} from './application-state-persistence.service';
+import {getDefaultApplicationCatalog} from './application-catalog';
+import {
+  AppEntry,
+  ApplicationInstance,
+  AppType,
+  DEFAULT_WINDOW_OFFSET_X,
+  DEFAULT_WINDOW_OFFSET_Y
+} from './application-manager.models';
 
 const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
 const INSTANCE_LIMIT_ERROR_TITLE = "System Error";
 const OPEN_APPS_STORAGE_KEY = 'applications';
-
-
-export enum APP_ID {
-  cli = 'cli',
-  finder = 'finder',
-  about = 'about',
-  player_config = 'player-config',
-  music_piano = 'music-piano',
-  music_patch_editor = 'music-patch-editor',
-  activity_monitor = 'activity-monitor',
-  system_settings = 'system-settings',
-  markdown_reader = 'markdown-reader',
-  music_player = 'music-player',
-  tailwind_preview = 'tailwind-preview',
-  tasks_app = 'tasks',
-  tooltip_example = 'tooltip-example',
-  space_x_app = 'space-x-app',
-  icon_playground = 'icon-playground',
-  weather_app = 'weather-app',
-  messages_app = 'messages-app',
-  chat_bot = 'chat-bot',
-}
 
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
@@ -153,384 +41,23 @@ export class ApplicationManagerService {
   constructor(
     private appFactory: ApplicationFactory,
     private notify: NotificationService,
-    private logger: LogService
+    private logger: LogService,
+    private readonly applicationStatePersistence: ApplicationStatePersistenceService
   ) {
-    this.registerApps();
-    this.registerSystemApps();
+    this.registerDefaultApps();
     this.loadSavedApplications();
   }
 
-  private registerApps() {
-
-    this.registerApp({
-      id: APP_ID.player_config,
-      title: 'Player Config',
-      component: PlayerConfiguratorComponent,
-      installed: true,
-      icon: {
-        class: 'text-[22px] gradient--bg-green py-0.5 px-2 rounded-lg shadow-lg border-2 border-blue-800 text-black',
-        svgPath: faPerson
-      },
-      memory: 1024,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
+  private registerDefaultApps(): void {
+    getDefaultApplicationCatalog().forEach((app) => {
+      this.registerApp(app);
     });
-
-    this.registerApp({
-      id: APP_ID.tooltip_example,
-      title: 'Tooltip Example',
-      component: TooltipExamplesComponent,
-      installed: true,
-      icon: {
-        class: 'text-teal-500/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.tasks_app,
-      title: 'Tasks',
-      component: TaskAppComponent,
-      installed: true,
-      autofit: true,
-      icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faNoteSticky
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.music_player,
-      title: 'Music',
-      component: MusicPlayerComponent,
-      installed: true,
-      windowSize: {height: 400, width: 200},
-      autofit: true,
-      icon: {
-        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faMusic
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.weather_app,
-      title: 'Weather',
-      component: WeatherComponent,
-      installed: true,
-      windowSize: {height: 600, width: 800},
-      autofit: true,
-      icon: {
-        class: 'text-blue-900 bg-blue-400 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faCloudSunRain
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.music_piano,
-      title: 'Piano',
-      component: PianoComponent,
-      installed: true,
-      windowSize: {height: 400, width: 1000},
-      autofit: true,
-      icon: {
-        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faKeyboard
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.music_patch_editor,
-      title: 'Patch Editor',
-      component: PatchEditorComponent,
-      installed: true,
-      windowSize: {height: 600, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-black bg-yellow-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faHexagonNodesBolt
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-
-    this.registerApp({
-      id: APP_ID.space_x_app,
-      title: 'Space X Launches',
-      component: SpaceXComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faRocket
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.messages_app,
-      title: 'Messages',
-      component: MessagesComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faMessage
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.chat_bot,
-      title: 'Chat',
-      component: ChatBotComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faMessage
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.markdown_reader,
-      title: '',
-      component: MarkdownReaderComponent,
-      installed: true,
-      icon: {
-        class: '',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 10,
-      type: AppType.system,
-      params: {file: 'colinos-demo.doc.md'},
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.tailwind_preview,
-      title: 'Tailwind Playground',
-      component: TailwindPreviewComponent,
-      installed: true,
-      icon: {
-        class: 'text-white/80 text-[20px] py-1 px-1.5 rounded-lg border-2 border-zinc-700',
-        svgPath: faCss
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.icon_playground,
-      title: 'Icon Playground',
-      component: IconPlaygroundComponent,
-      installed: true,
-      icon: {
-        class: 'bg-purple-500 text-black/80 p-1 text-[18px] rounded-lg shadow-lg border-2 border-purple-700',
-        svgPath: faIcons
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-  }
-
-  private registerSystemApps() {
-
-    this.registerApp({
-      id: APP_ID.activity_monitor,
-      title: 'Activity Monitor',
-      component: ActivityMonitorComponent,
-      installed: true,
-      icon: {
-        class: 'bg-zinc-900 text-sm p-2 rounded-sm shadow-sm border-2 border-zinc-700 text-green-500',
-        svgPath: faChartSimple
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.cli,
-      title: 'cli Console',
-      component: CliGameComponent,
-      installed: true,
-      icon: {
-        class: 'bg-zinc-900 text-green-500 rounded p-1 shadow-lg border-2 border-zinc-500 text-base',
-        svgPath: faComputer
-      },
-      memory: 1024,
-      maxInstances: 5,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.finder,
-      title: 'Finder',
-      component: FinderAppComponent,
-      installed: true,
-      icon: {
-        class: 'text-[20px] gradient--bg-blue p-1 rounded shadow-lg border-2 border-zinc-600 text-black',
-        svgPath: faFaceGrin
-      },
-      memory: 512,
-      maxInstances: 5,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.system_settings,
-      title: 'System Settings',
-      component: SettingsPanelComponent,
-      installed: true,
-      icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.about,
-      title: 'About',
-      component: AboutAppComponent,
-      installed: true,
-      icon: {
-        class: 'p-2 text-[32px]',
-        svgPath: faCircleInfo
-      },
-      autofit: true,
-      memory: 128,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
   }
 
   private loadSavedApplications() {
-    const appIds = this.getSavedApplicationIds();
+    const appIds = this.applicationStatePersistence.loadOpenApplicationIds(OPEN_APPS_STORAGE_KEY);
     for (const appId of appIds) {
       this.openApplication(appId);
-    }
-  }
-
-  private getSavedApplicationIds(): string[] {
-    const savedApps = localStorage.getItem(OPEN_APPS_STORAGE_KEY);
-    if (!savedApps) {
-      return [];
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(savedApps);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      return parsed
-        .map((entry) => {
-          if (typeof entry === 'string') {
-            return entry;
-          }
-          if (entry && typeof entry === 'object' && 'id' in entry) {
-            const maybeId = (entry as { id?: unknown }).id;
-            return typeof maybeId === 'string' ? maybeId : null;
-          }
-          return null;
-        })
-        .filter((id): id is string => Boolean(id));
-    } catch (error) {
-      this.logger.warn('Failed to parse saved applications.', {error});
-      return [];
     }
   }
 
@@ -538,14 +65,14 @@ export class ApplicationManagerService {
     return this.applications.getValue();
   }
 
-  getRunningApps(type = 'app'): ApplicationInstance[] {
+  getRunningApps(type: AppEntry['type'] = AppType.app): ApplicationInstance[] {
     return this.openApplications.filter((app) => {
       return app.type === type;
     });
   }
 
-  getApps(type = 'app'): ApplicationInstance[] {
-    return (this.registeredApps as ApplicationInstance[]).filter((app) => {
+  getApps(type: AppEntry['type'] = AppType.app): AppEntry[] {
+    return this.registeredApps.filter((app) => {
       return app.type === type;
     });
   }
@@ -572,7 +99,7 @@ export class ApplicationManagerService {
     this.appRegistry = this.appRegistry.filter(a => a.id !== id);
   }
 
-  openApplication(id: string, args?: []): boolean {
+  openApplication(id: string, args?: unknown): boolean {
     const app = this.appRegistry.find(a => a.id === id && a.installed);
 
     this.logger.debug('args', args);
@@ -663,7 +190,7 @@ export class ApplicationManagerService {
 
   saveOpenApplications() {
     const openAppIds = this.applications.value.map((app) => app.id);
-    localStorage.setItem(OPEN_APPS_STORAGE_KEY, JSON.stringify(openAppIds));
+    this.applicationStatePersistence.saveOpenApplicationIds(OPEN_APPS_STORAGE_KEY, openAppIds);
   }
 
   closeApplication(id: string): void {
@@ -706,8 +233,8 @@ export class ApplicationManagerService {
     }
     this.focusedAppId.next(id);
     application.focused = true;
-    application.offsetX = offsetX ?? 40;
-    application.offsetY = offsetY ?? 40;
+    application.offsetX = offsetX ?? DEFAULT_WINDOW_OFFSET_X;
+    application.offsetY = offsetY ?? DEFAULT_WINDOW_OFFSET_Y;
 
     // Move application to top of stack without recreating it
     const index = this.applications.value.findIndex(t => t.id === id);

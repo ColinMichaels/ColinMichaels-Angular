@@ -8,11 +8,14 @@ import {SoundService} from '../services/sound.service';
 import {UserService} from '../services/user.service';
 import {OverlayService} from '../services/overlay.service';
 import {
+  ApplicationManagerService
+} from '../services/application-manager.service';
+import {
   APP_ID,
-  ApplicationManagerService, WINDOW_HEIGHT_MIN,
+  WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
-} from '../services/application-manager.service';
+} from '../services/application-manager.models';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
@@ -75,7 +78,7 @@ export class DesktopComponent implements OnInit, AfterViewInit {
     this.onBeginInvestigation();
   }
 
-  openApp(id: string, params?: any) {
+  openApp(id: string, params?: unknown) {
     this.appManager.openApplication(id, params);
   }
 
