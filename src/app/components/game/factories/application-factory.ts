@@ -7,11 +7,15 @@ export class ApplicationFactory {
     id: string,
     app: AppEntry,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
+    params?: unknown,
+    instanceIndex?: number
   ): ApplicationInstance {
     // Dynamic defaults or more sophisticated rules can go here
     const memory = app.memory || 64; // Default memory
-    const running = app.running ?? false;
+    const resolvedInstanceIndex = Number.isFinite(instanceIndex) && (instanceIndex ?? 0) > 0
+      ? (instanceIndex as number)
+      : 1;
 
     return {
       id,
@@ -25,11 +29,11 @@ export class ApplicationFactory {
       icon: app.icon,
       offsetX,
       offsetY,
-      running,
+      running: true,
       installed: app.installed,
-      instanceIndex: app.instanceIndex,
+      instanceIndex: resolvedInstanceIndex,
       focused: app.focused ?? false,
-      params: app.params,
+      params: params ?? app.params,
     };
   }
 }

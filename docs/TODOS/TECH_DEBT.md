@@ -60,41 +60,50 @@ Status legend:
   - Effort: M
   - Validation: storage-focused unit tests across strategy paths.
 
-- [~] Break `ApplicationManagerService` into smaller responsibilities (registry, persistence, lifecycle).
+- [x] Break `ApplicationManagerService` into smaller responsibilities (registry, persistence, lifecycle).
   - Impact: High
   - Effort: M
-  - Validation: app launch/focus/close regression tests.
+  - Validation: app launch/focus/close regression tests, `application-lifecycle.service.spec.ts`, `application-manager.service.spec.ts`, `tsc --noEmit`.
   - Progress: extracted localStorage open-app persistence into `ApplicationStatePersistenceService`.
   - Progress: extracted shared app IDs/types/window constraints into `application-manager.models.ts` and updated consumers.
   - Progress: extracted static app registration definitions into `application-catalog.ts`.
   - Progress: extracted registry storage and app lookup/query behavior into `ApplicationRegistryService`.
+  - Progress: extracted open/close/focus/memory/persistence lifecycle state into `ApplicationLifecycleService`.
+  - Progress: normalized saved instance IDs during restore and forced deterministic re-open for repeated entries.
+  - Progress: switched persisted open-app payloads to base app IDs for safer multi-instance restoration.
+  - Progress: added focused unit specs for lifecycle restore/instance behavior (`application-lifecycle.service.spec.ts`, `application-manager.service.spec.ts`).
+  - Progress: removed runtime `running/instanceIndex` mutation from registry app entries; manager now derives these values from live open instances.
 
-- [~] Stabilize `TypewriterService` timer and callback semantics.
+- [x] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium
   - Effort: M
-  - Validation: CLI typing flow checks and queue behavior tests.
+  - Validation: CLI typing flow checks, queue behavior unit tests (`typewriter.service.spec.ts`), `tsc --noEmit`.
 
-- [~] Reduce startup randomness/cost in `FileSystemService`.
+- [x] Reduce startup randomness/cost in `FileSystemService`.
   - Impact: Medium
   - Effort: M
-  - Validation: finder behavior and startup responsiveness.
+  - Validation: finder behavior and startup responsiveness, deterministic startup unit tests (`file-system.service.spec.ts`), `tsc --noEmit`.
+  - Progress: replaced random deep favorite-folder generation at startup with deterministic lightweight seeded folder content.
 
 ## Larger Changes (Riskier, Stage Later)
 
-- [ ] Move OpenAI and weather calls behind backend proxy/functions.
+- [~] Move OpenAI and weather calls behind backend proxy/functions.
   - Impact: High (security)
   - Effort: L
   - Validation: integration tests and production key removal.
+  - Progress: frontend OpenAI/weather services now call backend proxy URL (`APP_API_URL`) instead of vendor APIs.
+  - Progress: added Firebase Functions API proxy (`functions/index.js`) using Firebase Secret Manager keys.
+  - Progress: removed vendor key requirements from frontend environment generation and hosting deploy workflows.
 
 - [ ] Replace `innerHTML` rendering paths with safe renderers.
   - Impact: High (security)
   - Effort: L
   - Validation: XSS regression tests + UI snapshot/manual checks.
 
-- [~] Enforce supported Node LTS through `.nvmrc`/`engines` and CI checks.
+- [x] Enforce supported Node LTS through `.nvmrc`/`engines` and CI checks.
   - Impact: Medium
   - Effort: S
-  - Validation: consistent local/CI build success.
+  - Validation: consistent local/CI build success, `.nvmrc` present, and workflow Node setup parity.
 
 ## Suggested Execution Order
 

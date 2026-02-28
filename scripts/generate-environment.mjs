@@ -5,8 +5,6 @@ const readEnv = (name) => (process.env[name] ?? '').trim();
 
 const appTitle = readEnv('APP_TITLE');
 const apiUrl = readEnv('APP_API_URL') || readEnv('API_URL');
-const openAiApiKey = readEnv('OPENAI_API_KEY');
-const openWeatherMapApiKey = readEnv('OPEN_WEATHER_MAP_API_KEY');
 const firebaseApiKey = readEnv('FIREBASE_API_KEY');
 const firebaseAuthDomain = readEnv('FIREBASE_AUTH_DOMAIN');
 const firebaseDatabaseUrl = readEnv('FIREBASE_DATABASE_URL');
@@ -19,8 +17,6 @@ const firebaseMeasurementId = readEnv('FIREBASE_MEASUREMENT_ID');
 const missing = [];
 if (!appTitle) missing.push('APP_TITLE');
 if (!apiUrl) missing.push('APP_API_URL (or API_URL)');
-if (!openAiApiKey) missing.push('OPENAI_API_KEY');
-if (!openWeatherMapApiKey) missing.push('OPEN_WEATHER_MAP_API_KEY');
 if (!firebaseApiKey) missing.push('FIREBASE_API_KEY');
 if (!firebaseAuthDomain) missing.push('FIREBASE_AUTH_DOMAIN');
 if (!firebaseDatabaseUrl) missing.push('FIREBASE_DATABASE_URL');
@@ -40,8 +36,6 @@ const environmentConfig = {
   production: true,
   title: appTitle,
   apiUrl,
-  openAiApiKey,
-  openWeatherMapApiKey,
   firebaseConfig: {
     apiKey: firebaseApiKey,
     authDomain: firebaseAuthDomain,
