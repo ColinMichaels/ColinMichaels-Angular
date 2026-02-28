@@ -1,745 +1,111 @@
-import {Injectable, Type} from '@angular/core';
-import {NotificationService} from './notification.service';
-import {IMediaItem} from './media.service';
-import {
-  faChartSimple,
-  faCircleInfo, faCloudSunRain, faCogs,
-  faComputer,
-  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMessage, faMusic, faNoteSticky,
-  faPerson, faRocket
-} from '@fortawesome/free-solid-svg-icons';
-import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
-
-/** installed apps */
-import {ActivityMonitorComponent} from '../apps/activity-monitor/activity-monitor.component';
-import {SettingsPanelComponent} from '../system/settings-panel/settings-panel.component';
-import {CliGameComponent} from '../apps/cli-game/cli-game.component';
-import {FinderAppComponent} from '../system/finder-app/finder-app.component';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {AboutAppComponent} from '../apps/about-app/about-app.component';
-import {PlayerConfiguratorComponent} from '../apps/player-configurator/player-configurator.component';
-import {TooltipExamplesComponent} from '../apps/tooltip-examples/tooltip-examples.component';
-import {MarkdownReaderComponent} from '../apps/markdown-reader/markdown-reader.component';
-import {ApplicationFactory} from '../factories/application-factory';
-import {TailwindPreviewComponent} from '../apps/tailwind-preview/tailwind-preview.component';
-import {faCss} from '@fortawesome/free-brands-svg-icons';
-import {IconPlaygroundComponent} from '../apps/icon-playground/icon-playground.component';
-import {TaskAppComponent} from '../apps/task-app/task-app.component';
-import {MusicPlayerComponent} from '../apps/music-player/music-player.component';
-import {SpaceXComponent} from '../apps/space-x/space-x.component';
-import {LogService} from './log.service';
-import {PianoComponent} from '../apps/music-apps/piano/piano.component';
-import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
-import {WeatherComponent} from '../apps/weather/weather.component';
-import {MessagesComponent} from '../apps/messages/messages.component';
-import {ChatBotComponent} from '../../../modules/chat/chat.component';
-
-export interface ApplicationInstance extends AppEntry {
-  id: string;
-  title: string;
-  parent: AppEntry | null;
-  component: Type<any>;
-  autofit: boolean;
-  windowSize?: {
-    width?: number;
-    height?: number;
-  };
-  maxInstances: number;
-  instanceIndex: number;
-  type: 'system' | 'other' | 'app',
-  memory: number; // in MB
-  offsetX?: number;
-  offsetY?: number;
-  icon?: {
-    class?: string;
-    svgPath?: any;
-  },
-  running?: boolean;
-  focused?: boolean;
-  params?: any;
-  installed: boolean;
-}
-
-export interface AppEntry {
-  id: string;
-  title: string;
-  description?: string;
-  component: Type<any>;
-  maxInstances: number;
-  instanceIndex: number;
-  type: 'system' | 'other' | 'app',
-  icon?: {
-    class?: string;
-    svgPath?: any;
-  }
-  memory: number;
-  metadata?: {
-    version?: string;
-    author?: string;
-    license?: string;
-    website?: string;
-  }
-  status?: 'development' | 'stable' | 'deprecated' | 'obsolete'
-  autofit?: boolean;
-  windowSize?: {
-    width?: number;
-    height?: number;
-  };
-  installed: boolean;
-  running?: boolean;
-  focused?: boolean;
-  params?: any;
-}
-
-export enum AppType {
-  system = 'system',
-  app = 'app',
-  other = 'other'
-}
-
-export const WINDOW_WIDTH_MIN = 480;
-export const WINDOW_WIDTH_MAX = 1024
-export const WINDOW_HEIGHT_MIN = 480;
-export const WINDOW_HEIGHT_MAX = 1024;
-
-export const DEFAULT_WINDOW_OFFSET_Y = 40;
-export const DEFAULT_WINDOW_OFFSET_X = 40;
-
-const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
-const INSTANCE_LIMIT_ERROR_TITLE = "System Error";
-const OPEN_APPS_STORAGE_KEY = 'applications';
-
-
-export enum APP_ID {
-  cli = 'cli',
-  finder = 'finder',
-  about = 'about',
-  player_config = 'player-config',
-  music_piano = 'music-piano',
-  music_patch_editor = 'music-patch-editor',
-  activity_monitor = 'activity-monitor',
-  system_settings = 'system-settings',
-  markdown_reader = 'markdown-reader',
-  music_player = 'music-player',
-  tailwind_preview = 'tailwind-preview',
-  tasks_app = 'tasks',
-  tooltip_example = 'tooltip-example',
-  space_x_app = 'space-x-app',
-  icon_playground = 'icon-playground',
-  weather_app = 'weather-app',
-  messages_app = 'messages-app',
-  chat_bot = 'chat-bot',
-}
+import {Injectable} from '@angular/core';
+import {Observable} from 'rxjs';
+import {ApplicationLifecycleService} from './application-lifecycle.service';
+import {ApplicationRegistryService} from './application-registry.service';
+import {AppEntry, ApplicationInstance, AppType} from './application-manager.models';
 
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
-  private applications: BehaviorSubject<ApplicationInstance[]> = new BehaviorSubject<ApplicationInstance[]>([]);
-  private appRegistry: AppEntry[] = [];
-  private maxMemory = 16 * 1024; // MB
-  private focusedAppId = new BehaviorSubject<string | null>(null);
-  private readonly notifyTemplate: IMediaItem = {
-    id: 'error',
-    title: 'Error',
-    content: {
-      type: 'icon',
-      data: {
-        type: 'fontawesome',
-        name: 'fa fa-exclamation-triangle',
-        svgPath: faExclamationTriangle
-      }
-    }
-  }
-
   constructor(
-    private appFactory: ApplicationFactory,
-    private notify: NotificationService,
-    private logger: LogService
+    private readonly applicationRegistry: ApplicationRegistryService,
+    private readonly applicationLifecycle: ApplicationLifecycleService
   ) {
-    this.registerApps();
-    this.registerSystemApps();
     this.loadSavedApplications();
   }
 
-  private registerApps() {
+  private loadSavedApplications(): void {
+    const restoredOpenCounts = new Map<string, number>();
 
-    this.registerApp({
-      id: APP_ID.player_config,
-      title: 'Player Config',
-      component: PlayerConfiguratorComponent,
-      installed: true,
-      icon: {
-        class: 'text-[22px] gradient--bg-green py-0.5 px-2 rounded-lg shadow-lg border-2 border-blue-800 text-black',
-        svgPath: faPerson
-      },
-      memory: 1024,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.tooltip_example,
-      title: 'Tooltip Example',
-      component: TooltipExamplesComponent,
-      installed: true,
-      icon: {
-        class: 'text-teal-500/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.tasks_app,
-      title: 'Tasks',
-      component: TaskAppComponent,
-      installed: true,
-      autofit: true,
-      icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faNoteSticky
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.music_player,
-      title: 'Music',
-      component: MusicPlayerComponent,
-      installed: true,
-      windowSize: {height: 400, width: 200},
-      autofit: true,
-      icon: {
-        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faMusic
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
+    this.applicationLifecycle.loadSavedApplicationIds().forEach((savedAppId) => {
+      const appId = this.normalizeSavedAppId(savedAppId);
+      const app = this.applicationRegistry.getInstalledAppById(appId);
+      if (!app) {
+        return;
       }
-    });
 
-    this.registerApp({
-      id: APP_ID.weather_app,
-      title: 'Weather',
-      component: WeatherComponent,
-      installed: true,
-      windowSize: {height: 600, width: 800},
-      autofit: true,
-      icon: {
-        class: 'text-blue-900 bg-blue-400 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faCloudSunRain
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
+      const restoredCount = restoredOpenCounts.get(appId) ?? 0;
+      const opened = this.applicationLifecycle.openApplication(appId, app, undefined, restoredCount > 0);
+      if (opened) {
+        restoredOpenCounts.set(appId, restoredCount + 1);
       }
-    });
-
-    this.registerApp({
-      id: APP_ID.music_piano,
-      title: 'Piano',
-      component: PianoComponent,
-      installed: true,
-      windowSize: {height: 400, width: 1000},
-      autofit: true,
-      icon: {
-        class: 'text-white bg-red-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faKeyboard
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.music_patch_editor,
-      title: 'Patch Editor',
-      component: PatchEditorComponent,
-      installed: true,
-      windowSize: {height: 600, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-black bg-yellow-600 text-[18px] p-1 rounded-lg inner-shadow border-2 border-zinc-700',
-        svgPath: faHexagonNodesBolt
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-
-    this.registerApp({
-      id: APP_ID.space_x_app,
-      title: 'Space X Launches',
-      component: SpaceXComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faRocket
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.messages_app,
-      title: 'Messages',
-      component: MessagesComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faMessage
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.chat_bot,
-      title: 'Chat',
-      component: ChatBotComponent,
-      installed: true,
-      windowSize: {height: 800, width: 600},
-      autofit: false,
-      icon: {
-        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
-        svgPath: faMessage
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.markdown_reader,
-      title: '',
-      component: MarkdownReaderComponent,
-      installed: true,
-      icon: {
-        class: '',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 10,
-      type: AppType.system,
-      params: {file: 'colinos-demo.doc.md'},
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.tailwind_preview,
-      title: 'Tailwind Playground',
-      component: TailwindPreviewComponent,
-      installed: true,
-      icon: {
-        class: 'text-white/80 text-[20px] py-1 px-1.5 rounded-lg border-2 border-zinc-700',
-        svgPath: faCss
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0,
-      status: 'development',
-      metadata: {
-        version: '0.0.1',
-        author: '<NAME>',
-        license: 'MIT',
-        website: 'https://github.com/colinmichaels'
-      }
-    });
-
-    this.registerApp({
-      id: APP_ID.icon_playground,
-      title: 'Icon Playground',
-      component: IconPlaygroundComponent,
-      installed: true,
-      icon: {
-        class: 'bg-purple-500 text-black/80 p-1 text-[18px] rounded-lg shadow-lg border-2 border-purple-700',
-        svgPath: faIcons
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.app,
-      instanceIndex: 0
     });
   }
 
-  private registerSystemApps() {
-
-    this.registerApp({
-      id: APP_ID.activity_monitor,
-      title: 'Activity Monitor',
-      component: ActivityMonitorComponent,
-      installed: true,
-      icon: {
-        class: 'bg-zinc-900 text-sm p-2 rounded-sm shadow-sm border-2 border-zinc-700 text-green-500',
-        svgPath: faChartSimple
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.cli,
-      title: 'cli Console',
-      component: CliGameComponent,
-      installed: true,
-      icon: {
-        class: 'bg-zinc-900 text-green-500 rounded p-1 shadow-lg border-2 border-zinc-500 text-base',
-        svgPath: faComputer
-      },
-      memory: 1024,
-      maxInstances: 5,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.finder,
-      title: 'Finder',
-      component: FinderAppComponent,
-      installed: true,
-      icon: {
-        class: 'text-[20px] gradient--bg-blue p-1 rounded shadow-lg border-2 border-zinc-600 text-black',
-        svgPath: faFaceGrin
-      },
-      memory: 512,
-      maxInstances: 5,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.system_settings,
-      title: 'System Settings',
-      component: SettingsPanelComponent,
-      installed: true,
-      icon: {
-        class: 'text-white/80 text-[20px] p-0.5 rounded-lg inner-shadow border-2 border-zinc-700 text-zinc-800',
-        svgPath: faCogs
-      },
-      memory: 512,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-    this.registerApp({
-      id: APP_ID.about,
-      title: 'About',
-      component: AboutAppComponent,
-      installed: true,
-      icon: {
-        class: 'p-2 text-[32px]',
-        svgPath: faCircleInfo
-      },
-      autofit: true,
-      memory: 128,
-      maxInstances: 1,
-      type: AppType.system,
-      instanceIndex: 0
-    });
-
-  }
-
-  private loadSavedApplications() {
-    const appIds = this.getSavedApplicationIds();
-    for (const appId of appIds) {
-      this.openApplication(appId);
-    }
-  }
-
-  private getSavedApplicationIds(): string[] {
-    const savedApps = localStorage.getItem(OPEN_APPS_STORAGE_KEY);
-    if (!savedApps) {
-      return [];
+  private normalizeSavedAppId(savedAppId: string): string {
+    if (this.applicationRegistry.getInstalledAppById(savedAppId)) {
+      return savedAppId;
     }
 
-    try {
-      const parsed: unknown = JSON.parse(savedApps);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      return parsed
-        .map((entry) => {
-          if (typeof entry === 'string') {
-            return entry;
-          }
-          if (entry && typeof entry === 'object' && 'id' in entry) {
-            const maybeId = (entry as { id?: unknown }).id;
-            return typeof maybeId === 'string' ? maybeId : null;
-          }
-          return null;
-        })
-        .filter((id): id is string => Boolean(id));
-    } catch (error) {
-      this.logger.warn('Failed to parse saved applications.', {error});
-      return [];
+    const normalizedId = savedAppId.replace(/-\d+$/, '');
+    if (this.applicationRegistry.getInstalledAppById(normalizedId)) {
+      return normalizedId;
     }
+
+    return savedAppId;
   }
 
   get openApplications(): ApplicationInstance[] {
-    return this.applications.getValue();
+    return this.applicationLifecycle.openApplications;
   }
 
-  getRunningApps(type = 'app'): ApplicationInstance[] {
-    return this.openApplications.filter((app) => {
-      return app.type === type;
-    });
+  getRunningApps(type: AppEntry['type'] = AppType.app): ApplicationInstance[] {
+    return this.applicationLifecycle.getRunningApps(type);
   }
 
-  getApps(type = 'app'): ApplicationInstance[] {
-    return (this.registeredApps as ApplicationInstance[]).filter((app) => {
-      return app.type === type;
-    });
+  getApps(type: AppEntry['type'] = AppType.app): AppEntry[] {
+    return this.applicationRegistry.getApps(type);
   }
 
   get totalMemory(): number {
-    return this.maxMemory;
+    return this.applicationLifecycle.totalMemory;
   }
 
   get usedMemory(): number {
-    return this.applications.getValue().reduce((sum, t) => sum + t.memory, 16);
+    return this.applicationLifecycle.usedMemory;
   }
 
   get registeredApps(): AppEntry[] {
-    return this.appRegistry;
+    return this.applicationRegistry.registeredApps;
   }
 
-  registerApp(app: AppEntry) {
-    if (!this.appRegistry.some(a => a.id === app.id)) {
-      this.appRegistry.push(app);
-    }
+  registerApp(app: AppEntry): void {
+    this.applicationRegistry.registerApp(app);
   }
 
-  unregisterApp(id: string) {
-    this.appRegistry = this.appRegistry.filter(a => a.id !== id);
+  unregisterApp(id: string): void {
+    this.applicationRegistry.unregisterApp(id);
   }
 
-  openApplication(id: string, args?: []): boolean {
-    const app = this.appRegistry.find(a => a.id === id && a.installed);
-
-    this.logger.debug('args', args);
-
-    const focusId = this.focusedAppId.getValue();
-
-    if (focusId === id) return true;
-
-    if (app?.running) {
-      const existing = this.getMostRecentApplicationInstance(id);
-      if (existing) {
-        this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
-        return true;
-      }
-    }
-
-    if (!app) return false;
-
-    if (this.usedMemory + app.memory > this.maxMemory) {
-      this.showErrorNotification('Not enough memory to open application', 'System Error');
-      return false;
-    }
-
-    const lastApplication = this.applications.value[this.applications.value.length - 1];
-
-    const newOffsetX = lastApplication?.offsetX !== undefined
-      ? lastApplication.offsetX + DEFAULT_WINDOW_OFFSET_X
-      : DEFAULT_WINDOW_OFFSET_X;
-
-    const newOffsetY = lastApplication?.offsetY !== undefined
-      ? lastApplication.offsetY + DEFAULT_WINDOW_OFFSET_Y
-      : DEFAULT_WINDOW_OFFSET_Y;
-
-    if (this.isInstanceLimitReached(app)) {
-      return false;
-    }
-
-    const openInstanceCount = this.getOpenInstanceCount(app.id);
-    const newAppInstanceId = openInstanceCount > 0 ? `${id}-${openInstanceCount + 1}` : id;
-    app.instanceIndex = openInstanceCount + 1;
-    app.running = true;
-
-    this.applications.next([...this.applications.value, this.appFactory
-      .createInstance(newAppInstanceId, app, newOffsetX, newOffsetY)]);
-
-
-    this.saveOpenApplications();
-
-    const focusSuccessful = this.setApplicationFocus(newAppInstanceId, newOffsetX, newOffsetY);
-
-    if (!focusSuccessful) {
-      this.showErrorNotification(`Failed to set focus for app with id: ${newAppInstanceId}`, 'System Error');
-      this.notify.show({
-        message: `Failed to set focus for terminal with id: ${newAppInstanceId}`,
-        title: "Terminal Error",
-        type: "error",
-        media: this.notifyTemplate,
-      });
-      return false;
-    }
-    return true;
-  }
-
-  private isInstanceLimitReached(app: AppEntry): boolean {
-    const openInstanceCount = this.getOpenInstanceCount(app.id);
-    if (openInstanceCount < app.maxInstances) {
-      return false;
-    }
-
-    if (app.maxInstances === 1) {
-      return true;
-    }
-
-    // General case when maxInstances limit is reached
-    this.showErrorNotification(INSTANCE_LIMIT_ERROR_MESSAGE, INSTANCE_LIMIT_ERROR_TITLE);
-    return true;
-  }
-
-  private showErrorNotification(message: string, title: string): void {
-    this.notify.show({
-      message,
-      title,
-      type: "error",
-      media: this.notifyTemplate,
-    });
-  }
-
-
-  saveOpenApplications() {
-    const openAppIds = this.applications.value.map((app) => app.id);
-    localStorage.setItem(OPEN_APPS_STORAGE_KEY, JSON.stringify(openAppIds));
+  openApplication(id: string, args?: unknown): boolean {
+    const app = this.applicationRegistry.getInstalledAppById(id);
+    return this.applicationLifecycle.openApplication(id, app, args);
   }
 
   closeApplication(id: string): void {
-    const application = this.getAppByID(id);
-    if (!application) return;
-    // Mark the application as no longer running
-    application.running = false;
-    // Decrement the instanceIndex for the parent AppEntry
-    // Remove the application from the active applications list
-    const remainingApplications = this.applications.getValue().filter(app => app.id !== id);
-    this.applications.next(remainingApplications);
-
-    if (application.parent) {
-      const remainingInstances = remainingApplications.filter((openApp) => openApp.parent?.id === application.parent?.id);
-      application.parent.instanceIndex = remainingInstances.length;
-      application.parent.running = remainingInstances.length > 0;
-    }
-
-    // Save the state of opened applications
-    this.saveOpenApplications();
-  }
-
-  private getOpenInstanceCount(appId: string): number {
-    return this.applications.value.filter((openApp) => openApp.parent?.id === appId).length;
-  }
-
-  private getMostRecentApplicationInstance(appId: string): ApplicationInstance | undefined {
-    const appInstances = this.applications.value.filter((openApp) => openApp.parent?.id === appId);
-    return appInstances[appInstances.length - 1];
+    this.applicationLifecycle.closeApplication(id);
   }
 
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
-    const application = this.applications.value.find(t => t.id === id);
-    if (id === 'desktop') {
-      this.focusedAppId.next(id);
-      return true;
-    }
-    if (!application) {
-      return false;
-    }
-    this.focusedAppId.next(id);
-    application.focused = true;
-    application.offsetX = offsetX ?? 40;
-    application.offsetY = offsetY ?? 40;
-
-    // Move application to top of stack without recreating it
-    const index = this.applications.value.findIndex(t => t.id === id);
-    if (index !== -1) {
-      this.applications.next([
-        ...this.applications.value.slice(0, index),
-        ...this.applications.value.slice(index + 1),
-        application
-      ]);
-    }
-    return true;
+    return this.applicationLifecycle.setApplicationFocus(id, offsetX, offsetY);
   }
 
   getAppByID(id: string): ApplicationInstance | undefined {
-    return this.applications.value.find(t => t.id === id);
+    return this.applicationLifecycle.getAppByID(id);
   }
 
   getFocus$(): Observable<string | null> {
-    return this.focusedAppId.asObservable();
+    return this.applicationLifecycle.getFocus$();
   }
 
-  getFocusedAppId() {
-    return this.focusedAppId.getValue();
+  getFocusedAppId(): string | null {
+    return this.applicationLifecycle.getFocusedAppId();
   }
 
-  closeAllApps() {
-    this.applications.getValue().forEach(app => this.closeApplication(app.id));
+  closeAllApps(): void {
+    this.applicationLifecycle.closeAllApps();
   }
 
-  getCurrentApp() {
-    // Get current focused app
-    const focusedAppId = this.getFocusedAppId();
-    return this.openApplications.find(app => app.id === focusedAppId);
+  getCurrentApp(): ApplicationInstance | undefined {
+    return this.applicationLifecycle.getCurrentApp();
   }
 }

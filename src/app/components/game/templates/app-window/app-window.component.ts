@@ -11,10 +11,14 @@ import {
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
 import {
-  ApplicationManagerService, WINDOW_HEIGHT_MAX, WINDOW_HEIGHT_MIN,
+  ApplicationManagerService
+} from '../../services/application-manager.service';
+import {
+  WINDOW_HEIGHT_MAX,
+  WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
-} from '../../services/application-manager.service';
+} from '../../services/application-manager.models';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faCircle, faMinus, faTimes, faUpRightAndDownLeftFromCenter} from '@fortawesome/free-solid-svg-icons';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';

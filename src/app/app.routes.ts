@@ -1,10 +1,7 @@
 import {Routes} from '@angular/router';
 
 import {redirectGuard} from './guards/redirect.guard';
-import {AuthGuard, redirectUnauthorizedTo, redirectLoggedInTo} from '@angular/fire/auth-guard';
-
-const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo([PATH_NAMES.OS_LOGIN]);
-const redirectLoggedInToHome = () => redirectLoggedInTo([PATH_NAMES.OS_MAIN]);
+import {AuthGuard} from './guards/auth.guard';
 
 export const PATH_NAMES = {
   OS_MAIN: 'os',
@@ -26,19 +23,19 @@ export const routes: Routes = [
     path: PATH_NAMES.OS_MAIN,
     pathMatch: 'full',
     canActivate: [AuthGuard],
-    data: {authGuardPipe: redirectUnauthorizedToLogin, animation: 'DesktopWindow'},
+    data: {animation: 'DesktopWindow'},
     loadComponent: () => import('./components/game/desktop/desktop.component').then(m => m.DesktopComponent)
   },
   {
     path: `${PATH_NAMES.OS_MAIN}/:app`,
     pathMatch: 'full',
     canActivate: [AuthGuard],
-    data: {authGuardPipe: redirectUnauthorizedToLogin, animation: 'DesktopWindow'},
+    data: {animation: 'DesktopWindow'},
     loadComponent: () => import('./components/game/desktop/desktop.component').then(m => m.DesktopComponent),
   },
   {
     path: PATH_NAMES.OS_LOGIN,
-    data: {authGuardPipe: redirectLoggedInToHome, animation: 'LoginWindow'},
+    data: {animation: 'LoginWindow'},
     loadComponent: () => import('./components/game/system/login-screen/login-screen.component').then(m => m.LoginScreenComponent),
   },
   {

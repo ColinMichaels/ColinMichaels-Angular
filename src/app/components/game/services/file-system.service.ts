@@ -86,6 +86,16 @@ export enum VIEW_MODES  {
   list= 'list', columns = 'columns', grid ='grid'
 }
 
+const GENERATED_FILE_EXTENSIONS: string[] = [
+  FileExtensions.txt,
+  FileExtensions.htm,
+  FileExtensions.pdf,
+  FileExtensions.jpg,
+  FileExtensions.mp3,
+  FileExtensions.css,
+  FileExtensions.zip
+];
+
 @Injectable({providedIn: 'root'})
 export class FileSystemService {
   private root: FileEntry = {
@@ -225,10 +235,11 @@ export class FileSystemService {
       this.assignTypesRecursively(tree);
 
       const favorites = (this.favoriteDirs ?? [])
-        .map(dir => this.createFolder(dir.name, dir.path)!)
+        .filter((dir) => dir.path !== '/')
+        .map(dir => this.createFolder(dir.name, dir.path, false))
         .filter((folder): folder is FileEntry => folder !== undefined)
         .map(folder => {
-          folder.children = this.createNestedFolders(folder.name, folder.path, faker.number.int({min: 1, max: 5}), true).children;
+          folder.children = this.createFavoriteFolderChildren(folder.path);
           return folder;
         });
 
@@ -246,23 +257,53 @@ export class FileSystemService {
     return [...uniqueNewFolders, ...existing];
   }
 
+  private createFavoriteFolderChildren(path: string): FileEntry[] {
+    const normalizedPath = path.replace(/\/+$/, '') || '/';
+    const baseName = normalizedPath.split('/').filter(Boolean).pop()?.toLowerCase() ?? 'home';
+    const hash = this.hashPath(normalizedPath);
+    const fileCount = (hash % 3) + 2;
+    const subfolderCount = (hash % 2) + 1;
+
+    const files: FileEntry[] = [];
+    for (let i = 0; i < fileCount; i++) {
+      const extension = GENERATED_FILE_EXTENSIONS[(hash + i) % GENERATED_FILE_EXTENSIONS.length];
+      const fileName = `${baseName}-${i + 1}.${extension}`;
+      files.push(this.createFile(fileName, `${normalizedPath}/${fileName}`));
+    }
+
+    const folders: FileEntry[] = [];
+    for (let i = 0; i < subfolderCount; i++) {
+      const folderName = `${baseName}-folder-${i + 1}`;
+      folders.push(this.createFolder(folderName, `${normalizedPath}/${folderName}`, false));
+    }
+
+    return [...folders, ...files];
+  }
+
+  private hashPath(value: string): number {
+    let hash = 0;
+    for (let i = 0; i < value.length; i++) {
+      hash = ((hash << 5) - hash) + value.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
   createMockFilesForFolder(folder: FileEntry, numFiles = 1) {
     const files: FileEntry[] = Array.isArray(folder.children) ? folder.children : [];
 
     for (let i = 0; i < numFiles; i++) {
       const file = this.createFile(faker.system.fileName(), folder.path + '/' + faker.system.fileName() + '.' + faker.system.commonFileType());
-      if (file) {
-        files.push(file);
-      }
+      files.push(file);
     }
     return files;
   }
 
 
-  createFile(name: string, path: string): FileEntry | undefined {
+  createFile(name: string, path: string): FileEntry {
     return {
       name,
-      path: `${path}`,
+      path: `${path}`.replace(/\/+/g, '/'),
       created: Date().toString(),
       modified: Date().toString(),
       type: 'document',

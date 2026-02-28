@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {AppEntry, ApplicationInstance} from '../services/application-manager.service';
+import {AppEntry, ApplicationInstance} from '../services/application-manager.models';
 
 @Injectable({providedIn: 'root'})
 export class ApplicationFactory {
@@ -7,7 +7,8 @@ export class ApplicationFactory {
     id: string,
     app: AppEntry,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
+    params?: unknown
   ): ApplicationInstance {
     // Dynamic defaults or more sophisticated rules can go here
     const memory = app.memory || 64; // Default memory
@@ -29,7 +30,7 @@ export class ApplicationFactory {
       installed: app.installed,
       instanceIndex: app.instanceIndex,
       focused: app.focused ?? false,
-      params: app.params,
+      params: params ?? app.params,
     };
   }
 }
