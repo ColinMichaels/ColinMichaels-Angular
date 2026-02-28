@@ -3,6 +3,7 @@ import {BehaviorSubject} from 'rxjs';
 import {StorageService} from './storage.service';
 import {NotificationService} from './notification.service';
 import {FormControl, FormGroup} from '@angular/forms';
+import {Subscription} from 'rxjs';
 
 
 export interface Setting {
@@ -48,6 +49,7 @@ export interface SettingsSet {
 export class SettingsService {
   private settings = new Map<string, BehaviorSubject<any>>();
   private settingSets = new Map<string, BehaviorSubject<any[]>>();
+  private settingValueSubjects = new Map<string, BehaviorSubject<unknown>>();
 
   constructor(private storageService: StorageService, private notify: NotificationService) {
     this.loadPersistedSettings();
@@ -225,25 +227,34 @@ export class SettingsService {
   }
 
   getSettingValue$<T>(setId: string, settingId?: string): BehaviorSubject<T | null> {
+    const cacheKey = settingId ? `${setId}:${settingId}` : setId;
+    const existingSubject = this.settingValueSubjects.get(cacheKey) as BehaviorSubject<T | null> | undefined;
+    if (existingSubject) {
+      return existingSubject;
+    }
+
     if (!settingId) {
       // Return observable for a single standalone setting
       const subject = this.getSetting<T | null>(setId);
-      return subject ? (subject as BehaviorSubject<T | null>) : new BehaviorSubject<T | null>(null);
+      const fallback = subject ? (subject as BehaviorSubject<T | null>) : new BehaviorSubject<T | null>(null);
+      this.settingValueSubjects.set(cacheKey, fallback as BehaviorSubject<unknown>);
+      return fallback;
     }
 
     // Create an on-the-fly observable to watch settingSet changes
     const settingSet$ = this.getSettingSet<Setting>(setId);
+    const subject = new BehaviorSubject<T | null>(null);
 
     if (settingSet$) {
-      const subject = new BehaviorSubject<T | null>(null);
+      const initialValue = this.findSettingValueInSet<T>(setId, settingId);
+      subject.next(initialValue);
       settingSet$.subscribe((set) => {
         const found = set.find((setting) => setting.id === settingId);
         subject.next(found ? (found.value as T) : null);
       });
-      return subject;
     }
-
-    return new BehaviorSubject<T | null>(null);
+    this.settingValueSubjects.set(cacheKey, subject as BehaviorSubject<unknown>);
+    return subject;
   }
 
   createFormGroupForSettings(setId: string): FormGroup | null {
@@ -261,9 +272,10 @@ export class SettingsService {
     );
   }
 
-  syncFormGroupWithSettingSet(formGroup: FormGroup, setId: string): void {
-    formGroup.valueChanges.subscribe((newValues) => {
+  syncFormGroupWithSettingSet(formGroup: FormGroup, setId: string): Subscription {
+    return formGroup.valueChanges.subscribe((newValues) => {
       const settingSet = this.getSettingSet<Setting>(setId);
+      console.warn('settingSet', settingSet?.value);
       if (!settingSet) {
         console.warn(`No settings set found with ID: "${setId}".`);
         return;

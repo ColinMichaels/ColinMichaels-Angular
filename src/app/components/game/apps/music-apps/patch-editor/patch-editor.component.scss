@@ -1,0 +1,11 @@
+.env-container {
+  @apply grid grid-cols-4 gap-2;
+}
+
+.env-container label {
+  @apply text-sm font-light;
+}
+
+.env-container input {
+  @apply w-full text-xs bg-black text-white/90 py-1 px-2 rounded-lg;
+}

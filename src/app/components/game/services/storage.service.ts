@@ -7,6 +7,8 @@ interface StorageStrategy {
 
   getItem<T>(key: string): Promise<T | null>;
 
+  getAllKeys(): Promise<string[]>;
+
   removeItem(key: string): Promise<void>;
 
   clear(): Promise<void>;
@@ -95,8 +97,12 @@ export class StorageService {
   }
 
   getAllKeys(): Observable<string[]> {
-    const keys = Object.keys(localStorage);
-    return of(keys);
+    return from(this.strategy.getAllKeys()).pipe(
+      catchError(error => {
+        console.error('Storage operation failed:', error);
+        return of([]);
+      })
+    );
   }
 }
 
@@ -163,6 +169,18 @@ class IndexedDBStrategy implements StorageStrategy {
     });
   }
 
+  async getAllKeys(): Promise<string[]> {
+    const db = await this.db;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.storeName, 'readonly');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.getAllKeys();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result.map((key) => String(key)));
+    });
+  }
+
   async clear(): Promise<void> {
     const db = await this.db;
     return new Promise((resolve, reject) => {
@@ -200,6 +218,15 @@ class LocalStorageStrategy implements StorageStrategy {
       localStorage.removeItem(key);
     } catch (error) {
       console.error('LocalStorage operation failed:', error);
+    }
+  }
+
+  async getAllKeys(): Promise<string[]> {
+    try {
+      return Object.keys(localStorage);
+    } catch (error) {
+      console.error('LocalStorage operation failed:', error);
+      return [];
     }
   }
 

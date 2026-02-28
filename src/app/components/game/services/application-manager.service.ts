@@ -5,7 +5,7 @@ import {
   faChartSimple,
   faCircleInfo, faCloudSunRain, faCogs,
   faComputer,
-  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMusic, faNoteSticky,
+  faExclamationTriangle, faHexagonNodesBolt, faIcons, faKeyboard, faMessage, faMusic, faNoteSticky,
   faPerson, faRocket
 } from '@fortawesome/free-solid-svg-icons';
 import {faFaceGrin} from '@fortawesome/free-regular-svg-icons';
@@ -31,6 +31,8 @@ import {LogService} from './log.service';
 import {PianoComponent} from '../apps/music-apps/piano/piano.component';
 import {PatchEditorComponent} from '../apps/music-apps/patch-editor/patch-editor.component';
 import {WeatherComponent} from '../apps/weather/weather.component';
+import {MessagesComponent} from '../apps/messages/messages.component';
+import {ChatBotComponent} from '../../../modules/chat/chat.component';
 
 export interface ApplicationInstance extends AppEntry {
   id: string;
@@ -77,6 +79,7 @@ export interface AppEntry {
     license?: string;
     website?: string;
   }
+  status?: 'development' | 'stable' | 'deprecated' | 'obsolete'
   autofit?: boolean;
   windowSize?: {
     width?: number;
@@ -104,6 +107,7 @@ export const DEFAULT_WINDOW_OFFSET_X = 40;
 
 const INSTANCE_LIMIT_ERROR_MESSAGE = "Cannot open application. Maximum number of instances reached.";
 const INSTANCE_LIMIT_ERROR_TITLE = "System Error";
+const OPEN_APPS_STORAGE_KEY = 'applications';
 
 
 export enum APP_ID {
@@ -123,6 +127,8 @@ export enum APP_ID {
   space_x_app = 'space-x-app',
   icon_playground = 'icon-playground',
   weather_app = 'weather-app',
+  messages_app = 'messages-app',
+  chat_bot = 'chat-bot',
 }
 
 @Injectable({providedIn: 'root'})
@@ -216,7 +222,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -233,7 +246,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -250,7 +270,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -267,7 +294,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
 
@@ -276,11 +310,52 @@ export class ApplicationManagerService {
       title: 'Space X Launches',
       component: SpaceXComponent,
       installed: true,
-      windowSize: {height: 400, width: 200},
+      windowSize: {height: 800, width: 600},
       autofit: false,
       icon: {
         class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
         svgPath: faRocket
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
+    });
+
+    this.registerApp({
+      id: APP_ID.messages_app,
+      title: 'Messages',
+      component: MessagesComponent,
+      installed: true,
+      windowSize: {height: 800, width: 600},
+      autofit: false,
+      icon: {
+        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
+        svgPath: faMessage
+      },
+      memory: 512,
+      maxInstances: 1,
+      type: AppType.app,
+      instanceIndex: 0
+    });
+
+    this.registerApp({
+      id: APP_ID.chat_bot,
+      title: 'Chat',
+      component: ChatBotComponent,
+      installed: true,
+      windowSize: {height: 800, width: 600},
+      autofit: false,
+      icon: {
+        class: 'text-white p-1 rounded-lg border-2 border-zinc-700',
+        svgPath: faMessage
       },
       memory: 512,
       maxInstances: 1,
@@ -298,9 +373,9 @@ export class ApplicationManagerService {
         svgPath: faCogs
       },
       memory: 512,
-      maxInstances: 1,
+      maxInstances: 10,
       type: AppType.system,
-      params: {file: 'cipher.md'},
+      params: {file: 'colinos-demo.doc.md'},
       instanceIndex: 0
     });
 
@@ -316,7 +391,14 @@ export class ApplicationManagerService {
       memory: 512,
       maxInstances: 1,
       type: AppType.app,
-      instanceIndex: 0
+      instanceIndex: 0,
+      status: 'development',
+      metadata: {
+        version: '0.0.1',
+        author: '<NAME>',
+        license: 'MIT',
+        website: 'https://github.com/colinmichaels'
+      }
     });
 
     this.registerApp({
@@ -416,9 +498,39 @@ export class ApplicationManagerService {
   }
 
   private loadSavedApplications() {
-    const savedApps = localStorage.getItem('applications');
-    if (savedApps) {
-      JSON.parse(savedApps).map((a: { id: any; }) => a.id).map((id: string) => this.openApplication(id));
+    const appIds = this.getSavedApplicationIds();
+    for (const appId of appIds) {
+      this.openApplication(appId);
+    }
+  }
+
+  private getSavedApplicationIds(): string[] {
+    const savedApps = localStorage.getItem(OPEN_APPS_STORAGE_KEY);
+    if (!savedApps) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(savedApps);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .map((entry) => {
+          if (typeof entry === 'string') {
+            return entry;
+          }
+          if (entry && typeof entry === 'object' && 'id' in entry) {
+            const maybeId = (entry as { id?: unknown }).id;
+            return typeof maybeId === 'string' ? maybeId : null;
+          }
+          return null;
+        })
+        .filter((id): id is string => Boolean(id));
+    } catch (error) {
+      this.logger.warn('Failed to parse saved applications.', {error});
+      return [];
     }
   }
 
@@ -467,9 +579,16 @@ export class ApplicationManagerService {
 
     const focusId = this.focusedAppId.getValue();
 
-    if (focusId === id || app?.running) {
-      return !this.setApplicationFocus(id);
+    if (focusId === id) return true;
+
+    if (app?.running) {
+      const existing = this.getMostRecentApplicationInstance(id);
+      if (existing) {
+        this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
+        return true;
+      }
     }
+
     if (!app) return false;
 
     if (this.usedMemory + app.memory > this.maxMemory) {
@@ -491,14 +610,9 @@ export class ApplicationManagerService {
       return false;
     }
 
-    const isNewInstanceNeeded = !!this.applications.value.find(t => t.id === id);
-
-    const curAppIndex = this.applications.value.length + 1;
-
-    const newAppInstanceId = isNewInstanceNeeded ? `${id}-${curAppIndex}` : id;
-
-
-    app.instanceIndex = isNewInstanceNeeded ? app.instanceIndex + 1 : app.instanceIndex;
+    const openInstanceCount = this.getOpenInstanceCount(app.id);
+    const newAppInstanceId = openInstanceCount > 0 ? `${id}-${openInstanceCount + 1}` : id;
+    app.instanceIndex = openInstanceCount + 1;
     app.running = true;
 
     this.applications.next([...this.applications.value, this.appFactory
@@ -523,8 +637,8 @@ export class ApplicationManagerService {
   }
 
   private isInstanceLimitReached(app: AppEntry): boolean {
-    if (app.instanceIndex < app.maxInstances) {
-      app.instanceIndex += 1; // Increment instanceIndex when under limit
+    const openInstanceCount = this.getOpenInstanceCount(app.id);
+    if (openInstanceCount < app.maxInstances) {
       return false;
     }
 
@@ -548,27 +662,37 @@ export class ApplicationManagerService {
 
 
   saveOpenApplications() {
-    localStorage.setItem('applications', JSON.stringify(this.applications.value));
+    const openAppIds = this.applications.value.map((app) => app.id);
+    localStorage.setItem(OPEN_APPS_STORAGE_KEY, JSON.stringify(openAppIds));
   }
 
-  closeApplication(id: string, args?: any): void {
+  closeApplication(id: string): void {
     const application = this.getAppByID(id);
     if (!application) return;
     // Mark the application as no longer running
     application.running = false;
     // Decrement the instanceIndex for the parent AppEntry
-    if (application.parent) {
-      application.parent.instanceIndex = Math.max(0, application.parent.instanceIndex - 1);
-      application.parent.running = application.parent.instanceIndex > 0;
-    }
-
-    application.instanceIndex = 0;
-
     // Remove the application from the active applications list
-    this.applications.next(this.applications.getValue().filter(app => app.id !== id));
+    const remainingApplications = this.applications.getValue().filter(app => app.id !== id);
+    this.applications.next(remainingApplications);
+
+    if (application.parent) {
+      const remainingInstances = remainingApplications.filter((openApp) => openApp.parent?.id === application.parent?.id);
+      application.parent.instanceIndex = remainingInstances.length;
+      application.parent.running = remainingInstances.length > 0;
+    }
 
     // Save the state of opened applications
     this.saveOpenApplications();
+  }
+
+  private getOpenInstanceCount(appId: string): number {
+    return this.applications.value.filter((openApp) => openApp.parent?.id === appId).length;
+  }
+
+  private getMostRecentApplicationInstance(appId: string): ApplicationInstance | undefined {
+    const appInstances = this.applications.value.filter((openApp) => openApp.parent?.id === appId);
+    return appInstances[appInstances.length - 1];
   }
 
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {

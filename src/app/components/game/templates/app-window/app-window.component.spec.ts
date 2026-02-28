@@ -14,7 +14,6 @@ describe('TerminalWindowComponent', () => {
 
     fixture = TestBed.createComponent(AppWindowComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {

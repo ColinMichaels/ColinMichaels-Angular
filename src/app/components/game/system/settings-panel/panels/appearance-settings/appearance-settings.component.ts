@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Setting, SettingsService} from '../../../../services/settings.service';
 import {FormGroup, ReactiveFormsModule} from '@angular/forms';
+import {Subscription} from 'rxjs';
 export type ThemeOption = 'light' | 'dark' | 'system';
 
 @Component({
@@ -20,16 +21,12 @@ export type ThemeOption = 'light' | 'dark' | 'system';
         </select>
 
 
- <!--       <button (click)="setTheme('light')"
-                [ngClass]="getThemeClass('light')"
+        <button (click)="setTheme('light')"
                 class="hover:opacity-100 hover:grayscale-0 bg-white text-black w-full px-2 py-1 rounded-full">Light</button>
         <button (click)="setTheme('dark')"
-                [ngClass]="getThemeClass('dark')"
                 class="hover:opacity-100 hover:grayscale-0 bg-black text-white w-full px-2 py-1 rounded-full">Dark</button>
         <button (click)="setTheme('system')"
-                [ngClass]="getThemeClass('system')"
                 class="hover:opacity-100 hover:grayscale-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white w-full px-2 py-1 rounded-full">System</button>
-                -->
       </div>
 
       <div class="mt-4 flex items-center justify-around">
@@ -48,9 +45,10 @@ export type ThemeOption = 'light' | 'dark' | 'system';
   `,
   styles: ``
 })
-export class AppearanceSettingsComponent implements OnInit {
+export class AppearanceSettingsComponent implements OnInit, OnDestroy {
   private settingsService = inject(SettingsService);
   private readonly settingsSetId = 'appearance';
+  private formSyncSub?: Subscription;
   formGroup!: FormGroup;
   accentColor: string = '#4f46e5';
   theme: ThemeOption = 'light';
@@ -78,15 +76,10 @@ export class AppearanceSettingsComponent implements OnInit {
     if (formGroup) {
       this.formGroup = formGroup;
       this.settingKeys = Object.keys(this.formGroup.controls);
-      this.settingsService.syncFormGroupWithSettingSet(this.formGroup, this.settingsSetId);
+      console.warn('Form group created:', this.formGroup.value, this.settingKeys, this.settingsSetId);
+      this.formSyncSub = this.settingsService.syncFormGroupWithSettingSet(this.formGroup, this.settingsSetId);
     }
 
-  }
-
-  getThemeClass(theme: string){
-    if(!this.formGroup) return '';
-    const themeControl = this.formGroup.get('theme');
-    return (themeControl && themeControl.value === theme) ? 'border-2 border-blue-500 opacity-100 grayscale-0' : 'opacity-30 grayscale'
   }
 
   setTheme(theme: ThemeOption): void {
@@ -95,6 +88,10 @@ export class AppearanceSettingsComponent implements OnInit {
 
   saveSettings(): void {
     console.log('Settings saved:', this.formGroup.value);
+  }
+
+  ngOnDestroy(): void {
+    this.formSyncSub?.unsubscribe();
   }
 
 }

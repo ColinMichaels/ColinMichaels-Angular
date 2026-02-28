@@ -6,7 +6,7 @@ import {INotification, NotificationService} from '../../game/services/notificati
 import {JokesService} from '../../game/services/jokes.service';
 import {SoundService} from '../../game/services/sound.service';
 import {RouterLink} from '@angular/router';
-import {HOME_NOTIFY_CLASSES} from '../main.component';
+import {HOME_NOTIFY_CLASSES} from '../main.constants';
 import {faSmile} from '@fortawesome/free-regular-svg-icons';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {TooltipDirective} from '../../game/directives/tooltip.directive';

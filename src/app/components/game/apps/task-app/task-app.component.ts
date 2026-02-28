@@ -5,7 +5,7 @@ import {Task, TaskService} from '../../services/task.service';
 import {catchError, map, startWith} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, debounceTime, Observable, of} from 'rxjs';
 import {TooltipDirective} from '../../directives/tooltip.directive';
-import {TimeAgoPipe} from '../../../../pipes/time-ago,pipe';
+import {TimeAgoPipe} from '../../../../pipes/time-ago.pipe';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArchive, faCheck, faPlus, faRedo, faTrash} from '@fortawesome/free-solid-svg-icons';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';

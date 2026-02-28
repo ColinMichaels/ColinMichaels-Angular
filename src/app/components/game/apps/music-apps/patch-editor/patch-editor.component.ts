@@ -19,7 +19,8 @@ import {TooltipDirective} from '../../../directives/tooltip.directive';
     NgSwitch,
     NgSwitchCase
   ],
-  templateUrl: './patch-editor.component.html'
+  templateUrl: './patch-editor.component.html',
+  styleUrls: ['./patch-editor.component.scss']
 })
 export class PatchEditorComponent implements OnInit {
   defaultPatch: SynthPatch = {

@@ -22,18 +22,23 @@ import {LogService} from '../components/game/services/log.service';
   providedIn: 'root'
 })
 export class AuthService {
-  private auth: Auth = inject(Auth);
+  private auth: Auth | null = inject(Auth, {optional: true});
 
-  user$: Observable<User | null> = user(this.auth);
+  user$: Observable<User | null> = this.auth ? user(this.auth) : of(null);
 
   constructor(
     private router: Router,
     private readonly logger: LogService,
     private zone: NgZone
   ) {
+    const auth = this.auth;
+    if (!auth) {
+      this.logger.warn('Auth service initialized without Firebase Auth provider.');
+      return;
+    }
 
     this.user$ = new Observable<User | null>(observer => {
-      return onAuthStateChanged(this.auth,
+      return onAuthStateChanged(auth,
         user => this.zone.run(() => observer.next(user)),
         error => this.zone.run(() => observer.error(error)),
         () => this.zone.run(() => observer.complete())
@@ -44,6 +49,9 @@ export class AuthService {
 
   // Email & Password Sign In
   signInWithEmail(email: string, password: string): Observable<UserCredential> {
+    if (!this.auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
     return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
       tap(result => this.logger.info('Signed in!', result.user)),
       catchError(error => {
@@ -55,6 +63,9 @@ export class AuthService {
 
   // Email & Password Registration
   registerWithEmail(email: string, password: string): Observable<UserCredential> {
+    if (!this.auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
     return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
       switchMap(credentials => {
         // Send email verification
@@ -71,6 +82,9 @@ export class AuthService {
 
   // Google Sign In (enhanced with Observable)
   loginWithGoogle(): Observable<UserCredential | null> {
+    if (!this.auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
     const provider = new GoogleAuthProvider();
     // Use signInWithPopup instead of redirect for more reliable behavior
     return from(signInWithPopup(this.auth, provider));
@@ -78,7 +92,11 @@ export class AuthService {
 
   // Add a method to handle redirect results
   handleRedirectResult(): Observable<UserCredential | null> {
-    return from(this.zone.runOutsideAngular(() => getRedirectResult(this.auth)))
+    const auth = this.auth;
+    if (!auth) {
+      return of(null);
+    }
+    return from(this.zone.runOutsideAngular(() => getRedirectResult(auth)))
       .pipe(
         tap(result => {
           if (result) {
@@ -95,6 +113,9 @@ export class AuthService {
 
   // Password Reset
   resetPassword(email: string): Observable<void> {
+    if (!this.auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
     return from(sendPasswordResetEmail(this.auth, email)).pipe(
       catchError(error => {
         this.logger.error('Password reset failed:', error);
@@ -105,6 +126,9 @@ export class AuthService {
 
   // Sign Out (enhanced with Observable)
   logout(): Observable<void> {
+    if (!this.auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
     return from(signOut(this.auth)).pipe(
       tap(() => {
         this.logger.info('Signed out');

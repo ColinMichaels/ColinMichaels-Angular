@@ -108,8 +108,6 @@ export class FileSystemService {
     {name: 'Documents', path: '/Documents', icon: this.getIconForType('folder')},
     {name: 'Photos', path: '/Photos', icon: this.getIconForType('folder')},
     {name: 'Videos', path: '/Videos', icon: this.getIconForType('folder')},
-    {name: 'Downloads', path: '/Downloads', icon: this.getIconForType('folder')},
-    {name: 'Music', path: '/Music', icon: this.getIconForType('folder')},
     {name: 'Recents', path: '/Recents', icon: this.getIconForType('folder')}
   ];
 
@@ -278,7 +276,7 @@ export class FileSystemService {
     }
 
     return {
-      name: faker.person.jobType(),
+      name,
       path: `${path}`.replace(/\/+/g, '/'), // Normalize the path
       created: new Date().toISOString(),
       modified: new Date().toISOString(),
@@ -301,7 +299,7 @@ export class FileSystemService {
 
   // Normalize the parent folder path and create the folder
   const folderPath = `${path.replace(/\/+$/, '')}/${name}`;
-  const folder: FileEntry = this.createFolder(name, path, false);
+    const folder: FileEntry = this.createFolder(name, folderPath, false);
 
   // Create a set to track existing children paths and ensure no duplicates
   const childPaths = new Set<string>();
