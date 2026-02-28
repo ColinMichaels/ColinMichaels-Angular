@@ -18,8 +18,7 @@ import {HomeTerminalWindowComponent} from './home-terminal-window/home-terminal-
 import {ProjectsOverviewComponent} from './projects-overview/projects-overview.component';
 import {ProjectItemComponent} from './project-item/project-item.component';
 import {DisclaimerComponent} from './disclaimer/disclaimer.component';
-
-export const HOME_NOTIFY_CLASSES = 'bg-black/80 text-green-500 border-2 border-green-500';
+import {HOME_NOTIFY_CLASSES} from './main.constants';
 
 @Component({
   selector: 'app-main',

@@ -1,7 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {FirestoreService} from '../../../services/firebase/firestore.service';
-import {user} from '@angular/fire/auth';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -17,7 +16,13 @@ export class LogService {
   private logSubject = new BehaviorSubject<LogEntry[]>([]);
   private mutedLevels: Set<LogLevel> = new Set();
   private globalMute = false;
-  private firestore: FirestoreService = inject(FirestoreService);
+  private firestore: FirestoreService | null = (() => {
+    try {
+      return inject(FirestoreService);
+    } catch {
+      return null;
+    }
+  })();
 
   get logs(): LogEntry[] {
     return [...this.logBuffer];
@@ -91,21 +96,23 @@ export class LogService {
 
     const entry: LogEntry = {level, message, timestamp: new Date()};
 
-    this.firestore.saveLogEntry(
-      {
-        level: entry.level,
-        message: typeof entry.message === 'string' ? entry.message : '',
-        userId: user.name,
-        metadata: 'log entry'
-      },
-    ).subscribe({
-      next: () => {
-        // Successfully saved log to Firestore
-      },
-      error: (err) => {
-        console.error('Failed to save log to Firestore:', err);
-      }
-    });
+    if (this.firestore) {
+      this.firestore.saveLogEntry(
+        {
+          level: entry.level,
+          message: typeof entry.message === 'string' ? entry.message : '',
+          userId: 'unknown',
+          metadata: 'log entry'
+        },
+      ).subscribe({
+        next: () => {
+          // Successfully saved log to Firestore
+        },
+        error: (err) => {
+          console.error('Failed to save log to Firestore:', err);
+        }
+      });
+    }
     this.logBuffer.push(entry);
     this.logSubject.next([...this.logBuffer]);
 

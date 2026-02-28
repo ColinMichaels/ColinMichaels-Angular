@@ -9,6 +9,7 @@ import { TypewriterService } from '../services/typewriter.service';
 import { SoundService } from '../services/sound.service';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
+import {LogService} from '../services/log.service';
 
 describe('DesktopComponent', () => {
   let component: DesktopComponent;
@@ -56,9 +57,23 @@ describe('DesktopComponent', () => {
     }),
   };
 
+  const logServiceMock = {
+    debug: jasmine.createSpy('debug'),
+    info: jasmine.createSpy('info'),
+    warn: jasmine.createSpy('warn'),
+    error: jasmine.createSpy('error'),
+  };
+
   beforeEach(async () => {
+    TestBed.overrideComponent(DesktopComponent, {
+      set: {
+        template: '',
+        imports: [],
+      }
+    });
+
     await TestBed.configureTestingModule({
-      declarations: [DesktopComponent],
+      imports: [DesktopComponent],
       providers: [
         { provide: ApplicationManagerService, useValue: appManagerServiceMock },
         { provide: ContextMenuService, useValue: contextMenuServiceMock },
@@ -68,6 +83,7 @@ describe('DesktopComponent', () => {
         { provide: TypewriterService, useValue: typewriterServiceMock },
         { provide: SoundService, useValue: soundServiceMock },
         { provide: ActivatedRoute, useValue: activatedRouteMock },
+        {provide: LogService, useValue: logServiceMock},
       ],
     }).compileComponents();
 
@@ -80,18 +96,17 @@ describe('DesktopComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should call onBeginInvestigation if no user exists in localStorage', () => {
+  it('should call onBeginInvestigation when view initializes', () => {
     spyOn(component, 'onBeginInvestigation');
-    spyOn(localStorage, 'getItem').and.returnValue(null);
-
-    component.ngOnInit();
+    component.ngAfterViewInit();
 
     expect(component.onBeginInvestigation).toHaveBeenCalled();
   });
 
   it('should call openApp on route param change', () => {
+    appManagerServiceMock.openApplication.calls.reset();
     component.ngOnInit();
-    expect(appManagerServiceMock.openApplication).toHaveBeenCalledWith('testApp');
+    expect(appManagerServiceMock.openApplication).toHaveBeenCalledWith('testApp', undefined);
   });
 
   it('should handle onDoubleClicked and close all apps', () => {
@@ -142,7 +157,7 @@ describe('DesktopComponent', () => {
     component.onBeginInvestigation();
 
     expect(soundServiceMock.play).toHaveBeenCalledWith('glitch-1.mp3', {
-      volume: 0.1,
+      volume: 0.3,
       forceRestart: true,
     });
     expect(typewriterServiceMock.enqueueLine).toHaveBeenCalledWith({

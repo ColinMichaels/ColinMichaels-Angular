@@ -19,6 +19,6 @@ describe('ObfuscatePipe', () => {
 
   it('should handle unsupported characters', () => {
     const cipher = { 'h': 'x', 'e': 'y' };
-    expect(pipe.transform('hi there!', cipher, 'encode')).toEqual('xi tyery!');
+    expect(pipe.transform('hi there!', cipher, 'encode')).toEqual('xi txyry!');
   });
 });

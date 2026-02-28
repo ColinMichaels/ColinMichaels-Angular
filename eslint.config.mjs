@@ -1,30 +1,31 @@
-import js from "@eslint/js";
+import eslint from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import json from "@eslint/json";
-import { defineConfig } from "eslint/config";
-import angular from "@analogjs/vite-plugin-angular";
-import eslint from "@eslint/css";
+import angular from "angular-eslint";
 
-
-export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts}"], plugins: { js }, extends: ["js/recommended"] },
-  { files: ["**/*.{js,mjs,cjs,ts}"], languageOptions: { globals: globals.browser } },
-  tseslint.configs.recommended,
-  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
-  { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
-  {files: ["**/*.css"], plugins: {eslint}, language: "css/css", extends: ["css/recommended"]},
-]);
-
-module.exports = tseslint.config(
+export default tseslint.config(
+  {
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      ".angular/**",
+      "out-tsc/**"
+    ]
+  },
   {
     files: ["**/*.ts"],
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommended,
-      ...tseslint.configs.stylistic,
-      ...angular.configs.tsRecommended,
+      ...angular.configs.tsRecommended
     ],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node
+      }
+    },
     processor: angular.processInlineTemplates,
     rules: {
       "@angular-eslint/directive-selector": [
@@ -32,25 +33,24 @@ module.exports = tseslint.config(
         {
           type: "attribute",
           prefix: "app",
-          style: "camelCase",
-        },
+          style: "camelCase"
+        }
       ],
       "@angular-eslint/component-selector": [
         "error",
         {
           type: "element",
           prefix: "app",
-          style: "kebab-case",
-        },
-      ],
-    },
+          style: "kebab-case"
+        }
+      ]
+    }
   },
   {
     files: ["**/*.html"],
     extends: [
       ...angular.configs.templateRecommended,
-      ...angular.configs.templateAccessibility,
-    ],
-    rules: {},
+      ...angular.configs.templateAccessibility
+    ]
   }
 );

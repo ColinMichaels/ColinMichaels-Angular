@@ -1,29 +1,30 @@
 import {Injectable} from '@angular/core';
 import {
-  collection,
-  deleteDoc,
-  doc,
+  collection as collectionFn,
+  deleteDoc as deleteDocFn,
+  doc as docFn,
   Firestore,
-  getDoc,
-  getDocs,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
+  getDoc as getDocFn,
+  getDocs as getDocsFn,
+  limit as limitFn,
+  onSnapshot as onSnapshotFn,
+  orderBy as orderByFn,
+  query as queryFn,
+  serverTimestamp as serverTimestampFn,
+  setDoc as setDocFn,
   Timestamp,
-  updateDoc,
-  where, writeBatch
+  updateDoc as updateDocFn,
+  where as whereFn,
+  writeBatch as writeBatchFn
 } from '@angular/fire/firestore';
 import {
-  deleteObject,
-  getDownloadURL,
-  ref,
+  deleteObject as deleteObjectFn,
+  getDownloadURL as getDownloadURLFn,
+  ref as storageRefFn,
   Storage,
-  uploadBytes,
-  uploadBytesResumable,
-  uploadString
+  uploadBytes as uploadBytesFn,
+  uploadBytesResumable as uploadBytesResumableFn,
+  uploadString as uploadStringFn
 } from '@angular/fire/storage';
 import {from, Observable, throwError, of} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
@@ -35,7 +36,7 @@ export interface FirestoreDocument {
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 @Injectable({
@@ -46,6 +47,113 @@ export class FirestoreService {
     private firestore: Firestore,
     private storage: Storage
   ) {
+  }
+
+  // Wrappers keep Firebase calls mockable in tests without changing runtime behavior.
+  private doc(...args: unknown[]): unknown {
+    return (docFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private collection(...args: unknown[]): unknown {
+    return (collectionFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private setDoc(...args: unknown[]): Promise<void> {
+    return (setDocFn as (...innerArgs: unknown[]) => Promise<void>)(...args);
+  }
+
+  private getDoc(...args: unknown[]): Promise<unknown> {
+    return (getDocFn as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+  }
+
+  private updateDoc(...args: unknown[]): Promise<void> {
+    return (updateDocFn as (...innerArgs: unknown[]) => Promise<void>)(...args);
+  }
+
+  private deleteDoc(...args: unknown[]): Promise<void> {
+    return (deleteDocFn as (...innerArgs: unknown[]) => Promise<void>)(...args);
+  }
+
+  private getDocs(...args: unknown[]): Promise<unknown> {
+    return (getDocsFn as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+  }
+
+  private query(...args: unknown[]): unknown {
+    return (queryFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private where(...args: unknown[]): unknown {
+    return (whereFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private orderBy(...args: unknown[]): unknown {
+    return (orderByFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private limit(...args: unknown[]): unknown {
+    return (limitFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private onSnapshot(...args: unknown[]): () => void {
+    return (onSnapshotFn as (...innerArgs: unknown[]) => () => void)(...args);
+  }
+
+  private serverTimestamp(...args: unknown[]): unknown {
+    return (serverTimestampFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private writeBatch(...args: unknown[]): {
+    set: (...batchArgs: unknown[]) => void;
+    update: (...batchArgs: unknown[]) => void;
+    delete: (...batchArgs: unknown[]) => void;
+    commit: () => Promise<void>;
+  } {
+    return (writeBatchFn as (...innerArgs: unknown[]) => {
+      set: (...batchArgs: unknown[]) => void;
+      update: (...batchArgs: unknown[]) => void;
+      delete: (...batchArgs: unknown[]) => void;
+      commit: () => Promise<void>;
+    })(...args);
+  }
+
+  private ref(...args: unknown[]): unknown {
+    return (storageRefFn as (...innerArgs: unknown[]) => unknown)(...args);
+  }
+
+  private uploadBytes(...args: unknown[]): Promise<unknown> {
+    return (uploadBytesFn as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+  }
+
+  private uploadBytesResumable(...args: unknown[]): {
+    on: (
+      event: string,
+      progress: (snapshot: { bytesTransferred: number; totalBytes: number }) => void,
+      error: (error: unknown) => void,
+      complete: () => void
+    ) => void;
+    snapshot: { ref: unknown };
+  } {
+    return (uploadBytesResumableFn as (...innerArgs: unknown[]) => {
+      on: (
+        event: string,
+        progress: (snapshot: { bytesTransferred: number; totalBytes: number }) => void,
+        error: (error: unknown) => void,
+        complete: () => void
+      ) => void;
+      snapshot: { ref: unknown };
+    })(...args);
+  }
+
+  private uploadString(...args: unknown[]): Promise<unknown> {
+    return (uploadStringFn as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+  }
+
+  private getDownloadURL(...args: unknown[]): Promise<string> {
+    return (getDownloadURLFn as (...innerArgs: unknown[]) => Promise<string>)(...args);
+  }
+
+  private deleteObject(...args: unknown[]): Promise<void> {
+    return (deleteObjectFn as (...innerArgs: unknown[]) => Promise<void>)(...args);
   }
 
   /**
@@ -61,17 +169,17 @@ export class FirestoreService {
     id?: string
   ): Observable<string> {
     const docId = id || data.id || uuidv4();
-    const docRef = doc(this.firestore, collectionPath, docId);
+    const docRef = this.doc(this.firestore, collectionPath, docId);
 
     // Add timestamps
     const documentData = {
       ...data,
-      updatedAt: serverTimestamp(),
-      createdAt: data.createdAt || serverTimestamp(),
+      updatedAt: this.serverTimestamp(),
+      createdAt: data.createdAt || this.serverTimestamp(),
       id: docId
     };
 
-    return from(setDoc(docRef, documentData, {merge: true})).pipe(
+    return from(this.setDoc(docRef, documentData, {merge: true})).pipe(
       map(() => docId),
       catchError(error => {
         console.error(`Error saving document to ${collectionPath}:`, error);
@@ -87,12 +195,18 @@ export class FirestoreService {
    * @returns Observable of the document data
    */
   getDocument<T>(collectionPath: string, id: string): Observable<T | null> {
-    const docRef = doc(this.firestore, collectionPath, id);
+    const docRef = this.doc(this.firestore, collectionPath, id);
 
-    return from(getDoc(docRef)).pipe(
-      map(snapshot => {
-        if (snapshot.exists()) {
-          return {id: snapshot.id, ...snapshot.data()} as T;
+    return from(this.getDoc(docRef)).pipe(
+      map((snapshot: unknown) => {
+        const typedSnapshot = snapshot as {
+          exists: () => boolean;
+          id: string;
+          data: () => Record<string, unknown>;
+        };
+
+        if (typedSnapshot.exists()) {
+          return {id: typedSnapshot.id, ...typedSnapshot.data()} as T;
         } else {
           return null;
         }
@@ -116,15 +230,15 @@ export class FirestoreService {
     id: string,
     data: T
   ): Observable<void> {
-    const docRef = doc(this.firestore, collectionPath, id);
+    const docRef = this.doc(this.firestore, collectionPath, id);
 
     // Add updated timestamp
     const updateData = {
       ...data,
-      updatedAt: serverTimestamp()
+      updatedAt: this.serverTimestamp()
     };
 
-    return from(updateDoc(docRef, updateData)).pipe(
+    return from(this.updateDoc(docRef, updateData)).pipe(
       catchError(error => {
         console.error(`Error updating document in ${collectionPath}:`, error);
         return throwError(() => new Error(`Failed to update document: ${error.message}`));
@@ -139,9 +253,9 @@ export class FirestoreService {
    * @returns Observable of void
    */
   deleteDocument(collectionPath: string, id: string): Observable<void> {
-    const docRef = doc(this.firestore, collectionPath, id);
+    const docRef = this.doc(this.firestore, collectionPath, id);
 
-    return from(deleteDoc(docRef)).pipe(
+    return from(this.deleteDoc(docRef)).pipe(
       catchError(error => {
         console.error(`Error deleting document from ${collectionPath}:`, error);
         return throwError(() => new Error(`Failed to delete document: ${error.message}`));
@@ -165,30 +279,34 @@ export class FirestoreService {
     sortDirection: 'asc' | 'desc' = 'desc',
     limitCount?: number
   ): Observable<T[]> {
-    const collectionRef = collection(this.firestore, collectionPath);
+    const collectionRef = this.collection(this.firestore, collectionPath);
 
-    let q = query(collectionRef);
+    let q = this.query(collectionRef);
 
     // Apply filters if provided
     if (filters && filters.length > 0) {
       filters.forEach(filter => {
-        q = query(q, where(filter[0], filter[1], filter[2]));
+        q = this.query(q, this.where(filter[0], filter[1], filter[2]));
       });
     }
 
     // Apply sorting if provided
     if (sortField) {
-      q = query(q, orderBy(sortField, sortDirection));
+      q = this.query(q, this.orderBy(sortField, sortDirection));
     }
 
     // Apply limit if provided
     if (limitCount) {
-      q = query(q, limit(limitCount));
+      q = this.query(q, this.limit(limitCount));
     }
 
-    return from(getDocs(q)).pipe(
-      map(snapshot => {
-        return snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as T));
+    return from(this.getDocs(q)).pipe(
+      map((snapshot: unknown) => {
+        const typedSnapshot = snapshot as {
+          docs: Array<{ id: string; data: () => Record<string, unknown> }>;
+        };
+
+        return typedSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()} as T));
       }),
       catchError(error => {
         console.error(`Error querying documents from ${collectionPath}:`, error);
@@ -204,19 +322,25 @@ export class FirestoreService {
    * @returns Observable that emits the document data on changes
    */
   listenToDocument<T>(collectionPath: string, id: string): Observable<T | null> {
-    const docRef = doc(this.firestore, collectionPath, id);
+    const docRef = this.doc(this.firestore, collectionPath, id);
 
     return new Observable<T | null>(observer => {
       // Return the unsubscribe function to clean up when the observable is unsubscribed
-      return onSnapshot(docRef,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            observer.next({id: snapshot.id, ...snapshot.data()} as T);
+      return this.onSnapshot(docRef,
+        (snapshot: unknown) => {
+          const typedSnapshot = snapshot as {
+            exists: () => boolean;
+            id: string;
+            data: () => Record<string, unknown>;
+          };
+
+          if (typedSnapshot.exists()) {
+            observer.next({id: typedSnapshot.id, ...typedSnapshot.data()} as T);
           } else {
             observer.next(null);
           }
         },
-        (error) => {
+        (error: unknown) => {
           console.error(`Error listening to document in ${collectionPath}:`, error);
           observer.error(error);
         }
@@ -238,30 +362,33 @@ export class FirestoreService {
     sortField?: string,
     sortDirection: 'asc' | 'desc' = 'desc'
   ): Observable<T[]> {
-    const collectionRef = collection(this.firestore, collectionPath);
+    const collectionRef = this.collection(this.firestore, collectionPath);
 
-    let q = query(collectionRef);
+    let q = this.query(collectionRef);
 
     // Apply filters if provided
     if (filters && filters.length > 0) {
       filters.forEach(filter => {
-        q = query(q, where(filter[0], filter[1], filter[2]));
+        q = this.query(q, this.where(filter[0], filter[1], filter[2]));
       });
     }
 
     // Apply sorting if provided
     if (sortField) {
-      q = query(q, orderBy(sortField, sortDirection));
+      q = this.query(q, this.orderBy(sortField, sortDirection));
     }
 
     return new Observable<T[]>(observer => {
       // Return the unsubscribe function to clean up when the observable is unsubscribed
-      return onSnapshot(q,
-        (snapshot) => {
-          const documents = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as T));
+      return this.onSnapshot(q,
+        (snapshot: unknown) => {
+          const typedSnapshot = snapshot as {
+            docs: Array<{ id: string; data: () => Record<string, unknown> }>;
+          };
+          const documents = typedSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()} as T));
           observer.next(documents);
         },
-        (error) => {
+        (error: unknown) => {
           console.error(`Error listening to collection ${collectionPath}:`, error);
           observer.error(error);
         }
@@ -277,10 +404,10 @@ export class FirestoreService {
    * @returns Observable of the download URL
    */
   uploadFile(path: string, file: File | Blob, metadata?: any): Observable<string> {
-    const storageRef = ref(this.storage, path);
+    const storageRef = this.ref(this.storage, path);
 
-    return from(uploadBytes(storageRef, file, metadata)).pipe(
-      switchMap(() => from(getDownloadURL(storageRef))),
+    return from(this.uploadBytes(storageRef, file, metadata)).pipe(
+      switchMap(() => from(this.getDownloadURL(storageRef))),
       catchError(error => {
         console.error(`Error uploading file to ${path}:`, error);
         return throwError(() => new Error(`Failed to upload file: ${error.message}`));
@@ -299,23 +426,23 @@ export class FirestoreService {
     progress: number,
     downloadUrl?: string
   }> {
-    const storageRef = ref(this.storage, path);
-    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+    const storageRef = this.ref(this.storage, path);
+    const uploadTask = this.uploadBytesResumable(storageRef, file, metadata);
 
     return new Observable<{ progress: number, downloadUrl?: string }>(observer => {
       uploadTask.on(
         'state_changed',
-        (snapshot) => {
+        (snapshot: { bytesTransferred: number; totalBytes: number }) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           observer.next({progress});
         },
-        (error) => {
+        (error: unknown) => {
           console.error(`Error uploading file to ${path}:`, error);
           observer.error(error);
         },
         async () => {
           try {
-            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            const downloadUrl = await this.getDownloadURL(uploadTask.snapshot.ref);
             observer.next({progress: 100, downloadUrl});
             observer.complete();
           } catch (error) {
@@ -334,10 +461,10 @@ export class FirestoreService {
    * @returns Observable of the download URL
    */
   uploadBase64(path: string, dataUrl: string, metadata?: any): Observable<string> {
-    const storageRef = ref(this.storage, path);
+    const storageRef = this.ref(this.storage, path);
 
-    return from(uploadString(storageRef, dataUrl, 'data_url', metadata)).pipe(
-      switchMap(() => from(getDownloadURL(storageRef))),
+    return from(this.uploadString(storageRef, dataUrl, 'data_url', metadata)).pipe(
+      switchMap(() => from(this.getDownloadURL(storageRef))),
       catchError(error => {
         console.error(`Error uploading base64 to ${path}:`, error);
         return throwError(() => new Error(`Failed to upload base64: ${error.message}`));
@@ -351,9 +478,9 @@ export class FirestoreService {
    * @returns Observable of void
    */
   deleteFile(path: string): Observable<void> {
-    const storageRef = ref(this.storage, path);
+    const storageRef = this.ref(this.storage, path);
 
-    return from(deleteObject(storageRef)).pipe(
+    return from(this.deleteObject(storageRef)).pipe(
       catchError(error => {
         console.error(`Error deleting file from ${path}:`, error);
         return throwError(() => new Error(`Failed to delete file: ${error.message}`));
@@ -397,7 +524,7 @@ export class FirestoreService {
   }): Observable<string> {
     return this.saveDocument('logs', {
       ...logEntry,
-      timestamp: serverTimestamp()
+      timestamp: this.serverTimestamp()
     });
   }
 
@@ -470,9 +597,9 @@ export class FirestoreService {
    * @returns Observable of the download URL
    */
   getFileUrl(path: string): Observable<string> {
-    const storageRef = ref(this.storage, path);
+    const storageRef = this.ref(this.storage, path);
 
-    return from(getDownloadURL(storageRef)).pipe(
+    return from(this.getDownloadURL(storageRef)).pipe(
       catchError(error => {
         console.error(`Error getting download URL for ${path}:`, error);
         return throwError(() => new Error(`Failed to get download URL: ${error.message}`));
@@ -491,23 +618,23 @@ export class FirestoreService {
     id: string;
     data?: any;
   }>): Observable<void> {
-    const batch = writeBatch(this.firestore);
+    const batch = this.writeBatch(this.firestore);
 
     operations.forEach(operation => {
-      const docRef = doc(this.firestore, operation.collection, operation.id);
+      const docRef = this.doc(this.firestore, operation.collection, operation.id);
 
       switch (operation.type) {
         case 'set':
           batch.set(docRef, {
             ...operation.data,
-            updatedAt: serverTimestamp(),
-            createdAt: operation.data?.createdAt || serverTimestamp()
+            updatedAt: this.serverTimestamp(),
+            createdAt: operation.data?.createdAt || this.serverTimestamp()
           });
           break;
         case 'update':
           batch.update(docRef, {
             ...operation.data,
-            updatedAt: serverTimestamp()
+            updatedAt: this.serverTimestamp()
           });
           break;
         case 'delete':
@@ -531,10 +658,10 @@ export class FirestoreService {
    * @returns Observable of boolean
    */
   documentExists(collectionPath: string, id: string): Observable<boolean> {
-    const docRef = doc(this.firestore, collectionPath, id);
+    const docRef = this.doc(this.firestore, collectionPath, id);
 
-    return from(getDoc(docRef)).pipe(
-      map(snapshot => snapshot.exists()),
+    return from(this.getDoc(docRef)).pipe(
+      map((snapshot: unknown) => (snapshot as { exists: () => boolean }).exists()),
       catchError(error => {
         console.error(`Error checking document existence in ${collectionPath}:`, error);
         return of(false);

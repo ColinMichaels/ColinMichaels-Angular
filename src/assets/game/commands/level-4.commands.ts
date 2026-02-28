@@ -6,7 +6,7 @@ export default function(): CLICommand[] {
   {
     name: 'aichat',
     description: 'Experimental AI ChatBot Service',
-    execute: (args: string[]) => {
+    execute: () => {
       return {
         status: 200,
         output: 'aichat > '

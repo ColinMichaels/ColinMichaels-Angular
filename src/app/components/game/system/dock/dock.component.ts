@@ -120,8 +120,8 @@ export class DockComponent {
     this.appManager.openApplication(id, args);
   }
 
-  closeApp(id: string, args?: any) {
-    this.appManager.closeApplication(id, args);
+  closeApp(id: string) {
+    this.appManager.closeApplication(id);
   }
 
   trash(key: string) {

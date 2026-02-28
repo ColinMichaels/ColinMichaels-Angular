@@ -24,12 +24,9 @@ export class CLIService {
   private commands = new Map<string, CLICommand>();
 
   constructor(private config: GameConfigService, private userService: UserService) {
-     this.config.loadLevelsForProgress().then((levels) => {
-       levels.subscribe((level) => {
-         console.warn('level', level);
-       });
-       this.registerBuiltins();
-     });
+    this.config.loadLevelsForProgress()
+      .then(() => this.registerBuiltins())
+      .catch(() => this.registerBuiltins());
   }
 
   private registerBuiltins() {
@@ -37,7 +34,6 @@ export class CLIService {
       name: 'help',
       description: 'List available commands',
       execute: () => {
-        console.warn('commands', this.commands.keys());
         const commands = '\n ' + Array.from(this.commands.keys()).join('\n ');
         return {
           status: commands ? 200 : 404,
@@ -48,11 +44,13 @@ export class CLIService {
     this.registerCommand({
       name: 'whoami',
       description: 'Returns user identity',
-      execute: () => ({
-          status: localStorage.getItem('user') ? 200 : 404,
-          output: localStorage.getItem('user') || 'Unknown'
-        }
-      )
+      execute: () => {
+        const username = this.userService.user.name?.trim();
+        return {
+          status: username ? 200 : 404,
+          output: username || 'Unknown'
+        };
+      }
     });
     this.registerCommand({
       name: 'exit',
@@ -80,7 +78,6 @@ export class CLIService {
       name: 'leet',
       description: 'Convert text to leet speak',
       execute: (args: string[]) => {
-        console.warn('params', args);
         if (!args.length) {
           return {
             status: 400,
@@ -140,7 +137,7 @@ export class CLIService {
           const isAuthorized = (password: string) => {
             return password === '1234';
           } // implement secure validation
-          if (!isAuthorized) {
+          if (!isAuthorized(password)) {
             return {
               status: 401,
               output: 'Unauthorized'
@@ -152,13 +149,13 @@ export class CLIService {
               output: `Already logged in as admin.`
             };
           }
-          this.userService.updateUser({name: username, level: 2, score: this.userService.user.score + 1});
+          void this.userService.updateUser({name: username, level: 2, score: this.userService.user.score + 1});
           return {
             status: 201,
             output: `Switched to user: ${username}`
           };
         }
-        this.userService.updateUser({name: username, level: 1, score: 0});
+        void this.userService.updateUser({name: username, level: 1, score: 0});
         return {
           status: 201,
           output: `Switched to user: ${username}`
@@ -182,8 +179,8 @@ export class CLIService {
             output: 'Unauthorized!'
           };
         } else {
-          this.userService.updateUser({[param]: value});
-          this.userService.updateUser({name: 'unknown'});
+          void this.userService.updateUser({[param]: value});
+          void this.userService.updateUser({name: 'unknown'});
           return {
             status: 200,
             output: `Updated user: ${param} to ${value}`
