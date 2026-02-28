@@ -7,8 +7,11 @@
     "build": "ng build",
     "build:css": "npx tailwindcss -o ./dist/output.css --minify",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test --include='**/'",
+    "test": "ng test",
     "lint": "ng lint"
+  },
+  "engines": {
+    "node": ">=20.11 <23"
   },
   "private": true,
   "dependencies": {

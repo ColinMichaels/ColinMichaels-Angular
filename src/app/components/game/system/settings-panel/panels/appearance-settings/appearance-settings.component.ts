@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {Component, OnDestroy, OnInit, inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Setting, SettingsService} from '../../../../services/settings.service';
 import {FormGroup, ReactiveFormsModule} from '@angular/forms';
+import {Subscription} from 'rxjs';
 export type ThemeOption = 'light' | 'dark' | 'system';
 
 @Component({
@@ -44,9 +45,10 @@ export type ThemeOption = 'light' | 'dark' | 'system';
   `,
   styles: ``
 })
-export class AppearanceSettingsComponent implements OnInit {
+export class AppearanceSettingsComponent implements OnInit, OnDestroy {
   private settingsService = inject(SettingsService);
   private readonly settingsSetId = 'appearance';
+  private formSyncSub?: Subscription;
   formGroup!: FormGroup;
   accentColor: string = '#4f46e5';
   theme: ThemeOption = 'light';
@@ -75,7 +77,7 @@ export class AppearanceSettingsComponent implements OnInit {
       this.formGroup = formGroup;
       this.settingKeys = Object.keys(this.formGroup.controls);
       console.warn('Form group created:', this.formGroup.value, this.settingKeys, this.settingsSetId);
-      this.settingsService.syncFormGroupWithSettingSet(this.formGroup, this.settingsSetId);
+      this.formSyncSub = this.settingsService.syncFormGroupWithSettingSet(this.formGroup, this.settingsSetId);
     }
 
   }
@@ -86,6 +88,10 @@ export class AppearanceSettingsComponent implements OnInit {
 
   saveSettings(): void {
     console.log('Settings saved:', this.formGroup.value);
+  }
+
+  ngOnDestroy(): void {
+    this.formSyncSub?.unsubscribe();
   }
 
 }

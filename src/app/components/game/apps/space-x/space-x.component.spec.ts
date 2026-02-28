@@ -1,4 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
 
 import {SpaceXComponent} from './space-x.component';
 
@@ -8,7 +10,8 @@ describe('SpaceXComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SpaceXComponent]
+      imports: [SpaceXComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     })
       .compileComponents();
 

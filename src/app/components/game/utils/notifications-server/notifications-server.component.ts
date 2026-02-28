@@ -52,15 +52,16 @@ export class NotificationServerComponent implements OnInit {
       });
   }
 
-  dismiss(id: string) {
+  dismiss(id?: string) {
+    if (!id) return;
     this.notify.dismiss(id);
   }
 
   async clearAllWithEffect() {
     const reversed = [...this.notifications].reverse();
     for (let i = 0; i < reversed.length; i++) {
-        if (reversed[i].title) {
-          this.dismiss(reversed[i].title);
+      if (reversed[i].id) {
+        this.dismiss(reversed[i].id);
         }
       await new Promise(res => setTimeout(res, 30));
     }

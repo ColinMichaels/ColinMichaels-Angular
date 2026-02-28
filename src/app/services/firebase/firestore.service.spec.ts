@@ -34,6 +34,8 @@ describe('FirestoreService', () => {
   let mockUploadBytesResumable: jasmine.Spy;
 
   beforeEach(() => {
+    jasmine.getEnv().allowRespy(true);
+
     const firestoreSpy = jasmine.createSpyObj('Firestore', ['app']);
     const storageSpy = jasmine.createSpyObj('Storage', ['app']);
 

@@ -17,13 +17,18 @@ interface TypewriterLine {
   onComplete?: () => void;
 }
 
+interface CompletedLineEvent {
+  text: string;
+  agent: 'user' | 'system';
+}
+
 @Injectable({ providedIn: 'root' })
 export class TypewriterService {
   public typedText$ = new BehaviorSubject<string>('');
-  public lineCompleted$ = new Subject<any>();
+  public lineCompleted$ = new Subject<CompletedLineEvent>();
   private queue: TypewriterLine[] = [];
   private currentIndex = 0;
-  private typingInterval: any;
+  private typingInterval: ReturnType<typeof setInterval> | null = null;
   private lineBuffer = '';
   public activeMode$ = new BehaviorSubject<TypingMode>('default');
 
@@ -72,6 +77,8 @@ export class TypewriterService {
         ' '
       )
 
+    line.onBegin?.();
+
     const config = this.getTypingConfig(mode);
     this.typingInterval = setInterval(() => this.typeNextChar(line), config.speed);
   }
@@ -79,7 +86,6 @@ export class TypewriterService {
   private typeNextChar(line: TypewriterLine) {
     const mode = line.mode ?? 'default';
     const config = this.getTypingConfig(mode);
-    line.onBegin?.();
 
     if (this.currentIndex < line.text.length) {
       const char = line.text[this.currentIndex];
@@ -98,7 +104,9 @@ export class TypewriterService {
 
       line.onCharTyped?.(char, this.currentIndex, mode);
     } else {
-      clearInterval(this.typingInterval);
+      if (this.typingInterval !== null) {
+        clearInterval(this.typingInterval);
+      }
       this.typingInterval = null;
 
       line.onComplete?.();
@@ -118,7 +126,9 @@ export class TypewriterService {
   }
 
   clear() {
-    clearInterval(this.typingInterval);
+    if (this.typingInterval !== null) {
+      clearInterval(this.typingInterval);
+    }
     this.typingInterval = null;
     this.queue = [];
     this.currentIndex = 0;

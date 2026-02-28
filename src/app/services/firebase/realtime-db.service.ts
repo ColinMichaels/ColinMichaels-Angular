@@ -30,7 +30,7 @@ export interface DatabaseItem {
   providedIn: 'root'
 })
 export class RealtimeDbService {
-  private readonly db: Database = getDatabase() as Database;
+  private db: Database | null = null;
 
   constructor() {
     console.warn('RealtimeDbService is deprecated. Please use FirebaseService instead.');
@@ -44,10 +44,17 @@ export class RealtimeDbService {
 
   }
 
+  private requireDb(): Database {
+    if (!this.db) {
+      throw new Error('Realtime Database is not initialized');
+    }
+    return this.db;
+  }
+
   // Create a new item
   async create<T extends DatabaseItem>(path: string, data: Omit<T, 'id'>): Promise<string> {
     try {
-      const listRef = ref(this.db, path);
+      const listRef = ref(this.requireDb(), path);
       const newItemRef = push(listRef);
       await set(newItemRef, {
         ...data,
@@ -64,7 +71,7 @@ export class RealtimeDbService {
   // Set item with custom ID
   async setItem<T extends DatabaseItem>(path: string, id: string, data: Omit<T, 'id'>): Promise<void> {
     try {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
       await set(itemRef, {
         ...data,
         id,
@@ -80,7 +87,7 @@ export class RealtimeDbService {
   // Get a single item by ID
   async getItem<T extends DatabaseItem>(path: string, id: string): Promise<T | null> {
     try {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
       const snapshot = await get(itemRef);
       if (snapshot.exists()) {
         return {id, ...snapshot.val()} as T;
@@ -95,7 +102,7 @@ export class RealtimeDbService {
   // Get all items from a path
   async getItems<T extends DatabaseItem>(path: string): Promise<T[]> {
     try {
-      const listRef = ref(this.db, path);
+      const listRef = ref(this.requireDb(), path);
       const snapshot = await get(listRef);
       if (snapshot.exists()) {
         const items: T[] = [];
@@ -117,7 +124,7 @@ export class RealtimeDbService {
   // Update an existing item
   async updateItem<T extends DatabaseItem>(path: string, id: string, updates: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<void> {
     try {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
       await update(itemRef, {
         ...updates,
         updatedAt: Date.now()
@@ -131,7 +138,7 @@ export class RealtimeDbService {
   // Delete an item
   async deleteItem(path: string, id: string): Promise<void> {
     try {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
       await remove(itemRef);
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -142,7 +149,7 @@ export class RealtimeDbService {
   // Listen to real-time changes for a single item
   watchItem<T extends DatabaseItem>(path: string, id: string): Observable<T | null> {
     return new Observable(observer => {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
 
       const unsubscribe = onValue(itemRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -162,7 +169,7 @@ export class RealtimeDbService {
   // Listen to real-time changes for a list of items
   watchItems<T extends DatabaseItem>(path: string): Observable<T[]> {
     return new Observable(observer => {
-      const listRef = ref(this.db, path);
+      const listRef = ref(this.requireDb(), path);
 
       const unsubscribe = onValue(listRef, (snapshot) => {
         const items: T[] = [];
@@ -197,7 +204,7 @@ export class RealtimeDbService {
     } = {}
   ): Promise<T[]> {
     try {
-      let queryRef = ref(this.db, path);
+      const queryRef = ref(this.requireDb(), path);
       let queryBuilder = query(queryRef);
 
       if (options.orderBy) {
@@ -255,7 +262,7 @@ export class RealtimeDbService {
     } = {}
   ): Observable<T[]> {
     return new Observable(observer => {
-      let queryRef = ref(this.db, path);
+      const queryRef = ref(this.requireDb(), path);
       let queryBuilder = query(queryRef);
 
       if (options.orderBy) {
@@ -304,7 +311,7 @@ export class RealtimeDbService {
   // Batch operations
   async batchUpdate(updates: { [path: string]: any }): Promise<void> {
     try {
-      const dbRef = ref(this.db);
+      const dbRef = ref(this.requireDb());
       await update(dbRef, updates);
     } catch (error) {
       console.error('Error performing batch update:', error);
@@ -315,7 +322,7 @@ export class RealtimeDbService {
   // Check if item exists
   async exists(path: string, id: string): Promise<boolean> {
     try {
-      const itemRef = ref(this.db, `${path}/${id}`);
+      const itemRef = ref(this.requireDb(), `${path}/${id}`);
       const snapshot = await get(itemRef);
       return snapshot.exists();
     } catch (error) {
@@ -327,7 +334,7 @@ export class RealtimeDbService {
   // Get count of items
   async getCount(path: string): Promise<number> {
     try {
-      const listRef = ref(this.db, path);
+      const listRef = ref(this.requireDb(), path);
       const snapshot = await get(listRef);
       return snapshot.size;
     } catch (error) {
