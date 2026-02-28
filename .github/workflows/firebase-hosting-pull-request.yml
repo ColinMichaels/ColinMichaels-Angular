@@ -31,6 +31,36 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Validate required environment variables
+        run: |
+          missing=()
+          required=(
+            APP_TITLE
+            APP_API_URL
+            OPENAI_API_KEY
+            OPEN_WEATHER_MAP_API_KEY
+            FIREBASE_API_KEY
+            FIREBASE_AUTH_DOMAIN
+            FIREBASE_DATABASE_URL
+            FIREBASE_PROJECT_ID
+            FIREBASE_STORAGE_BUCKET
+            FIREBASE_MESSAGING_SENDER_ID
+            FIREBASE_APP_ID
+            FIREBASE_MEASUREMENT_ID
+          )
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required workflow environment variables:"
+            printf -- '- %s\n' "${missing[@]}"
+            echo "Check GitHub repository Variables/Secrets or PR secret availability."
+            exit 1
+          fi
       - run: npm run generate:env
       - run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
