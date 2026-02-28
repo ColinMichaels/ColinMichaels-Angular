@@ -11,59 +11,9 @@ jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
-      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || vars.OPENAI_API_KEY }}
-      OPEN_WEATHER_MAP_API_KEY: ${{ secrets.OPEN_WEATHER_MAP_API_KEY || vars.OPEN_WEATHER_MAP_API_KEY }}
-      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
-      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
-      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
-      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
-      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
-      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
-      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
       - run: npm ci
-      - name: Validate required environment variables
-        run: |
-          missing=()
-          required=(
-            APP_TITLE
-            APP_API_URL
-            OPENAI_API_KEY
-            OPEN_WEATHER_MAP_API_KEY
-            FIREBASE_API_KEY
-            FIREBASE_AUTH_DOMAIN
-            FIREBASE_DATABASE_URL
-            FIREBASE_PROJECT_ID
-            FIREBASE_STORAGE_BUCKET
-            FIREBASE_MESSAGING_SENDER_ID
-            FIREBASE_APP_ID
-            FIREBASE_MEASUREMENT_ID
-          )
-
-          for name in "${required[@]}"; do
-            if [ -z "${!name}" ]; then
-              missing+=("$name")
-            fi
-          done
-
-          if [ "${#missing[@]}" -gt 0 ]; then
-            echo "Missing required workflow environment variables:"
-            printf -- '- %s\n' "${missing[@]}"
-            echo "Check GitHub repository Variables/Secrets or PR secret availability."
-            exit 1
-          fi
-      - run: npm run generate:env
-      - run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
