@@ -7,6 +7,8 @@ import {
   AfterViewInit,
 } from '@angular/core';
 
+type ScrollDirection = 'left' | 'right' | 'top' | 'bottom';
+
 /**
  * A directive that applies or removes specified CSS classes to an element based on the user's scroll position
  * relative to a defined scroll threshold. Supports additional animation effects for entry and exit behavior.
@@ -51,84 +53,154 @@ import {
   selector: '[appScrollClassToggle]',
   standalone: false
 })
-/**
- * TODO: need to test more and fix
- */
 export class ScrollClassToggleDirective implements AfterViewInit {
   @Input() scrollThreshold = 100;
-  @Input() enterClasses = ''; // class names to add when the threshold passed
-  @Input() exitClasses = '';  // class names to add when below the threshold
   @Input() applyTransition = true;
   @Input() duration = 'duration-500';
-  @Input() flyIn: 'left' | 'right' | 'top' | 'bottom' | null = null;
-  @Input() leaveTo: 'left' | 'right' | 'top' | 'bottom' | null = null;
+
+  private _enterClasses = '';
+  @Input()
+  set enterClasses(value: string) {
+    this._enterClasses = value ?? '';
+    this.enterClassList = this.toClassList(this._enterClasses);
+  }
+
+  get enterClasses(): string {
+    return this._enterClasses;
+  }
+
+  private _exitClasses = '';
+  @Input()
+  set exitClasses(value: string) {
+    this._exitClasses = value ?? '';
+    this.exitClassList = this.toClassList(this._exitClasses);
+  }
+
+  get exitClasses(): string {
+    return this._exitClasses;
+  }
+
+  private _flyIn: ScrollDirection | null = null;
+  @Input()
+  set flyIn(value: ScrollDirection | null) {
+    this._flyIn = value;
+    this.flyInClassList = value ? this.toClassList(this.getFlyInPreset(value)) : [];
+  }
+
+  get flyIn(): ScrollDirection | null {
+    return this._flyIn;
+  }
+
+  private _leaveTo: ScrollDirection | null = null;
+  @Input()
+  set leaveTo(value: ScrollDirection | null) {
+    this._leaveTo = value;
+    this.leaveToClassList = value ? this.toClassList(this.getLeaveToPreset(value)) : [];
+  }
+
+  get leaveTo(): ScrollDirection | null {
+    return this._leaveTo;
+  }
 
   private hasEntered = false;
+  private scrollTicking = false;
+  private enterClassList: string[] = [];
+  private exitClassList: string[] = [];
+  private flyInClassList: string[] = [];
+  private leaveToClassList: string[] = [];
 
   constructor(
-    private readonly el: ElementRef,
+    private readonly el: ElementRef<HTMLElement>,
     private readonly renderer: Renderer2) {
   }
 
   ngAfterViewInit(): void {
-    // Apply initial state
-    this.applyClasses(this.exitClasses);
-    if (this.flyIn) {
-      this.applyClasses(this.getFlyInPreset(this.flyIn));
-    }
     // Ensure transition classes are present
     if (this.applyTransition) {
       this.addIfMissing(this.duration);
       this.addIfMissing('transition-all');
       this.addIfMissing('ease-in-out');
     }
+
+    this.initializeState();
   }
 
   @HostListener('window:scroll', [])
-  onWindowScroll() {
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const passedThreshold = scrollTop > this.scrollThreshold;
-
-    const enterClassList = this.enterClasses.split(' ').filter(c => c);
-    const exitClassList = this.exitClasses.split(' ').filter(c => c);
-
-    if (passedThreshold && !this.hasEntered) {
-      // Add enter classes, remove exit
-      enterClassList.forEach(cls => this.renderer.addClass(this.el.nativeElement, cls));
-      exitClassList.forEach(cls => this.renderer.removeClass(this.el.nativeElement, cls));
-      if (this.flyIn) {
-        this.getFlyInPreset(this.flyIn).split(' ').forEach(cls =>
-          this.renderer.removeClass(this.el.nativeElement, cls)
-        );
-      }
-      this.hasEntered = true;
-    } else if (!passedThreshold && this.hasEntered) {
-      // Revert to exit classes
-      exitClassList.forEach(cls => this.renderer.addClass(this.el.nativeElement, cls));
-      enterClassList.forEach(cls => this.renderer.removeClass(this.el.nativeElement, cls));
-      if (this.leaveTo) {
-        this.getLeaveToPreset(this.leaveTo).split(' ').forEach(cls =>
-          this.renderer.addClass(this.el.nativeElement, cls)
-        );
-      }
-      this.hasEntered = false;
+  onWindowScroll(): void {
+    if (this.scrollTicking) {
+      return;
     }
+
+    this.scrollTicking = true;
+    requestAnimationFrame(() => {
+      this.scrollTicking = false;
+      this.updateStateFromScroll();
+    });
   }
 
-  private addIfMissing(className: string) {
+  private addIfMissing(className: string): void {
     const el = this.el.nativeElement;
     if (!el.classList.contains(className)) {
       this.renderer.addClass(el, className);
     }
   }
 
-  private applyClasses(classString: string) {
-    classString.split(' ').filter(c => c).forEach(cls =>
-      this.renderer.addClass(this.el.nativeElement, cls)
-    );
+  private initializeState(): void {
+    if (this.isThresholdPassed()) {
+      this.applyEnteredState();
+      this.hasEntered = true;
+      return;
+    }
+
+    this.addClasses(this.exitClassList);
+    this.addClasses(this.flyInClassList);
   }
 
-  private getFlyInPreset(direction: string): string {
+  private updateStateFromScroll(): void {
+    const passedThreshold = this.isThresholdPassed();
+    if (passedThreshold === this.hasEntered) {
+      return;
+    }
+
+    if (passedThreshold) {
+      this.applyEnteredState();
+    } else {
+      this.applyExitedState();
+    }
+    this.hasEntered = passedThreshold;
+  }
+
+  private applyEnteredState(): void {
+    this.addClasses(this.enterClassList);
+    this.removeClasses(this.exitClassList);
+    this.removeClasses(this.flyInClassList);
+    this.removeClasses(this.leaveToClassList);
+  }
+
+  private applyExitedState(): void {
+    this.addClasses(this.exitClassList);
+    this.removeClasses(this.enterClassList);
+    this.addClasses(this.leaveToClassList);
+  }
+
+  private addClasses(classes: string[]): void {
+    classes.forEach((cssClass) => this.renderer.addClass(this.el.nativeElement, cssClass));
+  }
+
+  private removeClasses(classes: string[]): void {
+    classes.forEach((cssClass) => this.renderer.removeClass(this.el.nativeElement, cssClass));
+  }
+
+  private toClassList(classString: string): string[] {
+    return classString.split(/\s+/).filter(Boolean);
+  }
+
+  private isThresholdPassed(): boolean {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+    return scrollTop > this.scrollThreshold;
+  }
+
+  private getFlyInPreset(direction: ScrollDirection): string {
     switch (direction) {
       case 'left':
         return '-translate-x-full opacity-0';
@@ -143,7 +215,7 @@ export class ScrollClassToggleDirective implements AfterViewInit {
     }
   }
 
-  private getLeaveToPreset(direction: string): string {
+  private getLeaveToPreset(direction: ScrollDirection): string {
     return this.getFlyInPreset(direction);
   }
 }

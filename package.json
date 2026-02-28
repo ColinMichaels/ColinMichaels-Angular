@@ -4,7 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "generate:env": "node scripts/generate-environment.mjs",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "build:css": "npx tailwindcss -o ./dist/output.css --minify",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
