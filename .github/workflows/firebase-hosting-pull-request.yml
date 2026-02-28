@@ -11,6 +11,7 @@ jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
+    environment: production
     env:
       APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
       APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
