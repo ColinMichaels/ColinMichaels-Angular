@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {AppEntry, ApplicationInstance} from '../services/application-manager.service';
+import {AppEntry, ApplicationInstance} from '../services/application-manager.models';
 
 @Injectable({providedIn: 'root'})
 export class ApplicationFactory {

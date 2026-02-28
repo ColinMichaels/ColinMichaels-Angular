@@ -40,10 +40,10 @@ Status legend:
 
 ## Medium Refactors
 
-- [~] Refactor `SettingsService` for typed models and safe subscription lifecycle.
+- [x] Refactor `SettingsService` for typed models and safe subscription lifecycle.
   - Impact: High
   - Effort: M
-  - Validation: lint/test/build + settings UI regression check.
+  - Validation: typed internal stores, guarded keyed-setting operations, explicit persistence subscriptions, `tsc --noEmit`, focused eslint pass.
 
 - [x] Optimize `ScrollClassToggleDirective` scroll handling by batching with `requestAnimationFrame` and caching class lists.
   - Impact: Medium
@@ -64,6 +64,10 @@ Status legend:
   - Impact: High
   - Effort: M
   - Validation: app launch/focus/close regression tests.
+  - Progress: extracted localStorage open-app persistence into `ApplicationStatePersistenceService`.
+  - Progress: extracted shared app IDs/types/window constraints into `application-manager.models.ts` and updated consumers.
+  - Progress: extracted static app registration definitions into `application-catalog.ts`.
+  - Progress: extracted registry storage and app lookup/query behavior into `ApplicationRegistryService`.
 
 - [~] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium

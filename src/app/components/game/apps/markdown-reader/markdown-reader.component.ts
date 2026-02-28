@@ -26,7 +26,7 @@ export class MarkdownReaderComponent {
 
   private _filename: string = 'gameplay.doc.md';
 
-  @Input() params: any;
+  @Input() params: unknown;
 
   @Input()
   set filename(value: string) {
@@ -42,8 +42,10 @@ export class MarkdownReaderComponent {
 
 
     const currentApp = this.appManager.getCurrentApp();
-
-    this.filename = currentApp?.params?.file;
+    const params = currentApp?.params;
+    if (params && typeof params === 'object' && 'file' in params && typeof params.file === 'string') {
+      this.filename = params.file;
+    }
     console.warn('FILE', this.filename);
     this.document = this.docsPath + this.filename;
   }
