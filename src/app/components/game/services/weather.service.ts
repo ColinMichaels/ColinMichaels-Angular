@@ -35,11 +35,41 @@ export interface WeatherBundle {
   forecast: ForecastEntry[];
 }
 
+interface OpenWeatherCondition {
+  description: string;
+  icon: string;
+}
+
+interface OpenWeatherCurrentResponse {
+  name: string;
+  main: {
+    temp: number;
+    feels_like: number;
+    humidity: number;
+    pressure: number;
+  };
+  visibility: number;
+  wind: unknown;
+  weather: OpenWeatherCondition[];
+}
+
+interface OpenWeatherForecastItem {
+  dt: number;
+  main: {
+    temp: number;
+  };
+  weather: OpenWeatherCondition[];
+}
+
+interface OpenWeatherForecastResponse {
+  list: OpenWeatherForecastItem[];
+}
+
 @Injectable({providedIn: 'root'})
 export class WeatherService {
-  private readonly currentUrl = 'https://api.openweathermap.org/data/2.5/weather';
-  private readonly forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast';
-  private readonly apiKey = environment.openWeatherMapApiKey;
+  private readonly apiBaseUrl = environment.apiUrl.replace(/\/+$/, '');
+  private readonly currentUrl = `${this.apiBaseUrl}/weather/current`;
+  private readonly forecastUrl = `${this.apiBaseUrl}/weather/forecast`;
   private units: 'metric' | 'imperial' = 'metric';
 
   /** Shared, cached bundle */
@@ -243,7 +273,6 @@ export class WeatherService {
     const params = new HttpParams()
       .set('lat', lat.toString())
       .set('lon', lon.toString())
-      .set('appid', this.apiKey)
       .set('units', this.units);
     return this.fetchWeatherData(params);
   }
@@ -251,13 +280,12 @@ export class WeatherService {
   private fetchCurrentByCity(city: string) {
     const params = new HttpParams()
       .set('q', city)
-      .set('appid', this.apiKey)
       .set('units', this.units);
     return this.fetchWeatherData(params);
   }
 
   private fetchWeatherData(params: HttpParams) {
-    return this.http.get<any>(this.currentUrl, {params}).pipe(
+    return this.http.get<OpenWeatherCurrentResponse>(this.currentUrl, {params}).pipe(
       map(r => ({
         location: r.name,
         temp: r.main.temp,
@@ -276,11 +304,10 @@ export class WeatherService {
     const params = new HttpParams()
       .set('lat', lat.toString())
       .set('lon', lon.toString())
-      .set('appid', this.apiKey)
       .set('units', this.units)
-    return this.http.get<any>(this.forecastUrl, {params}).pipe(
+    return this.http.get<OpenWeatherForecastResponse>(this.forecastUrl, {params}).pipe(
       map(r =>
-        r.list.map((e: any) => ({
+        r.list.map((e) => ({
           date: new Date(e.dt * 1000),
           temp: e.main.temp,
           description: e.weather[0].description,
@@ -293,11 +320,10 @@ export class WeatherService {
   private fetchForecastByCity(city: string) {
     const params = new HttpParams()
       .set('q', city)
-      .set('appid', this.apiKey)
       .set('units', this.units);
-    return this.http.get<any>(this.forecastUrl, {params}).pipe(
+    return this.http.get<OpenWeatherForecastResponse>(this.forecastUrl, {params}).pipe(
       map(r =>
-        r.list.map((e: any) => ({
+        r.list.map((e) => ({
           date: new Date(e.dt * 1000),
           temp: e.main.temp,
           description: e.weather[0].description,

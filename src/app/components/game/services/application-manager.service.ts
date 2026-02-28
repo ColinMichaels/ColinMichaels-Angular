@@ -53,7 +53,7 @@ export class ApplicationManagerService {
   }
 
   getApps(type: AppEntry['type'] = AppType.app): AppEntry[] {
-    return this.applicationRegistry.getApps(type);
+    return this.applicationRegistry.getApps(type).map((app) => this.withRuntimeState(app));
   }
 
   get totalMemory(): number {
@@ -65,7 +65,7 @@ export class ApplicationManagerService {
   }
 
   get registeredApps(): AppEntry[] {
-    return this.applicationRegistry.registeredApps;
+    return this.applicationRegistry.registeredApps.map((app) => this.withRuntimeState(app));
   }
 
   registerApp(app: AppEntry): void {
@@ -107,5 +107,16 @@ export class ApplicationManagerService {
 
   getCurrentApp(): ApplicationInstance | undefined {
     return this.applicationLifecycle.getCurrentApp();
+  }
+
+  private withRuntimeState(app: AppEntry): AppEntry {
+    const runningInstances = this.applicationLifecycle.openApplications
+      .filter((openApp) => openApp.parent?.id === app.id).length;
+
+    return {
+      ...app,
+      running: runningInstances > 0,
+      instanceIndex: runningInstances
+    };
   }
 }
