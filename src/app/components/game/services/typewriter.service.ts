@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {SoundService} from './sound.service';
 import {UserService} from './user.service';
 
 export type TypingMode = 'default' | 'glitch' | 'system' | 'dramatic';
 
-interface TypewriterLine {
+export interface TypewriterLine {
   text: string;
   speed?: number;
   mode?: TypingMode;
@@ -17,18 +17,19 @@ interface TypewriterLine {
   onComplete?: () => void;
 }
 
-interface CompletedLineEvent {
+export interface CompletedLineEvent {
   text: string;
   agent: 'user' | 'system';
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class TypewriterService {
   public typedText$ = new BehaviorSubject<string>('');
   public lineCompleted$ = new Subject<CompletedLineEvent>();
   private queue: TypewriterLine[] = [];
   private currentIndex = 0;
   private typingInterval: ReturnType<typeof setInterval> | null = null;
+  private lineCompletionTimeout: ReturnType<typeof setTimeout> | null = null;
   private lineBuffer = '';
   public activeMode$ = new BehaviorSubject<TypingMode>('default');
 
@@ -37,9 +38,6 @@ export class TypewriterService {
   public volume = new BehaviorSubject(0.2);
 
   constructor(private soundService: SoundService, private userService: UserService) {
-      if(this.queue.length > 0) {
-        this.processNextLine();
-      }
   }
 
   // Public method to enable/disable sounds
@@ -53,14 +51,19 @@ export class TypewriterService {
   }
 
 
-  enqueueLine(line: TypewriterLine) {
+  enqueueLine(line: TypewriterLine): void {
     this.queue.push({ ...line, mode: line.mode ?? 'default' });
     if (this.queue.length === 1) this.processNextLine();
   }
 
-  private processNextLine() {
+  private processNextLine(): void {
     const line = this.queue[0];
-    if (!line) return;
+    if (!line) {
+      this.activeMode$.next('default');
+      return;
+    }
+
+    this.clearTypingTimers();
 
     this.currentIndex = 0;
     this.lineBuffer = '';
@@ -80,10 +83,11 @@ export class TypewriterService {
     line.onBegin?.();
 
     const config = this.getTypingConfig(mode);
-    this.typingInterval = setInterval(() => this.typeNextChar(line), config.speed);
+    const resolvedSpeed = this.resolveTypingSpeed(line.speed, config.speed);
+    this.typingInterval = setInterval(() => this.typeNextChar(line), resolvedSpeed);
   }
 
-  private typeNextChar(line: TypewriterLine) {
+  private typeNextChar(line: TypewriterLine): void {
     const mode = line.mode ?? 'default';
     const config = this.getTypingConfig(mode);
 
@@ -104,19 +108,17 @@ export class TypewriterService {
 
       line.onCharTyped?.(char, this.currentIndex, mode);
     } else {
-      if (this.typingInterval !== null) {
-        clearInterval(this.typingInterval);
-      }
-      this.typingInterval = null;
+      this.clearTypingInterval();
 
       line.onComplete?.();
 
-      setTimeout(() => {
+      this.lineCompletionTimeout = setTimeout(() => {
+        this.lineCompletionTimeout = null;
 
         const finalLine = this.typedText$.getValue() + '\n';
         this.typedText$.next(finalLine);
         this.lineCompleted$.next({
-          text: finalLine.trim(),
+          text: this.lineBuffer,
           agent: line.agent || 'system'
         }); // ✨ emit completed line
         this.queue.shift();
@@ -125,14 +127,33 @@ export class TypewriterService {
     }
   }
 
-  clear() {
-    if (this.typingInterval !== null) {
-      clearInterval(this.typingInterval);
-    }
-    this.typingInterval = null;
+  clear(): void {
+    this.clearTypingTimers();
     this.queue = [];
     this.currentIndex = 0;
+    this.lineBuffer = '';
+    this.activeMode$.next('default');
     this.typedText$.next('');
+  }
+
+  private clearTypingTimers(): void {
+    this.clearTypingInterval();
+    if (this.lineCompletionTimeout !== null) {
+      clearTimeout(this.lineCompletionTimeout);
+      this.lineCompletionTimeout = null;
+    }
+  }
+
+  private clearTypingInterval(): void {
+    if (this.typingInterval !== null) {
+      clearInterval(this.typingInterval);
+      this.typingInterval = null;
+    }
+  }
+
+  private resolveTypingSpeed(lineSpeed: number | undefined, defaultSpeed: number): number {
+    const speed = lineSpeed ?? defaultSpeed;
+    return Number.isFinite(speed) && speed > 0 ? speed : defaultSpeed;
   }
 
   private getTypingConfig(mode: TypingMode): { speed: number; charSound: (char: string) => string | null } {

@@ -68,16 +68,18 @@ Status legend:
   - Progress: extracted shared app IDs/types/window constraints into `application-manager.models.ts` and updated consumers.
   - Progress: extracted static app registration definitions into `application-catalog.ts`.
   - Progress: extracted registry storage and app lookup/query behavior into `ApplicationRegistryService`.
+  - Progress: extracted open/close/focus/memory/persistence lifecycle state into `ApplicationLifecycleService`.
 
-- [~] Stabilize `TypewriterService` timer and callback semantics.
+- [x] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium
   - Effort: M
-  - Validation: CLI typing flow checks and queue behavior tests.
+  - Validation: CLI typing flow checks, queue behavior unit tests (`typewriter.service.spec.ts`), `tsc --noEmit`.
 
 - [~] Reduce startup randomness/cost in `FileSystemService`.
   - Impact: Medium
   - Effort: M
   - Validation: finder behavior and startup responsiveness.
+  - Progress: replaced random deep favorite-folder generation at startup with deterministic lightweight seeded folder content.
 
 ## Larger Changes (Riskier, Stage Later)
 

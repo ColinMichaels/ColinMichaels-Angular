@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, convertToParamMap} from '@angular/router';
 import {of} from 'rxjs';
 import {RouterTestingModule} from '@angular/router/testing';
 import {AuthService} from '../../../../services/auth.service';
@@ -36,7 +36,13 @@ describe('LoginScreenComponent', () => {
         {provide: SoundService, useValue: soundServiceMock},
         {provide: MusicService, useValue: musicServiceMock},
         {provide: LogService, useValue: loggerMock},
-        {provide: ActivatedRoute, useValue: {queryParams: of({})}}
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({}),
+            snapshot: {queryParamMap: convertToParamMap({})}
+          }
+        }
       ]
     })
     .compileComponents();
