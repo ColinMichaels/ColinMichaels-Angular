@@ -14,9 +14,34 @@ export class ApplicationManagerService {
   }
 
   private loadSavedApplications(): void {
-    this.applicationLifecycle.loadSavedApplicationIds().forEach((appId) => {
-      this.openApplication(appId);
+    const restoredOpenCounts = new Map<string, number>();
+
+    this.applicationLifecycle.loadSavedApplicationIds().forEach((savedAppId) => {
+      const appId = this.normalizeSavedAppId(savedAppId);
+      const app = this.applicationRegistry.getInstalledAppById(appId);
+      if (!app) {
+        return;
+      }
+
+      const restoredCount = restoredOpenCounts.get(appId) ?? 0;
+      const opened = this.applicationLifecycle.openApplication(appId, app, undefined, restoredCount > 0);
+      if (opened) {
+        restoredOpenCounts.set(appId, restoredCount + 1);
+      }
     });
+  }
+
+  private normalizeSavedAppId(savedAppId: string): string {
+    if (this.applicationRegistry.getInstalledAppById(savedAppId)) {
+      return savedAppId;
+    }
+
+    const normalizedId = savedAppId.replace(/-\d+$/, '');
+    if (this.applicationRegistry.getInstalledAppById(normalizedId)) {
+      return normalizedId;
+    }
+
+    return savedAppId;
   }
 
   get openApplications(): ApplicationInstance[] {

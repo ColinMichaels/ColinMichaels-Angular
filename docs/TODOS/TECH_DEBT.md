@@ -69,16 +69,19 @@ Status legend:
   - Progress: extracted static app registration definitions into `application-catalog.ts`.
   - Progress: extracted registry storage and app lookup/query behavior into `ApplicationRegistryService`.
   - Progress: extracted open/close/focus/memory/persistence lifecycle state into `ApplicationLifecycleService`.
+  - Progress: normalized saved instance IDs during restore and forced deterministic re-open for repeated entries.
+  - Progress: switched persisted open-app payloads to base app IDs for safer multi-instance restoration.
+  - Progress: added focused unit specs for lifecycle restore/instance behavior (`application-lifecycle.service.spec.ts`, `application-manager.service.spec.ts`).
 
 - [x] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium
   - Effort: M
   - Validation: CLI typing flow checks, queue behavior unit tests (`typewriter.service.spec.ts`), `tsc --noEmit`.
 
-- [~] Reduce startup randomness/cost in `FileSystemService`.
+- [x] Reduce startup randomness/cost in `FileSystemService`.
   - Impact: Medium
   - Effort: M
-  - Validation: finder behavior and startup responsiveness.
+  - Validation: finder behavior and startup responsiveness, deterministic startup unit tests (`file-system.service.spec.ts`), `tsc --noEmit`.
   - Progress: replaced random deep favorite-folder generation at startup with deterministic lightweight seeded folder content.
 
 ## Larger Changes (Riskier, Stage Later)
@@ -93,10 +96,10 @@ Status legend:
   - Effort: L
   - Validation: XSS regression tests + UI snapshot/manual checks.
 
-- [~] Enforce supported Node LTS through `.nvmrc`/`engines` and CI checks.
+- [x] Enforce supported Node LTS through `.nvmrc`/`engines` and CI checks.
   - Impact: Medium
   - Effort: S
-  - Validation: consistent local/CI build success.
+  - Validation: consistent local/CI build success, `.nvmrc` present, and workflow Node setup parity.
 
 ## Suggested Execution Order
 

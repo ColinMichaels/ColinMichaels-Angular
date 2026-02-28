@@ -65,15 +65,10 @@ export class ApplicationLifecycleService {
     return this.applicationStatePersistence.loadOpenApplicationIds(OPEN_APPS_STORAGE_KEY);
   }
 
-  openApplication(appId: string, app?: AppEntry, args?: unknown): boolean {
+  openApplication(appId: string, app?: AppEntry, args?: unknown, forceNewInstance = false): boolean {
     this.logger.debug('args', args);
 
-    const focusId = this.focusedAppId.getValue();
-    if (focusId === appId) {
-      return true;
-    }
-
-    if (app?.running) {
+    if (app?.running && !forceNewInstance) {
       const existing = this.getMostRecentApplicationInstance(app.id);
       if (existing) {
         this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
@@ -103,13 +98,13 @@ export class ApplicationLifecycleService {
     }
 
     const openInstanceCount = this.getOpenInstanceCount(app.id);
-    const newAppInstanceId = openInstanceCount > 0 ? `${appId}-${openInstanceCount + 1}` : appId;
+    const newAppInstanceId = this.getNextInstanceId(appId);
     app.instanceIndex = openInstanceCount + 1;
     app.running = true;
 
     this.applications.next([
       ...this.applications.value,
-      this.appFactory.createInstance(newAppInstanceId, app, newOffsetX, newOffsetY)
+      this.appFactory.createInstance(newAppInstanceId, app, newOffsetX, newOffsetY, args)
     ]);
 
     this.saveOpenApplications();
@@ -219,8 +214,27 @@ export class ApplicationLifecycleService {
   }
 
   private saveOpenApplications(): void {
-    const openAppIds = this.applications.value.map((app) => app.id);
+    const openAppIds = this.applications.value.map((app) => app.parent?.id ?? app.id);
     this.applicationStatePersistence.saveOpenApplicationIds(OPEN_APPS_STORAGE_KEY, openAppIds);
+  }
+
+  private getNextInstanceId(appId: string): string {
+    const existingIds = new Set(
+      this.applications.value
+        .filter((openApp) => openApp.parent?.id === appId)
+        .map((openApp) => openApp.id)
+    );
+
+    if (!existingIds.has(appId)) {
+      return appId;
+    }
+
+    let suffix = 2;
+    while (existingIds.has(`${appId}-${suffix}`)) {
+      suffix++;
+    }
+
+    return `${appId}-${suffix}`;
   }
 
   private getOpenInstanceCount(appId: string): number {
