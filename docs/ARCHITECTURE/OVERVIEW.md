@@ -5,9 +5,12 @@
 The app uses Angular standalone components with route-driven screens and service-centric state.
 
 - Router controls entry screens (home, login, desktop, boot, sleep).
+- `app.routes.ts` composes route groups from `features/public`, `labs`, and `core-os`.
 - Desktop screen coordinates window lifecycle and system UI.
 - Services hold long-lived state (apps, user, settings, storage, CLI, sound, files, notifications).
 - Dynamic component loading is used for in-window apps.
+
+Current route group files are boundary markers only. They preserve existing URL paths and lazy-load the legacy component locations until the folder migration moves implementations into their final homes.
 
 ## Major Subsystems
 
@@ -62,4 +65,3 @@ graph TD
 - This codebase favors behavior in services over local component state.
 - The primary maintainability pressure points are large services with mixed responsibilities and untyped dynamic data flows.
 - Behavior stability depends heavily on preserving service public APIs while tightening internals.
-

@@ -475,7 +475,8 @@ Exit criteria:
 ### Phase 1: Folder Skeleton and Route Grouping
 
 - Add empty target folders with README files.
-- Split `app.routes.ts` into public, OS, admin, and lab route arrays.
+- [~] Split `app.routes.ts` into public, OS, admin, and lab route arrays.
+  - Progress: added `features/public/public.routes.ts`, `core-os/os.routes.ts`, and `labs/lab.routes.ts`; admin routes are still pending.
 - Keep route paths unchanged.
 - Move `NotFoundComponent` to `shared/not-found` or leave a compatibility export.
 
@@ -593,4 +594,3 @@ Mitigations:
 8. Blog/CMS foundation: add models, Firestore schema, admin route, Editor.js wrapper, and public renderer.
 9. Design system pass: add tokens, reduce Tailwind safelist, and standardize buttons/forms/cards.
 10. Quality pass: reduce lint failures by category, then make lint a hard gate again.
-

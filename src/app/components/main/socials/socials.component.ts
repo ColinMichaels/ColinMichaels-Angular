@@ -4,7 +4,7 @@ import {faApple, faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from 
 import {NgForOf} from '@angular/common';
 import {TooltipDirective} from '../../game/directives/tooltip.directive';
 import {RouterLink} from '@angular/router';
-import {PATH_NAMES} from '../../../app.routes';
+import {PATH_NAMES} from '../../../app-route-paths';
 
 @Component({
   selector: 'app-socials',

@@ -22,7 +22,7 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
 import {Subject, takeUntil} from 'rxjs';
-import {PATH_NAMES} from '../../../../app.routes';
+import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
 import {updateProfile, User, UserCredential} from '@angular/fire/auth';
 import {AuthService} from '../../../../services/auth.service';
