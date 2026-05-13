@@ -54,7 +54,7 @@ Current count from static scan:
 - 71 Angular components.
 - 37 injectable services.
 - 4 pipes.
-- 54 spec files.
+- 55 spec files.
 - 2 NgModules remain: `ChatModule` and `ScrollEffectsModule`.
 
 Current component distribution:
@@ -64,12 +64,13 @@ Current component distribution:
 - `components/UI`: 4 components.
 - `modules/chat`: 1 component.
 - `modules/scroll`: 1 playground component.
-- `components/not-found`: 1 component.
+- `shared/not-found`: 1 component.
 - `app.component.ts`: root shell.
 
 Important current groups:
 
-- Public website: `components/main`, `components/not-found`.
+- Public website: `components/main`.
+- Shared fallback UI: `shared/not-found`.
 - OS shell: `components/game/desktop`, `components/game/system`, `components/game/templates`, `components/game/directives`, `components/game/factories`, `components/game/services`.
 - OS apps and demos: `components/game/apps`.
 - Experimental UI primitives: `components/UI`.
@@ -474,11 +475,13 @@ Exit criteria:
 
 ### Phase 1: Folder Skeleton and Route Grouping
 
-- Add empty target folders with README files.
+- [x] Add empty target folders with README files.
 - [~] Split `app.routes.ts` into public, OS, admin, and lab route arrays.
-  - Progress: added `features/public/public.routes.ts`, `core-os/os.routes.ts`, and `labs/lab.routes.ts`; admin routes are still pending.
-- Keep route paths unchanged.
-- Move `NotFoundComponent` to `shared/not-found` or leave a compatibility export.
+  - Progress: added `features/public/public.routes.ts`, `core-os/os.routes.ts`, `admin/admin.routes.ts`, and `labs/lab.routes.ts`.
+- [x] Keep route paths unchanged.
+  - Progress: added `app.routes.spec.ts` to snapshot the current route paths.
+- [x] Move `NotFoundComponent` to `shared/not-found` or leave a compatibility export.
+  - Progress: wildcard route lazy-loads `shared/not-found`; legacy `components/not-found` exports the shared component.
 
 Exit criteria:
 
