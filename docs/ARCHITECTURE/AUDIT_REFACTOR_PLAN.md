@@ -51,10 +51,10 @@ Lint failure categories:
 
 Current count from static scan:
 
-- 80 Angular components.
+- 81 Angular components.
 - 38 injectable services.
 - 4 pipes.
-- 57 spec files.
+- 59 spec files.
 - 2 NgModules remain: `ChatModule` and `ScrollEffectsModule`.
 
 Current component distribution:
@@ -64,6 +64,7 @@ Current component distribution:
 - `components/UI`: 4 components.
 - `features/blog`: 5 components.
 - `admin`: 4 components.
+- `labs`: 1 component.
 - `modules/chat`: 1 component.
 - `modules/scroll`: 1 playground component.
 - `shared/not-found`: 1 component.
@@ -183,6 +184,7 @@ Current routes:
 - `#/`: public home.
 - `#/blog`: public blog index.
 - `#/blog/:slug`: public published blog detail.
+- `#/labs`: public labs index.
 - `#/background`: background experiment.
 - `#/admin`: protected admin overview.
 - `#/admin/cms`: protected CMS post list.
@@ -199,7 +201,8 @@ Route issues:
 
 - OS route declarations still import concrete component paths from `components/game`.
 - `/archive` route boundary does not exist yet.
-- `background` is experimental but sits as a top-level public route.
+- `background` is experimental and remains as a preserved top-level route while the labs index links to it.
+- The old homepage demos are component labs embedded in `/labs`; they are not treated as standalone full-screen routes.
 
 Proposed route shape:
 
@@ -216,7 +219,7 @@ export const routes: Routes = [
 Preserved route paths:
 
 - Keep `''`, `background`, `os`, `os/:app`, `login`, `sleep`, `boot`, and `external/:externalUrl`.
-- Preserve new `blog`, `blog/:slug`, `admin`, and `admin/cms` boundaries unless replacement redirects are added.
+- Preserve new `blog`, `blog/:slug`, `labs`, `admin`, and `admin/cms` boundaries unless replacement redirects are added.
 - Add new routes without replacing old ones.
 - If a route later moves, add redirect routes instead of removing paths.
 

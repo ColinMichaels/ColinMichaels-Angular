@@ -47,9 +47,14 @@ npm run lint
 ## Current Quality Gate Status (Audit Baseline)
 
 - `npm ci`: not re-run in this pass (existing `node_modules` reused)
-- `npm run lint`: runs and reports real issues (`372` current errors)
-- `npm run test -- --watch=false --browsers=ChromeHeadless`: passing (`88/88`)
-- `npm run build`: still aborts early under unsupported Node `23.11.1`
+- `npm run lint`: runs and reports real legacy issues (`353` current errors)
+- Focused changed-spec runs with `npx ng test --watch=false --browsers=ChromeHeadless --include=...`: passing (`13/13`)
+- `npm run build`: passing when Angular can fetch configured Google Fonts for production font inlining
+
+Current build observations:
+
+- Local Node is `v23.11.1`, outside the declared package engine `>=20.11 <23`.
+- The production build still reports the existing initial bundle warning and CommonJS warnings for `web-audio-oscillators` and `dayjs`.
 
 ## Recommended Local Tooling Alignment
 

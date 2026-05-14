@@ -13,6 +13,7 @@ describe('routes', () => {
       '',
       PATH_NAMES.BLOG,
       `${PATH_NAMES.BLOG}/:slug`,
+      PATH_NAMES.LABS,
       PATH_NAMES.FS_BACKGROUND,
       PATH_NAMES.ADMIN,
       PATH_NAMES.OS_MAIN,

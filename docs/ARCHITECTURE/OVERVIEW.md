@@ -4,7 +4,7 @@
 
 The app uses Angular standalone components with route-driven screens and service-centric state.
 
-- Router controls entry screens (home, blog, admin, login, desktop, boot, sleep).
+- Router controls entry screens (home, blog, labs, admin, login, desktop, boot, sleep).
 - `app.routes.ts` composes route groups from `features/public`, `labs`, `admin`, and `core-os`.
 - Desktop screen coordinates window lifecycle and system UI.
 - Services hold long-lived state (apps, user, settings, storage, CLI, sound, files, notifications).
@@ -22,6 +22,8 @@ Current route group files are boundary markers only. They preserve existing URL 
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
   public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data.
+- Labs:
+  public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:
   settings/user/tasks/patches through storage strategy.
 - Media/audio:

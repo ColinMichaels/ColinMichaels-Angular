@@ -21,4 +21,8 @@ describe('SocialsComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('does not duplicate the OS launch entry in the footer links', () => {
+    expect(component.links.some(link => link.title === 'game')).toBeFalse();
+  });
 });

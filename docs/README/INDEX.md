@@ -7,6 +7,7 @@ This folder is the entry point for project documentation.
 - [Project Overview](./PROJECT_OVERVIEW.md)
 - [Development Setup](./DEVELOPMENT.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
+- [Changelog](../CHANGELOG.md)
 
 ## Architecture
 
