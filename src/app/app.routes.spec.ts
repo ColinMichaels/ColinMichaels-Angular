@@ -1,28 +1,37 @@
 import {Routes} from '@angular/router';
 
 import {routes} from './app.routes';
+import {PATH_NAMES} from './app-route-paths';
 
-function collectPaths(routeConfig: Routes): string[] {
-  return routeConfig.flatMap(route => {
-    const currentPath = route.path ?? '';
-    const childPaths = route.children ? collectPaths(route.children).map(path => `${currentPath}/${path}`) : [];
-
-    return [currentPath, ...childPaths];
-  });
+function routePaths(routeConfig: Routes): string[] {
+  return routeConfig.map(route => route.path ?? '');
 }
 
 describe('routes', () => {
-  it('preserves the existing public route paths', () => {
-    expect(collectPaths(routes)).toEqual([
+  it('preserves the root route order and appends new public/admin boundaries before OS routes', () => {
+    expect(routePaths(routes)).toEqual([
       '',
-      'background',
-      'os',
-      'os/:app',
-      'login',
-      'sleep',
-      'boot',
-      'external/:externalUrl',
+      PATH_NAMES.BLOG,
+      `${PATH_NAMES.BLOG}/:slug`,
+      PATH_NAMES.FS_BACKGROUND,
+      PATH_NAMES.ADMIN,
+      PATH_NAMES.OS_MAIN,
+      `${PATH_NAMES.OS_MAIN}/:app`,
+      PATH_NAMES.OS_LOGIN,
+      PATH_NAMES.OS_SLEEP,
+      PATH_NAMES.OS_BOOT,
+      `${PATH_NAMES.OS_EXTERNAL}/:externalUrl`,
       '**',
+    ]);
+  });
+
+  it('keeps admin child routes scoped under the admin boundary', () => {
+    const adminRoute = routes.find(route => route.path === PATH_NAMES.ADMIN);
+
+    expect(routePaths(adminRoute?.children ?? [])).toEqual([
+      '',
+      PATH_NAMES.ADMIN_CMS,
+      `${PATH_NAMES.ADMIN_CMS}/:slug/edit`,
     ]);
   });
 

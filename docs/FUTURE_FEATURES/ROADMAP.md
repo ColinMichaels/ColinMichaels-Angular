@@ -19,6 +19,8 @@ Risks:
 
 - Service decomposition:
   split `ApplicationManagerService` and simplify `SettingsService`.
+- Blog/CMS foundation:
+  connect the Editor.js draft save flow to Firebase and add media upload rules.
 - Strong typing pass:
   remove high-impact `any` usage in service contracts and dynamic payloads.
 - Performance cleanup:
@@ -48,4 +50,3 @@ Dependencies:
 Risks:
 
 - UI behavior drift during renderer hardening unless covered by tests and visual checks.
-

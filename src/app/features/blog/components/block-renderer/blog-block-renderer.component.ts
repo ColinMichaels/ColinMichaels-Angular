@@ -1,0 +1,156 @@
+import {Component, Input, OnChanges, inject} from '@angular/core';
+import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
+
+import {BlogContentBlock} from '../../models/blog-post.model';
+
+interface RenderableBlogBlock {
+  block: BlogContentBlock;
+  safeEmbedUrl: SafeResourceUrl | null;
+  externalUrl: string | null;
+}
+
+@Component({
+  selector: 'app-blog-block-renderer',
+  template: `
+    <section class="space-y-6 text-base leading-8 text-zinc-300">
+      @for (row of renderedBlocks; track row.block.id) {
+        @switch (row.block.type) {
+          @case ('header') {
+            @if (row.block.data.level === 3) {
+              <h3 class="pt-4 text-xl font-semibold text-zinc-50">{{ row.block.data.text }}</h3>
+            } @else {
+              <h2 class="pt-4 text-2xl font-semibold text-zinc-50">{{ row.block.data.text }}</h2>
+            }
+          }
+          @case ('paragraph') {
+            <p>{{ row.block.data.text }}</p>
+          }
+          @case ('quote') {
+            <blockquote class="border-l-2 border-cyan-300 pl-5 text-zinc-200">
+              <p>{{ row.block.data.text }}</p>
+              @if (row.block.data.caption) {
+                <cite class="mt-2 block text-sm not-italic text-zinc-500">{{ row.block.data.caption }}</cite>
+              }
+            </blockquote>
+          }
+          @case ('list') {
+            @if (row.block.data.ordered) {
+              <ol class="list-decimal space-y-2 pl-6">
+                @for (item of row.block.data.items ?? []; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ol>
+            } @else {
+              <ul class="list-disc space-y-2 pl-6">
+                @for (item of row.block.data.items ?? []; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            }
+          }
+          @case ('image') {
+            @if (row.block.data.url) {
+              <figure class="space-y-2">
+                <img
+                  [src]="row.block.data.url"
+                  [alt]="row.block.data.alt || fallbackAlt"
+                  class="w-full rounded object-cover"
+                  loading="lazy"
+                >
+                @if (row.block.data.caption) {
+                  <figcaption class="text-sm text-zinc-500">{{ row.block.data.caption }}</figcaption>
+                }
+              </figure>
+            }
+          }
+          @case ('embed') {
+            @if (row.safeEmbedUrl) {
+              <figure class="space-y-2">
+                <div class="aspect-video overflow-hidden rounded bg-black">
+                  <iframe
+                    [src]="row.safeEmbedUrl"
+                    [title]="row.block.data.caption || fallbackAlt"
+                    class="h-full w-full"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                @if (row.block.data.caption) {
+                  <figcaption class="text-sm text-zinc-500">{{ row.block.data.caption }}</figcaption>
+                }
+              </figure>
+            } @else if (row.externalUrl) {
+              <p>
+                <a [href]="row.externalUrl" target="_blank" rel="noreferrer" class="text-cyan-300 hover:text-cyan-200">
+                  {{ row.block.data.caption || row.externalUrl }}
+                </a>
+              </p>
+            }
+          }
+          @case ('code') {
+            <pre class="overflow-x-auto rounded bg-black p-4 text-sm leading-6 text-cyan-100"><code>{{ row.block.data.code }}</code></pre>
+          }
+          @case ('delimiter') {
+            <hr class="border-zinc-800">
+          }
+        }
+      }
+    </section>
+  `,
+})
+export class BlogBlockRendererComponent implements OnChanges {
+  @Input() blocks: readonly BlogContentBlock[] = [];
+  @Input() fallbackAlt = 'Blog content';
+
+  protected renderedBlocks: readonly RenderableBlogBlock[] = [];
+
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly trustedEmbedHosts = new Set([
+    'www.youtube.com',
+    'youtube.com',
+    'www.youtube-nocookie.com',
+    'player.vimeo.com',
+  ]);
+
+  ngOnChanges(): void {
+    this.renderedBlocks = this.blocks.map(block => ({
+      block,
+      safeEmbedUrl: this.createSafeEmbedUrl(block),
+      externalUrl: this.createExternalUrl(block),
+    }));
+  }
+
+  private createSafeEmbedUrl(block: BlogContentBlock): SafeResourceUrl | null {
+    if (block.type !== 'embed') {
+      return null;
+    }
+
+    const url = this.parseHttpUrl(block.data.embedUrl ?? block.data.url);
+
+    if (!url || url.protocol !== 'https:' || !this.trustedEmbedHosts.has(url.hostname)) {
+      return null;
+    }
+
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url.toString());
+  }
+
+  private createExternalUrl(block: BlogContentBlock): string | null {
+    const url = this.parseHttpUrl(block.data.url ?? block.data.embedUrl);
+
+    return url?.toString() ?? null;
+  }
+
+  private parseHttpUrl(value: string | undefined): URL | null {
+    if (!value) {
+      return null;
+    }
+
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' || url.protocol === 'http:' ? url : null;
+    } catch {
+      return null;
+    }
+  }
+}

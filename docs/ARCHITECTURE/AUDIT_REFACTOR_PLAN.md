@@ -51,10 +51,10 @@ Lint failure categories:
 
 Current count from static scan:
 
-- 71 Angular components.
-- 37 injectable services.
+- 80 Angular components.
+- 38 injectable services.
 - 4 pipes.
-- 55 spec files.
+- 57 spec files.
 - 2 NgModules remain: `ChatModule` and `ScrollEffectsModule`.
 
 Current component distribution:
@@ -62,6 +62,8 @@ Current component distribution:
 - `components/game`: 51 components.
 - `components/main`: 12 components.
 - `components/UI`: 4 components.
+- `features/blog`: 5 components.
+- `admin`: 4 components.
 - `modules/chat`: 1 component.
 - `modules/scroll`: 1 playground component.
 - `shared/not-found`: 1 component.
@@ -70,6 +72,8 @@ Current component distribution:
 Important current groups:
 
 - Public website: `components/main`.
+- Blog feature: `features/blog`.
+- Admin tooling: `admin`.
 - Shared fallback UI: `shared/not-found`.
 - OS shell: `components/game/desktop`, `components/game/system`, `components/game/templates`, `components/game/directives`, `components/game/factories`, `components/game/services`.
 - OS apps and demos: `components/game/apps`.
@@ -83,6 +87,7 @@ Root/shared application services:
 - `services/auth.service.ts`: Firebase Auth facade.
 - `services/firebase/firestore.service.ts`: Firestore and Storage facade.
 - `services/firebase/realtime-db.service.ts`: deprecated Realtime Database facade.
+- `features/blog/services/blog-repository.service.ts`: typed local blog content repository, pending Firebase backing.
 
 OS/framework services:
 
@@ -176,7 +181,12 @@ Current route map uses `withHashLocation()` and should keep hash URLs for Fireba
 Current routes:
 
 - `#/`: public home.
+- `#/blog`: public blog index.
+- `#/blog/:slug`: public published blog detail.
 - `#/background`: background experiment.
+- `#/admin`: protected admin overview.
+- `#/admin/cms`: protected CMS post list.
+- `#/admin/cms/:slug/edit`: protected Editor.js post editor.
 - `#/os`: OS desktop, protected by `AuthGuard`.
 - `#/os/:app`: OS desktop with app launch param, protected by `AuthGuard`.
 - `#/login`: OS login.
@@ -187,9 +197,8 @@ Current routes:
 
 Route issues:
 
-- Route declarations import concrete component paths from `components/game`.
-- Public routes and OS routes are not grouped.
-- No `/admin`, `/blog`, `/labs`, or `/archive` route boundary exists yet.
+- OS route declarations still import concrete component paths from `components/game`.
+- `/archive` route boundary does not exist yet.
 - `background` is experimental but sits as a top-level public route.
 
 Proposed route shape:
@@ -197,9 +206,9 @@ Proposed route shape:
 ```ts
 export const routes: Routes = [
   ...publicRoutes,
-  ...osRoutes,
-  ...adminRoutes,
   ...labRoutes,
+  ...adminRoutes,
+  ...osRoutes,
   { path: '**', loadComponent: () => import('./shared/not-found/not-found.component').then(m => m.NotFoundComponent) },
 ];
 ```
@@ -207,6 +216,7 @@ export const routes: Routes = [
 Preserved route paths:
 
 - Keep `''`, `background`, `os`, `os/:app`, `login`, `sleep`, `boot`, and `external/:externalUrl`.
+- Preserve new `blog`, `blog/:slug`, `admin`, and `admin/cms` boundaries unless replacement redirects are added.
 - Add new routes without replacing old ones.
 - If a route later moves, add redirect routes instead of removing paths.
 
@@ -242,7 +252,7 @@ Tailwind risks:
 
 ## Blog and CMS Preparation
 
-No blog feature currently exists. Existing markdown support is limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
+An initial blog/admin scaffold now exists. The public blog uses `features/blog`, the protected admin CMS list uses `admin/cms`, and both share the typed `BlogPost` content model. Existing markdown support remains limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
 
 Recommended feature boundary:
 
@@ -260,9 +270,21 @@ src/app/admin/cms/
   cms.routes.ts
   models/editor-document.model.ts
   services/cms-draft.service.ts
+  pages/post-list/
   pages/post-editor/
   pages/media-library/
 ```
+
+Initial implementation status:
+
+- `features/blog/blog.routes.ts`: public `blog` and `blog/:slug` routes.
+- `features/blog/models/blog-post.model.ts`: typed post, SEO, status, and block contracts.
+- `features/blog/services/blog-repository.service.ts`: local typed repository for published and admin post reads.
+- `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content.
+- `admin/admin.routes.ts`: protected admin route boundary.
+- `admin/cms/cms.routes.ts`: protected CMS post list and post editor routes.
+- `admin/cms/components/editor-js`: browser-only Editor.js wrapper using dynamic imports.
+- Editor.js dependencies are installed as admin-only lazy route dependencies: `@editorjs/editorjs`, `@editorjs/header`, `@editorjs/list`, `@editorjs/quote`, `@editorjs/code`, `@editorjs/delimiter`, `@editorjs/embed`, and `@editorjs/image`.
 
 Minimum content model:
 
@@ -291,8 +313,10 @@ Firebase collections:
 Migration stance:
 
 - Keep existing markdown docs under `assets/docs`.
-- Add Editor.js as an admin-only editor, not a public runtime dependency.
-- Render published Editor.js blocks through a read-only public renderer.
+- [~] Add Editor.js as an admin-only editor, not a public runtime dependency.
+  - Progress: the post editor lazy-loads Editor.js/tools in `admin/cms`; persistence is still local save-preview only.
+- [x] Render published Editor.js blocks through a read-only public renderer.
+  - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, and delimiter blocks without importing Editor.js.
 - Store block JSON, not HTML, and sanitize embeds at render time.
 
 ## Editor.js Compatibility Plan

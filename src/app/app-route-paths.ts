@@ -1,4 +1,7 @@
 export const PATH_NAMES = {
+  ADMIN: 'admin',
+  ADMIN_CMS: 'cms',
+  BLOG: 'blog',
   OS_MAIN: 'os',
   OS_LOGIN: 'login',
   OS_BOOT: 'boot',
