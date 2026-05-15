@@ -9,6 +9,6 @@ export const labRoutes: Routes = [
   },
   {
     path: PATH_NAMES.FS_BACKGROUND,
-    loadComponent: () => import('../components/game/system/full-screen-background/background-example.component').then(m => m.BackgroundExampleComponent),
+    loadComponent: () => import('./pages/full-screen-background-lab/full-screen-background-lab.component').then(m => m.FullScreenBackgroundLabComponent),
   },
 ];

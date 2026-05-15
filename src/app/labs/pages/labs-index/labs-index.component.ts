@@ -208,7 +208,7 @@ export class LabsIndexComponent {
   protected readonly standaloneLabs: readonly LabEntry[] = [
     {
       title: 'Full Screen Backgrounds',
-      description: 'A playground for image, video, overlay, and parallax background treatments.',
+      description: 'A prank scroll playground for image, video, overlay, parallax, and one very predictable payoff.',
       route: `/${PATH_NAMES.FS_BACKGROUND}`,
       status: 'Available',
       action: 'Open Lab',
