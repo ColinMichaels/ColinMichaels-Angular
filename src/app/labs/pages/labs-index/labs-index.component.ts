@@ -158,7 +158,7 @@ interface ComponentLabEntry {
                       }
                       @case ('patch-builder') {
                         @defer (when activeDemoId === 'patch-builder') {
-                          <app-defaultPatch-editor></app-defaultPatch-editor>
+                          <app-patch-editor></app-patch-editor>
                         } @placeholder {
                           <p class="p-5 text-sm text-zinc-400">Loading Patch Builder lab...</p>
                         }

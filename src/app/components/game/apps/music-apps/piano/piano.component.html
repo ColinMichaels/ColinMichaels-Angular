@@ -1,40 +1,65 @@
-<!-- piano.component.html -->
-<div class="flex justify-center items-center">
-  <button class="mac-button" (click)="settingsVisible = !settingsVisible">Settings</button>
-</div>
-<div class="w-full max-w-4xl mx-auto flex justify-center items-end bg-black p-1">
-  <div
-    *ngFor="let key of keyMap.slice(0, maxNumKeys)"
-    #pianoKey
-    [ngClass]="{
-    'bg-white text-black': !key.sharp && !pressedKeys.has(key.note + key.octave),
-    'bg-black text-white': key.sharp && !pressedKeys.has(key.note + key.octave),
-    'bg-blue-200': !key.sharp && pressedKeys.has(key.note + key.octave),
-    'bg-blue-500': key.sharp && pressedKeys.has(key.note + key.octave),
-  }"
-    class="relative h-40 w-10 m-[1px] border border-zinc-600 cursor-pointer select-none"
-    (mousedown)="onKeyDown(key.note, key.octave)"
-    (mouseenter)="onKeyEnter(key.note, key.octave)"
-    (mouseup)="onKeyUp()"
-    (touchmove)="onTouchMove($event)"
-    [attr.data-note]="{note: key.note, octave: key.octave}"
-  >
-      <span
-        class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-mono opacity-30 pointer-events-none"
-        [class.bottom-10]="key.sharp"
-        [ngClass]="{ 'opacity-100 text-blue-600 font-bold': pressedKeys.has(key.note + key.octave) }"
-      >
-        {{ key.note + key.octave }}
-  </span>
-  </div>
-  <div>
-    <app-piano-settings
-      [isVisible]="settingsVisible"
-      [startingOctave]="startingOctave"
-      [patches]="patches"
-      [selectedPatch]="selectedPatch"
-      (octaveChange)="setOctave($event)"
-      (close)="settingsVisible = false"/>
+<div class="piano-shell" [class.compact]="compact">
+  <header class="piano-toolbar">
+    <div class="piano-title">
+      <fa-icon [icon]="faKeyboard"></fa-icon>
+      <div>
+        <p>{{ keyboardModeLabel }}</p>
+        <h3>{{ activePatchName }}</h3>
+      </div>
+    </div>
+
+    <div class="piano-controls">
+      <div *ngIf="!patch" class="preset-control">
+        <label for="piano-preset">Preset</label>
+        <select id="piano-preset" name="pianoPreset" [(ngModel)]="selectedPreset">
+          <option *ngFor="let preset of patches" [value]="preset">{{ preset }}</option>
+        </select>
+      </div>
+
+      <div class="stepper" aria-label="Starting octave">
+        <span>Oct</span>
+        <button type="button" aria-label="Lower octave" (click)="setOctave(startingOctave - 1)">
+          <fa-icon [icon]="faMinus"></fa-icon>
+        </button>
+        <strong>{{ startingOctave }}</strong>
+        <button type="button" aria-label="Raise octave" (click)="setOctave(startingOctave + 1)">
+          <fa-icon [icon]="faPlus"></fa-icon>
+        </button>
+      </div>
+
+      <div class="stepper" aria-label="Visible octaves">
+        <span>Range</span>
+        <button type="button" aria-label="Reduce key range" (click)="setVisibleOctaves(visibleOctaves - 1)">
+          <fa-icon [icon]="faMinus"></fa-icon>
+        </button>
+        <strong>{{ visibleOctaves }}</strong>
+        <button type="button" aria-label="Expand key range" (click)="setVisibleOctaves(visibleOctaves + 1)">
+          <fa-icon [icon]="faPlus"></fa-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="piano-meta">
+    <span>{{ rootRangeLabel }}</span>
+    <span>Computer keys {{ enableComputerKeyboard ? 'on' : 'off' }}</span>
   </div>
 
+  <div class="keybed" (pointerleave)="onPointerUp()" (pointerup)="onPointerUp()" (pointercancel)="onPointerUp()">
+    <button
+      *ngFor="let key of keyMap; trackBy: trackByLabel"
+      type="button"
+      class="piano-key"
+      [class.sharp]="key.sharp"
+      [class.active]="pressedKeys.has(key.label)"
+      [attr.aria-label]="'Play ' + key.label"
+      (pointerdown)="onPointerDown(key)"
+      (pointerenter)="onPointerEnter(key)"
+      (pointerup)="onPointerUp()"
+      (keydown.enter)="onKeyPress(key)"
+      (keydown.space)="onKeyPress(key)"
+    >
+      <span>{{ key.label }}</span>
+    </button>
+  </div>
 </div>

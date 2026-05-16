@@ -4,6 +4,8 @@ import {customOscillators} from 'web-audio-oscillators';
 import {LogService} from './log.service';
 
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type SynthFilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+export type SynthLfoTarget = 'pitch' | 'filter';
 
 /**
  * An array of supported oscillator types used to define the waveform shape
@@ -20,36 +22,333 @@ export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
  * different oscillator shapes produce varying tonal qualities.
  */
 export const OSCILLATOR_TYPES: OscillatorType[] = ['sine', 'square', 'sawtooth', 'triangle'];
+export const FILTER_TYPES: SynthFilterType[] = ['lowpass', 'highpass', 'bandpass', 'notch'];
+export const LFO_TARGETS: SynthLfoTarget[] = ['pitch', 'filter'];
+
+export interface SynthOscillatorConfig {
+  type: OscillatorType;
+  detune: number;
+  volume: number;
+  pan?: number;
+  octave?: number;
+}
 
 export interface SynthPatch {
   name: string;
-  oscillators: {
-    type: OscillatorType;
-    detune: number;
-    volume: number;
-    pan?: number;
-  }[];
+  oscillators: SynthOscillatorConfig[];
   envelope: {
     attack: number;
     decay: number;
     sustain: number;
     release: number;
   };
+  filter?: {
+    enabled: boolean;
+    type: SynthFilterType;
+    frequency: number;
+    resonance: number;
+  };
+  lfo?: {
+    enabled: boolean;
+    target: SynthLfoTarget;
+    rate: number;
+    depth: number;
+  };
+  delay?: {
+    enabled: boolean;
+    time: number;
+    feedback: number;
+    mix: number;
+  };
+  master?: {
+    volume: number;
+  };
 }
 
 export const DEFAULT_SYNTH_PATCH: SynthPatch = {
   name: 'Warm Pad',
   oscillators: [
-    {type: 'sawtooth', detune: -10, volume: 0.3, pan: 0},
-    {type: 'sawtooth', detune: 10, volume: 0.3, pan: 2}
+    {type: 'sawtooth', detune: -10, volume: 0.26, pan: -0.35, octave: 0},
+    {type: 'sawtooth', detune: 10, volume: 0.26, pan: 0.35, octave: 0}
   ],
   envelope: {
     attack: 0.1,
     decay: 0.2,
     sustain: 0.7,
     release: 0.3
-  }
+  },
+  filter: {
+    enabled: true,
+    type: 'lowpass',
+    frequency: 2400,
+    resonance: 4,
+  },
+  lfo: {
+    enabled: false,
+    target: 'pitch',
+    rate: 4,
+    depth: 12,
+  },
+  delay: {
+    enabled: false,
+    time: 0.24,
+    feedback: 0.24,
+    mix: 0.18,
+  },
+  master: {
+    volume: 0.72,
+  },
 };
+
+export const SYNTH_PRESET_PATCHES: readonly SynthPatch[] = [
+  {
+    name: 'Piano',
+    oscillators: [
+      {type: 'triangle', detune: -3, volume: 0.34, pan: -0.08, octave: 0},
+      {type: 'sine', detune: 5, volume: 0.22, pan: 0.08, octave: 0},
+      {type: 'sine', detune: 0, volume: 0.08, pan: 0, octave: 1},
+    ],
+    envelope: {
+      attack: 0.006,
+      decay: 0.34,
+      sustain: 0.28,
+      release: 0.32,
+    },
+    filter: {
+      enabled: true,
+      type: 'lowpass',
+      frequency: 5200,
+      resonance: 1.2,
+    },
+    lfo: {
+      enabled: false,
+      target: 'pitch',
+      rate: 4,
+      depth: 4,
+    },
+    delay: {
+      enabled: false,
+      time: 0.18,
+      feedback: 0.12,
+      mix: 0.08,
+    },
+    master: {
+      volume: 0.74,
+    },
+  },
+  {
+    name: 'Guitar',
+    oscillators: [
+      {type: 'sawtooth', detune: -6, volume: 0.22, pan: -0.12, octave: 0},
+      {type: 'triangle', detune: 4, volume: 0.18, pan: 0.12, octave: 0},
+      {type: 'square', detune: 0, volume: 0.05, pan: 0, octave: 1},
+    ],
+    envelope: {
+      attack: 0.008,
+      decay: 0.22,
+      sustain: 0.18,
+      release: 0.22,
+    },
+    filter: {
+      enabled: true,
+      type: 'bandpass',
+      frequency: 1800,
+      resonance: 5.5,
+    },
+    lfo: {
+      enabled: false,
+      target: 'pitch',
+      rate: 5,
+      depth: 6,
+    },
+    delay: {
+      enabled: true,
+      time: 0.12,
+      feedback: 0.16,
+      mix: 0.1,
+    },
+    master: {
+      volume: 0.68,
+    },
+  },
+  {
+    name: 'Organ',
+    oscillators: [
+      {type: 'sine', detune: 0, volume: 0.26, pan: -0.1, octave: 0},
+      {type: 'square', detune: 0, volume: 0.16, pan: 0.1, octave: 0},
+      {type: 'sine', detune: 0, volume: 0.14, pan: 0, octave: 1},
+    ],
+    envelope: {
+      attack: 0.01,
+      decay: 0.05,
+      sustain: 0.88,
+      release: 0.16,
+    },
+    filter: {
+      enabled: true,
+      type: 'lowpass',
+      frequency: 3600,
+      resonance: 2.4,
+    },
+    lfo: {
+      enabled: true,
+      target: 'pitch',
+      rate: 5.8,
+      depth: 3,
+    },
+    delay: {
+      enabled: false,
+      time: 0.22,
+      feedback: 0.18,
+      mix: 0.12,
+    },
+    master: {
+      volume: 0.66,
+    },
+  },
+  {
+    name: 'Strings',
+    oscillators: [
+      {type: 'sawtooth', detune: -12, volume: 0.22, pan: -0.35, octave: 0},
+      {type: 'sawtooth', detune: 12, volume: 0.22, pan: 0.35, octave: 0},
+      {type: 'triangle', detune: 0, volume: 0.12, pan: 0, octave: 1},
+    ],
+    envelope: {
+      attack: 0.48,
+      decay: 0.28,
+      sustain: 0.78,
+      release: 1.3,
+    },
+    filter: {
+      enabled: true,
+      type: 'lowpass',
+      frequency: 2300,
+      resonance: 2.2,
+    },
+    lfo: {
+      enabled: true,
+      target: 'pitch',
+      rate: 4.2,
+      depth: 7,
+    },
+    delay: {
+      enabled: true,
+      time: 0.28,
+      feedback: 0.2,
+      mix: 0.14,
+    },
+    master: {
+      volume: 0.7,
+    },
+  },
+  {
+    name: 'Bass',
+    oscillators: [
+      {type: 'square', detune: 0, volume: 0.3, pan: 0, octave: -1},
+      {type: 'sawtooth', detune: -5, volume: 0.16, pan: -0.08, octave: -1},
+      {type: 'triangle', detune: 4, volume: 0.12, pan: 0.08, octave: 0},
+    ],
+    envelope: {
+      attack: 0.008,
+      decay: 0.14,
+      sustain: 0.42,
+      release: 0.2,
+    },
+    filter: {
+      enabled: true,
+      type: 'lowpass',
+      frequency: 760,
+      resonance: 6,
+    },
+    lfo: {
+      enabled: false,
+      target: 'filter',
+      rate: 2,
+      depth: 120,
+    },
+    delay: {
+      enabled: false,
+      time: 0.16,
+      feedback: 0.1,
+      mix: 0.05,
+    },
+    master: {
+      volume: 0.74,
+    },
+  },
+  {
+    name: 'Bell',
+    oscillators: [
+      {type: 'sine', detune: 0, volume: 0.28, pan: 0, octave: 0},
+      {type: 'triangle', detune: 7, volume: 0.12, pan: -0.15, octave: 1},
+      {type: 'sine', detune: -9, volume: 0.08, pan: 0.15, octave: 2},
+    ],
+    envelope: {
+      attack: 0.004,
+      decay: 0.75,
+      sustain: 0.08,
+      release: 1.15,
+    },
+    filter: {
+      enabled: true,
+      type: 'highpass',
+      frequency: 420,
+      resonance: 1.8,
+    },
+    lfo: {
+      enabled: false,
+      target: 'pitch',
+      rate: 6,
+      depth: 10,
+    },
+    delay: {
+      enabled: true,
+      time: 0.26,
+      feedback: 0.34,
+      mix: 0.22,
+    },
+    master: {
+      volume: 0.62,
+    },
+  },
+  {
+    name: 'Lead',
+    oscillators: [
+      {type: 'sawtooth', detune: -8, volume: 0.24, pan: -0.12, octave: 0},
+      {type: 'square', detune: 8, volume: 0.18, pan: 0.12, octave: 0},
+    ],
+    envelope: {
+      attack: 0.018,
+      decay: 0.12,
+      sustain: 0.64,
+      release: 0.18,
+    },
+    filter: {
+      enabled: true,
+      type: 'lowpass',
+      frequency: 4200,
+      resonance: 4.4,
+    },
+    lfo: {
+      enabled: true,
+      target: 'pitch',
+      rate: 5,
+      depth: 8,
+    },
+    delay: {
+      enabled: true,
+      time: 0.18,
+      feedback: 0.18,
+      mix: 0.12,
+    },
+    master: {
+      volume: 0.68,
+    },
+  },
+  DEFAULT_SYNTH_PATCH,
+];
+
+export const SYNTH_PRESET_NAMES: readonly string[] = SYNTH_PRESET_PATCHES.map(patch => patch.name);
 
 export const FREQUENCIES: { [note: string]: number } = {
   // Octave 1
@@ -99,7 +398,7 @@ export const FREQUENCIES: { [note: string]: number } = {
 })
 export class PatchService implements OnDestroy {
 
-  private audioCtx = new AudioContext();
+  private audioCtx?: AudioContext;
 
   constructor(
     private settingsService: SettingsService,
@@ -108,7 +407,7 @@ export class PatchService implements OnDestroy {
   }
 
   registerPatches() {
-    this.settingsService.registerSettingSet('keyboard-patches', [DEFAULT_SYNTH_PATCH]);
+    this.settingsService.registerSettingSet('keyboard-patches', this.getPresetPatches());
   }
 
   playNote(note: string, duration: number = 0.6): void {
@@ -116,24 +415,38 @@ export class PatchService implements OnDestroy {
   }
 
   playCustomOscillator(notes: string[], duration = 0.6, type: string = 'bass'): void {
-    // @ts-ignore
-    const customOscillator = customOscillators[type](this.audioCtx);
-    const time = this.audioCtx.currentTime;
+    const presetPatch = this.getPresetPatch(type);
+    if (presetPatch) {
+      notes.forEach(note => this.playPatch(note, duration, presetPatch));
+      return;
+    }
+
+    const audioCtx = this.getAudioContext();
+    const oscillatorFactories = customOscillators as Record<string, (context: AudioContext) => OscillatorNode>;
+    const createCustomOscillator = oscillatorFactories[type];
+
+    if (!createCustomOscillator) {
+      this.logger.warn(`Unknown oscillator patch: ${type}`);
+      return;
+    }
+
+    const customOscillator = createCustomOscillator(audioCtx);
+    const time = audioCtx.currentTime;
     for (const note of notes) {
       const freq = FREQUENCIES[note];
       if (!freq) {
         this.logger.warn(`Unknown note: ${note}`);
         continue;
       }
-      const gain = this.audioCtx.createGain();
-      const pan = this.audioCtx.createStereoPanner();
+      const gain = audioCtx.createGain();
+      const pan = audioCtx.createStereoPanner();
       pan.pan.setValueAtTime(-1, time);
       customOscillator.connect(pan);
 
 
       customOscillator.frequency.setValueAtTime(freq, time);
       customOscillator.connect(gain);
-      customOscillator.connect(this.audioCtx.destination);
+      customOscillator.connect(audioCtx.destination);
 
       gain.gain.setValueAtTime(0.05, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
@@ -143,8 +456,19 @@ export class PatchService implements OnDestroy {
     }
   }
 
+  playPreset(note: string, duration = 0.6, presetName = 'Piano'): void {
+    const presetPatch = this.getPresetPatch(presetName);
+    if (!presetPatch) {
+      this.logger.warn(`Unknown preset patch: ${presetName}`);
+      return;
+    }
+
+    this.playPatch(note, duration, presetPatch);
+  }
+
   playMultipleNotes(notes: string[], duration: number = 0.6): void {
-    const time = this.audioCtx.currentTime;
+    const audioCtx = this.getAudioContext();
+    const time = audioCtx.currentTime;
 
     for (const note of notes) {
       const freq = FREQUENCIES[note];
@@ -153,13 +477,13 @@ export class PatchService implements OnDestroy {
         continue;
       }
 
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, time);
       osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
+      gain.connect(audioCtx.destination);
 
       gain.gain.setValueAtTime(0.2, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
@@ -169,44 +493,209 @@ export class PatchService implements OnDestroy {
     }
   }
 
-  playPatch(note: string, duration = 0.5, patch: SynthPatch = DEFAULT_SYNTH_PATCH,) {
+  playPatch(note: string, duration = 0.5, patch: SynthPatch = DEFAULT_SYNTH_PATCH): void {
     const freq = FREQUENCIES[note];
-    const now = this.audioCtx.currentTime;
+    if (!freq) {
+      this.logger.warn(`Unknown note: ${note}`);
+      return;
+    }
 
-    patch.oscillators.forEach(config => {
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
-      const pan = this.audioCtx.createStereoPanner();
+    const audioCtx = this.getAudioContext();
+    const playablePatch = this.normalizePatch(patch);
+    const now = audioCtx.currentTime;
+    const attack = Math.max(0.001, playablePatch.envelope.attack);
+    const decay = Math.max(0.001, playablePatch.envelope.decay);
+    const release = Math.max(0.001, playablePatch.envelope.release);
+    const releaseStart = now + Math.max(0.05, duration);
+    const releaseEnd = releaseStart + release;
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(playablePatch.master?.volume ?? 0.7, now);
+
+    const filter = playablePatch.filter?.enabled ? audioCtx.createBiquadFilter() : null;
+    if (filter && playablePatch.filter) {
+      filter.type = playablePatch.filter.type;
+      filter.frequency.setValueAtTime(playablePatch.filter.frequency, now);
+      filter.Q.setValueAtTime(playablePatch.filter.resonance, now);
+      filter.connect(masterGain);
+    }
+
+    this.connectEffectsChain(audioCtx, masterGain, playablePatch);
+
+    const lfo = playablePatch.lfo?.enabled ? audioCtx.createOscillator() : null;
+    const lfoGain = playablePatch.lfo?.enabled ? audioCtx.createGain() : null;
+    if (lfo && lfoGain && playablePatch.lfo) {
+      lfo.frequency.setValueAtTime(playablePatch.lfo.rate, now);
+      lfoGain.gain.setValueAtTime(playablePatch.lfo.depth, now);
+      lfo.connect(lfoGain);
+
+      if (playablePatch.lfo.target === 'filter' && filter) {
+        lfoGain.connect(filter.frequency);
+      }
+
+      lfo.start(now);
+      lfo.stop(releaseEnd);
+    }
+
+    playablePatch.oscillators.forEach(config => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const pan = audioCtx.createStereoPanner();
+      const octave = config.octave ?? 0;
+      const oscillatorFrequency = freq * Math.pow(2, octave);
+      const peakGain = this.clamp(config.volume, 0, 1);
+      const sustainGain = peakGain * this.clamp(playablePatch.envelope.sustain, 0, 1);
 
       osc.type = config.type;
-      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.setValueAtTime(oscillatorFrequency, now);
       osc.detune.setValueAtTime(config.detune, now);
-      osc.connect(pan);
+      pan.pan.setValueAtTime(this.clamp(config.pan ?? 0, -1, 1), now);
 
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(config.volume, now + patch.envelope.attack);
-      gain.gain.linearRampToValueAtTime(patch.envelope.sustain, now + patch.envelope.attack + patch.envelope.decay);
-      gain.gain.linearRampToValueAtTime(0, now + duration + patch.envelope.release);
+      gain.gain.linearRampToValueAtTime(peakGain, now + attack);
+      gain.gain.linearRampToValueAtTime(sustainGain, now + attack + decay);
+      gain.gain.setValueAtTime(sustainGain, releaseStart);
+      gain.gain.linearRampToValueAtTime(0.0001, releaseEnd);
+
+      if (lfoGain && playablePatch.lfo?.target === 'pitch') {
+        lfoGain.connect(osc.detune);
+      }
 
       osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
+      gain.connect(pan);
+      pan.connect(filter ?? masterGain);
 
       osc.start(now);
-      osc.stop(now + duration + patch.envelope.release);
+      osc.stop(releaseEnd);
     });
   }
 
-  savePatch(patch: SynthPatch) {
-    this.settingsService.updateSettingSet('keyboard-patches', [patch]);
+  savePatch(patch: SynthPatch): void {
+    const normalizedPatch = this.normalizePatch(patch);
+    const existingPatches = this.getRegisteredPatches();
+    const nextPatches = [
+      normalizedPatch,
+      ...existingPatches.filter(savedPatch => savedPatch.name !== normalizedPatch.name),
+    ];
+
+    this.settingsService.updateSettingSet('keyboard-patches', nextPatches);
   }
 
   loadPatch(name: string): SynthPatch | null {
-    const raw = this.settingsService.getSettingSet('keyboard-patches')?.value;
-    console.warn('raw defaultPatch ', raw);
-    return DEFAULT_SYNTH_PATCH;
+    const patches = this.settingsService.getSettingSet('keyboard-patches')?.value as SynthPatch[] | undefined;
+    const patch = patches?.find(savedPatch => savedPatch.name === name);
+    return patch ? this.normalizePatch(patch) : this.getPresetPatch(name);
+  }
+
+  getPresetPatches(): SynthPatch[] {
+    return SYNTH_PRESET_PATCHES.map(patch => this.clonePatch(patch));
+  }
+
+  getPresetPatch(name: string): SynthPatch | null {
+    const normalizedName = name.trim().toLowerCase();
+    const patch = SYNTH_PRESET_PATCHES.find(preset => preset.name.toLowerCase() === normalizedName);
+    return patch ? this.clonePatch(patch) : null;
+  }
+
+  clonePatch(patch: SynthPatch, nextName = patch.name): SynthPatch {
+    const normalized = this.normalizePatch(patch);
+    return {
+      ...normalized,
+      name: nextName,
+      oscillators: normalized.oscillators.map(oscillator => ({...oscillator})),
+      envelope: {...normalized.envelope},
+      filter: normalized.filter ? {...normalized.filter} : undefined,
+      lfo: normalized.lfo ? {...normalized.lfo} : undefined,
+      delay: normalized.delay ? {...normalized.delay} : undefined,
+      master: normalized.master ? {...normalized.master} : undefined,
+    };
+  }
+
+  normalizePatch(patch: SynthPatch): SynthPatch {
+    return {
+      name: patch.name?.trim() || 'Untitled Patch',
+      oscillators: (patch.oscillators.length ? patch.oscillators : DEFAULT_SYNTH_PATCH.oscillators).map(oscillator => ({
+        type: oscillator.type,
+        detune: this.clamp(oscillator.detune ?? 0, -2400, 2400),
+        volume: this.clamp(oscillator.volume ?? 0.2, 0, 1),
+        pan: this.clamp(oscillator.pan ?? 0, -1, 1),
+        octave: this.clamp(Math.round(oscillator.octave ?? 0), -2, 2),
+      })),
+      envelope: {
+        attack: this.clamp(patch.envelope.attack ?? DEFAULT_SYNTH_PATCH.envelope.attack, 0.001, 5),
+        decay: this.clamp(patch.envelope.decay ?? DEFAULT_SYNTH_PATCH.envelope.decay, 0.001, 5),
+        sustain: this.clamp(patch.envelope.sustain ?? DEFAULT_SYNTH_PATCH.envelope.sustain, 0, 1),
+        release: this.clamp(patch.envelope.release ?? DEFAULT_SYNTH_PATCH.envelope.release, 0.001, 8),
+      },
+      filter: {
+        enabled: patch.filter?.enabled ?? DEFAULT_SYNTH_PATCH.filter?.enabled ?? false,
+        type: patch.filter?.type ?? DEFAULT_SYNTH_PATCH.filter?.type ?? 'lowpass',
+        frequency: this.clamp(patch.filter?.frequency ?? DEFAULT_SYNTH_PATCH.filter?.frequency ?? 2400, 40, 14000),
+        resonance: this.clamp(patch.filter?.resonance ?? DEFAULT_SYNTH_PATCH.filter?.resonance ?? 1, 0.1, 30),
+      },
+      lfo: {
+        enabled: patch.lfo?.enabled ?? DEFAULT_SYNTH_PATCH.lfo?.enabled ?? false,
+        target: patch.lfo?.target ?? DEFAULT_SYNTH_PATCH.lfo?.target ?? 'pitch',
+        rate: this.clamp(patch.lfo?.rate ?? DEFAULT_SYNTH_PATCH.lfo?.rate ?? 4, 0.05, 30),
+        depth: this.clamp(patch.lfo?.depth ?? DEFAULT_SYNTH_PATCH.lfo?.depth ?? 8, 0, 2400),
+      },
+      delay: {
+        enabled: patch.delay?.enabled ?? DEFAULT_SYNTH_PATCH.delay?.enabled ?? false,
+        time: this.clamp(patch.delay?.time ?? DEFAULT_SYNTH_PATCH.delay?.time ?? 0.2, 0.01, 1.5),
+        feedback: this.clamp(patch.delay?.feedback ?? DEFAULT_SYNTH_PATCH.delay?.feedback ?? 0.2, 0, 0.92),
+        mix: this.clamp(patch.delay?.mix ?? DEFAULT_SYNTH_PATCH.delay?.mix ?? 0.15, 0, 0.85),
+      },
+      master: {
+        volume: this.clamp(patch.master?.volume ?? DEFAULT_SYNTH_PATCH.master?.volume ?? 0.7, 0, 1),
+      },
+    };
   }
 
   ngOnDestroy() {
-    this.audioCtx.close();
+    this.audioCtx?.close();
+  }
+
+  private getAudioContext(): AudioContext {
+    this.audioCtx ??= new AudioContext();
+
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch(error => this.logger.warn(`Audio context resume failed: ${String(error)}`));
+    }
+
+    return this.audioCtx;
+  }
+
+  private connectEffectsChain(audioCtx: AudioContext, masterGain: GainNode, patch: SynthPatch): void {
+    if (!patch.delay?.enabled || patch.delay.mix <= 0) {
+      masterGain.connect(audioCtx.destination);
+      return;
+    }
+
+    const delay = audioCtx.createDelay(1.5);
+    const feedback = audioCtx.createGain();
+    const wet = audioCtx.createGain();
+    const dry = audioCtx.createGain();
+
+    delay.delayTime.setValueAtTime(patch.delay.time, audioCtx.currentTime);
+    feedback.gain.setValueAtTime(patch.delay.feedback, audioCtx.currentTime);
+    wet.gain.setValueAtTime(patch.delay.mix, audioCtx.currentTime);
+    dry.gain.setValueAtTime(1 - patch.delay.mix, audioCtx.currentTime);
+
+    masterGain.connect(dry);
+    dry.connect(audioCtx.destination);
+
+    masterGain.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(wet);
+    wet.connect(audioCtx.destination);
+  }
+
+  private getRegisteredPatches(): SynthPatch[] {
+    const patches = this.settingsService.getSettingSet('keyboard-patches')?.value as SynthPatch[] | undefined;
+    return (patches ?? this.getPresetPatches()).map(patch => this.normalizePatch(patch));
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
   }
 }

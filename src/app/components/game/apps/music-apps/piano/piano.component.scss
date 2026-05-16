@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.piano-shell {
+  @apply overflow-hidden border border-white/10 bg-black/80 text-zinc-100;
+}
+
+.piano-toolbar {
+  @apply flex flex-col gap-3 border-b border-white/10 p-3 md:flex-row md:items-center md:justify-between;
+}
+
+.piano-title {
+  @apply flex min-w-0 items-center gap-3;
+
+  fa-icon {
+    @apply grid h-9 w-9 flex-shrink-0 place-items-center border border-cyan-200/60 bg-cyan-200/10 text-cyan-100;
+  }
+
+  p {
+    @apply text-xs uppercase tracking-[0.2em] text-cyan-200;
+  }
+
+  h3 {
+    @apply mt-1 truncate text-base font-semibold text-white;
+  }
+}
+
+.piano-controls {
+  @apply flex flex-wrap items-end gap-2;
+}
+
+.preset-control {
+  @apply min-w-28;
+
+  label {
+    @apply mb-1 block text-[10px] uppercase tracking-[0.16em] text-zinc-500;
+  }
+
+  select {
+    @apply h-9 w-full border border-white/10 bg-black px-2 text-xs text-zinc-100 outline-none focus:border-cyan-200;
+  }
+}
+
+.stepper {
+  @apply grid grid-cols-[auto_2rem_2rem_2rem] items-center border border-white/10 bg-white/5 text-xs;
+
+  span {
+    @apply px-2 uppercase tracking-[0.14em] text-zinc-500;
+  }
+
+  button {
+    @apply h-9 border-l border-white/10 text-zinc-200 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/40;
+  }
+
+  strong {
+    @apply grid h-9 place-items-center border-l border-white/10 text-center text-sm text-white;
+  }
+}
+
+.piano-meta {
+  @apply flex flex-wrap justify-between gap-2 px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-zinc-500;
+}
+
+.keybed {
+  @apply flex min-w-0 gap-1 overflow-x-auto p-3;
+  scrollbar-gutter: stable;
+  touch-action: none;
+}
+
+.piano-key {
+  @apply relative h-32 min-w-10 flex-1 basis-10 select-none border border-zinc-500 bg-zinc-100 text-neutral-950 transition hover:border-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-200/50;
+
+  span {
+    @apply pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-[10px] opacity-70;
+  }
+}
+
+.piano-key.sharp {
+  @apply z-10 -mx-3 h-24 min-w-8 basis-8 border-zinc-700 bg-neutral-950 text-zinc-100;
+
+  span {
+    @apply bottom-3;
+  }
+}
+
+.piano-key.active {
+  @apply border-cyan-200 bg-cyan-200 text-neutral-950;
+}
+
+.compact {
+  .piano-toolbar {
+    @apply p-2;
+  }
+
+  .piano-meta {
+    @apply px-2 py-1;
+  }
+
+  .keybed {
+    @apply p-2;
+  }
+
+  .piano-key {
+    @apply h-24;
+  }
+
+  .piano-key.sharp {
+    @apply h-16;
+  }
+}
+
+@media (max-width: 640px) {
+  .piano-controls {
+    @apply grid grid-cols-1;
+  }
+
+  .stepper {
+    @apply w-full;
+  }
+
+  .piano-key {
+    @apply min-w-9 basis-9;
+  }
+
+  .piano-key.sharp {
+    @apply min-w-7 basis-7;
+  }
+}

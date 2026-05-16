@@ -35,7 +35,7 @@ describe('LabsIndexComponent', () => {
     expect(element.textContent).toContain('Choose a lab to mount its demo.');
     expect(element.querySelector('app-space-x')).toBeNull();
     expect(element.querySelector('app-weather')).toBeNull();
-    expect(element.querySelector('app-defaultPatch-editor')).toBeNull();
+    expect(element.querySelector('app-patch-editor')).toBeNull();
     expect(element.textContent).not.toContain('Core OS Experiments');
   });
 
@@ -53,6 +53,6 @@ describe('LabsIndexComponent', () => {
 
     expect(element.querySelector('app-space-x')).not.toBeNull();
     expect(element.querySelector('app-weather')).toBeNull();
-    expect(element.querySelector('app-defaultPatch-editor')).toBeNull();
+    expect(element.querySelector('app-patch-editor')).toBeNull();
   });
 });

@@ -1,18 +1,9 @@
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  HostListener,
-  Input, OnChanges,
-  OnDestroy, OnInit,
-  QueryList, SimpleChanges,
-  ViewChildren
-} from '@angular/core';
-import {NgClass, NgForOf} from '@angular/common';
-import {PatchService} from "../../../services/patch.service";
+import {Component, HostListener, Input, OnChanges, OnDestroy, OnInit, SimpleChanges} from '@angular/core';
+import {NgForOf, NgIf} from '@angular/common';
+import {PatchService, SYNTH_PRESET_NAMES, SynthPatch} from '../../../services/patch.service';
 import {FormsModule} from '@angular/forms';
-import {PianoSettingsComponent} from './components/piano-settings/piano-settings.component';
-import {faCog} from '@fortawesome/free-solid-svg-icons';
+import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import {faKeyboard, faMinus, faPlus} from '@fortawesome/free-solid-svg-icons';
 
 export interface PianoKey {
   note: string;
@@ -24,24 +15,23 @@ export interface PianoKey {
 @Component({
   selector: 'app-piano',
   templateUrl: './piano.component.html',
+  styleUrls: ['./piano.component.scss'],
   imports: [
-    NgClass,
     NgForOf,
+    NgIf,
     FormsModule,
-    PianoSettingsComponent,
+    FaIconComponent,
   ],
 })
-export class PianoComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges {
-  setOctave($event: number) {
-    this.startingOctave = $event;
-    this.generateKeyMap();
-  }
-  @ViewChildren('pianoKey') pianoKeys!: QueryList<ElementRef>;
-
+export class PianoComponent implements OnInit, OnDestroy, OnChanges {
   @Input() startingOctave = 3;
+  @Input() visibleOctaves = 2;
+  @Input() noteDuration = 0.7;
+  @Input() patch: SynthPatch | null = null;
+  @Input() compact = false;
+  @Input() enableComputerKeyboard = true;
 
-  // This will hold our full mapping with octave numbers
-  keyMap: { note: string, octave: number, sharp: boolean }[] = [];
+  keyMap: PianoKey[] = [];
 
   pressedKeys = new Set<string>();
 
@@ -75,50 +65,38 @@ export class PianoComponent implements OnInit, AfterViewInit, OnDestroy, OnChang
 
 
   private lastKeyPressTimestamps: Map<string, number> = new Map();
-  private readonly DEBOUNCE_TIME = 400; // milliseconds
+  private readonly debounceTimeMs = 80;
 
   isDragging = false;
-  maxNumKeys: number = 24;
-  settingsVisible: boolean = true;
-
-  patches: string[] = [];
-  selectedPatch: string = 'bass';
+  selectedPreset = 'Piano';
+  patches: readonly string[] = SYNTH_PRESET_NAMES;
 
   constructor(private readonly patchService: PatchService) {
-    this.patches = ['bass', 'piano']
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.generateKeyMap();
   }
 
-  ngAfterViewInit() {
-    this.setupEventListeners();
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    console.warn('changes', changes);
-    if (changes['startingOctave']) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['startingOctave'] || changes['visibleOctaves']) {
       this.generateKeyMap();
     }
   }
 
 
-  generateKeyMap() {
-    // Clear the existing map
+  generateKeyMap(): void {
     this.keyMap = [];
-
-    // Determine how many octaves to display (adjust as needed)
-    const totalOctaves = 3; // For example, show 3 octaves
+    const totalOctaves = Math.min(4, Math.max(1, Math.round(this.visibleOctaves)));
 
     for (let octaveOffset = 0; octaveOffset < totalOctaves; octaveOffset++) {
-      for (let i = 0; i < this.noteNames.length; i++) {
+      for (let i = 0; i < this.noteNames.length; i += 1) {
         const note = this.noteNames[i];
-        // Increment octave after each B note
-        const currentOctave = this.startingOctave + Math.floor((i + (octaveOffset * 12)) / 12);
+        const currentOctave = this.startingOctave + octaveOffset;
 
         this.keyMap.push({
           note: note,
+          label: `${note}${currentOctave}`,
           octave: currentOctave,
           sharp: note.includes('#'),
         });
@@ -126,66 +104,60 @@ export class PianoComponent implements OnInit, AfterViewInit, OnDestroy, OnChang
     }
   }
 
-
-  private setupEventListeners() {
-    this.pianoKeys.forEach(key => {
-      const element = key.nativeElement;
-      // Add passive touch listeners
-      element.addEventListener('touchstart', (e: TouchEvent) => {
-        const note: any = e.target instanceof Element ? e.target.getAttribute('data-note') : null;
-        if (note) this.onKeyDown(note.key, note.octave);
-      }, {passive: true});
-      element.addEventListener('touchmove', (e: TouchEvent) => this.onTouchMove(e), {passive: true});
-      element.addEventListener('touchend', () => this.onKeyUp(), {passive: true});
-    });
-  }
-
-
-  playNote(note: string, octave?: number, velocity = 0.6) {
+  playNote(note: string, octave?: number, velocity = this.noteDuration): void {
     const now = Date.now();
-    const noteAdjusted = note + (octave ?? '');
+    const noteAdjusted = this.normalizeNote(note, octave);
     const lastPlayed = this.lastKeyPressTimestamps.get(noteAdjusted) ?? 0;
 
-    // If the same note was played very recently, skip it
-    if (now - lastPlayed < this.DEBOUNCE_TIME) {
+    if (now - lastPlayed < this.debounceTimeMs) {
       return;
     }
 
     this.lastKeyPressTimestamps.set(noteAdjusted, now);
-    this.patchService.playCustomOscillator([noteAdjusted], velocity, this.selectedPatch);
 
+    if (this.patch) {
+      this.patchService.playPatch(noteAdjusted, velocity, this.patch);
+      return;
+    }
+
+    this.patchService.playPreset(noteAdjusted, velocity, this.selectedPreset);
   }
 
-  private getNoteAndOffsetFromKey(key: string) {
+  private getNoteAndOffsetFromKey(key: string): { note: string; octave: number } | null {
     const note = this.keyboardMap[key]?.note;
     const octaveOffset = this.keyboardMap[key]?.octaveOffset;
+    if (!note || octaveOffset === undefined) {
+      return null;
+    }
+
     const octave = this.startingOctave + octaveOffset;
     return {note, octave};
   }
 
   @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent) {
-    // Prevent default behavior for mapped keys to avoid scrolling, etc.
-    if (this.keyboardMap[event.key]) {
+  handleKeyDown(event: KeyboardEvent): void {
+    if (this.enableComputerKeyboard && this.keyboardMap[event.key]) {
       event.preventDefault();
       const notePlayed = this.getNoteAndOffsetFromKey(event.key);
-      this.notePressed(notePlayed.note + notePlayed.octave);
-      this.playNote(notePlayed.note, notePlayed.octave);
+      if (notePlayed) {
+        this.pressNote(notePlayed.note, notePlayed.octave);
+      }
     }
 
   }
 
-  private notePressed(note: string) {
-    if (note && !this.pressedKeys.has(note)) {
-      this.pressedKeys.add(note);
-      this.playNote(note);
-      setTimeout(() => this.pressedKeys.delete(note), 200); // optional fade-out timing
+  private pressNote(note: string, octave?: number): void {
+    const normalizedNote = this.normalizeNote(note, octave);
+    if (normalizedNote && !this.pressedKeys.has(normalizedNote)) {
+      this.pressedKeys.add(normalizedNote);
+      this.playNote(normalizedNote);
+      setTimeout(() => this.pressedKeys.delete(normalizedNote), 220);
     }
   }
 
   @HostListener('window:keyup', ['$event'])
-  handleKeyUp(event: KeyboardEvent) {
-    if (this.keyboardMap[event.key]) {
+  handleKeyUp(event: KeyboardEvent): void {
+    if (this.enableComputerKeyboard && this.keyboardMap[event.key]) {
       event.preventDefault();
       const notePlayed = this.getNoteAndOffsetFromKey(event.key);
       if (notePlayed) {
@@ -194,49 +166,66 @@ export class PianoComponent implements OnInit, AfterViewInit, OnDestroy, OnChang
     }
   }
 
-  onTouchMove(event: TouchEvent) {
-    const touch = event.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (element && element.hasAttribute('data-note')) {
-      const note = element.getAttribute('data-note');
-      if (note) this.onKeyEnter(note, 2);
-    }
-  }
-
-  onKeyDown(note: string, octave: number) {
+  onPointerDown(key: PianoKey): void {
     this.isDragging = true;
-    this.notePressed(note + octave);
-    this.playNote(note + octave);
+    this.pressNote(key.note, key.octave);
   }
 
-  onKeyEnter(note: string, octave: number) {
+  onPointerEnter(key: PianoKey): void {
     if (this.isDragging) {
-      this.notePressed(note + octave);
-      this.playNote(note + octave);
+      this.pressNote(key.note, key.octave);
     }
   }
 
-  onKeyUp() {
+  onPointerUp(): void {
     this.isDragging = false;
   }
 
-  ngOnDestroy() {
+  onKeyPress(key: PianoKey): void {
+    this.pressNote(key.note, key.octave);
+  }
+
+  setOctave(octave: number): void {
+    this.startingOctave = Math.min(6, Math.max(1, octave));
+    this.generateKeyMap();
+  }
+
+  setVisibleOctaves(octaves: number): void {
+    this.visibleOctaves = Math.min(4, Math.max(1, octaves));
+    this.generateKeyMap();
+  }
+
+  trackByLabel(_index: number, key: PianoKey): string {
+    return key.label;
+  }
+
+  ngOnDestroy(): void {
     this.lastKeyPressTimestamps.clear();
-    // Clean up listeners if needed
-    this.pianoKeys?.forEach(key => {
-      const element = key.nativeElement;
-      element.removeEventListener('touchstart', (e: TouchEvent) => {
-        const note = e.target instanceof Element ? e.target.getAttribute('data-note') : null;
-        if (note) this.onKeyDown(note, 2);
-      });
-      element.removeEventListener('touchmove', this.onTouchMove);
-      element.removeEventListener('touchend', this.onKeyUp);
-    });
+    this.pressedKeys.clear();
   }
 
-  onOctaveChange(octave: number) {
-    this.startingOctave = octave;
+  private normalizeNote(note: string, octave?: number): string {
+    if (octave !== undefined || /\d$/.test(note)) {
+      return `${note}${octave ?? ''}`;
+    }
+
+    return `${note}${this.startingOctave}`;
   }
 
-  protected readonly faCog = faCog;
+  protected get activePatchName(): string {
+    return this.patch?.name || this.selectedPreset;
+  }
+
+  protected get keyboardModeLabel(): string {
+    return this.patch ? 'Patch tester' : 'Preset tester';
+  }
+
+  protected get rootRangeLabel(): string {
+    const lastKey = this.keyMap[this.keyMap.length - 1];
+    return lastKey ? `${this.keyMap[0]?.label} - ${lastKey.label}` : '';
+  }
+
+  protected readonly faKeyboard = faKeyboard;
+  protected readonly faMinus = faMinus;
+  protected readonly faPlus = faPlus;
 }

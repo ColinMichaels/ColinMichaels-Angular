@@ -1,11 +1,259 @@
-.env-container {
-  @apply grid grid-cols-4 gap-2;
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
 }
 
-.env-container label {
-  @apply text-sm font-light;
+.patch-builder {
+  @apply flex h-full min-h-0 flex-col overflow-hidden bg-neutral-950 text-zinc-100;
 }
 
-.env-container input {
-  @apply w-full text-xs bg-black text-white/90 py-1 px-2 rounded-lg;
+.patch-hero {
+  @apply flex flex-shrink-0 flex-col gap-3 border-b border-white/10 bg-black px-4 py-3 md:flex-row md:items-center md:justify-between;
+
+  h2 {
+    @apply mt-1 text-xl font-semibold leading-none text-white md:text-2xl;
+  }
+}
+
+.patch-eyebrow {
+  @apply text-xs uppercase tracking-[0.24em] text-cyan-200;
+}
+
+.patch-subtitle {
+  @apply mt-2 max-w-2xl text-xs leading-5 text-zinc-400;
+}
+
+.transport-bar,
+.library-actions {
+  @apply flex flex-wrap gap-2;
+}
+
+.primary-action,
+.secondary-action,
+.tool-button,
+.icon-button,
+.wave-button,
+.segmented-control button {
+  @apply inline-flex items-center justify-center gap-2 border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/50;
+}
+
+.primary-action {
+  @apply border-cyan-200 bg-cyan-200 px-3 py-2 text-neutral-950 hover:bg-cyan-100;
+}
+
+.secondary-action,
+.tool-button {
+  @apply border-white/15 bg-white/5 px-3 py-2 text-zinc-100 hover:border-amber-200 hover:text-amber-100;
+}
+
+.secondary-action.active-action {
+  @apply border-cyan-200 bg-cyan-200 text-neutral-950 hover:bg-cyan-100 hover:text-neutral-950;
+}
+
+.tool-button {
+  @apply px-3 py-2 text-xs;
+}
+
+.tool-button.danger,
+.icon-button.danger {
+  @apply hover:border-rose-300 hover:text-rose-100;
+}
+
+.studio-grid {
+  @apply grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden p-3;
+}
+
+.library-panel,
+.editor-panel,
+.control-panel,
+.oscillator-panel {
+  @apply border border-white/10 bg-zinc-950/85;
+}
+
+.library-panel {
+  @apply grid flex-shrink-0 content-start gap-3 p-3;
+  grid-template-columns: minmax(7rem, auto) minmax(20rem, 1.4fr) minmax(19rem, 1fr);
+  align-items: end;
+
+  .panel-heading {
+    align-self: center;
+  }
+
+  .control-label {
+    margin-bottom: 0.35rem;
+  }
+}
+
+.library-select-group,
+.library-select,
+.library-stack {
+  min-width: 0;
+}
+
+.library-select-group {
+  @apply grid gap-2 md:grid-cols-2;
+}
+
+.library-stack {
+  @apply grid gap-2;
+}
+
+.editor-panel {
+  @apply grid min-h-0 gap-3 overflow-y-auto p-3;
+  scrollbar-gutter: stable;
+}
+
+.panel-heading,
+.section-heading {
+  @apply flex items-center justify-between gap-3;
+}
+
+.panel-heading {
+  @apply text-xs uppercase tracking-[0.18em] text-zinc-400;
+}
+
+.section-heading {
+  @apply border-t border-white/10 pt-4;
+
+  h3 {
+    @apply mt-1 text-xl font-semibold text-white;
+  }
+}
+
+.control-label {
+  @apply mb-2 block text-xs uppercase tracking-[0.18em] text-zinc-500;
+}
+
+.control-input {
+  @apply w-full border border-white/10 bg-black px-2.5 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-200;
+}
+
+.patch-name-row {
+  @apply grid gap-3 md:grid-cols-[minmax(0,1fr)_8rem_7rem];
+}
+
+.segmented-control {
+  @apply grid grid-cols-5 border border-white/10 bg-black;
+
+  button {
+    @apply border-0 border-r border-white/10 px-2 py-2 text-xs text-zinc-400 last:border-r-0 hover:text-white;
+  }
+
+  button.active {
+    @apply bg-cyan-200 text-neutral-950;
+  }
+}
+
+.keyboard-panel {
+  @apply min-w-0 border border-white/10 bg-zinc-950/85 p-2;
+}
+
+.control-grid {
+  @apply grid gap-3 md:grid-cols-2;
+}
+
+.control-grid.three-up {
+  @apply lg:grid-cols-3;
+}
+
+.control-panel,
+.oscillator-panel {
+  @apply p-3;
+}
+
+.parameter-grid {
+  @apply mt-3 grid grid-cols-2 gap-3 md:grid-cols-4;
+}
+
+.parameter-grid.compact {
+  @apply grid-cols-2 md:grid-cols-2;
+}
+
+.range-row {
+  @apply grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-3 text-right text-xs tabular-nums text-zinc-300;
+}
+
+.range-row input[type='range'] {
+  @apply h-2 w-full appearance-none bg-white/10;
+}
+
+.range-row input[type='range']::-webkit-slider-thumb {
+  @apply h-4 w-4 appearance-none border border-cyan-100 bg-cyan-200;
+}
+
+.range-row input[type='range']::-moz-range-thumb {
+  @apply h-4 w-4 border border-cyan-100 bg-cyan-200;
+}
+
+.switch-label {
+  @apply flex items-center gap-2 text-xs normal-case tracking-normal text-zinc-300;
+}
+
+.switch-label input {
+  @apply accent-cyan-300;
+}
+
+.metric-grid {
+  @apply grid grid-cols-3 border border-white/10 bg-black/60 text-center;
+
+  div {
+    @apply border-r border-white/10 px-2 py-2 last:border-r-0;
+  }
+
+  span {
+    @apply block text-lg font-semibold text-white;
+  }
+
+  small {
+    @apply mt-1 block text-[10px] uppercase tracking-[0.16em] text-zinc-500;
+  }
+}
+
+.oscillator-section {
+  @apply grid min-h-[18rem] gap-3 overflow-hidden;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: min(32rem, 48vh);
+}
+
+.oscillator-grid {
+  @apply grid gap-3 overflow-y-auto pr-1;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  scrollbar-gutter: stable;
+}
+
+.oscillator-panel {
+  @apply grid content-start gap-3 bg-black/60;
+}
+
+.icon-button {
+  @apply h-8 w-8 border-white/10 bg-white/5 text-zinc-300 hover:text-white;
+}
+
+.waveform-row {
+  @apply grid grid-cols-4 border border-white/10 bg-black;
+}
+
+.wave-button {
+  @apply h-11 border-0 border-r border-white/10 text-zinc-400 last:border-r-0 hover:text-white;
+}
+
+.wave-button.active {
+  @apply bg-amber-300 text-neutral-950;
+}
+
+@media (max-width: 860px) {
+  .library-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .transport-bar,
+  .library-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  }
+
+  .patch-subtitle {
+    display: none;
+  }
 }
