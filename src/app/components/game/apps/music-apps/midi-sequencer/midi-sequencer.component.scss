@@ -1,0 +1,218 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.sequencer-shell {
+  @apply flex h-full min-h-0 flex-col overflow-hidden text-zinc-100;
+  background: linear-gradient(180deg, rgba(20, 20, 24, 0.96), rgba(5, 5, 6, 1) 8rem),
+  #050505;
+}
+
+.sequencer-hero {
+  @apply flex flex-shrink-0 flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between;
+  background: linear-gradient(180deg, rgba(18, 18, 22, 0.98), rgba(8, 8, 10, 0.98));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36), inset 0 -1px rgba(255, 255, 255, 0.04);
+
+  h2 {
+    @apply mt-1 text-xl font-semibold leading-none text-white md:text-2xl;
+  }
+}
+
+.sequencer-eyebrow {
+  @apply text-xs uppercase tracking-[0.24em] text-cyan-200;
+}
+
+.sequencer-subtitle {
+  @apply mt-2 max-w-2xl text-xs leading-5 text-zinc-400;
+}
+
+.transport-bar {
+  @apply flex flex-wrap gap-2;
+}
+
+.primary-action,
+.secondary-action,
+.tool-button,
+.icon-button,
+.channel-select,
+.step-cell {
+  @apply inline-flex items-center justify-center gap-2 border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/50;
+}
+
+.primary-action {
+  @apply border-cyan-200 bg-cyan-200 px-3 py-2 text-neutral-950 hover:bg-cyan-100;
+  box-shadow: 0 12px 22px rgba(103, 232, 249, 0.16);
+}
+
+.secondary-action,
+.tool-button {
+  @apply border-white/15 px-3 py-2 text-zinc-100 hover:border-amber-200 hover:text-amber-100;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+}
+
+.sequencer-grid {
+  @apply grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-4 overflow-hidden p-4;
+}
+
+.sequencer-panel {
+  @apply border border-white/10;
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.setup-panel {
+  @apply grid gap-3 p-3;
+  background: linear-gradient(135deg, rgba(21, 94, 117, 0.16), transparent 32rem),
+  linear-gradient(180deg, rgba(24, 24, 27, 0.96), rgba(12, 12, 14, 0.96));
+}
+
+.editor-panel {
+  @apply grid min-h-0 gap-3 overflow-hidden p-3;
+  background: linear-gradient(180deg, rgba(12, 12, 15, 0.98), rgba(7, 7, 8, 0.98)),
+  #09090b;
+}
+
+.controller-panel {
+  @apply min-w-0 border-cyan-200/20 p-2;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.11), transparent 22rem),
+  linear-gradient(180deg, rgba(12, 16, 18, 0.96), rgba(6, 9, 10, 0.96));
+}
+
+.panel-heading {
+  @apply flex items-center justify-between gap-3 text-xs uppercase tracking-[0.18em] text-zinc-400;
+}
+
+.setup-controls {
+  @apply grid gap-3 md:grid-cols-[8rem_7rem_10rem];
+}
+
+.control-label {
+  @apply mb-2 block text-xs uppercase tracking-[0.18em] text-zinc-500;
+}
+
+.control-input {
+  @apply w-full min-w-0 border border-white/10 px-2.5 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-200;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(12, 12, 15, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 8px 14px rgba(0, 0, 0, 0.18);
+}
+
+.metric-grid {
+  @apply grid grid-cols-3 border border-white/10 text-center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+
+  div {
+    @apply border-r border-white/10 px-2 py-2 last:border-r-0;
+  }
+
+  span {
+    @apply block text-lg font-semibold text-white;
+  }
+
+  small {
+    @apply mt-1 block text-[10px] uppercase tracking-[0.16em] text-zinc-500;
+  }
+}
+
+.channel-stack {
+  @apply grid min-h-0 gap-3 overflow-auto pr-1;
+  scrollbar-gutter: stable;
+}
+
+.channel-row {
+  @apply grid gap-3 border border-white/10 p-3;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(15, 15, 17, 0.98), rgba(4, 4, 5, 0.98)),
+  #070707;
+}
+
+.channel-row.selected {
+  @apply border-cyan-200/50;
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.12), 0 14px 28px rgba(0, 0, 0, 0.26);
+}
+
+.channel-controls {
+  @apply grid gap-2;
+  grid-template-columns: minmax(5rem, 0.6fr) minmax(7rem, 0.8fr) minmax(10rem, 1fr) minmax(8rem, 0.7fr) minmax(5rem, 0.5fr) auto auto auto;
+}
+
+.channel-select {
+  @apply border-cyan-200/30 px-3 py-2 text-left text-cyan-100 hover:border-cyan-200;
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.tool-button {
+  @apply text-xs;
+}
+
+.tool-button.muted {
+  @apply border-rose-300/50 text-rose-100;
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.icon-button {
+  @apply h-10 w-10 border-white/10 text-zinc-300 hover:text-white;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.icon-button.danger {
+  @apply hover:border-rose-300 hover:text-rose-100;
+}
+
+.step-grid {
+  --step-count: 16;
+  @apply grid gap-1 overflow-x-auto pb-1;
+  grid-template-columns: repeat(var(--step-count), minmax(2.7rem, 1fr));
+  scrollbar-gutter: stable;
+}
+
+.step-cell {
+  @apply h-12 border-white/10 px-1 text-[10px] text-zinc-500 hover:border-cyan-200 hover:text-white;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+
+  span {
+    @apply truncate font-mono;
+  }
+}
+
+.step-cell.active {
+  @apply border-amber-300 text-neutral-950;
+  background: linear-gradient(180deg, #fcd34d, #fbbf24);
+}
+
+.step-cell.playhead {
+  @apply border-cyan-200;
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.18);
+}
+
+@media (max-width: 1024px) {
+  .channel-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .icon-button,
+  .tool-button {
+    @apply w-full;
+  }
+}
+
+@media (max-width: 640px) {
+  .sequencer-grid {
+    @apply p-3;
+  }
+
+  .setup-controls,
+  .channel-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .sequencer-subtitle {
+    display: none;
+  }
+}

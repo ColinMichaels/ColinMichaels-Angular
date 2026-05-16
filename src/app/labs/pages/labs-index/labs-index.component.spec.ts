@@ -31,11 +31,13 @@ describe('LabsIndexComponent', () => {
     expect(element.textContent).toContain('Experimental Systems');
     expect(element.textContent).toContain('Full Screen Backgrounds');
     expect(element.textContent).toContain('SpaceX Launches');
+    expect(element.textContent).toContain('MIDI Sequencer');
     expect(element.textContent).toContain('Tailwind Class Generator');
     expect(element.textContent).toContain('Choose a lab to mount its demo.');
     expect(element.querySelector('app-space-x')).toBeNull();
     expect(element.querySelector('app-weather')).toBeNull();
     expect(element.querySelector('app-patch-editor')).toBeNull();
+    expect(element.querySelector('app-midi-sequencer')).toBeNull();
     expect(element.textContent).not.toContain('Core OS Experiments');
   });
 

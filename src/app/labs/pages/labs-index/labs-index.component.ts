@@ -2,6 +2,7 @@ import {Component} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {MidiSequencerComponent} from '../../../components/game/apps/music-apps/midi-sequencer/midi-sequencer.component';
 import {PatchEditorComponent} from '../../../components/game/apps/music-apps/patch-editor/patch-editor.component';
 import {SpaceXComponent} from '../../../components/game/apps/space-x/space-x.component';
 import {TailwindPreviewComponent} from '../../../components/game/apps/tailwind-preview/tailwind-preview.component';
@@ -21,7 +22,14 @@ interface LabEntry {
   action: string;
 }
 
-type ComponentLabId = 'space-x' | 'weather' | 'patch-builder' | 'task-app' | 'tooltip-examples' | 'tailwind-preview';
+type ComponentLabId =
+  'space-x'
+  | 'weather'
+  | 'patch-builder'
+  | 'midi-sequencer'
+  | 'task-app'
+  | 'tooltip-examples'
+  | 'tailwind-preview';
 
 interface ComponentLabEntry {
   id: ComponentLabId;
@@ -33,6 +41,7 @@ interface ComponentLabEntry {
 @Component({
   selector: 'app-labs-index',
   imports: [
+    MidiSequencerComponent,
     PatchEditorComponent,
     ProjectItemComponent,
     RouterLink,
@@ -160,7 +169,14 @@ interface ComponentLabEntry {
                         @defer (when activeDemoId === 'patch-builder') {
                           <app-patch-editor></app-patch-editor>
                         } @placeholder {
-                          <p class="p-5 text-sm text-zinc-400">Loading Patch Builder lab...</p>
+                          <p class="p-5 text-sm text-zinc-400">Loading Patch Studio...</p>
+                        }
+                      }
+                      @case ('midi-sequencer') {
+                        @defer (when activeDemoId === 'midi-sequencer') {
+                          <app-midi-sequencer></app-midi-sequencer>
+                        } @placeholder {
+                          <p class="p-5 text-sm text-zinc-400">Loading MIDI Sequencer...</p>
                         }
                       }
                       @case ('task-app') {
@@ -230,9 +246,15 @@ export class LabsIndexComponent {
     },
     {
       id: 'patch-builder',
-      title: 'Patch Builder',
-      description: 'A Web Audio patch editor for testing custom instruments, controls, and saved patch state.',
-      windowTitle: 'Web Audio Patch Builder',
+      title: 'Patch Studio',
+      description: 'A standalone sound-generator editor for designing patches, testing controllers, and comparing audio drivers.',
+      windowTitle: 'Patch Studio',
+    },
+    {
+      id: 'midi-sequencer',
+      title: 'MIDI Sequencer',
+      description: 'A standalone multi-channel controller for building tempo-synced note loops and routing them to generators.',
+      windowTitle: 'MIDI Sequencer',
     },
     {
       id: 'task-app',

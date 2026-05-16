@@ -30,17 +30,6 @@ describe('PianoComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('generates a responsive octave range', () => {
-    component.startingOctave = 2;
-    component.visibleOctaves = 3;
-
-    component.generateKeyMap();
-
-    expect(component.keyMap.length).toBe(36);
-    expect(component.keyMap[0]?.label).toBe('C2');
-    expect(component.keyMap[component.keyMap.length - 1]?.label).toBe('B4');
-  });
-
   it('plays the provided patch when testing editor sounds', () => {
     component.patch = DEFAULT_SYNTH_PATCH;
     component.soundDriverId = 'tone-sampler';
@@ -57,6 +46,15 @@ describe('PianoComponent', () => {
     component.playNote('C', 3, 0.5);
 
     expect(patchService.playPreset).toHaveBeenCalledWith('C3', 0.5, 'Guitar', 'tone-sampler');
+  });
+
+  it('routes keyboard controller events through the selected output', () => {
+    component.selectedPreset = 'Electric Piano';
+    component.soundDriverId = 'soundfont';
+
+    component.playControllerNote({note: 'F#4', duration: 0.25});
+
+    expect(patchService.playPreset).toHaveBeenCalledWith('F#4', 0.25, 'Electric Piano', 'soundfont');
   });
 
   it('renders grouped preset options', () => {

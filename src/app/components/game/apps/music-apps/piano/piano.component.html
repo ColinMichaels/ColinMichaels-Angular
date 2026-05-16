@@ -1,81 +1,33 @@
-<div class="piano-shell" [class.compact]="compact">
-  <header class="piano-toolbar">
-    <div class="piano-title">
-      <fa-icon [icon]="faKeyboard"></fa-icon>
-      <div>
-        <p>{{ keyboardModeLabel }}</p>
-        <h3>{{ activePatchName }}</h3>
-      </div>
-    </div>
-
-    <div class="piano-controls">
-      <div *ngIf="!patch" class="preset-control">
-        <label for="piano-preset">Preset</label>
-        <select id="piano-preset" name="pianoPreset" [(ngModel)]="selectedPreset">
-          <optgroup
-            *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
-            [label]="category.label"
-          >
-            <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
-              {{ preset.name }}
-            </option>
-          </optgroup>
-        </select>
-      </div>
-
-      <div *ngIf="showDriverControl" class="preset-control">
-        <label for="piano-driver">Sound driver</label>
-        <select id="piano-driver" name="pianoDriver" [(ngModel)]="soundDriverId">
-          <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
-            {{ driver.label }}
-          </option>
-        </select>
-      </div>
-
-      <div class="stepper" aria-label="Starting octave">
-        <span>Oct</span>
-        <button type="button" aria-label="Lower octave" (click)="setOctave(startingOctave - 1)">
-          <fa-icon [icon]="faMinus"></fa-icon>
-        </button>
-        <strong>{{ startingOctave }}</strong>
-        <button type="button" aria-label="Raise octave" (click)="setOctave(startingOctave + 1)">
-          <fa-icon [icon]="faPlus"></fa-icon>
-        </button>
-      </div>
-
-      <div class="stepper" aria-label="Visible octaves">
-        <span>Range</span>
-        <button type="button" aria-label="Reduce key range" (click)="setVisibleOctaves(visibleOctaves - 1)">
-          <fa-icon [icon]="faMinus"></fa-icon>
-        </button>
-        <strong>{{ visibleOctaves }}</strong>
-        <button type="button" aria-label="Expand key range" (click)="setVisibleOctaves(visibleOctaves + 1)">
-          <fa-icon [icon]="faPlus"></fa-icon>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <div class="piano-meta">
-    <span>{{ rootRangeLabel }}</span>
-    <span>Computer keys {{ enableComputerKeyboard ? 'on' : 'off' }}</span>
+<app-keyboard-controller
+  [title]="activePatchName"
+  [subtitle]="keyboardModeLabel"
+  [startingOctave]="startingOctave"
+  [visibleOctaves]="visibleOctaves"
+  [noteDuration]="noteDuration"
+  [compact]="compact"
+  [enableComputerKeyboard]="enableComputerKeyboard"
+  (noteTriggered)="playControllerNote($event)"
+>
+  <div keyboardControls *ngIf="!patch" class="preset-control">
+    <label for="piano-preset">Preset</label>
+    <select id="piano-preset" name="pianoPreset" [(ngModel)]="selectedPreset">
+      <optgroup
+        *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
+        [label]="category.label"
+      >
+        <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
+          {{ preset.name }}
+        </option>
+      </optgroup>
+    </select>
   </div>
 
-  <div class="keybed" (pointerleave)="onPointerUp()" (pointerup)="onPointerUp()" (pointercancel)="onPointerUp()">
-    <button
-      *ngFor="let key of keyMap; trackBy: trackByLabel"
-      type="button"
-      class="piano-key"
-      [class.sharp]="key.sharp"
-      [class.active]="pressedKeys.has(key.label)"
-      [attr.aria-label]="'Play ' + key.label"
-      (pointerdown)="onPointerDown(key)"
-      (pointerenter)="onPointerEnter(key)"
-      (pointerup)="onPointerUp()"
-      (keydown.enter)="onKeyPress(key)"
-      (keydown.space)="onKeyPress(key)"
-    >
-      <span>{{ key.label }}</span>
-    </button>
+  <div keyboardControls *ngIf="showDriverControl" class="preset-control">
+    <label for="piano-driver">Sound driver</label>
+    <select id="piano-driver" name="pianoDriver" [(ngModel)]="soundDriverId">
+      <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
+        {{ driver.label }}
+      </option>
+    </select>
   </div>
-</div>
+</app-keyboard-controller>
