@@ -49,9 +49,14 @@
             (ngModelChange)="loadFactoryPreset($event)"
           >
             <option value="">Choose preset</option>
-            <option *ngFor="let preset of factoryPresets; trackBy: trackByPatchName" [value]="preset.name">
-              {{ preset.name }}
-            </option>
+            <optgroup
+              *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
+              [label]="category.label"
+            >
+              <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
+                {{ preset.name }}
+              </option>
+            </optgroup>
           </select>
         </div>
 
@@ -103,7 +108,7 @@
     </aside>
 
     <section class="editor-panel">
-      <div class="patch-name-row">
+      <div class="patch-name-row editor-strip">
         <div>
           <label class="control-label" for="patch-name">Patch name</label>
           <input
@@ -136,9 +141,24 @@
             [(ngModel)]="previewDuration"
           />
         </div>
+
+        <div>
+          <label class="control-label" for="sound-driver">Sound driver</label>
+          <select
+            id="sound-driver"
+            class="control-input"
+            name="soundDriver"
+            [(ngModel)]="selectedSoundDriverId"
+            (ngModelChange)="setSoundDriver($event)"
+          >
+            <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
+              {{ driver.label }}
+            </option>
+          </select>
+        </div>
       </div>
 
-      <div class="segmented-control" aria-label="Preview mode">
+      <div class="segmented-control editor-strip" aria-label="Preview mode">
         <button
           *ngFor="let mode of previewModes"
           type="button"
@@ -155,12 +175,14 @@
           [startingOctave]="3"
           [visibleOctaves]="2"
           [noteDuration]="previewDuration"
+          [soundDriverId]="selectedSoundDriverId"
+          [showDriverControl]="false"
           [compact]="true"
         />
       </section>
 
       <div class="control-grid">
-        <section class="control-panel">
+        <section class="control-panel envelope-panel">
           <div class="panel-heading">
             <span>Envelope</span>
             <fa-icon [icon]="faSliders"></fa-icon>
@@ -190,7 +212,7 @@
           </div>
         </section>
 
-        <section class="control-panel">
+        <section class="control-panel master-panel">
           <div class="panel-heading">
             <span>Master</span>
             <fa-icon [icon]="faVolumeHigh"></fa-icon>
@@ -211,7 +233,7 @@
       </div>
 
       <div class="control-grid three-up">
-        <section class="control-panel">
+        <section class="control-panel filter-panel">
           <div class="panel-heading">
             <span>Filter</span>
             <label class="switch-label" for="filter-enabled">
@@ -240,7 +262,7 @@
           </div>
         </section>
 
-        <section class="control-panel">
+        <section class="control-panel lfo-panel">
           <div class="panel-heading">
             <span>LFO</span>
             <label class="switch-label" for="lfo-enabled">
@@ -267,7 +289,7 @@
           </div>
         </section>
 
-        <section class="control-panel">
+        <section class="control-panel delay-panel">
           <div class="panel-heading">
             <span>Delay</span>
             <label class="switch-label" for="delay-enabled">

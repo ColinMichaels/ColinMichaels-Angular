@@ -12,7 +12,23 @@
       <div *ngIf="!patch" class="preset-control">
         <label for="piano-preset">Preset</label>
         <select id="piano-preset" name="pianoPreset" [(ngModel)]="selectedPreset">
-          <option *ngFor="let preset of patches" [value]="preset">{{ preset }}</option>
+          <optgroup
+            *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
+            [label]="category.label"
+          >
+            <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
+              {{ preset.name }}
+            </option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div *ngIf="showDriverControl" class="preset-control">
+        <label for="piano-driver">Sound driver</label>
+        <select id="piano-driver" name="pianoDriver" [(ngModel)]="soundDriverId">
+          <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
+            {{ driver.label }}
+          </option>
         </select>
       </div>
 

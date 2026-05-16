@@ -5,6 +5,7 @@ import {PatchEditorComponent} from './patch-editor.component';
 import {DEFAULT_SYNTH_PATCH, PatchService, SYNTH_PRESET_PATCHES, SynthPatch} from '../../../services/patch.service';
 import {StorageService} from '../../../services/storage.service';
 import {NotificationService} from '../../../services/notification.service';
+import {SOUND_DRIVERS} from '../../../services/sound-drivers/sound-driver.types';
 
 describe('PatchEditorComponent', () => {
   let component: PatchEditorComponent;
@@ -19,9 +20,17 @@ describe('PatchEditorComponent', () => {
   };
 
   beforeEach(async () => {
-    patchService = jasmine.createSpyObj<PatchService>('PatchService', ['playPatch', 'normalizePatch', 'clonePatch', 'getPresetPatch']);
+    patchService = jasmine.createSpyObj<PatchService>('PatchService', [
+      'playPatch',
+      'normalizePatch',
+      'clonePatch',
+      'getPresetPatch',
+      'getSoundDrivers',
+      'setSoundDriver',
+    ]);
     patchService.normalizePatch.and.callFake((patch: SynthPatch) => clonePatch(patch));
     patchService.clonePatch.and.callFake((patch: SynthPatch, nextName?: string) => clonePatch(patch, nextName));
+    patchService.getSoundDrivers.and.returnValue([...SOUND_DRIVERS]);
     patchService.getPresetPatch.and.callFake((name: string) => {
       const preset = SYNTH_PRESET_PATCHES.find(patch => patch.name === name);
       return preset ? clonePatch(preset) : null;
@@ -64,7 +73,19 @@ describe('PatchEditorComponent', () => {
 
     expect(patchService.playPatch).toHaveBeenCalledWith('C4', 0.6, jasmine.objectContaining({
       name: 'Edited Patch',
-    }));
+    }), 'web-audio');
+  });
+
+  it('routes preview through the selected sound driver', () => {
+    component.selectedPatch = clonePatch(DEFAULT_SYNTH_PATCH, 'Piano');
+
+    component.setSoundDriver('tone-sampler');
+    component.playPreview();
+
+    expect(patchService.setSoundDriver).toHaveBeenCalledWith('tone-sampler');
+    expect(patchService.playPatch).toHaveBeenCalledWith('C4', 0.6, jasmine.objectContaining({
+      name: 'Piano',
+    }), 'tone-sampler');
   });
 
   it('replaces an existing saved patch with the same name', () => {
@@ -89,6 +110,18 @@ describe('PatchEditorComponent', () => {
     expect(component.selectedPatch.name).toBe('Guitar');
     expect(component.selectedFactoryPresetName).toBe('Guitar');
     expect(component.selectedSavedPatchName).toBe('');
+  });
+
+  it('renders factory preset dropdown groups', () => {
+    const groups = Array.from(
+      fixture.nativeElement.querySelectorAll('#factory-preset optgroup')
+    ) as HTMLOptGroupElement[];
+
+    expect(groups.map(group => group.label)).toEqual(jasmine.arrayContaining([
+      'Keys',
+      'Guitars',
+      'Synth Leads',
+    ]));
   });
 
   it('toggles the patch keyboard tester', () => {

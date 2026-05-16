@@ -47,6 +47,8 @@
     "ngx-markdown": "^19.1.1",
     "prismjs": "^1.30.0",
     "rxjs": "~7.8.0",
+    "soundfont-player": "^0.12.0",
+    "tone": "^15.1.22",
     "tslib": "^2.3.0",
     "web-audio-oscillators": "^2.0.0",
     "zone.js": "~0.15.0"

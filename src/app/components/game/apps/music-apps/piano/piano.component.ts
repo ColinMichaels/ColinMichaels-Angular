@@ -1,9 +1,15 @@
 import {Component, HostListener, Input, OnChanges, OnDestroy, OnInit, SimpleChanges} from '@angular/core';
 import {NgForOf, NgIf} from '@angular/common';
-import {PatchService, SYNTH_PRESET_NAMES, SynthPatch} from '../../../services/patch.service';
+import {
+  PatchService,
+  SYNTH_PRESET_CATEGORIES,
+  SynthPatch,
+  SynthPresetCategory
+} from '../../../services/patch.service';
 import {FormsModule} from '@angular/forms';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faKeyboard, faMinus, faPlus} from '@fortawesome/free-solid-svg-icons';
+import {SoundDriverId, SoundDriverMetadata} from '../../../services/sound-drivers/sound-driver.types';
 
 export interface PianoKey {
   note: string;
@@ -30,6 +36,8 @@ export class PianoComponent implements OnInit, OnDestroy, OnChanges {
   @Input() patch: SynthPatch | null = null;
   @Input() compact = false;
   @Input() enableComputerKeyboard = true;
+  @Input() soundDriverId: SoundDriverId = 'web-audio';
+  @Input() showDriverControl = true;
 
   keyMap: PianoKey[] = [];
 
@@ -69,9 +77,11 @@ export class PianoComponent implements OnInit, OnDestroy, OnChanges {
 
   isDragging = false;
   selectedPreset = 'Piano';
-  patches: readonly string[] = SYNTH_PRESET_NAMES;
+  presetCategories: readonly SynthPresetCategory[] = SYNTH_PRESET_CATEGORIES;
+  soundDrivers: readonly SoundDriverMetadata[] = [];
 
   constructor(private readonly patchService: PatchService) {
+    this.soundDrivers = this.patchService.getSoundDrivers();
   }
 
   ngOnInit(): void {
@@ -116,11 +126,11 @@ export class PianoComponent implements OnInit, OnDestroy, OnChanges {
     this.lastKeyPressTimestamps.set(noteAdjusted, now);
 
     if (this.patch) {
-      this.patchService.playPatch(noteAdjusted, velocity, this.patch);
+      this.patchService.playPatch(noteAdjusted, velocity, this.patch, this.soundDriverId);
       return;
     }
 
-    this.patchService.playPreset(noteAdjusted, velocity, this.selectedPreset);
+    this.patchService.playPreset(noteAdjusted, velocity, this.selectedPreset, this.soundDriverId);
   }
 
   private getNoteAndOffsetFromKey(key: string): { note: string; octave: number } | null {
@@ -197,6 +207,18 @@ export class PianoComponent implements OnInit, OnDestroy, OnChanges {
 
   trackByLabel(_index: number, key: PianoKey): string {
     return key.label;
+  }
+
+  trackBySoundDriverId(_index: number, driver: SoundDriverMetadata): SoundDriverId {
+    return driver.id;
+  }
+
+  trackByPresetCategoryLabel(_index: number, category: SynthPresetCategory): string {
+    return category.label;
+  }
+
+  trackByPatchName(_index: number, patch: SynthPatch): string {
+    return patch.name;
   }
 
   ngOnDestroy(): void {

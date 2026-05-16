@@ -1,7 +1,7 @@
 import {BehaviorSubject} from 'rxjs';
 
 import {LogService} from './log.service';
-import {PatchService, SynthPatch} from './patch.service';
+import {PatchService, SYNTH_PRESET_CATEGORIES, SynthPatch} from './patch.service';
 import {SettingsService} from './settings.service';
 
 describe('PatchService presets', () => {
@@ -27,11 +27,28 @@ describe('PatchService presets', () => {
     expect(storageKey).toBe('keyboard-patches');
     expect((patches as SynthPatch[]).map(patch => patch.name)).toEqual(jasmine.arrayContaining([
       'Piano',
+      'Electric Piano',
       'Guitar',
+      'Clean Electric Guitar',
       'Organ',
       'Strings',
       'Bass',
+      'Synth Bass',
+      'Glass Pad',
     ]));
+  });
+
+  it('groups factory presets into library categories', () => {
+    expect(SYNTH_PRESET_CATEGORIES.map(category => category.label)).toEqual([
+      'Keys',
+      'Guitars',
+      'Organs',
+      'Strings & Pads',
+      'Bass',
+      'Bells & Mallets',
+      'Synth Leads',
+    ]);
+    expect(SYNTH_PRESET_CATEGORIES.flatMap(category => category.patches).map(patch => patch.name)).toContain('Acid Lead');
   });
 
   it('returns preset patch clones by case-insensitive name', () => {
@@ -50,7 +67,20 @@ describe('PatchService presets', () => {
 
     expect(playPatch).toHaveBeenCalledWith('C4', 0.5, jasmine.objectContaining({
       name: 'Organ',
-    }));
+    }), 'web-audio');
+  });
+
+  it('exposes and tracks selectable sound drivers', () => {
+    expect(service.getSoundDrivers().map(driver => driver.id)).toEqual(['web-audio', 'tone-sampler', 'soundfont']);
+    expect(service.getSoundDriverId()).toBe('web-audio');
+
+    service.setSoundDriver('tone-sampler');
+
+    expect(service.getSoundDriverId()).toBe('tone-sampler');
+
+    service.setSoundDriver('soundfont');
+
+    expect(service.getSoundDriverId()).toBe('soundfont');
   });
 
   it('keeps presets available when saving a user patch', () => {

@@ -130,7 +130,7 @@
 }
 
 .patch-name-row {
-  @apply grid gap-3 md:grid-cols-[minmax(0,1fr)_8rem_7rem];
+  @apply grid gap-3 md:grid-cols-[minmax(0,1fr)_8rem_7rem_10rem];
 }
 
 .segmented-control {

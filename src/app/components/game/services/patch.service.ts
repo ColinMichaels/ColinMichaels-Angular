@@ -2,6 +2,9 @@ import {Injectable, OnDestroy} from '@angular/core';
 import {SettingsService} from './settings.service';
 import {customOscillators} from 'web-audio-oscillators';
 import {LogService} from './log.service';
+import {SOUND_DRIVERS, SoundDriverId, SoundDriverMetadata} from './sound-drivers/sound-driver.types';
+import {ToneSampledSoundDriver} from './sound-drivers/tone-sampled-sound.driver';
+import {SoundFontSampledSoundDriver} from './sound-drivers/soundfont-sampled-sound.driver';
 
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type SynthFilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
@@ -100,253 +103,389 @@ export const DEFAULT_SYNTH_PATCH: SynthPatch = {
   },
 };
 
-export const SYNTH_PRESET_PATCHES: readonly SynthPatch[] = [
-  {
-    name: 'Piano',
-    oscillators: [
+type RequiredSynthSection<T extends keyof SynthPatch> = NonNullable<SynthPatch[T]>;
+
+export interface SynthPresetCategory {
+  label: string;
+  patches: readonly SynthPatch[];
+}
+
+const presetPatch = (
+  name: string,
+  oscillators: SynthOscillatorConfig[],
+  envelope: SynthPatch['envelope'],
+  filter: RequiredSynthSection<'filter'>,
+  lfo: RequiredSynthSection<'lfo'>,
+  delay: RequiredSynthSection<'delay'>,
+  masterVolume: number
+): SynthPatch => ({
+  name,
+  oscillators,
+  envelope,
+  filter,
+  lfo,
+  delay,
+  master: {
+    volume: masterVolume,
+  },
+});
+
+const KEY_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Piano',
+    [
       {type: 'triangle', detune: -3, volume: 0.34, pan: -0.08, octave: 0},
       {type: 'sine', detune: 5, volume: 0.22, pan: 0.08, octave: 0},
       {type: 'sine', detune: 0, volume: 0.08, pan: 0, octave: 1},
     ],
-    envelope: {
-      attack: 0.006,
-      decay: 0.34,
-      sustain: 0.28,
-      release: 0.32,
-    },
-    filter: {
-      enabled: true,
-      type: 'lowpass',
-      frequency: 5200,
-      resonance: 1.2,
-    },
-    lfo: {
-      enabled: false,
-      target: 'pitch',
-      rate: 4,
-      depth: 4,
-    },
-    delay: {
-      enabled: false,
-      time: 0.18,
-      feedback: 0.12,
-      mix: 0.08,
-    },
-    master: {
-      volume: 0.74,
-    },
-  },
-  {
-    name: 'Guitar',
-    oscillators: [
+    {attack: 0.006, decay: 0.34, sustain: 0.28, release: 0.32},
+    {enabled: true, type: 'lowpass', frequency: 5200, resonance: 1.2},
+    {enabled: false, target: 'pitch', rate: 4, depth: 4},
+    {enabled: false, time: 0.18, feedback: 0.12, mix: 0.08},
+    0.74
+  ),
+  presetPatch(
+    'Bright Piano',
+    [
+      {type: 'triangle', detune: -2, volume: 0.28, pan: -0.08, octave: 0},
+      {type: 'sine', detune: 3, volume: 0.18, pan: 0.08, octave: 0},
+      {type: 'triangle', detune: 0, volume: 0.1, pan: 0, octave: 1},
+    ],
+    {attack: 0.004, decay: 0.26, sustain: 0.22, release: 0.26},
+    {enabled: true, type: 'lowpass', frequency: 8200, resonance: 1.6},
+    {enabled: false, target: 'pitch', rate: 4, depth: 3},
+    {enabled: true, time: 0.1, feedback: 0.08, mix: 0.06},
+    0.72
+  ),
+  presetPatch(
+    'Soft Piano',
+    [
+      {type: 'sine', detune: -4, volume: 0.3, pan: -0.12, octave: 0},
+      {type: 'triangle', detune: 4, volume: 0.18, pan: 0.12, octave: 0},
+      {type: 'sine', detune: 0, volume: 0.08, pan: 0, octave: 1},
+    ],
+    {attack: 0.018, decay: 0.42, sustain: 0.34, release: 0.58},
+    {enabled: true, type: 'lowpass', frequency: 3600, resonance: 0.9},
+    {enabled: false, target: 'pitch', rate: 3, depth: 2},
+    {enabled: true, time: 0.24, feedback: 0.12, mix: 0.1},
+    0.66
+  ),
+  presetPatch(
+    'Electric Piano',
+    [
+      {type: 'sine', detune: -6, volume: 0.26, pan: -0.18, octave: 0},
+      {type: 'triangle', detune: 6, volume: 0.22, pan: 0.18, octave: 0},
+      {type: 'square', detune: 0, volume: 0.05, pan: 0, octave: 1},
+    ],
+    {attack: 0.012, decay: 0.52, sustain: 0.42, release: 0.78},
+    {enabled: true, type: 'lowpass', frequency: 4200, resonance: 2.1},
+    {enabled: true, target: 'pitch', rate: 4.8, depth: 4},
+    {enabled: true, time: 0.32, feedback: 0.2, mix: 0.18},
+    0.7
+  ),
+];
+
+const GUITAR_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Guitar',
+    [
       {type: 'sawtooth', detune: -6, volume: 0.22, pan: -0.12, octave: 0},
       {type: 'triangle', detune: 4, volume: 0.18, pan: 0.12, octave: 0},
       {type: 'square', detune: 0, volume: 0.05, pan: 0, octave: 1},
     ],
-    envelope: {
-      attack: 0.008,
-      decay: 0.22,
-      sustain: 0.18,
-      release: 0.22,
-    },
-    filter: {
-      enabled: true,
-      type: 'bandpass',
-      frequency: 1800,
-      resonance: 5.5,
-    },
-    lfo: {
-      enabled: false,
-      target: 'pitch',
-      rate: 5,
-      depth: 6,
-    },
-    delay: {
-      enabled: true,
-      time: 0.12,
-      feedback: 0.16,
-      mix: 0.1,
-    },
-    master: {
-      volume: 0.68,
-    },
-  },
-  {
-    name: 'Organ',
-    oscillators: [
+    {attack: 0.008, decay: 0.22, sustain: 0.18, release: 0.22},
+    {enabled: true, type: 'bandpass', frequency: 1800, resonance: 5.5},
+    {enabled: false, target: 'pitch', rate: 5, depth: 6},
+    {enabled: true, time: 0.12, feedback: 0.16, mix: 0.1},
+    0.68
+  ),
+  presetPatch(
+    'Nylon Guitar',
+    [
+      {type: 'triangle', detune: -7, volume: 0.26, pan: -0.14, octave: 0},
+      {type: 'sine', detune: 5, volume: 0.16, pan: 0.14, octave: 0},
+      {type: 'triangle', detune: 0, volume: 0.08, pan: 0, octave: 1},
+    ],
+    {attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.34},
+    {enabled: true, type: 'bandpass', frequency: 1200, resonance: 4.4},
+    {enabled: false, target: 'pitch', rate: 4, depth: 4},
+    {enabled: true, time: 0.16, feedback: 0.12, mix: 0.08},
+    0.66
+  ),
+  presetPatch(
+    'Clean Electric Guitar',
+    [
+      {type: 'sawtooth', detune: -9, volume: 0.18, pan: -0.25, octave: 0},
+      {type: 'triangle', detune: 9, volume: 0.16, pan: 0.25, octave: 0},
+      {type: 'square', detune: 0, volume: 0.06, pan: 0, octave: 1},
+    ],
+    {attack: 0.006, decay: 0.24, sustain: 0.34, release: 0.32},
+    {enabled: true, type: 'bandpass', frequency: 2200, resonance: 6.8},
+    {enabled: true, target: 'pitch', rate: 5.4, depth: 3},
+    {enabled: true, time: 0.2, feedback: 0.28, mix: 0.16},
+    0.64
+  ),
+  presetPatch(
+    'Muted Guitar',
+    [
+      {type: 'square', detune: -5, volume: 0.18, pan: -0.08, octave: 0},
+      {type: 'triangle', detune: 4, volume: 0.14, pan: 0.08, octave: 0},
+      {type: 'sine', detune: 0, volume: 0.04, pan: 0, octave: 1},
+    ],
+    {attack: 0.004, decay: 0.08, sustain: 0.1, release: 0.08},
+    {enabled: true, type: 'bandpass', frequency: 1700, resonance: 8.5},
+    {enabled: false, target: 'pitch', rate: 5, depth: 3},
+    {enabled: false, time: 0.1, feedback: 0.08, mix: 0.04},
+    0.64
+  ),
+];
+
+const ORGAN_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Organ',
+    [
       {type: 'sine', detune: 0, volume: 0.26, pan: -0.1, octave: 0},
       {type: 'square', detune: 0, volume: 0.16, pan: 0.1, octave: 0},
       {type: 'sine', detune: 0, volume: 0.14, pan: 0, octave: 1},
     ],
-    envelope: {
-      attack: 0.01,
-      decay: 0.05,
-      sustain: 0.88,
-      release: 0.16,
-    },
-    filter: {
-      enabled: true,
-      type: 'lowpass',
-      frequency: 3600,
-      resonance: 2.4,
-    },
-    lfo: {
-      enabled: true,
-      target: 'pitch',
-      rate: 5.8,
-      depth: 3,
-    },
-    delay: {
-      enabled: false,
-      time: 0.22,
-      feedback: 0.18,
-      mix: 0.12,
-    },
-    master: {
-      volume: 0.66,
-    },
-  },
-  {
-    name: 'Strings',
-    oscillators: [
+    {attack: 0.01, decay: 0.05, sustain: 0.88, release: 0.16},
+    {enabled: true, type: 'lowpass', frequency: 3600, resonance: 2.4},
+    {enabled: true, target: 'pitch', rate: 5.8, depth: 3},
+    {enabled: false, time: 0.22, feedback: 0.18, mix: 0.12},
+    0.66
+  ),
+  presetPatch(
+    'Jazz Organ',
+    [
+      {type: 'sine', detune: 0, volume: 0.24, pan: -0.18, octave: 0},
+      {type: 'square', detune: 0, volume: 0.2, pan: 0.18, octave: 0},
+      {type: 'sine', detune: 0, volume: 0.16, pan: 0, octave: 1},
+    ],
+    {attack: 0.006, decay: 0.04, sustain: 0.92, release: 0.2},
+    {enabled: true, type: 'lowpass', frequency: 4400, resonance: 3.2},
+    {enabled: true, target: 'pitch', rate: 6.4, depth: 4},
+    {enabled: true, time: 0.18, feedback: 0.14, mix: 0.1},
+    0.64
+  ),
+  presetPatch(
+    'Pipe Organ',
+    [
+      {type: 'sine', detune: 0, volume: 0.24, pan: -0.24, octave: -1},
+      {type: 'sine', detune: 0, volume: 0.2, pan: 0.24, octave: 0},
+      {type: 'square', detune: 0, volume: 0.08, pan: 0, octave: 1},
+    ],
+    {attack: 0.08, decay: 0.08, sustain: 0.94, release: 0.9},
+    {enabled: true, type: 'lowpass', frequency: 2800, resonance: 1.8},
+    {enabled: false, target: 'pitch', rate: 2, depth: 2},
+    {enabled: true, time: 0.42, feedback: 0.28, mix: 0.2},
+    0.7
+  ),
+];
+
+const STRING_PAD_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Strings',
+    [
       {type: 'sawtooth', detune: -12, volume: 0.22, pan: -0.35, octave: 0},
       {type: 'sawtooth', detune: 12, volume: 0.22, pan: 0.35, octave: 0},
       {type: 'triangle', detune: 0, volume: 0.12, pan: 0, octave: 1},
     ],
-    envelope: {
-      attack: 0.48,
-      decay: 0.28,
-      sustain: 0.78,
-      release: 1.3,
-    },
-    filter: {
-      enabled: true,
-      type: 'lowpass',
-      frequency: 2300,
-      resonance: 2.2,
-    },
-    lfo: {
-      enabled: true,
-      target: 'pitch',
-      rate: 4.2,
-      depth: 7,
-    },
-    delay: {
-      enabled: true,
-      time: 0.28,
-      feedback: 0.2,
-      mix: 0.14,
-    },
-    master: {
-      volume: 0.7,
-    },
-  },
-  {
-    name: 'Bass',
-    oscillators: [
+    {attack: 0.48, decay: 0.28, sustain: 0.78, release: 1.3},
+    {enabled: true, type: 'lowpass', frequency: 2300, resonance: 2.2},
+    {enabled: true, target: 'pitch', rate: 4.2, depth: 7},
+    {enabled: true, time: 0.28, feedback: 0.2, mix: 0.14},
+    0.7
+  ),
+  presetPatch(
+    'Slow Strings',
+    [
+      {type: 'sawtooth', detune: -16, volume: 0.2, pan: -0.42, octave: 0},
+      {type: 'sawtooth', detune: 16, volume: 0.2, pan: 0.42, octave: 0},
+      {type: 'triangle', detune: 0, volume: 0.1, pan: 0, octave: 1},
+    ],
+    {attack: 0.9, decay: 0.38, sustain: 0.84, release: 1.8},
+    {enabled: true, type: 'lowpass', frequency: 1900, resonance: 2.1},
+    {enabled: true, target: 'pitch', rate: 3.4, depth: 8},
+    {enabled: true, time: 0.36, feedback: 0.24, mix: 0.18},
+    0.72
+  ),
+  presetPatch(
+    'Synth Strings',
+    [
+      {type: 'sawtooth', detune: -18, volume: 0.22, pan: -0.35, octave: 0},
+      {type: 'square', detune: 18, volume: 0.14, pan: 0.35, octave: 0},
+      {type: 'sawtooth', detune: 0, volume: 0.1, pan: 0, octave: 1},
+    ],
+    {attack: 0.32, decay: 0.22, sustain: 0.72, release: 1.1},
+    {enabled: true, type: 'lowpass', frequency: 3200, resonance: 4.8},
+    {enabled: true, target: 'filter', rate: 1.8, depth: 480},
+    {enabled: true, time: 0.24, feedback: 0.22, mix: 0.16},
+    0.68
+  ),
+  DEFAULT_SYNTH_PATCH,
+  presetPatch(
+    'Glass Pad',
+    [
+      {type: 'sine', detune: -12, volume: 0.2, pan: -0.38, octave: 0},
+      {type: 'triangle', detune: 12, volume: 0.16, pan: 0.38, octave: 1},
+      {type: 'sine', detune: 7, volume: 0.08, pan: 0, octave: 2},
+    ],
+    {attack: 0.72, decay: 0.42, sustain: 0.68, release: 2},
+    {enabled: true, type: 'highpass', frequency: 360, resonance: 1.4},
+    {enabled: true, target: 'pitch', rate: 2.6, depth: 5},
+    {enabled: true, time: 0.42, feedback: 0.38, mix: 0.24},
+    0.6
+  ),
+];
+
+const BASS_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Bass',
+    [
       {type: 'square', detune: 0, volume: 0.3, pan: 0, octave: -1},
       {type: 'sawtooth', detune: -5, volume: 0.16, pan: -0.08, octave: -1},
       {type: 'triangle', detune: 4, volume: 0.12, pan: 0.08, octave: 0},
     ],
-    envelope: {
-      attack: 0.008,
-      decay: 0.14,
-      sustain: 0.42,
-      release: 0.2,
-    },
-    filter: {
-      enabled: true,
-      type: 'lowpass',
-      frequency: 760,
-      resonance: 6,
-    },
-    lfo: {
-      enabled: false,
-      target: 'filter',
-      rate: 2,
-      depth: 120,
-    },
-    delay: {
-      enabled: false,
-      time: 0.16,
-      feedback: 0.1,
-      mix: 0.05,
-    },
-    master: {
-      volume: 0.74,
-    },
-  },
-  {
-    name: 'Bell',
-    oscillators: [
+    {attack: 0.008, decay: 0.14, sustain: 0.42, release: 0.2},
+    {enabled: true, type: 'lowpass', frequency: 760, resonance: 6},
+    {enabled: false, target: 'filter', rate: 2, depth: 120},
+    {enabled: false, time: 0.16, feedback: 0.1, mix: 0.05},
+    0.74
+  ),
+  presetPatch(
+    'Sub Bass',
+    [
+      {type: 'sine', detune: 0, volume: 0.38, pan: 0, octave: -1},
+      {type: 'triangle', detune: 0, volume: 0.12, pan: 0, octave: 0},
+    ],
+    {attack: 0.012, decay: 0.18, sustain: 0.64, release: 0.24},
+    {enabled: true, type: 'lowpass', frequency: 260, resonance: 2.4},
+    {enabled: false, target: 'filter', rate: 1.5, depth: 80},
+    {enabled: false, time: 0.1, feedback: 0.06, mix: 0.04},
+    0.78
+  ),
+  presetPatch(
+    'Synth Bass',
+    [
+      {type: 'sawtooth', detune: -8, volume: 0.28, pan: -0.08, octave: -1},
+      {type: 'square', detune: 8, volume: 0.2, pan: 0.08, octave: -1},
+      {type: 'triangle', detune: 0, volume: 0.08, pan: 0, octave: 0},
+    ],
+    {attack: 0.006, decay: 0.18, sustain: 0.46, release: 0.22},
+    {enabled: true, type: 'lowpass', frequency: 920, resonance: 9},
+    {enabled: true, target: 'filter', rate: 3.2, depth: 420},
+    {enabled: true, time: 0.14, feedback: 0.12, mix: 0.08},
+    0.72
+  ),
+  presetPatch(
+    'Pluck Bass',
+    [
+      {type: 'triangle', detune: -4, volume: 0.24, pan: -0.06, octave: -1},
+      {type: 'square', detune: 5, volume: 0.16, pan: 0.06, octave: -1},
+      {type: 'sine', detune: 0, volume: 0.06, pan: 0, octave: 0},
+    ],
+    {attack: 0.004, decay: 0.12, sustain: 0.24, release: 0.12},
+    {enabled: true, type: 'lowpass', frequency: 1100, resonance: 6.8},
+    {enabled: false, target: 'filter', rate: 2, depth: 160},
+    {enabled: false, time: 0.12, feedback: 0.08, mix: 0.05},
+    0.7
+  ),
+];
+
+const BELL_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Bell',
+    [
       {type: 'sine', detune: 0, volume: 0.28, pan: 0, octave: 0},
       {type: 'triangle', detune: 7, volume: 0.12, pan: -0.15, octave: 1},
       {type: 'sine', detune: -9, volume: 0.08, pan: 0.15, octave: 2},
     ],
-    envelope: {
-      attack: 0.004,
-      decay: 0.75,
-      sustain: 0.08,
-      release: 1.15,
-    },
-    filter: {
-      enabled: true,
-      type: 'highpass',
-      frequency: 420,
-      resonance: 1.8,
-    },
-    lfo: {
-      enabled: false,
-      target: 'pitch',
-      rate: 6,
-      depth: 10,
-    },
-    delay: {
-      enabled: true,
-      time: 0.26,
-      feedback: 0.34,
-      mix: 0.22,
-    },
-    master: {
-      volume: 0.62,
-    },
-  },
-  {
-    name: 'Lead',
-    oscillators: [
+    {attack: 0.004, decay: 0.75, sustain: 0.08, release: 1.15},
+    {enabled: true, type: 'highpass', frequency: 420, resonance: 1.8},
+    {enabled: false, target: 'pitch', rate: 6, depth: 10},
+    {enabled: true, time: 0.26, feedback: 0.34, mix: 0.22},
+    0.62
+  ),
+  presetPatch(
+    'Vibraphone',
+    [
+      {type: 'sine', detune: -4, volume: 0.26, pan: -0.18, octave: 0},
+      {type: 'triangle', detune: 4, volume: 0.14, pan: 0.18, octave: 1},
+      {type: 'sine', detune: 0, volume: 0.08, pan: 0, octave: 2},
+    ],
+    {attack: 0.006, decay: 0.8, sustain: 0.18, release: 1.3},
+    {enabled: true, type: 'highpass', frequency: 300, resonance: 1.6},
+    {enabled: true, target: 'pitch', rate: 6.8, depth: 5},
+    {enabled: true, time: 0.3, feedback: 0.26, mix: 0.18},
+    0.6
+  ),
+  presetPatch(
+    'Marimba',
+    [
+      {type: 'triangle', detune: 0, volume: 0.26, pan: -0.08, octave: 0},
+      {type: 'sine', detune: 12, volume: 0.1, pan: 0.08, octave: 1},
+      {type: 'triangle', detune: -7, volume: 0.06, pan: 0, octave: 0},
+    ],
+    {attack: 0.004, decay: 0.34, sustain: 0.08, release: 0.38},
+    {enabled: true, type: 'bandpass', frequency: 1500, resonance: 3.6},
+    {enabled: false, target: 'pitch', rate: 5, depth: 4},
+    {enabled: true, time: 0.16, feedback: 0.14, mix: 0.08},
+    0.66
+  ),
+];
+
+const LEAD_PRESETS: readonly SynthPatch[] = [
+  presetPatch(
+    'Lead',
+    [
       {type: 'sawtooth', detune: -8, volume: 0.24, pan: -0.12, octave: 0},
       {type: 'square', detune: 8, volume: 0.18, pan: 0.12, octave: 0},
     ],
-    envelope: {
-      attack: 0.018,
-      decay: 0.12,
-      sustain: 0.64,
-      release: 0.18,
-    },
-    filter: {
-      enabled: true,
-      type: 'lowpass',
-      frequency: 4200,
-      resonance: 4.4,
-    },
-    lfo: {
-      enabled: true,
-      target: 'pitch',
-      rate: 5,
-      depth: 8,
-    },
-    delay: {
-      enabled: true,
-      time: 0.18,
-      feedback: 0.18,
-      mix: 0.12,
-    },
-    master: {
-      volume: 0.68,
-    },
-  },
-  DEFAULT_SYNTH_PATCH,
+    {attack: 0.018, decay: 0.12, sustain: 0.64, release: 0.18},
+    {enabled: true, type: 'lowpass', frequency: 4200, resonance: 4.4},
+    {enabled: true, target: 'pitch', rate: 5, depth: 8},
+    {enabled: true, time: 0.18, feedback: 0.18, mix: 0.12},
+    0.68
+  ),
+  presetPatch(
+    'Square Lead',
+    [
+      {type: 'square', detune: -10, volume: 0.24, pan: -0.1, octave: 0},
+      {type: 'square', detune: 10, volume: 0.18, pan: 0.1, octave: 0},
+      {type: 'sawtooth', detune: 0, volume: 0.06, pan: 0, octave: 1},
+    ],
+    {attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.16},
+    {enabled: true, type: 'lowpass', frequency: 5200, resonance: 5.2},
+    {enabled: true, target: 'pitch', rate: 5.8, depth: 10},
+    {enabled: true, time: 0.16, feedback: 0.16, mix: 0.1},
+    0.66
+  ),
+  presetPatch(
+    'Acid Lead',
+    [
+      {type: 'sawtooth', detune: -12, volume: 0.22, pan: -0.08, octave: 0},
+      {type: 'square', detune: 7, volume: 0.16, pan: 0.08, octave: 0},
+      {type: 'sawtooth', detune: 0, volume: 0.08, pan: 0, octave: -1},
+    ],
+    {attack: 0.006, decay: 0.16, sustain: 0.5, release: 0.14},
+    {enabled: true, type: 'bandpass', frequency: 1800, resonance: 12},
+    {enabled: true, target: 'filter', rate: 4.4, depth: 620},
+    {enabled: true, time: 0.12, feedback: 0.22, mix: 0.12},
+    0.66
+  ),
 ];
+
+export const SYNTH_PRESET_CATEGORIES: readonly SynthPresetCategory[] = [
+  {label: 'Keys', patches: KEY_PRESETS},
+  {label: 'Guitars', patches: GUITAR_PRESETS},
+  {label: 'Organs', patches: ORGAN_PRESETS},
+  {label: 'Strings & Pads', patches: STRING_PAD_PRESETS},
+  {label: 'Bass', patches: BASS_PRESETS},
+  {label: 'Bells & Mallets', patches: BELL_PRESETS},
+  {label: 'Synth Leads', patches: LEAD_PRESETS},
+];
+
+export const SYNTH_PRESET_PATCHES: readonly SynthPatch[] = SYNTH_PRESET_CATEGORIES.flatMap(category => category.patches);
 
 export const SYNTH_PRESET_NAMES: readonly string[] = SYNTH_PRESET_PATCHES.map(patch => patch.name);
 
@@ -399,11 +538,16 @@ export const FREQUENCIES: { [note: string]: number } = {
 export class PatchService implements OnDestroy {
 
   private audioCtx?: AudioContext;
+  private selectedSoundDriverId: SoundDriverId = 'web-audio';
+  private readonly toneSampledDriver: ToneSampledSoundDriver;
+  private readonly soundFontDriver: SoundFontSampledSoundDriver;
 
   constructor(
     private settingsService: SettingsService,
     private readonly logger: LogService
   ) {
+    this.toneSampledDriver = new ToneSampledSoundDriver(this.logger);
+    this.soundFontDriver = new SoundFontSampledSoundDriver(this.logger);
   }
 
   registerPatches() {
@@ -417,7 +561,7 @@ export class PatchService implements OnDestroy {
   playCustomOscillator(notes: string[], duration = 0.6, type: string = 'bass'): void {
     const presetPatch = this.getPresetPatch(type);
     if (presetPatch) {
-      notes.forEach(note => this.playPatch(note, duration, presetPatch));
+      notes.forEach(note => this.playPatch(note, duration, presetPatch, 'web-audio'));
       return;
     }
 
@@ -456,14 +600,29 @@ export class PatchService implements OnDestroy {
     }
   }
 
-  playPreset(note: string, duration = 0.6, presetName = 'Piano'): void {
+  playPreset(
+    note: string,
+    duration = 0.6,
+    presetName = 'Piano',
+    driverId: SoundDriverId = this.selectedSoundDriverId
+  ): void {
+    if (driverId === 'tone-sampler') {
+      void this.toneSampledDriver.playPreset(note, duration, presetName);
+      return;
+    }
+
+    if (driverId === 'soundfont') {
+      void this.soundFontDriver.playPreset(note, duration, presetName);
+      return;
+    }
+
     const presetPatch = this.getPresetPatch(presetName);
     if (!presetPatch) {
       this.logger.warn(`Unknown preset patch: ${presetName}`);
       return;
     }
 
-    this.playPatch(note, duration, presetPatch);
+    this.playPatch(note, duration, presetPatch, 'web-audio');
   }
 
   playMultipleNotes(notes: string[], duration: number = 0.6): void {
@@ -493,7 +652,22 @@ export class PatchService implements OnDestroy {
     }
   }
 
-  playPatch(note: string, duration = 0.5, patch: SynthPatch = DEFAULT_SYNTH_PATCH): void {
+  playPatch(
+    note: string,
+    duration = 0.5,
+    patch: SynthPatch = DEFAULT_SYNTH_PATCH,
+    driverId: SoundDriverId = 'web-audio'
+  ): void {
+    if (driverId === 'tone-sampler' && this.toneSampledDriver.canPlayPreset(patch.name)) {
+      void this.toneSampledDriver.playPreset(note, duration, patch.name);
+      return;
+    }
+
+    if (driverId === 'soundfont' && this.soundFontDriver.canPlayPreset(patch.name)) {
+      void this.soundFontDriver.playPreset(note, duration, patch.name);
+      return;
+    }
+
     const freq = FREQUENCIES[note];
     if (!freq) {
       this.logger.warn(`Unknown note: ${note}`);
@@ -586,6 +760,23 @@ export class PatchService implements OnDestroy {
     return patch ? this.normalizePatch(patch) : this.getPresetPatch(name);
   }
 
+  getSoundDrivers(): SoundDriverMetadata[] {
+    return SOUND_DRIVERS.map(driver => ({...driver}));
+  }
+
+  getSoundDriverId(): SoundDriverId {
+    return this.selectedSoundDriverId;
+  }
+
+  setSoundDriver(driverId: SoundDriverId): void {
+    if (!SOUND_DRIVERS.some(driver => driver.id === driverId)) {
+      this.logger.warn(`Unknown sound driver: ${driverId}`);
+      return;
+    }
+
+    this.selectedSoundDriverId = driverId;
+  }
+
   getPresetPatches(): SynthPatch[] {
     return SYNTH_PRESET_PATCHES.map(patch => this.clonePatch(patch));
   }
@@ -651,6 +842,8 @@ export class PatchService implements OnDestroy {
   }
 
   ngOnDestroy() {
+    this.toneSampledDriver.dispose();
+    this.soundFontDriver.dispose();
     this.audioCtx?.close();
   }
 

@@ -2,6 +2,8 @@
 
 ## 2026-05-14
 
+- Added a selectable sound driver model with the existing Web Audio synth driver, an experimental Tone.js sampled preset driver, and a SoundFont General MIDI sampled driver for comparing more realistic instrument playback paths.
+- Expanded the patch builder preset library with categorized instrument variants across keys, guitars, organs, strings/pads, bass, bells/mallets, and synth leads.
 - Added reusable synth factory presets for Piano, Guitar, Organ, Strings, Bass, Bell, Lead, and Warm Pad, with patch editor loading and piano tester playback support.
 - Added a patch keyboard tester toggle to the patch builder and refreshed the piano component with patch-aware playback, octave/range controls, and responsive horizontal scrolling.
 - Upgraded the patch builder lab with a richer dark studio UI, reliable save/load/duplicate/delete controls, generated patches, chord/sequence preview modes, oscillator pan/octave controls, and optional filter/LFO/delay/master synth settings.

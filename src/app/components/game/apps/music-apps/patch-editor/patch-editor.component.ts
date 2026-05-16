@@ -11,7 +11,8 @@ import {
   OSCILLATOR_TYPES,
   OscillatorType,
   PatchService,
-  SYNTH_PRESET_PATCHES,
+  SYNTH_PRESET_CATEGORIES,
+  SynthPresetCategory,
   SynthOscillatorConfig,
   SynthPatch,
 } from '../../../services/patch.service';
@@ -35,6 +36,7 @@ import {
 import {TooltipDirective} from '../../../directives/tooltip.directive';
 import {take} from 'rxjs/operators';
 import {PianoComponent} from '../piano/piano.component';
+import {SoundDriverId, SoundDriverMetadata} from '../../../services/sound-drivers/sound-driver.types';
 
 type PreviewMode = 'note' | 'fifth' | 'minor' | 'major' | 'sequence';
 
@@ -64,10 +66,12 @@ export class PatchEditorComponent implements OnInit {
   defaultNote = 'C4';
   previewDuration = 0.6;
   previewMode: PreviewMode = 'note';
+  selectedSoundDriverId: SoundDriverId = 'web-audio';
   selectedPatch: SynthPatch = DEFAULT_SYNTH_PATCH;
   selectedFactoryPresetName = '';
   selectedSavedPatchName = '';
   showKeyboard = false;
+  protected readonly soundDrivers: readonly SoundDriverMetadata[];
 
   constructor(
     private patchService: PatchService,
@@ -75,6 +79,7 @@ export class PatchEditorComponent implements OnInit {
     private readonly notify: NotificationService
   ) {
     this.selectedPatch = this.createPatch('New Patch');
+    this.soundDrivers = this.patchService.getSoundDrivers();
   }
 
   ngOnInit(): void {
@@ -112,12 +117,15 @@ export class PatchEditorComponent implements OnInit {
     const stepMs = this.previewMode === 'sequence' ? 180 : 0;
 
     if (stepMs === 0) {
-      notes.forEach(note => this.patchService.playPatch(note, this.previewDuration, patch));
+      notes.forEach(note => this.patchService.playPatch(note, this.previewDuration, patch, this.selectedSoundDriverId));
       return;
     }
 
     notes.forEach((note, index) => {
-      window.setTimeout(() => this.patchService.playPatch(note, this.previewDuration, patch), index * stepMs);
+      window.setTimeout(
+        () => this.patchService.playPatch(note, this.previewDuration, patch, this.selectedSoundDriverId),
+        index * stepMs
+      );
     });
   }
 
@@ -273,8 +281,21 @@ export class PatchEditorComponent implements OnInit {
     oscillator.type = type;
   }
 
+  setSoundDriver(driverId: SoundDriverId): void {
+    this.selectedSoundDriverId = driverId;
+    this.patchService.setSoundDriver(driverId);
+  }
+
   trackByPatchName(_index: number, patch: SynthPatch): string {
     return patch.name;
+  }
+
+  trackBySoundDriverId(_index: number, driver: SoundDriverMetadata): SoundDriverId {
+    return driver.id;
+  }
+
+  trackByPresetCategoryLabel(_index: number, category: SynthPresetCategory): string {
+    return category.label;
   }
 
   trackByIndex(index: number): number {
@@ -380,7 +401,7 @@ export class PatchEditorComponent implements OnInit {
   }
 
   protected readonly noteOptions = Object.keys(FREQUENCIES).filter(note => /[2-6]$/.test(note));
-  protected readonly factoryPresets = SYNTH_PRESET_PATCHES;
+  protected readonly presetCategories = SYNTH_PRESET_CATEGORIES;
   protected readonly previewModes: readonly PreviewModeOption[] = [
     {id: 'note', label: 'Single'},
     {id: 'fifth', label: 'Fifth'},
