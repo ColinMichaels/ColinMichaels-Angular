@@ -41,9 +41,12 @@ import {BlogRepositoryService} from '../../../features/blog/services/blog-reposi
           </div>
         </section>
 
-        <section class="border-t border-zinc-800 pt-6">
+        <section class="flex flex-wrap gap-3 border-t border-zinc-800 pt-6">
           <a routerLink="/admin/cms" class="inline-flex border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
             Open CMS
+          </a>
+          <a routerLink="/admin/cms/new" class="inline-flex border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
+            New Post
           </a>
         </section>
       </section>

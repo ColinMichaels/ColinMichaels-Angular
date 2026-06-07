@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-07
+
+- Added local browser storage for CMS-created and edited blog posts, layered over the existing seeded blog data.
+- Added `/admin/cms/new` and CMS entry points for creating a new post with metadata, SEO fields, status, tags, categories, cover image, and Editor.js content.
+- Added Editor.js-to-blog block conversion so saved CMS content feeds the public blog renderer when posts are published.
+
 ## 2026-05-14
 
 - Added a selectable sound driver model with the existing Web Audio synth driver, an experimental Tone.js sampled preset driver, and a SoundFont General MIDI sampled driver for comparing more realistic instrument playback paths.

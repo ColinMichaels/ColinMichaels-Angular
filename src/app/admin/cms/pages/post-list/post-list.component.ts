@@ -34,10 +34,18 @@ function formatDate(value: string | null): string {
           <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
         </nav>
 
-        <header class="space-y-3 border-b border-zinc-800 pb-8">
-          <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-          <h1 class="text-4xl font-semibold text-zinc-50">Posts</h1>
-          <p class="max-w-2xl text-zinc-400">Draft, scheduled, published, and archived entries using the shared blog content model.</p>
+        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
+          <div class="space-y-3">
+            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
+            <h1 class="text-4xl font-semibold text-zinc-50">Posts</h1>
+            <p class="max-w-2xl text-zinc-400">Draft, scheduled, published, and archived entries using the shared blog content model.</p>
+          </div>
+          <a
+            routerLink="/admin/cms/new"
+            class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+          >
+            New Post
+          </a>
         </header>
 
         <section class="overflow-x-auto border border-zinc-800">

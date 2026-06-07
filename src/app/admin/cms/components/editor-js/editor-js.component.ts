@@ -102,7 +102,7 @@ function createObjectUrlUploadResult(file: File): ImageUploadResult {
             [disabled]="isLoading() || isSaving()"
             (click)="save()"
           >
-            {{ isSaving() ? 'Saving' : 'Save Draft' }}
+            {{ isSaving() ? 'Saving' : saveLabel }}
           </button>
         </div>
       </div>
@@ -126,6 +126,7 @@ function createObjectUrlUploadResult(file: File): ImageUploadResult {
 export class EditorJsComponent implements AfterViewInit {
   @Input({required: true}) initialData!: OutputData;
   @Input() title = 'Post Editor';
+  @Input() saveLabel = 'Save Draft';
   @Output() saved = new EventEmitter<EditorSavedDocument>();
 
   @ViewChild('editorHolder', {static: true}) private readonly editorHolder!: ElementRef<HTMLElement>;

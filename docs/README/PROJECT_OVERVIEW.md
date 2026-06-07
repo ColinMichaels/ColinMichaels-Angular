@@ -26,9 +26,9 @@ This project combines a public portfolio and publishing site with a macOS-inspir
 - `src/app/components/main` and `src/app/features/public`:
   public homepage and portfolio-facing route boundary.
 - `src/app/features/blog`:
-  public blog routes, typed post models, local repository, and read-only block rendering.
+  public blog routes, typed post models, local repository, browser-local CMS storage, and read-only block rendering.
 - `src/app/admin`:
-  protected admin and CMS route boundary.
+  protected admin and CMS route boundary for post listing, creation, and editing.
 - `src/app/labs`:
   public experiments index and route-backed playgrounds.
 - `src/app/core-os`:

@@ -1,6 +1,35 @@
 import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 
-import {BlogBlockData, BlogContentBlock, BlogPost} from '../../../features/blog/models/blog-post.model';
+import {BlogBlockData, BlogBlockType, BlogContentBlock, BlogPost} from '../../../features/blog/models/blog-post.model';
+
+const supportedBlockTypes = new Set<BlogBlockType>([
+  'paragraph',
+  'header',
+  'image',
+  'embed',
+  'list',
+  'quote',
+  'code',
+  'delimiter',
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getString(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getNestedString(record: Record<string, unknown>, parentKey: string, key: string): string | undefined {
+  const parent = record[parentKey];
+  return isRecord(parent) ? getString(parent, key) : undefined;
+}
+
+function toHeaderLevel(value: unknown): 2 | 3 {
+  return value === 3 ? 3 : 2;
+}
 
 function toListData(blockData: BlogBlockData): Record<string, unknown> {
   return {
@@ -51,9 +80,89 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
   }
 }
 
+function extractListItems(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map(item => {
+      if (typeof item === 'string') {
+        return item;
+      }
+
+      if (isRecord(item)) {
+        return getString(item, 'content') ?? getString(item, 'text') ?? '';
+      }
+
+      return '';
+    })
+    .map(item => item.trim())
+    .filter(item => item.length > 0);
+}
+
+function createBlockData(type: BlogBlockType, data: Record<string, unknown>): BlogBlockData {
+  switch (type) {
+    case 'header':
+      return {
+        text: getString(data, 'text') ?? '',
+        level: toHeaderLevel(data['level']),
+      };
+    case 'paragraph':
+      return {
+        text: getString(data, 'text') ?? '',
+      };
+    case 'quote':
+      return {
+        text: getString(data, 'text') ?? '',
+        caption: getString(data, 'caption') ?? '',
+      };
+    case 'list':
+      return {
+        ordered: data['style'] === 'ordered',
+        items: extractListItems(data['items']),
+      };
+    case 'image':
+      return {
+        url: getNestedString(data, 'file', 'url') ?? getString(data, 'url') ?? '',
+        caption: getString(data, 'caption') ?? '',
+      };
+    case 'embed':
+      return {
+        provider: getString(data, 'service') ?? '',
+        url: getString(data, 'source') ?? '',
+        embedUrl: getString(data, 'embed') ?? getString(data, 'source') ?? '',
+        caption: getString(data, 'caption') ?? '',
+      };
+    case 'code':
+      return {
+        code: getString(data, 'code') ?? '',
+        language: getString(data, 'language') ?? '',
+      };
+    case 'delimiter':
+      return {};
+  }
+}
+
 export function createEditorDocument(post: BlogPost): OutputData {
   return {
     time: new Date(post.updatedAt).getTime(),
     blocks: post.blocks.map(toEditorBlock),
   };
+}
+
+export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
+  return document.blocks.flatMap((block, index) => {
+    if (!supportedBlockTypes.has(block.type as BlogBlockType) || !isRecord(block.data)) {
+      return [];
+    }
+
+    const type = block.type as BlogBlockType;
+
+    return {
+      id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+      type,
+      data: createBlockData(type, block.data),
+    };
+  });
 }

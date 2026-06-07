@@ -255,7 +255,7 @@ Tailwind risks:
 
 ## Blog and CMS Preparation
 
-An initial blog/admin scaffold now exists. The public blog uses `features/blog`, the protected admin CMS list uses `admin/cms`, and both share the typed `BlogPost` content model. Existing markdown support remains limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
+An initial blog/admin scaffold now exists. The public blog uses `features/blog`, the protected admin CMS list/editor uses `admin/cms`, and both share the typed `BlogPost` content model. CMS-created and edited posts currently persist to browser `localStorage` layered over seeded content; Firebase-backed writes remain a future migration step. Existing markdown support remains limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
 
 Recommended feature boundary:
 
@@ -263,6 +263,7 @@ Recommended feature boundary:
 src/app/features/blog/
   blog.routes.ts
   models/blog-post.model.ts
+  services/blog-storage.service.ts
   services/blog-repository.service.ts
   pages/blog-index/
   pages/blog-detail/
@@ -282,10 +283,11 @@ Initial implementation status:
 
 - `features/blog/blog.routes.ts`: public `blog` and `blog/:slug` routes.
 - `features/blog/models/blog-post.model.ts`: typed post, SEO, status, and block contracts.
-- `features/blog/services/blog-repository.service.ts`: local typed repository for published and admin post reads.
+- `features/blog/services/blog-storage.service.ts`: browser-local storage for initial CMS create/edit workflows.
+- `features/blog/services/blog-repository.service.ts`: local typed repository for published/admin reads plus local CMS create/save operations.
 - `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content.
 - `admin/admin.routes.ts`: protected admin route boundary.
-- `admin/cms/cms.routes.ts`: protected CMS post list and post editor routes.
+- `admin/cms/cms.routes.ts`: protected CMS post list, new post, and post editor routes.
 - `admin/cms/components/editor-js`: browser-only Editor.js wrapper using dynamic imports.
 - Editor.js dependencies are installed as admin-only lazy route dependencies: `@editorjs/editorjs`, `@editorjs/header`, `@editorjs/list`, `@editorjs/quote`, `@editorjs/code`, `@editorjs/delimiter`, `@editorjs/embed`, and `@editorjs/image`.
 

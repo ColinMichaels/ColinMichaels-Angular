@@ -32,6 +32,7 @@ describe('routes', () => {
     expect(routePaths(adminRoute?.children ?? [])).toEqual([
       '',
       PATH_NAMES.ADMIN_CMS,
+      `${PATH_NAMES.ADMIN_CMS}/new`,
       `${PATH_NAMES.ADMIN_CMS}/:slug/edit`,
     ]);
   });
