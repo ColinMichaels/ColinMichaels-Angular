@@ -28,8 +28,14 @@ describe('routes', () => {
 
   it('keeps admin child routes scoped under the admin boundary', () => {
     const adminRoute = routes.find(route => route.path === PATH_NAMES.ADMIN);
+    const guardedAdminRoutes = adminRoute?.children?.find(route => route.path === '');
 
     expect(routePaths(adminRoute?.children ?? [])).toEqual([
+      PATH_NAMES.ADMIN_ACCESS_DENIED,
+      '',
+    ]);
+
+    expect(routePaths(guardedAdminRoutes?.children ?? [])).toEqual([
       '',
       PATH_NAMES.ADMIN_CMS,
       `${PATH_NAMES.ADMIN_CMS}/new`,

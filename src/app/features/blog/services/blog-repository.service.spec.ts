@@ -115,4 +115,33 @@ describe('BlogRepositoryService', () => {
     expect(service.getPublishedPostBySlug(savedPost.slug)?.title).toBe('Published Local Post');
     expect(service.getPublishedPosts().some(post => post.slug === savedPost.slug)).toBeTrue();
   });
+
+  it('archives seed posts instead of deleting source content', () => {
+    const seedPost = service.getAdminPostBySlug('architecture-boundaries');
+
+    expect(seedPost).toBeDefined();
+
+    const result = service.deletePost(seedPost!.id);
+
+    expect(result).toBe('archived-seed-post');
+    expect(service.getPublishedPostBySlug('architecture-boundaries')).toBeUndefined();
+    expect(service.getAdminPostBySlug('architecture-boundaries')?.status).toBe('archived');
+  });
+
+  it('deletes locally created posts from CMS storage', () => {
+    const template = service.createNewPostTemplate();
+    const savedPost = service.savePost({
+      ...template,
+      slug: 'temporary-local-post',
+      title: 'Temporary Local Post',
+      excerpt: 'A temporary local post.',
+    });
+
+    expect(service.getAdminPostBySlug(savedPost.slug)).toBeDefined();
+
+    const result = service.deletePost(savedPost.id);
+
+    expect(result).toBe('deleted-local-post');
+    expect(service.getAdminPostBySlug(savedPost.slug)).toBeUndefined();
+  });
 });

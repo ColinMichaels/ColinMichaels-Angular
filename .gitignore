@@ -2,12 +2,14 @@
 
 # Compiled output
 /dist
+/functions/lib
 /tmp
 /out-tsc
 /bazel-out
 
 # Node
 /node_modules
+functions/node_modules
 npm-debug.log
 yarn-error.log
 
@@ -49,4 +51,3 @@ Thumbs.db
 src/environments/environment.local.ts
 src/environments/.env.*
 !src/environments/.env.example
-

@@ -273,6 +273,9 @@ src/app/features/blog/
 src/app/admin/cms/
   cms.routes.ts
   models/editor-document.model.ts
+  models/blog-ai-assistant.model.ts
+  services/blog-ai-assistant.service.ts
+  services/blog-ai-functions.service.ts
   services/cms-draft.service.ts
   pages/post-list/
   pages/post-editor/
@@ -287,8 +290,12 @@ Initial implementation status:
 - `features/blog/services/blog-repository.service.ts`: local typed repository for published/admin reads plus local CMS create/save operations.
 - `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content.
 - `admin/admin.routes.ts`: protected admin route boundary.
+- `guards/admin-auth.guard.ts`: Firebase Auth custom-claim guard for all admin routes.
 - `admin/cms/cms.routes.ts`: protected CMS post list, new post, and post editor routes.
 - `admin/cms/components/editor-js`: browser-only Editor.js wrapper using dynamic imports.
+- `admin/cms/services/blog-ai-functions.service.ts`: callable Firebase Functions client for server-side CMS AI metadata and thumbnail generation.
+- `admin/cms/services/blog-ai-assistant.service.ts`: CMS-local writing assistant fallback for draft metadata and thumbnail prompt suggestions when the backend is unavailable.
+- `functions/src/index.ts`: Firebase callable functions that call OpenAI server-side and store generated blog thumbnails in Firebase Storage.
 - Editor.js dependencies are installed as admin-only lazy route dependencies: `@editorjs/editorjs`, `@editorjs/header`, `@editorjs/list`, `@editorjs/quote`, `@editorjs/code`, `@editorjs/delimiter`, `@editorjs/embed`, and `@editorjs/image`.
 
 Minimum content model:
@@ -323,6 +330,8 @@ Migration stance:
 - [x] Render published Editor.js blocks through a read-only public renderer.
   - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, and delimiter blocks without importing Editor.js.
 - Store block JSON, not HTML, and sanitize embeds at render time.
+- Keep secret-bearing AI calls out of Angular browser code. CMS writing assistance and thumbnail generation run through authenticated Firebase callable functions with `OPENAI_API_KEY` bound as a Functions secret.
+- Admin authorization uses Firebase Auth custom claims (`admin`, `cmsAdmin`, or `roles.admin`) across route guards, callable functions, Firestore rules, Realtime Database rules, and Storage rules.
 
 ## Editor.js Compatibility Plan
 

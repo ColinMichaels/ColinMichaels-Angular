@@ -2,7 +2,7 @@ import {Component, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
-import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {BlogPostDeleteResult, BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
 
 interface AdminPostRow {
   post: BlogPost;
@@ -82,12 +82,20 @@ function formatDate(value: string | null): string {
                     } @else {
                       <span class="text-zinc-600">Hidden</span>
                     }
+                    <button type="button" class="text-red-300 hover:text-red-200" (click)="deletePost(row.post)">
+                      Delete
+                    </button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </section>
+
+        @if (deleteMessage) {
+          <p
+            class="border border-emerald-500/50 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">{{ deleteMessage }}</p>
+        }
       </section>
     </main>
   `,
@@ -95,11 +103,8 @@ function formatDate(value: string | null): string {
 export class CmsPostListComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
 
-  protected readonly rows: readonly AdminPostRow[] = this.blogRepository.getAdminPosts().map(post => ({
-    post,
-    updatedAt: formatDate(post.updatedAt),
-    publishedAt: formatDate(post.publishedAt),
-  }));
+  protected rows: readonly AdminPostRow[] = this.createRows();
+  protected deleteMessage = '';
 
   protected statusClass(status: BlogPostStatus): string {
     const baseClass = 'rounded border px-2 py-1 text-xs uppercase tracking-wide';
@@ -113,6 +118,38 @@ export class CmsPostListComponent {
         return `${baseClass} border-cyan-500/60 text-cyan-300`;
       case 'archived':
         return `${baseClass} border-zinc-600 text-zinc-400`;
+    }
+  }
+
+  protected deletePost(post: BlogPost): void {
+    const confirmed = window.confirm(`Delete "${post.title}" from the CMS? Seed posts will be archived instead of removed.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const result = this.blogRepository.deletePost(post.id);
+
+    this.rows = this.createRows();
+    this.deleteMessage = this.getDeleteMessage(result, post.title);
+  }
+
+  private createRows(): readonly AdminPostRow[] {
+    return this.blogRepository.getAdminPosts().map(post => ({
+      post,
+      updatedAt: formatDate(post.updatedAt),
+      publishedAt: formatDate(post.publishedAt),
+    }));
+  }
+
+  private getDeleteMessage(result: BlogPostDeleteResult, title: string): string {
+    switch (result) {
+      case 'archived-seed-post':
+        return `Archived seeded post "${title}" instead of deleting source content.`;
+      case 'deleted-local-post':
+        return `Deleted local CMS post "${title}".`;
+      case 'not-found':
+        return `Could not delete "${title}" because it was not found.`;
     }
   }
 }

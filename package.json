@@ -6,11 +6,13 @@
     "start": "ng serve",
     "generate:env": "node scripts/generate-environment.mjs",
     "build": "ng build",
+    "build:functions": "npm --prefix functions run build",
     "build:prod": "ng build --configuration production",
     "build:css": "npx tailwindcss -o ./dist/output.css --minify",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "serve:functions": "npm --prefix functions run serve"
   },
   "engines": {
     "node": ">=20.11 <23"

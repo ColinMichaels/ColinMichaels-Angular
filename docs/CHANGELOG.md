@@ -1,7 +1,17 @@
 # Changelog
 
+## 2026-06-08
+
+- Added Firebase custom-claim admin authorization across admin routes, callable CMS AI functions, Realtime Database rules, Firestore rules, and Storage rules.
+- Added a trusted Admin SDK script for granting or revoking the initial `admin` custom claim.
+- Added CMS post delete handling with local-draft deletion and safe archiving for seeded posts.
+
 ## 2026-06-07
 
+- Added a CMS writing assistant panel for blog post creation and editing with generated title, description, SEO, category, tag, and thumbnail prompt suggestions.
+- Added Firebase callable functions for server-side CMS AI metadata and thumbnail generation with OpenAI keys bound through Firebase Functions secrets.
+- Added Firebase Storage rules and generated-thumbnail storage under `cms/blog-thumbnails/{slug}/`, with stored URLs applied to post cover and Open Graph fields.
+- Added a CMS-only assistant service/model boundary so server-backed AI metadata and thumbnail generation can fall back to the local suggestion provider without changing public blog rendering.
 - Added local browser storage for CMS-created and edited blog posts, layered over the existing seeded blog data.
 - Added `/admin/cms/new` and CMS entry points for creating a new post with metadata, SEO fields, status, tags, categories, cover image, and Editor.js content.
 - Added Editor.js-to-blog block conversion so saved CMS content feeds the public blog renderer when posts are published.

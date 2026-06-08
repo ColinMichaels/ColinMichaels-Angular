@@ -2,6 +2,7 @@ import {inject, Injectable, NgZone} from '@angular/core';
 import {
   Auth,
   createUserWithEmailAndPassword,
+  getIdTokenResult,
   getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -17,6 +18,26 @@ import {from, map, Observable, of, shareReplay, throwError} from 'rxjs';
 import {catchError, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
+
+export interface AdminAuthorization {
+  uid: string | null;
+  email: string | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  claims: Record<string, unknown>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function hasAdminClaim(claims: Record<string, unknown>): boolean {
+  const roles = claims['roles'];
+
+  return claims['admin'] === true
+    || claims['cmsAdmin'] === true
+    || (isRecord(roles) && roles['admin'] === true);
+}
 
 @Injectable({
   providedIn: 'root'
@@ -145,6 +166,47 @@ export class AuthService {
   isAuthenticated(): Observable<boolean> {
     return this.user$.pipe(
       map(user => !!user)
+    );
+  }
+
+  getAdminAuthorization(forceRefresh = false): Observable<AdminAuthorization> {
+    return this.user$.pipe(
+      switchMap(currentUser => {
+        if (!currentUser) {
+          return of({
+            uid: null,
+            email: null,
+            isAuthenticated: false,
+            isAdmin: false,
+            claims: {},
+          });
+        }
+
+        return from(getIdTokenResult(currentUser, forceRefresh)).pipe(
+          map(tokenResult => {
+            const claims = tokenResult.claims as Record<string, unknown>;
+
+            return {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              isAuthenticated: true,
+              isAdmin: hasAdminClaim(claims),
+              claims,
+            };
+          }),
+          catchError(error => {
+            this.logger.error('Admin claim check failed:', error);
+
+            return of({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              isAuthenticated: true,
+              isAdmin: false,
+              claims: {},
+            });
+          })
+        );
+      })
     );
   }
 }

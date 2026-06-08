@@ -181,6 +181,10 @@ export class EditorJsComponent implements AfterViewInit {
     }
   }
 
+  async getDocument(): Promise<OutputData> {
+    return this.editor ? this.editor.save() : this.initialData;
+  }
+
   private async initializeEditor(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) {
       this.error.set('Editor.js is only available in the browser.');

@@ -6,6 +6,8 @@ import {BlogStorageService} from './blog-storage.service';
 
 const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
 
+export type BlogPostDeleteResult = 'archived-seed-post' | 'deleted-local-post' | 'not-found';
+
 function toSummary(post: BlogPost): BlogPostSummary {
   return {
     id: post.id,
@@ -154,6 +156,30 @@ export class BlogRepositoryService {
 
     this.storage.savePost(savedPost);
     return savedPost;
+  }
+
+  deletePost(postId: string): BlogPostDeleteResult {
+    const seedPost = this.seedPosts.find(post => post.id === postId);
+
+    if (seedPost) {
+      this.savePost({
+        ...seedPost,
+        status: 'archived',
+        updatedAt: new Date().toISOString(),
+        publishedAt: null,
+      });
+
+      return 'archived-seed-post';
+    }
+
+    const localPost = this.storage.getPosts().find(post => post.id === postId);
+
+    if (!localPost) {
+      return 'not-found';
+    }
+
+    this.storage.deletePost(postId);
+    return 'deleted-local-post';
   }
 
   createUniqueSlug(value: string, currentPostId?: string): string {

@@ -21,6 +21,8 @@ Risks:
   split `ApplicationManagerService` and simplify `SettingsService`.
 - Blog/CMS foundation:
   connect the Editor.js draft save flow to Firebase and add media upload rules.
+- Blog AI authoring:
+  refine the Firebase Functions metadata prompt, add admin-only quotas, and persist suggestion history.
 - Strong typing pass:
   remove high-impact `any` usage in service contracts and dynamic payloads.
 - Performance cleanup:
@@ -42,6 +44,8 @@ Risks:
   remove risky `innerHTML` patterns in terminal/tooltip/notification systems.
 - Product evolution:
   richer app ecosystem, saved desktop sessions, advanced window tiling/layout presets.
+- AI media generation:
+  add a richer CMS media library for browsing, replacing, and deleting generated thumbnails.
 
 Dependencies:
 

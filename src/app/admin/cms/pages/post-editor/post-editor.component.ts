@@ -1,12 +1,21 @@
 import {JsonPipe} from '@angular/common';
-import {Component, inject} from '@angular/core';
+import {Component, ViewChild, inject} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
 import {EditorJsComponent} from '../../components/editor-js/editor-js.component';
+import {
+  BlogAssistantContext,
+  BlogAssistantResult,
+  BlogMetadataSuggestion,
+  BlogStoredThumbnail,
+  BlogThumbnailSuggestion,
+} from '../../models/blog-ai-assistant.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
+import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
 
 interface PostEditorForm {
@@ -42,6 +51,10 @@ function fromCsv(value: string): readonly string[] {
 function requiredText(value: string, fallback: string): string {
   const trimmedValue = value.trim();
   return trimmedValue || fallback;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error';
 }
 
 @Component({
@@ -216,6 +229,133 @@ function requiredText(value: string, fallback: string): string {
                 </dl>
               </section>
 
+              <section class="space-y-4 border-t border-zinc-800 pt-5">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-lg font-semibold text-zinc-50">AI Writing Assistant</h2>
+                    <span
+                      class="border border-amber-500/50 px-2 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-amber-200">
+                      {{ assistantSourceLabel }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-zinc-400">
+                    Suggests titles, descriptions, categories, tags, and thumbnail prompts from the current draft.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  class="w-full border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+                  [disabled]="isAssistantLoading"
+                  (click)="generateAssistantSuggestions()"
+                >
+                  {{ isAssistantLoading ? 'Generating Suggestions' : 'Suggest Metadata' }}
+                </button>
+
+                @if (assistantError) {
+                  <p
+                    class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ assistantError }}</p>
+                }
+
+                @if (assistantMessage) {
+                  <p
+                    class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">{{ assistantMessage }}</p>
+                }
+
+                @if (assistantResult; as result) {
+                  <div class="space-y-4">
+                    @for (suggestion of result.suggestions; track suggestion.id) {
+                      <article class="space-y-3 border border-zinc-800 bg-zinc-900/70 p-4">
+                        <div class="space-y-2">
+                          <h3 class="text-base font-semibold text-zinc-50">{{ suggestion.title }}</h3>
+                          <p class="text-sm leading-6 text-zinc-400">{{ suggestion.description }}</p>
+                          <p class="text-xs text-zinc-500">{{ suggestion.rationale }}</p>
+                        </div>
+
+                        <div class="space-y-2 text-xs text-zinc-400">
+                          <p><span class="text-zinc-500">Categories:</span> {{ suggestion.categories.join(', ') }}</p>
+                          <p><span class="text-zinc-500">Tags:</span> {{ suggestion.tags.join(', ') }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                            (click)="applySuggestion(suggestion)"
+                          >
+                            Apply All
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                            (click)="applyTitleSuggestion(suggestion)"
+                          >
+                            Use Title
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                            (click)="applyDescriptionSuggestion(suggestion)"
+                          >
+                            Use Description
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                            (click)="applyTaxonomySuggestion(suggestion)"
+                          >
+                            Use Taxonomy
+                          </button>
+                        </div>
+                      </article>
+                    }
+
+                    <section class="space-y-3 border border-dashed border-zinc-700 bg-black/30 p-4">
+                      <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-300">Thumbnail Generator
+                          Prep</h3>
+                        <p class="mt-2 text-xs leading-5 text-zinc-500">
+                          These prompts are ready for a future server-backed image generation endpoint.
+                        </p>
+                      </div>
+
+                      @for (thumbnail of result.thumbnailSuggestions; track thumbnail.id) {
+                        <article class="space-y-2 border-t border-zinc-800 pt-3">
+                          <p class="text-xs font-medium uppercase tracking-wide text-cyan-300">{{ thumbnail.style }}</p>
+                          <p class="text-sm leading-6 text-zinc-300">{{ thumbnail.prompt }}</p>
+                          <p class="text-xs text-zinc-500">Alt text: {{ thumbnail.altText }}</p>
+                          <button
+                            type="button"
+                            class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+                            [disabled]="isThumbnailLoading === thumbnail.id"
+                            (click)="generateAndStoreThumbnail(thumbnail)"
+                          >
+                            {{ isThumbnailLoading === thumbnail.id ? 'Generating Image' : 'Generate & Store' }}
+                          </button>
+                        </article>
+                      }
+
+                      @if (thumbnailError) {
+                        <p
+                          class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ thumbnailError }}</p>
+                      }
+
+                      @if (lastGeneratedThumbnail; as storedThumbnail) {
+                        <div
+                          class="space-y-2 border border-emerald-500/40 bg-emerald-950/20 p-3 text-xs text-emerald-100">
+                          <p class="font-medium">Stored thumbnail and applied it to Cover Image and Open Graph
+                            Image.</p>
+                          <a [href]="storedThumbnail.downloadUrl" target="_blank" rel="noopener noreferrer"
+                             class="break-all text-cyan-200 hover:text-cyan-100">
+                            {{ storedThumbnail.storagePath }}
+                          </a>
+                        </div>
+                      }
+                    </section>
+                  </div>
+                }
+              </section>
+
               @if (lastSaved; as saved) {
                 <section class="space-y-3 border-t border-zinc-800 pt-5">
                   <h2 class="text-lg font-semibold text-zinc-50">Last Saved</h2>
@@ -241,9 +381,13 @@ function requiredText(value: string, fallback: string): string {
   `,
 })
 export class CmsPostEditorComponent {
+  @ViewChild(EditorJsComponent) private editorComponent?: EditorJsComponent;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly blogAssistant = inject(BlogAiAssistantService);
+  private readonly blogAiFunctions = inject(BlogAiFunctionsService);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
   private hasCreatedPost = false;
 
@@ -255,6 +399,13 @@ export class CmsPostEditorComponent {
   protected lastSaved: EditorSavedDocument | null = null;
   protected saveMessage = '';
   protected saveError = '';
+  protected assistantResult: BlogAssistantResult | null = null;
+  protected assistantMessage = '';
+  protected assistantError = '';
+  protected isAssistantLoading = false;
+  protected isThumbnailLoading: string | null = null;
+  protected thumbnailError = '';
+  protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
 
   protected get editorTitle(): string {
     return requiredText(this.postForm.controls.title.value, 'Untitled Post');
@@ -262,6 +413,14 @@ export class CmsPostEditorComponent {
 
   protected get editorExcerpt(): string {
     return this.postForm.controls.excerpt.value.trim();
+  }
+
+  protected get assistantSourceLabel(): string {
+    if (!this.assistantResult) {
+      return 'Backend';
+    }
+
+    return this.assistantResult.source === 'backend' ? 'Backend' : 'Local fallback';
   }
 
   protected syncSlugFromTitle(): void {
@@ -282,6 +441,107 @@ export class CmsPostEditorComponent {
     );
 
     this.postForm.controls.slug.setValue(slug, {emitEvent: false});
+  }
+
+  protected async generateAssistantSuggestions(): Promise<void> {
+    this.assistantError = '';
+    this.assistantMessage = '';
+    this.isAssistantLoading = true;
+
+    try {
+      const context = await this.createAssistantContext();
+
+      try {
+        this.assistantResult = await this.blogAiFunctions.generateMetadata(context);
+        this.assistantMessage = 'Generated AI metadata and thumbnail prompts with Firebase Functions.';
+      } catch (backendError) {
+        this.assistantResult = this.blogAssistant.createSuggestions(context);
+        this.assistantMessage = `Generated local fallback suggestions because the backend was unavailable: ${getErrorMessage(backendError)}`;
+      }
+    } catch (error) {
+      this.assistantError = error instanceof Error ? error.message : 'Unable to generate writing suggestions.';
+    } finally {
+      this.isAssistantLoading = false;
+    }
+  }
+
+  protected async generateAndStoreThumbnail(thumbnail: BlogThumbnailSuggestion): Promise<void> {
+    this.thumbnailError = '';
+    this.lastGeneratedThumbnail = null;
+
+    if (!this.currentPost) {
+      this.thumbnailError = 'Unable to generate a thumbnail because the source post is missing.';
+      return;
+    }
+
+    this.isThumbnailLoading = thumbnail.id;
+
+    try {
+      const storedThumbnail = await this.blogAiFunctions.generateAndStoreThumbnail({
+        prompt: thumbnail.prompt,
+        altText: thumbnail.altText,
+        style: thumbnail.style,
+        postId: this.currentPost.id,
+        slug: this.postForm.controls.slug.value || this.currentPost.slug,
+      });
+
+      this.postForm.controls.coverImage.setValue(storedThumbnail.downloadUrl);
+      this.postForm.controls.openGraphImage.setValue(storedThumbnail.downloadUrl);
+      this.postForm.markAsDirty();
+      this.lastGeneratedThumbnail = storedThumbnail;
+      this.assistantMessage = 'Generated and stored a thumbnail in Firebase Storage.';
+    } catch (error) {
+      this.thumbnailError = `Unable to generate and store the thumbnail: ${getErrorMessage(error)}`;
+    } finally {
+      this.isThumbnailLoading = null;
+    }
+  }
+
+  protected applySuggestion(suggestion: BlogMetadataSuggestion): void {
+    this.applyTitleSuggestion(suggestion, false);
+    this.applyDescriptionSuggestion(suggestion, false);
+    this.applyTaxonomySuggestion(suggestion, false);
+    this.postForm.controls.seoTitle.setValue(suggestion.seoTitle);
+    this.postForm.controls.seoDescription.setValue(suggestion.seoDescription);
+    this.assistantMessage = 'Applied the full writing assistant suggestion.';
+    this.postForm.markAsDirty();
+  }
+
+  protected applyTitleSuggestion(suggestion: BlogMetadataSuggestion, showMessage = true): void {
+    this.postForm.controls.title.setValue(suggestion.title);
+    this.postForm.controls.seoTitle.setValue(suggestion.seoTitle);
+
+    if (this.isNewPost && !this.postForm.controls.slug.dirty) {
+      this.postForm.controls.slug.setValue(createBlogSlug(suggestion.title));
+    }
+
+    if (showMessage) {
+      this.assistantMessage = 'Applied the suggested title and SEO title.';
+    }
+
+    this.postForm.markAsDirty();
+  }
+
+  protected applyDescriptionSuggestion(suggestion: BlogMetadataSuggestion, showMessage = true): void {
+    this.postForm.controls.excerpt.setValue(suggestion.description);
+    this.postForm.controls.seoDescription.setValue(suggestion.seoDescription);
+
+    if (showMessage) {
+      this.assistantMessage = 'Applied the suggested excerpt and SEO description.';
+    }
+
+    this.postForm.markAsDirty();
+  }
+
+  protected applyTaxonomySuggestion(suggestion: BlogMetadataSuggestion, showMessage = true): void {
+    this.postForm.controls.categories.setValue(toCsv(suggestion.categories));
+    this.postForm.controls.tags.setValue(toCsv(suggestion.tags));
+
+    if (showMessage) {
+      this.assistantMessage = 'Applied the suggested categories and tags.';
+    }
+
+    this.postForm.markAsDirty();
   }
 
   protected onSaved(saved: EditorSavedDocument): void {
@@ -336,6 +596,21 @@ export class CmsPostEditorComponent {
     return this.slug
       ? this.blogRepository.getAdminPostBySlug(this.slug)
       : this.blogRepository.createNewPostTemplate();
+  }
+
+  private async createAssistantContext(): Promise<BlogAssistantContext> {
+    const document = await this.editorComponent?.getDocument() ?? this.initialData;
+    const formValue = this.postForm.getRawValue();
+
+    return {
+      title: formValue.title,
+      excerpt: formValue.excerpt,
+      seoTitle: formValue.seoTitle,
+      seoDescription: formValue.seoDescription,
+      categories: fromCsv(formValue.categories),
+      tags: fromCsv(formValue.tags),
+      blocks: createBlogBlocksFromEditorDocument(document),
+    };
   }
 
   private createForm(post: BlogPost): FormGroup<PostEditorForm> {

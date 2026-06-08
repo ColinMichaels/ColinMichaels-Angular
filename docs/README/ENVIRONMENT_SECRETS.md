@@ -23,11 +23,11 @@ Add these under: `Settings -> Secrets and variables -> Actions -> Variables`
 
 Add these under: `Settings -> Secrets and variables -> Actions -> Secrets`
 
-| Name | Description | Example Value |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | API key used by the AI chat service. | `example_openai_api_key_value` |
-| `OPEN_WEATHER_MAP_API_KEY` | API key used by weather data calls. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
-| `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` | Firebase service account JSON used by GitHub Action deploy. | `{"type":"service_account","project_id":"your-project",...}` |
+| Name                                     | Description                                                                                                                                               | Example Value                                                |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `OPENAI_API_KEY`                         | API key used by the legacy browser AI chat service. CMS AI uses a Firebase Functions secret with the same name instead of this browser environment value. | `example_openai_api_key_value`                               |
+| `OPEN_WEATHER_MAP_API_KEY`               | API key used by weather data calls.                                                                                                                       | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`                           |
+| `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` | Firebase service account JSON used by GitHub Action deploy.                                                                                               | `{"type":"service_account","project_id":"your-project",...}` |
 
 ## Optional Compatibility Keys
 
@@ -59,3 +59,31 @@ This script writes:
 - `src/environments/environment.prod.ts`
 
 Both are generated from CI environment values before `npm run build`.
+
+## Firebase Functions Secrets
+
+CMS AI metadata and thumbnail generation runs server-side in Firebase Functions. Set the OpenAI key as a Functions secret before deploying:
+
+```bash
+firebase functions:secrets:set OPENAI_API_KEY
+firebase deploy --only functions,firestore,database,storage
+```
+
+Optional runtime params:
+
+- `OPENAI_TEXT_MODEL`, default `gpt-5.5`
+- `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
+
+## Admin Claims
+
+Admin routes and CMS writes require a Firebase Auth custom claim. Set the initial admin claim from a trusted shell:
+
+```bash
+npm --prefix functions run set-admin -- --email user@example.com
+```
+
+Supported admin claims:
+
+- `admin: true`
+- `cmsAdmin: true`
+- `roles.admin: true`

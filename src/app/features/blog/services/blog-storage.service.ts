@@ -74,6 +74,14 @@ export class BlogStorageService {
     this.writePosts([...posts, post]);
   }
 
+  deletePost(postId: string): void {
+    if (!this.canUseLocalStorage()) {
+      return;
+    }
+
+    this.writePosts(this.getPosts().filter(savedPost => savedPost.id !== postId));
+  }
+
   private writePosts(posts: readonly BlogPost[]): void {
     try {
       window.localStorage.setItem(BLOG_POST_STORAGE_KEY, JSON.stringify(posts));

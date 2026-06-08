@@ -9,6 +9,7 @@ import {initializeApp, provideFirebaseApp} from '@angular/fire/app';
 import {environment} from '../environments/environment';
 import {getAuth, provideAuth} from '@angular/fire/auth';
 import {getFirestore, provideFirestore} from '@angular/fire/firestore';
+import {getFunctions, provideFunctions} from '@angular/fire/functions';
 import {getStorage, provideStorage} from '@angular/fire/storage';
 import {
   SOUND_SERVICE_CONFIG,
@@ -74,6 +75,16 @@ export const appConfig: ApplicationConfig = {
         return firestore;
       } catch (error) {
         console.error('Error initializing Firestore:', error);
+        throw error;
+      }
+    }),
+    provideFunctions(() => {
+      try {
+        const functions = getFunctions(undefined, 'us-east1');
+        console.log('Functions initialized successfully');
+        return functions;
+      } catch (error) {
+        console.error('Error initializing Functions:', error);
         throw error;
       }
     }),
