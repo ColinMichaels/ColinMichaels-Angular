@@ -12,6 +12,8 @@ import {Observable, map, take} from 'rxjs';
 import {PATH_NAMES} from '../app-route-paths';
 import {AuthService} from '../services/auth.service';
 
+const DEFAULT_ADMIN_ROLES = ['admin', 'cmsAdmin'] as const;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -23,18 +25,22 @@ export class AdminAuthGuard implements CanActivate, CanActivateChild {
   }
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean | UrlTree> {
-    return this.authorizeAdmin(state.url, route.routeConfig?.path ?? '');
+    return this.authorizeAdmin(state.url, route.routeConfig?.path ?? '', this.getRequiredRoles(route));
   }
 
   canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean | UrlTree> {
-    return this.authorizeAdmin(state.url, route.routeConfig?.path ?? '');
+    return this.authorizeAdmin(state.url, route.routeConfig?.path ?? '', this.getRequiredRoles(route));
   }
 
-  private authorizeAdmin(redirectUrl: string, targetRoute: string): Observable<boolean | UrlTree> {
-    return this.authService.getAdminAuthorization(true).pipe(
+  private authorizeAdmin(
+    redirectUrl: string,
+    targetRoute: string,
+    requiredRoles: readonly string[]
+  ): Observable<boolean | UrlTree> {
+    return this.authService.getRoleAuthorization(requiredRoles, true).pipe(
       take(1),
       map(authorization => {
-        if (authorization.isAdmin) {
+        if (authorization.isAuthorized) {
           return true;
         }
 
@@ -45,9 +51,25 @@ export class AdminAuthGuard implements CanActivate, CanActivateChild {
         }
 
         return this.router.createUrlTree(['/', PATH_NAMES.ADMIN, PATH_NAMES.ADMIN_ACCESS_DENIED], {
-          queryParams: {redirectUrl, targetRoute},
+          queryParams: {
+            redirectUrl,
+            targetRoute,
+            requiredRoles: requiredRoles.join(','),
+          },
         });
       })
     );
+  }
+
+  private getRequiredRoles(route: ActivatedRouteSnapshot): readonly string[] {
+    const routeWithRoles = [...route.pathFromRoot]
+      .reverse()
+      .find(routeSnapshot => this.isRoleList(routeSnapshot.data['roles']));
+
+    return routeWithRoles ? routeWithRoles.data['roles'] as string[] : DEFAULT_ADMIN_ROLES;
+  }
+
+  private isRoleList(value: unknown): value is string[] {
+    return Array.isArray(value) && value.length > 0 && value.every(role => typeof role === 'string');
   }
 }

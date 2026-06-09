@@ -4,6 +4,8 @@
 
 - Added Firebase custom-claim admin authorization across admin routes, callable CMS AI functions, Realtime Database rules, Firestore rules, and Storage rules.
 - Added a trusted Admin SDK script for granting or revoking the initial `admin` custom claim.
+- Added Google login support on the OS login screen with popup sign-in, redirect fallback, safe redirect handling, and reusable route role requirements for future admin sections.
+- Expanded the trusted Admin SDK claim script to grant or revoke named roles without removing existing custom claims.
 - Added CMS post delete handling with local-draft deletion and safe archiving for seeded posts.
 
 ## 2026-06-07

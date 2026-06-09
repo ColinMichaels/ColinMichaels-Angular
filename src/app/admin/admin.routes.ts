@@ -15,6 +15,7 @@ export const adminRoutes: Routes = [
       {
         path: '',
         canActivateChild: [AdminAuthGuard],
+        data: {roles: ['admin', 'cmsAdmin']},
         children: [
           {
             path: '',

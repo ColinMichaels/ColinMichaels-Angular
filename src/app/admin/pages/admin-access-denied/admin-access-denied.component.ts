@@ -23,8 +23,10 @@ import {AuthService} from '../../../services/auth.service';
           <h1 class="text-3xl font-semibold text-zinc-50">This account is signed in but not authorized for admin
             tools.</h1>
           <p class="text-zinc-300">
-            Admin publishing actions require the Firebase Auth custom claim <code class="text-amber-100">admin:
-            true</code>.
+            Admin publishing actions require a Firebase Auth custom claim such as
+            <code class="text-amber-100">admin: true</code>,
+            <code class="text-amber-100">cmsAdmin: true</code>, or
+            <code class="text-amber-100">roles.admin: true</code>.
             Ask an existing project owner to grant the claim, then sign out and sign back in to refresh your token.
           </p>
 

@@ -82,8 +82,17 @@ Admin routes and CMS writes require a Firebase Auth custom claim. Set the initia
 npm --prefix functions run set-admin -- --email user@example.com
 ```
 
+Grant or revoke named roles for future admin sections:
+
+```bash
+npm --prefix functions run set-admin -- --email user@example.com --role contentEditor
+npm --prefix functions run set-admin -- --email user@example.com --role contentEditor --revoke
+```
+
 Supported admin claims:
 
 - `admin: true`
 - `cmsAdmin: true`
 - `roles.admin: true`
+
+Google sign-in must be enabled in Firebase Authentication before the login page can use a Gmail account. Add production and local development domains under Firebase Authentication authorized domains.

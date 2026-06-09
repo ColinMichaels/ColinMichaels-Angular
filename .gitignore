@@ -51,3 +51,5 @@ Thumbs.db
 src/environments/environment.local.ts
 src/environments/.env.*
 !src/environments/.env.example
+/functions/.secret.local
+/functions/.env.local

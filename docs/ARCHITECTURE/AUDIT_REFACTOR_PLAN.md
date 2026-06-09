@@ -331,7 +331,7 @@ Migration stance:
   - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, and delimiter blocks without importing Editor.js.
 - Store block JSON, not HTML, and sanitize embeds at render time.
 - Keep secret-bearing AI calls out of Angular browser code. CMS writing assistance and thumbnail generation run through authenticated Firebase callable functions with `OPENAI_API_KEY` bound as a Functions secret.
-- Admin authorization uses Firebase Auth custom claims (`admin`, `cmsAdmin`, or `roles.admin`) across route guards, callable functions, Firestore rules, Realtime Database rules, and Storage rules.
+- Admin authorization uses Firebase Auth custom claims (`admin`, `cmsAdmin`, or `roles.admin`) across route guards, callable functions, Firestore rules, Realtime Database rules, and Storage rules. The login screen supports Google sign-in, and admin route guards can read future role requirements from route `data.roles`; any role that protects data must also be enforced server-side and in Firebase Security Rules.
 
 ## Editor.js Compatibility Plan
 

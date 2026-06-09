@@ -25,16 +25,32 @@ npm run build:functions
 firebase deploy --only functions,firestore,database,storage
 ```
 
+## Authentication And Roles
+
+Enable Google sign-in in Firebase Console under Authentication > Sign-in method > Google. Make sure the deployed site domain and any local development domain are listed under Authentication > Settings > Authorized domains.
+
 Grant the first admin from a trusted shell with Application Default Credentials or a service account:
 
 ```bash
 npm --prefix functions run set-admin -- --email user@example.com
 ```
 
+Grant a future role:
+
+```bash
+npm --prefix functions run set-admin -- --email user@example.com --role contentEditor
+```
+
 Revoke access:
 
 ```bash
 npm --prefix functions run set-admin -- --email user@example.com --revoke
+```
+
+Revoke a specific role:
+
+```bash
+npm --prefix functions run set-admin -- --email user@example.com --role contentEditor --revoke
 ```
 
 Optional function params:
@@ -49,3 +65,5 @@ Admin authorization is enforced through Firebase Auth custom claims. The UI, cal
 - `admin: true`
 - `cmsAdmin: true`
 - `roles.admin: true`
+
+Route guards can also require future named roles by setting route data, for example `data: {roles: ['admin', 'contentEditor']}`. Any route-level role must also be enforced in Firebase Functions and Security Rules before it protects real data.

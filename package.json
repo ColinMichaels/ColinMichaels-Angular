@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --configuration local",
     "generate:env": "node scripts/generate-environment.mjs",
     "build": "ng build",
     "build:functions": "npm --prefix functions run build",

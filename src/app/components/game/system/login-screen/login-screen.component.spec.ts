@@ -18,7 +18,9 @@ describe('LoginScreenComponent', () => {
     handleRedirectResult: jasmine.createSpy('handleRedirectResult').and.returnValue(of(null)),
     signInWithEmail: jasmine.createSpy('signInWithEmail').and.returnValue(of(null)),
     registerWithEmail: jasmine.createSpy('registerWithEmail').and.returnValue(of(null)),
-    loginWithGoogle: jasmine.createSpy('loginWithGoogle').and.returnValue(of(null))
+    loginWithGoogle: jasmine.createSpy('loginWithGoogle').and.returnValue(of(null)),
+    loginWithGoogleRedirect: jasmine.createSpy('loginWithGoogleRedirect').and.returnValue(of(undefined)),
+    updateUserProfile: jasmine.createSpy('updateUserProfile').and.returnValue(of(undefined))
   };
   const userServiceMock = {
     updateUser: jasmine.createSpy('updateUser').and.returnValue(Promise.resolve())
