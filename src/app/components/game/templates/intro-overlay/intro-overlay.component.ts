@@ -1,4 +1,4 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, OnDestroy, Output} from '@angular/core';
 import {SoundService} from '../../services/sound.service';
 import {NgClass} from '@angular/common';
 import {RouterLink} from '@angular/router';
@@ -14,16 +14,12 @@ import {RouterLink} from '@angular/router';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./intro-overlay.component.scss'],
 })
-export class IntroOverlayComponent implements OnInit, OnDestroy {
+export class IntroOverlayComponent implements OnDestroy {
   @Output() begin = new EventEmitter<void>();
   flickerClass = '';
-  flickerInterval: any;
+  private flickerTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(private soundService: SoundService) {
-  }
-
-  ngOnInit() {
-
   }
 
   startGame() {
@@ -34,7 +30,7 @@ export class IntroOverlayComponent implements OnInit, OnDestroy {
   private scheduleRandomFlicker() {
     const randomDelay = Math.floor(Math.random() * 4000) + 1000; // 1–5 sec
 
-   this.flickerInterval =  setTimeout(() => {
+    this.flickerTimeout = setTimeout(() => {
       this.triggerFlicker();
       this.scheduleRandomFlicker(); // loop it
     }, randomDelay);
@@ -42,7 +38,6 @@ export class IntroOverlayComponent implements OnInit, OnDestroy {
 
   private triggerFlicker() {
     this.flickerClass = 'glitch-flicker';
-    const glitches = ['digital-beep-1.mp3', 'digital-beep-2.mp3'];
     this.soundService.playVariant('beep', {volume: 0.2, forceRestart: true});
     setTimeout(() => {
       this.flickerClass = '';
@@ -50,7 +45,8 @@ export class IntroOverlayComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.flickerInterval && clearInterval(this.flickerInterval);
+    if (this.flickerTimeout) {
+      clearTimeout(this.flickerTimeout);
+    }
   }
 }
-

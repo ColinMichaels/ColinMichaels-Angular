@@ -52,7 +52,7 @@ export class UserService implements OnDestroy {
       this.initialized$
     ]).pipe(
       takeUntil(this.destroy$),
-      filter(([_, initialized]) => initialized),
+      filter(([, initialized]) => initialized),
       map(([users]) => users)
     ).subscribe({
       next: (users) => {

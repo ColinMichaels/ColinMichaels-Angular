@@ -37,10 +37,11 @@ export class GameConfigService {
   constructor(private readonly http: HttpClient, private readonly userService: UserService) {
   }
 
-  async loadLevelsForProgress(currentLevel = this.currentLevelIndex, preloadNext: number = 0): Promise<Observable<GameLevel[]>> {
+  async loadLevelsForProgress(currentLevel = this.currentLevelIndex, preloadNext = 0): Promise<Observable<GameLevel[]>> {
     const levelFiles = [];
+    const highestLevelToLoad = currentLevel + preloadNext;
 
-    for (let i = 0; i <= currentLevel; i++) {
+    for (let i = 0; i <= highestLevelToLoad; i++) {
       levelFiles.push(
         this.http.get<GameLevel>(`/assets/game/levels/level-${i + 1}.json`).pipe(
           catchError(error => {

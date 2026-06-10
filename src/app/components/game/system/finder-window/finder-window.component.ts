@@ -1,5 +1,5 @@
-import {Component, inject, Input, signal, ChangeDetectionStrategy} from '@angular/core';
-import {FileSystemService} from '../../services/file-system.service';
+import {ChangeDetectionStrategy, Component, inject, Input} from '@angular/core';
+import {FileEntry, FileSystemService} from '../../services/file-system.service';
 import {NgSwitch, NgSwitchCase} from '@angular/common';
 
 @Component({
@@ -56,7 +56,7 @@ export class FinderWindowComponent {
     this.fileSystem.navigateTo(path);
   }
 
-  trackByName(_: number, file: any): string {
+  trackByName(_: number, file: FileEntry): string {
     return file.name;
   }
 }

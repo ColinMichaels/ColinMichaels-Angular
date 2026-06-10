@@ -14,7 +14,7 @@ export class TimeAgoPipe implements PipeTransform {
 
     try {
       return dayjs(value).fromNow();
-    } catch (err) {
+    } catch {
       console.warn('Invalid timestamp passed to timeAgo pipe:', value);
       return '';
     }

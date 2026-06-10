@@ -3,6 +3,13 @@ import {RouterLink} from '@angular/router';
 import {ScrollEffectsModule} from '../../../modules/scroll/scroll-effects.module';
 import {NgForOf} from '@angular/common';
 
+interface ProjectOverviewFeature {
+  title: string;
+  summary: string;
+  details: string;
+  animation: string;
+}
+
 @Component({
   selector: 'app-projects-overview',
   imports: [
@@ -15,9 +22,8 @@ import {NgForOf} from '@angular/common';
   styles: ``
 })
 export class ProjectsOverviewComponent {
-  @Input() features!: any;
+  @Input() features: readonly ProjectOverviewFeature[] = [];
   @Input() title!: string;
   @Input() description!: string;
   @Input() githubUrl!: string;
-
 }

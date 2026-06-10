@@ -5,6 +5,7 @@
 - Added a shared global site header/menu for public, blog, labs, admin, and CMS routes while preserving OS desktop/login routes without the site shell.
 - Added persistent light/dark theme selection through the global header, backed by `localStorage` and scoped theme tokens for site/admin/lab pages.
 - Updated the global header to hide admin/CMS/media links unless the signed-in user has admin claims, use icon-only theme controls, and switch homepage hero imagery between day/night theme assets.
+- Completed a safe cleanup pass that removed global Prism scripts from the initial Angular bundle, tightened public component typings, removed debug logs, improved subscription teardown, and reduced lint debt in public/chat/game utility code.
 - Added the protected `/admin/cms/media-library` Media Library Organizer UI with sidebar navigation, toolbar search/sort/filter controls, responsive media grid/list/compact views, inspector, preview, batch rename, resize request, tag editing, selection, and status states.
 - Added a media-library service boundary over existing Firebase upload, storage, Firestore, and callable Functions services so the organizer does not introduce a new backend or upload pipeline.
 - Included CMS blog attachments in the media library by deriving cover, Open Graph, and inline image block URLs into globally manageable media records.

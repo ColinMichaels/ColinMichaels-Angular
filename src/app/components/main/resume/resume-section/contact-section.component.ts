@@ -91,7 +91,7 @@ export class Transformer {
   `
 })
 export class ContactSectionComponent implements OnInit{
-  @Input() hidden: any;
+  @Input() hidden = false;
 
   contact: Record<string, string> = {
     name : 'Colin Michaels',
@@ -121,15 +121,8 @@ export class ContactSectionComponent implements OnInit{
       message: 'email me at <EMAIL> and I\'ll send you the code'
     }
   ]
-  constructor() {
-  }
 
-  ngOnInit() {
-
+  ngOnInit(): void {
     this.contact = new Transformer().transformObject(this.contact,true);
-    console.warn('contact',this.contact);
   }
-
-
-
 }

@@ -1,4 +1,5 @@
-import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {debounceTime, Subject, throttleTime} from 'rxjs';
 import {MediaItem} from '../../game/services/media.service';
 import {faLaugh} from '@fortawesome/free-solid-svg-icons';
@@ -59,6 +60,7 @@ import {TooltipDirective} from '../../game/directives/tooltip.directive';
     </section>`
 })
 export class JokeTrayComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private randomJokeClicks$ = new Subject<string>();
   private notifyClicks$ = new Subject<{ title: string; message: string }>();
 
@@ -73,16 +75,17 @@ export class JokeTrayComponent implements OnInit {
     this.loadSubjects();
   }
 
-  notify(title = 'Notification', message = '') {
+  notify(title = 'Notification', message = ''): void {
     this.notificationService.show({
       title: title, message: message, type: 'success', duration: 10 * 1000, classList: HOME_NOTIFY_CLASSES,
-    })
+    });
   }
 
-  private loadSubjects() {
+  private loadSubjects(): void {
     this.randomJokeClicks$
       .pipe(
-        throttleTime(1000)
+        throttleTime(1000),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((type) => {
         switch (type) {
@@ -93,38 +96,38 @@ export class JokeTrayComponent implements OnInit {
             this.getChuckJoke();
             break;
           case 'dad' :
-            console.warn('tye', type);
-            this.getDadJoke()
+            this.getDadJoke();
             break;
         }
       });
 
     this.notifyClicks$
       .pipe(
-        debounceTime(200)
+        debounceTime(200),
+        takeUntilDestroyed(this.destroyRef)
       ).subscribe(({title, message}) => {
       this.notify(title, message);
     });
   }
 
-  handleJokeClick(event: MouseEvent, type = 'random') {
+  handleJokeClick(event: MouseEvent, type = 'random'): void {
     event.preventDefault();
     event.stopPropagation();
     this.randomJokeClicks$.next(type);
   }
 
-  handleRandomNotifyClick(event: MouseEvent) {
+  handleRandomNotifyClick(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.notifyClicks$.next({title: 'Random Notification', message: 'What did you expect to happen here?'});
   }
 
-  private getDadJoke() {
+  private getDadJoke(): void {
     this.joke.getJoke('dad').pipe(
-      debounceTime(1000)
-    ).subscribe((res: any) => {
+      debounceTime(1000),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((res) => {
       if (res && res.status === 200) {
-        console.warn('dad', res);
         const icon: MediaItem = new MediaItem({
           id: res.id,
           title: 'Dad',
@@ -136,7 +139,7 @@ export class JokeTrayComponent implements OnInit {
               svgPath: faLaugh
             },
           },
-        })
+        });
         this.notificationService.show({
           title: 'Dad Says',
           message: res.joke,
@@ -147,15 +150,17 @@ export class JokeTrayComponent implements OnInit {
         this.soundService.playVariant('drums',
           {volume: 0.2, forceRestart: true, loop: false}
         );
-
       }
     });
   }
 
-  private getChuckJoke() {
+  private getChuckJoke(): void {
     this.joke.getJoke('chuck')
-      .pipe(debounceTime(1000))
-      .subscribe((res: any) => {
+      .pipe(
+        debounceTime(1000),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((res) => {
         if (res) {
           const icon = res.icon_url;
           const image: MediaItem = new MediaItem({
@@ -174,7 +179,7 @@ export class JokeTrayComponent implements OnInit {
             classList: HOME_NOTIFY_CLASSES,
             media: image,
             duration: 10 * 1000,
-          }
+          };
           this.soundService.playVariant('drums',
             {volume: 0.2, forceRestart: true, loop: false}
           );
@@ -182,7 +187,7 @@ export class JokeTrayComponent implements OnInit {
         } else {
           this.notify('Error', 'No jokes today!');
         }
-      })
+      });
   }
 
   protected readonly faSmile = faSmile;
