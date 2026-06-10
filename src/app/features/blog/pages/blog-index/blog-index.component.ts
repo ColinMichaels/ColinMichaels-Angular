@@ -3,9 +3,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
-import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
+import {createBlogCategorySlug} from '../../utils/blog-category-url.util';
+import {PATH_NAMES} from '../../../../app-route-paths';
 
 @Component({
   selector: 'app-blog-index',
@@ -29,35 +30,25 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
           </div>
 
           <div class="flex flex-wrap gap-2 md:justify-end">
-            <button
-              type="button"
-              [class]="selectedCategory === null ? activeCategoryClass : inactiveCategoryClass"
-              [attr.aria-pressed]="selectedCategory === null"
-              (click)="clearCategoryFilter()"
+            <a
+              [routerLink]="['/', pathNames.BLOG]"
+              [class]="activeCategoryClass"
+              aria-current="page"
             >
               All
-            </button>
+            </a>
             @for (category of categories(); track category) {
-              <button
-                type="button"
-                [class]="selectedCategory === category ? activeCategoryClass : inactiveCategoryClass"
-                [attr.aria-pressed]="selectedCategory === category"
-                (click)="toggleCategory(category)"
+              <a
+                [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
+                [class]="inactiveCategoryClass"
               >
                 {{ category }}
-              </button>
+              </a>
             }
           </div>
         </header>
 
         <section>
-          @if (selectedCategory) {
-            <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
-              Showing posts in <span class="text-cyan-300">{{ selectedCategory }}</span>.
-              <button type="button" class="ml-2 text-cyan-300 hover:text-cyan-200" (click)="clearCategoryFilter()">Show all</button>
-            </p>
-          }
-
           @if (loadError(); as error) {
             <div class="border-t border-zinc-800 py-8">
               <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
@@ -68,11 +59,11 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
               Loading posts from Firestore.
             </p>
           } @else {
-            @for (post of filteredPosts; track post.id) {
+          @for (post of posts(); track post.id) {
               <app-blog-post-card [post]="post"></app-blog-post-card>
             } @empty {
               <p class="border-t border-zinc-800 py-8 text-zinc-400">
-                {{ selectedCategory ? 'No published posts match this category.' : 'No published posts yet.' }}
+                No published posts yet.
               </p>
             }
           }
@@ -89,29 +80,15 @@ export class BlogIndexComponent {
   protected readonly categories = toSignal(this.blogRepository.getCategories$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly pathNames = PATH_NAMES;
   protected readonly activeCategoryClass = 'rounded border border-cyan-300 bg-cyan-400 px-3 py-2 text-sm font-medium text-zinc-950';
   protected readonly inactiveCategoryClass = 'rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-cyan-300 hover:text-cyan-200';
-  protected selectedCategory: string | null = null;
 
   constructor() {
     this.openGraph.applyBlogIndex();
   }
 
-  protected get filteredPosts(): readonly BlogPostSummary[] {
-    const selectedCategory = this.selectedCategory;
-
-    if (!selectedCategory) {
-      return this.posts();
-    }
-
-    return this.posts().filter(post => post.categories.includes(selectedCategory));
-  }
-
-  protected toggleCategory(category: string): void {
-    this.selectedCategory = this.selectedCategory === category ? null : category;
-  }
-
-  protected clearCategoryFilter(): void {
-    this.selectedCategory = null;
+  protected categorySlug(category: string): string {
+    return createBlogCategorySlug(category);
   }
 }

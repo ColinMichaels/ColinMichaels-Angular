@@ -4,6 +4,7 @@ import {Meta, Title} from '@angular/platform-browser';
 
 import {PATH_NAMES} from '../../../app-route-paths';
 import {BlogPost} from '../models/blog-post.model';
+import {createBlogCategorySlug} from '../utils/blog-category-url.util';
 
 export interface BlogShareMetadata {
   title: string;
@@ -57,6 +58,24 @@ export class BlogOpenGraphService {
       url: this.createRouteUrl(PATH_NAMES.BLOG),
       image: this.toAbsoluteUrl(DEFAULT_IMAGE),
       imageAlt: 'Colin Michaels blog',
+    };
+
+    this.title.setTitle(metadata.title);
+    this.setCanonicalUrl(metadata.url);
+    this.applyBaseMetadata(metadata, 'website');
+    this.clearArticleMetadata();
+
+    return metadata;
+  }
+
+  applyBlogCategory(category: string): BlogShareMetadata {
+    const categoryTitle = this.toPlainText(category || 'Blog Category');
+    const metadata: BlogShareMetadata = {
+      title: `${categoryTitle} Posts | ColinMichaels.com`,
+      description: `Published Colin Michaels blog posts in the ${categoryTitle} category.`,
+      url: this.createRouteUrl(`${PATH_NAMES.BLOG}/category/${createBlogCategorySlug(categoryTitle)}`),
+      image: this.toAbsoluteUrl(DEFAULT_IMAGE),
+      imageAlt: `${categoryTitle} blog category`,
     };
 
     this.title.setTitle(metadata.title);

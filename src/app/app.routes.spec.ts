@@ -12,6 +12,7 @@ describe('routes', () => {
     expect(routePaths(routes)).toEqual([
       '',
       PATH_NAMES.BLOG,
+      `${PATH_NAMES.BLOG}/category/:category`,
       `${PATH_NAMES.BLOG}/:slug`,
       PATH_NAMES.LABS,
       PATH_NAMES.FS_BACKGROUND,

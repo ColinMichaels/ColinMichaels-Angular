@@ -33,11 +33,6 @@ interface HomeCapability {
   meta: string;
 }
 
-interface HomeStat {
-  value: string;
-  label: string;
-}
-
 @Component({
   selector: 'app-main',
   imports: [
@@ -61,15 +56,9 @@ export class MainComponent implements OnInit {
   user = new User();
 
   protected readonly navItems: readonly HomeNavItem[] = [
-    {label: 'Work', sectionId: 'work'},
+    {label: 'Links', sectionId: 'links'},
     {label: 'Blog', sectionId: 'blog'},
     {label: 'Labs', sectionId: 'labs'},
-  ];
-
-  protected readonly stats: readonly HomeStat[] = [
-    {value: 'Angular', label: 'Primary UI stack'},
-    {value: 'Firebase', label: 'App platform'},
-    {value: 'Editor.js', label: 'CMS foundation'},
   ];
 
   protected readonly capabilities: readonly HomeCapability[] = [

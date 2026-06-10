@@ -9,6 +9,7 @@
 - Added thumbnails, search, sorting, and pagination to the admin CMS post listing.
 - Added an Editor.js image insert panel for choosing images from the media library or uploading new embedded images, with fit-to-text-area and contained aspect-ratio layout options.
 - Added public blog category filtering and sanitized HTML rendering for blog titles, excerpts, and content blocks.
+- Added route-backed public blog category pages at `#/blog/category/:category` for shareable sub-blog listings.
 - Added homepage blog read-more calls to action and reusable blog share controls for homepage cards and article pages.
 - Added Facebook blog sharing, Firestore-backed CMS post persistence, and CMS JSON export/Firestore backup controls.
 - Added CMS post JSON import on new/edit post screens for restoring exported posts or raw Editor.js documents.

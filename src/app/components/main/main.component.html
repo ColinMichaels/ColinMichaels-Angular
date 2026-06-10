@@ -3,7 +3,7 @@
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
       <a routerLink="/" class="min-w-0">
         <span class="block text-sm uppercase tracking-[0.28em] text-zinc-500">Colin Michaels</span>
-        <span class="block truncate text-base font-semibold text-zinc-50">Developer / Interface Systems</span>
+        <span class="block truncate text-base font-semibold text-zinc-50">Developer / Drone Pilot</span>
       </a>
 
       <nav class="hidden items-center gap-1 md:flex" aria-label="Homepage sections">
@@ -27,8 +27,8 @@
     </div>
   </header>
 
-  <main class="pb-28">
-    <section class="relative isolate min-h-[82svh] overflow-hidden">
+  <main class="pb-12">
+    <section class="relative isolate min-h-[22svh] overflow-hidden">
       <img
         src="/assets/images/backgrounds/day.webp"
         alt="Aerial landscape background"
@@ -38,74 +38,19 @@
       <div class="absolute inset-0 -z-10 bg-gradient-to-r from-neutral-950 via-neutral-950/82 to-neutral-950/20"></div>
       <div class="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-neutral-950 to-transparent"></div>
 
-      <div class="mx-auto flex min-h-[82svh] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
+      <div class="mx-auto flex min-h-[22svh] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
-          <p class="text-sm uppercase tracking-[0.32em] text-cyan-200">Portfolio / Publishing / Labs</p>
+          <p class="text-sm uppercase tracking-[0.32em] text-cyan-200">Blog / Links / Labs</p>
           <h1 class="mt-5 max-w-4xl text-5xl font-semibold leading-none text-white sm:text-6xl lg:text-7xl">
             Colin Michaels
           </h1>
-          <p class="mt-6 max-w-2xl text-lg leading-8 text-zinc-200">
-            A public web workspace for software, media, writing, and an Angular-powered desktop framework.
-          </p>
-
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a
-              [routerLink]="['/', pathNames.BLOG]"
-              class="border border-cyan-300 bg-cyan-300 px-4 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-transparent hover:text-cyan-200"
-            >
-              Read Blog
-            </a>
-            <a
-              [routerLink]="['/', pathNames.LABS]"
-              class="border border-white/25 px-4 py-3 text-sm font-semibold text-white transition hover:border-amber-300 hover:text-amber-200"
-            >
-              Browse Labs
-            </a>
-          </div>
-
-          <dl class="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
-            @for (stat of stats; track stat.label) {
-              <div class="border-l border-white/20 py-2 pl-4">
-                <dt class="text-2xl font-semibold text-white">{{ stat.value }}</dt>
-                <dd class="mt-1 text-sm text-zinc-400">{{ stat.label }}</dd>
-              </div>
-            }
-          </dl>
         </div>
       </div>
     </section>
 
-    <section id="work" class="mx-auto grid max-w-7xl gap-4 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
-      @for (capability of capabilities; track capability.title) {
-        <article class="border border-white/10 bg-zinc-900/70 p-5">
-          <p class="text-xs uppercase tracking-[0.24em] text-zinc-500">{{ capability.meta }}</p>
-          <h2 class="mt-4 text-2xl font-semibold text-zinc-50">{{ capability.title }}</h2>
-          <p class="mt-3 text-sm leading-6 text-zinc-400">{{ capability.description }}</p>
-        </article>
-      }
-    </section>
-
-    <section class="bg-zinc-100 py-14 text-neutral-950">
-      <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:px-8">
-        <div>
-          <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">About</p>
-          <h2 class="mt-4 text-3xl font-semibold sm:text-4xl">Building practical, reusable interface systems.</h2>
-          <p class="mt-5 text-base leading-8 text-neutral-600">
-            The site now works as a single public hub: writing stays close to projects, labs stay discoverable, and
-            the OS framework stays consolidated behind the header launch action.
-          </p>
-        </div>
-
-        <div class="overflow-hidden border border-neutral-300 bg-neutral-950">
-          <app-home-terminal-window></app-home-terminal-window>
-        </div>
-      </div>
-    </section>
-
-    <section id="blog" class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+    <section id="blog" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p class="text-sm uppercase tracking-[0.28em] text-cyan-300">Blog</p>
           <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Latest writing</h2>
         </div>
         <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
@@ -158,6 +103,35 @@
       </div>
     }
     </section>
+
+
+    <section id="terminal-section " class="bg-zinc-100 py-12 text-neutral-950">
+      <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:px-8">
+        <div>
+          <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">About</p>
+          <h2 class="mt-4 text-3xl font-semibold sm:text-4xl">Never know whats on my mind hopefully this helps.</h2>
+          <p class="mt-5 text-base leading-8 text-neutral-600">
+            A place on the internets to learn more about me and learn from me hopefully.
+          </p>
+        </div>
+
+        <div class="overflow-hidden border border-neutral-300 bg-neutral-950">
+          <app-home-terminal-window></app-home-terminal-window>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="links" class="mx-auto grid max-w-7xl gap-4 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
+      @for (capability of capabilities; track capability.title) {
+        <article class="border border-white/10 bg-zinc-900/70 p-5">
+          <p class="text-xs uppercase tracking-[0.24em] text-zinc-500">{{ capability.meta }}</p>
+          <h2 class="mt-4 text-2xl font-semibold text-zinc-50">{{ capability.title }}</h2>
+          <p class="mt-3 text-sm leading-6 text-zinc-400">{{ capability.description }}</p>
+        </article>
+      }
+    </section>
+
 
     <section id="labs" class="border-y border-white/10 bg-neutral-900 py-14">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

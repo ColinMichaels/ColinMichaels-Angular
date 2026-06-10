@@ -2,7 +2,9 @@ import {DatePipe} from '@angular/common';
 import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
+import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostSummary} from '../../models/blog-post.model';
+import {createBlogCategorySlug} from '../../utils/blog-category-url.util';
 import {BlogTagListComponent} from '../tag-list/tag-list.component';
 
 @Component({
@@ -28,7 +30,12 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
           <span>{{ post.publishedAt ? (post.publishedAt | date: 'MMM d, y') : (post.updatedAt | date: 'MMM d, y') }}</span>
           @for (category of post.categories; track category) {
             <span aria-hidden="true">/</span>
-            <span>{{ category }}</span>
+            <a
+              [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
+              class="hover:text-cyan-300"
+            >
+              {{ category }}
+            </a>
           }
         </div>
 
@@ -46,4 +53,10 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
 })
 export class BlogPostCardComponent {
   @Input({required: true}) post!: BlogPostSummary;
+
+  protected readonly pathNames = PATH_NAMES;
+
+  protected categorySlug(category: string): string {
+    return createBlogCategorySlug(category);
+  }
 }

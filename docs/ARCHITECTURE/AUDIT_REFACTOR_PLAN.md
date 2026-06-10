@@ -183,6 +183,7 @@ Current routes:
 
 - `#/`: public home.
 - `#/blog`: public blog index.
+- `#/blog/category/:category`: public blog category listing.
 - `#/blog/:slug`: public published blog detail.
 - `#/labs`: public labs index.
 - `#/background`: background experiment.
@@ -284,7 +285,7 @@ src/app/admin/cms/
 
 Initial implementation status:
 
-- `features/blog/blog.routes.ts`: public `blog` and `blog/:slug` routes.
+- `features/blog/blog.routes.ts`: public `blog`, `blog/category/:category`, and `blog/:slug` routes.
 - `features/blog/models/blog-post.model.ts`: typed post, SEO, status, and block contracts.
 - `features/blog/services/blog-storage.service.ts`: browser-local storage for initial CMS create/edit workflows.
 - `features/blog/services/blog-repository.service.ts`: local typed repository for published/admin reads plus local CMS create/save operations.
