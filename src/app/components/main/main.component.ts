@@ -7,16 +7,12 @@ import {map} from 'rxjs';
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {SocialsComponent} from './socials/socials.component';
 import {NotificationService} from '../game/services/notification.service';
 import {User, UserService} from '../game/services/user.service';
 import {HomeTerminalWindowComponent} from './home-terminal-window/home-terminal-window.component';
 import {HOME_NOTIFY_CLASSES} from './main.constants';
-
-interface HomeNavItem {
-  label: string;
-  sectionId: string;
-}
 
 interface HomeHighlight {
   eyebrow: string;
@@ -52,14 +48,9 @@ export class MainComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly userService = inject(UserService);
   private readonly blogRepository = inject(BlogRepositoryService);
+  protected readonly theme = inject(SiteThemeService);
 
   user = new User();
-
-  protected readonly navItems: readonly HomeNavItem[] = [
-    {label: 'Links', sectionId: 'links'},
-    {label: 'Blog', sectionId: 'blog'},
-    {label: 'Labs', sectionId: 'labs'},
-  ];
 
   protected readonly capabilities: readonly HomeCapability[] = [
     {
@@ -120,10 +111,4 @@ export class MainComponent implements OnInit {
     }
   }
 
-  protected scrollToSection(sectionId: string): void {
-    document.getElementById(sectionId)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  }
 }

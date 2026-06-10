@@ -4,6 +4,8 @@
 
 This project combines a public portfolio and publishing site with a macOS-inspired desktop experience in the browser. The public site now keeps portfolio, blog, and labs entry points visible while the interactive in-browser "OS" remains available through its own launch route.
 
+The normal site routes share a global header/menu and persistent light/dark theme toggle. The OS desktop/login/boot/sleep routes remain outside that shared site shell so the reusable OS framework can preserve its own interface system.
+
 ## Core Experience
 
 - Desktop shell with app windows and focus management.
@@ -25,6 +27,8 @@ This project combines a public portfolio and publishing site with a macOS-inspir
 
 - `src/app/components/main` and `src/app/features/public`:
   public homepage and portfolio-facing route boundary.
+- `src/app/shared`:
+  reusable global site header, theme persistence, not-found UI, and shared primitives.
 - `src/app/features/blog`:
   public blog index, category listing, detail routes, typed post models, Firestore-backed repository/storage, and read-only block rendering.
 - `src/app/admin`:

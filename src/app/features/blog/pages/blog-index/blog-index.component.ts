@@ -18,14 +18,8 @@ import {PATH_NAMES} from '../../../../app-route-paths';
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-5xl">
-        <nav class="mb-10 flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/" class="hover:text-zinc-100">Home</a>
-          <a routerLink="/admin/cms" class="hover:text-zinc-100">Admin</a>
-        </nav>
-
         <header class="mb-10 grid gap-6 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
           <div class="space-y-4">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Journal</p>
             <h1 class="text-4xl font-semibold text-zinc-50 sm:text-5xl">Blog</h1>
           </div>
 

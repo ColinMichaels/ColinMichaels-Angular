@@ -19,14 +19,8 @@ import {createBlogCategorySlug, createBlogCategoryTitle} from '../../utils/blog-
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-5xl">
-        <nav class="mb-10 flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/" class="hover:text-zinc-100">Home</a>
-          <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-zinc-100">All posts</a>
-        </nav>
-
         <header class="mb-10 grid gap-6 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
           <div class="space-y-4">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Journal / Category</p>
             <h1 class="text-4xl font-semibold text-zinc-50 sm:text-5xl">{{ categoryTitle() }}</h1>
             <p class="max-w-2xl text-sm leading-6 text-zinc-400">
               Published posts filed under this category.
@@ -54,7 +48,7 @@ import {createBlogCategorySlug, createBlogCategoryTitle} from '../../utils/blog-
 
         <section>
           @if (loadError(); as error) {
-            <div class="border-t border-zinc-800 py-8">
+            <div class="border-t border-zinc-800">
               <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
               <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
             </div>

@@ -6,6 +6,7 @@ The app uses Angular standalone components with route-driven screens and service
 
 - Router controls entry screens (home, blog, labs, admin, login, desktop, boot, sleep).
 - `app.routes.ts` composes route groups from `features/public`, `labs`, `admin`, and `core-os`.
+- `AppComponent` owns the shared site shell header for public/blog/labs/admin routes and intentionally excludes OS desktop/login/boot/sleep/redirect routes.
 - Desktop screen coordinates window lifecycle and system UI.
 - Services hold long-lived state (apps, user, settings, storage, CLI, sound, files, notifications).
 - Dynamic component loading is used for in-window apps.
@@ -22,6 +23,8 @@ Current route group files are boundary markers only. They preserve existing URL 
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
   public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
+- Shared site shell:
+  global header/menu and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
 - Admin media library:
   protected media organizer UI for Firebase-backed uploads and metadata, with feature-scoped browsing, filtering, batch rename, resize requests, preview, and virtual folder/tag workflows.
 - Labs:

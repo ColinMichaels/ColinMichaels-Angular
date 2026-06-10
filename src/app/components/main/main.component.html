@@ -1,49 +1,38 @@
 <div class="min-h-screen overflow-x-clip bg-neutral-950 text-zinc-100 selection:bg-cyan-300 selection:text-neutral-950">
-  <header class="sticky top-0 z-40 border-b border-white/10 bg-neutral-950/85 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-      <a routerLink="/" class="min-w-0">
-        <span class="block text-sm uppercase tracking-[0.28em] text-zinc-500">Colin Michaels</span>
-        <span class="block truncate text-base font-semibold text-zinc-50">Developer / Drone Pilot</span>
-      </a>
-
-      <nav class="hidden items-center gap-1 md:flex" aria-label="Homepage sections">
-        @for (item of navItems; track item.sectionId) {
-          <button
-            type="button"
-            class="px-3 py-2 text-sm text-zinc-400 transition hover:text-zinc-50"
-            (click)="scrollToSection(item.sectionId)"
-          >
-            {{ item.label }}
-          </button>
-        }
-      </nav>
-
-      <a
-        [routerLink]="['/', pathNames.OS_LOGIN]"
-        class="shrink-0 border border-emerald-400/70 px-3 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-300 hover:text-neutral-950"
-      >
-        Launch OS
-      </a>
-    </div>
-  </header>
-
   <main class="pb-12">
     <section class="relative isolate min-h-[22svh] overflow-hidden">
       <img
-        src="/assets/images/backgrounds/day.webp"
-        alt="Aerial landscape background"
+        [src]="theme.isDark() ? '/assets/images/backgrounds/night.webp' : '/assets/images/backgrounds/day.webp'"
+        [alt]="theme.isDark() ? 'Night aerial landscape background' : 'Day aerial landscape background'"
         class="absolute inset-0 -z-20 h-full w-full object-cover"
         fetchpriority="high"
       >
-      <div class="absolute inset-0 -z-10 bg-gradient-to-r from-neutral-950 via-neutral-950/82 to-neutral-950/20"></div>
-      <div class="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-neutral-950 to-transparent"></div>
+      <div
+        class="absolute inset-0 -z-10 bg-gradient-to-r from-white/92 via-white/70 to-white/18 dark:from-neutral-950 dark:via-neutral-950/82 dark:to-neutral-950/20"></div>
+      <div
+        class="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-slate-50 to-transparent dark:from-neutral-950"></div>
 
       <div class="mx-auto flex min-h-[22svh] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
-          <p class="text-sm uppercase tracking-[0.32em] text-cyan-200">Blog / Links / Labs</p>
-          <h1 class="mt-5 max-w-4xl text-5xl font-semibold leading-none text-white sm:text-6xl lg:text-7xl">
+          <p class="text-sm uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">Blog / Links / Labs</p>
+          <h1
+            class="mt-5 max-w-4xl text-5xl font-semibold leading-none text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
             Colin Michaels
           </h1>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a
+              [routerLink]="['/', pathNames.BLOG]"
+              class="inline-flex border border-cyan-600 px-4 py-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+            >
+              Read the blog
+            </a>
+            <a
+              [routerLink]="['/', pathNames.OS_LOGIN]"
+              class="inline-flex border border-emerald-600 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-300 dark:text-emerald-100 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
+            >
+              Launch OS
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -105,7 +94,7 @@
     </section>
 
 
-    <section id="terminal-section " class="bg-zinc-100 py-12 text-neutral-950">
+    <section id="work" class="bg-zinc-100 py-12 text-neutral-950">
       <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:px-8">
         <div>
           <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">About</p>
