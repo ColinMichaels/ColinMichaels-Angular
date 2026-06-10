@@ -21,13 +21,13 @@ Current route group files are boundary markers only. They preserve existing URL 
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
-  public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, browser-local CMS storage for initial create/edit workflows.
+  public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
 - Admin media library:
   protected media organizer UI for Firebase-backed uploads and metadata, with feature-scoped browsing, filtering, batch rename, resize requests, preview, and virtual folder/tag workflows.
 - Labs:
   public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:
-  settings/user/tasks/patches through storage strategy; CMS-edited blog posts currently use browser `localStorage` layered over seeded content until a Firebase write model is finalized.
+  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source.
 - Media/audio:
   icon/media helpers, sound playback, music and effects.
 - Overlay and notifications:

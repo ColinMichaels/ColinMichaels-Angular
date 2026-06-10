@@ -18,19 +18,19 @@ interface RenderableBlogBlock {
         @switch (row.block.type) {
           @case ('header') {
             @if (row.block.data.level === 3) {
-              <h3 class="pt-4 text-xl font-semibold text-zinc-50">{{ row.block.data.text }}</h3>
+              <h3 class="pt-4 text-xl font-semibold text-zinc-50" [innerHTML]="row.block.data.text"></h3>
             } @else {
-              <h2 class="pt-4 text-2xl font-semibold text-zinc-50">{{ row.block.data.text }}</h2>
+              <h2 class="pt-4 text-2xl font-semibold text-zinc-50" [innerHTML]="row.block.data.text"></h2>
             }
           }
           @case ('paragraph') {
-            <p>{{ row.block.data.text }}</p>
+            <p [innerHTML]="row.block.data.text"></p>
           }
           @case ('quote') {
             <blockquote class="border-l-2 border-cyan-300 pl-5 text-zinc-200">
-              <p>{{ row.block.data.text }}</p>
+              <p [innerHTML]="row.block.data.text"></p>
               @if (row.block.data.caption) {
-                <cite class="mt-2 block text-sm not-italic text-zinc-500">{{ row.block.data.caption }}</cite>
+                <cite class="mt-2 block text-sm not-italic text-zinc-500" [innerHTML]="row.block.data.caption"></cite>
               }
             </blockquote>
           }
@@ -38,28 +38,41 @@ interface RenderableBlogBlock {
             @if (row.block.data.ordered) {
               <ol class="list-decimal space-y-2 pl-6">
                 @for (item of row.block.data.items ?? []; track item) {
-                  <li>{{ item }}</li>
+                  <li [innerHTML]="item"></li>
                 }
               </ol>
             } @else {
               <ul class="list-disc space-y-2 pl-6">
                 @for (item of row.block.data.items ?? []; track item) {
-                  <li>{{ item }}</li>
+                  <li [innerHTML]="item"></li>
                 }
               </ul>
             }
           }
           @case ('image') {
             @if (row.block.data.url) {
-              <figure class="space-y-2">
+              <figure
+                class="space-y-2"
+                [class.rounded]="row.block.data.withBackground"
+                [class.bg-zinc-900]="row.block.data.withBackground"
+                [class.p-4]="row.block.data.withBackground"
+              >
                 <img
                   [src]="row.block.data.url"
                   [alt]="row.block.data.alt || fallbackAlt"
-                  class="w-full rounded object-cover"
+                  [attr.width]="row.block.data.width || null"
+                  [attr.height]="row.block.data.height || null"
+                  class="rounded object-contain"
+                  [class.w-full]="row.block.data.stretched"
+                  [class.mx-auto]="!row.block.data.stretched"
+                  [class.max-w-full]="!row.block.data.stretched"
+                  [class.border]="row.block.data.withBorder"
+                  [class.border-zinc-700]="row.block.data.withBorder"
                   loading="lazy"
+                  decoding="async"
                 >
                 @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500">{{ row.block.data.caption }}</figcaption>
+                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.block.data.caption"></figcaption>
                 }
               </figure>
             }
@@ -78,13 +91,13 @@ interface RenderableBlogBlock {
                   ></iframe>
                 </div>
                 @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500">{{ row.block.data.caption }}</figcaption>
+                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.block.data.caption"></figcaption>
                 }
               </figure>
             } @else if (row.externalUrl) {
               <p>
                 <a [href]="row.externalUrl" target="_blank" rel="noreferrer" class="text-cyan-300 hover:text-cyan-200">
-                  {{ row.block.data.caption || row.externalUrl }}
+                  <span [innerHTML]="row.block.data.caption || row.externalUrl"></span>
                 </a>
               </p>
             }

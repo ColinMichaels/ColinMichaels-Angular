@@ -1,7 +1,9 @@
 import {JsonPipe} from '@angular/common';
-import {Component, ViewChild, inject, ChangeDetectionStrategy} from '@angular/core';
+import {Component, ViewChild, effect, inject, ChangeDetectionStrategy} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import type {OutputData} from '@editorjs/editorjs';
 import {lastValueFrom} from 'rxjs';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
@@ -27,6 +29,7 @@ interface PostEditorForm {
   excerpt: FormControl<string>;
   coverImage: FormControl<string>;
   status: FormControl<BlogPostStatus>;
+  publishedAt: FormControl<string>;
   categories: FormControl<string>;
   tags: FormControl<string>;
   seoTitle: FormControl<string>;
@@ -35,8 +38,20 @@ interface PostEditorForm {
   openGraphImage: FormControl<string>;
 }
 
+interface ImportedPostDocument {
+  post: BlogPost;
+  sourceLabel: string;
+}
+
 const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
 const statusOptions: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
+const postedDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 function toCsv(values: readonly string[]): string {
   return values.join(', ');
@@ -54,6 +69,84 @@ function fromCsv(value: string): readonly string[] {
 function requiredText(value: string, fallback: string): string {
   const trimmedValue = value.trim();
   return trimmedValue || fallback;
+}
+
+function toDateTimeLocalValue(value: string | null): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value: string): string | null {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const date = new Date(trimmedValue);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isStringArray(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
+function isBlogPostStatus(value: unknown): value is BlogPostStatus {
+  return typeof value === 'string' && statusOptions.includes(value as BlogPostStatus);
+}
+
+function isBlogAuthor(value: unknown): value is BlogPost['author'] {
+  return isRecord(value)
+    && typeof value['name'] === 'string'
+    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined');
+}
+
+function isBlogSeo(value: unknown): value is BlogPost['seo'] {
+  return isRecord(value)
+    && typeof value['title'] === 'string'
+    && typeof value['description'] === 'string'
+    && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
+    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined');
+}
+
+function isBlogPost(value: unknown): value is BlogPost {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return typeof value['id'] === 'string'
+    && typeof value['slug'] === 'string'
+    && typeof value['title'] === 'string'
+    && typeof value['excerpt'] === 'string'
+    && typeof value['coverImage'] === 'string'
+    && isBlogAuthor(value['author'])
+    && isStringArray(value['categories'])
+    && isStringArray(value['tags'])
+    && isBlogPostStatus(value['status'])
+    && isBlogSeo(value['seo'])
+    && value['contentFormat'] === 'editorjs'
+    && Array.isArray(value['blocks'])
+    && typeof value['createdAt'] === 'string'
+    && typeof value['updatedAt'] === 'string'
+    && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
+}
+
+function isEditorDocument(value: unknown): value is OutputData {
+  return isRecord(value) && Array.isArray(value['blocks']);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -79,10 +172,28 @@ function getErrorMessage(error: unknown): string {
         </nav>
 
         @if (currentPost; as post) {
-          <header class="space-y-3 border-b border-zinc-800 pb-8">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">{{ isNewPost ? 'New Post' : 'CMS Editor' }}</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">{{ editorTitle }}</h1>
-            <p class="max-w-2xl text-zinc-400">{{ editorExcerpt || 'Create metadata, write blocks, then save the post into local CMS storage.' }}</p>
+          <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
+            <div class="space-y-3">
+              <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">{{ isNewPost ? 'New Post' : 'CMS Editor' }}</p>
+              <h1 class="text-4xl font-semibold text-zinc-50">{{ editorTitle }}</h1>
+              <p class="max-w-2xl text-zinc-400">{{ editorExcerpt || 'Create metadata, write blocks, then save the post into Firestore-backed CMS storage.' }}</p>
+            </div>
+            <div class="flex flex-wrap gap-3 md:justify-end">
+              <input
+                #postJsonImportInput
+                type="file"
+                class="hidden"
+                accept=".json,application/json"
+                (change)="importPostJson($event)"
+              >
+              <button
+                type="button"
+                class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                (click)="postJsonImportInput.click()"
+              >
+                Import JSON
+              </button>
+            </div>
           </header>
 
           <section class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -118,6 +229,27 @@ function getErrorMessage(error: unknown): string {
                       <option [value]="status">{{ status }}</option>
                     }
                   </select>
+                </label>
+
+                <label class="space-y-2 md:col-span-2">
+                  <span class="flex items-center justify-between gap-3">
+                    <span class="text-sm font-medium text-zinc-200">Posted on</span>
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-cyan-300 hover:text-cyan-200"
+                      (click)="setPublishedAtNow()"
+                    >
+                      Use current time
+                    </button>
+                  </span>
+                  <input
+                    type="datetime-local"
+                    formControlName="publishedAt"
+                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
+                  >
+                  <p class="text-xs leading-5 text-zinc-500">
+                    Controls public blog ordering and article published metadata. Published posts use this value; blank published posts fall back to first publish time.
+                  </p>
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
@@ -232,12 +364,16 @@ function getErrorMessage(error: unknown): string {
                     <dd class="text-right text-zinc-200">{{ postForm.controls.slug.value }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
+                    <dt class="text-zinc-500">Posted</dt>
+                    <dd class="text-right text-zinc-200">{{ postedOnPreview }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Format</dt>
                     <dd class="text-zinc-200">{{ post.contentFormat }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Storage</dt>
-                    <dd class="text-zinc-200">local browser</dd>
+                    <dd class="text-zinc-200">Firestore-backed</dd>
                   </div>
                 </dl>
               </section>
@@ -382,6 +518,11 @@ function getErrorMessage(error: unknown): string {
               }
             </aside>
           </section>
+        } @else if (isPostLoading()) {
+          <section class="border border-zinc-800 bg-zinc-900 p-6">
+            <h1 class="text-2xl font-semibold text-zinc-50">Loading post</h1>
+            <p class="mt-2 text-zinc-400">Fetching the latest CMS post data from Firestore.</p>
+          </section>
         } @else {
           <section class="border border-zinc-800 bg-zinc-900 p-6">
             <h1 class="text-2xl font-semibold text-zinc-50">Post not found</h1>
@@ -403,13 +544,18 @@ export class CmsPostEditorComponent {
   private readonly blogAiFunctions = inject(BlogAiFunctionsService);
   private readonly blogMediaUpload = inject(BlogMediaUploadService);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
+  private readonly firestorePost = this.slug
+    ? toSignal(this.blogRepository.getAdminPostBySlug$(this.slug), {initialValue: undefined})
+    : null;
+  private hasHydratedFirestorePost = false;
   private hasCreatedPost = false;
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
   protected currentPost = this.resolvePost();
-  protected readonly initialData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
+  protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
+  protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected lastSaved: EditorSavedDocument | null = null;
   protected saveMessage = '';
   protected saveError = '';
@@ -434,9 +580,27 @@ export class CmsPostEditorComponent {
       success: 1,
       file: {
         url: upload.downloadUrl,
+        width: upload.width,
+        height: upload.height,
       },
     };
   };
+
+  constructor() {
+    if (!this.firestorePost) {
+      return;
+    }
+
+    effect(() => {
+      const post = this.firestorePost?.();
+
+      if (!post || (this.hasHydratedFirestorePost && this.postForm.dirty)) {
+        return;
+      }
+
+      void this.applyFirestorePost(post);
+    });
+  }
 
   protected get editorTitle(): string {
     return requiredText(this.postForm.controls.title.value, 'Untitled Post');
@@ -461,6 +625,16 @@ export class CmsPostEditorComponent {
       || 'untitled-post';
   }
 
+  protected get postedOnPreview(): string {
+    const publishedAt = fromDateTimeLocalValue(this.postForm.controls.publishedAt.value);
+
+    if (!publishedAt) {
+      return this.postForm.controls.status.value === 'published' ? 'On first publish' : 'Not set';
+    }
+
+    return postedDateFormatter.format(new Date(publishedAt));
+  }
+
   protected syncSlugFromTitle(): void {
     const slugControl = this.postForm.controls.slug;
 
@@ -479,6 +653,36 @@ export class CmsPostEditorComponent {
     );
 
     this.postForm.controls.slug.setValue(slug, {emitEvent: false});
+  }
+
+  protected setPublishedAtNow(): void {
+    this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(new Date().toISOString()));
+    this.postForm.controls.publishedAt.markAsDirty();
+  }
+
+  protected async importPostJson(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+
+    if (input) {
+      input.value = '';
+    }
+
+    if (!file) {
+      return;
+    }
+
+    this.saveError = '';
+    this.saveMessage = '';
+
+    try {
+      const parsedJson: unknown = JSON.parse(await file.text());
+      const importedDocument = this.createImportedPostDocument(parsedJson);
+      await this.applyImportedPost(importedDocument.post);
+      this.saveMessage = `Imported ${importedDocument.sourceLabel} from ${file.name}. Review and save to persist it.`;
+    } catch (error) {
+      this.saveError = `Unable to import JSON: ${getErrorMessage(error)}`;
+    }
   }
 
   protected async generateAssistantSuggestions(): Promise<void> {
@@ -598,7 +802,7 @@ export class CmsPostEditorComponent {
     this.postForm.markAsDirty();
   }
 
-  protected onSaved(saved: EditorSavedDocument): void {
+  protected async onSaved(saved: EditorSavedDocument): Promise<void> {
     this.saveError = '';
     this.saveMessage = '';
     this.postForm.markAllAsTouched();
@@ -615,34 +819,40 @@ export class CmsPostEditorComponent {
 
     const formValue = this.postForm.getRawValue();
     const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
-    const savedPost = this.blogRepository.savePost({
-      ...this.currentPost,
-      title: requiredText(formValue.title, 'Untitled Post'),
-      slug: this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id),
-      excerpt: formValue.excerpt.trim(),
-      coverImage,
-      status: formValue.status,
-      categories: fromCsv(formValue.categories),
-      tags: fromCsv(formValue.tags),
-      seo: {
-        title: requiredText(formValue.seoTitle, formValue.title),
-        description: requiredText(formValue.seoDescription, formValue.excerpt),
-        canonical: formValue.canonical.trim() || undefined,
-        openGraphImage: formValue.openGraphImage.trim() || coverImage,
-      },
-      blocks: createBlogBlocksFromEditorDocument(saved.data),
-      updatedAt: saved.savedAt,
-      publishedAt: this.getPublishedAt(formValue.status, this.currentPost.publishedAt, saved.savedAt),
-    });
+    try {
+      const savedPost = await this.blogRepository.savePost({
+        ...this.currentPost,
+        title: requiredText(formValue.title, 'Untitled Post'),
+        slug: this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id),
+        excerpt: formValue.excerpt.trim(),
+        coverImage,
+        status: formValue.status,
+        categories: fromCsv(formValue.categories),
+        tags: fromCsv(formValue.tags),
+        seo: {
+          title: requiredText(formValue.seoTitle, formValue.title),
+          description: requiredText(formValue.seoDescription, formValue.excerpt),
+          canonical: formValue.canonical.trim() || undefined,
+          openGraphImage: formValue.openGraphImage.trim() || coverImage,
+        },
+        blocks: createBlogBlocksFromEditorDocument(saved.data),
+        updatedAt: saved.savedAt,
+        publishedAt: this.getPublishedAt(formValue.status, formValue.publishedAt, this.currentPost.publishedAt, saved.savedAt),
+      });
 
-    this.currentPost = savedPost;
-    this.postForm.controls.slug.setValue(savedPost.slug, {emitEvent: false});
-    this.lastSaved = saved;
-    this.saveMessage = `Saved ${savedPost.title} to local CMS storage.`;
+      this.currentPost = savedPost;
+      this.postForm.controls.slug.setValue(savedPost.slug, {emitEvent: false});
+      this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
+      this.postForm.markAsPristine();
+      this.lastSaved = saved;
+      this.saveMessage = `Saved ${savedPost.title} to Firestore CMS storage.`;
 
-    if (this.isNewPost && !this.hasCreatedPost) {
-      this.hasCreatedPost = true;
-      void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {replaceUrl: true});
+      if (this.isNewPost && !this.hasCreatedPost) {
+        this.hasCreatedPost = true;
+        void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {replaceUrl: true});
+      }
+    } catch (error) {
+      this.saveError = error instanceof Error ? error.message : 'Unable to save post to Firestore.';
     }
   }
 
@@ -650,6 +860,105 @@ export class CmsPostEditorComponent {
     return this.slug
       ? this.blogRepository.getAdminPostBySlug(this.slug)
       : this.blogRepository.createNewPostTemplate();
+  }
+
+  private async applyFirestorePost(post: BlogPost): Promise<void> {
+    this.currentPost = post;
+    this.initialData = createEditorDocument(post);
+    this.setFormFromPost(post);
+    this.postForm.markAsPristine();
+    this.hasHydratedFirestorePost = true;
+
+    await this.editorComponent?.renderDocument(this.initialData);
+  }
+
+  private createImportedPostDocument(value: unknown): ImportedPostDocument {
+    const currentPost = this.currentPost ?? this.blogRepository.createNewPostTemplate();
+
+    if (isBlogPost(value)) {
+      return {
+        post: value,
+        sourceLabel: `post "${value.title || value.slug}"`,
+      };
+    }
+
+    const nestedPost = isRecord(value) ? value['post'] : null;
+
+    if (isBlogPost(nestedPost)) {
+      return {
+        post: nestedPost,
+        sourceLabel: `post "${nestedPost.title || nestedPost.slug}"`,
+      };
+    }
+
+    if (isRecord(value) && Array.isArray(value['posts'])) {
+      const posts = value['posts'].filter(isBlogPost);
+      const matchingPost = posts.find(post => post.id === currentPost.id || post.slug === currentPost.slug) ?? posts[0];
+
+      if (matchingPost) {
+        return {
+          post: matchingPost,
+          sourceLabel: `backup post "${matchingPost.title || matchingPost.slug}"`,
+        };
+      }
+    }
+
+    if (isEditorDocument(value)) {
+      return {
+        post: {
+          ...currentPost,
+          blocks: createBlogBlocksFromEditorDocument(value),
+        },
+        sourceLabel: 'Editor.js document',
+      };
+    }
+
+    throw new Error('Expected a CMS post JSON object, a CMS export with posts, or an Editor.js document with blocks.');
+  }
+
+  private async applyImportedPost(importedPost: BlogPost): Promise<void> {
+    if (!this.currentPost) {
+      throw new Error('No current post is available to import into.');
+    }
+
+    const importedTitle = requiredText(importedPost.title, this.currentPost.title);
+    const importedCoverImage = requiredText(importedPost.coverImage, DEFAULT_COVER_IMAGE);
+    const importedSlug = this.blogRepository.createUniqueSlug(
+      importedPost.slug || createBlogSlug(importedTitle),
+      this.currentPost.id
+    );
+    const nextPost: BlogPost = {
+      ...this.currentPost,
+      ...importedPost,
+      id: this.currentPost.id,
+      title: importedTitle,
+      slug: importedSlug,
+      excerpt: importedPost.excerpt.trim(),
+      coverImage: importedCoverImage,
+      author: {
+        ...this.currentPost.author,
+        ...importedPost.author,
+      },
+      categories: [...importedPost.categories],
+      tags: [...importedPost.tags],
+      seo: {
+        ...importedPost.seo,
+        title: requiredText(importedPost.seo.title, importedTitle),
+        description: requiredText(importedPost.seo.description, importedPost.excerpt),
+        openGraphImage: importedPost.seo.openGraphImage || importedCoverImage,
+      },
+      contentFormat: 'editorjs',
+      blocks: importedPost.blocks,
+      createdAt: this.currentPost.createdAt,
+      updatedAt: new Date().toISOString(),
+      publishedAt: importedPost.publishedAt,
+    };
+
+    this.currentPost = nextPost;
+    this.setFormFromPost(nextPost);
+    this.postForm.markAsDirty();
+    this.lastSaved = null;
+    await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
   }
 
   private async createAssistantContext(): Promise<BlogAssistantContext> {
@@ -674,6 +983,7 @@ export class CmsPostEditorComponent {
       excerpt: new FormControl(post.excerpt, {nonNullable: true, validators: [Validators.required]}),
       coverImage: new FormControl(post.coverImage, {nonNullable: true, validators: [Validators.required]}),
       status: new FormControl(post.status, {nonNullable: true, validators: [Validators.required]}),
+      publishedAt: new FormControl(toDateTimeLocalValue(post.publishedAt), {nonNullable: true}),
       categories: new FormControl(toCsv(post.categories), {nonNullable: true}),
       tags: new FormControl(toCsv(post.tags), {nonNullable: true}),
       seoTitle: new FormControl(post.seo.title, {nonNullable: true}),
@@ -683,7 +993,35 @@ export class CmsPostEditorComponent {
     });
   }
 
-  private getPublishedAt(status: BlogPostStatus, currentValue: string | null, savedAt: string): string | null {
+  private setFormFromPost(post: BlogPost): void {
+    this.postForm.setValue({
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      coverImage: post.coverImage,
+      status: post.status,
+      publishedAt: toDateTimeLocalValue(post.publishedAt),
+      categories: toCsv(post.categories),
+      tags: toCsv(post.tags),
+      seoTitle: post.seo.title,
+      seoDescription: post.seo.description,
+      canonical: post.seo.canonical ?? '',
+      openGraphImage: post.seo.openGraphImage ?? post.coverImage,
+    });
+  }
+
+  private getPublishedAt(
+    status: BlogPostStatus,
+    formValue: string,
+    currentValue: string | null,
+    savedAt: string
+  ): string | null {
+    const requestedValue = fromDateTimeLocalValue(formValue);
+
+    if (requestedValue) {
+      return requestedValue;
+    }
+
     return status === 'published' ? currentValue ?? savedAt : null;
   }
 

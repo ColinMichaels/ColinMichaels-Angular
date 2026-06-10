@@ -1,12 +1,21 @@
 import {Injectable, inject} from '@angular/core';
+import {map, Observable} from 'rxjs';
 
-import {BLOG_POSTS} from '../data/blog-posts.data';
 import {BlogAdminStats, BlogPost, BlogPostSummary} from '../models/blog-post.model';
 import {BlogStorageService} from './blog-storage.service';
 
 const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
 
-export type BlogPostDeleteResult = 'archived-seed-post' | 'deleted-local-post' | 'not-found';
+export interface BlogPostsExportDocument {
+  version: 1;
+  source: 'colinmichaels-cms';
+  collection: 'posts';
+  exportedAt: string;
+  totalPosts: number;
+  posts: readonly BlogPost[];
+}
+
+export type BlogPostDeleteResult = 'deleted-cms-post' | 'not-found';
 
 function toSummary(post: BlogPost): BlogPostSummary {
   return {
@@ -23,8 +32,13 @@ function toSummary(post: BlogPost): BlogPostSummary {
   };
 }
 
+function getSortablePostDate(post: BlogPost): string {
+  return post.publishedAt ?? post.updatedAt;
+}
+
 function sortNewestFirst(left: BlogPost, right: BlogPost): number {
-  return right.updatedAt.localeCompare(left.updatedAt);
+  return getSortablePostDate(right).localeCompare(getSortablePostDate(left))
+    || right.updatedAt.localeCompare(left.updatedAt);
 }
 
 export function createBlogSlug(value: string): string {
@@ -36,20 +50,6 @@ export function createBlogSlug(value: string): string {
     .replace(/^-+|-+$/g, '');
 
   return slug || 'untitled-post';
-}
-
-function mergePosts(seedPosts: readonly BlogPost[], savedPosts: readonly BlogPost[]): readonly BlogPost[] {
-  const postMap = new Map<string, BlogPost>();
-
-  for (const post of seedPosts) {
-    postMap.set(post.id, post);
-  }
-
-  for (const post of savedPosts) {
-    postMap.set(post.id, post);
-  }
-
-  return [...postMap.values()];
 }
 
 function createPostId(): string {
@@ -65,13 +65,47 @@ function createPostId(): string {
 })
 export class BlogRepositoryService {
   private readonly storage = inject(BlogStorageService);
-  private readonly seedPosts = BLOG_POSTS;
+  readonly loading$ = this.storage.loading$;
+  readonly error$ = this.storage.error$;
+
+  getPublishedPosts$(): Observable<readonly BlogPostSummary[]> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createPublishedPosts(posts))
+    );
+  }
+
+  getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
+    return this.storage.posts$.pipe(
+      map(posts => posts.find(post => post.slug === slug && post.status === 'published'))
+    );
+  }
+
+  getAdminPosts$(): Observable<readonly BlogPost[]> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createAdminPosts(posts))
+    );
+  }
+
+  getAdminPostBySlug$(slug: string): Observable<BlogPost | undefined> {
+    return this.storage.posts$.pipe(
+      map(posts => posts.find(post => post.slug === slug))
+    );
+  }
+
+  getCategories$(): Observable<readonly string[]> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createCategories(posts))
+    );
+  }
+
+  getAdminStats$(): Observable<BlogAdminStats> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createAdminStats(posts))
+    );
+  }
 
   getPublishedPosts(): readonly BlogPostSummary[] {
-    return this.getPosts()
-      .filter(post => post.status === 'published')
-      .sort(sortNewestFirst)
-      .map(toSummary);
+    return this.createPublishedPosts(this.getPosts());
   }
 
   getPublishedPostBySlug(slug: string): BlogPost | undefined {
@@ -79,7 +113,7 @@ export class BlogRepositoryService {
   }
 
   getAdminPosts(): readonly BlogPost[] {
-    return [...this.getPosts()].sort(sortNewestFirst);
+    return this.createAdminPosts(this.getPosts());
   }
 
   getAdminPostBySlug(slug: string): BlogPost | undefined {
@@ -87,23 +121,11 @@ export class BlogRepositoryService {
   }
 
   getCategories(): readonly string[] {
-    const categories = this.getPosts()
-      .filter(post => post.status === 'published')
-      .flatMap(post => post.categories);
-
-    return [...new Set(categories)].sort();
+    return this.createCategories(this.getPosts());
   }
 
   getAdminStats(): BlogAdminStats {
-    const posts = this.getPosts();
-
-    return {
-      total: posts.length,
-      published: posts.filter(post => post.status === 'published').length,
-      drafts: posts.filter(post => post.status === 'draft').length,
-      scheduled: posts.filter(post => post.status === 'scheduled').length,
-      archived: posts.filter(post => post.status === 'archived').length,
-    };
+    return this.createAdminStats(this.getPosts());
   }
 
   createNewPostTemplate(): BlogPost {
@@ -135,7 +157,7 @@ export class BlogRepositoryService {
     };
   }
 
-  savePost(post: BlogPost): BlogPost {
+  async savePost(post: BlogPost): Promise<BlogPost> {
     const now = new Date().toISOString();
     const slug = this.createUniqueSlug(post.slug || post.title, post.id);
     const publishedAt = post.status === 'published'
@@ -154,32 +176,42 @@ export class BlogRepositoryService {
       publishedAt,
     };
 
-    this.storage.savePost(savedPost);
+    await this.storage.savePost(savedPost);
     return savedPost;
   }
 
-  deletePost(postId: string): BlogPostDeleteResult {
-    const seedPost = this.seedPosts.find(post => post.id === postId);
+  createExportDocument(posts: readonly BlogPost[] = this.getAdminPosts()): BlogPostsExportDocument {
+    return {
+      version: 1,
+      source: 'colinmichaels-cms',
+      collection: 'posts',
+      exportedAt: new Date().toISOString(),
+      totalPosts: posts.length,
+      posts,
+    };
+  }
 
-    if (seedPost) {
-      this.savePost({
-        ...seedPost,
-        status: 'archived',
-        updatedAt: new Date().toISOString(),
-        publishedAt: null,
-      });
+  backupPostsToFirestore(posts: readonly BlogPost[] = this.getAdminPosts()): Promise<number> {
+    return this.storage.backupPostsToFirestore(posts);
+  }
 
-      return 'archived-seed-post';
-    }
+  loadPostsFromFirestore(): Promise<readonly BlogPost[]> {
+    return this.storage.loadPostsFromFirestore();
+  }
 
-    const localPost = this.storage.getPosts().find(post => post.id === postId);
+  loadPublishedPostsFromFirestore(): Promise<readonly BlogPost[]> {
+    return this.storage.loadPublishedPostsFromFirestore();
+  }
 
-    if (!localPost) {
+  async deletePost(postId: string): Promise<BlogPostDeleteResult> {
+    const firestorePost = this.storage.getPosts().find(post => post.id === postId);
+
+    if (!firestorePost) {
       return 'not-found';
     }
 
-    this.storage.deletePost(postId);
-    return 'deleted-local-post';
+    await this.storage.deletePost(postId);
+    return 'deleted-cms-post';
   }
 
   createUniqueSlug(value: string, currentPostId?: string): string {
@@ -206,6 +238,35 @@ export class BlogRepositoryService {
   }
 
   private getPosts(): readonly BlogPost[] {
-    return mergePosts(this.seedPosts, this.storage.getPosts());
+    return this.storage.getPosts();
+  }
+
+  private createPublishedPosts(posts: readonly BlogPost[]): readonly BlogPostSummary[] {
+    return posts
+      .filter(post => post.status === 'published')
+      .sort(sortNewestFirst)
+      .map(toSummary);
+  }
+
+  private createAdminPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
+    return [...posts].sort(sortNewestFirst);
+  }
+
+  private createCategories(posts: readonly BlogPost[]): readonly string[] {
+    const categories = posts
+      .filter(post => post.status === 'published')
+      .flatMap(post => post.categories);
+
+    return [...new Set(categories)].sort();
+  }
+
+  private createAdminStats(posts: readonly BlogPost[]): BlogAdminStats {
+    return {
+      total: posts.length,
+      published: posts.filter(post => post.status === 'published').length,
+      drafts: posts.filter(post => post.status === 'draft').length,
+      scheduled: posts.filter(post => post.status === 'scheduled').length,
+      archived: posts.filter(post => post.status === 'archived').length,
+    };
   }
 }

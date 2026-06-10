@@ -5,6 +5,16 @@
 - Added the protected `/admin/cms/media-library` Media Library Organizer UI with sidebar navigation, toolbar search/sort/filter controls, responsive media grid/list/compact views, inspector, preview, batch rename, resize request, tag editing, selection, and status states.
 - Added a media-library service boundary over existing Firebase upload, storage, Firestore, and callable Functions services so the organizer does not introduce a new backend or upload pipeline.
 - Included CMS blog attachments in the media library by deriving cover, Open Graph, and inline image block URLs into globally manageable media records.
+- Added explicit CMS control over blog post posted dates so `publishedAt` drives public ordering and article published metadata.
+- Added thumbnails, search, sorting, and pagination to the admin CMS post listing.
+- Added an Editor.js image insert panel for choosing images from the media library or uploading new embedded images, with fit-to-text-area and contained aspect-ratio layout options.
+- Added public blog category filtering and sanitized HTML rendering for blog titles, excerpts, and content blocks.
+- Added homepage blog read-more calls to action and reusable blog share controls for homepage cards and article pages.
+- Added Facebook blog sharing, Firestore-backed CMS post persistence, and CMS JSON export/Firestore backup controls.
+- Added CMS post JSON import on new/edit post screens for restoring exported posts or raw Editor.js documents.
+- Added fuller Editor.js image block preservation and blog OpenGraph/Twitter/canonical metadata for shared post links.
+- Switched blog post listing, editing, publishing, and media attachment derivation to Firestore-only post data with no browser localStorage fallback.
+- Added CMS post-list bulk JSON import for restoring exported blog posts directly into Firestore `/posts`.
 - Documented the media library architecture, component inventory, and migration notes.
 
 ## 2026-06-08

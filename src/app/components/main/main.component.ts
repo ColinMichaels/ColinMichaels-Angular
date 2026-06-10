@@ -1,9 +1,11 @@
 import {DatePipe, NgClass} from '@angular/common';
-import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
+import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
+import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {SocialsComponent} from './socials/socials.component';
 import {NotificationService} from '../game/services/notification.service';
@@ -39,6 +41,7 @@ interface HomeStat {
 @Component({
   selector: 'app-main',
   imports: [
+    BlogShareActionsComponent,
     DatePipe,
     HomeTerminalWindowComponent,
     NgClass,
@@ -51,6 +54,10 @@ interface HomeStat {
   styleUrl: `./home-page.scss`
 })
 export class MainComponent implements OnInit {
+  private readonly notificationService = inject(NotificationService);
+  private readonly userService = inject(UserService);
+  private readonly blogRepository = inject(BlogRepositoryService);
+
   user = new User();
 
   protected readonly navItems: readonly HomeNavItem[] = [
@@ -102,16 +109,16 @@ export class MainComponent implements OnInit {
     },
   ];
 
-  protected readonly publishedPosts: readonly BlogPostSummary[];
+  protected readonly publishedPosts = toSignal(
+    this.blogRepository.getPublishedPosts$().pipe(map(posts => posts.slice(0, 3))),
+    {initialValue: []}
+  );
+  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
+  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly pathNames = PATH_NAMES;
 
-  constructor(
-    private notificationService: NotificationService,
-    private userService: UserService,
-    blogRepository: BlogRepositoryService,
-  ) {
+  constructor() {
     this.user = this.userService.user;
-    this.publishedPosts = blogRepository.getPublishedPosts().slice(0, 3);
   }
 
   ngOnInit(): void {

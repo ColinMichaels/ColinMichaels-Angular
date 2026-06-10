@@ -1,5 +1,5 @@
 import {Injectable, inject} from '@angular/core';
-import {Observable, concatMap, forkJoin, from, merge, of} from 'rxjs';
+import {Observable, combineLatest, concatMap, forkJoin, from, merge, of} from 'rxjs';
 import {catchError, map, startWith} from 'rxjs/operators';
 
 import {
@@ -91,10 +91,13 @@ export class MediaLibraryService {
   private readonly blogRepository = inject(BlogRepositoryService);
 
   listenToMediaItems(): Observable<readonly MediaLibraryItem[]> {
-    return this.firestore.listenToCollection<MediaLibraryDocument>(MEDIA_COLLECTION, [], 'uploadedAt', 'desc').pipe(
-      map(documents => this.mergeMediaSources(
+    return combineLatest([
+      this.firestore.listenToCollection<MediaLibraryDocument>(MEDIA_COLLECTION, [], 'uploadedAt', 'desc'),
+      this.blogRepository.getAdminPosts$(),
+    ]).pipe(
+      map(([documents, posts]) => this.mergeMediaSources(
         documents.map(document => this.toMediaItem(document)),
-        this.getBlogAttachmentItems()
+        this.getBlogAttachmentItems(posts)
       ))
     );
   }
@@ -446,7 +449,7 @@ export class MediaLibraryService {
   }
 
   private promoteDerivedBlogItem(mediaId: string, patch: MediaMetadataPatch): Observable<string> {
-    const item = this.getBlogAttachmentItems().find(attachmentItem => attachmentItem.id === mediaId);
+    const item = this.getBlogAttachmentItems(this.blogRepository.getAdminPosts()).find(attachmentItem => attachmentItem.id === mediaId);
 
     if (!item) {
       return this.createErrorObservable('Unable to find the blog attachment metadata to update.');
@@ -474,10 +477,10 @@ export class MediaLibraryService {
     );
   }
 
-  private getBlogAttachmentItems(): readonly MediaLibraryItem[] {
+  private getBlogAttachmentItems(posts: readonly BlogPost[]): readonly MediaLibraryItem[] {
     const attachmentMap = new Map<string, MediaLibraryItem>();
 
-    for (const post of this.blogRepository.getAdminPosts()) {
+    for (const post of posts) {
       for (const attachment of this.getPostAttachmentCandidates(post)) {
         const key = this.getMediaIdentityKey(attachment.url, undefined);
         const existingItem = attachmentMap.get(key);

@@ -15,8 +15,12 @@ service cloud.firestore {
         );
     }
 
+    function isPublishedPost() {
+      return resource.data.status == 'published';
+    }
+
     match /posts/{postId} {
-      allow read: if isAdmin() || resource.data.status == 'published';
+      allow get, list: if isAdmin() || isPublishedPost();
       allow create, update, delete: if isAdmin();
     }
 

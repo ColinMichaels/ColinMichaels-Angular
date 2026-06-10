@@ -1,34 +1,112 @@
 import {TestBed} from '@angular/core/testing';
+import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPost} from '../models/blog-post.model';
-import {BLOG_POST_STORAGE_KEY} from './blog-storage.service';
+import {BlogStorageService} from './blog-storage.service';
 import {BlogRepositoryService} from './blog-repository.service';
+
+function createPost(overrides: Partial<BlogPost>): BlogPost {
+  return {
+    id: overrides.id ?? `post-${overrides.slug ?? 'test'}`,
+    slug: overrides.slug ?? 'test-post',
+    title: overrides.title ?? 'Test Post',
+    excerpt: overrides.excerpt ?? 'A test post.',
+    coverImage: overrides.coverImage ?? '/assets/images/backgrounds/night.webp',
+    author: overrides.author ?? {
+      name: 'Colin Michaels',
+      title: 'Frontend Engineer',
+    },
+    categories: overrides.categories ?? ['CMS'],
+    tags: overrides.tags ?? ['Firebase'],
+    status: overrides.status ?? 'draft',
+    seo: overrides.seo ?? {
+      title: overrides.title ?? 'Test Post',
+      description: overrides.excerpt ?? 'A test post.',
+      openGraphImage: overrides.coverImage ?? '/assets/images/backgrounds/night.webp',
+    },
+    contentFormat: 'editorjs',
+    blocks: overrides.blocks ?? [],
+    createdAt: overrides.createdAt ?? '2026-01-01T12:00:00.000Z',
+    updatedAt: overrides.updatedAt ?? '2026-01-01T12:00:00.000Z',
+    publishedAt: overrides.publishedAt ?? null,
+  };
+}
+
+class FakeBlogStorageService {
+  private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
+
+  readonly posts$ = this.postsSubject.asObservable();
+  readonly loading$ = of(false);
+  readonly error$ = of(null);
+
+  setPosts(posts: readonly BlogPost[]): void {
+    this.postsSubject.next(posts);
+  }
+
+  getPosts(): readonly BlogPost[] {
+    return this.postsSubject.value;
+  }
+
+  async savePost(post: BlogPost): Promise<void> {
+    this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), post]);
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    this.setPosts(this.getPosts().filter(post => post.id !== postId));
+  }
+
+  async backupPostsToFirestore(posts: readonly BlogPost[]): Promise<number> {
+    this.setPosts(posts);
+    return posts.length;
+  }
+
+  async loadPostsFromFirestore(): Promise<readonly BlogPost[]> {
+    return this.getPosts();
+  }
+}
 
 describe('BlogRepositoryService', () => {
   let service: BlogRepositoryService;
+  let storage: FakeBlogStorageService;
+
+  const publishedPost = createPost({
+    id: 'published-post',
+    slug: 'published-post',
+    title: 'Published Post',
+    status: 'published',
+    publishedAt: '2026-01-02T12:00:00.000Z',
+  });
+  const draftPost = createPost({
+    id: 'draft-post',
+    slug: 'draft-post',
+    title: 'Draft Post',
+    status: 'draft',
+  });
 
   beforeEach(() => {
-    window.localStorage.removeItem(BLOG_POST_STORAGE_KEY);
-    TestBed.configureTestingModule({});
+    storage = new FakeBlogStorageService();
+    storage.setPosts([publishedPost, draftPost]);
+
+    TestBed.configureTestingModule({
+      providers: [
+        {provide: BlogStorageService, useValue: storage},
+      ],
+    });
     service = TestBed.inject(BlogRepositoryService);
   });
 
-  afterEach(() => {
-    window.localStorage.removeItem(BLOG_POST_STORAGE_KEY);
-  });
-
-  it('returns only published posts for the public blog', () => {
+  it('returns only Firestore published posts for the public blog', () => {
     const posts = service.getPublishedPosts();
 
     expect(posts.length).toBe(1);
-    expect(posts[0].slug).toBe('architecture-boundaries');
+    expect(posts[0].slug).toBe('published-post');
   });
 
   it('does not expose draft posts by public slug lookup', () => {
-    expect(service.getPublishedPostBySlug('cms-foundation')).toBeUndefined();
+    expect(service.getPublishedPostBySlug('draft-post')).toBeUndefined();
   });
 
-  it('keeps drafts available to the admin repository view', () => {
+  it('keeps Firestore drafts available to the admin repository view', () => {
     const posts = service.getAdminPosts();
     const stats = service.getAdminStats();
 
@@ -42,28 +120,28 @@ describe('BlogRepositoryService', () => {
     });
   });
 
-  it('returns draft posts by slug for the admin editor', () => {
-    expect(service.getAdminPostBySlug('cms-foundation')?.status).toBe('draft');
+  it('returns Firestore draft posts by slug for the admin editor', () => {
+    expect(service.getAdminPostBySlug('draft-post')?.status).toBe('draft');
   });
 
-  it('persists newly created posts in local CMS storage', () => {
+  it('saves newly created posts through the storage service', async () => {
     const template = service.createNewPostTemplate();
-    const savedPost = service.savePost({
+    const savedPost = await service.savePost({
       ...template,
-      slug: 'local-storage-draft',
-      title: 'Local Storage Draft',
-      excerpt: 'A locally persisted CMS draft.',
+      slug: 'firestore-draft',
+      title: 'Firestore CMS Draft',
+      excerpt: 'A Firestore CMS draft.',
       coverImage: '/assets/images/backgrounds/night.webp',
       categories: ['CMS'],
-      tags: ['Local Storage'],
+      tags: ['Firestore'],
       seo: {
-        title: 'Local Storage Draft',
-        description: 'A locally persisted CMS draft.',
+        title: 'Firestore CMS Draft',
+        description: 'A Firestore CMS draft.',
         openGraphImage: '/assets/images/backgrounds/night.webp',
       },
       blocks: [
         {
-          id: 'local-draft-intro',
+          id: 'firestore-draft-intro',
           type: 'paragraph',
           data: {
             text: 'Saved from the CMS editor.',
@@ -72,76 +150,73 @@ describe('BlogRepositoryService', () => {
       ],
     });
 
-    const storedPosts = JSON.parse(window.localStorage.getItem(BLOG_POST_STORAGE_KEY) ?? '[]') as BlogPost[];
-
-    expect(service.getAdminPostBySlug(savedPost.slug)?.title).toBe('Local Storage Draft');
+    expect(service.getAdminPostBySlug(savedPost.slug)?.title).toBe('Firestore CMS Draft');
     expect(service.getAdminStats().total).toBe(3);
-    expect(storedPosts.length).toBe(1);
-    expect(storedPosts[0].id).toBe(savedPost.id);
+    expect(storage.getPosts().some(post => post.id === savedPost.id)).toBeTrue();
   });
 
-  it('overrides seed posts by id without duplicating the admin list', () => {
-    const seedPost = service.getAdminPostBySlug('cms-foundation');
-
-    expect(seedPost).toBeDefined();
-
-    const savedPost = service.savePost({
-      ...seedPost!,
-      title: 'Updated CMS Foundation Notes',
+  it('updates Firestore posts by id without duplicating the admin list', async () => {
+    const savedPost = await service.savePost({
+      ...draftPost,
+      title: 'Updated Draft Post',
     });
 
-    expect(service.getAdminPostBySlug(savedPost.slug)?.title).toBe('Updated CMS Foundation Notes');
+    expect(service.getAdminPostBySlug(savedPost.slug)?.title).toBe('Updated Draft Post');
     expect(service.getAdminStats().total).toBe(2);
   });
 
-  it('exposes locally saved published posts to the public blog', () => {
+  it('exposes saved published posts to the public blog', async () => {
     const template = service.createNewPostTemplate();
-    const savedPost = service.savePost({
+    const savedPost = await service.savePost({
       ...template,
-      slug: 'published-local-post',
-      title: 'Published Local Post',
-      excerpt: 'A locally saved post that is visible publicly.',
+      slug: 'published-firestore-post',
+      title: 'Published CMS Post',
+      excerpt: 'A saved post that is visible publicly.',
       status: 'published',
       categories: ['CMS'],
       tags: ['Publishing'],
       seo: {
-        title: 'Published Local Post',
-        description: 'A locally saved post that is visible publicly.',
+        title: 'Published CMS Post',
+        description: 'A saved post that is visible publicly.',
         openGraphImage: template.coverImage,
       },
       blocks: [],
     });
 
-    expect(service.getPublishedPostBySlug(savedPost.slug)?.title).toBe('Published Local Post');
+    expect(service.getPublishedPostBySlug(savedPost.slug)?.title).toBe('Published CMS Post');
     expect(service.getPublishedPosts().some(post => post.slug === savedPost.slug)).toBeTrue();
   });
 
-  it('archives seed posts instead of deleting source content', () => {
-    const seedPost = service.getAdminPostBySlug('architecture-boundaries');
+  it('uses the controlled published date for public post ordering', async () => {
+    await service.savePost(createPost({
+      id: 'older-controlled-post',
+      slug: 'older-controlled-post',
+      title: 'Older Controlled Post',
+      excerpt: 'A published post with an older posted date.',
+      status: 'published',
+      publishedAt: '2024-01-10T12:00:00.000Z',
+    }));
+    await service.savePost(createPost({
+      id: 'newer-controlled-post',
+      slug: 'newer-controlled-post',
+      title: 'Newer Controlled Post',
+      excerpt: 'A published post with a newer posted date.',
+      status: 'published',
+      publishedAt: '2027-01-10T12:00:00.000Z',
+    }));
 
-    expect(seedPost).toBeDefined();
+    const publishedSlugs = service.getPublishedPosts().map(post => post.slug);
 
-    const result = service.deletePost(seedPost!.id);
-
-    expect(result).toBe('archived-seed-post');
-    expect(service.getPublishedPostBySlug('architecture-boundaries')).toBeUndefined();
-    expect(service.getAdminPostBySlug('architecture-boundaries')?.status).toBe('archived');
+    expect(publishedSlugs.indexOf('newer-controlled-post'))
+      .toBeLessThan(publishedSlugs.indexOf('older-controlled-post'));
   });
 
-  it('deletes locally created posts from CMS storage', () => {
-    const template = service.createNewPostTemplate();
-    const savedPost = service.savePost({
-      ...template,
-      slug: 'temporary-local-post',
-      title: 'Temporary Local Post',
-      excerpt: 'A temporary local post.',
-    });
+  it('deletes posts from Firestore storage', async () => {
+    expect(service.getAdminPostBySlug(draftPost.slug)).toBeDefined();
 
-    expect(service.getAdminPostBySlug(savedPost.slug)).toBeDefined();
+    const result = await service.deletePost(draftPost.id);
 
-    const result = service.deletePost(savedPost.id);
-
-    expect(result).toBe('deleted-local-post');
-    expect(service.getAdminPostBySlug(savedPost.slug)).toBeUndefined();
+    expect(result).toBe('deleted-cms-post');
+    expect(service.getAdminPostBySlug(draftPost.slug)).toBeUndefined();
   });
 });

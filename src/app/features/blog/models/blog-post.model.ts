@@ -22,12 +22,17 @@ export interface BlogBlockData {
   url?: string;
   alt?: string;
   caption?: string;
+  width?: number;
+  height?: number;
   provider?: string;
   embedUrl?: string;
   items?: readonly string[];
   ordered?: boolean;
   language?: string;
   code?: string;
+  stretched?: boolean;
+  withBorder?: boolean;
+  withBackground?: boolean;
 }
 
 export interface BlogContentBlock {

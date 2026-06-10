@@ -27,6 +27,21 @@ function getNestedString(record: Record<string, unknown>, parentKey: string, key
   return isRecord(parent) ? getString(parent, key) : undefined;
 }
 
+function getBoolean(record: Record<string, unknown>, key: string): boolean {
+  return record[key] === true;
+}
+
+function getNumber(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getNestedNumber(record: Record<string, unknown>, parentKey: string, key: string): number | undefined {
+  const parent = record[parentKey];
+  return isRecord(parent) ? getNumber(parent, key) : undefined;
+}
+
 function toHeaderLevel(value: unknown): 2 | 3 {
   return value === 3 ? 3 : 2;
 }
@@ -53,11 +68,15 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
         data: {
           file: {
             url: block.data.url ?? '',
+            alt: block.data.alt ?? '',
+            width: block.data.width,
+            height: block.data.height,
           },
+          alt: block.data.alt ?? '',
           caption: block.data.caption ?? '',
-          withBorder: false,
-          withBackground: false,
-          stretched: false,
+          withBorder: block.data.withBorder ?? false,
+          withBackground: block.data.withBackground ?? false,
+          stretched: block.data.stretched ?? false,
         },
       };
     case 'embed':
@@ -125,7 +144,13 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
     case 'image':
       return {
         url: getNestedString(data, 'file', 'url') ?? getString(data, 'url') ?? '',
+        alt: getString(data, 'alt') ?? getNestedString(data, 'file', 'alt') ?? '',
         caption: getString(data, 'caption') ?? '',
+        width: getNestedNumber(data, 'file', 'width') ?? getNumber(data, 'width'),
+        height: getNestedNumber(data, 'file', 'height') ?? getNumber(data, 'height'),
+        stretched: getBoolean(data, 'stretched'),
+        withBorder: getBoolean(data, 'withBorder'),
+        withBackground: getBoolean(data, 'withBackground'),
       };
     case 'embed':
       return {

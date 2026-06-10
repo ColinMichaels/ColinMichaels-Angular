@@ -37,7 +37,9 @@ describe('routes', () => {
 
     expect(routePaths(guardedAdminRoutes?.children ?? [])).toEqual([
       '',
+      PATH_NAMES.ADMIN_MEDIA_LIBRARY,
       PATH_NAMES.ADMIN_CMS,
+      `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
       `${PATH_NAMES.ADMIN_CMS}/new`,
       `${PATH_NAMES.ADMIN_CMS}/:slug/edit`,
     ]);

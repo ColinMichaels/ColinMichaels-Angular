@@ -255,7 +255,7 @@ Tailwind risks:
 
 ## Blog and CMS Preparation
 
-An initial blog/admin scaffold now exists. The public blog uses `features/blog`, the protected admin CMS list/editor uses `admin/cms`, and both share the typed `BlogPost` content model. CMS-created and edited posts currently persist to browser `localStorage` layered over seeded content; Firebase-backed writes remain a future migration step. Existing markdown support remains limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
+An initial blog/admin scaffold now exists. The public blog uses `features/blog`, the protected admin CMS list/editor uses `admin/cms`, and both share the typed `BlogPost` content model. CMS-created and edited posts read and write through the Firestore `posts` collection; browser `localStorage` is not used for blog post persistence. Existing markdown support remains limited to `MarkdownReaderComponent`, `ngx-markdown`, `marked`, and Prism scripts.
 
 Recommended feature boundary:
 
