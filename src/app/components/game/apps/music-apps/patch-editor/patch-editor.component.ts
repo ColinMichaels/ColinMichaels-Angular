@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {StorageService} from '../../../services/storage.service';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
@@ -59,6 +59,7 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
     PianoComponent,
   ],
   templateUrl: './patch-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./patch-editor.component.scss']
 })
 export class PatchEditorComponent implements OnInit {

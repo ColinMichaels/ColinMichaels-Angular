@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {IconDefinition, IMediaItem, MediaItem} from '../../services/media.service';
 import {NgIf} from '@angular/common';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
@@ -29,6 +29,7 @@ import {SvgIconComponent} from '../app-icon/svg-icon.component';
       font-style: italic;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <ng-container *ngIf="media?.content as content">
 

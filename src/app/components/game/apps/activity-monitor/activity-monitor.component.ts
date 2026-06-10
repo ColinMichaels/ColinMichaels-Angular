@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgClass, NgForOf, NgSwitch, NgSwitchCase, NgSwitchDefault} from '@angular/common';
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {BaseChartDirective} from 'ng2-charts';
@@ -52,6 +52,7 @@ interface Process {
     NgSwitchDefault
   ],
   templateUrl: './activity-monitor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
   .activity-monitor-stats-row{
     @apply flex w-full justify-between border-b border-white/70 border-spacing-y-2;

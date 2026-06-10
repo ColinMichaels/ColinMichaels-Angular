@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -24,7 +24,7 @@ import {MusicService} from '../../services/music.service';
 import {Subject, takeUntil} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
-import {type User, type UserCredential} from '@angular/fire/auth';
+import {type User, type UserCredential} from 'firebase/auth';
 import {AuthService} from '../../../../services/auth.service';
 import {faGoogle} from '@fortawesome/free-brands-svg-icons';
 
@@ -39,6 +39,7 @@ import {faGoogle} from '@fortawesome/free-brands-svg-icons';
     RouterLink
   ],
   templateUrl: './login-screen.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .login-input {
       @apply text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500

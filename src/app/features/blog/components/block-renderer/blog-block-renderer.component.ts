@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, inject} from '@angular/core';
+import {Component, Input, OnChanges, inject, ChangeDetectionStrategy} from '@angular/core';
 import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 
 import {BlogContentBlock} from '../../models/blog-post.model';
@@ -11,6 +11,7 @@ interface RenderableBlogBlock {
 
 @Component({
   selector: 'app-blog-block-renderer',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="space-y-6 text-base leading-8 text-zinc-300">
       @for (row of renderedBlocks; track row.block.id) {

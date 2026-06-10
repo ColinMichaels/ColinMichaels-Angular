@@ -1,5 +1,5 @@
 import {JsonPipe} from '@angular/common';
-import {Component, ViewChild, inject} from '@angular/core';
+import {Component, ViewChild, inject, ChangeDetectionStrategy} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {lastValueFrom} from 'rxjs';
@@ -69,6 +69,7 @@ function getErrorMessage(error: unknown): string {
     EditorJsComponent,
     BlogMediaUploaderComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-6xl space-y-8">

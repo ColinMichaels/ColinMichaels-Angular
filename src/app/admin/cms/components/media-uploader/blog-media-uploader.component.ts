@@ -8,6 +8,7 @@ import {
   Output,
   forwardRef,
   inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
 import {Subscription} from 'rxjs';
@@ -32,6 +33,7 @@ import {
       multi: true,
     },
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section
       class="space-y-3 border border-zinc-800 bg-zinc-950/70 p-4"

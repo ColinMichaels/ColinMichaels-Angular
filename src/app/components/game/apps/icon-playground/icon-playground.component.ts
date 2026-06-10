@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {SvgService} from '../../services/svg.service'; // Adjust the path
 import {NgFor} from '@angular/common';
 import {FileExtensions, SvgIcons} from '../../services/file-system.service';
@@ -10,6 +10,7 @@ import {NotificationService} from '../../services/notification.service';
   selector: 'app-icon-playground',
   standalone: true,
   imports: [NgFor, SvgIconComponent, TooltipDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="icon-gallery p-4 py-10">
       <div class="grid grid-cols-5 gap-2 gap-y-8 mt-4">

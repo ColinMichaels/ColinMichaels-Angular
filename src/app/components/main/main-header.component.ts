@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {ScrollEffectsModule} from '../../modules/scroll/scroll-effects.module';
 
 
@@ -7,6 +7,7 @@ import {ScrollEffectsModule} from '../../modules/scroll/scroll-effects.module';
   imports: [
     ScrollEffectsModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <header class="mx-auto text-center">
       <h1 class="text-4xl sm:text-5xl md:text-5xl font-bold "

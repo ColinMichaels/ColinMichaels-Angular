@@ -217,9 +217,7 @@ export const generateAndStoreBlogThumbnail = onCall(
     const data = parseThumbnailRequest(request.data);
     const model = openAiImageModel.value();
     const image = await generateImage(data.prompt, model);
-    const storedImage = await storeThumbnailImage(data, image, model);
-
-    return storedImage;
+    return await storeThumbnailImage(data, image, model);
   }
 );
 

@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {SpaceXLaunch, SpaceXRocket, SpaceXLaunchpad, SpaceXCrew} from '../models/spacex-models';
 import {SpacexCrewComponent} from '../spacex-crew/spacex-crew.component';
 import {SpacexLaunchpadComponent} from '../spacex-launchpad/spacex-launchpad.component';
@@ -18,6 +18,7 @@ import {take} from 'rxjs';
     NgSwitchCase
   ],
   templateUrl: './spacex-sub-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class SpacexSubPanelComponent {

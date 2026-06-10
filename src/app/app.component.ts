@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import {NotificationServerComponent} from './components/game/utils/notifications-server/notifications-server.component';
 import {fadeToBlackAnimation} from './route-animations';
@@ -9,6 +9,7 @@ import {fadeToBlackAnimation} from './route-animations';
   templateUrl: './app.component.html',
   styles: [],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   animations: [fadeToBlackAnimation]
 
 })

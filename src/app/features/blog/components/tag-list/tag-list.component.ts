@@ -1,7 +1,8 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 
 @Component({
   selector: 'app-blog-tag-list',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-wrap gap-2">
       @for (tag of tags; track tag) {

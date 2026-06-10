@@ -1,10 +1,11 @@
-import {EnvironmentInjector, inject, Injectable, runInInjectionContext} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {
   Auth,
   createUserWithEmailAndPassword,
   getIdTokenResult,
   getRedirectResult,
   GoogleAuthProvider,
+  onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -12,14 +13,14 @@ import {
   signInWithRedirect,
   signOut,
   updateProfile,
-  user,
   User,
   UserCredential
-} from '@angular/fire/auth';
+} from 'firebase/auth';
 import {defer, from, map, Observable, of, shareReplay, throwError} from 'rxjs';
 import {catchError, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
+import {FIREBASE_AUTH} from './firebase/firebase.tokens';
 
 export interface AdminAuthorization {
   uid: string | null;
@@ -53,8 +54,7 @@ function hasAdminClaim(claims: Record<string, unknown>): boolean {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly auth: Auth | null = inject(Auth, {optional: true});
-  private readonly injector = inject(EnvironmentInjector);
+  private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
 
   readonly user$: Observable<User | null>;
 
@@ -69,7 +69,13 @@ export class AuthService {
       return;
     }
 
-    this.user$ = this.runInAuthContext(() => user(auth))
+    this.user$ = new Observable<User | null>(observer => {
+      return onAuthStateChanged(
+        auth,
+        currentUser => observer.next(currentUser),
+        error => observer.error(error)
+      );
+    })
       .pipe(shareReplay({bufferSize: 1, refCount: true}));
   }
 
@@ -80,7 +86,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => signInWithEmailAndPassword(auth, email, password)).pipe(
+    return this.fromAuthOperation(() => signInWithEmailAndPassword(auth, email, password)).pipe(
       tap(result => this.logger.info('Signed in!', result.user)),
       catchError(error => {
         this.logger.error('Login failed:', error);
@@ -96,9 +102,9 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => createUserWithEmailAndPassword(auth, email, password)).pipe(
+    return this.fromAuthOperation(() => createUserWithEmailAndPassword(auth, email, password)).pipe(
       switchMap(credentials => {
-        return this.fromAuthContext(() => sendEmailVerification(credentials.user)).pipe(
+        return this.fromAuthOperation(() => sendEmailVerification(credentials.user)).pipe(
           map(() => credentials)
         );
       }),
@@ -116,7 +122,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => signInWithPopup(auth, this.createGoogleProvider())).pipe(
+    return this.fromAuthOperation(() => signInWithPopup(auth, this.createGoogleProvider())).pipe(
       catchError(error => {
         this.logger.error('Google popup login failed:', error);
         return throwError(() => error);
@@ -130,7 +136,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => signInWithRedirect(auth, this.createGoogleProvider())).pipe(
+    return this.fromAuthOperation(() => signInWithRedirect(auth, this.createGoogleProvider())).pipe(
       catchError(error => {
         this.logger.error('Google redirect login failed:', error);
         return throwError(() => error);
@@ -145,7 +151,7 @@ export class AuthService {
       return of(null);
     }
 
-    return this.fromAuthContext(() => getRedirectResult(auth))
+    return this.fromAuthOperation(() => getRedirectResult(auth))
       .pipe(
         tap(result => {
           if (result) {
@@ -167,7 +173,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => sendPasswordResetEmail(auth, email)).pipe(
+    return this.fromAuthOperation(() => sendPasswordResetEmail(auth, email)).pipe(
       catchError(error => {
         this.logger.error('Password reset failed:', error);
         return throwError(() => error);
@@ -182,7 +188,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
-    return this.fromAuthContext(() => signOut(auth)).pipe(
+    return this.fromAuthOperation(() => signOut(auth)).pipe(
       tap(() => {
         this.logger.info('Signed out');
         this.router.navigate(['/login']);
@@ -198,7 +204,7 @@ export class AuthService {
     displayName?: string | null;
     photoURL?: string | null
   }): Observable<void> {
-    return this.fromAuthContext(() => updateProfile(profileUser, profile)).pipe(
+    return this.fromAuthOperation(() => updateProfile(profileUser, profile)).pipe(
       catchError(error => {
         this.logger.error('Profile update failed:', error);
         return throwError(() => error);
@@ -232,7 +238,7 @@ export class AuthService {
           });
         }
 
-        return this.fromAuthContext(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
+        return this.fromAuthOperation(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
           map(tokenResult => {
             const claims = tokenResult.claims as Record<string, unknown>;
             const isAdmin = hasAdminClaim(claims);
@@ -277,11 +283,7 @@ export class AuthService {
     return provider;
   }
 
-  private fromAuthContext<T>(operation: () => Promise<T>): Observable<T> {
-    return defer(() => from(this.runInAuthContext(operation)));
-  }
-
-  private runInAuthContext<T>(operation: () => T): T {
-    return runInInjectionContext(this.injector, operation);
+  private fromAuthOperation<T>(operation: () => Promise<T>): Observable<T> {
+    return defer(() => from(operation()));
   }
 }

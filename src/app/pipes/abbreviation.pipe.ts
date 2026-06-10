@@ -9,16 +9,15 @@ export class AbbreviationPipe implements PipeTransform {
     if (!value) return '';
 
     const words = value.trim().split(/\s+/);
-    let result = '';
 
     if (words.length === 1) {
-      result = words[0].substring(0, 2);
-    } else if (words.length === 2) {
-      result = words[0][0] + words[1][0];
-    } else {
-      result = words[0][0] + words[words.length - 1][0];
+      return words[0].substring(0, 2).toUpperCase();
     }
 
-    return result.toUpperCase();
+    if (words.length === 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+
+    return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
   }
 }

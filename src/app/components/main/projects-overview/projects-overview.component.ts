@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {ScrollEffectsModule} from '../../../modules/scroll/scroll-effects.module';
 import {NgForOf} from '@angular/common';
@@ -11,6 +11,7 @@ import {NgForOf} from '@angular/common';
     NgForOf
   ],
   templateUrl: './projects-overview.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class ProjectsOverviewComponent {

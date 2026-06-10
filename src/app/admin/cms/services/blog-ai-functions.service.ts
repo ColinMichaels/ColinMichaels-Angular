@@ -1,5 +1,5 @@
 import {Injectable, inject} from '@angular/core';
-import {Functions, httpsCallable} from '@angular/fire/functions';
+import {Functions, httpsCallable} from 'firebase/functions';
 
 import {
   BlogAssistantContext,
@@ -7,12 +7,13 @@ import {
   BlogStoredThumbnail,
   BlogThumbnailGenerationRequest,
 } from '../models/blog-ai-assistant.model';
+import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
 
 @Injectable({
   providedIn: 'root',
 })
 export class BlogAiFunctionsService {
-  private readonly functions = inject(Functions, {optional: true});
+  private readonly functions = inject(FIREBASE_FUNCTIONS, {optional: true});
 
   async generateMetadata(context: BlogAssistantContext): Promise<BlogAssistantResult> {
     const functions = this.getFunctions();

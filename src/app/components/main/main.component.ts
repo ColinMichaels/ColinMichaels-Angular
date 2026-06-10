@@ -1,5 +1,5 @@
 import {DatePipe, NgClass} from '@angular/common';
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
@@ -47,6 +47,7 @@ interface HomeStat {
   ],
   templateUrl: './main.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: `./home-page.scss`
 })
 export class MainComponent implements OnInit {

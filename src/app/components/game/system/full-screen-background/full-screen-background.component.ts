@@ -527,7 +527,7 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
     }
   }
 
-  @HostListener('window:scroll', ['$event'])
+  @HostListener('window:scroll')
   onScroll(): void {
     if (this.enableParallax) {
       this.scrollY.set(window.pageYOffset);
@@ -535,7 +535,7 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
     }
   }
 
-  @HostListener('window:resize', ['$event'])
+  @HostListener('window:resize')
   onResize(): void {
     this.windowHeight.set(window.innerHeight);
   }

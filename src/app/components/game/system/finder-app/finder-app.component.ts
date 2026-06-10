@@ -1,4 +1,4 @@
-import {Component, DestroyRef} from '@angular/core';
+import {Component, DestroyRef, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FileEntry, FileSystemService, VIEW_MODES} from '../../services/file-system.service';
 import {FinderWindowComponent} from '../finder-window/finder-window.component';
@@ -22,6 +22,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [CommonModule, FinderWindowComponent, FormsModule, FontAwesomeModule],
   templateUrl: './finder-app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles:`.input, select {
     @apply bg-zinc-800 text-white border border-zinc-700 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500;
   }`

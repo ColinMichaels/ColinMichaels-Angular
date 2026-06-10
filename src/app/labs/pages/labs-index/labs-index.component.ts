@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
@@ -52,6 +52,7 @@ interface ComponentLabEntry {
     WeatherComponent,
     WindowHeaderComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-neutral-950 pb-16 text-zinc-100">
       <section class="relative isolate overflow-hidden">

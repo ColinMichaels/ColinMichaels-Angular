@@ -1,4 +1,4 @@
-import {Component, ElementRef, ViewChild, signal, computed} from '@angular/core';
+import {Component, ElementRef, ViewChild, signal, computed, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
@@ -87,7 +87,7 @@ export interface User {
                 <div class="flex items-center justify-between">
                   <h3 class="font-medium text-gray-900 truncate">{{ chat.name }}</h3>
                   <span class="text-xs text-gray-500">
-                    {{ formatTime(chat.lastMessage?.timestamp) }}
+                    {{ formatTime($safeNavigationMigration(chat.lastMessage?.timestamp)) }}
                   </span>
                 </div>
                 <p class="text-sm text-gray-600 truncate">
@@ -383,6 +383,7 @@ export interface User {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: block;

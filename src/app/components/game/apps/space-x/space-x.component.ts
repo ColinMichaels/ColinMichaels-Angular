@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DatePipe, NgForOf, NgIf} from '@angular/common';
 import {
@@ -27,6 +27,7 @@ import {ClickOutsideDirective} from "../../../../modules/scroll/directives/click
     ClickOutsideDirective
   ],
   templateUrl: './space-x.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class SpaceXComponent {

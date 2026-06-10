@@ -12,6 +12,7 @@ import {
   ViewChild,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import type EditorJS from '@editorjs/editorjs';
 import type {EditorConfig, OutputData, ToolConstructable} from '@editorjs/editorjs';
@@ -79,6 +80,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
   imports: [
     CommonModule,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">

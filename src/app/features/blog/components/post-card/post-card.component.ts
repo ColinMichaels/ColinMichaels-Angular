@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {BlogPostSummary} from '../../models/blog-post.model';
@@ -10,6 +10,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
     RouterLink,
     BlogTagListComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <article class="grid gap-4 border-t border-zinc-800 py-6 md:grid-cols-[220px_1fr]">
       <a [routerLink]="['/blog', post.slug]" class="block overflow-hidden rounded bg-zinc-900">

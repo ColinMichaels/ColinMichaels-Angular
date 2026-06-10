@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf, NgIf} from '@angular/common';
 import {
   PatchService,
@@ -17,6 +17,7 @@ import {
   selector: 'app-piano',
   templateUrl: './piano.component.html',
   styleUrls: ['./piano.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgForOf,
     NgIf,

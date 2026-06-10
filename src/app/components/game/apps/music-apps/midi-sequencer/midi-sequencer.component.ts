@@ -1,5 +1,5 @@
 import {CommonModule} from '@angular/common';
-import {Component, OnDestroy} from '@angular/core';
+import {Component, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faKeyboard, faPlay, faPlus, faStop, faTrash} from '@fortawesome/free-solid-svg-icons';
@@ -39,6 +39,7 @@ type SequencerResolution = 1 | 2 | 4;
   selector: 'app-midi-sequencer',
   templateUrl: './midi-sequencer.component.html',
   styleUrls: ['./midi-sequencer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,

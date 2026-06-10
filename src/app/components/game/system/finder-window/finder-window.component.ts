@@ -1,4 +1,4 @@
-import {Component, inject, Input, signal} from '@angular/core';
+import {Component, inject, Input, signal, ChangeDetectionStrategy} from '@angular/core';
 import {FileSystemService} from '../../services/file-system.service';
 import {NgSwitch, NgSwitchCase} from '@angular/common';
 
@@ -27,6 +27,7 @@ import {NgSwitch, NgSwitchCase} from '@angular/common';
     NgSwitch,
     NgSwitchCase
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="finder-content">
       <ng-container [ngSwitch]="viewMode">

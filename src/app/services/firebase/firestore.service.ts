@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import {Inject, Injectable} from '@angular/core';
 import {
   collection as collectionFn,
   deleteDoc as deleteDocFn,
@@ -16,19 +16,20 @@ import {
   updateDoc as updateDocFn,
   where as whereFn,
   writeBatch as writeBatchFn
-} from '@angular/fire/firestore';
+} from 'firebase/firestore';
 import {
   deleteObject as deleteObjectFn,
   getDownloadURL as getDownloadURLFn,
   ref as storageRefFn,
-  Storage,
+  FirebaseStorage,
   uploadBytes as uploadBytesFn,
   uploadBytesResumable as uploadBytesResumableFn,
   uploadString as uploadStringFn
-} from '@angular/fire/storage';
+} from 'firebase/storage';
 import {from, Observable, throwError, of} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
 import {v4 as uuidv4} from 'uuid';
+import {FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
 
 
 export interface FirestoreDocument {
@@ -44,8 +45,8 @@ export interface FirestoreDocument {
 })
 export class FirestoreService {
   constructor(
-    private firestore: Firestore,
-    private storage: Storage
+    @Inject(FIREBASE_FIRESTORE) private firestore: Firestore,
+    @Inject(FIREBASE_STORAGE) private storage: FirebaseStorage
   ) {
   }
 

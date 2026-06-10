@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {BlogRepositoryService} from '../../../features/blog/services/blog-repository.service';
@@ -8,6 +8,7 @@ import {BlogRepositoryService} from '../../../features/blog/services/blog-reposi
   imports: [
     RouterLink,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-5xl space-y-8">

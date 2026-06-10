@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {debounceTime, Subject, throttleTime} from 'rxjs';
 import {MediaItem} from '../../game/services/media.service';
 import {faLaugh} from '@fortawesome/free-solid-svg-icons';
@@ -29,6 +29,7 @@ import {TooltipDirective} from '../../game/directives/tooltip.directive';
         @apply text-white/50 hover:text-emerald-500;
     }
     }`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="flex flex-col  py-2 px-2 rounded-lg">
       <button class="side-button"

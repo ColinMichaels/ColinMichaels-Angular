@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, ChangeDetectionStrategy} from '@angular/core';
 import {Meta, Title} from '@angular/platform-browser';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 
@@ -11,6 +11,7 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
     BlogBlockRendererComponent,
     RouterLink,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <article class="mx-auto max-w-3xl">

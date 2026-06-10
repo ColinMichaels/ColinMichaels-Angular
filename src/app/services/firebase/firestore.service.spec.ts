@@ -1,13 +1,14 @@
 import {TestBed} from '@angular/core/testing';
-import {Firestore} from '@angular/fire/firestore';
-import {Storage} from '@angular/fire/storage';
+import {Firestore} from 'firebase/firestore';
+import {FirebaseStorage} from 'firebase/storage';
 import {FirestoreService, FirestoreDocument} from './firestore.service';
 import {of} from 'rxjs';
+import {FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
 
 describe('FirestoreService', () => {
   let service: FirestoreService;
   let mockFirestore: jasmine.SpyObj<Firestore>;
-  let mockStorage: jasmine.SpyObj<Storage>;
+  let mockStorage: jasmine.SpyObj<FirebaseStorage>;
 
   // Mock implementations for Firebase functions
   let mockDoc: jasmine.Spy;
@@ -42,14 +43,14 @@ describe('FirestoreService', () => {
     TestBed.configureTestingModule({
       providers: [
         FirestoreService,
-        {provide: Firestore, useValue: firestoreSpy},
-        {provide: Storage, useValue: storageSpy}
+        {provide: FIREBASE_FIRESTORE, useValue: firestoreSpy},
+        {provide: FIREBASE_STORAGE, useValue: storageSpy}
       ]
     });
 
     service = TestBed.inject(FirestoreService);
-    mockFirestore = TestBed.inject(Firestore) as jasmine.SpyObj<Firestore>;
-    mockStorage = TestBed.inject(Storage) as jasmine.SpyObj<Storage>;
+    mockFirestore = TestBed.inject(FIREBASE_FIRESTORE) as jasmine.SpyObj<Firestore>;
+    mockStorage = TestBed.inject(FIREBASE_STORAGE) as jasmine.SpyObj<FirebaseStorage>;
 
     // Setup Firebase function mocks
     setupFirebaseMocks();

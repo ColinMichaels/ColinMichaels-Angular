@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {WindowHeaderComponent} from '../../components/game/templates/app-window/window-header/window-header.component';
@@ -10,6 +10,7 @@ import {WindowHeaderComponent} from '../../components/game/templates/app-window/
     WindowHeaderComponent,
   ],
   templateUrl: './not-found.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: '../../components/main/home-page.scss',
 })
 export class NotFoundComponent {

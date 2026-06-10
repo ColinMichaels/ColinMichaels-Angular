@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {NgForOf} from '@angular/common';
@@ -15,6 +15,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './socials.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `:host {
     position: fixed;
     bottom: 0;

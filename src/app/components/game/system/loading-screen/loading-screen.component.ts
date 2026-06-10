@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faApple} from '@fortawesome/free-brands-svg-icons';
 import {Router} from '@angular/router';
@@ -9,6 +9,7 @@ import {Router} from '@angular/router';
     FaIconComponent
   ],
   templateUrl: './loading-screen.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     @keyframes loading-bar {
       0% {

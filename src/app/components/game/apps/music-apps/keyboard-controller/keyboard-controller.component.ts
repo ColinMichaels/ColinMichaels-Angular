@@ -7,7 +7,8 @@ import {
   OnDestroy,
   OnInit,
   Output,
-  SimpleChanges
+  SimpleChanges,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {NgForOf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -29,6 +30,7 @@ export interface KeyboardNoteEvent {
   selector: 'app-keyboard-controller',
   templateUrl: './keyboard-controller.component.html',
   styleUrls: ['./keyboard-controller.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgForOf,
     FaIconComponent,

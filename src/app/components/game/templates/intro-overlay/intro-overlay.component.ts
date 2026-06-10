@@ -1,4 +1,4 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit, Output, ChangeDetectionStrategy} from '@angular/core';
 import {SoundService} from '../../services/sound.service';
 import {NgClass} from '@angular/common';
 import {RouterLink} from '@angular/router';
@@ -11,6 +11,7 @@ import {RouterLink} from '@angular/router';
   ],
   standalone: true,
   templateUrl: './intro-overlay.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./intro-overlay.component.scss'],
 })
 export class IntroOverlayComponent implements OnInit, OnDestroy {

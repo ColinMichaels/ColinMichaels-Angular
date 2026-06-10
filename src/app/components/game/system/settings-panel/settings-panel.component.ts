@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {SettingsSubpanelComponent} from './sub-settings-panel/sub-settings-panel.component';
@@ -16,6 +16,7 @@ import {faUserCircle} from '@fortawesome/free-regular-svg-icons';
     NgIf
   ],
   templateUrl: './settings-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class SettingsPanelComponent {

@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 
 @Component({
@@ -16,6 +16,7 @@ import {CommonModule} from '@angular/common';
       </div>
     </article>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .project-section {
       @apply grid min-w-0 grid-cols-1 gap-5 border border-white/20 bg-teal-950/30 p-4 shadow-2xl sm:p-6;

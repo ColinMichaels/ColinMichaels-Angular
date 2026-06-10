@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-network-settings',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="space-y-4">
       <h2 class="text-lg font-semibold">Network Settings</h2>

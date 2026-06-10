@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf, NgIf, UpperCasePipe} from '@angular/common';
 import {SpaceXCrew} from '../models/spacex-models';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -8,6 +8,7 @@ import {SpacexService} from '../spacex.service';
 @Component({
   selector: 'app-spacex-crew',
   templateUrl: './spacex-crew.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgForOf,
     NgIf,

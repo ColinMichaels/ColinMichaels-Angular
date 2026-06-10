@@ -6,7 +6,8 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type, computed, OnChanges, OnDestroy, ComponentRef
+  Type, computed, OnChanges, OnDestroy, ComponentRef,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {CliGameComponent} from '../../apps/cli-game/cli-game.component';
@@ -34,6 +35,7 @@ const DEFAULT_HEIGHT = 'h-auto';
   standalone: true,
   imports: [CommonModule, FontAwesomeModule],
   templateUrl: './app-window.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     /* app-window.component.scss */
     .window-unfocused {

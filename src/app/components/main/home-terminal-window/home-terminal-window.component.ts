@@ -1,4 +1,4 @@
-import {AfterViewInit, Component} from '@angular/core';
+import {AfterViewInit, Component, ChangeDetectionStrategy} from '@angular/core';
 import {TypewriterService} from '../../game/services/typewriter.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
@@ -11,6 +11,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
       <p class="mb-4 text-emerald-400">More about me......</p>
       <p [innerHTML]="typedText"></p>
     </div>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class HomeTerminalWindowComponent implements AfterViewInit {

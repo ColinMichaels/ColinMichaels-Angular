@@ -10,6 +10,7 @@ import {
   ViewChild,
   computed,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {CommonModule, isPlatformBrowser} from '@angular/common';
 import {RouterLink} from '@angular/router';
@@ -255,6 +256,7 @@ interface ScrollScene {
 
     <app-socials></app-socials>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: block;

@@ -1,4 +1,4 @@
-import {Component, Input, ViewEncapsulation} from '@angular/core';
+import {Component, Input, ViewEncapsulation, ChangeDetectionStrategy} from '@angular/core';
 import {SafeHtml} from '@angular/platform-browser';
 import {Observable} from 'rxjs';
 import {AsyncPipe} from '@angular/common';
@@ -10,6 +10,7 @@ import {AsyncPipe} from '@angular/common';
   imports: [
     AsyncPipe
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="w-full h-auto" [class]="cssClass" [innerHTML]="icon | async"></div>`
 })

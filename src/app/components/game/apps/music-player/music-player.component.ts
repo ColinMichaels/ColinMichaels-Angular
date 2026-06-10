@@ -1,4 +1,4 @@
-import {Component, DestroyRef, HostListener, OnDestroy} from '@angular/core';
+import {Component, DestroyRef, HostListener, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -18,6 +18,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   selector: 'app-music-player',
   templateUrl: './music-player.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgForOf,
     FaIconComponent,

@@ -53,7 +53,8 @@
                 "styles": {
                   "minify": true,
                   "inlineCritical": true
-                }
+                },
+                "fonts": false
               },
               "budgets": [
                 {
@@ -87,13 +88,7 @@
               ]
             },
             "local": {
-              "optimization": {
-                "scripts": true,
-                "styles": {
-                  "minify": true,
-                  "inlineCritical": true
-                }
-              },
+              "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
               "fileReplacements": [

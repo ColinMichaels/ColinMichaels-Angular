@@ -1,4 +1,4 @@
-import {Component, effect, signal} from '@angular/core';
+import {Component, effect, signal, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from "@angular/common";
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
@@ -23,6 +23,7 @@ import {AuthService} from '../../../../services/auth.service';
     SvgIconComponent
   ],
   templateUrl: './dock.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     :host {
       display: block;

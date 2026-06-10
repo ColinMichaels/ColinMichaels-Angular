@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faComputer, faLaptop} from '@fortawesome/free-solid-svg-icons';
@@ -8,6 +8,7 @@ import {faComputer, faLaptop} from '@fortawesome/free-solid-svg-icons';
   standalone: true,
   imports: [CommonModule, FontAwesomeModule],
   templateUrl: './about-app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class AboutAppComponent {

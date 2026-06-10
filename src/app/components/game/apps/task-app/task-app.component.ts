@@ -1,4 +1,4 @@
-import {Component, DestroyRef, OnInit} from '@angular/core';
+import {Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormControl, FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {Task, TaskService} from '../../services/task.service';
@@ -17,6 +17,7 @@ type TaskStatus = 'all' | Task['status'];
   selector: 'app-task-app',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, TooltipDirective, TimeAgoPipe, FaIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './task-app.component.html',
 })
 export class TaskAppComponent implements OnInit {
