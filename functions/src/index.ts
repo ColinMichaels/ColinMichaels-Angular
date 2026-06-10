@@ -15,6 +15,16 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
 const openAiImageModel = defineString('OPENAI_IMAGE_MODEL', {default: 'gpt-image-2'});
+const CMS_CALLABLE_CORS_ORIGINS = [
+  'http://localhost:4200',
+  'http://127.0.0.1:4200',
+  'https://colinmichaels.com',
+  'https://www.colinmichaels.com',
+  'https://colinmichaels.firebaseapp.com',
+  'https://colinmichaels.web.app',
+  /^http:\/\/localhost:\d+$/,
+  /^http:\/\/127\.0\.0\.1:\d+$/,
+];
 
 interface BlogBlockData {
   text?: string;
@@ -175,6 +185,8 @@ export const generateBlogMetadata = onCall(
     secrets: [openAiApiKey],
     timeoutSeconds: 60,
     memory: '512MiB',
+    cors: CMS_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
   },
   async request => {
     requireAdmin(request.auth);
@@ -197,6 +209,8 @@ export const generateAndStoreBlogThumbnail = onCall(
     secrets: [openAiApiKey],
     timeoutSeconds: 300,
     memory: '1GiB',
+    cors: CMS_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
   },
   async request => {
     requireAdmin(request.auth);

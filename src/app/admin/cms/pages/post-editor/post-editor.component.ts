@@ -2,10 +2,12 @@ import {JsonPipe} from '@angular/common';
 import {Component, ViewChild, inject} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import {lastValueFrom} from 'rxjs';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
-import {EditorJsComponent} from '../../components/editor-js/editor-js.component';
+import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
+import {BlogMediaUploaderComponent} from '../../components/media-uploader/blog-media-uploader.component';
 import {
   BlogAssistantContext,
   BlogAssistantResult,
@@ -16,6 +18,7 @@ import {
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
+import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog-media-upload.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
 
 interface PostEditorForm {
@@ -64,6 +67,7 @@ function getErrorMessage(error: unknown): string {
     ReactiveFormsModule,
     RouterLink,
     EditorJsComponent,
+    BlogMediaUploaderComponent,
   ],
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
@@ -124,14 +128,18 @@ function getErrorMessage(error: unknown): string {
                   ></textarea>
                 </label>
 
-                <label class="space-y-2 md:col-span-2">
-                  <span class="text-sm font-medium text-zinc-200">Cover Image URL</span>
-                  <input
-                    type="text"
-                    formControlName="coverImage"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                </label>
+                <app-blog-media-uploader
+                  class="md:col-span-2"
+                  formControlName="coverImage"
+                  label="Cover Image"
+                  description="Upload the post card, detail hero, and default social thumbnail image."
+                  buttonLabel="Upload Cover"
+                  previewAlt="Cover image preview"
+                  assetRole="cover"
+                  [postSlug]="mediaUploadSlug"
+                  [required]="true"
+                  (mediaUploaded)="onCoverImageUploaded($event)"
+                ></app-blog-media-uploader>
 
                 <label class="space-y-2">
                   <span class="text-sm font-medium text-zinc-200">Categories</span>
@@ -180,14 +188,17 @@ function getErrorMessage(error: unknown): string {
                   >
                 </label>
 
-                <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Open Graph Image</span>
-                  <input
-                    type="text"
-                    formControlName="openGraphImage"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                </label>
+                <app-blog-media-uploader
+                  class="md:col-span-2"
+                  formControlName="openGraphImage"
+                  label="Open Graph Image"
+                  description="Optional social sharing image. Leave empty to use the cover image."
+                  buttonLabel="Upload OG"
+                  previewAlt="Open Graph image preview"
+                  assetRole="open-graph"
+                  [postSlug]="mediaUploadSlug"
+                  (mediaUploaded)="onOpenGraphImageUploaded($event)"
+                ></app-blog-media-uploader>
               </form>
 
               @if (saveError) {
@@ -202,6 +213,7 @@ function getErrorMessage(error: unknown): string {
                 [title]="editorTitle"
                 [saveLabel]="'Save Post'"
                 [initialData]="initialData"
+                [imageUploader]="uploadEditorImage"
                 (saved)="onSaved($event)"
               ></app-editor-js>
             </section>
@@ -388,6 +400,7 @@ export class CmsPostEditorComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly blogAssistant = inject(BlogAiAssistantService);
   private readonly blogAiFunctions = inject(BlogAiFunctionsService);
+  private readonly blogMediaUpload = inject(BlogMediaUploadService);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
   private hasCreatedPost = false;
 
@@ -406,6 +419,23 @@ export class CmsPostEditorComponent {
   protected isThumbnailLoading: string | null = null;
   protected thumbnailError = '';
   protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
+  protected readonly uploadEditorImage = async (file: File): Promise<EditorImageUploadResult> => {
+    const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
+      slug: this.mediaUploadSlug,
+      role: 'editor-image',
+    }));
+
+    if (!upload.downloadUrl) {
+      throw new Error('Editor image upload completed without a download URL.');
+    }
+
+    return {
+      success: 1,
+      file: {
+        url: upload.downloadUrl,
+      },
+    };
+  };
 
   protected get editorTitle(): string {
     return requiredText(this.postForm.controls.title.value, 'Untitled Post');
@@ -421,6 +451,13 @@ export class CmsPostEditorComponent {
     }
 
     return this.assistantResult.source === 'backend' ? 'Backend' : 'Local fallback';
+  }
+
+  protected get mediaUploadSlug(): string {
+    return this.postForm.controls.slug.value
+      || createBlogSlug(this.postForm.controls.title.value)
+      || this.currentPost?.slug
+      || 'untitled-post';
   }
 
   protected syncSlugFromTitle(): void {
@@ -495,6 +532,22 @@ export class CmsPostEditorComponent {
     } finally {
       this.isThumbnailLoading = null;
     }
+  }
+
+  protected onCoverImageUploaded(upload: BlogMediaUploadResult): void {
+    const openGraphImage = this.postForm.controls.openGraphImage;
+
+    if (!openGraphImage.value.trim()
+      || openGraphImage.value === DEFAULT_COVER_IMAGE
+      || openGraphImage.value === this.currentPost?.coverImage) {
+      openGraphImage.setValue(upload.downloadUrl);
+    }
+
+    this.markUploadedMedia(upload);
+  }
+
+  protected onOpenGraphImageUploaded(upload: BlogMediaUploadResult): void {
+    this.markUploadedMedia(upload);
   }
 
   protected applySuggestion(suggestion: BlogMetadataSuggestion): void {
@@ -631,5 +684,11 @@ export class CmsPostEditorComponent {
 
   private getPublishedAt(status: BlogPostStatus, currentValue: string | null, savedAt: string): string | null {
     return status === 'published' ? currentValue ?? savedAt : null;
+  }
+
+  private markUploadedMedia(upload: BlogMediaUploadResult): void {
+    this.postForm.markAsDirty();
+    this.saveMessage = `Uploaded ${upload.originalName}. Save the post to persist the media URL.`;
+    this.saveError = '';
   }
 }

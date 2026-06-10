@@ -28,7 +28,7 @@ interface EditorToolModules {
   ImageTool: ToolConstructable;
 }
 
-interface ImageUploadResult {
+export interface EditorImageUploadResult {
   success: 1;
   file: {
     url: string;
@@ -65,7 +65,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
   };
 }
 
-function createObjectUrlUploadResult(file: File): ImageUploadResult {
+function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
   return {
     success: 1,
     file: {
@@ -127,6 +127,7 @@ export class EditorJsComponent implements AfterViewInit {
   @Input({required: true}) initialData!: OutputData;
   @Input() title = 'Post Editor';
   @Input() saveLabel = 'Save Draft';
+  @Input() imageUploader: ((file: File) => Promise<EditorImageUploadResult>) | null = null;
   @Output() saved = new EventEmitter<EditorSavedDocument>();
 
   @ViewChild('editorHolder', {static: true}) private readonly editorHolder!: ElementRef<HTMLElement>;
@@ -234,8 +235,8 @@ export class EditorJsComponent implements AfterViewInit {
             class: tools.ImageTool,
             config: {
               uploader: {
-                uploadByFile: async (file: File) => createObjectUrlUploadResult(file),
-                uploadByUrl: async (url: string): Promise<ImageUploadResult> => ({
+                uploadByFile: async (file: File) => this.uploadImageFile(file),
+                uploadByUrl: async (url: string): Promise<EditorImageUploadResult> => ({
                   success: 1,
                   file: {url},
                 }),
@@ -252,5 +253,9 @@ export class EditorJsComponent implements AfterViewInit {
       this.error.set(error instanceof Error ? error.message : 'Unable to initialize Editor.js.');
       this.isLoading.set(false);
     }
+  }
+
+  private uploadImageFile(file: File): Promise<EditorImageUploadResult> {
+    return this.imageUploader ? this.imageUploader(file) : Promise.resolve(createObjectUrlUploadResult(file));
   }
 }

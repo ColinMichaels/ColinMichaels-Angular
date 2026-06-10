@@ -11,11 +11,19 @@ service firebase.storage {
         );
     }
 
+    function isValidCmsImage() {
+      return request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     match /cms/blog-thumbnails/{postSlug}/{fileName} {
       allow read: if true;
-      allow write: if isAdmin()
-        && request.resource.size < 8 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      allow write: if isAdmin() && isValidCmsImage();
+    }
+
+    match /cms/blog-media/{postSlug}/{assetRole}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidCmsImage();
     }
 
     match /{allPaths=**} {
