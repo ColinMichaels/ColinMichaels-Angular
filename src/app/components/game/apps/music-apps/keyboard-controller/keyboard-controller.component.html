@@ -1,0 +1,60 @@
+<div class="piano-shell" [class.compact]="compact">
+  <header class="piano-toolbar">
+    <div class="piano-title">
+      <fa-icon [icon]="faKeyboard"></fa-icon>
+      <div>
+        <p>{{ subtitle }}</p>
+        <h3>{{ title }}</h3>
+      </div>
+    </div>
+
+    <div class="piano-controls">
+      <ng-content select="[keyboardControls]"></ng-content>
+
+      <div class="stepper" aria-label="Starting octave">
+        <span>Oct</span>
+        <button type="button" aria-label="Lower octave" (click)="setOctave(startingOctave - 1)">
+          <fa-icon [icon]="faMinus"></fa-icon>
+        </button>
+        <strong>{{ startingOctave }}</strong>
+        <button type="button" aria-label="Raise octave" (click)="setOctave(startingOctave + 1)">
+          <fa-icon [icon]="faPlus"></fa-icon>
+        </button>
+      </div>
+
+      <div class="stepper" aria-label="Visible octaves">
+        <span>Range</span>
+        <button type="button" aria-label="Reduce key range" (click)="setVisibleOctaves(visibleOctaves - 1)">
+          <fa-icon [icon]="faMinus"></fa-icon>
+        </button>
+        <strong>{{ visibleOctaves }}</strong>
+        <button type="button" aria-label="Expand key range" (click)="setVisibleOctaves(visibleOctaves + 1)">
+          <fa-icon [icon]="faPlus"></fa-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="piano-meta">
+    <span>{{ rootRangeLabel }}</span>
+    <span>Computer keys {{ enableComputerKeyboard ? 'on' : 'off' }}</span>
+  </div>
+
+  <div class="keybed" (pointerleave)="onPointerUp()" (pointerup)="onPointerUp()" (pointercancel)="onPointerUp()">
+    <button
+      *ngFor="let key of keyMap; trackBy: trackByLabel"
+      type="button"
+      class="piano-key"
+      [class.sharp]="key.sharp"
+      [class.active]="pressedKeys.has(key.label)"
+      [attr.aria-label]="'Play ' + key.label"
+      (pointerdown)="onPointerDown(key)"
+      (pointerenter)="onPointerEnter(key)"
+      (pointerup)="onPointerUp()"
+      (keydown.enter)="onKeyPress(key)"
+      (keydown.space)="onKeyPress(key)"
+    >
+      <span>{{ key.label }}</span>
+    </button>
+  </div>
+</div>

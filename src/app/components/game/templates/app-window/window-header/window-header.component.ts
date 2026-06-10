@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {faCircle, faMinus, faTimes, faUpRightAndDownLeftFromCenter} from '@fortawesome/free-solid-svg-icons';
 
@@ -10,6 +10,7 @@ import {faCircle, faMinus, faTimes, faUpRightAndDownLeftFromCenter} from '@forta
     FaStackItemSizeDirective
   ],
   templateUrl: './window-header.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class WindowHeaderComponent {

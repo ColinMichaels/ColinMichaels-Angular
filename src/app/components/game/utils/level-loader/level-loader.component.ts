@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import {Component, EventEmitter, OnInit, Output, ChangeDetectionStrategy} from '@angular/core';
 import { GameConfigService, GameLevel } from '../../services/game-config.service';
 import { UserService } from '../../services/user.service';
 import {NgIf} from '@angular/common';
@@ -12,6 +12,7 @@ import {NgIf} from '@angular/common';
     font-weight: bold;
     margin-top: 1rem;
   }`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgIf
   ]

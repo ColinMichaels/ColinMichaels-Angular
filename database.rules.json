@@ -1,7 +1,7 @@
 {
   "rules": {
     ".read": "auth != null",
-    ".write": "auth != null",
+    ".write": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)",
     "users": {
       "$uid": {
         ".read": "$uid === auth.uid",
@@ -9,12 +9,16 @@
       }
     },
     "logs": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)",
+      ".write": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)"
     },
     "public": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)"
+    },
+    "cms": {
+      ".read": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)",
+      ".write": "auth != null && (auth.token.admin === true || auth.token.cmsAdmin === true || auth.token.roles.admin === true)"
     }
   }
 }

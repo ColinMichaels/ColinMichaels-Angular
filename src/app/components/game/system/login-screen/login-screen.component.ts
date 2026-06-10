@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -22,9 +22,9 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
 import {Subject, takeUntil} from 'rxjs';
-import {PATH_NAMES} from '../../../../app.routes';
+import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
-import {updateProfile, User, UserCredential} from '@angular/fire/auth';
+import {type User, type UserCredential} from 'firebase/auth';
 import {AuthService} from '../../../../services/auth.service';
 import {faGoogle} from '@fortawesome/free-brands-svg-icons';
 
@@ -39,6 +39,7 @@ import {faGoogle} from '@fortawesome/free-brands-svg-icons';
     RouterLink
   ],
   templateUrl: './login-screen.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .login-input {
       @apply text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -60,11 +61,13 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   registerForm: FormGroup;
   isLoginMode = true; // Toggle between login and register views
   loading = false;
+  googleLoading = false;
   error = '';
 
   form: FormGroup;
   user?: User;
   private destroy$ = new Subject<void>();
+  private completingLogin = false;
 
   backgroundImage = 'assets/images/backgrounds/night.webp';
 
@@ -103,9 +106,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.redirectUrl = this.route.snapshot.queryParamMap.get('redirectUrl');
+    this.redirectUrl = this.getSafeRedirectUrl(this.route.snapshot.queryParamMap.get('redirectUrl'));
 
-    if (this.isLocalHost) {
+    if (this.shouldBypassLoginForLocalDevelopment()) {
       this.navigateToDestination();
       return;
     }
@@ -113,7 +116,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        this.redirectUrl = params['redirectUrl'] ?? null;
+        this.redirectUrl = this.getSafeRedirectUrl(params['redirectUrl']);
       });
 
     // Check for redirect results
@@ -121,11 +124,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((result: UserCredential | null) => {
         if (result) {
-          this.userService.updateUser({
-            name: result.user.displayName ?? result.user.email?.split('@')[0] ?? 'User'
-          }).then(() => {
-            this.navigateToDestination();
-          });
+          this.loading = true;
+          this.googleLoading = true;
+          this.finishFirebaseLogin(result.user, 'Google redirect');
         }
       });
 
@@ -138,7 +139,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         if (user) {
-          this.navigateToDestination();
+          this.finishFirebaseLogin(user, 'existing session');
         }
       });
 
@@ -170,10 +171,44 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   }
 
+  private shouldBypassLoginForLocalDevelopment(): boolean {
+    return this.isLocalHost && !this.isAdminRedirect(this.redirectUrl);
+  }
+
+  private isAdminRedirect(redirectUrl: string | null): boolean {
+    const adminRoot = `/${PATH_NAMES.ADMIN}`;
+
+    return redirectUrl === adminRoot || redirectUrl?.startsWith(`${adminRoot}/`) === true;
+  }
+
+  private getSafeRedirectUrl(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const redirectUrl = value.trim();
+
+    if (!redirectUrl || !redirectUrl.startsWith('/') || redirectUrl.startsWith('//') || redirectUrl.includes('://')) {
+      return null;
+    }
+
+    return redirectUrl;
+  }
+
+  private getErrorCode(error: unknown): string {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const code = (error as { code?: unknown }).code;
+      return typeof code === 'string' ? code : '';
+    }
+
+    return '';
+  }
+
   private getErrorMessage(errorCode: string): string {
     switch (errorCode) {
       case 'auth/user-not-found':
       case 'auth/wrong-password':
+      case 'auth/invalid-credential':
         return 'Invalid email or password';
       case 'auth/email-already-in-use':
         return 'Email is already in use';
@@ -187,8 +222,14 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         return 'Operation not allowed';
       case 'auth/account-exists-with-different-credential':
         return 'An account already exists with the same email address';
+      case 'auth/popup-blocked':
+        return 'The Google sign-in popup was blocked. Please allow popups or try again.';
       case 'auth/popup-closed-by-user':
         return 'Authentication popup was closed before completing the process';
+      case 'auth/unauthorized-domain':
+        return 'This domain is not authorized for Firebase Google sign-in.';
+      case 'auth/network-request-failed':
+        return 'Network error while contacting Firebase Authentication';
       default:
         return 'An error occurred during authentication';
     }
@@ -207,16 +248,11 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (result) => {
           this.logger.info('User logged in:', result.user.email);
-          // Update user service with Firebase user info
-          this.userService.updateUser({
-            name: result.user.displayName || result.user.email?.split('@')[0] || 'User'
-          }).then(() => {
-            this.navigateToDestination();
-          });
+          this.finishFirebaseLogin(result.user, 'email');
         },
         error: (error) => {
           this.loading = false;
-          this.error = this.getErrorMessage(error.code);
+          this.error = this.getErrorMessage(this.getErrorCode(error));
           this.logger.error('Login error:', error);
         }
       });
@@ -235,24 +271,31 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         next: (result: UserCredential) => {
           this.logger.info('User registered:', result.user.email);
 
-          // Use the modern Firebase approach for updating the profile
-          updateProfile(result.user, {displayName})
-            .then(() => {
-              return this.userService.updateUser({name: displayName});
-            })
-            .then(() => {
-              this.navigateToDestination();
-              this.loading = false; // Set loading to false on success
-            })
-            .catch((error) => {
-              this.loading = false;
-              this.error = 'Failed to update profile information';
-              this.logger.error('Profile update error:', error);
+          this.authService.updateUserProfile(result.user, {displayName})
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: () => {
+                this.userService.updateUser({name: displayName})
+                  .then(() => {
+                    this.navigateToDestination();
+                    this.loading = false;
+                  })
+                  .catch((error) => {
+                    this.loading = false;
+                    this.error = 'Failed to update local user information';
+                    this.logger.error('Local profile update error:', error);
+                  });
+              },
+              error: (error) => {
+                this.loading = false;
+                this.error = 'Failed to update profile information';
+                this.logger.error('Profile update error:', error);
+              }
             });
         },
         error: (error) => {
           this.loading = false;
-          this.error = this.getErrorMessage(error.code);
+          this.error = this.getErrorMessage(this.getErrorCode(error));
           this.logger.error('Registration error:', error);
         }
       });
@@ -260,29 +303,72 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   loginWithGoogle() {
     this.loading = true;
+    this.googleLoading = true;
     this.error = '';
 
     this.authService.loginWithGoogle()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (result: UserCredential | null) => {
-          this.logger.info('User logged in with Google:', result?.user?.email);
-          // Update user service with Google user info
-          this.userService.updateUser({
-            name: result?.user?.displayName ??
-              (result?.user?.email ? result.user.email.split('@')[0] : null) ??
-              'User'
-
-          }).then(() => {
-            this.navigateToDestination();
-          });
+        next: (result: UserCredential) => {
+          this.logger.info('User logged in with Google:', result.user.email);
+          this.finishFirebaseLogin(result.user, 'Google');
         },
         error: (error) => {
+          const errorCode = this.getErrorCode(error);
+
+          if (this.shouldFallbackToGoogleRedirect(errorCode)) {
+            this.error = 'Popup blocked. Redirecting to Google sign-in...';
+            this.startGoogleRedirectSignIn();
+            return;
+          }
+
           this.loading = false;
-          this.error = this.getErrorMessage(error.code);
+          this.googleLoading = false;
+          this.error = this.getErrorMessage(errorCode);
           this.logger.error('Google login error:', error);
         }
       });
+  }
+
+  private shouldFallbackToGoogleRedirect(errorCode: string): boolean {
+    return errorCode === 'auth/popup-blocked'
+      || errorCode === 'auth/operation-not-supported-in-this-environment';
+  }
+
+  private startGoogleRedirectSignIn(): void {
+    this.authService.loginWithGoogleRedirect()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loading = false;
+          this.googleLoading = false;
+        },
+        error: (error) => {
+          this.loading = false;
+          this.googleLoading = false;
+          this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.logger.error('Google redirect login error:', error);
+        }
+      });
+  }
+
+  private finishFirebaseLogin(user: User, method: string): void {
+    if (this.completingLogin) {
+      return;
+    }
+
+    this.completingLogin = true;
+    this.userService.updateUser({
+      name: user.displayName ?? user.email?.split('@')[0] ?? 'User'
+    }).then(() => {
+      this.navigateToDestination();
+    }).catch(error => {
+      this.loading = false;
+      this.googleLoading = false;
+      this.completingLogin = false;
+      this.error = 'Signed in, but failed to update the local user session';
+      this.logger.error(`${method} login profile update error:`, error);
+    });
   }
 
   resetPassword() {
@@ -302,7 +388,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           alert(`Password reset email sent to ${email}`);
         },
         error: (error) => {
-          this.error = this.getErrorMessage(error.code);
+          this.error = this.getErrorMessage(this.getErrorCode(error));
           this.logger.error('Password reset error:', error);
         }
       });

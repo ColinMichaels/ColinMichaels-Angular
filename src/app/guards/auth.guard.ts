@@ -4,7 +4,7 @@ import {isPlatformBrowser} from '@angular/common';
 import {CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
 import {Observable, map, of, take, tap} from 'rxjs';
 import {AuthService} from '../services/auth.service';
-import {PATH_NAMES} from '../app.routes';
+import {PATH_NAMES} from '../app-route-paths';
 
 @Injectable({
   providedIn: 'root'

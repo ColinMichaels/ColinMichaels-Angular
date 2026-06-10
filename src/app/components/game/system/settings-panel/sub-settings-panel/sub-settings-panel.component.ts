@@ -5,7 +5,8 @@ import {
   ViewChild,
   ComponentRef,
   AfterViewInit,
-  SimpleChanges, OnChanges
+  SimpleChanges, OnChanges,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -13,6 +14,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-settings-subpanel',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <ng-container #panelHost></ng-container>
   `,

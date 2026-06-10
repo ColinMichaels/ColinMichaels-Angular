@@ -1,5 +1,5 @@
 // tailwind-preview.component.ts
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {TailwindClassGeneratorService, TailwindVariant} from '../../services/tailwind-class-generator.service';
 import {NgClass, NgForOf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -89,6 +89,7 @@ import {NotificationService} from '../../services/notification.service';
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
   .form-field{
     @apply w-full text-xs;

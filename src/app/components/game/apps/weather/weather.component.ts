@@ -1,4 +1,4 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
+import {Component, OnInit, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {SettingsService} from '../../services/settings.service';
 import {WeatherService} from '../../services/weather.service';
@@ -9,6 +9,7 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
   selector: 'app-weather',
   templateUrl: './weather.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [CommonModule, FaIconComponent, TooltipDirective],
 })
 export class WeatherComponent implements OnInit {

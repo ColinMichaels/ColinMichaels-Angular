@@ -107,24 +107,32 @@ export class TypewriterService {
       }
 
       line.onCharTyped?.(char, this.currentIndex, mode);
+
+      if (this.currentIndex === line.text.length) {
+        this.completeCurrentLine(line);
+      }
     } else {
-      this.clearTypingInterval();
-
-      line.onComplete?.();
-
-      this.lineCompletionTimeout = setTimeout(() => {
-        this.lineCompletionTimeout = null;
-
-        const finalLine = this.typedText$.getValue() + '\n';
-        this.typedText$.next(finalLine);
-        this.lineCompleted$.next({
-          text: this.lineBuffer,
-          agent: line.agent || 'system'
-        }); // ✨ emit completed line
-        this.queue.shift();
-        this.processNextLine();
-      }, line.pauseAfter ?? 100);
+      this.completeCurrentLine(line);
     }
+  }
+
+  private completeCurrentLine(line: TypewriterLine): void {
+    this.clearTypingInterval();
+
+    line.onComplete?.();
+
+    this.lineCompletionTimeout = setTimeout(() => {
+      this.lineCompletionTimeout = null;
+
+      const finalLine = this.typedText$.getValue() + '\n';
+      this.typedText$.next(finalLine);
+      this.lineCompleted$.next({
+        text: this.lineBuffer,
+        agent: line.agent || 'system'
+      });
+      this.queue.shift();
+      this.processNextLine();
+    }, line.pauseAfter ?? 100);
   }
 
   clear(): void {

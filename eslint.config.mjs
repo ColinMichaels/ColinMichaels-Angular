@@ -43,7 +43,9 @@ export default tseslint.config(
           prefix: "app",
           style: "kebab-case"
         }
-      ]
+      ],
+      "@angular-eslint/prefer-inject": "off",
+      "@angular-eslint/prefer-on-push-component-change-detection": "off"
     }
   },
   {
@@ -51,6 +53,9 @@ export default tseslint.config(
     extends: [
       ...angular.configs.templateRecommended,
       ...angular.configs.templateAccessibility
-    ]
+    ],
+    rules: {
+      "@angular-eslint/template/prefer-control-flow": "off"
+    }
   }
 );

@@ -6,9 +6,86 @@
 @tailwind components;
 @tailwind utilities;
 
+:root,
+.dark {
+  --site-bg: #09090b;
+  --site-panel: #18181b;
+  --site-panel-soft: rgba(24, 24, 27, 0.72);
+  --site-section: #171717;
+  --site-border: rgba(255, 255, 255, 0.1);
+  --site-heading: #fafafa;
+  --site-text: #e4e4e7;
+  --site-muted: #a1a1aa;
+  --site-subtle: #71717a;
+}
+
+.light {
+  --site-bg: #f8fafc;
+  --site-panel: #ffffff;
+  --site-panel-soft: rgba(255, 255, 255, 0.82);
+  --site-section: #f1f5f9;
+  --site-border: rgba(15, 23, 42, 0.12);
+  --site-heading: #0f172a;
+  --site-text: #1e293b;
+  --site-muted: #475569;
+  --site-subtle: #64748b;
+}
+
 /* Set Roboto as the default font */
 body {
   font-family: 'Arimo', sans-serif;
+  background: var(--site-bg);
+  color: var(--site-text);
+}
+
+.site-theme-scope {
+  background: var(--site-bg);
+  color: var(--site-text);
+  color-scheme: dark;
+}
+
+.light .site-theme-scope {
+  color-scheme: light;
+}
+
+.light .site-theme-scope :is([class~="bg-zinc-950"], [class~="bg-neutral-950"], [class~="bg-zinc-950/80"], [class~="bg-zinc-950/70"], [class~="bg-neutral-950/85"]) {
+  background-color: var(--site-bg) !important;
+}
+
+.light .site-theme-scope :is([class~="bg-zinc-900"], [class~="bg-zinc-900/70"], [class~="bg-zinc-900/40"], [class~="bg-neutral-900"]) {
+  background-color: var(--site-panel) !important;
+}
+
+.light .site-theme-scope :is([class~="bg-zinc-100"], [class~="bg-white"]) {
+  background-color: var(--site-section) !important;
+}
+
+.light .site-theme-scope :is([class~="border-zinc-800"], [class~="border-zinc-700"], [class~="border-zinc-600"], [class~="border-white/10"], [class~="border-white/15"], [class~="border-white/20"]) {
+  border-color: var(--site-border) !important;
+}
+
+.light .site-theme-scope :is([class~="text-zinc-50"], [class~="text-zinc-100"]) {
+  color: var(--site-heading) !important;
+}
+
+.light .site-theme-scope :is([class~="text-zinc-200"], [class~="text-zinc-300"]) {
+  color: var(--site-text) !important;
+}
+
+.light .site-theme-scope :is([class~="text-zinc-400"], [class~="text-zinc-500"], [class~="text-zinc-600"]) {
+  color: var(--site-muted) !important;
+}
+
+.light .site-theme-scope :is([class~="placeholder:text-zinc-600"])::placeholder {
+  color: var(--site-subtle) !important;
+}
+
+.light .site-theme-scope input,
+.light .site-theme-scope textarea,
+.light .site-theme-scope select {
+  background-color: var(--site-panel) !important;
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
 }
 
 /* Remove outline for everything */
@@ -21,7 +98,6 @@ body {
   outline: 2px solid #005fcc; /* Adjust style as needed */
   border-radius: 4px; /* Optional: rounding for better visuals */
 }
-
 
 
 

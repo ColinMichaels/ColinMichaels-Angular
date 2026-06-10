@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, DestroyRef, OnInit} from '@angular/core';
+import {AfterViewInit, Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
 import {AppWindowComponent} from '../templates/app-window/app-window.component';
@@ -44,6 +44,7 @@ import {LogService} from '../services/log.service';
     TooltipDirective
   ],
   templateUrl: './desktop.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class DesktopComponent implements OnInit, AfterViewInit {

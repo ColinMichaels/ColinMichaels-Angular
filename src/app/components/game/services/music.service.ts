@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, interval} from 'rxjs';
 
-interface Track {
+export interface Track {
   id: number;
   title: string;
   artist: string;

@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 
 @Component({
@@ -16,23 +16,23 @@ import {CommonModule} from '@angular/common';
       </div>
     </article>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .project-section {
-      @apply p-4 sm:p-8 grid grid-cols-1 md:grid-cols-10 grid-flow-dense md:grid-flow-col border
-      rounded-lg shadow-2xl  border-white/30 bg-teal-950/30;
+      @apply grid min-w-0 grid-cols-1 gap-5 border border-white/20 bg-teal-950/30 p-4 shadow-2xl sm:p-6;
       .project-section-header {
-        @apply flex flex-col justify-center  sm:col-span-4 text-pretty text-left font-sans;
+        @apply min-w-0 text-pretty text-left font-sans;
         h3 {
-          @apply text-xl font-bold;
+          @apply text-2xl font-semibold text-white;
         }
 
         p {
-          @apply mt-2 text-base text-gray-400;
+          @apply mt-2 max-w-3xl text-sm leading-6 text-gray-400;
         }
       }
 
       .project-example-container {
-        @apply block w-full h-fit  justify-start max-h-full items-center max-w-4xl sm:col-span-6 scale-75 sm:scale-90;
+        @apply block min-w-0 w-full overflow-hidden;
         .project-example {
           @apply w-full;
         }

@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {TooltipDirective} from '../../../game/directives/tooltip.directive';
 
 export class Transformer {
@@ -62,6 +62,7 @@ export class Transformer {
     TooltipDirective
   ],
   styles: ``,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div
       [appTooltip]="tooltips[0].message"
@@ -90,7 +91,7 @@ export class Transformer {
   `
 })
 export class ContactSectionComponent implements OnInit{
-  @Input() hidden: any;
+  @Input() hidden = false;
 
   contact: Record<string, string> = {
     name : 'Colin Michaels',
@@ -120,15 +121,8 @@ export class ContactSectionComponent implements OnInit{
       message: 'email me at <EMAIL> and I\'ll send you the code'
     }
   ]
-  constructor() {
-  }
 
-  ngOnInit() {
-
+  ngOnInit(): void {
     this.contact = new Transformer().transformObject(this.contact,true);
-    console.warn('contact',this.contact);
   }
-
-
-
 }

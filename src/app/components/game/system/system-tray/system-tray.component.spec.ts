@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 
 import { SystemTrayComponent } from './system-tray.component';
@@ -11,7 +11,7 @@ describe('SystemTrayComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SystemTrayComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()]
     })
     .compileComponents();
 

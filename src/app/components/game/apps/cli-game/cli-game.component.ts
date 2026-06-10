@@ -1,4 +1,4 @@
-import {Component, DestroyRef, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {Component, DestroyRef, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TypewriterService, TypingMode} from '../../services/typewriter.service';
 import {SoundService} from '../../services/sound.service';
@@ -33,6 +33,7 @@ export interface ITerminalMessage {
   ],
   standalone: true,
   templateUrl: './cli-game.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./cli-game.component.scss'],
 })
 export class CliGameComponent implements OnInit {

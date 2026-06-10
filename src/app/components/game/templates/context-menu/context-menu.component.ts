@@ -1,5 +1,5 @@
 // context-menu.component.ts
-import {Component, Inject, HostListener, Input} from '@angular/core';
+import {Component, Inject, HostListener, Input, ChangeDetectionStrategy} from '@angular/core';
 import {CONTEXT_MENU_DATA, ContextMenuConfig, ContextMenuItem} from '../../services/context-menu.service';
 import {NgForOf, NgIf} from '@angular/common';
 
@@ -35,6 +35,7 @@ import {NgForOf, NgIf} from '@angular/common';
     NgIf,
     NgForOf
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [':host { outline: none; display: block; }']
 })
 export class ContextMenuComponent {

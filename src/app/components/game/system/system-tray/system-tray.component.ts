@@ -1,5 +1,5 @@
 // system-tray.component.ts
-import {Component, HostListener, effect, signal, DestroyRef} from '@angular/core';
+import {Component, HostListener, effect, signal, DestroyRef, ChangeDetectionStrategy} from '@angular/core';
 import { ApplicationManagerService } from '../../services/application-manager.service';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {ClockDisplayComponent} from '../clock-display/clock-display.component';
@@ -42,6 +42,7 @@ import {SoundPlayerComponent} from '../sound-player/sound-player.component';
     .menu-separator {
       @apply my-1 border-t border-white/20;
     }`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './system-tray.component.html'
 })
 export class SystemTrayComponent {

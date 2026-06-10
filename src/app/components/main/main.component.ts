@@ -1,44 +1,111 @@
-import {Component, OnInit} from '@angular/core';
+import {DatePipe, NgClass} from '@angular/common';
+import {Component, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
+import {RouterLink} from '@angular/router';
+import {map} from 'rxjs';
+
+import {PATH_NAMES} from '../../app-route-paths';
+import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
+import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {
+  YouTubeLatestVideosComponent
+} from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
+import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {SocialsComponent} from './socials/socials.component';
 import {NotificationService} from '../game/services/notification.service';
 import {User, UserService} from '../game/services/user.service';
-import {WindowHeaderComponent} from '../game/templates/app-window/window-header/window-header.component';
-import {MainHeaderComponent} from './main-header.component';
-import {MainSubHeaderComponent} from './main-sub-header.component';
-import {JokeTrayComponent} from './joke-tray/joke-tray.component';
-import {SpaceXComponent} from '../game/apps/space-x/space-x.component';
-import {faExclamationTriangle, faPersonDigging} from '@fortawesome/free-solid-svg-icons';
-import {PatchEditorComponent} from '../game/apps/music-apps/patch-editor/patch-editor.component';
-import {TailwindPreviewComponent} from '../game/apps/tailwind-preview/tailwind-preview.component';
-import {TooltipExamplesComponent} from '../game/apps/tooltip-examples/tooltip-examples.component';
-import {TaskAppComponent} from '../game/apps/task-app/task-app.component';
-import {WeatherComponent} from '../game/apps/weather/weather.component';
-import {ScrollEffectsModule} from '../../modules/scroll/scroll-effects.module';
 import {HomeTerminalWindowComponent} from './home-terminal-window/home-terminal-window.component';
-import {ProjectsOverviewComponent} from './projects-overview/projects-overview.component';
-import {ProjectItemComponent} from './project-item/project-item.component';
-import {DisclaimerComponent} from './disclaimer/disclaimer.component';
 import {HOME_NOTIFY_CLASSES} from './main.constants';
+
+interface HomeHighlight {
+  eyebrow: string;
+  title: string;
+  description: string;
+  route: string;
+  action: string;
+  accentClass: string;
+}
+
+interface HomeCapability {
+  title: string;
+  description: string;
+  meta: string;
+}
 
 @Component({
   selector: 'app-main',
-  imports: [SocialsComponent, WindowHeaderComponent, MainHeaderComponent, MainSubHeaderComponent, JokeTrayComponent, SpaceXComponent, PatchEditorComponent, TailwindPreviewComponent, TooltipExamplesComponent, TaskAppComponent, ScrollEffectsModule, WeatherComponent, HomeTerminalWindowComponent, ProjectsOverviewComponent, ProjectItemComponent, DisclaimerComponent],
+  imports: [
+    BlogShareActionsComponent,
+    DatePipe,
+    HomeTerminalWindowComponent,
+    NgClass,
+    RouterLink,
+    SocialsComponent,
+    YouTubeLatestVideosComponent,
+  ],
   templateUrl: './main.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: `./home-page.scss`
 })
-export class MainComponent implements OnInit{
+export class MainComponent implements OnInit {
+  private readonly notificationService = inject(NotificationService);
+  private readonly userService = inject(UserService);
+  private readonly blogRepository = inject(BlogRepositoryService);
+  protected readonly theme = inject(SiteThemeService);
+
   user = new User();
 
-  constructor(
-    private notificationService: NotificationService,
-    private userService: UserService
+  protected readonly capabilities: readonly HomeCapability[] = [
+    {
+      title: 'Public Website',
+      description: 'Portfolio, publishing, media, and project context organized for quick scanning.',
+      meta: 'Home / Blog / Work',
+    },
+    {
+      title: 'Core OS Framework',
+      description: 'Reusable desktop, window, dock, terminal, tooltip, and command systems.',
+      meta: 'Protected OS routes',
+    },
+    {
+      title: 'Labs',
+      description: 'Experimental interaction and visual systems kept separate from production pages.',
+      meta: 'Route-backed experiments',
+    },
+  ];
 
-  ) {
+  protected readonly labItems: readonly HomeHighlight[] = [
+    {
+      eyebrow: 'Visual Lab',
+      title: 'Full Screen Backgrounds',
+      description: 'Image, video, overlay, and parallax background experiments for immersive interfaces.',
+      route: `/${PATH_NAMES.FS_BACKGROUND}`,
+      action: 'View background lab',
+      accentClass: 'border-sky-400/70 text-sky-200',
+    },
+    {
+      eyebrow: 'Project Demos',
+      title: 'Homepage Experiments',
+      description: 'SpaceX, weather, patch builder, task, tooltip, and Tailwind demos now belong with labs.',
+      route: `/${PATH_NAMES.LABS}`,
+      action: 'Browse labs',
+      accentClass: 'border-amber-400/70 text-amber-200',
+    },
+  ];
+
+  protected readonly publishedPosts = toSignal(
+    this.blogRepository.getPublishedPosts$().pipe(map(posts => posts.slice(0, 3))),
+    {initialValue: []}
+  );
+  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
+  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly pathNames = PATH_NAMES;
+
+  constructor() {
     this.user = this.userService.user;
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     if (this.user?.name !== '') {
       this.notificationService.show({
         title: 'Welcome back ',
@@ -47,6 +114,5 @@ export class MainComponent implements OnInit{
       });
     }
   }
-  protected readonly faExclamationTriangle = faExclamationTriangle;
-  protected readonly faPersonDigging = faPersonDigging;
+
 }

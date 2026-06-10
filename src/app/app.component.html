@@ -1,7 +1,11 @@
 <app-notification-server/>
+@if (showSiteHeader()) {
+  <app-site-header/>
+}
 <div
-  class=" bg-zinc-800/70 min-h-screen"
+  class="min-h-screen bg-zinc-800/70"
+  [class.site-theme-scope]="showSiteHeader()"
   [@routeAnimations]="prepareRoute(outlet)"
 >
-<router-outlet #outlet='outlet'></router-outlet>
+  <router-outlet #outlet='outlet'></router-outlet>
 </div>

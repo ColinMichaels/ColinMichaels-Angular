@@ -19,7 +19,7 @@
         <div
           class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-md p-2 flex items-center justify-between">
           <span class="text-xs">{{ currentWeather?.current?.location }}</span>
-          <span class="text-xs">{{ currentWeather?.current?.temp | number:'1.0-0' }}°</span>
+          <span class="text-xs">{{ $safeNavigationMigration(currentWeather?.current?.temp) | number:'1.0-0' }}°</span>
         </div>
         <div
           class="dark:text-gray-300 text-gray-600 dark:hover:bg-gray-700 hover:bg-gray-100 rounded-md p-2 flex items-center justify-between">
@@ -90,17 +90,17 @@
         <div
           class="dark:bg-gray-800 dark:border dark:border-gray-700 bg-white shadow-sm rounded-lg p-4 mb-4 flex items-center">
           <div class="flex items-center">
-            <fa-icon [icon]="getWeatherIcon(currentWeather?.current?.description)"></fa-icon>
+            <fa-icon [icon]="getWeatherIcon($safeNavigationMigration(currentWeather?.current?.description))"></fa-icon>
             <div class="ml-4">
               <div class="flex items-baseline">
                 <span
-                  class="dark:text-gray-100 text-4xl font-light text-gray-800">{{ currentWeather?.current?.temp | number: '1.0-0' }}
+                  class="dark:text-gray-100 text-4xl font-light text-gray-800">{{ $safeNavigationMigration(currentWeather?.current?.temp) | number: '1.0-0' }}
                   °</span>
                 <span class="ml-1 dark:text-gray-400 text-gray-500 text-sm">{{ units }}</span>
               </div>
               <p class="dark:text-gray-300 text-gray-700 text-sm">{{ currentWeather?.current?.description }}</p>
               <p class="dark:text-gray-400 text-gray-500 text-xs">Feels
-                like {{ currentWeather?.current?.feelsLike | number: '1.0-0' }}°</p>
+                like {{ $safeNavigationMigration(currentWeather?.current?.feelsLike) | number: '1.0-0' }}°</p>
             </div>
           </div>
 

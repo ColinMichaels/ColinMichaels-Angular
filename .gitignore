@@ -2,14 +2,20 @@
 
 # Compiled output
 /dist
+/functions/lib
 /tmp
 /out-tsc
 /bazel-out
 
 # Node
 /node_modules
+functions/node_modules
 npm-debug.log
 yarn-error.log
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+database-debug.log
 
 # IDEs and editors
 .idea/
@@ -49,4 +55,5 @@ Thumbs.db
 src/environments/environment.local.ts
 src/environments/.env.*
 !src/environments/.env.example
-
+/functions/.secret.local
+/functions/.env.local

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from '@angular/common';
 
 @Component({
@@ -7,6 +7,7 @@ import {NgForOf} from '@angular/common';
     NgForOf
   ],
   templateUrl: './piano-settings.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `/* settings-sidebar.component.css */
   .settings-sidebar {
     position: fixed;
