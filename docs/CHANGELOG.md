@@ -14,6 +14,7 @@
 - Added Facebook blog sharing, Firestore-backed CMS post persistence, and CMS JSON export/Firestore backup controls.
 - Added CMS post JSON import on new/edit post screens for restoring exported posts or raw Editor.js documents.
 - Added fuller Editor.js image block preservation and blog OpenGraph/Twitter/canonical metadata for shared post links.
+- Separated CMS post cover images from optional custom Open Graph/social share images while keeping cover-image fallback for posts without a custom social image.
 - Switched blog post listing, editing, publishing, and media attachment derivation to Firestore-only post data with no browser localStorage fallback.
 - Added CMS post-list bulk JSON import for restoring exported blog posts directly into Firestore `/posts`.
 - Documented the media library architecture, component inventory, and migration notes.

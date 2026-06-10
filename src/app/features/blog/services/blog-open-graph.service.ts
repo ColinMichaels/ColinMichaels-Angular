@@ -105,7 +105,7 @@ export class BlogOpenGraphService {
   createBlogPostMetadata(post: BlogPost): BlogShareMetadata {
     const title = this.toPlainText(post.seo.title || post.title);
     const description = this.truncateDescription(this.toPlainText(post.seo.description || post.excerpt));
-    const image = this.toAbsoluteUrl(post.seo.openGraphImage || this.findFirstImageBlockUrl(post) || post.coverImage || DEFAULT_IMAGE);
+    const image = this.toAbsoluteUrl(post.seo.openGraphImage || post.coverImage || this.findFirstImageBlockUrl(post) || DEFAULT_IMAGE);
     const imageAlt = this.toPlainText(this.findFirstImageBlockAlt(post) || `${post.title} cover image`);
     const url = post.seo.canonical ? this.toAbsoluteUrl(post.seo.canonical) : this.createRouteUrl(`${PATH_NAMES.BLOG}/${post.slug}`);
 

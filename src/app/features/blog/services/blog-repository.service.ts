@@ -147,7 +147,7 @@ export class BlogRepositoryService {
       seo: {
         title: 'Untitled Post',
         description: '',
-        openGraphImage: DEFAULT_COVER_IMAGE,
+        openGraphImage: '',
       },
       contentFormat: 'editorjs',
       blocks: [],
@@ -170,7 +170,7 @@ export class BlogRepositoryService {
         ...post.seo,
         title: post.seo.title || post.title,
         description: post.seo.description || post.excerpt,
-        openGraphImage: post.seo.openGraphImage || post.coverImage,
+        openGraphImage: post.seo.openGraphImage?.trim() || '',
       },
       updatedAt: now,
       publishedAt,

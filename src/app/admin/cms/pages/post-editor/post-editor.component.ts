@@ -71,6 +71,11 @@ function requiredText(value: string, fallback: string): string {
   return trimmedValue || fallback;
 }
 
+function normalizeOpenGraphImage(value: string | undefined, coverImage: string): string {
+  const trimmedValue = value?.trim() ?? '';
+  return trimmedValue && trimmedValue !== coverImage ? trimmedValue : '';
+}
+
 function toDateTimeLocalValue(value: string | null): string {
   if (!value) {
     return '';
@@ -265,7 +270,7 @@ function getErrorMessage(error: unknown): string {
                   class="md:col-span-2"
                   formControlName="coverImage"
                   label="Cover Image"
-                  description="Upload the post card, detail hero, and default social thumbnail image."
+                  description="Upload the post card and detail hero image. Social sharing falls back to this image unless a separate Open Graph image is selected."
                   buttonLabel="Upload Cover"
                   previewAlt="Cover image preview"
                   assetRole="cover"
@@ -324,14 +329,29 @@ function getErrorMessage(error: unknown): string {
                 <app-blog-media-uploader
                   class="md:col-span-2"
                   formControlName="openGraphImage"
-                  label="Open Graph Image"
-                  description="Optional social sharing image. Leave empty to use the cover image."
-                  buttonLabel="Upload OG"
+                  label="Open Graph / Social Share Image"
+                  description="Optional. Choose a separate image for Facebook, Twitter/X, and other link previews. Leave blank to fall back to the cover image."
+                  buttonLabel="Upload OG Image"
+                  placeholder="Optional custom social image URL"
                   previewAlt="Open Graph image preview"
                   assetRole="open-graph"
                   [postSlug]="mediaUploadSlug"
                   (mediaUploaded)="onOpenGraphImageUploaded($event)"
                 ></app-blog-media-uploader>
+
+                <div
+                  class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-4 py-3 md:col-span-2">
+                  <p class="text-sm text-zinc-400">{{ openGraphImageMode }}</p>
+                  @if (postForm.controls.openGraphImage.value.trim()) {
+                    <button
+                      type="button"
+                      class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
+                      (click)="clearOpenGraphImage()"
+                    >
+                      Clear Custom OG Image
+                    </button>
+                  }
+                </div>
               </form>
 
               @if (saveError) {
@@ -374,6 +394,10 @@ function getErrorMessage(error: unknown): string {
                   <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Storage</dt>
                     <dd class="text-zinc-200">Firestore-backed</dd>
+                  </div>
+                  <div class="flex justify-between gap-4">
+                    <dt class="text-zinc-500">Social image</dt>
+                    <dd class="text-right text-zinc-200">{{ openGraphImageMode }}</dd>
                   </div>
                 </dl>
               </section>
@@ -492,8 +516,8 @@ function getErrorMessage(error: unknown): string {
                       @if (lastGeneratedThumbnail; as storedThumbnail) {
                         <div
                           class="space-y-2 border border-emerald-500/40 bg-emerald-950/20 p-3 text-xs text-emerald-100">
-                          <p class="font-medium">Stored thumbnail and applied it to Cover Image and Open Graph
-                            Image.</p>
+                          <p class="font-medium">Stored thumbnail and applied it to the Cover Image. The Open Graph
+                            image remains independent.</p>
                           <a [href]="storedThumbnail.downloadUrl" target="_blank" rel="noopener noreferrer"
                              class="break-all text-cyan-200 hover:text-cyan-100">
                             {{ storedThumbnail.storagePath }}
@@ -635,6 +659,17 @@ export class CmsPostEditorComponent {
     return postedDateFormatter.format(new Date(publishedAt));
   }
 
+  protected get openGraphImageMode(): string {
+    const openGraphImage = this.postForm.controls.openGraphImage.value.trim();
+    const coverImage = this.postForm.controls.coverImage.value.trim();
+
+    if (!openGraphImage || openGraphImage === coverImage) {
+      return 'Using cover image fallback.';
+    }
+
+    return 'Using custom Open Graph image.';
+  }
+
   protected syncSlugFromTitle(): void {
     const slugControl = this.postForm.controls.slug;
 
@@ -728,10 +763,9 @@ export class CmsPostEditorComponent {
       });
 
       this.postForm.controls.coverImage.setValue(storedThumbnail.downloadUrl);
-      this.postForm.controls.openGraphImage.setValue(storedThumbnail.downloadUrl);
       this.postForm.markAsDirty();
       this.lastGeneratedThumbnail = storedThumbnail;
-      this.assistantMessage = 'Generated and stored a thumbnail in Firebase Storage.';
+      this.assistantMessage = 'Generated and stored a thumbnail in Firebase Storage and applied it to the cover image.';
     } catch (error) {
       this.thumbnailError = `Unable to generate and store the thumbnail: ${getErrorMessage(error)}`;
     } finally {
@@ -740,19 +774,16 @@ export class CmsPostEditorComponent {
   }
 
   protected onCoverImageUploaded(upload: BlogMediaUploadResult): void {
-    const openGraphImage = this.postForm.controls.openGraphImage;
-
-    if (!openGraphImage.value.trim()
-      || openGraphImage.value === DEFAULT_COVER_IMAGE
-      || openGraphImage.value === this.currentPost?.coverImage) {
-      openGraphImage.setValue(upload.downloadUrl);
-    }
-
     this.markUploadedMedia(upload);
   }
 
   protected onOpenGraphImageUploaded(upload: BlogMediaUploadResult): void {
     this.markUploadedMedia(upload);
+  }
+
+  protected clearOpenGraphImage(): void {
+    this.postForm.controls.openGraphImage.setValue('');
+    this.postForm.markAsDirty();
   }
 
   protected applySuggestion(suggestion: BlogMetadataSuggestion): void {
@@ -819,6 +850,8 @@ export class CmsPostEditorComponent {
 
     const formValue = this.postForm.getRawValue();
     const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
+    const openGraphImage = normalizeOpenGraphImage(formValue.openGraphImage, coverImage);
+
     try {
       const savedPost = await this.blogRepository.savePost({
         ...this.currentPost,
@@ -833,7 +866,7 @@ export class CmsPostEditorComponent {
           title: requiredText(formValue.seoTitle, formValue.title),
           description: requiredText(formValue.seoDescription, formValue.excerpt),
           canonical: formValue.canonical.trim() || undefined,
-          openGraphImage: formValue.openGraphImage.trim() || coverImage,
+          openGraphImage,
         },
         blocks: createBlogBlocksFromEditorDocument(saved.data),
         updatedAt: saved.savedAt,
@@ -945,7 +978,7 @@ export class CmsPostEditorComponent {
         ...importedPost.seo,
         title: requiredText(importedPost.seo.title, importedTitle),
         description: requiredText(importedPost.seo.description, importedPost.excerpt),
-        openGraphImage: importedPost.seo.openGraphImage || importedCoverImage,
+        openGraphImage: normalizeOpenGraphImage(importedPost.seo.openGraphImage, importedCoverImage),
       },
       contentFormat: 'editorjs',
       blocks: importedPost.blocks,
@@ -989,7 +1022,7 @@ export class CmsPostEditorComponent {
       seoTitle: new FormControl(post.seo.title, {nonNullable: true}),
       seoDescription: new FormControl(post.seo.description, {nonNullable: true}),
       canonical: new FormControl(post.seo.canonical ?? '', {nonNullable: true}),
-      openGraphImage: new FormControl(post.seo.openGraphImage ?? post.coverImage, {nonNullable: true}),
+      openGraphImage: new FormControl(normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage), {nonNullable: true}),
     });
   }
 
@@ -1006,7 +1039,7 @@ export class CmsPostEditorComponent {
       seoTitle: post.seo.title,
       seoDescription: post.seo.description,
       canonical: post.seo.canonical ?? '',
-      openGraphImage: post.seo.openGraphImage ?? post.coverImage,
+      openGraphImage: normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage),
     });
   }
 

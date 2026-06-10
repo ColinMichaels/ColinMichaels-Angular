@@ -22,7 +22,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     seo: overrides.seo ?? {
       title: overrides.title ?? 'Test Post',
       description: overrides.excerpt ?? 'A test post.',
-      openGraphImage: overrides.coverImage ?? '/assets/images/backgrounds/night.webp',
+      openGraphImage: '',
     },
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
@@ -137,7 +137,7 @@ describe('BlogRepositoryService', () => {
       seo: {
         title: 'Firestore CMS Draft',
         description: 'A Firestore CMS draft.',
-        openGraphImage: '/assets/images/backgrounds/night.webp',
+        openGraphImage: '',
       },
       blocks: [
         {
@@ -178,13 +178,43 @@ describe('BlogRepositoryService', () => {
       seo: {
         title: 'Published CMS Post',
         description: 'A saved post that is visible publicly.',
-        openGraphImage: template.coverImage,
+        openGraphImage: '',
       },
       blocks: [],
     });
 
     expect(service.getPublishedPostBySlug(savedPost.slug)?.title).toBe('Published CMS Post');
     expect(service.getPublishedPosts().some(post => post.slug === savedPost.slug)).toBeTrue();
+  });
+
+  it('preserves a custom Open Graph image separately from the cover image', async () => {
+    const savedPost = await service.savePost(createPost({
+      id: 'custom-og-post',
+      slug: 'custom-og-post',
+      coverImage: '/assets/images/posts/cover.webp',
+      seo: {
+        title: 'Custom OG Post',
+        description: 'A post with separate social artwork.',
+        openGraphImage: '/assets/images/posts/social-share.webp',
+      },
+    }));
+
+    expect(savedPost.seo.openGraphImage).toBe('/assets/images/posts/social-share.webp');
+  });
+
+  it('keeps the Open Graph image blank when social sharing should fall back to the cover image', async () => {
+    const savedPost = await service.savePost(createPost({
+      id: 'cover-fallback-post',
+      slug: 'cover-fallback-post',
+      coverImage: '/assets/images/posts/cover.webp',
+      seo: {
+        title: 'Cover Fallback Post',
+        description: 'A post without separate social artwork.',
+        openGraphImage: '',
+      },
+    }));
+
+    expect(savedPost.seo.openGraphImage).toBe('');
   });
 
   it('uses the controlled published date for public post ordering', async () => {
