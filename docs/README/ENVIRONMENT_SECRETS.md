@@ -35,7 +35,17 @@ Workflows support fallbacks for legacy names:
 
 - `API_URL` (legacy fallback for `APP_API_URL`)
 - `APP_TITLE`/`APP_API_URL` can be provided as either Variables or Secrets
-- `FIREBASE_SERVICE_ACCOUNT` can be used as fallback for manual deploy workflow
+- `FIREBASE_SERVICE_ACCOUNT` can be used as fallback for Firebase Hosting deploy workflows
+
+## Firebase Hosting Workflows
+
+Hosting deploys are intentionally split by branch target:
+
+- Pull requests targeting `dev` run `.github/workflows/firebase-hosting-pull-request.yml` and deploy only to a preview channel named `pr-<number>`.
+- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml` and deploy Firebase Hosting production with `channelId: live`.
+- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override.
+
+All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
 
 ## Local Development Files
 
