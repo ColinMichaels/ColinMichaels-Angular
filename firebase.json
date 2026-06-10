@@ -14,6 +14,24 @@
       "*.local"
     ]
   },
+  "emulators": {
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4400
+    },
+    "ui": {
+      "host": "127.0.0.1",
+      "port": 4000
+    },
+    "logging": {
+      "host": "127.0.0.1",
+      "port": 4500
+    }
+  },
   "firestore": {
     "rules": "firestore.rules"
   },

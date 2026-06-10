@@ -7,6 +7,9 @@ import {map} from 'rxjs';
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {
+  YouTubeLatestVideosComponent
+} from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
 import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {SocialsComponent} from './socials/socials.component';
 import {NotificationService} from '../game/services/notification.service';
@@ -38,6 +41,7 @@ interface HomeCapability {
     NgClass,
     RouterLink,
     SocialsComponent,
+    YouTubeLatestVideosComponent,
   ],
   templateUrl: './main.component.html',
   standalone: true,

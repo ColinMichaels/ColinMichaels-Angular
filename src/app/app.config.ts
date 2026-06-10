@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
       provide: SOUND_SERVICE_CONFIG,
       useValue: defaultSoundConfig
     },
-    provideFirebaseServices(environment.firebaseConfig)
+    provideFirebaseServices(environment.firebaseConfig, environment.firebaseEmulators)
 
   ]
 };

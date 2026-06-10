@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Added a homepage latest YouTube videos section backed by a Firebase callable Function that keeps the YouTube Data API key in Secret Manager and reads the target channel from `YOUTUBE_CHANNEL_ID`.
+- Added a browser-testable `getLatestYouTubeVideosHttp` Firebase Function wrapper for local YouTube feed debugging while keeping the Angular app on the callable SDK endpoint.
 - Added a shared global site header/menu for public, blog, labs, admin, and CMS routes while preserving OS desktop/login routes without the site shell.
 - Added persistent light/dark theme selection through the global header, backed by `localStorage` and scoped theme tokens for site/admin/lab pages.
 - Updated the global header to hide admin/CMS/media links unless the signed-in user has admin claims, use icon-only theme controls, and switch homepage hero imagery between day/night theme assets.

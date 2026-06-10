@@ -3,7 +3,7 @@ import {FirebaseApp, FirebaseOptions, getApp, getApps, initializeApp} from 'fire
 import {Auth, getAuth} from 'firebase/auth';
 import {Database, getDatabase} from 'firebase/database';
 import {Firestore, getFirestore} from 'firebase/firestore';
-import {Functions, getFunctions} from 'firebase/functions';
+import {Functions, connectFunctionsEmulator, getFunctions} from 'firebase/functions';
 import {FirebaseStorage, getStorage} from 'firebase/storage';
 
 export const FIREBASE_APP = new InjectionToken<FirebaseApp>('Firebase app');
@@ -13,7 +13,14 @@ export const FIREBASE_FIRESTORE = new InjectionToken<Firestore>('Firebase firest
 export const FIREBASE_FUNCTIONS = new InjectionToken<Functions>('Firebase functions');
 export const FIREBASE_STORAGE = new InjectionToken<FirebaseStorage>('Firebase storage');
 
-export function provideFirebaseServices(options: FirebaseOptions): Provider[] {
+export interface FirebaseServiceEmulatorConfig {
+  functions?: {
+    host: string;
+    port: number;
+  };
+}
+
+export function provideFirebaseServices(options: FirebaseOptions, emulators?: FirebaseServiceEmulatorConfig): Provider[] {
   return [
     {
       provide: FIREBASE_APP,
@@ -36,7 +43,15 @@ export function provideFirebaseServices(options: FirebaseOptions): Provider[] {
     },
     {
       provide: FIREBASE_FUNCTIONS,
-      useFactory: (app: FirebaseApp) => getFunctions(app, 'us-east1'),
+      useFactory: (app: FirebaseApp) => {
+        const functions = getFunctions(app, 'us-east1');
+
+        if (emulators?.functions) {
+          connectFunctionsEmulator(functions, emulators.functions.host, emulators.functions.port);
+        }
+
+        return functions;
+      },
       deps: [FIREBASE_APP],
     },
     {

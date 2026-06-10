@@ -4,7 +4,7 @@ import {initializeApp} from 'firebase-admin/app';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
-import {HttpsError, onCall} from 'firebase-functions/v2/https';
+import {HttpsError, onCall, onRequest} from 'firebase-functions/v2/https';
 
 initializeApp();
 
@@ -12,10 +12,16 @@ const FUNCTION_REGION = 'us-east1';
 const MAX_PROMPT_LENGTH = 3000;
 const MAX_TEXT_LENGTH = 12000;
 const OPENAI_API_URL = 'https://api.openai.com/v1';
+const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
+const YOUTUBE_DEFAULT_MAX_RESULTS = 3;
+const YOUTUBE_MAX_RESULTS = 6;
+const YOUTUBE_FEED_CACHE_MS = 10 * 60 * 1000;
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
+const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
 const openAiImageModel = defineString('OPENAI_IMAGE_MODEL', {default: 'gpt-image-2'});
-const CMS_CALLABLE_CORS_ORIGINS = [
+const youtubeChannelId = defineString('YOUTUBE_CHANNEL_ID', {default: ''});
+const SITE_CALLABLE_CORS_ORIGINS = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
   'https://colinmichaels.com',
@@ -25,6 +31,8 @@ const CMS_CALLABLE_CORS_ORIGINS = [
   /^http:\/\/localhost:\d+$/,
   /^http:\/\/127\.0\.0\.1:\d+$/,
 ];
+
+let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
 
 interface BlogBlockData {
   text?: string;
@@ -99,6 +107,91 @@ interface BlogStoredThumbnail {
   storagePath: string;
   downloadUrl: string;
   model: string;
+}
+
+interface YoutubeVideo {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  thumbnailAlt: string;
+  videoUrl: string;
+}
+
+interface YoutubeFeedResponse {
+  fetchedAt: string;
+  source: 'youtube-api';
+  channelId: string;
+  channelTitle: string;
+  channelUrl: string;
+  videos: readonly YoutubeVideo[];
+}
+
+interface YoutubeFeedCacheEntry {
+  key: string;
+  expiresAt: number;
+  response: YoutubeFeedResponse;
+}
+
+interface YoutubeChannelDetails {
+  channelId: string;
+  channelTitle: string;
+  uploadsPlaylistId: string;
+}
+
+interface YoutubeChannelsResponse {
+  items?: Array<{
+    id?: string;
+    snippet?: {
+      title?: string;
+    };
+    contentDetails?: {
+      relatedPlaylists?: {
+        uploads?: string;
+      };
+    };
+  }>;
+}
+
+interface YoutubePlaylistItemsResponse {
+  items?: YoutubePlaylistItem[];
+}
+
+interface YoutubePlaylistItem {
+  snippet?: {
+    title?: string;
+    description?: string;
+    publishedAt?: string;
+    thumbnails?: YoutubeThumbnails;
+    resourceId?: {
+      videoId?: string;
+    };
+  };
+  contentDetails?: {
+    videoId?: string;
+    videoPublishedAt?: string;
+  };
+}
+
+interface YoutubeThumbnails {
+  default?: YoutubeThumbnail;
+  medium?: YoutubeThumbnail;
+  high?: YoutubeThumbnail;
+  standard?: YoutubeThumbnail;
+  maxres?: YoutubeThumbnail;
+}
+
+interface YoutubeThumbnail {
+  url?: string;
+}
+
+interface YoutubeErrorResponse {
+  error?: {
+    code?: number;
+    message?: string;
+    status?: string;
+  };
 }
 
 interface OpenAiErrorResponse {
@@ -179,13 +272,55 @@ const metadataSchema = {
   },
 };
 
+export const getLatestYouTubeVideos = onCall(
+  {
+    region: FUNCTION_REGION,
+    secrets: [youtubeApiKey],
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const maxResults = parseYoutubeMaxResults(request.data);
+
+    return await loadLatestYoutubeVideos(maxResults);
+  }
+);
+
+export const getLatestYouTubeVideosHttp = onRequest(
+  {
+    region: FUNCTION_REGION,
+    secrets: [youtubeApiKey],
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async (request, response) => {
+    if (request.method !== 'GET') {
+      response.status(405).json({error: 'Use GET for this browser-test endpoint.'});
+      return;
+    }
+
+    try {
+      const feed = await loadLatestYoutubeVideos(parseYoutubeMaxResults(request.query['maxResults']));
+      response.status(200).json(feed);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load latest YouTube videos.';
+      logger.error('Unable to load latest YouTube videos over HTTP.', {error});
+      response.status(getHttpStatusCode(error)).json({error: message});
+    }
+  }
+);
+
 export const generateBlogMetadata = onCall(
   {
     region: FUNCTION_REGION,
     secrets: [openAiApiKey],
     timeoutSeconds: 60,
     memory: '512MiB',
-    cors: CMS_CALLABLE_CORS_ORIGINS,
+    cors: SITE_CALLABLE_CORS_ORIGINS,
     invoker: 'public',
   },
   async request => {
@@ -209,7 +344,7 @@ export const generateAndStoreBlogThumbnail = onCall(
     secrets: [openAiApiKey],
     timeoutSeconds: 300,
     memory: '1GiB',
-    cors: CMS_CALLABLE_CORS_ORIGINS,
+    cors: SITE_CALLABLE_CORS_ORIGINS,
     invoker: 'public',
   },
   async request => {
@@ -220,6 +355,166 @@ export const generateAndStoreBlogThumbnail = onCall(
     return await storeThumbnailImage(data, image, model);
   }
 );
+
+function parseYoutubeMaxResults(value: unknown): number {
+  const maxResults = isRecord(value) ? value['maxResults'] : value;
+  const parsedMaxResults = typeof maxResults === 'string' ? Number(maxResults) : maxResults;
+
+  if (typeof parsedMaxResults !== 'number' || !Number.isFinite(parsedMaxResults)) {
+    return YOUTUBE_DEFAULT_MAX_RESULTS;
+  }
+
+  return Math.min(YOUTUBE_MAX_RESULTS, Math.max(1, Math.trunc(parsedMaxResults)));
+}
+
+async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedResponse> {
+  const channelId = youtubeChannelId.value().trim();
+
+  if (!channelId) {
+    throw new HttpsError('failed-precondition', 'YOUTUBE_CHANNEL_ID is not configured for the YouTube feed.');
+  }
+
+  const cacheKey = `${channelId}:${maxResults}`;
+  const now = Date.now();
+
+  if (youtubeFeedCache?.key === cacheKey && youtubeFeedCache.expiresAt > now) {
+    return youtubeFeedCache.response;
+  }
+
+  const channel = await fetchYoutubeChannelDetails(channelId);
+  const videos = await fetchYoutubeUploads(channel.uploadsPlaylistId, maxResults);
+  const response = {
+    fetchedAt: new Date().toISOString(),
+    source: 'youtube-api',
+    channelId: channel.channelId,
+    channelTitle: channel.channelTitle,
+    channelUrl: `https://www.youtube.com/channel/${channel.channelId}`,
+    videos,
+  } satisfies YoutubeFeedResponse;
+
+  youtubeFeedCache = {
+    key: cacheKey,
+    expiresAt: now + YOUTUBE_FEED_CACHE_MS,
+    response,
+  };
+
+  return response;
+}
+
+function getHttpStatusCode(error: unknown): number {
+  if (error instanceof HttpsError) {
+    if (error.code === 'failed-precondition') {
+      return 412;
+    }
+
+    if (error.code === 'invalid-argument') {
+      return 400;
+    }
+  }
+
+  return 500;
+}
+
+async function fetchYoutubeChannelDetails(channelId: string): Promise<YoutubeChannelDetails> {
+  const params = new URLSearchParams({
+    part: 'snippet,contentDetails',
+    id: channelId,
+    key: youtubeApiKey.value(),
+    maxResults: '1',
+  });
+  const payload = await fetchYoutubeApi<YoutubeChannelsResponse>(
+    `channels?${params.toString()}`,
+    'Unable to load YouTube channel details.'
+  );
+  const channel = payload.items?.[0];
+  const uploadsPlaylistId = getTrimmedString(channel?.contentDetails?.relatedPlaylists?.uploads);
+
+  if (!channel || !uploadsPlaylistId) {
+    throw new HttpsError('failed-precondition', 'Configured YouTube channel does not expose an uploads playlist.');
+  }
+
+  return {
+    channelId: getTrimmedString(channel.id) || channelId,
+    channelTitle: getTrimmedString(channel.snippet?.title) || 'YouTube',
+    uploadsPlaylistId,
+  };
+}
+
+async function fetchYoutubeUploads(playlistId: string, maxResults: number): Promise<readonly YoutubeVideo[]> {
+  const params = new URLSearchParams({
+    part: 'snippet,contentDetails',
+    playlistId,
+    maxResults: maxResults.toString(),
+    key: youtubeApiKey.value(),
+  });
+  const payload = await fetchYoutubeApi<YoutubePlaylistItemsResponse>(
+    `playlistItems?${params.toString()}`,
+    'Unable to load YouTube uploads.'
+  );
+
+  return (payload.items ?? [])
+    .flatMap(item => normalizeYoutubePlaylistItem(item))
+    .slice(0, maxResults);
+}
+
+async function fetchYoutubeApi<T>(pathWithQuery: string, fallbackMessage: string): Promise<T> {
+  const response = await fetch(`${YOUTUBE_API_URL}/${pathWithQuery}`);
+  const payload = await response.json().catch(() => ({})) as T & YoutubeErrorResponse;
+
+  if (!response.ok) {
+    const youtubeMessage = payload.error?.message ?? '';
+    const isEmptyRefererRestriction = response.status === 403
+      && youtubeMessage.toLowerCase().includes('referer <empty>');
+
+    throw new HttpsError(
+      'internal',
+      isEmptyRefererRestriction
+        ? 'YouTube API key is restricted to HTTP referrers, but Firebase Functions calls YouTube server-to-server with an empty referer. Use a server-side key with application restrictions set to None, or IP address restrictions only if deployed Functions use static egress, and restrict the key to YouTube Data API v3.'
+        : youtubeMessage || fallbackMessage,
+      {status: response.status, youtubeStatus: payload.error?.status, youtubeCode: payload.error?.code}
+    );
+  }
+
+  return payload;
+}
+
+function normalizeYoutubePlaylistItem(item: YoutubePlaylistItem): YoutubeVideo[] {
+  const videoId = getTrimmedString(item.contentDetails?.videoId) || getTrimmedString(item.snippet?.resourceId?.videoId);
+
+  if (!videoId) {
+    return [];
+  }
+
+  const title = getTrimmedString(item.snippet?.title) || 'Untitled YouTube video';
+  const description = getTrimmedString(item.snippet?.description);
+  const publishedAt = getTrimmedString(item.contentDetails?.videoPublishedAt)
+    || getTrimmedString(item.snippet?.publishedAt)
+    || new Date(0).toISOString();
+  const thumbnailUrl = selectYoutubeThumbnail(item.snippet?.thumbnails)
+    || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+  return [{
+    id: videoId,
+    title,
+    description,
+    publishedAt,
+    thumbnailUrl,
+    thumbnailAlt: `${title} thumbnail`,
+    videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+  }];
+}
+
+function selectYoutubeThumbnail(thumbnails: YoutubeThumbnails | undefined): string {
+  return getTrimmedString(thumbnails?.maxres?.url)
+    || getTrimmedString(thumbnails?.standard?.url)
+    || getTrimmedString(thumbnails?.high?.url)
+    || getTrimmedString(thumbnails?.medium?.url)
+    || getTrimmedString(thumbnails?.default?.url);
+}
+
+function getTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 function requireAdmin(auth: AdminCallableAuth | undefined): string {
   if (!auth?.uid) {

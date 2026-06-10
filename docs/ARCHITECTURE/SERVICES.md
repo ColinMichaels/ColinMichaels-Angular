@@ -2,6 +2,19 @@
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
+## `youtube-feed.service.ts`
+
+- Responsibility:
+  public homepage access to latest YouTube uploads through a Firebase callable Function.
+- Dependencies:
+  `FIREBASE_FUNCTIONS`, `getLatestYouTubeVideos` callable.
+- Called by:
+  `YouTubeLatestVideosComponent` on the public homepage.
+- Current risks:
+  the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching.
+- Planned cleanup:
+  add Firebase App Check enforcement when App Check is configured for the public site.
+
 ## `sound.service.ts`
 
 - Responsibility:
@@ -144,4 +157,3 @@ This section focuses on the key game/runtime services prioritized in the cleanup
   awkward `Promise<Observable<...>>` API, unused parameters, fragile level load expectations.
 - Planned cleanup:
   return clean observables/promises (one async model), remove unused args, tighten level indexing.
-

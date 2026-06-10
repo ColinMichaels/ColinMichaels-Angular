@@ -12,6 +12,10 @@
 functions/node_modules
 npm-debug.log
 yarn-error.log
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+database-debug.log
 
 # IDEs and editors
 .idea/
