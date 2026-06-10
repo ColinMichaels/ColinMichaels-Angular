@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-06-10
+
+- Added the protected `/admin/cms/media-library` Media Library Organizer UI with sidebar navigation, toolbar search/sort/filter controls, responsive media grid/list/compact views, inspector, preview, batch rename, resize request, tag editing, selection, and status states.
+- Added a media-library service boundary over existing Firebase upload, storage, Firestore, and callable Functions services so the organizer does not introduce a new backend or upload pipeline.
+- Included CMS blog attachments in the media library by deriving cover, Open Graph, and inline image block URLs into globally manageable media records.
+- Documented the media library architecture, component inventory, and migration notes.
+
 ## 2026-06-08
 
 - Added Firebase custom-claim admin authorization across admin routes, callable CMS AI functions, Realtime Database rules, Firestore rules, and Storage rules.

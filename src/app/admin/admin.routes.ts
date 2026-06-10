@@ -22,6 +22,11 @@ export const adminRoutes: Routes = [
             pathMatch: 'full',
             loadComponent: () => import('./pages/admin-overview/admin-overview.component').then(m => m.AdminOverviewComponent),
           },
+          {
+            path: PATH_NAMES.ADMIN_MEDIA_LIBRARY,
+            redirectTo: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
+            pathMatch: 'full',
+          },
           ...cmsRoutes,
         ],
       },

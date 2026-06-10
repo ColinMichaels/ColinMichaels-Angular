@@ -69,3 +69,21 @@ Admin authorization is enforced through Firebase Auth custom claims. The UI, cal
 - `roles.admin: true`
 
 Route guards can also require future named roles by setting route data, for example `data: {roles: ['admin', 'contentEditor']}`. Any route-level role must also be enforced in Firebase Functions and Security Rules before it protects real data.
+
+## Media Library Organizer
+
+The admin media library is available at `/admin/cms/media-library` and lives under `src/app/admin/media-library`.
+
+Component inventory:
+
+- `MediaLibraryPageComponent` coordinates media loading, filtering, sorting, selection, uploads, dialogs, and keyboard shortcuts.
+- Sidebar, toolbar, grid/card, inspector, preview, filter, batch rename, resize, tag editor, and status bar components are standalone and feature-scoped.
+
+Service and migration notes:
+
+- `MediaLibraryService` uses the existing `FirestoreService` and `BlogMediaUploadService` rather than creating a new upload pipeline.
+- Image uploads keep the CMS image optimization/upload path behavior through `BlogMediaUploadService`; other media uses the existing Firebase Storage progress wrapper.
+- Metadata rename updates display names only and intentionally does not rename Storage objects.
+- Resize requests go through `MediaProcessingService`, which calls callable Firebase Functions named `resizeMedia` or `batchResizeMedia` when those existing functions are deployed.
+- If production media metadata already uses different collection names, change the service constants instead of component logic.
+

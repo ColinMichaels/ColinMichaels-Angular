@@ -22,6 +22,8 @@ Current route group files are boundary markers only. They preserve existing URL 
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
   public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, browser-local CMS storage for initial create/edit workflows.
+- Admin media library:
+  protected media organizer UI for Firebase-backed uploads and metadata, with feature-scoped browsing, filtering, batch rename, resize requests, preview, and virtual folder/tag workflows.
 - Labs:
   public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:

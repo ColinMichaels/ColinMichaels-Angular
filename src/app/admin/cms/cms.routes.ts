@@ -8,6 +8,10 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/post-list/post-list.component').then(m => m.CmsPostListComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
+    loadComponent: () => import('../media-library/media-library-page.component').then(m => m.MediaLibraryPageComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/new`,
     loadComponent: () => import('./pages/post-editor/post-editor.component').then(m => m.CmsPostEditorComponent),
   },

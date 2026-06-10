@@ -49,6 +49,9 @@ import {BlogRepositoryService} from '../../../features/blog/services/blog-reposi
           <a routerLink="/admin/cms/new" class="inline-flex border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
             New Post
           </a>
+          <a routerLink="/admin/cms/media-library" class="inline-flex border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
+            Media Library
+          </a>
         </section>
       </section>
     </main>

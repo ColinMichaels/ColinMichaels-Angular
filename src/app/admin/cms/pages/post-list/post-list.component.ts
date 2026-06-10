@@ -41,12 +41,20 @@ function formatDate(value: string | null): string {
             <h1 class="text-4xl font-semibold text-zinc-50">Posts</h1>
             <p class="max-w-2xl text-zinc-400">Draft, scheduled, published, and archived entries using the shared blog content model.</p>
           </div>
-          <a
-            routerLink="/admin/cms/new"
-            class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
-          >
-            New Post
-          </a>
+          <div class="flex flex-wrap gap-3">
+            <a
+              routerLink="/admin/cms/new"
+              class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+            >
+              New Post
+            </a>
+            <a
+              routerLink="/admin/cms/media-library"
+              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+            >
+              Media Library
+            </a>
+          </div>
         </header>
 
         <section class="overflow-x-auto border border-zinc-800">
