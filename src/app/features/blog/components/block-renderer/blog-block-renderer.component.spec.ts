@@ -50,4 +50,24 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.querySelector('iframe')).toBeNull();
     expect(element.querySelector('a')?.getAttribute('href')).toBe('https://example.com/embed/story');
   });
+
+  it('renders typography pull quotes with attribution', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'typography-1',
+        type: 'typography',
+        data: {
+          variant: 'pullQuote',
+          text: 'A strong editorial line.',
+          attribution: 'Field notes',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('blockquote')?.textContent).toContain('A strong editorial line.');
+    expect(element.querySelector('cite')?.textContent).toContain('Field notes');
+  });
 });

@@ -16,6 +16,19 @@ The blog editor includes a CMS-local writing assistant for metadata drafting:
 
 The editor calls Firebase callable functions first and falls back to the deterministic local provider when the backend is unavailable. The OpenAI key must stay in Firebase Secret Manager, not Angular environment files.
 
+## CMS Editor.js Tools
+
+The CMS editor extends the base Editor.js toolset with a custom `typography` block. It stores structured block data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently.
+
+Supported typography variants:
+
+- Lead paragraph
+- Pull quote with optional attribution
+- Callout with optional label
+- Aside
+- Caption / note
+- Eyebrow text
+
 Required backend setup:
 
 ```bash
@@ -86,4 +99,3 @@ Service and migration notes:
 - Metadata rename updates display names only and intentionally does not rename Storage objects.
 - Resize requests go through `MediaProcessingService`, which calls callable Firebase Functions named `resizeMedia` or `batchResizeMedia` when those existing functions are deployed.
 - If production media metadata already uses different collection names, change the service constants instead of component logic.
-

@@ -1,6 +1,13 @@
 import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 
-import {BlogBlockData, BlogBlockType, BlogContentBlock, BlogPost} from '../../../features/blog/models/blog-post.model';
+import {
+  BLOG_TYPOGRAPHY_VARIANTS,
+  BlogBlockData,
+  BlogBlockType,
+  BlogContentBlock,
+  BlogPost,
+  BlogTypographyVariant,
+} from '../../../features/blog/models/blog-post.model';
 
 const supportedBlockTypes = new Set<BlogBlockType>([
   'paragraph',
@@ -11,6 +18,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'quote',
   'code',
   'delimiter',
+  'typography',
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -44,6 +52,12 @@ function getNestedNumber(record: Record<string, unknown>, parentKey: string, key
 
 function toHeaderLevel(value: unknown): 2 | 3 {
   return value === 3 ? 3 : 2;
+}
+
+function toTypographyVariant(value: unknown): BlogTypographyVariant {
+  return typeof value === 'string' && (BLOG_TYPOGRAPHY_VARIANTS as readonly string[]).includes(value)
+    ? value as BlogTypographyVariant
+    : 'lead';
 }
 
 function toListData(blockData: BlogBlockData): Record<string, unknown> {
@@ -166,6 +180,12 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
       };
     case 'delimiter':
       return {};
+    case 'typography':
+      return {
+        variant: toTypographyVariant(data['variant']),
+        text: getString(data, 'text') ?? '',
+        attribution: getString(data, 'attribution') ?? '',
+      };
   }
 }
 

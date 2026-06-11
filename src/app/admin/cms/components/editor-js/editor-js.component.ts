@@ -21,6 +21,7 @@ import type {BlockToolData, EditorConfig, OutputData, ToolConstructable} from '@
 import {MediaLibraryItem} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {TypographyBlockTool} from './tools/typography-block.tool';
 
 interface EditorToolModules {
   Header: ToolConstructable;
@@ -30,6 +31,7 @@ interface EditorToolModules {
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
   ImageTool: ToolConstructable;
+  TypographyBlock: ToolConstructable;
 }
 
 export interface EditorImageUploadResult {
@@ -72,6 +74,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     Delimiter: delimiterModule.default as unknown as ToolConstructable,
     Embed: embedModule.default as unknown as ToolConstructable,
     ImageTool: imageModule.default as unknown as ToolConstructable,
+    TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
   };
 }
 
@@ -633,6 +636,9 @@ export class EditorJsComponent implements AfterViewInit {
           quote: {
             class: tools.Quote,
             inlineToolbar: true,
+          },
+          typography: {
+            class: tools.TypographyBlock,
           },
           code: tools.Code,
           delimiter: tools.Delimiter,

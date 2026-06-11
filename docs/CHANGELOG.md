@@ -8,6 +8,8 @@
 - Added shared route SEO metadata objects for home, blog, project/lab, background lab, and protected media library routes.
 - Added a Firebase `renderSeoHtml` Function and Hosting rewrite so clean route requests receive metadata-injected HTML before Angular loads.
 - Added server-rendered BlogPosting JSON-LD for published blog posts and homepage Person/WebSite JSON-LD.
+- Added a custom Editor.js typography block for lead paragraphs, pull quotes, callouts, asides, captions, and eyebrow text, with CMS persistence and public blog rendering.
+- Added auto-generated CMS post canonical URLs based on `/blog/{slug}` while preserving manual canonical overrides.
 
 ## 2026-06-10
 
