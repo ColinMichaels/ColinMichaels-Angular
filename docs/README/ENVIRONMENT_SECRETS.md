@@ -135,12 +135,19 @@ Optional runtime params:
 
 Cloud Run Functions require Cloud Build, Artifact Registry, Cloud Run, Secret Manager, and Compute Engine project setup. If every Function fails during creation with `Could not build the function due to a missing permission on the build service account`, enable the required APIs and grant the default Compute Engine service account the Cloud Build builder role.
 
+The Firebase CLI also checks Firebase Extensions during deploy. If deploy fails with `firebaseextensions.googleapis.com ... instances ... HTTP Error: 403, The caller does not have permission`, grant the deploy service account the Firebase Extensions Viewer role so it can list extension instances.
+
+Cloud Functions deploys also require the deploy caller to act as the runtime service account. If deploy fails with `Caller is missing permission 'iam.serviceaccounts.actAs' on service account ...-compute@developer.gserviceaccount.com`, grant the deploy service account `roles/iam.serviceAccountUser` on the default Compute Engine service account.
+
+If browser calls fail as CORS errors but an `OPTIONS` probe returns `403 Forbidden` from Google Frontend with no `Access-Control-Allow-Origin`, the Gen 2 Function's underlying Cloud Run service is private. The source sets public invokers for browser-facing Functions, but the deployed services may need public Cloud Run invoker bindings after a first deploy or failed IAM update.
+
 For this Firebase project:
 
 ```bash
 PROJECT_ID=colinmichaels
 PROJECT_NUMBER=695739708994
 COMPUTE_SERVICE_ACCOUNT="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+DEPLOY_SERVICE_ACCOUNT="<client_email-from-service-account-json>"
 
 gcloud services enable \
   artifactregistry.googleapis.com \
@@ -155,6 +162,54 @@ gcloud services enable \
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member "serviceAccount:${COMPUTE_SERVICE_ACCOUNT}" \
   --role "roles/cloudbuild.builds.builder"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+  --role "roles/firebaseextensions.viewer"
+
+gcloud iam service-accounts add-iam-policy-binding "$COMPUTE_SERVICE_ACCOUNT" \
+  --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+  --role "roles/iam.serviceAccountUser" \
+  --project "$PROJECT_ID"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+  --role "roles/run.admin"
+```
+
+Replace `DEPLOY_SERVICE_ACCOUNT` with the `client_email` from the service account JSON stored in the GitHub secret `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT`. If the service account does not exist yet, create it first:
+
+```bash
+PROJECT_ID=colinmichaels
+
+gcloud iam service-accounts create firebase-deploy \
+  --display-name "Firebase GitHub deploy" \
+  --project "$PROJECT_ID"
+
+DEPLOY_SERVICE_ACCOUNT="firebase-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+After creating a new deploy service account, grant the deploy roles it needs and generate a new JSON key for the GitHub secret.
+
+To repair already-deployed browser-facing Gen 2 Functions that are returning unauthenticated `403` responses:
+
+```bash
+PROJECT_ID=colinmichaels
+REGION=us-east1
+
+for SERVICE in \
+  getlatestyoutubevideos \
+  getlatestyoutubevideoshttp \
+  generateblogmetadata \
+  generateandstoreblogthumbnail \
+  renderseohtml
+do
+  gcloud run services add-iam-policy-binding "$SERVICE" \
+    --project "$PROJECT_ID" \
+    --region "$REGION" \
+    --member "allUsers" \
+    --role "roles/run.invoker"
+done
 ```
 
 Wait a few minutes after enabling APIs or changing IAM, then rerun the Functions deploy.
