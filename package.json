@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve --configuration local",
     "generate:env": "node scripts/generate-environment.mjs",
+    "prepare:functions-seo": "node scripts/prepare-functions-seo.mjs",
     "build": "ng build",
     "build:functions": "npm --prefix functions run build",
     "build:prod": "ng build --configuration production",

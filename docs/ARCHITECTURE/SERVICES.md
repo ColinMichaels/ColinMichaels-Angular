@@ -2,6 +2,19 @@
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
+## `seo.service.ts`
+
+- Responsibility:
+  route-level canonical, Open Graph, Twitter Card, robots, and JSON-LD metadata for the Angular app.
+- Dependencies:
+  Angular `Router`, `Meta`, `Title`, and route `data.seo` objects.
+- Called by:
+  `AppComponent`, blog OpenGraph service, public/blog/lab/media routes.
+- Current risks:
+  social crawlers do not execute the Angular runtime consistently, so initial HTML metadata is provided by the Firebase `renderSeoHtml` Function for deployed clean URLs.
+- Planned cleanup:
+  add automated metadata snapshot tests for key public routes after the broader lint backlog is reduced.
+
 ## `youtube-feed.service.ts`
 
 - Responsibility:

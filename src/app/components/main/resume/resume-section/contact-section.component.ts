@@ -71,7 +71,7 @@ export class Transformer {
       class="resume-section text-center">
       <h5 class="font-bold mb-2">{{ this.contact['name'] }}</h5>
       <p class="text-sm text-white/90">
-        <a [href]="'/#/' + this.contact['website']" class="text-green-600 hover:underline"
+        <a [href]="'/' + this.contact['website']" class="text-green-600 hover:underline"
            target="_self">{{ this.contact['website'] }}
         </a> |
         <a [href]="'mailto:' + this.contact['email']"  target="_blank" [appTooltip]="tooltips[3].message"

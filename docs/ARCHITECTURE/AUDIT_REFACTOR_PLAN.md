@@ -177,25 +177,25 @@ Archive policy:
 
 ## Route Organization Audit
 
-Current route map uses `withHashLocation()` and should keep hash URLs for Firebase hosting compatibility unless hosting rewrites are explicitly changed.
+Current route map uses clean Angular path URLs. Firebase Hosting rewrites app route requests through `renderSeoHtml`, which injects SEO metadata and returns the Angular shell for deep links.
 
 Current routes:
 
-- `#/`: public home.
-- `#/blog`: public blog index.
-- `#/blog/category/:category`: public blog category listing.
-- `#/blog/:slug`: public published blog detail.
-- `#/labs`: public labs index.
-- `#/background`: background experiment.
-- `#/admin`: protected admin overview.
-- `#/admin/cms`: protected CMS post list.
-- `#/admin/cms/:slug/edit`: protected Editor.js post editor.
-- `#/os`: OS desktop, protected by `AuthGuard`.
-- `#/os/:app`: OS desktop with app launch param, protected by `AuthGuard`.
-- `#/login`: OS login.
-- `#/sleep`: OS sleep screen.
-- `#/boot`: OS boot/loading screen.
-- `#/external/:externalUrl`: guarded external redirect.
+- `/`: public home.
+- `/blog`: public blog index.
+- `/blog/category/:category`: public blog category listing.
+- `/blog/:slug`: public published blog detail.
+- `/labs`: public labs index.
+- `/background`: background experiment.
+- `/admin`: protected admin overview.
+- `/admin/cms`: protected CMS post list.
+- `/admin/cms/:slug/edit`: protected Editor.js post editor.
+- `/os`: OS desktop, protected by `AuthGuard`.
+- `/os/:app`: OS desktop with app launch param, protected by `AuthGuard`.
+- `/login`: OS login.
+- `/sleep`: OS sleep screen.
+- `/boot`: OS boot/loading screen.
+- `/external/:externalUrl`: guarded external redirect.
 - `**`: not found.
 
 Route issues:
@@ -504,7 +504,7 @@ Recommended path aliases:
 - Decide whether lint should be a hard gate immediately or repaired in batches.
 - Create a route snapshot test for current routes.
 - Capture a build artifact size baseline.
-- Add a short architecture decision record for preserving hash routes.
+- Add a short architecture decision record for the clean URL and SEO-rendering Hosting rewrite.
 
 Exit criteria:
 
@@ -550,7 +550,7 @@ Exit criteria:
 
 Exit criteria:
 
-- `#/os`, `#/os/:app`, `#/login`, `#/boot`, and `#/sleep` still work.
+- `/os`, `/os/:app`, `/login`, `/boot`, and `/sleep` still work.
 - Open/focus/close app behavior remains unchanged.
 
 ### Phase 4: Feature and Lab Isolation
@@ -598,7 +598,7 @@ Exit criteria:
 High risk:
 
 - Moving OS framework files can break dynamic app catalog imports.
-- Changing route paths can break external links and Firebase-hosted hash URLs.
+- Changing route paths or Hosting rewrites can break external links and deep-link fallback.
 - Firebase config and environment files must not be overwritten.
 - Editor.js raw/embed blocks can introduce XSS if rendered without sanitization.
 
