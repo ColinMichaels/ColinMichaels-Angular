@@ -40,8 +40,9 @@
               </div>
               <button
                 [class.hidden]="loginForm.invalid"
+                [disabled]="loading"
                 type="submit"
-                class="login-button">
+                class="login-button disabled:cursor-not-allowed disabled:opacity-50">
                 <fa-icon [icon]="faChevronRight"></fa-icon>
               </button>
             </div>
@@ -61,8 +62,12 @@
 
             <div class="form-actions">
               <div class="text-center my-2">
-                <a (click)="resetPassword()" class="text-gray-500 hover:text-white cursor-pointer text-sm">Forgot
-                  password?</a>
+                <button
+                  type="button"
+                  (click)="resetPassword()"
+                  class="text-gray-500 hover:text-white cursor-pointer text-sm bg-transparent border-0 p-0">
+                  Forgot password?
+                </button>
               </div>
             </div>
           </form>
@@ -136,19 +141,23 @@
           <div class="my-4 text-center">
             <span class="block mb-2 text-sm text-gray-500">OR</span>
             <button
+              type="button"
               (click)="loginWithGoogle()"
               [disabled]="loading"
-              class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 ">
+              class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
               <fa-icon [icon]="faGoogle" class="text-xl"></fa-icon>
-              {{ isLoginMode ? 'Sign in with Google' : 'Sign up with Google' }}
+              {{ googleLoading ? 'Opening Google...' : (isLoginMode ? 'Sign in with Google' : 'Sign up with Google') }}
             </button>
           </div>
 
           <!-- Toggle Login/Register -->
           <div class="text-center">
-            <a (click)="toggleMode()" class="text-gray-500 text-sm hover:text-white cursor-pointer">
+            <button
+              type="button"
+              (click)="toggleMode()"
+              class="text-gray-500 text-sm hover:text-white cursor-pointer bg-transparent border-0 p-0">
               {{ isLoginMode ? 'Need an account? Register' : 'Already have an account? Login' }}
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -157,16 +166,22 @@
 </div>
 
 <div class="absolute bottom-6 inset-x-0 flex justify-center space-x-12 text-white/70 text-xs">
-  <div class="flex flex-col items-center hover:text-white/90" (click)="sleep()">
+  <button
+    type="button"
+    class="flex flex-col items-center text-white/70 hover:text-white/90 bg-transparent border-0 p-0"
+    (click)="sleep()">
     <fa-icon [icon]="faMoon" class="text-lg"></fa-icon>
     <span>Sleep</span>
-  </div>
-  <div class="flex flex-col items-center hover:text-white/90" (click)="restart()">
+  </button>
+  <button
+    type="button"
+    class="flex flex-col items-center text-white/70 hover:text-white/90 bg-transparent border-0 p-0"
+    (click)="restart()">
     <fa-icon [icon]="faRedo" class="text-lg"></fa-icon>
     <span>Restart</span>
-  </div>
-  <div class="flex flex-col items-center hover:text-white/90" [routerLink]="['/']">
+  </button>
+  <a class="flex flex-col items-center text-white/70 hover:text-white/90" [routerLink]="['/']">
     <fa-icon [icon]="faPowerOff" class="text-lg"></fa-icon>
     <span>Shut Down</span>
-  </div>
+  </a>
 </div>

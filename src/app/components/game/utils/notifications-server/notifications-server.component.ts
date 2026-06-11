@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, DestroyRef, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {INotification, NotificationService} from '../../services/notification.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -12,6 +12,7 @@ import {faTimes} from '@fortawesome/free-solid-svg-icons';
   standalone: true,
   imports: [CommonModule, MediaComponent, TimeAgoPipe, FontAwesomeModule],
   templateUrl: './notifications-server.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class NotificationServerComponent implements OnInit {

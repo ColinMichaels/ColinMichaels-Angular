@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {TooltipDirective} from '../../directives/tooltip.directive';
 import {NgForOf, NgIf} from '@angular/common';
 import {TooltipOptions} from '../../services/tooltip.service';
@@ -24,6 +24,7 @@ export interface TooltipExampleSet  {
   ],
   preserveWhitespaces: true,
   templateUrl: './tooltip-examples.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     :host ::ng-deep .tooltip-content p {
       margin: 0;

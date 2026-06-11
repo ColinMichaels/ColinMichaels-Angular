@@ -1,10 +1,9 @@
-import { Component } from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faApple, faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
+import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {NgForOf} from '@angular/common';
 import {TooltipDirective} from '../../game/directives/tooltip.directive';
 import {RouterLink} from '@angular/router';
-import {PATH_NAMES} from '../../../app.routes';
 
 @Component({
   selector: 'app-socials',
@@ -16,6 +15,7 @@ import {PATH_NAMES} from '../../../app.routes';
   ],
   templateUrl: './socials.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `:host {
     position: fixed;
     bottom: 0;
@@ -73,16 +73,6 @@ export class SocialsComponent {
       icon: faLinkedin,
       tooltip: 'LinkedIn: @colinmichaels',
       tooltipClass: 'bg-blue-700 text-white font-mono'
-    },
-    {
-      link: `/${PATH_NAMES.OS_LOGIN}`,
-      type: 'internal',
-      target: "_self",
-      title: "game",
-      class: "group hover:text-green-600",
-      icon: faApple,
-      tooltip: "Os Emulator", // Tooltip visible in the HTML for this link
-      tooltipClass: 'bg-green-600 text-black font-monok'
     },
   ];
 

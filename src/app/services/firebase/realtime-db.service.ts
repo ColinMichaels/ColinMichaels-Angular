@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import {
   Database,
   ref,
@@ -15,10 +15,10 @@ import {
   limitToFirst,
   limitToLast,
   startAt,
-  endAt,
-  getDatabase
-} from '@angular/fire/database';
+  endAt
+} from 'firebase/database';
 import {Observable} from 'rxjs';
+import {FIREBASE_DATABASE} from './firebase.tokens';
 
 export interface DatabaseItem {
   id?: string;
@@ -30,18 +30,10 @@ export interface DatabaseItem {
   providedIn: 'root'
 })
 export class RealtimeDbService {
-  private db: Database | null = null;
+  private readonly db: Database | null = inject(FIREBASE_DATABASE, {optional: true});
 
   constructor() {
     console.warn('RealtimeDbService is deprecated. Please use FirebaseService instead.');
-    try {
-      this.db = getDatabase();
-      console.log('Database service initialized successfully');
-    } catch (error) {
-      console.error('Error in database service:', error);
-    }
-
-
   }
 
   private requireDb(): Database {

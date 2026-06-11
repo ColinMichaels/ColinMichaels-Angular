@@ -1,11 +1,375 @@
-.env-container {
-  @apply grid grid-cols-4 gap-2;
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
 }
 
-.env-container label {
-  @apply text-sm font-light;
+.patch-builder {
+  @apply flex h-full min-h-0 flex-col overflow-hidden text-zinc-100;
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.95), rgba(4, 4, 5, 1) 7rem),
+  #050505;
 }
 
-.env-container input {
-  @apply w-full text-xs bg-black text-white/90 py-1 px-2 rounded-lg;
+.patch-hero {
+  @apply flex flex-shrink-0 flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between;
+  background: linear-gradient(180deg, rgba(18, 18, 22, 0.98), rgba(8, 8, 10, 0.98));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36), inset 0 -1px rgba(255, 255, 255, 0.04);
+
+  h2 {
+    @apply mt-1 text-xl font-semibold leading-none text-white md:text-2xl;
+  }
+}
+
+.patch-eyebrow {
+  @apply text-xs uppercase tracking-[0.24em] text-cyan-200;
+}
+
+.patch-subtitle {
+  @apply mt-2 max-w-2xl text-xs leading-5 text-zinc-400;
+}
+
+.transport-bar,
+.library-actions {
+  @apply flex flex-wrap gap-2;
+}
+
+.primary-action,
+.secondary-action,
+.tool-button,
+.icon-button,
+.wave-button,
+.segmented-control button {
+  @apply inline-flex items-center justify-center gap-2 border text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/50;
+}
+
+.primary-action {
+  @apply border-cyan-200 bg-cyan-200 px-3 py-2 text-neutral-950 hover:bg-cyan-100;
+  box-shadow: 0 12px 22px rgba(103, 232, 249, 0.16);
+}
+
+.secondary-action,
+.tool-button {
+  @apply border-white/15 px-3 py-2 text-zinc-100 hover:border-amber-200 hover:text-amber-100;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+}
+
+.secondary-action.active-action {
+  @apply border-cyan-200 bg-cyan-200 text-neutral-950 hover:bg-cyan-100 hover:text-neutral-950;
+}
+
+.tool-button {
+  @apply px-3 py-2 text-xs;
+}
+
+.tool-button.danger,
+.icon-button.danger {
+  @apply hover:border-rose-300 hover:text-rose-100;
+}
+
+.studio-grid {
+  @apply grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden p-4;
+}
+
+.library-panel,
+.editor-panel,
+.control-panel,
+.oscillator-panel {
+  @apply border border-white/10;
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.library-panel {
+  @apply grid flex-shrink-0 content-start gap-3 p-3;
+  background: linear-gradient(135deg, rgba(21, 94, 117, 0.16), transparent 32rem),
+  linear-gradient(180deg, rgba(24, 24, 27, 0.96), rgba(12, 12, 14, 0.96));
+  grid-template-columns: minmax(7rem, auto) minmax(20rem, 1.4fr) minmax(19rem, 1fr);
+  align-items: end;
+
+  .panel-heading {
+    align-self: center;
+  }
+
+  .control-label {
+    margin-bottom: 0.35rem;
+  }
+}
+
+.library-select-group,
+.library-select,
+.library-stack {
+  min-width: 0;
+}
+
+.library-select-group {
+  @apply grid gap-2 md:grid-cols-2;
+}
+
+.library-stack {
+  @apply grid gap-2;
+}
+
+.editor-panel {
+  @apply grid min-h-0 gap-4 overflow-y-auto p-4;
+  background: linear-gradient(180deg, rgba(12, 12, 15, 0.98), rgba(7, 7, 8, 0.98)),
+  #09090b;
+  scrollbar-gutter: stable;
+}
+
+.panel-heading,
+.section-heading {
+  @apply flex items-center justify-between gap-3;
+}
+
+.panel-heading {
+  @apply text-xs uppercase tracking-[0.18em] text-zinc-400;
+
+  fa-icon {
+    @apply text-zinc-500;
+  }
+}
+
+.section-heading {
+  @apply border-t border-white/10 pt-4;
+
+  h3 {
+    @apply mt-1 text-xl font-semibold text-white;
+  }
+}
+
+.control-label {
+  @apply mb-2 block text-xs uppercase tracking-[0.18em] text-zinc-500;
+}
+
+.control-input {
+  @apply w-full border border-white/10 px-2.5 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-200;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(12, 12, 15, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 8px 14px rgba(0, 0, 0, 0.18);
+}
+
+.control-input:focus {
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.14), 0 10px 18px rgba(0, 0, 0, 0.22);
+}
+
+.patch-name-row {
+  @apply grid gap-3 md:grid-cols-[minmax(0,1fr)_8rem_7rem_10rem];
+}
+
+.editor-strip {
+  @apply border border-white/10;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.82), rgba(12, 12, 14, 0.92)),
+  #101012;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.patch-name-row.editor-strip {
+  @apply p-3;
+}
+
+.segmented-control {
+  @apply grid grid-cols-5 overflow-hidden;
+
+  button {
+    @apply border-0 border-r border-white/10 px-2 py-2 text-xs text-zinc-400 last:border-r-0 hover:text-white;
+    background: transparent;
+  }
+
+  button.active {
+    @apply text-neutral-950;
+    background: linear-gradient(180deg, #a5f3fc, #67e8f9);
+  }
+}
+
+.keyboard-panel {
+  @apply min-w-0 border border-cyan-200/20 p-2;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.11), transparent 22rem),
+  linear-gradient(180deg, rgba(12, 16, 18, 0.96), rgba(6, 9, 10, 0.96));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.control-grid {
+  @apply grid gap-3 md:grid-cols-2;
+}
+
+.control-grid.three-up {
+  @apply lg:grid-cols-3;
+}
+
+.control-panel,
+.oscillator-panel {
+  @apply p-3;
+}
+
+.control-panel {
+  @apply relative overflow-hidden;
+  background: linear-gradient(180deg, rgba(20, 20, 23, 0.96), rgba(11, 11, 13, 0.98));
+}
+
+.control-panel::before,
+.oscillator-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: rgba(113, 113, 122, 0.44);
+}
+
+.envelope-panel::before {
+  background: #67e8f9;
+}
+
+.master-panel::before {
+  background: #fbbf24;
+}
+
+.filter-panel {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), transparent 18rem),
+  linear-gradient(180deg, rgba(18, 22, 24, 0.96), rgba(10, 12, 13, 0.98));
+}
+
+.filter-panel::before {
+  background: #22d3ee;
+}
+
+.lfo-panel {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.09), transparent 18rem),
+  linear-gradient(180deg, rgba(19, 18, 25, 0.96), rgba(11, 10, 15, 0.98));
+}
+
+.lfo-panel::before {
+  background: #a78bfa;
+}
+
+.delay-panel {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), transparent 18rem),
+  linear-gradient(180deg, rgba(24, 21, 15, 0.96), rgba(12, 10, 8, 0.98));
+}
+
+.delay-panel::before {
+  background: #fbbf24;
+}
+
+.parameter-grid {
+  @apply mt-3 grid grid-cols-2 gap-3 md:grid-cols-4;
+}
+
+.parameter-grid.compact {
+  @apply grid-cols-2 md:grid-cols-2;
+}
+
+.range-row {
+  @apply grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-3 text-right text-xs tabular-nums text-zinc-300;
+
+  span {
+    @apply border border-white/10 px-2 py-1;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+.range-row input[type='range'] {
+  @apply h-2 w-full appearance-none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(103, 232, 249, 0.42), rgba(251, 191, 36, 0.28));
+}
+
+.range-row input[type='range']::-webkit-slider-thumb {
+  @apply h-4 w-4 appearance-none border border-cyan-100 bg-cyan-200;
+}
+
+.range-row input[type='range']::-moz-range-thumb {
+  @apply h-4 w-4 border border-cyan-100 bg-cyan-200;
+}
+
+.switch-label {
+  @apply flex items-center gap-2 text-xs normal-case tracking-normal text-zinc-300;
+}
+
+.switch-label input {
+  @apply accent-cyan-300;
+}
+
+.metric-grid {
+  @apply grid grid-cols-3 border border-white/10 text-center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+
+  div {
+    @apply border-r border-white/10 px-2 py-2 last:border-r-0;
+  }
+
+  span {
+    @apply block text-lg font-semibold text-white;
+  }
+
+  small {
+    @apply mt-1 block text-[10px] uppercase tracking-[0.16em] text-zinc-500;
+  }
+}
+
+.oscillator-section {
+  @apply grid min-h-[18rem] gap-3 overflow-hidden border border-white/10 p-3;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.09), transparent 24rem),
+  linear-gradient(180deg, rgba(14, 14, 16, 0.98), rgba(7, 7, 8, 0.98));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.035);
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: min(32rem, 48vh);
+}
+
+.oscillator-grid {
+  @apply grid gap-3 overflow-y-auto pr-1;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  scrollbar-gutter: stable;
+}
+
+.oscillator-panel {
+  @apply relative grid content-start gap-3;
+  background: linear-gradient(180deg, rgba(15, 15, 17, 0.98), rgba(4, 4, 5, 0.98)),
+  #070707;
+}
+
+.oscillator-panel::before {
+  background: #fbbf24;
+}
+
+.icon-button {
+  @apply h-8 w-8 border-white/10 text-zinc-300 hover:text-white;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.waveform-row {
+  @apply grid grid-cols-4 overflow-hidden border border-white/10;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.wave-button {
+  @apply h-11 border-0 border-r border-white/10 text-zinc-400 last:border-r-0 hover:text-white;
+}
+
+.wave-button.active {
+  @apply text-neutral-950;
+  background: linear-gradient(180deg, #fcd34d, #fbbf24);
+}
+
+@media (max-width: 860px) {
+  .library-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .transport-bar,
+  .library-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  }
+
+  .patch-subtitle {
+    display: none;
+  }
 }

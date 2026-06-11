@@ -1,4 +1,4 @@
-import {Component, ElementRef, ViewChild, signal, computed} from '@angular/core';
+import {Component, ElementRef, ViewChild, signal, computed, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
@@ -65,17 +65,19 @@ export interface User {
 
         <!-- Chat List -->
         <div class="flex-1 overflow-y-auto">
-          <div
+          <button
+            type="button"
             *ngFor="let chat of chats()"
             (click)="selectChat(chat)"
-            class="p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors"
+            class="block w-full p-3 text-left border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors"
             [class.bg-blue-100]="selectedChat().id === chat.id">
             <div class="flex items-center space-x-3">
               <div class="relative">
                 <div
                   class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
                   <span *ngIf="!chat.avatar">{{ chat.name.charAt(0).toUpperCase() }}</span>
-                  <img *ngIf="chat.avatar" [src]="chat.avatar" class="w-full h-full rounded-full object-cover"/>
+                  <img *ngIf="chat.avatar" [src]="chat.avatar" [alt]="chat.name + ' avatar'"
+                       class="w-full h-full rounded-full object-cover"/>
                 </div>
                 <div
                   *ngIf="chat.isOnline && !chat.isGroup"
@@ -87,7 +89,7 @@ export interface User {
                 <div class="flex items-center justify-between">
                   <h3 class="font-medium text-gray-900 truncate">{{ chat.name }}</h3>
                   <span class="text-xs text-gray-500">
-                    {{ formatTime(chat.lastMessage?.timestamp) }}
+                    {{ formatTime($safeNavigationMigration(chat.lastMessage?.timestamp)) }}
                   </span>
                 </div>
                 <p class="text-sm text-gray-600 truncate">
@@ -100,7 +102,7 @@ export interface User {
                 {{ chat.unreadCount }}
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -115,6 +117,7 @@ export interface User {
                   class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
                   <span *ngIf="!selectedChat()?.avatar">{{ selectedChat().name }}</span>
                   <img *ngIf="selectedChat()?.avatar" [src]="selectedChat().avatar"
+                       [alt]="selectedChat().name + ' avatar'"
                        class="w-full h-full rounded-full object-cover"/>
                 </div>
                 <div
@@ -182,11 +185,15 @@ export interface User {
                        }">
 
                     <!-- Image attachment -->
-                    <div *ngIf="message.image" class="mb-2">
+                    <button
+                      *ngIf="message.image"
+                      type="button"
+                      class="mb-2 block"
+                      (click)="openImageModal(message.image)">
                       <img [src]="message.image"
-                           class="rounded-lg max-w-full h-auto cursor-pointer"
-                           (click)="openImageModal(message.image)"/>
-                    </div>
+                           [alt]="'Image sent by ' + message.senderName"
+                           class="rounded-lg max-w-full h-auto"/>
+                    </button>
 
                     <!-- Message text -->
                     <div *ngIf="message.text">{{ message.text }}</div>
@@ -194,11 +201,12 @@ export interface User {
                     <!-- Reactions -->
                     <div *ngIf="message.reactions && message.reactions.length > 0"
                          class="flex space-x-1 mt-2">
-                      <span *ngFor="let reaction of message.reactions"
+                      <button *ngFor="let reaction of message.reactions"
+                              type="button"
                             class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs cursor-pointer hover:bg-gray-200"
                             (click)="toggleReaction(message, reaction.emoji)">
                         {{ reaction.emoji }} {{ reaction.count }}
-                      </span>
+                      </button>
                     </div>
                   </div>
 
@@ -293,14 +301,25 @@ export interface User {
     <!-- New Chat Modal -->
     <div *ngIf="showNewChatModal"
          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         role="button"
+         tabindex="0"
+         aria-label="Close new chat dialog"
+         (keydown.enter)="showNewChatModal = false"
+         (keydown.space)="showNewChatModal = false"
          (click)="showNewChatModal = false">
-      <div class="bg-white rounded-lg p-6 w-96 max-w-full" (click)="$event.stopPropagation()">
+      <div
+        class="bg-white rounded-lg p-6 w-96 max-w-full"
+        tabindex="-1"
+        (keydown)="$event.stopPropagation()"
+        (click)="$event.stopPropagation()"
+      >
         <h3 class="text-lg font-semibold mb-4">New Chat</h3>
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Chat Name</label>
+            <label for="new-chat-name" class="block text-sm font-medium text-gray-700 mb-1">Chat Name</label>
             <input
+              id="new-chat-name"
               [(ngModel)]="newChatName"
               type="text"
               placeholder="Enter chat name"
@@ -337,17 +356,36 @@ export interface User {
     <!-- Image Modal -->
     <div *ngIf="selectedImage"
          class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+         role="button"
+         tabindex="0"
+         aria-label="Close image preview"
+         (keydown.enter)="closeImageModal()"
+         (keydown.space)="closeImageModal()"
          (click)="closeImageModal()">
       <div class="max-w-4xl max-h-full p-4">
-        <img [src]="selectedImage" class="max-w-full max-h-full object-contain rounded-lg">
+        <img
+          [src]="selectedImage"
+          alt="Selected chat attachment preview"
+          class="max-w-full max-h-full object-contain rounded-lg"
+        >
       </div>
     </div>
 
     <!-- Group Info Modal -->
     <div *ngIf="showGroupInfo"
          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         role="button"
+         tabindex="0"
+         aria-label="Close group info dialog"
+         (keydown.enter)="showGroupInfo = false"
+         (keydown.space)="showGroupInfo = false"
          (click)="showGroupInfo = false">
-      <div class="bg-white rounded-lg p-6 w-96 max-w-full" (click)="$event.stopPropagation()">
+      <div
+        class="bg-white rounded-lg p-6 w-96 max-w-full"
+        tabindex="-1"
+        (keydown)="$event.stopPropagation()"
+        (click)="$event.stopPropagation()"
+      >
         <h3 class="text-lg font-semibold mb-4">Group Info</h3>
 
         <div class="space-y-4">
@@ -383,6 +421,7 @@ export interface User {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: block;
@@ -636,8 +675,9 @@ export class ChatBotComponent {
     this.showEmojiPicker = false;
   }
 
-  onImageSelect(event: any) {
-    const file = event.target.files[0];
+  onImageSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file || !this.selectedChat()) return;
 
     const reader = new FileReader();

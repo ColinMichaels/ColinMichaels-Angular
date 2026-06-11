@@ -4,10 +4,14 @@
 
 The app uses Angular standalone components with route-driven screens and service-centric state.
 
-- Router controls entry screens (home, login, desktop, boot, sleep).
+- Router controls entry screens (home, blog, labs, admin, login, desktop, boot, sleep).
+- `app.routes.ts` composes route groups from `features/public`, `labs`, `admin`, and `core-os`.
+- `AppComponent` owns the shared site shell header for public/blog/labs/admin routes and intentionally excludes OS desktop/login/boot/sleep/redirect routes.
 - Desktop screen coordinates window lifecycle and system UI.
 - Services hold long-lived state (apps, user, settings, storage, CLI, sound, files, notifications).
 - Dynamic component loading is used for in-window apps.
+
+Current route group files are boundary markers only. They preserve existing URL paths and lazy-load legacy component locations until the folder migration moves implementations into their final homes. The 404 route now uses `shared/not-found`, with the old component path kept as a compatibility export.
 
 ## Major Subsystems
 
@@ -17,8 +21,18 @@ The app uses Angular standalone components with route-driven screens and service
   app registry, app launch, focus, close, persisted open apps.
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
+- Blog/CMS:
+  public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
+- Public media:
+  homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
+- Shared site shell:
+  global header/menu and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
+- Admin media library:
+  protected media organizer UI for Firebase-backed uploads and metadata, with feature-scoped browsing, filtering, batch rename, resize requests, preview, and virtual folder/tag workflows.
+- Labs:
+  public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:
-  settings/user/tasks/patches through storage strategy.
+  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source.
 - Media/audio:
   icon/media helpers, sound playback, music and effects.
 - Overlay and notifications:
@@ -62,4 +76,3 @@ graph TD
 - This codebase favors behavior in services over local component state.
 - The primary maintainability pressure points are large services with mixed responsibilities and untyped dynamic data flows.
 - Behavior stability depends heavily on preserving service public APIs while tightening internals.
-

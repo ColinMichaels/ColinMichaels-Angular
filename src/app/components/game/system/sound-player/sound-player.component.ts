@@ -1,5 +1,5 @@
 // sound-player.component.ts
-import {Component, inject, signal} from '@angular/core';
+import {Component, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faPause, faPlay, faVolumeUp} from '@fortawesome/free-solid-svg-icons';
@@ -11,6 +11,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   selector: 'app-sound-player',
   standalone: true,
   imports: [CommonModule, FontAwesomeModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex items-center space-x-2 bg-zinc-800/40 p-1.5 rounded-lg">
       <button (click)="togglePlayPause()" class="text-white/80 hover:text-white text-xs">

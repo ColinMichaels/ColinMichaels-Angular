@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import {Component, Inject, ChangeDetectionStrategy} from '@angular/core';
 import {CONTEXT_MENU_DATA} from '../services/context-menu.service';
 import {JsonPipe} from '@angular/common';
 
@@ -9,8 +9,9 @@ import {JsonPipe} from '@angular/common';
   ],
   template: `
   <div class="menu-type-b">
-    {{ data?.customData | json }}
+    {{ $safeNavigationMigration(data?.customData) | json }}
   </div>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class MenuTypeBComponent {

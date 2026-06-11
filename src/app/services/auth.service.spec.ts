@@ -1,9 +1,10 @@
 import {TestBed} from '@angular/core/testing';
 
 import {AuthService} from './auth.service';
-import {Auth} from '@angular/fire/auth';
+import {Auth} from 'firebase/auth';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
+import {FIREBASE_AUTH} from './firebase/firebase.tokens';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,7 +15,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        {provide: Auth, useValue: {} as Auth},
+        {provide: FIREBASE_AUTH, useValue: {} as Auth},
         {provide: Router, useValue: routerSpy},
         {provide: LogService, useValue: logServiceSpy},
       ]

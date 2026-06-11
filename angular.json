@@ -35,16 +35,9 @@
               }
             ],
             "styles": [
-              "src/styles.scss",
-              "node_modules/prismjs/themes/prism-twilight.css"
+              "src/styles.scss"
             ],
-            "scripts": [
-              "node_modules/prismjs/prism.js",
-              "node_modules/prismjs/components/prism-css.min.js",
-              "node_modules/prismjs/components/prism-markdown.min.js",
-              "node_modules/prismjs/components/prism-javascript.min.js",
-              "node_modules/prismjs/components/prism-typescript.min.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -53,7 +46,8 @@
                 "styles": {
                   "minify": true,
                   "inlineCritical": true
-                }
+                },
+                "fonts": false
               },
               "budgets": [
                 {
@@ -87,13 +81,7 @@
               ]
             },
             "local": {
-              "optimization": {
-                "scripts": true,
-                "styles": {
-                  "minify": true,
-                  "inlineCritical": true
-                }
-              },
+              "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
               "fileReplacements": [
@@ -114,9 +102,12 @@
             },
             "development": {
               "buildTarget": "ColinMichaels-Firebase:build:development"
+            },
+            "local": {
+              "buildTarget": "ColinMichaels-Firebase:build:local"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "local"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"
@@ -157,6 +148,10 @@
     }
   },
   "cli": {
-    "analytics": false
+    "analytics": false,
+    "cache": {
+      "enabled": true,
+      "environment": "ci"
+    }
   }
 }

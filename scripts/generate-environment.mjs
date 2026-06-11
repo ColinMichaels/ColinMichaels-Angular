@@ -48,7 +48,11 @@ const environmentConfig = {
   }
 };
 
-const fileContent = `export const environment = ${JSON.stringify(environmentConfig, null, 2)};\n`;
+const serializedEnvironmentConfig = JSON.stringify(environmentConfig, null, 2).replace(
+  /\n}$/,
+  ',\n  "firebaseEmulators": undefined\n}'
+);
+const fileContent = `export const environment = ${serializedEnvironmentConfig};\n`;
 const outputFiles = [
   resolve('src/environments/environment.ts'),
   resolve('src/environments/environment.prod.ts')

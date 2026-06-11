@@ -2,7 +2,9 @@
 
 ## What This Project Is
 
-This project recreates a macOS-inspired desktop experience in the browser using Angular and Tailwind CSS. It mixes a portfolio-style landing experience with an interactive in-browser "OS" that includes movable windows, app launching, CLI-like gameplay, notifications, overlays, and media tools.
+This project combines a public portfolio and publishing site with a macOS-inspired desktop experience in the browser. The public site now keeps portfolio, blog, and labs entry points visible while the interactive in-browser "OS" remains available through its own launch route.
+
+The normal site routes share a global header/menu and persistent light/dark theme toggle. The OS desktop/login/boot/sleep routes remain outside that shared site shell so the reusable OS framework can preserve its own interface system.
 
 ## Core Experience
 
@@ -23,10 +25,20 @@ This project recreates a macOS-inspired desktop experience in the browser using 
 
 ## High-Level Module Map
 
-- `src/app/components/main`:
-  public/portfolio-facing experience.
+- `src/app/components/main` and `src/app/features/public`:
+  public homepage and portfolio-facing route boundary.
+- `src/app/shared`:
+  reusable global site header, theme persistence, not-found UI, and shared primitives.
+- `src/app/features/blog`:
+  public blog index, category listing, detail routes, typed post models, Firestore-backed repository/storage, and read-only block rendering.
+- `src/app/admin`:
+  protected admin and CMS route boundary for post listing, creation, and editing.
+- `src/app/labs`:
+  public experiments index and route-backed playgrounds.
+- `src/app/core-os`:
+  OS route boundary that preserves legacy desktop/login/boot/sleep URLs.
 - `src/app/components/game`:
-  desktop simulation, apps, system UI, and most game services.
+  legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:
   core runtime logic (app manager, CLI, settings, storage, media, sound, user).
 - `src/app/services`:
@@ -37,9 +49,11 @@ This project recreates a macOS-inspired desktop experience in the browser using 
 ## Suggested Reading Order
 
 1. `src/app/app.routes.ts`
-2. `src/app/app.config.ts`
-3. `src/app/components/game/desktop/desktop.component.ts`
-4. `src/app/components/game/services/application-manager.service.ts`
-5. `src/app/components/game/apps/cli-game/cli-game.component.ts`
-6. `src/app/components/game/services/*` for subsystem behavior
-
+2. `src/app/features/public/public.routes.ts`
+3. `src/app/labs/lab.routes.ts`
+4. `src/app/core-os/os.routes.ts`
+5. `src/app/app.config.ts`
+6. `src/app/components/game/desktop/desktop.component.ts`
+7. `src/app/components/game/services/application-manager.service.ts`
+8. `src/app/components/game/apps/cli-game/cli-game.component.ts`
+9. `src/app/components/game/services/*` for subsystem behavior

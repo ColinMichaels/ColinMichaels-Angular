@@ -1,5 +1,5 @@
-import {Component, DestroyRef, HostListener, OnDestroy} from '@angular/core';
-import {MUSIC_PLAYER_SETTING_ID, MusicService} from '../../services/music.service';
+import {Component, DestroyRef, HostListener, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
+import {MUSIC_PLAYER_SETTING_ID, MusicService, Track} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
@@ -18,6 +18,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   selector: 'app-music-player',
   templateUrl: './music-player.component.html',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     NgForOf,
     FaIconComponent,
@@ -28,8 +29,9 @@ export class MusicPlayerComponent implements OnDestroy {
   toggleRepeat() {
       throw new Error('Method not implemented.');
   }
-  currentTrack;
-  trackLibrary;
+
+  currentTrack: Track;
+  trackLibrary: Track[];
   isPlaying = false;
   currentTime = 0;
   progress = 0;
@@ -43,7 +45,7 @@ export class MusicPlayerComponent implements OnDestroy {
     this.currentTrack = this.music.currentTrack;
     this.trackLibrary = this.music.library;
     this.volume = this.music.volume();
-    this.music.trackChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((track: any) => {
+    this.music.trackChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((track) => {
       this.currentTrack = track;
     });
     this.music.timeUpdated.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((time: number) => {
@@ -69,7 +71,7 @@ export class MusicPlayerComponent implements OnDestroy {
     this.music.previous();
   }
 
-  selectTrack(track: any) {
+  selectTrack(track: Track) {
     this.music.load(track);
     this.music.play();
   }
@@ -83,8 +85,6 @@ export class MusicPlayerComponent implements OnDestroy {
   onVolumeChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     const volume = Number(value) / 100;
-    console.log(volume);
-
     this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', volume);
     this.music.setVolume(volume);
     // Update volume through sound service
@@ -93,7 +93,11 @@ export class MusicPlayerComponent implements OnDestroy {
   @HostListener('window:keydown', ['$event'])
   handleKeyboard(event: KeyboardEvent) {
     if (event.code === 'Space') {
-      this.isPlaying ? this.pause() : this.play();
+      if (this.isPlaying) {
+        this.pause();
+      } else {
+        this.play();
+      }
     } else if (event.code === 'ArrowRight') {
       this.nextTrack();
     } else if (event.code === 'ArrowLeft') {

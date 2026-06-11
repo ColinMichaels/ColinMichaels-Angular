@@ -1,58 +1,92 @@
-import {inject, Injectable, NgZone} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {
   Auth,
   createUserWithEmailAndPassword,
+  getIdTokenResult,
   getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
-  signInWithEmailAndPassword, signInWithPopup,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect,
   signOut,
-  user,
+  updateProfile,
+  User,
   UserCredential
-} from '@angular/fire/auth';
-import {User} from 'firebase/auth';
-import {from, map, Observable, of, shareReplay, throwError} from 'rxjs';
+} from 'firebase/auth';
+import {defer, from, map, Observable, of, shareReplay, throwError} from 'rxjs';
 import {catchError, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
+import {FIREBASE_AUTH} from './firebase/firebase.tokens';
+
+export interface AdminAuthorization {
+  uid: string | null;
+  email: string | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isAuthorized: boolean;
+  claims: Record<string, unknown>;
+  requiredRoles: readonly string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
+  const roles = claims['roles'];
+
+  return claims[role] === true || (isRecord(roles) && roles[role] === true);
+}
+
+function hasAnyRoleClaim(claims: Record<string, unknown>, requiredRoles: readonly string[]): boolean {
+  return requiredRoles.some(role => hasRoleClaim(claims, role));
+}
+
+function hasAdminClaim(claims: Record<string, unknown>): boolean {
+  return hasAnyRoleClaim(claims, ['admin', 'cmsAdmin']);
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private auth: Auth | null = inject(Auth, {optional: true});
+  private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
 
-  user$: Observable<User | null> = this.auth ? user(this.auth) : of(null);
+  readonly user$: Observable<User | null>;
 
   constructor(
     private router: Router,
-    private readonly logger: LogService,
-    private zone: NgZone
+    private readonly logger: LogService
   ) {
     const auth = this.auth;
     if (!auth) {
       this.logger.warn('Auth service initialized without Firebase Auth provider.');
+      this.user$ = of(null);
       return;
     }
 
     this.user$ = new Observable<User | null>(observer => {
-      return onAuthStateChanged(auth,
-        user => this.zone.run(() => observer.next(user)),
-        error => this.zone.run(() => observer.error(error)),
-        () => this.zone.run(() => observer.complete())
+      return onAuthStateChanged(
+        auth,
+        currentUser => observer.next(currentUser),
+        error => observer.error(error)
       );
-    }).pipe(shareReplay(1));
-
+    })
+      .pipe(shareReplay({bufferSize: 1, refCount: true}));
   }
 
   // Email & Password Sign In
   signInWithEmail(email: string, password: string): Observable<UserCredential> {
-    if (!this.auth) {
+    const auth = this.auth;
+    if (!auth) {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
-    return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
+
+    return this.fromAuthOperation(() => signInWithEmailAndPassword(auth, email, password)).pipe(
       tap(result => this.logger.info('Signed in!', result.user)),
       catchError(error => {
         this.logger.error('Login failed:', error);
@@ -63,14 +97,15 @@ export class AuthService {
 
   // Email & Password Registration
   registerWithEmail(email: string, password: string): Observable<UserCredential> {
-    if (!this.auth) {
+    const auth = this.auth;
+    if (!auth) {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
-    return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
+
+    return this.fromAuthOperation(() => createUserWithEmailAndPassword(auth, email, password)).pipe(
       switchMap(credentials => {
-        // Send email verification
-        return from(sendEmailVerification(credentials.user)).pipe(
-          switchMap(() => of(credentials))
+        return this.fromAuthOperation(() => sendEmailVerification(credentials.user)).pipe(
+          map(() => credentials)
         );
       }),
       catchError(error => {
@@ -80,14 +115,33 @@ export class AuthService {
     );
   }
 
-  // Google Sign In (enhanced with Observable)
-  loginWithGoogle(): Observable<UserCredential | null> {
-    if (!this.auth) {
+  // Google Sign In
+  loginWithGoogle(): Observable<UserCredential> {
+    const auth = this.auth;
+    if (!auth) {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
-    const provider = new GoogleAuthProvider();
-    // Use signInWithPopup instead of redirect for more reliable behavior
-    return from(signInWithPopup(this.auth, provider));
+
+    return this.fromAuthOperation(() => signInWithPopup(auth, this.createGoogleProvider())).pipe(
+      catchError(error => {
+        this.logger.error('Google popup login failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  loginWithGoogleRedirect(): Observable<void> {
+    const auth = this.auth;
+    if (!auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
+
+    return this.fromAuthOperation(() => signInWithRedirect(auth, this.createGoogleProvider())).pipe(
+      catchError(error => {
+        this.logger.error('Google redirect login failed:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // Add a method to handle redirect results
@@ -96,7 +150,8 @@ export class AuthService {
     if (!auth) {
       return of(null);
     }
-    return from(this.zone.runOutsideAngular(() => getRedirectResult(auth)))
+
+    return this.fromAuthOperation(() => getRedirectResult(auth))
       .pipe(
         tap(result => {
           if (result) {
@@ -113,10 +168,12 @@ export class AuthService {
 
   // Password Reset
   resetPassword(email: string): Observable<void> {
-    if (!this.auth) {
+    const auth = this.auth;
+    if (!auth) {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
-    return from(sendPasswordResetEmail(this.auth, email)).pipe(
+
+    return this.fromAuthOperation(() => sendPasswordResetEmail(auth, email)).pipe(
       catchError(error => {
         this.logger.error('Password reset failed:', error);
         return throwError(() => error);
@@ -126,10 +183,12 @@ export class AuthService {
 
   // Sign Out (enhanced with Observable)
   logout(): Observable<void> {
-    if (!this.auth) {
+    const auth = this.auth;
+    if (!auth) {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
-    return from(signOut(this.auth)).pipe(
+
+    return this.fromAuthOperation(() => signOut(auth)).pipe(
       tap(() => {
         this.logger.info('Signed out');
         this.router.navigate(['/login']);
@@ -141,10 +200,90 @@ export class AuthService {
     );
   }
 
+  updateUserProfile(profileUser: User, profile: {
+    displayName?: string | null;
+    photoURL?: string | null
+  }): Observable<void> {
+    return this.fromAuthOperation(() => updateProfile(profileUser, profile)).pipe(
+      catchError(error => {
+        this.logger.error('Profile update failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   // Check if user is authenticated
   isAuthenticated(): Observable<boolean> {
     return this.user$.pipe(
       map(user => !!user)
     );
+  }
+
+  getAdminAuthorization(forceRefresh = false): Observable<AdminAuthorization> {
+    return this.getRoleAuthorization(['admin', 'cmsAdmin'], forceRefresh);
+  }
+
+  getRoleAuthorization(requiredRoles: readonly string[], forceRefresh = false): Observable<AdminAuthorization> {
+    return this.user$.pipe(
+      switchMap(currentUser => {
+        if (!currentUser) {
+          return of({
+            uid: null,
+            email: null,
+            isAuthenticated: false,
+            isAdmin: false,
+            isAuthorized: false,
+            claims: {},
+            requiredRoles,
+          });
+        }
+
+        return this.fromAuthOperation(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
+          map(tokenResult => {
+            const claims = tokenResult.claims as Record<string, unknown>;
+            const isAdmin = hasAdminClaim(claims);
+
+            return {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              isAuthenticated: true,
+              isAdmin,
+              isAuthorized: isAdmin || hasAnyRoleClaim(claims, requiredRoles),
+              claims,
+              requiredRoles,
+            };
+          }),
+          catchError(error => {
+            this.logger.error('Admin claim check failed:', error);
+
+            return of({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              isAuthenticated: true,
+              isAdmin: false,
+              isAuthorized: false,
+              claims: {},
+              requiredRoles,
+            });
+          })
+        );
+      })
+    );
+  }
+
+  private createGoogleProvider(): GoogleAuthProvider {
+    const provider = new GoogleAuthProvider();
+
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({
+      prompt: 'select_account',
+    });
+
+    return provider;
+  }
+
+  private fromAuthOperation<T>(operation: () => Promise<T>): Observable<T> {
+    return defer(() => from(operation()));
   }
 }

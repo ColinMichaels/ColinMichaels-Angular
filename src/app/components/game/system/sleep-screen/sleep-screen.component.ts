@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {Router} from '@angular/router';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faApple} from '@fortawesome/free-brands-svg-icons';
@@ -10,6 +10,7 @@ import {TailwindClassGeneratorService} from '../../services/tailwind-class-gener
   imports: [
     FaIconComponent
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div
       [class]="rndBgClass?.bg ? rndBgClass?.bg + '/90' :  'bg-black'"

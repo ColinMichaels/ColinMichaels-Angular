@@ -1,97 +1,399 @@
-<div class="p-4  mx-auto bg-zinc-800 text-white rounded shadow h-full">
-  <div class="flex justify-start items-center mb-4">
-    <div class="flex flex-col justify-end space-x-4 basis-1/3 text-sm">
-      <button class="w-full bg-black text-white/90 py-1 px-2" (click)="playPreview()">Preview</button>
+<div class="patch-builder">
+  <header class="patch-hero">
+    <div>
+      <p class="patch-eyebrow">Instrument Lab</p>
+      <h2>Patch Studio</h2>
+      <p class="patch-subtitle">
+        Design reusable sound-generator patches with presets, selectable drivers, and keyboard controller testing.
+      </p>
     </div>
 
-    <!-- Patch Name -->
-    <div>
-      <label class="block text-[10px] text-white/70 font-thin">Patch Name</label>
-      <div class="flex h-[34px] text-sm text-white/60">
-        <input
-          class="input w-full bg-black text-white/90
-          px-3 py-1 rounded-l-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2
-          focus:ring-offset-black/80 transition-all duration-150 ease-in-out"
-          name="text"
-          type="text"
-          placeholder="Patch Name"
-          [(ngModel)]="selectedPatch.name"
-        />
+    <div class="transport-bar" aria-label="Patch actions">
+      <button type="button" class="primary-action" (click)="playPreview()">
+        <fa-icon [icon]="faPlay"></fa-icon>
+        Preview
+      </button>
+      <button type="button" class="secondary-action" (click)="savePatch()">
+        <fa-icon [icon]="faFloppyDisk"></fa-icon>
+        Save
+      </button>
+      <button type="button" class="secondary-action" (click)="randomizePatch()">
+        <fa-icon [icon]="faShuffle"></fa-icon>
+        Generate
+      </button>
+      <button
+        type="button"
+        class="secondary-action"
+        [class.active-action]="showKeyboard"
+        (click)="showKeyboard = !showKeyboard"
+      >
+        <fa-icon [icon]="faKeyboard"></fa-icon>
+        {{ showKeyboard ? 'Hide Keys' : 'Show Keys' }}
+      </button>
+    </div>
+  </header>
+
+  <section class="studio-grid">
+    <aside class="library-panel" aria-label="Patch library">
+      <div class="panel-heading">
+        <span>Library</span>
+        <span>{{ savedPatches.length }}</span>
+      </div>
+
+      <div class="library-select-group">
+        <div class="library-select">
+          <label class="control-label" for="factory-preset">Factory preset</label>
+          <select
+            id="factory-preset"
+            class="control-input"
+            name="factoryPreset"
+            [(ngModel)]="selectedFactoryPresetName"
+            (ngModelChange)="loadFactoryPreset($event)"
+          >
+            <option value="">Choose preset</option>
+            <optgroup
+              *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
+              [label]="category.label"
+            >
+              <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
+                {{ preset.name }}
+              </option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="library-select">
+          <label class="control-label" for="saved-patch">Saved patch</label>
+          <select
+            id="saved-patch"
+            class="control-input"
+            name="savedPatch"
+            [(ngModel)]="selectedSavedPatchName"
+            (ngModelChange)="loadSavedPatch($event)"
+          >
+            <option value="">Unsaved patch</option>
+            <option *ngFor="let patch of savedPatches; trackBy: trackByPatchName" [value]="patch.name">
+              {{ patch.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="library-stack">
+        <div class="library-actions">
+          <button type="button" class="tool-button" (click)="newPatch()">New</button>
+          <button type="button" class="tool-button" (click)="duplicatePatch()">
+            <fa-icon [icon]="faCopy"></fa-icon>
+            Copy
+          </button>
+          <button type="button" class="tool-button danger" (click)="deletePatch()">
+            <fa-icon [icon]="faTrash"></fa-icon>
+            Delete
+          </button>
+        </div>
+
+        <div class="metric-grid" aria-label="Patch metrics">
+          <div>
+            <span>{{ oscillatorCount }}</span>
+            <small>osc</small>
+          </div>
+          <div>
+            <span>{{ totalOscillatorVolume }}</span>
+            <small>sum</small>
+          </div>
+          <div>
+            <span>{{ complexityScore }}</span>
+            <small>complexity</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="editor-panel">
+      <div class="patch-name-row editor-strip">
+        <div>
+          <label class="control-label" for="patch-name">Patch name</label>
+          <input
+            id="patch-name"
+            class="control-input text-lg"
+            name="patchName"
+            type="text"
+            placeholder="Patch Name"
+            [(ngModel)]="selectedPatch.name"
+          />
+        </div>
+
+        <div>
+          <label class="control-label" for="preview-note">Root note</label>
+          <select id="preview-note" class="control-input" name="previewNote" [(ngModel)]="defaultNote">
+            <option *ngFor="let note of noteOptions" [value]="note">{{ note }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="control-label" for="preview-duration">Duration</label>
+          <input
+            id="preview-duration"
+            class="control-input"
+            name="previewDuration"
+            type="number"
+            min="0.1"
+            max="3"
+            step="0.1"
+            [(ngModel)]="previewDuration"
+          />
+        </div>
+
+        <div>
+          <label class="control-label" for="sound-driver">Sound driver</label>
+          <select
+            id="sound-driver"
+            class="control-input"
+            name="soundDriver"
+            [(ngModel)]="selectedSoundDriverId"
+            (ngModelChange)="setSoundDriver($event)"
+          >
+            <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
+              {{ driver.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="segmented-control editor-strip" aria-label="Preview mode">
         <button
-          class="text-[#f4f4f5] px-3 py-1 rounded-r-lg border-y border-r border-r-white/10 border-y-white/10 hover:bg-zinc-800/40 transition-all duration-150 ease-in-out"
-          (click)="savePatch()"
+          *ngFor="let mode of previewModes"
+          type="button"
+          [class.active]="previewMode === mode.id"
+          (click)="previewMode = mode.id"
         >
-          Save
+          {{ mode.label }}
         </button>
       </div>
-    </div>
 
-    <!-- Saved Patches -->
-    <div *ngIf="savedPatches.length > 0">
-      <h3 class="text-xs">🎹 Load Saved Patch</h3>
-      <select class="w-full bg-zinc-700 p-2 rounded mb-2" [(ngModel)]="selectedPatch">
-        <option *ngFor="let patch of savedPatches" [value]="patch.id">
-          {{ patch.name }}
-        </option>
-      </select>
-    </div>
+      <section *ngIf="showKeyboard" class="keyboard-panel" aria-label="Patch keyboard tester">
+        <app-piano
+          [patch]="selectedPatch"
+          [startingOctave]="3"
+          [visibleOctaves]="2"
+          [noteDuration]="previewDuration"
+          [soundDriverId]="selectedSoundDriverId"
+          [showDriverControl]="false"
+          [compact]="true"
+        />
+      </section>
 
-  </div>
+      <div class="control-grid">
+        <section class="control-panel envelope-panel">
+          <div class="panel-heading">
+            <span>Envelope</span>
+            <fa-icon [icon]="faSliders"></fa-icon>
+          </div>
 
-  <div class="container">
-    <!-- Envelope -->
-    <div class="env-container">
-      <div>
-        <label class="block">Attack</label>
-        <input type="number" [(ngModel)]="selectedPatch.envelope.attack" step="0.01"/>
-      </div>
-      <div>
-        <label class="block">Decay</label>
-        <input type="number" [(ngModel)]="selectedPatch.envelope.decay" step="0.01"/>
-      </div>
-      <div>
-        <label class="block">Sustain</label>
-        <input type="number" [(ngModel)]="selectedPatch.envelope.sustain" step="0.01"/>
-      </div>
-      <div>
-        <label class="block">Release</label>
-        <input type="number" [(ngModel)]="selectedPatch.envelope.release" class="env-button" step="0.01"/>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- Oscillator Controls -->
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4  my-4">
-    <div *ngFor="let osc of selectedPatch.oscillators; let i = index"
-         class="border border-white/30 bg-black/90 rounded p-3 relative">
-      <button class="absolute top-1 right-1 text-xs " (click)="removeOscillator(i)">X</button>
-      <h3 class="text-sm mb-2">Osc:{{ i + 1 }}</h3>
-
-      <div class="flex justify-center space-x-1 w-full mb-1">
-        <ng-template ngFor let-type [ngForOf]="OSCILLATOR_TYPES">
-          <button [value]="type"
-                  class="mac-button flex-1 min-w-0"
-                  [class.active]="osc.type === type"
-                  [appTooltip]="type"
-                  [tooltipCssClass]="'text-xs p-2 text-white bg-black/90 border border-white/30'"
-                  (click)="osc.type = type">
-            <div [ngSwitch]="type" class="flex justify-center">
-              <fa-icon *ngSwitchCase="'triangle'" [icon]="faTriangleCircleSquare"/>
-              <fa-icon *ngSwitchCase="'square'" [icon]="faWaveSquare"/>
-              <fa-icon *ngSwitchCase="'sawtooth'" [icon]="faTooth"/>
-              <fa-icon *ngSwitchCase="'sine'" [icon]="faSignature"/>
+          <div class="parameter-grid">
+            <div>
+              <label class="control-label" for="env-attack">Attack</label>
+              <input id="env-attack" class="control-input" name="envAttack" type="number" min="0.001" max="5"
+                     step="0.01" [(ngModel)]="selectedPatch.envelope.attack"/>
             </div>
+            <div>
+              <label class="control-label" for="env-decay">Decay</label>
+              <input id="env-decay" class="control-input" name="envDecay" type="number" min="0.001" max="5" step="0.01"
+                     [(ngModel)]="selectedPatch.envelope.decay"/>
+            </div>
+            <div>
+              <label class="control-label" for="env-sustain">Sustain</label>
+              <input id="env-sustain" class="control-input" name="envSustain" type="number" min="0" max="1" step="0.01"
+                     [(ngModel)]="selectedPatch.envelope.sustain"/>
+            </div>
+            <div>
+              <label class="control-label" for="env-release">Release</label>
+              <input id="env-release" class="control-input" name="envRelease" type="number" min="0.001" max="8"
+                     step="0.01" [(ngModel)]="selectedPatch.envelope.release"/>
+            </div>
+          </div>
+        </section>
+
+        <section class="control-panel master-panel">
+          <div class="panel-heading">
+            <span>Master</span>
+            <fa-icon [icon]="faVolumeHigh"></fa-icon>
+          </div>
+
+          <label class="control-label" for="master-volume">Output volume</label>
+          <div class="range-row">
+            <input id="master-volume" name="masterVolume" type="range" min="0" max="1" step="0.01"
+                   [(ngModel)]="master.volume"/>
+            <span>{{ master.volume | number: '1.2-2' }}</span>
+          </div>
+
+          <button type="button" class="tool-button mt-4" (click)="resetPatch()">
+            <fa-icon [icon]="faRotateLeft"></fa-icon>
+            Reset controls
           </button>
-        </ng-template>
+        </section>
       </div>
-      <label class="block text-xs">Detune</label>
-      <input type="number" [(ngModel)]="osc.detune" class="w-full bg-zinc-700 p-0.5 rounded mb-2"/>
-      <label class="block text-xs">Volume</label>
-      <input type="number" [(ngModel)]="osc.volume" class="w-full bg-zinc-700 p-0.5 rounded" step="0.01"/>
-    </div>
-  </div>
-  <button class="mac-button " (click)="addOscillator()">+ Add Oscillator</button>
 
+      <div class="control-grid three-up">
+        <section class="control-panel filter-panel">
+          <div class="panel-heading">
+            <span>Filter</span>
+            <label class="switch-label" for="filter-enabled">
+              <input id="filter-enabled" name="filterEnabled" type="checkbox" [(ngModel)]="filter.enabled"/>
+              On
+            </label>
+          </div>
 
+          <label class="control-label" for="filter-type">Type</label>
+          <select id="filter-type" class="control-input" name="filterType" [(ngModel)]="filter.type">
+            <option *ngFor="let type of FILTER_TYPES" [value]="type">{{ type }}</option>
+          </select>
+
+          <label class="control-label mt-4" for="filter-frequency">Frequency</label>
+          <div class="range-row">
+            <input id="filter-frequency" name="filterFrequency" type="range" min="40" max="14000" step="10"
+                   [(ngModel)]="filter.frequency"/>
+            <span>{{ filter.frequency | number: '1.0-0' }}Hz</span>
+          </div>
+
+          <label class="control-label mt-4" for="filter-resonance">Resonance</label>
+          <div class="range-row">
+            <input id="filter-resonance" name="filterResonance" type="range" min="0.1" max="30" step="0.1"
+                   [(ngModel)]="filter.resonance"/>
+            <span>{{ filter.resonance | number: '1.1-1' }}</span>
+          </div>
+        </section>
+
+        <section class="control-panel lfo-panel">
+          <div class="panel-heading">
+            <span>LFO</span>
+            <label class="switch-label" for="lfo-enabled">
+              <input id="lfo-enabled" name="lfoEnabled" type="checkbox" [(ngModel)]="lfo.enabled"/>
+              On
+            </label>
+          </div>
+
+          <label class="control-label" for="lfo-target">Target</label>
+          <select id="lfo-target" class="control-input" name="lfoTarget" [(ngModel)]="lfo.target">
+            <option *ngFor="let target of LFO_TARGETS" [value]="target">{{ target }}</option>
+          </select>
+
+          <label class="control-label mt-4" for="lfo-rate">Rate</label>
+          <div class="range-row">
+            <input id="lfo-rate" name="lfoRate" type="range" min="0.05" max="30" step="0.05" [(ngModel)]="lfo.rate"/>
+            <span>{{ lfo.rate | number: '1.2-2' }}Hz</span>
+          </div>
+
+          <label class="control-label mt-4" for="lfo-depth">Depth</label>
+          <div class="range-row">
+            <input id="lfo-depth" name="lfoDepth" type="range" min="0" max="2400" step="1" [(ngModel)]="lfo.depth"/>
+            <span>{{ lfo.depth | number: '1.0-0' }}</span>
+          </div>
+        </section>
+
+        <section class="control-panel delay-panel">
+          <div class="panel-heading">
+            <span>Delay</span>
+            <label class="switch-label" for="delay-enabled">
+              <input id="delay-enabled" name="delayEnabled" type="checkbox" [(ngModel)]="delay.enabled"/>
+              On
+            </label>
+          </div>
+
+          <label class="control-label" for="delay-time">Time</label>
+          <div class="range-row">
+            <input id="delay-time" name="delayTime" type="range" min="0.01" max="1.5" step="0.01"
+                   [(ngModel)]="delay.time"/>
+            <span>{{ delay.time | number: '1.2-2' }}s</span>
+          </div>
+
+          <label class="control-label mt-4" for="delay-feedback">Feedback</label>
+          <div class="range-row">
+            <input id="delay-feedback" name="delayFeedback" type="range" min="0" max="0.92" step="0.01"
+                   [(ngModel)]="delay.feedback"/>
+            <span>{{ delay.feedback | percent: '1.0-0' }}</span>
+          </div>
+
+          <label class="control-label mt-4" for="delay-mix">Mix</label>
+          <div class="range-row">
+            <input id="delay-mix" name="delayMix" type="range" min="0" max="0.85" step="0.01" [(ngModel)]="delay.mix"/>
+            <span>{{ delay.mix | percent: '1.0-0' }}</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="oscillator-section">
+        <div class="section-heading">
+          <div>
+            <p class="patch-eyebrow">Sources</p>
+            <h3>Oscillators</h3>
+          </div>
+          <button type="button" class="secondary-action" (click)="addOscillator()">
+            <fa-icon [icon]="faPlus"></fa-icon>
+            Add oscillator
+          </button>
+        </div>
+
+        <div class="oscillator-grid">
+          <article *ngFor="let osc of selectedPatch.oscillators; let i = index; trackBy: trackByIndex"
+                   class="oscillator-panel">
+            <div class="panel-heading">
+              <span>Osc {{ i + 1 }}</span>
+              <button type="button" class="icon-button danger" [attr.aria-label]="'Remove oscillator ' + (i + 1)"
+                      (click)="removeOscillator(i)">
+                <fa-icon [icon]="faTrash"></fa-icon>
+              </button>
+            </div>
+
+            <div class="waveform-row" aria-label="Waveform">
+              <button
+                *ngFor="let type of OSCILLATOR_TYPES"
+                type="button"
+                class="wave-button"
+                [class.active]="osc.type === type"
+                [attr.aria-label]="'Use ' + type + ' wave'"
+                [appTooltip]="type"
+                [tooltipCssClass]="'text-xs p-2 text-white bg-black/90 border border-white/30'"
+                (click)="setOscillatorType(osc, type)"
+              >
+                <ng-container [ngSwitch]="type">
+                  <fa-icon *ngSwitchCase="'triangle'" [icon]="faTriangleCircleSquare"></fa-icon>
+                  <fa-icon *ngSwitchCase="'square'" [icon]="faWaveSquare"></fa-icon>
+                  <fa-icon *ngSwitchCase="'sawtooth'" [icon]="faTooth"></fa-icon>
+                  <fa-icon *ngSwitchDefault [icon]="faSignature"></fa-icon>
+                </ng-container>
+              </button>
+            </div>
+
+            <div class="parameter-grid compact">
+              <div>
+                <label class="control-label" [attr.for]="'osc-octave-' + i">Octave</label>
+                <input [id]="'osc-octave-' + i" class="control-input" [name]="'oscOctave' + i" type="number" min="-2"
+                       max="2" step="1" [(ngModel)]="osc.octave"/>
+              </div>
+              <div>
+                <label class="control-label" [attr.for]="'osc-detune-' + i">Detune</label>
+                <input [id]="'osc-detune-' + i" class="control-input" [name]="'oscDetune' + i" type="number" min="-2400"
+                       max="2400" step="1" [(ngModel)]="osc.detune"/>
+              </div>
+            </div>
+
+            <label class="control-label" [attr.for]="'osc-pan-' + i">Pan</label>
+            <div class="range-row">
+              <input [id]="'osc-pan-' + i" [name]="'oscPan' + i" type="range" min="-1" max="1" step="0.01"
+                     [(ngModel)]="osc.pan"/>
+              <span>{{ osc.pan || 0 | number: '1.2-2' }}</span>
+            </div>
+
+            <label class="control-label mt-4" [attr.for]="'osc-volume-' + i">Level</label>
+            <div class="range-row">
+              <input [id]="'osc-volume-' + i" [name]="'oscVolume' + i" type="range" min="0" max="1" step="0.01"
+                     [(ngModel)]="osc.volume"/>
+              <span>{{ osc.volume | percent: '1.0-0' }}</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+  </section>
 </div>

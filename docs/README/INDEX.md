@@ -7,10 +7,12 @@ This folder is the entry point for project documentation.
 - [Project Overview](./PROJECT_OVERVIEW.md)
 - [Development Setup](./DEVELOPMENT.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
+- [Changelog](../CHANGELOG.md)
 
 ## Architecture
 
 - [Architecture Overview](../ARCHITECTURE/OVERVIEW.md)
+- [Architecture Audit and Refactor Plan](../ARCHITECTURE/AUDIT_REFACTOR_PLAN.md)
 - [Core Services](../ARCHITECTURE/SERVICES.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)

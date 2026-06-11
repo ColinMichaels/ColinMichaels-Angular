@@ -1,5 +1,6 @@
 import {Component, Input} from '@angular/core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import type {IconProp, SizeProp} from '@fortawesome/fontawesome-svg-core';
 
 
 @Component({
@@ -10,7 +11,7 @@ import {FaIconComponent} from '@fortawesome/angular-fontawesome';
   ],
   styles: ``,
   template: `
-    <div class=" w-fit  justify-center mx-auto mb-8 pb-1.5">
+    <div class="w-fit justify-center mx-auto mb-8 pb-1.5" [class.hidden]="hidden">
       <div class="flex space-x-2">
         <h2 class="text-2xl">{{sectionTitle}}</h2>
         <h4 class="text-base" [class.hidden]="!subTitle">{{subTitle}}</h4>
@@ -22,10 +23,9 @@ import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 export class SectionHeaderComponent {
   @Input() sectionTitle!: string;
   @Input() subTitle!: string;
-  @Input() hidden!: boolean;
-  @Input() iconSize!: any;
-  @Input() iconColor!: string;
-  @Input() showIcon!: boolean;
-  @Input() icon!: any;
+  @Input() hidden = false;
+  @Input() iconSize?: SizeProp;
+  @Input() showIcon = false;
+  @Input() icon!: IconProp;
 
 }

@@ -1,0 +1,201 @@
+<div class="sequencer-shell">
+  <header class="sequencer-hero">
+    <div>
+      <p class="sequencer-eyebrow">Controller Lab</p>
+      <h2>MIDI Sequencer</h2>
+      <p class="sequencer-subtitle">
+        Build looping multi-channel note patterns and route each channel into a selectable sound generator.
+      </p>
+    </div>
+
+    <div class="transport-bar" aria-label="Sequencer transport">
+      <button type="button" class="primary-action" (click)="togglePlayback()">
+        <fa-icon [icon]="isPlaying ? faStop : faPlay"></fa-icon>
+        {{ isPlaying ? 'Stop' : 'Play' }}
+      </button>
+      <button type="button" class="secondary-action" (click)="addChannel()">
+        <fa-icon [icon]="faPlus"></fa-icon>
+        Channel
+      </button>
+    </div>
+  </header>
+
+  <section class="sequencer-grid">
+    <aside class="sequencer-panel setup-panel" aria-label="Loop setup">
+      <div class="panel-heading">
+        <span>Loop Setup</span>
+        <span>{{ activeStepCount }} events</span>
+      </div>
+
+      <div class="setup-controls">
+        <div>
+          <label class="control-label" for="sequencer-tempo">Tempo</label>
+          <input
+            id="sequencer-tempo"
+            class="control-input"
+            name="sequencerTempo"
+            type="number"
+            min="40"
+            max="220"
+            step="1"
+            [(ngModel)]="tempo"
+          />
+        </div>
+
+        <div>
+          <label class="control-label" for="sequencer-bars">Bars</label>
+          <input
+            id="sequencer-bars"
+            class="control-input"
+            name="sequencerBars"
+            type="number"
+            min="1"
+            max="8"
+            step="1"
+            [ngModel]="bars"
+            (ngModelChange)="setBars($event)"
+          />
+        </div>
+
+        <div>
+          <label class="control-label" for="sequencer-resolution">Grid</label>
+          <select
+            id="sequencer-resolution"
+            class="control-input"
+            name="sequencerResolution"
+            [ngModel]="stepsPerBeat"
+            (ngModelChange)="setStepsPerBeat($event)"
+          >
+            <option *ngFor="let option of resolutionOptions" [ngValue]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="metric-grid" aria-label="Sequence metrics">
+        <div>
+          <span>{{ channels.length }}</span>
+          <small>channels</small>
+        </div>
+        <div>
+          <span>{{ totalSteps }}</span>
+          <small>steps</small>
+        </div>
+        <div>
+          <span>{{ stepDurationMs | number: '1.0-0' }}</span>
+          <small>ms/step</small>
+        </div>
+      </div>
+    </aside>
+
+    <section class="sequencer-panel editor-panel">
+      <div class="panel-heading">
+        <span>Channels</span>
+        <span>Pattern grid</span>
+      </div>
+
+      <div class="channel-stack">
+        <article
+          *ngFor="let channel of channels; trackBy: trackByChannelId"
+          class="channel-row"
+          [class.selected]="selectedChannelId === channel.id"
+        >
+          <div class="channel-controls">
+            <button type="button" class="channel-select" (click)="selectChannel(channel)">
+              {{ channel.name }}
+            </button>
+
+            <input
+              class="control-input"
+              [name]="'channelName' + channel.id"
+              type="text"
+              [(ngModel)]="channel.name"
+              aria-label="Channel name"
+            />
+
+            <select
+              class="control-input"
+              [name]="'channelPreset' + channel.id"
+              [(ngModel)]="channel.presetName"
+              aria-label="Channel preset"
+            >
+              <optgroup
+                *ngFor="let category of presetCategories; trackBy: trackByPresetCategoryLabel"
+                [label]="category.label"
+              >
+                <option *ngFor="let preset of category.patches; trackBy: trackByPatchName" [value]="preset.name">
+                  {{ preset.name }}
+                </option>
+              </optgroup>
+            </select>
+
+            <select
+              class="control-input"
+              [name]="'channelDriver' + channel.id"
+              [(ngModel)]="channel.soundDriverId"
+              aria-label="Channel sound driver"
+            >
+              <option *ngFor="let driver of soundDrivers; trackBy: trackBySoundDriverId" [ngValue]="driver.id">
+                {{ driver.label }}
+              </option>
+            </select>
+
+            <select
+              class="control-input"
+              [name]="'channelNote' + channel.id"
+              [(ngModel)]="channel.selectedNote"
+              aria-label="Channel selected note"
+            >
+              <option *ngFor="let note of noteOptions" [value]="note">{{ note }}</option>
+            </select>
+
+            <button type="button" class="tool-button" [class.muted]="channel.muted"
+                    (click)="channel.muted = !channel.muted">
+              {{ channel.muted ? 'Muted' : 'On' }}
+            </button>
+
+            <button type="button" class="icon-button" aria-label="Preview channel" (click)="previewChannel(channel)">
+              <fa-icon [icon]="faKeyboard"></fa-icon>
+            </button>
+
+            <button
+              type="button"
+              class="icon-button danger"
+              [attr.aria-label]="'Remove ' + channel.name"
+              (click)="removeChannel(channel.id)"
+            >
+              <fa-icon [icon]="faTrash"></fa-icon>
+            </button>
+          </div>
+
+          <div class="step-grid" [style.--step-count]="totalSteps">
+            <button
+              *ngFor="let step of channel.steps; let i = index; trackBy: trackByStepIndex"
+              type="button"
+              class="step-cell"
+              [class.active]="step.active"
+              [class.playhead]="isPlaying && playheadStep === i"
+              [attr.aria-label]="'Toggle ' + channel.name + ' step ' + (i + 1)"
+              (click)="toggleStep(channel, i)"
+            >
+              <span>{{ step.active ? step.note : i + 1 }}</span>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="sequencer-panel controller-panel" aria-label="Selected channel keyboard controller">
+      <app-keyboard-controller
+        [title]="selectedChannel?.name || 'Channel'"
+        [subtitle]="'Selected channel controller'"
+        [startingOctave]="3"
+        [visibleOctaves]="2"
+        [noteDuration]="stepDurationSeconds"
+        [compact]="true"
+        (noteTriggered)="playSelectedChannelNote($event)"
+      />
+    </section>
+  </section>
+</div>

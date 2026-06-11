@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit, inject} from '@angular/core';
+import {Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Setting, SettingsService} from '../../../../services/settings.service';
 import {FormGroup, ReactiveFormsModule} from '@angular/forms';
@@ -43,6 +43,7 @@ export type ThemeOption = 'light' | 'dark' | 'system';
       </form>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``
 })
 export class AppearanceSettingsComponent implements OnInit, OnDestroy {
