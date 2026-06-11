@@ -131,6 +131,34 @@ Optional runtime params:
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
 - `YOUTUBE_CHANNEL_ID`, required for the homepage latest videos feed
 
+## First Gen 2 Functions Deploy
+
+Cloud Run Functions require Cloud Build, Artifact Registry, Cloud Run, Secret Manager, and Compute Engine project setup. If every Function fails during creation with `Could not build the function due to a missing permission on the build service account`, enable the required APIs and grant the default Compute Engine service account the Cloud Build builder role.
+
+For this Firebase project:
+
+```bash
+PROJECT_ID=colinmichaels
+PROJECT_NUMBER=695739708994
+COMPUTE_SERVICE_ACCOUNT="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud services enable \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  cloudfunctions.googleapis.com \
+  compute.googleapis.com \
+  eventarc.googleapis.com \
+  run.googleapis.com \
+  secretmanager.googleapis.com \
+  --project "$PROJECT_ID"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${COMPUTE_SERVICE_ACCOUNT}" \
+  --role "roles/cloudbuild.builds.builder"
+```
+
+Wait a few minutes after enabling APIs or changing IAM, then rerun the Functions deploy.
+
 ## Admin Claims
 
 Admin routes and CMS writes require a Firebase Auth custom claim. Set the initial admin claim from a trusted shell:
