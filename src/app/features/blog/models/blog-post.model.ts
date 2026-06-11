@@ -2,7 +2,27 @@ export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type BlogContentFormat = 'editorjs';
 
-export type BlogBlockType = 'paragraph' | 'header' | 'image' | 'embed' | 'list' | 'quote' | 'code' | 'delimiter';
+export const BLOG_TYPOGRAPHY_VARIANTS = [
+  'lead',
+  'pullQuote',
+  'callout',
+  'aside',
+  'caption',
+  'eyebrow',
+] as const;
+
+export type BlogTypographyVariant = typeof BLOG_TYPOGRAPHY_VARIANTS[number];
+
+export type BlogBlockType =
+  'paragraph'
+  | 'header'
+  | 'image'
+  | 'embed'
+  | 'list'
+  | 'quote'
+  | 'code'
+  | 'delimiter'
+  | 'typography';
 
 export interface BlogSeoMetadata {
   title: string;
@@ -33,6 +53,8 @@ export interface BlogBlockData {
   stretched?: boolean;
   withBorder?: boolean;
   withBackground?: boolean;
+  variant?: BlogTypographyVariant;
+  attribution?: string;
 }
 
 export interface BlogContentBlock {

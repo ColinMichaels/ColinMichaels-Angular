@@ -95,6 +95,8 @@ interface BlogBlockData {
   ordered?: boolean;
   language?: string;
   code?: string;
+  variant?: string;
+  attribution?: string;
 }
 
 interface BlogContentBlock {

@@ -8,6 +8,7 @@ import {lastValueFrom} from 'rxjs';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
+import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
 import {BlogMediaUploaderComponent} from '../../components/media-uploader/blog-media-uploader.component';
 import {
@@ -44,6 +45,7 @@ interface ImportedPostDocument {
 }
 
 const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
+const BLOG_CANONICAL_BASE_URL = `${SITE_URL}/blog`;
 const statusOptions: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const postedDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -317,13 +319,27 @@ function getErrorMessage(error: unknown): string {
                   ></textarea>
                 </label>
 
-                <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Canonical URL</span>
+                <label class="space-y-2 md:col-span-2">
+                  <span class="flex items-center justify-between gap-3">
+                    <span class="text-sm font-medium text-zinc-200">Canonical URL</span>
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-cyan-300 hover:text-cyan-200"
+                      (click)="useGeneratedCanonicalUrl()"
+                    >
+                      Use generated
+                    </button>
+                  </span>
                   <input
                     type="url"
                     formControlName="canonical"
+                    [placeholder]="generatedCanonicalUrl"
                     class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
                   >
+                  <p class="text-xs leading-5 text-zinc-500">
+                    {{ canonicalUrlMode }} Generated from the current slug:
+                    <span class="break-all text-zinc-400">{{ generatedCanonicalUrl }}</span>
+                  </p>
                 </label>
 
                 <app-blog-media-uploader
@@ -649,6 +665,20 @@ export class CmsPostEditorComponent {
       || 'untitled-post';
   }
 
+  protected get generatedCanonicalUrl(): string {
+    return this.createCanonicalUrl(this.mediaUploadSlug);
+  }
+
+  protected get canonicalUrlMode(): string {
+    const value = this.postForm.controls.canonical.value.trim();
+
+    if (!value || value === this.generatedCanonicalUrl) {
+      return 'Using the generated canonical URL.';
+    }
+
+    return 'Using a custom canonical override.';
+  }
+
   protected get postedOnPreview(): string {
     const publishedAt = fromDateTimeLocalValue(this.postForm.controls.publishedAt.value);
 
@@ -677,17 +707,27 @@ export class CmsPostEditorComponent {
       return;
     }
 
+    const previousSlug = slugControl.value;
     slugControl.setValue(createBlogSlug(this.postForm.controls.title.value), {emitEvent: false});
+    this.syncCanonicalFromSlug(previousSlug);
   }
 
   protected normalizeSlug(): void {
     const postId = this.currentPost?.id;
+    const previousSlug = this.postForm.controls.slug.value;
     const slug = this.blogRepository.createUniqueSlug(
       this.postForm.controls.slug.value || this.postForm.controls.title.value,
       postId
     );
 
     this.postForm.controls.slug.setValue(slug, {emitEvent: false});
+    this.syncCanonicalFromSlug(previousSlug);
+  }
+
+  protected useGeneratedCanonicalUrl(): void {
+    this.postForm.controls.canonical.setValue(this.generatedCanonicalUrl);
+    this.postForm.controls.canonical.markAsDirty();
+    this.postForm.markAsDirty();
   }
 
   protected setPublishedAtNow(): void {
@@ -801,7 +841,9 @@ export class CmsPostEditorComponent {
     this.postForm.controls.seoTitle.setValue(suggestion.seoTitle);
 
     if (this.isNewPost && !this.postForm.controls.slug.dirty) {
+      const previousSlug = this.postForm.controls.slug.value;
       this.postForm.controls.slug.setValue(createBlogSlug(suggestion.title));
+      this.syncCanonicalFromSlug(previousSlug);
     }
 
     if (showMessage) {
@@ -851,12 +893,13 @@ export class CmsPostEditorComponent {
     const formValue = this.postForm.getRawValue();
     const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
     const openGraphImage = normalizeOpenGraphImage(formValue.openGraphImage, coverImage);
+    const savedSlug = this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id);
 
     try {
       const savedPost = await this.blogRepository.savePost({
         ...this.currentPost,
         title: requiredText(formValue.title, 'Untitled Post'),
-        slug: this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id),
+        slug: savedSlug,
         excerpt: formValue.excerpt.trim(),
         coverImage,
         status: formValue.status,
@@ -865,7 +908,7 @@ export class CmsPostEditorComponent {
         seo: {
           title: requiredText(formValue.seoTitle, formValue.title),
           description: requiredText(formValue.seoDescription, formValue.excerpt),
-          canonical: formValue.canonical.trim() || undefined,
+          canonical: this.resolveCanonicalUrlForSave(formValue.canonical, formValue.slug, savedSlug),
           openGraphImage,
         },
         blocks: createBlogBlocksFromEditorDocument(saved.data),
@@ -875,6 +918,7 @@ export class CmsPostEditorComponent {
 
       this.currentPost = savedPost;
       this.postForm.controls.slug.setValue(savedPost.slug, {emitEvent: false});
+      this.postForm.controls.canonical.setValue(savedPost.seo.canonical ?? this.createCanonicalUrl(savedPost.slug), {emitEvent: false});
       this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
       this.postForm.markAsPristine();
       this.lastSaved = saved;
@@ -978,6 +1022,7 @@ export class CmsPostEditorComponent {
         ...importedPost.seo,
         title: requiredText(importedPost.seo.title, importedTitle),
         description: requiredText(importedPost.seo.description, importedPost.excerpt),
+        canonical: importedPost.seo.canonical ?? this.createCanonicalUrl(importedSlug),
         openGraphImage: normalizeOpenGraphImage(importedPost.seo.openGraphImage, importedCoverImage),
       },
       contentFormat: 'editorjs',
@@ -1021,7 +1066,7 @@ export class CmsPostEditorComponent {
       tags: new FormControl(toCsv(post.tags), {nonNullable: true}),
       seoTitle: new FormControl(post.seo.title, {nonNullable: true}),
       seoDescription: new FormControl(post.seo.description, {nonNullable: true}),
-      canonical: new FormControl(post.seo.canonical ?? '', {nonNullable: true}),
+      canonical: new FormControl(post.seo.canonical ?? this.createCanonicalUrl(post.slug), {nonNullable: true}),
       openGraphImage: new FormControl(normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage), {nonNullable: true}),
     });
   }
@@ -1038,9 +1083,41 @@ export class CmsPostEditorComponent {
       tags: toCsv(post.tags),
       seoTitle: post.seo.title,
       seoDescription: post.seo.description,
-      canonical: post.seo.canonical ?? '',
+      canonical: post.seo.canonical ?? this.createCanonicalUrl(post.slug),
       openGraphImage: normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage),
     });
+  }
+
+  private createCanonicalUrl(slug: string): string {
+    const normalizedSlug = createBlogSlug(slug);
+
+    return normalizedSlug ? `${BLOG_CANONICAL_BASE_URL}/${normalizedSlug}` : BLOG_CANONICAL_BASE_URL;
+  }
+
+  private syncCanonicalFromSlug(previousSlug: string): void {
+    const canonicalControl = this.postForm.controls.canonical;
+
+    if (!this.isGeneratedCanonicalValue(canonicalControl.value, previousSlug)) {
+      return;
+    }
+
+    canonicalControl.setValue(this.createCanonicalUrl(this.postForm.controls.slug.value), {emitEvent: false});
+  }
+
+  private resolveCanonicalUrlForSave(value: string, formSlug: string, savedSlug: string): string {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue || this.isGeneratedCanonicalValue(trimmedValue, formSlug)) {
+      return this.createCanonicalUrl(savedSlug);
+    }
+
+    return trimmedValue;
+  }
+
+  private isGeneratedCanonicalValue(value: string, slug: string): boolean {
+    const trimmedValue = value.trim();
+
+    return !trimmedValue || trimmedValue === this.createCanonicalUrl(slug);
   }
 
   private getPublishedAt(
