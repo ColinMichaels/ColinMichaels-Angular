@@ -42,8 +42,8 @@ Workflows support fallbacks for legacy names:
 Hosting deploys are intentionally split by branch target:
 
 - Pull requests targeting `dev` run `.github/workflows/firebase-hosting-pull-request.yml` and deploy only to a preview channel named `pr-<number>`.
-- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml` and deploy Firebase Hosting production with `channelId: live`.
-- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override.
+- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml`, deploy Firebase Functions, then deploy Firebase Hosting production with `channelId: live`.
+- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override for Firebase Functions and Hosting.
 
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
