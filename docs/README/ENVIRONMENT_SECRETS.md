@@ -49,12 +49,6 @@ The dev PR workflow uses the GitHub Environment named `preview`. If CI reports e
 
 All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
 
-The Firebase Hosting deploy action receives `checks: write` because it creates GitHub check runs. Without that permission, production deploys can fail with `Resource not accessible by integration` while posting the deploy check.
-
-Production and manual workflows deploy Functions through `firebase-tools` using the same service account JSON secret. That service account must have permissions to deploy Cloud Functions v2, update Cloud Run services, and bind public invokers for public callable endpoints.
-
-Hosting serves the prebuilt Angular browser output from `dist/colin-michaels-firebase/browser`. Clean app routes fall through to the `renderSeoHtml` Firebase Function, which injects route-specific metadata into the built `index.html` shell. Production workflows and the Firebase Functions predeploy hook run `npm run prepare:functions-seo`, which copies that built shell to `functions/seo-index.html` immediately before deploying Functions.
-
 ## Local Development Files
 
 - Keep local-only values in ignored files:
