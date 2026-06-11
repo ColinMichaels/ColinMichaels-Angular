@@ -137,6 +137,8 @@ export class BlogAiAssistantService {
     switch (type) {
       case 'header':
       case 'paragraph':
+      case 'typography':
+        return [data.text, data.attribution].filter(Boolean).join(' ');
       case 'quote':
         return [data.text, data.caption].filter(Boolean).join(' ');
       case 'list':

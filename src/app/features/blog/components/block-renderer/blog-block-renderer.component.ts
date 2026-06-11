@@ -34,6 +34,38 @@ interface RenderableBlogBlock {
               }
             </blockquote>
           }
+          @case ('typography') {
+            @switch (row.block.data.variant) {
+              @case ('eyebrow') {
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300" [innerHTML]="row.block.data.text"></p>
+              }
+              @case ('pullQuote') {
+                <blockquote class="my-10 border-y border-amber-300/40 py-7 text-zinc-100">
+                  <p class="text-2xl font-semibold leading-10 tracking-[-0.02em] sm:text-3xl" [innerHTML]="row.block.data.text"></p>
+                  @if (row.block.data.attribution) {
+                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-200" [innerHTML]="row.block.data.attribution"></cite>
+                  }
+                </blockquote>
+              }
+              @case ('callout') {
+                <aside class="border border-emerald-400/30 bg-emerald-950/30 p-5 text-emerald-50">
+                  @if (row.block.data.attribution) {
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300" [innerHTML]="row.block.data.attribution"></p>
+                  }
+                  <div class="leading-8" [innerHTML]="row.block.data.text"></div>
+                </aside>
+              }
+              @case ('aside') {
+                <aside class="border-l border-zinc-600 pl-5 text-sm leading-7 text-zinc-400" [innerHTML]="row.block.data.text"></aside>
+              }
+              @case ('caption') {
+                <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.block.data.text"></p>
+              }
+              @default {
+                <p class="text-xl leading-9 tracking-[-0.01em] text-zinc-100" [innerHTML]="row.block.data.text"></p>
+              }
+            }
+          }
           @case ('list') {
             @if (row.block.data.ordered) {
               <ol class="list-decimal space-y-2 pl-6">
