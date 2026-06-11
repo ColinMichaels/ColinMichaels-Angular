@@ -1,10 +1,15 @@
 import {DOCUMENT} from '@angular/common';
 import {Injectable, inject} from '@angular/core';
-import {Meta, Title} from '@angular/platform-browser';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {
+  BLOG_INDEX_SEO_METADATA,
+  HOMEPAGE_OG_IMAGE,
+  createBlogCategorySeoMetadata,
+  createMissingBlogPostSeoMetadata,
+} from '../../../shared/seo/seo.metadata';
+import {SeoService} from '../../../shared/seo/seo.service';
 import {BlogPost} from '../models/blog-post.model';
-import {createBlogCategorySlug} from '../utils/blog-category-url.util';
 
 export interface BlogShareMetadata {
   title: string;
@@ -14,100 +19,69 @@ export interface BlogShareMetadata {
   imageAlt: string;
 }
 
-const SITE_NAME = 'ColinMichaels.com';
-const BLOG_TITLE = 'Blog | ColinMichaels.com';
-const BLOG_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
-const DEFAULT_IMAGE = '/assets/images/backgrounds/night.webp';
-const DEFAULT_LOCALE = 'en_US';
-
 @Injectable({
   providedIn: 'root',
 })
 export class BlogOpenGraphService {
   private readonly document = inject(DOCUMENT);
-  private readonly meta = inject(Meta);
-  private readonly title = inject(Title);
+  private readonly seo = inject(SeoService);
 
   applyBlogPost(post: BlogPost): BlogShareMetadata {
     const metadata = this.createBlogPostMetadata(post);
     const publishedAt = post.publishedAt ?? post.updatedAt;
 
-    this.title.setTitle(metadata.title);
-    this.setCanonicalUrl(metadata.url);
-    this.applyBaseMetadata(metadata, 'article');
-    this.updatePropertyTag('article:published_time', publishedAt);
-    this.updatePropertyTag('article:modified_time', post.updatedAt);
-    this.updatePropertyTag('article:author', post.author.name);
-
-    if (post.categories[0]) {
-      this.updatePropertyTag('article:section', post.categories[0]);
-    } else {
-      this.removeTag("property='article:section'");
-    }
-
-    this.clearArticleTags();
-    post.tags.forEach(tag => this.meta.addTag({property: 'article:tag', content: tag}));
+    this.seo.apply({
+      title: metadata.title,
+      description: metadata.description,
+      path: `/${PATH_NAMES.BLOG}/${post.slug}`,
+      image: metadata.image,
+      imageAlt: metadata.imageAlt,
+      type: 'article',
+      article: {
+        publishedAt,
+        modifiedAt: post.updatedAt,
+        author: post.author.name,
+        section: post.categories[0],
+        tags: post.tags,
+      },
+      structuredData: this.seo.createBlogPostingJsonLd({
+        title: metadata.title,
+        description: metadata.description,
+        url: metadata.url,
+        image: metadata.image,
+        author: post.author.name,
+        publishedAt: post.publishedAt,
+        modifiedAt: post.updatedAt,
+      }),
+    });
 
     return metadata;
   }
 
   applyBlogIndex(): BlogShareMetadata {
-    const metadata: BlogShareMetadata = {
-      title: BLOG_TITLE,
-      description: BLOG_DESCRIPTION,
-      url: this.createRouteUrl(PATH_NAMES.BLOG),
-      image: this.toAbsoluteUrl(DEFAULT_IMAGE),
-      imageAlt: 'Colin Michaels blog',
-    };
-
-    this.title.setTitle(metadata.title);
-    this.setCanonicalUrl(metadata.url);
-    this.applyBaseMetadata(metadata, 'website');
-    this.clearArticleMetadata();
+    const metadata = this.toShareMetadata(BLOG_INDEX_SEO_METADATA);
+    this.seo.apply(BLOG_INDEX_SEO_METADATA);
 
     return metadata;
   }
 
   applyBlogCategory(category: string): BlogShareMetadata {
-    const categoryTitle = this.toPlainText(category || 'Blog Category');
-    const metadata: BlogShareMetadata = {
-      title: `${categoryTitle} Posts | ColinMichaels.com`,
-      description: `Published Colin Michaels blog posts in the ${categoryTitle} category.`,
-      url: this.createRouteUrl(`${PATH_NAMES.BLOG}/category/${createBlogCategorySlug(categoryTitle)}`),
-      image: this.toAbsoluteUrl(DEFAULT_IMAGE),
-      imageAlt: `${categoryTitle} blog category`,
-    };
+    const metadata = createBlogCategorySeoMetadata(category);
+    this.seo.apply(metadata);
 
-    this.title.setTitle(metadata.title);
-    this.setCanonicalUrl(metadata.url);
-    this.applyBaseMetadata(metadata, 'website');
-    this.clearArticleMetadata();
-
-    return metadata;
+    return this.toShareMetadata(metadata);
   }
 
   applyMissingBlogPost(slug: string): void {
-    const title = 'Post not found | ColinMichaels.com';
-    const metadata: BlogShareMetadata = {
-      title,
-      description: 'This post is unavailable or has not been published.',
-      url: this.createRouteUrl(`${PATH_NAMES.BLOG}/${slug}`),
-      image: this.toAbsoluteUrl(DEFAULT_IMAGE),
-      imageAlt: 'Colin Michaels blog',
-    };
-
-    this.title.setTitle(title);
-    this.setCanonicalUrl(metadata.url);
-    this.applyBaseMetadata(metadata, 'website');
-    this.clearArticleMetadata();
+    this.seo.apply(createMissingBlogPostSeoMetadata(slug));
   }
 
   createBlogPostMetadata(post: BlogPost): BlogShareMetadata {
     const title = this.toPlainText(post.seo.title || post.title);
     const description = this.truncateDescription(this.toPlainText(post.seo.description || post.excerpt));
-    const image = this.toAbsoluteUrl(post.seo.openGraphImage || post.coverImage || this.findFirstImageBlockUrl(post) || DEFAULT_IMAGE);
+    const image = this.seo.toAbsoluteUrl(post.seo.openGraphImage || post.coverImage || this.findFirstImageBlockUrl(post) || HOMEPAGE_OG_IMAGE);
     const imageAlt = this.toPlainText(this.findFirstImageBlockAlt(post) || `${post.title} cover image`);
-    const url = post.seo.canonical ? this.toAbsoluteUrl(post.seo.canonical) : this.createRouteUrl(`${PATH_NAMES.BLOG}/${post.slug}`);
+    const url = post.seo.canonical ? this.seo.toAbsoluteUrl(post.seo.canonical) : this.seo.createUrl(`/${PATH_NAMES.BLOG}/${post.slug}`);
 
     return {
       title,
@@ -118,100 +92,20 @@ export class BlogOpenGraphService {
     };
   }
 
-  clearArticleMetadata(): void {
-    this.removeTag("property='article:published_time'");
-    this.removeTag("property='article:modified_time'");
-    this.removeTag("property='article:author'");
-    this.removeTag("property='article:section'");
-    this.clearArticleTags();
-  }
-
-  private applyBaseMetadata(metadata: BlogShareMetadata, type: 'article' | 'website'): void {
-    this.updateNameTag('description', metadata.description);
-    this.updatePropertyTag('og:site_name', SITE_NAME);
-    this.updatePropertyTag('og:locale', DEFAULT_LOCALE);
-    this.updatePropertyTag('og:title', metadata.title);
-    this.updatePropertyTag('og:description', metadata.description);
-    this.updatePropertyTag('og:type', type);
-    this.updatePropertyTag('og:url', metadata.url);
-    this.updatePropertyTag('og:image', metadata.image);
-    this.updatePropertyTag('og:image:secure_url', metadata.image);
-    this.updatePropertyTag('og:image:alt', metadata.imageAlt);
-    this.updatePropertyTag('og:image:type', this.getImageMimeType(metadata.image));
-    this.updateNameTag('twitter:card', 'summary_large_image');
-    this.updateNameTag('twitter:title', metadata.title);
-    this.updateNameTag('twitter:description', metadata.description);
-    this.updateNameTag('twitter:image', metadata.image);
-    this.updateNameTag('twitter:image:alt', metadata.imageAlt);
-  }
-
-  private updateNameTag(name: string, content: string): void {
-    this.meta.updateTag({name, content});
-  }
-
-  private updatePropertyTag(property: string, content: string): void {
-    this.meta.updateTag({property, content});
-  }
-
-  private removeTag(selector: string): void {
-    this.meta.removeTag(selector);
-  }
-
-  private clearArticleTags(): void {
-    this.document.head
-      .querySelectorAll<HTMLMetaElement>('meta[property="article:tag"]')
-      .forEach(tag => this.meta.removeTagElement(tag));
-  }
-
-  private setCanonicalUrl(url: string): void {
-    const canonicalLink = this.getOrCreateCanonicalLink();
-    canonicalLink.href = url;
-  }
-
-  private getOrCreateCanonicalLink(): HTMLLinkElement {
-    const existingLink = this.document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-
-    if (existingLink) {
-      return existingLink;
-    }
-
-    const link = this.document.createElement('link');
-    link.rel = 'canonical';
-    this.document.head.appendChild(link);
-
-    return link;
-  }
-
-  private createRouteUrl(path: string): string {
-    const normalizedPath = path.replace(/^\/+/, '');
-    return `${this.document.location.origin}${this.getBasePath()}#/${normalizedPath}`;
-  }
-
-  private toAbsoluteUrl(value: string): string {
-    const trimmedValue = value.trim();
-
-    if (!trimmedValue) {
-      return this.toAbsoluteUrl(DEFAULT_IMAGE);
-    }
-
-    if (trimmedValue.startsWith('#/')) {
-      return `${this.document.location.origin}${this.getBasePath()}${trimmedValue}`;
-    }
-
-    try {
-      return new URL(trimmedValue, `${this.document.location.origin}${this.getBasePath()}`).toString();
-    } catch {
-      return trimmedValue;
-    }
-  }
-
-  private getBasePath(): string {
-    const pathname = this.document.location.pathname || '/';
-    const normalizedPathname = pathname.endsWith('/index.html')
-      ? pathname.slice(0, -'index.html'.length)
-      : pathname;
-
-    return normalizedPathname.endsWith('/') ? normalizedPathname : `${normalizedPathname}/`;
+  private toShareMetadata(metadata: {
+    title: string;
+    description: string;
+    path: string;
+    image: string;
+    imageAlt: string;
+  }): BlogShareMetadata {
+    return {
+      title: metadata.title,
+      description: metadata.description,
+      url: this.seo.createUrl(metadata.path),
+      image: this.seo.toAbsoluteUrl(metadata.image),
+      imageAlt: metadata.imageAlt,
+    };
   }
 
   private findFirstImageBlockUrl(post: BlogPost): string {
@@ -220,40 +114,6 @@ export class BlogOpenGraphService {
 
   private findFirstImageBlockAlt(post: BlogPost): string {
     return post.blocks.find(block => block.type === 'image' && block.data.alt)?.data.alt ?? '';
-  }
-
-  private getImageMimeType(imageUrl: string): string {
-    const pathname = this.parseUrlPathname(imageUrl);
-
-    if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) {
-      return 'image/jpeg';
-    }
-
-    if (pathname.endsWith('.png')) {
-      return 'image/png';
-    }
-
-    if (pathname.endsWith('.gif')) {
-      return 'image/gif';
-    }
-
-    if (pathname.endsWith('.svg')) {
-      return 'image/svg+xml';
-    }
-
-    if (pathname.endsWith('.avif')) {
-      return 'image/avif';
-    }
-
-    return 'image/webp';
-  }
-
-  private parseUrlPathname(value: string): string {
-    try {
-      return decodeURIComponent(new URL(value).pathname).toLowerCase();
-    } catch {
-      return value.split('?')[0].split('#')[0].toLowerCase();
-    }
   }
 
   private truncateDescription(value: string): string {

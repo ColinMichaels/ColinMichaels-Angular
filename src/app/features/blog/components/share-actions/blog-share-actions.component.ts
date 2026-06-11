@@ -167,11 +167,10 @@ export class BlogShareActionsComponent implements OnDestroy {
     }
 
     const normalizedPath = this.path.replace(/^\/+/, '');
-    const pathname = this.document.location.pathname.endsWith('/')
-      ? this.document.location.pathname
-      : `${this.document.location.pathname}/`;
 
-    return `${this.document.location.origin}${pathname}#/${normalizedPath}`;
+    return normalizedPath
+      ? `${this.document.location.origin}/${normalizedPath}`
+      : this.document.location.origin;
   }
 
   private toPlainText(value: string): string {

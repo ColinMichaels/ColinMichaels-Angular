@@ -53,6 +53,8 @@ The Firebase Hosting deploy action receives `checks: write` because it creates G
 
 Production and manual workflows deploy Functions through `firebase-tools` using the same service account JSON secret. That service account must have permissions to deploy Cloud Functions v2, update Cloud Run services, and bind public invokers for public callable endpoints.
 
+Hosting serves the prebuilt Angular browser output from `dist/colin-michaels-firebase/browser`. Clean app routes fall through to the `renderSeoHtml` Firebase Function, which injects route-specific metadata into the built `index.html` shell. Production workflows and the Firebase Functions predeploy hook run `npm run prepare:functions-seo`, which copies that built shell to `functions/seo-index.html` immediately before deploying Functions.
+
 ## Local Development Files
 
 - Keep local-only values in ignored files:

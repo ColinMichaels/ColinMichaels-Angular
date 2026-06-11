@@ -1,6 +1,9 @@
 import {randomUUID} from 'node:crypto';
+import {existsSync, readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 
 import {initializeApp} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
@@ -16,6 +19,13 @@ const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
 const YOUTUBE_DEFAULT_MAX_RESULTS = 3;
 const YOUTUBE_MAX_RESULTS = 6;
 const YOUTUBE_FEED_CACHE_MS = 10 * 60 * 1000;
+const SITE_URL = 'https://colinmichaels.com';
+const SITE_NAME = 'ColinMichaels.com';
+const DEFAULT_LOCALE = 'en_US';
+const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
+const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
+const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
+const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
@@ -33,6 +43,45 @@ const SITE_CALLABLE_CORS_ORIGINS = [
 ];
 
 let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
+
+interface SeoArticleMetadata {
+  publishedAt?: string;
+  modifiedAt?: string;
+  author?: string;
+  section?: string;
+  tags?: readonly string[];
+}
+
+interface SeoMetadata {
+  title: string;
+  description: string;
+  path: string;
+  image: string;
+  imageAlt: string;
+  type: 'website' | 'article';
+  robots?: string;
+  article?: SeoArticleMetadata;
+  structuredData?: unknown;
+  statusCode?: number;
+  cacheControl?: string;
+}
+
+interface SeoBlogPostDocument {
+  slug: string;
+  title: string;
+  excerpt: string;
+  coverImage: string;
+  authorName: string;
+  categories: readonly string[];
+  tags: readonly string[];
+  seoTitle: string;
+  seoDescription: string;
+  seoCanonical: string;
+  seoOpenGraphImage: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  imageAlt: string;
+}
 
 interface BlogBlockData {
   text?: string;
@@ -272,6 +321,42 @@ const metadataSchema = {
   },
 };
 
+export const renderSeoHtml = onRequest(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    invoker: 'public',
+  },
+  async (request, response) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.status(405).send('Method Not Allowed');
+      return;
+    }
+
+    try {
+      const metadata = await createSeoMetadataForPath(getRequestPath(request));
+      const html = injectSeoMetadata(readSeoIndexTemplate(), metadata);
+
+      response
+        .status(metadata.statusCode ?? 200)
+        .set('Cache-Control', metadata.cacheControl ?? 'public, max-age=300, s-maxage=600')
+        .set('Content-Type', 'text/html; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : html);
+    } catch (error) {
+      logger.error('Unable to render SEO HTML shell.', {error});
+      const fallbackMetadata = createFallbackSeoMetadata('/');
+      const html = injectSeoMetadata(readSeoIndexTemplate(), fallbackMetadata);
+
+      response
+        .status(200)
+        .set('Cache-Control', 'public, max-age=60, s-maxage=60')
+        .set('Content-Type', 'text/html; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : html);
+    }
+  }
+);
+
 export const getLatestYouTubeVideos = onCall(
   {
     region: FUNCTION_REGION,
@@ -413,6 +498,526 @@ function getHttpStatusCode(error: unknown): number {
   }
 
   return 500;
+}
+
+async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
+  const normalizedPath = normalizeSeoPath(path);
+
+  if (normalizedPath === '/') {
+    return createHomeSeoMetadata();
+  }
+
+  if (normalizedPath === '/blog') {
+    return createBlogIndexSeoMetadata();
+  }
+
+  if (normalizedPath.startsWith('/blog/category/')) {
+    const category = decodeSlugSegment(normalizedPath.slice('/blog/category/'.length));
+    return createBlogCategorySeoMetadata(category);
+  }
+
+  if (normalizedPath.startsWith('/blog/')) {
+    const slug = decodeSlugSegment(normalizedPath.slice('/blog/'.length));
+    const post = await fetchPublishedSeoBlogPost(slug);
+
+    if (post) {
+      return createBlogPostSeoMetadata(post);
+    }
+
+    return createMissingBlogPostSeoMetadata(slug);
+  }
+
+  if (normalizedPath === '/labs') {
+    return createStaticSeoMetadata({
+      title: 'Projects & Labs | ColinMichaels.com',
+      description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
+      path: '/labs',
+      imageAlt: 'Colin Michaels projects and labs preview card',
+    });
+  }
+
+  if (normalizedPath === '/background') {
+    return createStaticSeoMetadata({
+      title: 'Full Screen Background Lab | ColinMichaels.com',
+      description: 'A visual lab for image, video, overlay, and parallax background experiments.',
+      path: '/background',
+      imageAlt: 'Colin Michaels visual background lab preview card',
+    });
+  }
+
+  if (normalizedPath === '/admin/cms/media-library') {
+    return createStaticSeoMetadata({
+      title: 'CMS Media Library | ColinMichaels.com',
+      description: 'Protected CMS media management for Firebase-backed blog assets.',
+      path: '/admin/cms/media-library',
+      imageAlt: 'Colin Michaels CMS media library preview card',
+      robots: 'noindex,nofollow',
+    });
+  }
+
+  return createFallbackSeoMetadata(normalizedPath);
+}
+
+function createHomeSeoMetadata(): SeoMetadata {
+  return {
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
+    path: '/',
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: 'Colin Michaels personal site preview card',
+    type: 'website',
+    structuredData: createHomeJsonLd(),
+    cacheControl: 'public, max-age=600, s-maxage=3600',
+  };
+}
+
+function createBlogIndexSeoMetadata(): SeoMetadata {
+  return createStaticSeoMetadata({
+    title: 'Blog | ColinMichaels.com',
+    description: 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.',
+    path: '/blog',
+    imageAlt: 'Colin Michaels blog preview card',
+  });
+}
+
+function createBlogCategorySeoMetadata(category: string): SeoMetadata {
+  const categoryTitle = createTitleFromSlug(category || 'blog-category');
+
+  return createStaticSeoMetadata({
+    title: `${categoryTitle} Posts | ColinMichaels.com`,
+    description: `Published Colin Michaels blog posts in the ${categoryTitle} category.`,
+    path: `/blog/category/${createSeoSlug(categoryTitle)}`,
+    imageAlt: `${categoryTitle} blog category preview card`,
+  });
+}
+
+function createMissingBlogPostSeoMetadata(slug: string): SeoMetadata {
+  return {
+    title: 'Post not found | ColinMichaels.com',
+    description: 'This post is unavailable or has not been published.',
+    path: `/blog/${createSeoSlug(slug)}`,
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: 'Colin Michaels blog preview card',
+    type: 'website',
+    robots: 'noindex,nofollow',
+    statusCode: 200,
+    cacheControl: 'public, max-age=60, s-maxage=60',
+  };
+}
+
+function createFallbackSeoMetadata(path: string): SeoMetadata {
+  return createStaticSeoMetadata({
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_DESCRIPTION,
+    path,
+    imageAlt: 'Colin Michaels personal site preview card',
+  });
+}
+
+function createStaticSeoMetadata(options: {
+  title: string;
+  description: string;
+  path: string;
+  imageAlt: string;
+  robots?: string;
+}): SeoMetadata {
+  return {
+    title: options.title,
+    description: options.description,
+    path: options.path,
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: options.imageAlt,
+    type: 'website',
+    robots: options.robots,
+  };
+}
+
+function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
+  const title = stripHtml(post.seoTitle || post.title);
+  const description = truncateDescription(stripHtml(post.seoDescription || post.excerpt));
+  const image = post.seoOpenGraphImage || post.coverImage || HOMEPAGE_OG_IMAGE;
+  const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
+
+  return {
+    title,
+    description,
+    path: `/blog/${post.slug}`,
+    image,
+    imageAlt: post.imageAlt || `${title} cover image`,
+    type: 'article',
+    article: {
+      publishedAt: post.publishedAt ?? post.updatedAt,
+      modifiedAt: post.updatedAt,
+      author: post.authorName,
+      section: post.categories[0],
+      tags: post.tags,
+    },
+    structuredData: createBlogPostingJsonLd({
+      title,
+      description,
+      url,
+      image: createAbsoluteUrl(image),
+      author: post.authorName,
+      publishedAt: post.publishedAt,
+      modifiedAt: post.updatedAt,
+    }),
+  };
+}
+
+async function fetchPublishedSeoBlogPost(slug: string): Promise<SeoBlogPostDocument | null> {
+  if (!slug) {
+    return null;
+  }
+
+  const snapshot = await getFirestore()
+    .collection('posts')
+    .where('slug', '==', slug)
+    .where('status', '==', 'published')
+    .limit(1)
+    .get();
+  const document = snapshot.docs[0];
+
+  if (!document) {
+    return null;
+  }
+
+  return toSeoBlogPostDocument(document.data());
+}
+
+function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const seo = isRecord(value['seo']) ? value['seo'] : {};
+  const author = isRecord(value['author']) ? value['author'] : {};
+  const blocks = Array.isArray(value['blocks']) ? value['blocks'] : [];
+  const title = getTrimmedString(value['title']);
+  const slug = getTrimmedString(value['slug']);
+
+  if (!title || !slug) {
+    return null;
+  }
+
+  return {
+    slug,
+    title,
+    excerpt: getTrimmedString(value['excerpt']),
+    coverImage: getTrimmedString(value['coverImage']),
+    authorName: getTrimmedString(author['name']) || 'Colin Michaels',
+    categories: getStringArrayValue(value['categories']),
+    tags: getStringArrayValue(value['tags']),
+    seoTitle: getTrimmedString(seo['title']),
+    seoDescription: getTrimmedString(seo['description']),
+    seoCanonical: getTrimmedString(seo['canonical']),
+    seoOpenGraphImage: getTrimmedString(seo['openGraphImage']),
+    updatedAt: getIsoString(value['updatedAt']) || new Date(0).toISOString(),
+    publishedAt: getIsoString(value['publishedAt']) || null,
+    imageAlt: getFirstImageAlt(blocks),
+  };
+}
+
+function injectSeoMetadata(template: string, metadata: SeoMetadata): string {
+  const tags = renderSeoTags(metadata);
+  const cleanedTemplate = template
+    .replace(/<title>[\s\S]*?<\/title>\s*/i, '')
+    .replace(/<meta\s+(?:name|property)=["'](?:description|robots|twitter:[^"']+|og:[^"']+|article:[^"']+)["'][^>]*>\s*/gi, '')
+    .replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, '')
+    .replace(/<script[^>]*id=["']seo-json-ld["'][\s\S]*?<\/script>\s*/gi, '');
+
+  return cleanedTemplate.replace(/<\/head>/i, `${tags}\n</head>`);
+}
+
+function renderSeoTags(metadata: SeoMetadata): string {
+  const url = createAbsoluteUrl(metadata.path);
+  const image = createAbsoluteUrl(metadata.image);
+  const robots = metadata.robots ?? 'index,follow';
+  const tags = [
+    `<title>${escapeHtml(metadata.title)}</title>`,
+    `<meta name="description" content="${escapeHtml(metadata.description)}">`,
+    `<meta name="robots" content="${escapeHtml(robots)}">`,
+    `<link rel="canonical" href="${escapeHtml(url)}">`,
+    `<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}">`,
+    `<meta property="og:locale" content="${escapeHtml(DEFAULT_LOCALE)}">`,
+    `<meta property="og:type" content="${escapeHtml(metadata.type)}">`,
+    `<meta property="og:title" content="${escapeHtml(metadata.title)}">`,
+    `<meta property="og:description" content="${escapeHtml(metadata.description)}">`,
+    `<meta property="og:url" content="${escapeHtml(url)}">`,
+    `<meta property="og:image" content="${escapeHtml(image)}">`,
+    `<meta property="og:image:secure_url" content="${escapeHtml(image)}">`,
+    `<meta property="og:image:type" content="${escapeHtml(getImageMimeType(image))}">`,
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    `<meta property="og:image:alt" content="${escapeHtml(metadata.imageAlt)}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+    `<meta name="twitter:title" content="${escapeHtml(metadata.title)}">`,
+    `<meta name="twitter:description" content="${escapeHtml(metadata.description)}">`,
+    `<meta name="twitter:image" content="${escapeHtml(image)}">`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(metadata.imageAlt)}">`,
+    ...renderArticleTags(metadata.article),
+    renderStructuredDataTag(metadata.structuredData),
+  ].filter(tag => tag.length > 0);
+
+  return tags.join('\n  ');
+}
+
+function renderArticleTags(article: SeoArticleMetadata | undefined): string[] {
+  if (!article) {
+    return [];
+  }
+
+  const tags = [
+    renderOptionalPropertyTag('article:published_time', article.publishedAt),
+    renderOptionalPropertyTag('article:modified_time', article.modifiedAt),
+    renderOptionalPropertyTag('article:author', article.author),
+    renderOptionalPropertyTag('article:section', article.section),
+    ...(article.tags ?? []).map(tag => renderOptionalPropertyTag('article:tag', tag)),
+  ];
+
+  return tags.filter(tag => tag.length > 0);
+}
+
+function renderOptionalPropertyTag(property: string, content: string | undefined): string {
+  return content ? `<meta property="${escapeHtml(property)}" content="${escapeHtml(content)}">` : '';
+}
+
+function renderStructuredDataTag(data: unknown): string {
+  if (!data) {
+    return '';
+  }
+
+  return `<script id="seo-json-ld" type="application/ld+json">${escapeScriptJson(JSON.stringify(data))}</script>`;
+}
+
+function readSeoIndexTemplate(): string {
+  if (existsSync(SEO_INDEX_TEMPLATE_PATH)) {
+    return readFileSync(SEO_INDEX_TEMPLATE_PATH, 'utf8');
+  }
+
+  return `<!doctype html><html lang="en"><head></head><body><app-root></app-root></body></html>`;
+}
+
+function getRequestPath(request: { originalUrl?: unknown; path?: unknown }): string {
+  const originalUrl = getTrimmedString(request.originalUrl);
+  const path = getTrimmedString(request.path);
+
+  if (path && path !== '/') {
+    return path;
+  }
+
+  if (originalUrl) {
+    return originalUrl.split('?')[0] || '/';
+  }
+
+  return '/';
+}
+
+function normalizeSeoPath(path: string): string {
+  const pathname = path.split('?')[0].split('#')[0].trim() || '/';
+  const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  const withoutIndex = normalizedPath.endsWith('/index.html')
+    ? normalizedPath.slice(0, -'/index.html'.length) || '/'
+    : normalizedPath;
+  const withoutTrailingSlash = withoutIndex.length > 1 ? withoutIndex.replace(/\/+$/, '') : withoutIndex;
+
+  return withoutTrailingSlash || '/';
+}
+
+function decodeSlugSegment(value: string): string {
+  try {
+    return decodeURIComponent(value.split('/')[0] ?? '');
+  } catch {
+    return value.split('/')[0] ?? '';
+  }
+}
+
+function createAbsoluteUrl(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return SITE_URL;
+  }
+
+  try {
+    return new URL(trimmedValue, SITE_URL).toString();
+  } catch {
+    return trimmedValue;
+  }
+}
+
+function createHomeJsonLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Person',
+        '@id': `${SITE_URL}/#person`,
+        name: 'Colin Michaels',
+        url: SITE_URL,
+        jobTitle: 'Frontend Engineer',
+        sameAs: [
+          'https://github.com/ColinMichaels',
+          'https://www.linkedin.com/in/colinmichaels',
+        ],
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: SITE_NAME,
+        description: HOMEPAGE_DESCRIPTION,
+        publisher: {
+          '@id': `${SITE_URL}/#person`,
+        },
+      },
+    ],
+  };
+}
+
+function createBlogPostingJsonLd(options: {
+  title: string;
+  description: string;
+  url: string;
+  image: string;
+  author: string;
+  publishedAt: string | null;
+  modifiedAt: string;
+}): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: options.title,
+    description: options.description,
+    url: options.url,
+    image: [options.image],
+    datePublished: options.publishedAt ?? options.modifiedAt,
+    dateModified: options.modifiedAt,
+    author: {
+      '@type': 'Person',
+      name: options.author,
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Person',
+      name: 'Colin Michaels',
+      url: SITE_URL,
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': options.url,
+    },
+  };
+}
+
+function getFirstImageAlt(blocks: readonly unknown[]): string {
+  const imageBlock = blocks.find(block => {
+    if (!isRecord(block) || block['type'] !== 'image' || !isRecord(block['data'])) {
+      return false;
+    }
+
+    return typeof block['data']['alt'] === 'string';
+  });
+
+  if (!imageBlock || !isRecord(imageBlock) || !isRecord(imageBlock['data'])) {
+    return '';
+  }
+
+  return getTrimmedString(imageBlock['data']['alt']);
+}
+
+function getStringArrayValue(value: unknown): readonly string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string').map(item => item.trim()).filter(Boolean)
+    : [];
+}
+
+function getIsoString(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (isRecord(value) && typeof value['seconds'] === 'number') {
+    return new Date(value['seconds'] * 1000).toISOString();
+  }
+
+  return '';
+}
+
+function createTitleFromSlug(value: string): string {
+  return value
+    .split('-')
+    .filter(Boolean)
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ') || 'Blog Category';
+}
+
+function createSeoSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'untitled';
+}
+
+function getImageMimeType(imageUrl: string): string {
+  const pathname = parseUrlPathname(imageUrl);
+
+  if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) {
+    return 'image/jpeg';
+  }
+
+  if (pathname.endsWith('.png')) {
+    return 'image/png';
+  }
+
+  if (pathname.endsWith('.gif')) {
+    return 'image/gif';
+  }
+
+  if (pathname.endsWith('.svg')) {
+    return 'image/svg+xml';
+  }
+
+  if (pathname.endsWith('.avif')) {
+    return 'image/avif';
+  }
+
+  return 'image/webp';
+}
+
+function parseUrlPathname(value: string): string {
+  try {
+    return decodeURIComponent(new URL(value).pathname).toLowerCase();
+  } catch {
+    return value.split('?')[0].split('#')[0].toLowerCase();
+  }
+}
+
+function truncateDescription(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length <= 300) {
+    return trimmedValue;
+  }
+
+  return `${trimmedValue.slice(0, 297).trimEnd()}...`;
+}
+
+function stripHtml(value: string): string {
+  return value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeScriptJson(value: string): string {
+  return value.replace(/</g, '\\u003c');
 }
 
 async function fetchYoutubeChannelDetails(channelId: string): Promise<YoutubeChannelDetails> {
