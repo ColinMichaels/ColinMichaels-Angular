@@ -54,6 +54,8 @@ describe('ApplicationLifecycleService', () => {
     expect(service.openApplications.length).toBe(1);
     expect(service.openApplications[0].id).toBe('finder');
     expect(service.openApplications[0].params).toEqual(args);
+    expect(service.openApplications[0].running).toBeTrue();
+    expect(service.openApplications[0].instanceIndex).toBe(1);
   });
 
   it('focuses an existing running app when opening without forceNewInstance', () => {
@@ -88,5 +90,15 @@ describe('ApplicationLifecycleService', () => {
     const lastSaveArgs = persistenceMock.saveOpenApplicationIds.calls.mostRecent().args;
     expect(lastSaveArgs[0]).toBe('applications');
     expect(lastSaveArgs[1]).toEqual(['cli', 'cli']);
+  });
+
+  it('does not mutate registry app entry runtime flags when opening and closing', () => {
+    const app = createAppEntry();
+
+    service.openApplication(app.id, app);
+    service.closeApplication('cli');
+
+    expect(app.running).toBeUndefined();
+    expect(app.instanceIndex).toBe(0);
   });
 });

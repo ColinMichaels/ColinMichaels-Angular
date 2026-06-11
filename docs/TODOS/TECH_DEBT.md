@@ -60,10 +60,10 @@ Status legend:
   - Effort: M
   - Validation: storage-focused unit tests across strategy paths.
 
-- [~] Break `ApplicationManagerService` into smaller responsibilities (registry, persistence, lifecycle).
+- [x] Break `ApplicationManagerService` into smaller responsibilities (registry, persistence, lifecycle).
   - Impact: High
   - Effort: M
-  - Validation: app launch/focus/close regression tests.
+  - Validation: app launch/focus/close regression tests, `application-lifecycle.service.spec.ts`, `application-manager.service.spec.ts`, `tsc --noEmit`.
   - Progress: extracted localStorage open-app persistence into `ApplicationStatePersistenceService`.
   - Progress: extracted shared app IDs/types/window constraints into `application-manager.models.ts` and updated consumers.
   - Progress: extracted static app registration definitions into `application-catalog.ts`.
@@ -72,6 +72,7 @@ Status legend:
   - Progress: normalized saved instance IDs during restore and forced deterministic re-open for repeated entries.
   - Progress: switched persisted open-app payloads to base app IDs for safer multi-instance restoration.
   - Progress: added focused unit specs for lifecycle restore/instance behavior (`application-lifecycle.service.spec.ts`, `application-manager.service.spec.ts`).
+  - Progress: removed runtime `running/instanceIndex` mutation from registry app entries; manager now derives these values from live open instances.
 
 - [x] Stabilize `TypewriterService` timer and callback semantics.
   - Impact: Medium
@@ -86,10 +87,13 @@ Status legend:
 
 ## Larger Changes (Riskier, Stage Later)
 
-- [ ] Move OpenAI and weather calls behind backend proxy/functions.
+- [~] Move OpenAI and weather calls behind backend proxy/functions.
   - Impact: High (security)
   - Effort: L
   - Validation: integration tests and production key removal.
+  - Progress: frontend OpenAI/weather services now call backend proxy URL (`APP_API_URL`) instead of vendor APIs.
+  - Progress: added Firebase Functions API proxy (`functions/index.js`) using Firebase Secret Manager keys.
+  - Progress: removed vendor key requirements from frontend environment generation and hosting deploy workflows.
 
 - [ ] Replace `innerHTML` rendering paths with safe renderers.
   - Impact: High (security)

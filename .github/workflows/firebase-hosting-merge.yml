@@ -18,8 +18,6 @@ jobs:
     env:
       APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
       APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || vars.OPENAI_API_KEY }}
-      OPEN_WEATHER_MAP_API_KEY: ${{ secrets.OPEN_WEATHER_MAP_API_KEY || vars.OPEN_WEATHER_MAP_API_KEY }}
       FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
       FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
       FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
@@ -49,8 +47,6 @@ jobs:
           required=(
             APP_TITLE
             APP_API_URL
-            OPENAI_API_KEY
-            OPEN_WEATHER_MAP_API_KEY
             FIREBASE_API_KEY
             FIREBASE_AUTH_DOMAIN
             FIREBASE_DATABASE_URL

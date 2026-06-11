@@ -68,7 +68,7 @@ export class ApplicationLifecycleService {
   openApplication(appId: string, app?: AppEntry, args?: unknown, forceNewInstance = false): boolean {
     this.logger.debug('args', args);
 
-    if (app?.running && !forceNewInstance) {
+    if (app && !forceNewInstance) {
       const existing = this.getMostRecentApplicationInstance(app.id);
       if (existing) {
         this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
@@ -99,12 +99,11 @@ export class ApplicationLifecycleService {
 
     const openInstanceCount = this.getOpenInstanceCount(app.id);
     const newAppInstanceId = this.getNextInstanceId(appId);
-    app.instanceIndex = openInstanceCount + 1;
-    app.running = true;
+    const instanceIndex = openInstanceCount + 1;
 
     this.applications.next([
       ...this.applications.value,
-      this.appFactory.createInstance(newAppInstanceId, app, newOffsetX, newOffsetY, args)
+      this.appFactory.createInstance(newAppInstanceId, app, newOffsetX, newOffsetY, args, instanceIndex)
     ]);
 
     this.saveOpenApplications();
@@ -130,16 +129,8 @@ export class ApplicationLifecycleService {
       return;
     }
 
-    application.running = false;
-
     const remainingApplications = this.applications.getValue().filter((app) => app.id !== id);
     this.applications.next(remainingApplications);
-
-    if (application.parent) {
-      const remainingInstances = remainingApplications.filter((openApp) => openApp.parent?.id === application.parent?.id);
-      application.parent.instanceIndex = remainingInstances.length;
-      application.parent.running = remainingInstances.length > 0;
-    }
 
     this.saveOpenApplications();
   }
