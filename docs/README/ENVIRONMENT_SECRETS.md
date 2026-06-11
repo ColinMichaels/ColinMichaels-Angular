@@ -42,14 +42,16 @@ Workflows support fallbacks for legacy names:
 Hosting deploys are intentionally split by branch target:
 
 - Pull requests targeting `dev` run `.github/workflows/firebase-hosting-pull-request.yml` and deploy only to a preview channel named `pr-<number>`.
-- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml` and deploy Firebase Hosting production with `channelId: live`.
-- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override.
+- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml`, deploy Firebase Functions, then deploy Firebase Hosting production with `channelId: live`.
+- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override for Firebase Functions and Hosting.
 
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
 All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
 
 The Firebase Hosting deploy action receives `checks: write` because it creates GitHub check runs. Without that permission, production deploys can fail with `Resource not accessible by integration` while posting the deploy check.
+
+Production and manual workflows deploy Functions through `firebase-tools` using the same service account JSON secret. That service account must have permissions to deploy Cloud Functions v2, update Cloud Run services, and bind public invokers for public callable endpoints.
 
 ## Local Development Files
 
