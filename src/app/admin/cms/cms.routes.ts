@@ -1,6 +1,7 @@
 import {Routes} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
+import {MEDIA_LIBRARY_SEO_METADATA} from '../../shared/seo/seo.metadata';
 
 export const cmsRoutes: Routes = [
   {
@@ -9,6 +10,7 @@ export const cmsRoutes: Routes = [
   },
   {
     path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
+    data: {seo: MEDIA_LIBRARY_SEO_METADATA},
     loadComponent: () => import('../media-library/media-library-page.component').then(m => m.MediaLibraryPageComponent),
   },
   {

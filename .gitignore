@@ -57,3 +57,4 @@ src/environments/.env.*
 !src/environments/.env.example
 /functions/.secret.local
 /functions/.env.local
+/functions/seo-index.html

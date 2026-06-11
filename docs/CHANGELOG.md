@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06-11
+
+- Added static homepage canonical, Open Graph, Twitter Card, and JSON-LD metadata to the initial Angular document.
+- Added a 1200x630 homepage social preview image at `/assets/social/colin-michaels-og.jpg`.
+- Migrated Angular routing from hash URLs to clean path URLs and updated share/canonical URL generation.
+- Added shared route SEO metadata objects for home, blog, project/lab, background lab, and protected media library routes.
+- Added a Firebase `renderSeoHtml` Function and Hosting rewrite so clean route requests receive metadata-injected HTML before Angular loads.
+- Added server-rendered BlogPosting JSON-LD for published blog posts and homepage Person/WebSite JSON-LD.
+
 ## 2026-06-10
 
 - Added a homepage latest YouTube videos section backed by a Firebase callable Function that keeps the YouTube Data API key in Secret Manager and reads the target channel from `YOUTUBE_CHANNEL_ID`.
@@ -15,7 +24,7 @@
 - Added thumbnails, search, sorting, and pagination to the admin CMS post listing.
 - Added an Editor.js image insert panel for choosing images from the media library or uploading new embedded images, with fit-to-text-area and contained aspect-ratio layout options.
 - Added public blog category filtering and sanitized HTML rendering for blog titles, excerpts, and content blocks.
-- Added route-backed public blog category pages at `#/blog/category/:category` for shareable sub-blog listings.
+- Added route-backed public blog category pages at `/blog/category/:category` for shareable sub-blog listings.
 - Added homepage blog read-more calls to action and reusable blog share controls for homepage cards and article pages.
 - Added Facebook blog sharing, Firestore-backed CMS post persistence, and CMS JSON export/Firestore backup controls.
 - Added CMS post JSON import on new/edit post screens for restoring exported posts or raw Editor.js documents.

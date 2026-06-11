@@ -6,6 +6,7 @@ import {filter, map, startWith} from 'rxjs/operators';
 import {NotificationServerComponent} from './components/game/utils/notifications-server/notifications-server.component';
 import {PATH_NAMES} from './app-route-paths';
 import {fadeToBlackAnimation} from './route-animations';
+import {SeoService} from './shared/seo/seo.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
 
@@ -29,6 +30,7 @@ const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
   private readonly theme = inject(SiteThemeService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -46,6 +48,7 @@ export class AppComponent {
   });
 
   constructor() {
+    this.seo.initializeRouteTracking();
     this.theme.mode();
   }
 

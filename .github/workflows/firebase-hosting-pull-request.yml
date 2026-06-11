@@ -89,5 +89,3 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: pr-${{ github.event.pull_request.number }}
           projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
