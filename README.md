@@ -1,124 +1,206 @@
-# Tooltip Examples and Notification Service
+# ColinMichaels.com
 
-This project is an Angular-based application showcasing customized tooltip examples and a notification system. It utilizes various utility libraries and techniques to enhance user interface interactions.
+Angular and Firebase application for ColinMichaels.com. The project combines a public portfolio and publishing site, a Firestore-backed blog/CMS, public experiments, and a reusable browser-based OS framework.
 
-## Features
+## What This Project Contains
 
-### Tooltip Examples
-- **Default Tooltips**: Position-based tooltips for `top`, `bottom`, `left`, and `right`.
-- **Colored Tooltips**: Customizable background and text colors using Tailwind CSS.
-- **Randomized Colors**: Dynamic tooltip styles with random text and background color combinations.
-- **No Arrow Tooltips**: Tooltips without arrows for a sleek design.
+- Public website for portfolio, writing, media, labs, and personal brand content.
+- Blog system with Editor.js content blocks, categories, tags, search, RSS/JSON feeds, social sharing, SEO metadata, and reading UX.
+- Protected admin CMS for creating, editing, importing, publishing, and managing blog posts and media.
+- Firebase Functions for crawler-friendly SEO HTML, sitemap/feed generation, YouTube feed loading, and CMS AI helpers.
+- Public labs area for experiments and demos.
+- Browser OS framework for desktop/window/dock/terminal-style systems.
 
-### Notification System
-- **Customizable Notifications**: Display notifications with dynamic content, styles, and media assets.
-- **Media Support**: Include FontAwesome icons or image assets in the notification modal.
-- **Auto-Dismiss and Queued Notifications**: Notifications can auto-dismiss after a set duration while handling multiple notifications in a queue.
+## Current Stack
 
-## Key Components & Services
+- Angular 22 standalone components
+- TypeScript strict mode
+- Tailwind CSS
+- Firebase Hosting, Firestore, Storage, Auth, and Functions
+- Editor.js for CMS post content
+- Font Awesome for iconography
+- RxJS for reactive state
 
-### Components
-- **TooltipExamplesComponent**: The core feature demo component showcasing tooltip examples and their customizations.
-- **MarkdownReaderComponent**: Dynamically reads and renders markdown documents, useful for embedding user guides directly.
+## Repository Layout
 
-### Directives
-- **TooltipDirective**: Handles tooltip display logic when a mouse hovers over an element. Enables customization of tooltips' size, position, and more.
+- `src/app/features/public`: public site route boundary and portfolio-facing views.
+- `src/app/features/blog`: public blog listing, search, archive, and post detail experience.
+- `src/app/admin`: protected CMS/admin routes for posts, media, and site management.
+- `src/app/shared`: reusable public-site UI, SEO helpers, models, and utilities.
+- `src/app/core-os`: reusable OS-style framework route boundary and infrastructure.
+- `src/app/components/game`: legacy desktop/game systems pending continued migration into `core-os`.
+- `src/app/labs`: public experiments and playground routes.
+- `functions`: Firebase Functions for SEO rendering, feeds, sitemap, media, and CMS helpers.
+- `docs`: architecture, setup, changelog, planning, and migration notes.
 
-### Services
-- **NotificationService**: A shared service to manage notifications. It provides:
-  - Functions to display, dismiss, and clear notifications.
-  - Queue-based notification handling.
+## Requirements
 
-- **MediaItem (Helper Class)**: Facilitates the creation of media elements such as icons and images for notifications.
+Use the Node version pinned in `.nvmrc`:
 
-## Table of Contents
-
-1. [Getting Started](#getting-started)
-2. [Usage](#usage)
-3. [Customization](#customization)
-4. [Technology Stack](#technology-stack)
-5. [License](#license)
-
----
-
-## Getting Started
-
-### Prerequisites
-Ensure you have the following installed on your system:
-- **Node.js**: v14 or higher
-- **NPM**: v6 or higher
-- **Angular CLI**: v19 or higher
-
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd <project-directory>
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-Start the development server:
-```bash 
-ng serve
+```bash
+nvm use
+npm ci
 ```
 
-Open your browser and navigate to `http://localhost:4200`.
+The current engine requirement is:
 
----
-
-## Usage
-
-### TooltipExamplesComponent
-This component demonstrates various tooltip designs. You can experiment with:
-- Changing tooltip text, size, or position.
-- Applying different colors via the utility classes in `Tailwind CSS`.
-- Using the `TooltipDirective` directly in your Angular templates.
-
-### NotificationService
-To trigger a notification from your code, use the `NotificationService`. Example:
-```typescript 
-    this.notificationService.show({ title: 'New Message', message: 'You have received a new message!', classList: 'bg-green-500 text-white', duration: 5000 });
+```text
+^22.22.3 || ^24.15.0 || >=26.0.0
 ```
 
+## Common Commands
 
-### Random Tailwind Styles
-The `randomTailwindColorClasses` property generates random text and background combinations for tooltips.
+```bash
+npm start
+```
 
----
+Runs the Angular app with the local configuration.
 
-## Customization
+```bash
+npm run build
+npm run lint
+```
 
-### Tooltips
-Tooltips can be customized with the following options:
-- **Position**: `top`, `bottom`, `left`, or `right`.
-- **CSS Classes**: Customize styles such as background color or padding.
-- **Size**: `sm`, `md`, or `lg`.
+Required validation before completing changes.
 
-### Notifications
-- **Media Content**: Add images or icons using the configurable `MediaItem` class.
-- **Persistent or Temporary**: Decide whether notifications should auto-dismiss or stay visible until manually removed.
+```bash
+npm --prefix functions run build
+npm run serve:functions
+npm run serve:emulators
+```
 
----
+Builds and runs Firebase Functions/emulators for local backend work.
 
-## Technology Stack
-- **Angular**: Modern web applications built with components and modules.
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI styling.
-- **FontAwesome Angular Library**: For using scalable vector icons.
-- **RxJS (Reactive Extensions)**: Reactive programming paradigm.
+```bash
+npm run generate:env
+npm run prepare:functions-seo
+```
 
----
+Generates Angular environment files and prepares the SEO HTML shell used by Firebase Functions.
 
-## License
-This project is licensed under the [MIT License](LICENSE).
+## Deployment Notes
 
----
+Firebase Hosting serves the built Angular app from `dist/colin-michaels-firebase/browser` and rewrites application routes through `renderSeoHtml` for crawler-friendly HTML. Feed and sitemap routes are handled by dedicated Functions.
 
-## Contributors
-Feel free to contribute to this project by submitting issues or pull requests.
+The Functions runtime is configured as Node 20 in `firebase.json` and `functions/package.json`. Hosting and Functions predeploy hooks run the Angular build, prepare the SEO shell, and build Functions.
+
+## Environment Files
+
+Local secrets and generated environment files must stay out of version control.
+
+- Use `src/environments/.env.example` as the safe template.
+- Keep `src/environments/.env.local` local only.
+- Keep `src/environments/environment.local.ts` local only.
+- Do not commit Firebase service account JSON or Functions secret values.
+
+See [Environment and Secrets Setup](docs/README/ENVIRONMENT_SECRETS.md) for full CI, Firebase, Functions, and local emulator details.
+
+## Project Areas
+
+### Public Site
+
+The public website is the main professional surface: homepage, portfolio content, blog, labs, media, SEO metadata, feeds, and global site shell. Normal public routes use a shared header and theme system.
+
+Relevant areas:
+
+- `src/app/features/public`
+- `src/app/components/main`
+- `src/app/shared`
+- `src/app/shared/seo`
+
+### Blog and CMS
+
+The blog supports structured Editor.js blocks, Firestore persistence, post statuses, categories, tags, search, social sharing, Open Graph/Twitter metadata, BlogPosting JSON-LD, RSS, JSON Feed, sitemap entries, reading time, table of contents, heading anchors, and CMS SEO/share validation.
+
+Relevant areas:
+
+- `src/app/features/blog`
+- `src/app/admin/cms`
+- `src/app/admin/media-library`
+- `functions/src/index.ts`
+
+### SEO and Feeds
+
+Firebase Hosting rewrites clean app routes through the `renderSeoHtml` Function so crawlers receive initial HTML with canonical, Open Graph, Twitter Card, robots, and JSON-LD metadata. Published posts also feed `/sitemap.xml`, `/feed.xml`, and `/feed.json`.
+
+Relevant routes:
+
+- `/sitemap.xml`
+- `/feed.xml`
+- `/feed.json`
+- `/blog`
+- `/blog/search`
+- `/blog/category/:category`
+- `/blog/tag/:tag`
+- `/blog/:slug`
+
+### Labs
+
+Labs isolate experiments and playgrounds from the production public site and reusable OS framework. Experimental systems should stay under `labs`, `archive`, or playground-style boundaries unless intentionally promoted.
+
+Relevant areas:
+
+- `src/app/labs`
+- `src/app/modules/scroll`
+
+### Core OS Framework
+
+The OS-style systems are reusable infrastructure and should be preserved and modularized rather than rewritten. This includes desktop UI, dock, windows, terminal systems, tooltips, context menus, command systems, and app/window management.
+
+Relevant areas:
+
+- `src/app/core-os`
+- `src/app/components/game`
+
+## Documentation
+
+Start here:
+
+- [Documentation Index](docs/README/INDEX.md)
+- [Project Overview](docs/README/PROJECT_OVERVIEW.md)
+- [Development Setup](docs/README/DEVELOPMENT.md)
+- [Environment and Secrets Setup](docs/README/ENVIRONMENT_SECRETS.md)
+- [Architecture Overview](docs/ARCHITECTURE/OVERVIEW.md)
+- [Media Library Architecture](docs/ARCHITECTURE/MEDIA_LIBRARY.md)
+- [Security Notes](docs/ARCHITECTURE/SECURITY.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Future Roadmap](docs/FUTURE_FEATURES/ROADMAP.md)
+- [Tech Debt TODOs](docs/TODOS/TECH_DEBT.md)
+
+## Development Rules
+
+Project-specific agent and architecture rules live in [AGENTS.md](AGENTS.md). In short:
+
+- Preserve existing functionality.
+- Prefer refactor, extraction, and modularization over rewrites.
+- Keep reusable OS framework systems under `core-os` boundaries where possible.
+- Keep experimental systems isolated from production public-site logic.
+- Use Tailwind and existing shared design tokens/components.
+- Preserve dark mode support.
+- Do not delete routes without redirects.
+- Do not overwrite Firebase configs or local secrets.
+- Run `npm run build` and `npm run lint` before completing code changes.
+
+## Validation Notes
+
+If `npm run lint` or `npm run build` fails immediately with an Angular CLI Node-version error, switch to the pinned Node version first:
+
+```bash
+nvm use
+node -v
+```
+
+Then rerun:
+
+```bash
+npm run lint
+npm run build
+```
+
+For TypeScript-only checks during development:
+
+```bash
+./node_modules/.bin/tsc -p tsconfig.app.json --noEmit
+./node_modules/.bin/tsc -p tsconfig.spec.json --noEmit
+npm --prefix functions run build
+```
