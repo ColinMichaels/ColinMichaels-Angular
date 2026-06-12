@@ -24,6 +24,8 @@ export interface SeoMetadata {
   path: string;
   image: string;
   imageAlt: string;
+  imageWidth?: number;
+  imageHeight?: number;
   type?: 'website' | 'article';
   robots?: string;
   article?: SeoArticleMetadata;

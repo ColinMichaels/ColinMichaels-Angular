@@ -17,7 +17,12 @@ export interface BlogShareMetadata {
   url: string;
   image: string;
   imageAlt: string;
+  imageWidth: number;
+  imageHeight: number;
 }
+
+const DEFAULT_OG_IMAGE_WIDTH = 1200;
+const DEFAULT_OG_IMAGE_HEIGHT = 630;
 
 @Injectable({
   providedIn: 'root',
@@ -36,6 +41,8 @@ export class BlogOpenGraphService {
       path: `/${PATH_NAMES.BLOG}/${post.slug}`,
       image: metadata.image,
       imageAlt: metadata.imageAlt,
+      imageWidth: metadata.imageWidth,
+      imageHeight: metadata.imageHeight,
       type: 'article',
       article: {
         publishedAt,
@@ -91,6 +98,8 @@ export class BlogOpenGraphService {
     );
     const imageAlt = this.toPlainText(post.og?.imageAlt || this.findFirstImageBlockAlt(post) || `${post.title} preview image`);
     const url = post.seo.canonical ? this.seo.toAbsoluteUrl(post.seo.canonical) : this.seo.createUrl(`/${PATH_NAMES.BLOG}/${post.slug}`);
+    const imageWidth = post.seo.openGraphImageWidth ?? post.og?.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
+    const imageHeight = post.seo.openGraphImageHeight ?? post.og?.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
 
     return {
       title,
@@ -98,6 +107,8 @@ export class BlogOpenGraphService {
       url,
       image,
       imageAlt,
+      imageWidth,
+      imageHeight,
     };
   }
 
@@ -107,6 +118,8 @@ export class BlogOpenGraphService {
     path: string;
     image: string;
     imageAlt: string;
+    imageWidth?: number;
+    imageHeight?: number;
   }): BlogShareMetadata {
     return {
       title: metadata.title,
@@ -114,6 +127,8 @@ export class BlogOpenGraphService {
       url: this.seo.createUrl(metadata.path),
       image: this.seo.toAbsoluteUrl(metadata.image),
       imageAlt: metadata.imageAlt,
+      imageWidth: metadata.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH,
+      imageHeight: metadata.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT,
     };
   }
 

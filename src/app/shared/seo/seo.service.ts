@@ -8,6 +8,8 @@ import {DEFAULT_LOCALE, SITE_NAME, SITE_URL} from './seo.metadata';
 import {SeoMetadata, SeoStructuredDataObject} from './seo.model';
 
 const jsonLdScriptId = 'seo-json-ld';
+const DEFAULT_OG_IMAGE_WIDTH = 1200;
+const DEFAULT_OG_IMAGE_HEIGHT = 630;
 
 @Injectable({
   providedIn: 'root',
@@ -36,6 +38,8 @@ export class SeoService {
     const url = this.createUrl(metadata.path);
     const image = this.toAbsoluteUrl(metadata.image);
     const type = metadata.type ?? 'website';
+    const imageWidth = String(metadata.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH);
+    const imageHeight = String(metadata.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT);
 
     this.title.setTitle(metadata.title);
     this.setCanonicalUrl(url);
@@ -48,11 +52,12 @@ export class SeoService {
     this.updatePropertyTag('og:type', type);
     this.updatePropertyTag('og:url', url);
     this.updatePropertyTag('og:image', image);
+    this.updatePropertyTag('og:image:width', imageWidth);
+    this.updatePropertyTag('og:image:height', imageHeight);
+    this.updatePropertyTag('og:image:url', image);
     this.updatePropertyTag('og:image:secure_url', image);
     this.updatePropertyTag('og:image:alt', metadata.imageAlt);
     this.updatePropertyTag('og:image:type', this.getImageMimeType(image));
-    this.updatePropertyTag('og:image:width', '1200');
-    this.updatePropertyTag('og:image:height', '630');
     this.updateNameTag('twitter:card', 'summary_large_image');
     this.updateNameTag('twitter:title', metadata.title);
     this.updateNameTag('twitter:description', metadata.description);
