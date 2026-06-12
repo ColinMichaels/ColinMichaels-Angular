@@ -1,4 +1,12 @@
 export function createBlogCategorySlug(value: string): string {
+  return createBlogTaxonomySlug(value, 'uncategorized');
+}
+
+export function createBlogTagSlug(value: string): string {
+  return createBlogTaxonomySlug(value, 'untagged');
+}
+
+function createBlogTaxonomySlug(value: string, fallback: string): string {
   const slug = value
     .trim()
     .toLowerCase()
@@ -7,7 +15,7 @@ export function createBlogCategorySlug(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  return slug || 'uncategorized';
+  return slug || fallback;
 }
 
 export function createBlogCategoryTitle(value: string): string {

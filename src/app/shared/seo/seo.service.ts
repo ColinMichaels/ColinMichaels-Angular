@@ -10,6 +10,20 @@ import {SeoMetadata, SeoStructuredDataObject} from './seo.model';
 const jsonLdScriptId = 'seo-json-ld';
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
+const FEED_LINKS = [
+  {
+    id: 'rss-feed',
+    title: 'ColinMichaels.com Blog RSS Feed',
+    type: 'application/rss+xml',
+    href: '/feed.xml',
+  },
+  {
+    id: 'json-feed',
+    title: 'ColinMichaels.com Blog JSON Feed',
+    type: 'application/feed+json',
+    href: '/feed.json',
+  },
+] as const;
 
 @Injectable({
   providedIn: 'root',
@@ -43,6 +57,7 @@ export class SeoService {
 
     this.title.setTitle(metadata.title);
     this.setCanonicalUrl(url);
+    this.setFeedLinks();
     this.updateNameTag('description', metadata.description);
     this.updateNameTag('robots', metadata.robots ?? 'index,follow');
     this.updatePropertyTag('og:site_name', SITE_NAME);
@@ -218,6 +233,31 @@ export class SeoService {
 
     const link = this.document.createElement('link');
     link.rel = 'canonical';
+    this.document.head.appendChild(link);
+
+    return link;
+  }
+
+  private setFeedLinks(): void {
+    FEED_LINKS.forEach(feed => {
+      const link = this.getOrCreateFeedLink(feed.id);
+      link.rel = 'alternate';
+      link.type = feed.type;
+      link.title = feed.title;
+      link.href = this.toAbsoluteUrl(feed.href);
+    });
+  }
+
+  private getOrCreateFeedLink(id: string): HTMLLinkElement {
+    const selector = `link[data-feed-id="${id}"]`;
+    const existingLink = this.document.head.querySelector<HTMLLinkElement>(selector);
+
+    if (existingLink) {
+      return existingLink;
+    }
+
+    const link = this.document.createElement('link');
+    link.dataset['feedId'] = id;
     this.document.head.appendChild(link);
 
     return link;
