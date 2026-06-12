@@ -1,4 +1,4 @@
-import {DatePipe, DecimalPipe, isPlatformBrowser} from '@angular/common';
+import {DatePipe, DecimalPipe, isPlatformBrowser, NgClass} from '@angular/common';
 import {
   Component,
   computed,
@@ -18,6 +18,7 @@ import {map, switchMap} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
+import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
@@ -34,8 +35,10 @@ import {
   imports: [
     DatePipe,
     DecimalPipe,
+    NgClass,
     BlogBlockRendererComponent,
     BlogShareActionsComponent,
+    BlogTableOfContentsComponent,
     BlogTagListComponent,
     RouterLink,
   ],
@@ -48,155 +51,174 @@ import {
         </div>
       }
 
-      <article #articleElement class="mx-auto max-w-3xl">
+      <article #articleElement class="mx-auto max-w-7xl">
         <nav class="mb-10 flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-          <a routerLink="/" class="hover:text-zinc-100">Home</a>
+          <a
+            routerLink="/blog"
+            class="inline-flex rounded border border-zinc-800 px-3 py-2 transition-colors hover:border-cyan-400 hover:bg-zinc-900 hover:text-zinc-100"
+          >
+            Blog
+          </a>
+          <a
+            routerLink="/"
+            class="inline-flex rounded border border-zinc-800 px-3 py-2 transition-colors hover:border-cyan-400 hover:bg-zinc-900 hover:text-zinc-100"
+          >
+            Home
+          </a>
         </nav>
 
         @if (post(); as currentPost) {
-          <header class="mb-10 space-y-5 border-b border-zinc-800 pb-8">
-            <div class="flex flex-wrap gap-2 text-sm text-cyan-300">
-              @for (category of currentPost.categories; track category) {
-                <span>{{ category }}</span>
-              }
-            </div>
-            <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl" [innerHTML]="currentPost.title"></h1>
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
-              <span>
-                Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
-              </span>
-              @if (showUpdatedDate()) {
-                <span>
-                  Updated {{ currentPost.updatedAt | date: 'MMM d, y' }}
-                </span>
-              }
-              @if (readingStats(); as stats) {
-                <span>{{ stats.readingMinutes }} min read</span>
-                <span>{{ stats.wordCount | number }} words</span>
-              }
-            </div>
-            <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
-            @if (currentPost.tags.length > 0) {
-              <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
-            }
-            @if (shareMetadata(); as share) {
-              <app-blog-share-actions
-                [title]="share.title"
-                [excerpt]="share.description"
-                [path]="pathNames.BLOG + '/' + currentPost.slug"
-                [url]="share.url"
-                variant="panel"
-              ></app-blog-share-actions>
-            }
-            <img
-              [src]="currentPost.coverImage"
-              [alt]="currentPost.title + ' cover image'"
-              class="aspect-[16/9] w-full rounded object-cover"
-            >
-          </header>
-
-          @if (tableOfContents().length > 1) {
-            <nav aria-labelledby="table-of-contents-heading" class="mb-10 border border-zinc-800 bg-zinc-900/60 p-5">
-              <h2 id="table-of-contents-heading"
-                  class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                Contents
-              </h2>
-              <ol class="mt-4 space-y-2 text-sm text-zinc-400">
-                @for (item of tableOfContents(); track item.id) {
-                  <li [class.pl-4]="item.level === 3">
-                    <a [href]="createPostAnchorHref(currentPost.slug, item.id)" class="hover:text-cyan-200">
-                      {{ item.text }}
-                    </a>
-                  </li>
-                }
-              </ol>
-            </nav>
-          }
-
-          <app-blog-block-renderer
-            [blocks]="currentPost.blocks"
-            [fallbackAlt]="currentPost.title"
-            [anchorPath]="createPostPath(currentPost.slug)"
-          ></app-blog-block-renderer>
-
-          <footer class="mt-14 border-t border-zinc-800 pt-8">
-            @if (previousPost() || nextPost()) {
-              <nav aria-label="Post navigation" class="grid gap-4 sm:grid-cols-2">
-                @if (previousPost(); as previous) {
-                  <a
-                    [routerLink]="['/', pathNames.BLOG, previous.slug]"
-                    class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
-                  >
-                    <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Previous post</span>
-                    <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
-                          [innerHTML]="previous.title"></span>
-                  </a>
-                } @else {
-                  <span aria-hidden="true" class="hidden sm:block"></span>
-                }
-
-                @if (nextPost(); as next) {
-                  <a
-                    [routerLink]="['/', pathNames.BLOG, next.slug]"
-                    class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900 sm:text-right"
-                  >
-                    <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Next post</span>
-                    <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
-                          [innerHTML]="next.title"></span>
-                  </a>
-                }
-              </nav>
-            }
-
-            @if (suggestedPosts().length > 0) {
-              <section aria-labelledby="suggested-posts-heading" class="mt-10">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-cyan-300">Keep reading</p>
-                    <h2 id="suggested-posts-heading" class="mt-1 text-2xl font-semibold text-zinc-50">Suggested
-                      posts</h2>
-                  </div>
-                  <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-zinc-400 hover:text-cyan-200">
-                    View all posts
-                  </a>
-                </div>
-                <div class="mt-5 grid gap-4 md:grid-cols-3">
-                  @for (suggestedPost of suggestedPosts(); track suggestedPost.id) {
-                    <a
-                      [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
-                      class="group flex min-h-full flex-col overflow-hidden rounded border border-zinc-800 bg-zinc-900/70 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
+          <div
+            class="mx-auto grid max-w-4xl gap-10 xl:items-start"
+            [ngClass]="hasTableOfContents() ? 'xl:max-w-7xl xl:grid-cols-[minmax(0,1fr)_20rem]' : 'xl:max-w-5xl'"
+          >
+            <div class="min-w-0 xl:col-start-1">
+              <header class="mb-10 space-y-6 border-b border-zinc-800 pb-8">
+                <div class="flex flex-wrap gap-2 text-cyan-200">
+                  @for (category of currentPost.categories; track category) {
+                    <span
+                      class="rounded border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
                     >
-                      <span class="relative block overflow-hidden bg-zinc-900">
-                        <img
-                          [src]="suggestedPostImage(suggestedPost)"
-                          [alt]="suggestedPost.title + ' thumbnail image'"
-                          class="aspect-[16/10] w-full object-cover transition duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        >
-                        <span
-                          class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950/92 to-transparent px-3 pb-3 pt-8">
-                          <span
-                            class="inline-flex rounded border border-cyan-300/70 bg-zinc-950/70 px-2 py-1 text-xs font-semibold text-cyan-100">
-                            Read related post
-                          </span>
-                        </span>
-                      </span>
-                      <span class="flex flex-1 min-w-0 flex-col p-4">
-                        <span class="text-xs text-zinc-500">
-                          {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
-                        </span>
-                        <span class="mt-1 block text-lg font-semibold leading-6 text-zinc-100 group-hover:text-cyan-200"
-                              [innerHTML]="suggestedPost.title"></span>
-                        <span class="mt-2 line-clamp-3 block text-sm leading-6 text-zinc-400"
-                              [innerHTML]="suggestedPost.excerpt"></span>
-                      </span>
-                    </a>
+                      {{ category }}
+                    </span>
                   }
                 </div>
-              </section>
+                <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl"
+                    [innerHTML]="currentPost.title"></h1>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 border-y border-zinc-800/80 py-3 text-sm text-zinc-500">
+                  <span>
+                    Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
+                  </span>
+                  @if (showUpdatedDate()) {
+                    <span>
+                      Updated {{ currentPost.updatedAt | date: 'MMM d, y' }}
+                    </span>
+                  }
+                  @if (readingStats(); as stats) {
+                    <span>{{ stats.readingMinutes }} min read</span>
+                    <span>{{ stats.wordCount | number }} words</span>
+                  }
+                </div>
+                <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
+                @if (currentPost.tags.length > 0) {
+                  <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
+                }
+                @if (shareMetadata(); as share) {
+                  <app-blog-share-actions
+                    [title]="share.title"
+                    [excerpt]="share.description"
+                    [path]="pathNames.BLOG + '/' + currentPost.slug"
+                    [url]="share.url"
+                    variant="panel"
+                  ></app-blog-share-actions>
+                }
+                <img
+                  [src]="currentPost.coverImage"
+                  [alt]="currentPost.title + ' cover image'"
+                  class="aspect-[16/9] w-full rounded border border-zinc-800 bg-zinc-900 object-cover shadow-2xl shadow-black/25"
+                >
+              </header>
+            </div>
+
+            @if (hasTableOfContents()) {
+              <aside class="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-stretch">
+                <app-blog-table-of-contents
+                  [items]="tableOfContents()"
+                  [postPath]="createPostPath(currentPost.slug)"
+                  [activeHeadingId]="activeContentSectionId()"
+                ></app-blog-table-of-contents>
+              </aside>
             }
-          </footer>
+
+            <div class="min-w-0 xl:col-start-1">
+              <app-blog-block-renderer
+                [blocks]="currentPost.blocks"
+                [fallbackAlt]="currentPost.title"
+                [anchorPath]="createPostPath(currentPost.slug)"
+              ></app-blog-block-renderer>
+
+              <footer class="mt-14 border-t border-zinc-800 pt-8">
+                @if (previousPost() || nextPost()) {
+                  <nav aria-label="Post navigation" class="grid gap-4 sm:grid-cols-2">
+                    @if (previousPost(); as previous) {
+                      <a
+                        [routerLink]="['/', pathNames.BLOG, previous.slug]"
+                        class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
+                      >
+                        <span
+                          class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Previous post</span>
+                        <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
+                              [innerHTML]="previous.title"></span>
+                      </a>
+                    } @else {
+                      <span aria-hidden="true" class="hidden sm:block"></span>
+                    }
+
+                    @if (nextPost(); as next) {
+                      <a
+                        [routerLink]="['/', pathNames.BLOG, next.slug]"
+                        class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900 sm:text-right"
+                      >
+                        <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Next post</span>
+                        <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
+                              [innerHTML]="next.title"></span>
+                      </a>
+                    }
+                  </nav>
+                }
+
+                @if (suggestedPosts().length > 0) {
+                  <section aria-labelledby="suggested-posts-heading" class="mt-10">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-cyan-300">Keep reading</p>
+                        <h2 id="suggested-posts-heading" class="mt-1 text-2xl font-semibold text-zinc-50">Suggested
+                          posts</h2>
+                      </div>
+                      <a [routerLink]="['/', pathNames.BLOG]"
+                         class="text-sm font-medium text-zinc-400 hover:text-cyan-200">
+                        View all posts
+                      </a>
+                    </div>
+                    <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      @for (suggestedPost of suggestedPosts(); track suggestedPost.id) {
+                        <a
+                          [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
+                          class="group flex min-h-full flex-col overflow-hidden rounded border border-zinc-800 bg-zinc-900/70 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
+                        >
+                          <span class="relative block overflow-hidden bg-zinc-900">
+                            <img
+                              [src]="suggestedPostImage(suggestedPost)"
+                              [alt]="suggestedPost.title + ' thumbnail image'"
+                              class="aspect-[16/10] w-full object-cover transition duration-300 group-hover:scale-105"
+                              loading="lazy"
+                            >
+                            <span
+                              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950/92 to-transparent px-3 pb-3 pt-8">
+                              <span
+                                class="inline-flex rounded border border-cyan-300/70 bg-zinc-950/70 px-2 py-1 text-xs font-semibold text-cyan-100">
+                                Read related post
+                              </span>
+                            </span>
+                          </span>
+                          <span class="flex flex-1 min-w-0 flex-col p-4">
+                            <span class="text-xs text-zinc-500">
+                              {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
+                            </span>
+                            <span
+                              class="mt-1 block text-lg font-semibold leading-6 text-zinc-100 group-hover:text-cyan-200"
+                              [innerHTML]="suggestedPost.title"></span>
+                            <span class="mt-2 line-clamp-3 block text-sm leading-6 text-zinc-400"
+                                  [innerHTML]="suggestedPost.excerpt"></span>
+                          </span>
+                        </a>
+                      }
+                    </div>
+                  </section>
+                }
+              </footer>
+            </div>
+          </div>
         } @else if (loadError(); as error) {
           <section class="rounded border border-zinc-800 bg-zinc-900 p-6">
             <h1 class="text-2xl font-semibold text-zinc-50">Unable to load post</h1>
@@ -294,6 +316,7 @@ export class BlogDetailComponent {
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
+  protected readonly activeContentSectionId = signal<string | null>(null);
   protected readonly currentYear = new Date().getFullYear();
   protected readonly readingStats = computed(() => {
     const post = this.post();
@@ -305,6 +328,7 @@ export class BlogDetailComponent {
 
     return post ? createBlogTableOfContents(post.blocks) : [];
   });
+  protected readonly hasTableOfContents = computed(() => this.tableOfContents().length > 1);
   protected readonly showUpdatedDate = computed(() => {
     const post = this.post();
 
@@ -346,10 +370,13 @@ export class BlogDetailComponent {
       if (post) {
         this.shareMetadata.set(this.openGraph.applyBlogPost(post));
         this.readingProgress.set(0);
+        this.activeContentSectionId.set(this.tableOfContents()[0]?.id ?? null);
+        this.queueReadingStateRefresh();
         return;
       }
 
       this.shareMetadata.set(null);
+      this.activeContentSectionId.set(null);
 
       if (!this.isLoading() && !this.loadError()) {
         this.openGraph.applyMissingBlogPost(this.slug());
@@ -377,6 +404,7 @@ export class BlogDetailComponent {
     const readDistance = Math.min(readableDistance, Math.max(0, -rect.top));
 
     this.readingProgress.set(Math.round((readDistance / readableDistance) * 100));
+    this.updateActiveContentSection();
   }
 
   private getSharedTaxonomyCount(post: BlogPostSummary, currentPost: BlogPostSummary): number {
@@ -399,7 +427,39 @@ export class BlogDetailComponent {
     return `/${this.pathNames.BLOG}/${slug}`;
   }
 
-  protected createPostAnchorHref(slug: string, headingId: string): string {
-    return `${this.createPostPath(slug)}#${headingId}`;
+  private queueReadingStateRefresh(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => this.updateReadingProgress());
+  }
+
+  private updateActiveContentSection(): void {
+    const contents = this.tableOfContents();
+
+    if (contents.length === 0) {
+      this.activeContentSectionId.set(null);
+      return;
+    }
+
+    const scrollOffset = 128;
+    let activeHeadingId = contents[0].id;
+
+    for (const item of contents) {
+      const heading = document.getElementById(item.id);
+
+      if (!heading) {
+        continue;
+      }
+
+      if (heading.getBoundingClientRect().top <= scrollOffset) {
+        activeHeadingId = item.id;
+      } else {
+        break;
+      }
+    }
+
+    this.activeContentSectionId.set(activeHeadingId);
   }
 }
