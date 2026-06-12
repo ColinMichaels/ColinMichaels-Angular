@@ -33,6 +33,10 @@ function isBlogPostStatus(value: unknown): value is BlogPostStatus {
   return typeof value === 'string' && blogPostStatuses.has(value as BlogPostStatus);
 }
 
+function isOptionalPositiveInteger(value: unknown): boolean {
+  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value > 0);
+}
+
 function isBlogOpenGraphMetadata(value: unknown): boolean {
   return value === undefined || (
     isRecord(value)
@@ -40,6 +44,8 @@ function isBlogOpenGraphMetadata(value: unknown): boolean {
     && (value['description'] === undefined || typeof value['description'] === 'string')
     && (value['image'] === undefined || typeof value['image'] === 'string')
     && (value['imageAlt'] === undefined || typeof value['imageAlt'] === 'string')
+    && isOptionalPositiveInteger(value['imageWidth'])
+    && isOptionalPositiveInteger(value['imageHeight'])
   );
 }
 
@@ -60,6 +66,8 @@ function isBlogPost(value: unknown): value is BlogPost {
     && isStringArray(value['tags'])
     && isBlogPostStatus(value['status'])
     && isRecord(value['seo'])
+    && isOptionalPositiveInteger(value['seo']['openGraphImageWidth'])
+    && isOptionalPositiveInteger(value['seo']['openGraphImageHeight'])
     && isBlogOpenGraphMetadata(value['og'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])

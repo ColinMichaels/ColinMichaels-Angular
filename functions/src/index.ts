@@ -23,6 +23,8 @@ const SITE_URL = 'https://colinmichaels.com';
 const SITE_NAME = 'ColinMichaels.com';
 const DEFAULT_LOCALE = 'en_US';
 const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
+const DEFAULT_OG_IMAGE_WIDTH = 1200;
+const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
 const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
@@ -60,6 +62,8 @@ interface SeoMetadata {
   path: string;
   image: string;
   imageAlt: string;
+  imageWidth?: number;
+  imageHeight?: number;
   type: 'website' | 'article';
   robots?: string;
   article?: SeoArticleMetadata;
@@ -81,10 +85,14 @@ interface SeoBlogPostDocument {
   seoDescription: string;
   seoCanonical: string;
   seoOpenGraphImage: string;
+  seoOpenGraphImageWidth: number | null;
+  seoOpenGraphImageHeight: number | null;
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
   ogImageAlt: string;
+  ogImageWidth: number | null;
+  ogImageHeight: number | null;
   updatedAt: string;
   publishedAt: string | null;
   imageAlt: string;
@@ -856,6 +864,8 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
   const image = post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE;
+  const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
+  const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
   const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
 
   return {
@@ -864,6 +874,8 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
     path: `/blog/${post.slug}`,
     image,
     imageAlt: post.ogImageAlt || post.imageAlt || `${title} preview image`,
+    imageWidth,
+    imageHeight,
     type: 'article',
     article: {
       publishedAt: post.publishedAt ?? post.updatedAt,
@@ -934,10 +946,14 @@ function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
     seoDescription: getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']),
     seoCanonical: getTrimmedString(seo['canonical']),
     seoOpenGraphImage: getTrimmedString(seo['openGraphImage']),
+    seoOpenGraphImageWidth: getPositiveInteger(seo['openGraphImageWidth']),
+    seoOpenGraphImageHeight: getPositiveInteger(seo['openGraphImageHeight']),
     ogTitle: getTrimmedString(og['title']),
     ogDescription: getTrimmedString(og['description']),
     ogImage: getTrimmedString(og['image']),
     ogImageAlt: getTrimmedString(og['imageAlt']),
+    ogImageWidth: getPositiveInteger(og['imageWidth']) ?? getPositiveInteger(og['width']),
+    ogImageHeight: getPositiveInteger(og['imageHeight']) ?? getPositiveInteger(og['height']),
     updatedAt: getIsoString(value['updatedAt']) || new Date(0).toISOString(),
     publishedAt: getIsoString(value['publishedAt']) || null,
     imageAlt: getFirstImageAlt(blocks),
@@ -959,6 +975,8 @@ function renderSeoTags(metadata: SeoMetadata): string {
   const url = createAbsoluteUrl(metadata.path);
   const image = createAbsoluteUrl(metadata.image);
   const robots = metadata.robots ?? 'index,follow';
+  const imageWidth = String(metadata.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH);
+  const imageHeight = String(metadata.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT);
   const tags = [
     `<title>${escapeHtml(metadata.title)}</title>`,
     `<meta name="description" content="${escapeHtml(metadata.description)}">`,
@@ -971,10 +989,11 @@ function renderSeoTags(metadata: SeoMetadata): string {
     `<meta property="og:description" content="${escapeHtml(metadata.description)}">`,
     `<meta property="og:url" content="${escapeHtml(url)}">`,
     `<meta property="og:image" content="${escapeHtml(image)}">`,
+    `<meta property="og:image:width" content="${escapeHtml(imageWidth)}">`,
+    `<meta property="og:image:height" content="${escapeHtml(imageHeight)}">`,
+    `<meta property="og:image:url" content="${escapeHtml(image)}">`,
     `<meta property="og:image:secure_url" content="${escapeHtml(image)}">`,
     `<meta property="og:image:type" content="${escapeHtml(getImageMimeType(image))}">`,
-    '<meta property="og:image:width" content="1200">',
-    '<meta property="og:image:height" content="630">',
     `<meta property="og:image:alt" content="${escapeHtml(metadata.imageAlt)}">`,
     '<meta name="twitter:card" content="summary_large_image">',
     `<meta name="twitter:title" content="${escapeHtml(metadata.title)}">`,
@@ -1379,6 +1398,19 @@ function selectYoutubeThumbnail(thumbnails: YoutubeThumbnails | undefined): stri
 
 function getTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function getPositiveInteger(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value.trim());
+    return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+  }
+
+  return null;
 }
 
 function requireAdmin(auth: AdminCallableAuth | undefined): string {
