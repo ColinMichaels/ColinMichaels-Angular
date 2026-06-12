@@ -17,3 +17,15 @@ export function createBlogCategoryTitle(value: string): string {
     .replace(/\s+/g, ' ')
     .replace(/\b[a-z]/g, letter => letter.toUpperCase());
 }
+
+export function getBlogTaxonomyTerms(post: {
+  categories: readonly string[];
+  subcategories?: readonly string[];
+}): readonly string[] {
+  const terms = [
+    ...post.categories,
+    ...(post.subcategories ?? []),
+  ].map(term => term.trim()).filter(Boolean);
+
+  return [...new Set(terms)];
+}

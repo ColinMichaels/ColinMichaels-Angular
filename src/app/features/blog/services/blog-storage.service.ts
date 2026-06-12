@@ -45,6 +45,7 @@ function isBlogPost(value: unknown): value is BlogPost {
     && typeof value['coverImage'] === 'string'
     && isRecord(value['author'])
     && isStringArray(value['categories'])
+    && (value['subcategories'] === undefined || isStringArray(value['subcategories']))
     && isStringArray(value['tags'])
     && isBlogPostStatus(value['status'])
     && isRecord(value['seo'])

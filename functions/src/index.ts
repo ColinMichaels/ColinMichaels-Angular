@@ -26,6 +26,7 @@ const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
 const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
+const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
@@ -81,6 +82,23 @@ interface SeoBlogPostDocument {
   updatedAt: string;
   publishedAt: string | null;
   imageAlt: string;
+}
+
+type SitemapChangeFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+interface SitemapUrl {
+  path: string;
+  lastmod?: string;
+  changefreq?: SitemapChangeFrequency;
+  priority?: number;
+}
+
+interface SitemapBlogPostDocument {
+  slug: string;
+  categories: readonly string[];
+  subcategories: readonly string[];
+  updatedAt: string;
+  publishedAt: string | null;
 }
 
 interface BlogBlockData {
@@ -359,6 +377,40 @@ export const renderSeoHtml = onRequest(
   }
 );
 
+export const sitemapXml = onRequest(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    invoker: 'public',
+  },
+  async (request, response) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.status(405).send('Method Not Allowed');
+      return;
+    }
+
+    try {
+      const xml = await createSitemapXml();
+
+      response
+        .status(200)
+        .set('Cache-Control', SITEMAP_CACHE_CONTROL)
+        .set('Content-Type', 'application/xml; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : xml);
+    } catch (error) {
+      logger.error('Unable to render sitemap.xml.', {error});
+      const fallbackXml = renderSitemapXml(createStaticSitemapUrls());
+
+      response
+        .status(200)
+        .set('Cache-Control', 'public, max-age=60, s-maxage=60')
+        .set('Content-Type', 'application/xml; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : fallbackXml);
+    }
+  }
+);
+
 export const getLatestYouTubeVideos = onCall(
   {
     region: FUNCTION_REGION,
@@ -558,6 +610,155 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
   }
 
   return createFallbackSeoMetadata(normalizedPath);
+}
+
+async function createSitemapXml(): Promise<string> {
+  const posts = await fetchPublishedSitemapBlogPosts();
+  const latestPostUpdate = getLatestIsoDate(posts.map(post => post.updatedAt || post.publishedAt).filter(isNonEmptyString));
+  const urls = [
+    ...createStaticSitemapUrls(latestPostUpdate),
+    ...createSitemapTaxonomyUrls(posts),
+    ...posts.map(post => ({
+      path: `/blog/${createSeoSlug(post.slug)}`,
+      lastmod: getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString)),
+      changefreq: 'monthly',
+      priority: 0.7,
+    } satisfies SitemapUrl)),
+  ];
+
+  return renderSitemapXml(urls);
+}
+
+function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
+  return [
+    {
+      path: '/',
+      changefreq: 'weekly',
+      priority: 1.0,
+    },
+    {
+      path: '/blog',
+      lastmod: blogLastmod,
+      changefreq: 'weekly',
+      priority: 0.8,
+    },
+    {
+      path: '/labs',
+      changefreq: 'monthly',
+      priority: 0.6,
+    },
+    {
+      path: '/background',
+      changefreq: 'monthly',
+      priority: 0.5,
+    },
+  ];
+}
+
+function createSitemapTaxonomyUrls(posts: readonly SitemapBlogPostDocument[]): readonly SitemapUrl[] {
+  const categoryLastmod = new Map<string, string>();
+
+  for (const post of posts) {
+    const lastmod = getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString));
+
+    for (const category of getSitemapTaxonomyTerms(post)) {
+      const slug = createBlogCategorySlug(category);
+      const existingLastmod = categoryLastmod.get(slug);
+      const latestLastmod = getLatestIsoDate([existingLastmod, lastmod].filter(isNonEmptyString));
+
+      categoryLastmod.set(slug, latestLastmod ?? existingLastmod ?? lastmod ?? '');
+    }
+  }
+
+  return Array.from(categoryLastmod.entries())
+    .filter(([slug]) => slug.length > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([slug, lastmod]) => ({
+      path: `/blog/category/${slug}`,
+      lastmod: lastmod || undefined,
+      changefreq: 'weekly',
+      priority: 0.6,
+    }));
+}
+
+async function fetchPublishedSitemapBlogPosts(): Promise<readonly SitemapBlogPostDocument[]> {
+  const snapshot = await getFirestore()
+    .collection('posts')
+    .where('status', '==', 'published')
+    .get();
+
+  return snapshot.docs
+    .map(document => toSitemapBlogPostDocument(document.data()))
+    .filter((post): post is SitemapBlogPostDocument => post !== null)
+    .sort((left, right) => {
+      const rightDate = getLatestIsoDate([right.updatedAt, right.publishedAt].filter(isNonEmptyString)) ?? '';
+      const leftDate = getLatestIsoDate([left.updatedAt, left.publishedAt].filter(isNonEmptyString)) ?? '';
+
+      return rightDate.localeCompare(leftDate) || left.slug.localeCompare(right.slug);
+    });
+}
+
+function toSitemapBlogPostDocument(value: unknown): SitemapBlogPostDocument | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const slug = getTrimmedString(value['slug']);
+
+  if (!slug) {
+    return null;
+  }
+
+  return {
+    slug,
+    categories: getStringArrayValue(value['categories']),
+    subcategories: getStringArrayValue(value['subcategories']),
+    updatedAt: getIsoString(value['updatedAt']),
+    publishedAt: getIsoString(value['publishedAt']) || null,
+  };
+}
+
+function getSitemapTaxonomyTerms(post: SitemapBlogPostDocument): readonly string[] {
+  return uniqueStrings([...post.categories, ...post.subcategories]);
+}
+
+function renderSitemapXml(urls: readonly SitemapUrl[]): string {
+  const entries = uniqueSitemapUrls(urls)
+    .map(url => [
+      '  <url>',
+      `    <loc>${escapeXml(createAbsoluteUrl(url.path))}</loc>`,
+      url.lastmod ? `    <lastmod>${escapeXml(url.lastmod)}</lastmod>` : '',
+      url.changefreq ? `    <changefreq>${escapeXml(url.changefreq)}</changefreq>` : '',
+      typeof url.priority === 'number' ? `    <priority>${url.priority.toFixed(1)}</priority>` : '',
+      '  </url>',
+    ].filter(Boolean).join('\n'))
+    .join('\n');
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    entries,
+    '</urlset>',
+    '',
+  ].join('\n');
+}
+
+function uniqueSitemapUrls(urls: readonly SitemapUrl[]): readonly SitemapUrl[] {
+  const seen = new Set<string>();
+  const uniqueUrls: SitemapUrl[] = [];
+
+  for (const url of urls) {
+    const path = normalizeSeoPath(url.path);
+
+    if (seen.has(path)) {
+      continue;
+    }
+
+    seen.add(path);
+    uniqueUrls.push({...url, path});
+  }
+
+  return uniqueUrls;
 }
 
 function createHomeSeoMetadata(): SeoMetadata {
@@ -957,9 +1158,14 @@ function createSeoSlug(value: string): string {
   return value
     .trim()
     .toLowerCase()
+    .replace(/&/g, 'and')
     .replace(/['"]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'untitled';
+}
+
+function createBlogCategorySlug(value: string): string {
+  return createSeoSlug(value) || 'uncategorized';
 }
 
 function getImageMimeType(imageUrl: string): string {
@@ -1010,12 +1216,36 @@ function stripHtml(value: string): string {
   return value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
+function getLatestIsoDate(values: readonly string[]): string | undefined {
+  const dates = values
+    .map(value => Date.parse(value))
+    .filter(value => Number.isFinite(value));
+
+  if (dates.length === 0) {
+    return undefined;
+  }
+
+  return new Date(Math.max(...dates)).toISOString();
+}
+
+function isNonEmptyString(value: string | null | undefined): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function uniqueStrings(values: readonly string[]): readonly string[] {
+  return [...new Set(values.map(value => value.trim()).filter(Boolean))];
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function escapeXml(value: string): string {
+  return escapeHtml(value).replace(/'/g, '&apos;');
 }
 
 function escapeScriptJson(value: string): string {
