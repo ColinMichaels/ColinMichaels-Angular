@@ -4,8 +4,10 @@ import {Injectable, inject} from '@angular/core';
 import {PATH_NAMES} from '../../../app-route-paths';
 import {
   BLOG_INDEX_SEO_METADATA,
+  BLOG_SEARCH_SEO_METADATA,
   HOMEPAGE_OG_IMAGE,
   createBlogCategorySeoMetadata,
+  createBlogTagSeoMetadata,
   createMissingBlogPostSeoMetadata,
 } from '../../../shared/seo/seo.metadata';
 import {SeoService} from '../../../shared/seo/seo.service';
@@ -72,8 +74,22 @@ export class BlogOpenGraphService {
     return metadata;
   }
 
+  applyBlogSearch(): BlogShareMetadata {
+    const metadata = this.toShareMetadata(BLOG_SEARCH_SEO_METADATA);
+    this.seo.apply(BLOG_SEARCH_SEO_METADATA);
+
+    return metadata;
+  }
+
   applyBlogCategory(category: string): BlogShareMetadata {
     const metadata = createBlogCategorySeoMetadata(category);
+    this.seo.apply(metadata);
+
+    return this.toShareMetadata(metadata);
+  }
+
+  applyBlogTag(tag: string): BlogShareMetadata {
+    const metadata = createBlogTagSeoMetadata(tag);
     this.seo.apply(metadata);
 
     return this.toShareMetadata(metadata);

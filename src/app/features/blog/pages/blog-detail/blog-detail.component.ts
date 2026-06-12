@@ -7,6 +7,7 @@ import {map, switchMap} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
+import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -18,6 +19,7 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
     DatePipe,
     BlogBlockRendererComponent,
     BlogShareActionsComponent,
+    BlogTagListComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -41,6 +43,9 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
               Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
             </p>
             <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
+            @if (currentPost.tags.length > 0) {
+              <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
+            }
             @if (shareMetadata(); as share) {
               <app-blog-share-actions
                 [title]="share.title"

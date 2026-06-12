@@ -10,8 +10,16 @@ export const blogRoutes: Routes = [
     loadComponent: () => import('./pages/blog-index/blog-index.component').then(m => m.BlogIndexComponent),
   },
   {
+    path: `${PATH_NAMES.BLOG}/search`,
+    loadComponent: () => import('./pages/blog-search/blog-search.component').then(m => m.BlogSearchComponent),
+  },
+  {
     path: `${PATH_NAMES.BLOG}/category/:category`,
     loadComponent: () => import('./pages/blog-category/blog-category.component').then(m => m.BlogCategoryComponent),
+  },
+  {
+    path: `${PATH_NAMES.BLOG}/tag/:tag`,
+    loadComponent: () => import('./pages/blog-tag/blog-tag.component').then(m => m.BlogTagComponent),
   },
   {
     path: `${PATH_NAMES.BLOG}/:slug`,
