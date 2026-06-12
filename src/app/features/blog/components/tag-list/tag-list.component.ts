@@ -6,7 +6,8 @@ import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
   template: `
     <div class="flex flex-wrap gap-2">
       @for (tag of tags; track tag) {
-        <span class="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs uppercase tracking-wide text-zinc-300">
+        <span
+          class="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-xs uppercase tracking-wide text-zinc-300">
           {{ tag }}
         </span>
       }
