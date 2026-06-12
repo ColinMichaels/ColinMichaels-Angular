@@ -6,6 +6,8 @@
 - Added feed discovery links to client-side and server-rendered SEO metadata, plus visible feed links on the blog index.
 - Added route-backed public blog tag archive pages at `/blog/tag/:tag`, linked tag badges, tag SEO metadata, and tag sitemap entries.
 - Added a public blog search page at `/blog/search` for title, excerpt, taxonomy, and body text discovery, marked `noindex,follow`.
+- Added blog post reading UX with reading time, word count, meaningful updated dates, generated table of contents, heading anchors, and article progress.
+- Added a CMS SEO/share checklist with title, description, canonical, taxonomy, image, alt text, heading, search-preview, and social-preview checks.
 
 ## 2026-06-11
 

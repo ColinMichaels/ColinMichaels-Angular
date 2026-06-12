@@ -2,11 +2,13 @@ import {Component, Input, OnChanges, inject, ChangeDetectionStrategy} from '@ang
 import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 
 import {BlogContentBlock} from '../../models/blog-post.model';
+import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
 
 interface RenderableBlogBlock {
   block: BlogContentBlock;
   safeEmbedUrl: SafeResourceUrl | null;
   externalUrl: string | null;
+  headingId: string | null;
 }
 
 @Component({
@@ -18,9 +20,37 @@ interface RenderableBlogBlock {
         @switch (row.block.type) {
           @case ('header') {
             @if (row.block.data.level === 3) {
-              <h3 class="pt-4 text-xl font-semibold text-zinc-50" [innerHTML]="row.block.data.text"></h3>
+              <h3
+                [id]="row.headingId"
+                class="group scroll-mt-24 pt-4 text-xl font-semibold text-zinc-50"
+              >
+                <a
+                  [href]="row.headingId ? createAnchorHref(row.headingId) : null"
+                  class="inline-flex items-baseline gap-2 hover:text-cyan-200"
+                >
+                  <span [innerHTML]="row.block.data.text"></span>
+                  @if (row.headingId) {
+                    <span aria-hidden="true"
+                          class="text-sm text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
+                  }
+                </a>
+              </h3>
             } @else {
-              <h2 class="pt-4 text-2xl font-semibold text-zinc-50" [innerHTML]="row.block.data.text"></h2>
+              <h2
+                [id]="row.headingId"
+                class="group scroll-mt-24 pt-4 text-2xl font-semibold text-zinc-50"
+              >
+                <a
+                  [href]="row.headingId ? createAnchorHref(row.headingId) : null"
+                  class="inline-flex items-baseline gap-2 hover:text-cyan-200"
+                >
+                  <span [innerHTML]="row.block.data.text"></span>
+                  @if (row.headingId) {
+                    <span aria-hidden="true"
+                          class="text-base text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
+                  }
+                </a>
+              </h2>
             }
           }
           @case ('paragraph') {
@@ -148,6 +178,7 @@ interface RenderableBlogBlock {
 export class BlogBlockRendererComponent implements OnChanges {
   @Input() blocks: readonly BlogContentBlock[] = [];
   @Input() fallbackAlt = 'Blog content';
+  @Input() anchorPath = '';
 
   protected renderedBlocks: readonly RenderableBlogBlock[] = [];
 
@@ -160,10 +191,13 @@ export class BlogBlockRendererComponent implements OnChanges {
   ]);
 
   ngOnChanges(): void {
+    const headingIdMap = createBlogHeadingIdMap(this.blocks);
+
     this.renderedBlocks = this.blocks.map(block => ({
       block,
       safeEmbedUrl: this.createSafeEmbedUrl(block),
       externalUrl: this.createExternalUrl(block),
+      headingId: headingIdMap.get(block.id) ?? null,
     }));
   }
 
@@ -185,6 +219,12 @@ export class BlogBlockRendererComponent implements OnChanges {
     const url = this.parseHttpUrl(block.data.url ?? block.data.embedUrl);
 
     return url?.toString() ?? null;
+  }
+
+  protected createAnchorHref(headingId: string): string {
+    const normalizedPath = this.anchorPath.trim().replace(/\/+$/, '');
+
+    return normalizedPath ? `${normalizedPath}#${headingId}` : `#${headingId}`;
   }
 
   private parseHttpUrl(value: string | undefined): URL | null {
