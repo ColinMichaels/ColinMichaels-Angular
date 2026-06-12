@@ -27,8 +27,10 @@ const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
 const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
+const BLOG_FEED_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
+const FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800';
 const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|ogg|otf|png|svg|ttf|txt|wav|webmanifest|webp|woff2?)$/i;
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
@@ -111,6 +113,7 @@ interface SitemapBlogPostDocument {
   slug: string;
   categories: readonly string[];
   subcategories: readonly string[];
+  tags: readonly string[];
   updatedAt: string;
   publishedAt: string | null;
 }
@@ -436,6 +439,74 @@ export const sitemapXml = onRequest(
   }
 );
 
+export const rssFeed = onRequest(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    invoker: 'public',
+  },
+  async (request, response) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.status(405).send('Method Not Allowed');
+      return;
+    }
+
+    try {
+      const posts = await fetchPublishedFeedBlogPosts();
+      const xml = renderRssFeed(posts);
+
+      response
+        .status(200)
+        .set('Cache-Control', FEED_CACHE_CONTROL)
+        .set('Content-Type', 'application/rss+xml; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : xml);
+    } catch (error) {
+      logger.error('Unable to render RSS feed.', {error});
+
+      response
+        .status(503)
+        .set('Cache-Control', 'public, max-age=60, s-maxage=60')
+        .set('Content-Type', 'text/plain; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : 'Unable to render RSS feed.');
+    }
+  }
+);
+
+export const jsonFeed = onRequest(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    invoker: 'public',
+  },
+  async (request, response) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.status(405).send('Method Not Allowed');
+      return;
+    }
+
+    try {
+      const posts = await fetchPublishedFeedBlogPosts();
+      const feed = renderJsonFeed(posts);
+
+      response
+        .status(200)
+        .set('Cache-Control', FEED_CACHE_CONTROL)
+        .set('Content-Type', 'application/feed+json; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : feed);
+    } catch (error) {
+      logger.error('Unable to render JSON feed.', {error});
+
+      response
+        .status(503)
+        .set('Cache-Control', 'public, max-age=60, s-maxage=60')
+        .set('Content-Type', 'text/plain; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : 'Unable to render JSON feed.');
+    }
+  }
+);
+
 export const getLatestYouTubeVideos = onCall(
   {
     region: FUNCTION_REGION,
@@ -590,9 +661,18 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createBlogIndexSeoMetadata();
   }
 
+  if (normalizedPath === '/blog/search') {
+    return createBlogSearchSeoMetadata();
+  }
+
   if (normalizedPath.startsWith('/blog/category/')) {
     const category = decodeSlugSegment(normalizedPath.slice('/blog/category/'.length));
     return createBlogCategorySeoMetadata(category);
+  }
+
+  if (normalizedPath.startsWith('/blog/tag/')) {
+    const tag = decodeSlugSegment(normalizedPath.slice('/blog/tag/'.length));
+    return createBlogTagSeoMetadata(tag);
   }
 
   if (normalizedPath.startsWith('/blog/')) {
@@ -643,6 +723,7 @@ async function createSitemapXml(): Promise<string> {
   const urls = [
     ...createStaticSitemapUrls(latestPostUpdate),
     ...createSitemapTaxonomyUrls(posts),
+    ...createSitemapTagUrls(posts),
     ...posts.map(post => ({
       path: `/blog/${createSeoSlug(post.slug)}`,
       lastmod: getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString)),
@@ -706,6 +787,32 @@ function createSitemapTaxonomyUrls(posts: readonly SitemapBlogPostDocument[]): r
     }));
 }
 
+function createSitemapTagUrls(posts: readonly SitemapBlogPostDocument[]): readonly SitemapUrl[] {
+  const tagLastmod = new Map<string, string>();
+
+  for (const post of posts) {
+    const lastmod = getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString));
+
+    for (const tag of post.tags) {
+      const slug = createBlogTagSlug(tag);
+      const existingLastmod = tagLastmod.get(slug);
+      const latestLastmod = getLatestIsoDate([existingLastmod, lastmod].filter(isNonEmptyString));
+
+      tagLastmod.set(slug, latestLastmod ?? existingLastmod ?? lastmod ?? '');
+    }
+  }
+
+  return Array.from(tagLastmod.entries())
+    .filter(([slug]) => slug.length > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([slug, lastmod]) => ({
+      path: `/blog/tag/${slug}`,
+      lastmod: lastmod || undefined,
+      changefreq: 'weekly',
+      priority: 0.5,
+    }));
+}
+
 async function fetchPublishedSitemapBlogPosts(): Promise<readonly SitemapBlogPostDocument[]> {
   const snapshot = await getFirestore()
     .collection('posts')
@@ -738,6 +845,7 @@ function toSitemapBlogPostDocument(value: unknown): SitemapBlogPostDocument | nu
     slug,
     categories: getStringArrayValue(value['categories']),
     subcategories: getStringArrayValue(value['subcategories']),
+    tags: getStringArrayValue(value['tags']),
     updatedAt: getIsoString(value['updatedAt']),
     publishedAt: getIsoString(value['publishedAt']) || null,
   };
@@ -745,6 +853,147 @@ function toSitemapBlogPostDocument(value: unknown): SitemapBlogPostDocument | nu
 
 function getSitemapTaxonomyTerms(post: SitemapBlogPostDocument): readonly string[] {
   return uniqueStrings([...post.categories, ...post.subcategories]);
+}
+
+async function fetchPublishedFeedBlogPosts(): Promise<readonly SeoBlogPostDocument[]> {
+  const snapshot = await getFirestore()
+    .collection('posts')
+    .where('status', '==', 'published')
+    .get();
+
+  return snapshot.docs
+    .map(document => toSeoBlogPostDocument(document.data()))
+    .filter((post): post is SeoBlogPostDocument => post !== null)
+    .sort((left, right) => {
+      const rightDate = getLatestIsoDate([right.updatedAt, right.publishedAt].filter(isNonEmptyString)) ?? '';
+      const leftDate = getLatestIsoDate([left.updatedAt, left.publishedAt].filter(isNonEmptyString)) ?? '';
+
+      return rightDate.localeCompare(leftDate) || left.slug.localeCompare(right.slug);
+    });
+}
+
+function renderRssFeed(posts: readonly SeoBlogPostDocument[]): string {
+  const latestPostUpdate = getLatestIsoDate(posts.map(post => post.updatedAt || post.publishedAt).filter(isNonEmptyString));
+  const items = posts
+    .map(post => renderRssFeedItem(post))
+    .join('\n');
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">',
+    '  <channel>',
+    `    <title>${escapeXml(`${SITE_NAME} Blog`)}</title>`,
+    `    <link>${escapeXml(createAbsoluteUrl('/blog'))}</link>`,
+    `    <description>${escapeXml(BLOG_FEED_DESCRIPTION)}</description>`,
+    `    <language>${escapeXml(DEFAULT_LOCALE.replace('_', '-'))}</language>`,
+    latestPostUpdate ? `    <lastBuildDate>${escapeXml(toRfc822Date(latestPostUpdate))}</lastBuildDate>` : '',
+    `    <atom:link href="${escapeXml(createAbsoluteUrl('/feed.xml'))}" rel="self" type="application/rss+xml"/>`,
+    `    <image><url>${escapeXml(createAbsoluteUrl(HOMEPAGE_OG_IMAGE))}</url><title>${escapeXml(`${SITE_NAME} Blog`)}</title><link>${escapeXml(createAbsoluteUrl('/blog'))}</link></image>`,
+    items,
+    '  </channel>',
+    '</rss>',
+    '',
+  ].filter(line => line.length > 0).join('\n');
+}
+
+function renderRssFeedItem(post: SeoBlogPostDocument): string {
+  const metadata = createBlogPostFeedMetadata(post);
+  const categories = metadata.tags
+    .map(tag => `      <category>${escapeXml(tag)}</category>`)
+    .join('\n');
+  const image = metadata.image
+    ? `      <media:content url="${escapeXml(metadata.image)}" medium="image" type="${escapeXml(getImageMimeType(metadata.image))}" width="${metadata.imageWidth}" height="${metadata.imageHeight}"/>`
+    : '';
+
+  return [
+    '    <item>',
+    `      <title>${escapeXml(metadata.title)}</title>`,
+    `      <link>${escapeXml(metadata.url)}</link>`,
+    `      <guid isPermaLink="true">${escapeXml(metadata.url)}</guid>`,
+    `      <description>${escapeXml(metadata.description)}</description>`,
+    `      <author>${escapeXml(`noreply@colinmichaels.com (${metadata.author})`)}</author>`,
+    `      <pubDate>${escapeXml(toRfc822Date(metadata.publishedAt))}</pubDate>`,
+    `      <atom:updated>${escapeXml(metadata.modifiedAt)}</atom:updated>`,
+    categories,
+    image,
+    '    </item>',
+  ].filter(line => line.length > 0).join('\n');
+}
+
+function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
+  const feed = {
+    version: 'https://jsonfeed.org/version/1.1',
+    title: `${SITE_NAME} Blog`,
+    home_page_url: createAbsoluteUrl('/blog'),
+    feed_url: createAbsoluteUrl('/feed.json'),
+    description: BLOG_FEED_DESCRIPTION,
+    language: DEFAULT_LOCALE.replace('_', '-'),
+    icon: createAbsoluteUrl(HOMEPAGE_OG_IMAGE),
+    favicon: createAbsoluteUrl('/favicon.ico'),
+    authors: [
+      {
+        name: 'Colin Michaels',
+        url: SITE_URL,
+      },
+    ],
+    items: posts.map(post => {
+      const metadata = createBlogPostFeedMetadata(post);
+
+      return {
+        id: metadata.url,
+        url: metadata.url,
+        title: metadata.title,
+        summary: metadata.description,
+        content_text: metadata.description,
+        image: metadata.image,
+        date_published: metadata.publishedAt,
+        date_modified: metadata.modifiedAt,
+        authors: [
+          {
+            name: metadata.author,
+            url: SITE_URL,
+          },
+        ],
+        tags: metadata.tags,
+      };
+    }),
+  };
+
+  return `${JSON.stringify(feed, null, 2)}\n`;
+}
+
+function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
+  title: string;
+  description: string;
+  url: string;
+  image: string;
+  imageWidth: number;
+  imageHeight: number;
+  author: string;
+  tags: readonly string[];
+  publishedAt: string;
+  modifiedAt: string;
+} {
+  const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
+  const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
+  const image = createAbsoluteUrl(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
+  const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
+  const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
+  const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
+  const publishedAt = post.publishedAt ?? post.updatedAt;
+
+  return {
+    title,
+    description,
+    url,
+    image,
+    imageWidth,
+    imageHeight,
+    author: post.authorName,
+    tags: uniqueStrings([...post.categories, ...post.tags]),
+    publishedAt,
+    modifiedAt: post.updatedAt,
+  };
 }
 
 function renderSitemapXml(urls: readonly SitemapUrl[]): string {
@@ -808,6 +1057,16 @@ function createBlogIndexSeoMetadata(): SeoMetadata {
   });
 }
 
+function createBlogSearchSeoMetadata(): SeoMetadata {
+  return createStaticSeoMetadata({
+    title: 'Search Blog | ColinMichaels.com',
+    description: 'Search Colin Michaels blog posts by title, excerpt, category, tag, and article body text.',
+    path: '/blog/search',
+    imageAlt: 'Colin Michaels blog search preview card',
+    robots: 'noindex,follow',
+  });
+}
+
 function createBlogCategorySeoMetadata(category: string): SeoMetadata {
   const categoryTitle = createTitleFromSlug(category || 'blog-category');
 
@@ -816,6 +1075,17 @@ function createBlogCategorySeoMetadata(category: string): SeoMetadata {
     description: `Published Colin Michaels blog posts in the ${categoryTitle} category.`,
     path: `/blog/category/${createSeoSlug(categoryTitle)}`,
     imageAlt: `${categoryTitle} blog category preview card`,
+  });
+}
+
+function createBlogTagSeoMetadata(tag: string): SeoMetadata {
+  const tagTitle = createTitleFromSlug(tag || 'blog-tag');
+
+  return createStaticSeoMetadata({
+    title: `${tagTitle} Articles | ColinMichaels.com`,
+    description: `Published Colin Michaels blog posts tagged ${tagTitle}.`,
+    path: `/blog/tag/${createBlogTagSlug(tagTitle)}`,
+    imageAlt: `${tagTitle} blog tag preview card`,
   });
 }
 
@@ -982,6 +1252,8 @@ function renderSeoTags(metadata: SeoMetadata): string {
     `<meta name="description" content="${escapeHtml(metadata.description)}">`,
     `<meta name="robots" content="${escapeHtml(robots)}">`,
     `<link rel="canonical" href="${escapeHtml(url)}">`,
+    `<link rel="alternate" type="application/rss+xml" title="${escapeHtml(`${SITE_NAME} Blog RSS Feed`)}" href="${escapeHtml(createAbsoluteUrl('/feed.xml'))}">`,
+    `<link rel="alternate" type="application/feed+json" title="${escapeHtml(`${SITE_NAME} Blog JSON Feed`)}" href="${escapeHtml(createAbsoluteUrl('/feed.json'))}">`,
     `<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}">`,
     `<meta property="og:locale" content="${escapeHtml(DEFAULT_LOCALE)}">`,
     `<meta property="og:type" content="${escapeHtml(metadata.type)}">`,
@@ -1215,6 +1487,10 @@ function createBlogCategorySlug(value: string): string {
   return createSeoSlug(value) || 'uncategorized';
 }
 
+function createBlogTagSlug(value: string): string {
+  return createSeoSlug(value) || 'untagged';
+}
+
 function getImageMimeType(imageUrl: string): string {
   const pathname = parseUrlPathname(imageUrl);
 
@@ -1273,6 +1549,14 @@ function getLatestIsoDate(values: readonly string[]): string | undefined {
   }
 
   return new Date(Math.max(...dates)).toISOString();
+}
+
+function toRfc822Date(value: string): string {
+  const timestamp = Date.parse(value);
+
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toUTCString()
+    : new Date(0).toUTCString();
 }
 
 function isNonEmptyString(value: string | null | undefined): value is string {

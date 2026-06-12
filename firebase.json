@@ -62,6 +62,20 @@
         }
       },
       {
+        "source": "/feed.xml",
+        "function": {
+          "functionId": "rssFeed",
+          "region": "us-east1"
+        }
+      },
+      {
+        "source": "/feed.json",
+        "function": {
+          "functionId": "jsonFeed",
+          "region": "us-east1"
+        }
+      },
+      {
         "source": "**",
         "function": {
           "functionId": "renderSeoHtml",

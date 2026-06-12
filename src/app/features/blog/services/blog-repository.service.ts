@@ -77,6 +77,12 @@ export class BlogRepositoryService {
     );
   }
 
+  getPublishedFullPosts$(): Observable<readonly BlogPost[]> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createPublishedFullPosts(posts))
+    );
+  }
+
   getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
     return this.storage.posts$.pipe(
       map(posts => posts.find(post => post.slug === slug && post.status === 'published'))
@@ -109,6 +115,10 @@ export class BlogRepositoryService {
 
   getPublishedPosts(): readonly BlogPostSummary[] {
     return this.createPublishedPosts(this.getPosts());
+  }
+
+  getPublishedFullPosts(): readonly BlogPost[] {
+    return this.createPublishedFullPosts(this.getPosts());
   }
 
   getPublishedPostBySlug(slug: string): BlogPost | undefined {
@@ -246,10 +256,14 @@ export class BlogRepositoryService {
   }
 
   private createPublishedPosts(posts: readonly BlogPost[]): readonly BlogPostSummary[] {
+    return this.createPublishedFullPosts(posts)
+      .map(toSummary);
+  }
+
+  private createPublishedFullPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
     return posts
       .filter(post => post.status === 'published')
-      .sort(sortNewestFirst)
-      .map(toSummary);
+      .sort(sortNewestFirst);
   }
 
   private createAdminPosts(posts: readonly BlogPost[]): readonly BlogPost[] {

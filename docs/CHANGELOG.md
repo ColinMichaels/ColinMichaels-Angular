@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-06-12
+
+- Added RSS and JSON Feed endpoints for published blog posts, with Firebase Hosting rewrites at `/feed.xml` and `/feed.json`.
+- Added feed discovery links to client-side and server-rendered SEO metadata, plus visible feed links on the blog index.
+- Added route-backed public blog tag archive pages at `/blog/tag/:tag`, linked tag badges, tag SEO metadata, and tag sitemap entries.
+- Added a public blog search page at `/blog/search` for title, excerpt, taxonomy, and body text discovery, marked `noindex,follow`.
+
 ## 2026-06-11
 
 - Added static homepage canonical, Open Graph, Twitter Card, and JSON-LD metadata to the initial Angular document.

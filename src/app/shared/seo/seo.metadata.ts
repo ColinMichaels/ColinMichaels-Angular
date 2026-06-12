@@ -56,6 +56,16 @@ export const BLOG_INDEX_SEO_METADATA: SeoMetadata = {
   type: 'website',
 };
 
+export const BLOG_SEARCH_SEO_METADATA: SeoMetadata = {
+  title: 'Search Blog | ColinMichaels.com',
+  description: 'Search Colin Michaels blog posts by title, excerpt, category, tag, and article body text.',
+  path: '/blog/search',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: 'Colin Michaels blog search preview card',
+  type: 'website',
+  robots: 'noindex,follow',
+};
+
 export const PROJECTS_SEO_METADATA: SeoMetadata = {
   title: 'Projects & Labs | ColinMichaels.com',
   description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
@@ -93,6 +103,19 @@ export function createBlogCategorySeoMetadata(category: string): SeoMetadata {
     path: `/blog/category/${createSeoSlug(categoryTitle)}`,
     image: HOMEPAGE_OG_IMAGE,
     imageAlt: `${categoryTitle} blog category preview card`,
+    type: 'website',
+  };
+}
+
+export function createBlogTagSeoMetadata(tag: string): SeoMetadata {
+  const tagTitle = tag.trim() || 'Blog Tag';
+
+  return {
+    title: `${tagTitle} Articles | ColinMichaels.com`,
+    description: `Published Colin Michaels blog posts tagged ${tagTitle}.`,
+    path: `/blog/tag/${createSeoSlug(tagTitle)}`,
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: `${tagTitle} blog tag preview card`,
     type: 'website',
   };
 }

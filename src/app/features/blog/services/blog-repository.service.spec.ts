@@ -102,6 +102,14 @@ describe('BlogRepositoryService', () => {
     expect(posts[0].slug).toBe('published-post');
   });
 
+  it('returns full published posts for public search without exposing drafts', () => {
+    const posts = service.getPublishedFullPosts();
+
+    expect(posts.length).toBe(1);
+    expect(posts[0].slug).toBe('published-post');
+    expect(posts[0].blocks).toEqual(publishedPost.blocks);
+  });
+
   it('does not expose draft posts by public slug lookup', () => {
     expect(service.getPublishedPostBySlug('draft-post')).toBeUndefined();
   });

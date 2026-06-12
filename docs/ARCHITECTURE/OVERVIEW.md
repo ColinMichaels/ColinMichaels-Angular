@@ -23,11 +23,11 @@ Current route group files are boundary markers only. They preserve existing URL 
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
-  public published post views, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
+  public published post views, category/tag archives, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:
-  shared route metadata lives under `shared/seo`; dynamic blog post metadata is injected both client-side and server-side through the Firebase `renderSeoHtml` Function.
+  shared route metadata lives under `shared/seo`; dynamic blog post metadata is injected both client-side and server-side through the Firebase `renderSeoHtml` Function. Blog feed endpoints are served by Firebase Functions at `/feed.xml` and `/feed.json`, with discovery links emitted in both Angular and server-rendered metadata.
 - Shared site shell:
   global header/menu and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
 - Admin media library:
