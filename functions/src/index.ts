@@ -73,6 +73,7 @@ interface SeoBlogPostDocument {
   title: string;
   excerpt: string;
   coverImage: string;
+  thumbnailImage: string;
   authorName: string;
   categories: readonly string[];
   tags: readonly string[];
@@ -80,6 +81,10 @@ interface SeoBlogPostDocument {
   seoDescription: string;
   seoCanonical: string;
   seoOpenGraphImage: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  ogImageAlt: string;
   updatedAt: string;
   publishedAt: string | null;
   imageAlt: string;
@@ -848,9 +853,9 @@ function createStaticSeoMetadata(options: {
 }
 
 function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
-  const title = stripHtml(post.seoTitle || post.title);
-  const description = truncateDescription(stripHtml(post.seoDescription || post.excerpt));
-  const image = post.seoOpenGraphImage || post.coverImage || HOMEPAGE_OG_IMAGE;
+  const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
+  const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
+  const image = post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE;
   const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
 
   return {
@@ -858,7 +863,7 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
     description,
     path: `/blog/${post.slug}`,
     image,
-    imageAlt: post.imageAlt || `${title} cover image`,
+    imageAlt: post.ogImageAlt || post.imageAlt || `${title} preview image`,
     type: 'article',
     article: {
       publishedAt: post.publishedAt ?? post.updatedAt,
@@ -905,7 +910,9 @@ function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
   }
 
   const seo = isRecord(value['seo']) ? value['seo'] : {};
-  const author = isRecord(value['author']) ? value['author'] : {};
+  const og = isRecord(value['og']) ? value['og'] : {};
+  const rawAuthor = value['author'];
+  const author = isRecord(rawAuthor) ? rawAuthor : {};
   const blocks = Array.isArray(value['blocks']) ? value['blocks'] : [];
   const title = getTrimmedString(value['title']);
   const slug = getTrimmedString(value['slug']);
@@ -919,13 +926,18 @@ function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
     title,
     excerpt: getTrimmedString(value['excerpt']),
     coverImage: getTrimmedString(value['coverImage']),
-    authorName: getTrimmedString(author['name']) || 'Colin Michaels',
+    thumbnailImage: getTrimmedString(value['thumbnailImage']),
+    authorName: getTrimmedString(author['name']) || getTrimmedString(rawAuthor) || 'Colin Michaels',
     categories: getStringArrayValue(value['categories']),
     tags: getStringArrayValue(value['tags']),
-    seoTitle: getTrimmedString(seo['title']),
-    seoDescription: getTrimmedString(seo['description']),
+    seoTitle: getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']),
+    seoDescription: getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']),
     seoCanonical: getTrimmedString(seo['canonical']),
     seoOpenGraphImage: getTrimmedString(seo['openGraphImage']),
+    ogTitle: getTrimmedString(og['title']),
+    ogDescription: getTrimmedString(og['description']),
+    ogImage: getTrimmedString(og['image']),
+    ogImageAlt: getTrimmedString(og['imageAlt']),
     updatedAt: getIsoString(value['updatedAt']) || new Date(0).toISOString(),
     publishedAt: getIsoString(value['publishedAt']) || null,
     imageAlt: getFirstImageAlt(blocks),

@@ -33,6 +33,16 @@ function isBlogPostStatus(value: unknown): value is BlogPostStatus {
   return typeof value === 'string' && blogPostStatuses.has(value as BlogPostStatus);
 }
 
+function isBlogOpenGraphMetadata(value: unknown): boolean {
+  return value === undefined || (
+    isRecord(value)
+    && (value['title'] === undefined || typeof value['title'] === 'string')
+    && (value['description'] === undefined || typeof value['description'] === 'string')
+    && (value['image'] === undefined || typeof value['image'] === 'string')
+    && (value['imageAlt'] === undefined || typeof value['imageAlt'] === 'string')
+  );
+}
+
 function isBlogPost(value: unknown): value is BlogPost {
   if (!isRecord(value)) {
     return false;
@@ -43,12 +53,14 @@ function isBlogPost(value: unknown): value is BlogPost {
     && typeof value['title'] === 'string'
     && typeof value['excerpt'] === 'string'
     && typeof value['coverImage'] === 'string'
+    && (value['thumbnailImage'] === undefined || typeof value['thumbnailImage'] === 'string')
     && isRecord(value['author'])
     && isStringArray(value['categories'])
     && (value['subcategories'] === undefined || isStringArray(value['subcategories']))
     && isStringArray(value['tags'])
     && isBlogPostStatus(value['status'])
     && isRecord(value['seo'])
+    && isBlogOpenGraphMetadata(value['og'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
     && typeof value['createdAt'] === 'string'
