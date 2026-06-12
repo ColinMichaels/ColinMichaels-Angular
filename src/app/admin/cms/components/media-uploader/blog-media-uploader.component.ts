@@ -206,6 +206,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   @Input() optimizationMaxHeight = 1920;
   @Input() optimizationQuality = 0.82;
   @Input() optimizationOutputType: BlogMediaOptimizationOutputType = 'image/webp';
+  @Input() forceOptimizationOutputType = false;
 
   @Output() mediaUploaded = new EventEmitter<BlogMediaUploadResult>();
 
@@ -334,6 +335,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
         maxHeight: this.optimizationMaxHeight,
         quality: this.optimizationQuality,
         outputType: this.optimizationOutputType,
+        forceOutputType: this.forceOptimizationOutputType,
       },
     }).subscribe({
       next: event => this.handleUploadProgress(event),

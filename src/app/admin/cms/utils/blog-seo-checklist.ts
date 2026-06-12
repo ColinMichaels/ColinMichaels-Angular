@@ -163,16 +163,39 @@ function createCoverImageCheck(value: string): SeoChecklistItem {
 
 function createOpenGraphImageCheck(openGraphImage: string, coverImage: string): SeoChecklistItem {
   const socialImage = openGraphImage.trim();
+  const fallbackImage = coverImage.trim();
 
-  if (socialImage && socialImage !== coverImage.trim()) {
+  if (isWebpImageUrl(socialImage)) {
+    return createItem('open-graph-image', 'Social image', 'Use a JPEG or PNG Open Graph image. WebP can fail social crawler previews.', 'fail', socialImage);
+  }
+
+  if (socialImage && socialImage !== fallbackImage) {
     return createItem('open-graph-image', 'Social image', 'Custom Open Graph image is set.', 'pass');
   }
 
-  if (coverImage.trim()) {
+  if (isWebpImageUrl(fallbackImage)) {
+    return createItem('open-graph-image', 'Social image', 'Add a JPEG or PNG Open Graph image. The cover image fallback is WebP.', 'warning', fallbackImage);
+  }
+
+  if (fallbackImage) {
     return createItem('open-graph-image', 'Social image', 'Social previews will fall back to the cover image.', 'warning');
   }
 
   return createItem('open-graph-image', 'Social image', 'Add a cover or Open Graph image for social previews.', 'fail');
+}
+
+function isWebpImageUrl(value: string): boolean {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return false;
+  }
+
+  try {
+    return new URL(trimmedValue, 'https://colinmichaels.com').pathname.toLowerCase().endsWith('.webp');
+  } catch {
+    return trimmedValue.split('?')[0].split('#')[0].toLowerCase().endsWith('.webp');
+  }
 }
 
 function createCategoryCheck(values: readonly string[]): SeoChecklistItem {

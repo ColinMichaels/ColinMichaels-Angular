@@ -104,7 +104,7 @@ export class BlogOpenGraphService {
     const description = this.truncateDescription(this.toPlainText(
       post.og?.description || post.seo.description || post.seo.metaDescription || post.excerpt
     ));
-    const image = this.seo.toAbsoluteUrl(
+    const image = this.seo.toOpenGraphCompatibleImage(
       post.seo.openGraphImage
       || post.og?.image
       || post.thumbnailImage
