@@ -1,5 +1,16 @@
-import {DatePipe} from '@angular/common';
-import {Component, computed, effect, inject, signal, ChangeDetectionStrategy} from '@angular/core';
+import {DatePipe, DecimalPipe, isPlatformBrowser} from '@angular/common';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+  ElementRef,
+  HostListener,
+  PLATFORM_ID,
+  ViewChild,
+} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map, switchMap} from 'rxjs';
@@ -12,11 +23,17 @@ import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
+import {
+  createBlogReadingStats,
+  createBlogTableOfContents,
+  hasMeaningfulPostUpdate
+} from '../../utils/blog-reading.util';
 
 @Component({
   selector: 'app-blog-detail',
   imports: [
     DatePipe,
+    DecimalPipe,
     BlogBlockRendererComponent,
     BlogShareActionsComponent,
     BlogTagListComponent,
@@ -25,7 +42,13 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
-      <article class="mx-auto max-w-3xl">
+      @if (post()) {
+        <div class="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-transparent">
+          <div class="h-full bg-cyan-300 transition-[width] duration-150" [style.width.%]="readingProgress()"></div>
+        </div>
+      }
+
+      <article #articleElement class="mx-auto max-w-3xl">
         <nav class="mb-10 flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
           <a routerLink="/" class="hover:text-zinc-100">Home</a>
@@ -39,9 +62,20 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
               }
             </div>
             <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl" [innerHTML]="currentPost.title"></h1>
-            <p class="text-sm text-zinc-500">
-              Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
-            </p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
+              <span>
+                Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
+              </span>
+              @if (showUpdatedDate()) {
+                <span>
+                  Updated {{ currentPost.updatedAt | date: 'MMM d, y' }}
+                </span>
+              }
+              @if (readingStats(); as stats) {
+                <span>{{ stats.readingMinutes }} min read</span>
+                <span>{{ stats.wordCount | number }} words</span>
+              }
+            </div>
             <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
             @if (currentPost.tags.length > 0) {
               <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
@@ -62,7 +96,29 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
             >
           </header>
 
-          <app-blog-block-renderer [blocks]="currentPost.blocks" [fallbackAlt]="currentPost.title"></app-blog-block-renderer>
+          @if (tableOfContents().length > 1) {
+            <nav aria-labelledby="table-of-contents-heading" class="mb-10 border border-zinc-800 bg-zinc-900/60 p-5">
+              <h2 id="table-of-contents-heading"
+                  class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                Contents
+              </h2>
+              <ol class="mt-4 space-y-2 text-sm text-zinc-400">
+                @for (item of tableOfContents(); track item.id) {
+                  <li [class.pl-4]="item.level === 3">
+                    <a [href]="createPostAnchorHref(currentPost.slug, item.id)" class="hover:text-cyan-200">
+                      {{ item.text }}
+                    </a>
+                  </li>
+                }
+              </ol>
+            </nav>
+          }
+
+          <app-blog-block-renderer
+            [blocks]="currentPost.blocks"
+            [fallbackAlt]="currentPost.title"
+            [anchorPath]="createPostPath(currentPost.slug)"
+          ></app-blog-block-renderer>
 
           <footer class="mt-14 border-t border-zinc-800 pt-8">
             @if (previousPost() || nextPost()) {
@@ -214,9 +270,12 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
   `,
 })
 export class BlogDetailComponent {
+  @ViewChild('articleElement') private articleElement?: ElementRef<HTMLElement>;
+
   private readonly route = inject(ActivatedRoute);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly openGraph = inject(BlogOpenGraphService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly slug = toSignal(
@@ -234,7 +293,23 @@ export class BlogDetailComponent {
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
+  protected readonly readingProgress = signal(0);
   protected readonly currentYear = new Date().getFullYear();
+  protected readonly readingStats = computed(() => {
+    const post = this.post();
+
+    return post ? createBlogReadingStats(post) : null;
+  });
+  protected readonly tableOfContents = computed(() => {
+    const post = this.post();
+
+    return post ? createBlogTableOfContents(post.blocks) : [];
+  });
+  protected readonly showUpdatedDate = computed(() => {
+    const post = this.post();
+
+    return post ? hasMeaningfulPostUpdate(post) : false;
+  });
   protected readonly currentPostIndex = computed(() => (
     this.posts().findIndex(post => post.slug === this.slug())
   ));
@@ -270,6 +345,7 @@ export class BlogDetailComponent {
 
       if (post) {
         this.shareMetadata.set(this.openGraph.applyBlogPost(post));
+        this.readingProgress.set(0);
         return;
       }
 
@@ -279,6 +355,28 @@ export class BlogDetailComponent {
         this.openGraph.applyMissingBlogPost(this.slug());
       }
     });
+  }
+
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  protected updateReadingProgress(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const article = this.articleElement?.nativeElement;
+
+    if (!article) {
+      this.readingProgress.set(0);
+      return;
+    }
+
+    const rect = article.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const readableDistance = Math.max(1, rect.height - viewportHeight);
+    const readDistance = Math.min(readableDistance, Math.max(0, -rect.top));
+
+    this.readingProgress.set(Math.round((readDistance / readableDistance) * 100));
   }
 
   private getSharedTaxonomyCount(post: BlogPostSummary, currentPost: BlogPostSummary): number {
@@ -295,5 +393,13 @@ export class BlogDetailComponent {
 
   protected suggestedPostImage(post: BlogPostSummary): string {
     return post.thumbnailImage?.trim() || post.coverImage;
+  }
+
+  protected createPostPath(slug: string): string {
+    return `/${this.pathNames.BLOG}/${slug}`;
+  }
+
+  protected createPostAnchorHref(slug: string, headingId: string): string {
+    return `${this.createPostPath(slug)}#${headingId}`;
   }
 }

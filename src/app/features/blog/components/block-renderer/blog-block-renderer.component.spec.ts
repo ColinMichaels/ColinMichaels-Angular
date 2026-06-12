@@ -70,4 +70,26 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.querySelector('blockquote')?.textContent).toContain('A strong editorial line.');
     expect(element.querySelector('cite')?.textContent).toContain('Field notes');
   });
+
+  it('renders linkable heading anchors', () => {
+    fixture.componentRef.setInput('anchorPath', '/blog/test-post');
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'heading-1',
+        type: 'header',
+        data: {
+          text: 'Anchor Heading',
+          level: 2,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const heading = element.querySelector('h2');
+    const link = heading?.querySelector('a');
+
+    expect(heading?.id).toBe('anchor-heading');
+    expect(link?.getAttribute('href')).toBe('/blog/test-post#anchor-heading');
+  });
 });
