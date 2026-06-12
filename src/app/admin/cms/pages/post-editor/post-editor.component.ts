@@ -6,7 +6,7 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import type {OutputData} from '@editorjs/editorjs';
 import {lastValueFrom} from 'rxjs';
 
-import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
+import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
@@ -116,6 +116,10 @@ function isBlogPostStatus(value: unknown): value is BlogPostStatus {
   return typeof value === 'string' && statusOptions.includes(value as BlogPostStatus);
 }
 
+function getTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function isBlogAuthor(value: unknown): value is BlogPost['author'] {
   return isRecord(value)
     && typeof value['name'] === 'string'
@@ -126,8 +130,18 @@ function isBlogSeo(value: unknown): value is BlogPost['seo'] {
   return isRecord(value)
     && typeof value['title'] === 'string'
     && typeof value['description'] === 'string'
+    && (typeof value['metaTitle'] === 'string' || typeof value['metaTitle'] === 'undefined')
+    && (typeof value['metaDescription'] === 'string' || typeof value['metaDescription'] === 'undefined')
     && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
     && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined');
+}
+
+function isBlogOpenGraph(value: unknown): value is NonNullable<BlogPost['og']> {
+  return isRecord(value)
+    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined')
+    && (typeof value['description'] === 'string' || typeof value['description'] === 'undefined')
+    && (typeof value['image'] === 'string' || typeof value['image'] === 'undefined')
+    && (typeof value['imageAlt'] === 'string' || typeof value['imageAlt'] === 'undefined');
 }
 
 function isBlogPost(value: unknown): value is BlogPost {
@@ -140,11 +154,14 @@ function isBlogPost(value: unknown): value is BlogPost {
     && typeof value['title'] === 'string'
     && typeof value['excerpt'] === 'string'
     && typeof value['coverImage'] === 'string'
+    && (typeof value['thumbnailImage'] === 'string' || typeof value['thumbnailImage'] === 'undefined')
     && isBlogAuthor(value['author'])
     && isStringArray(value['categories'])
+    && (isStringArray(value['subcategories']) || typeof value['subcategories'] === 'undefined')
     && isStringArray(value['tags'])
     && isBlogPostStatus(value['status'])
     && isBlogSeo(value['seo'])
+    && (isBlogOpenGraph(value['og']) || typeof value['og'] === 'undefined')
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
     && typeof value['createdAt'] === 'string'
@@ -154,6 +171,327 @@ function isBlogPost(value: unknown): value is BlogPost {
 
 function isEditorDocument(value: unknown): value is OutputData {
   return isRecord(value) && Array.isArray(value['blocks']);
+}
+
+function getImportedStringArray(value: unknown): readonly string[] {
+  if (isStringArray(value)) {
+    return value;
+  }
+
+  return typeof value === 'string' ? fromCsv(value) : [];
+}
+
+function getImportedIsoDate(value: unknown): string | null {
+  const dateValue = getTrimmedString(value);
+
+  if (!dateValue) {
+    return null;
+  }
+
+  const date = new Date(dateValue);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function createImportedBlockId(index: number): string {
+  return `imported-${Date.now().toString(36)}-${index}`;
+}
+
+function normalizeMarkdownInline(value: string): string {
+  return value
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+}
+
+function createMarkdownParagraph(lines: readonly string[], index: number): BlogContentBlock {
+  return {
+    id: createImportedBlockId(index),
+    type: 'paragraph',
+    data: {
+      text: normalizeMarkdownInline(lines.join(' ')),
+    },
+  };
+}
+
+function createBlogBlocksFromMarkdown(content: string): readonly BlogContentBlock[] {
+  const blocks: BlogContentBlock[] = [];
+  const paragraphLines: string[] = [];
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  let index = 0;
+  let isInCodeFence = false;
+  let codeFenceLanguage = '';
+  let codeFenceLines: string[] = [];
+
+  const flushParagraph = (): void => {
+    if (paragraphLines.length === 0) {
+      return;
+    }
+
+    blocks.push(createMarkdownParagraph(paragraphLines, index));
+    paragraphLines.length = 0;
+    index += 1;
+  };
+
+  const pushBlock = (block: Omit<BlogContentBlock, 'id'>): void => {
+    blocks.push({
+      ...block,
+      id: createImportedBlockId(index),
+    });
+    index += 1;
+  };
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+    const trimmedLine = line.trim();
+    const codeFenceMatch = trimmedLine.match(/^```([a-z0-9_-]*)/i);
+
+    if (codeFenceMatch) {
+      if (isInCodeFence) {
+        pushBlock({
+          type: 'code',
+          data: {
+            language: codeFenceLanguage,
+            code: codeFenceLines.join('\n'),
+          },
+        });
+        isInCodeFence = false;
+        codeFenceLanguage = '';
+        codeFenceLines = [];
+      } else {
+        flushParagraph();
+        isInCodeFence = true;
+        codeFenceLanguage = codeFenceMatch[1] ?? '';
+      }
+
+      continue;
+    }
+
+    if (isInCodeFence) {
+      codeFenceLines.push(line);
+      continue;
+    }
+
+    if (!trimmedLine) {
+      flushParagraph();
+      continue;
+    }
+
+    const imageMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    const headingMatch = trimmedLine.match(/^(#{1,3})\s+(.+)$/);
+    const unorderedListMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
+    const orderedListMatch = trimmedLine.match(/^\d+\.\s+(.+)$/);
+    const quoteMatch = trimmedLine.match(/^>\s+(.+)$/);
+
+    if (imageMatch) {
+      flushParagraph();
+      pushBlock({
+        type: 'image',
+        data: {
+          url: imageMatch[2],
+          alt: imageMatch[1],
+          caption: '',
+          stretched: true,
+        },
+      });
+      continue;
+    }
+
+    if (headingMatch) {
+      flushParagraph();
+      pushBlock({
+        type: 'header',
+        data: {
+          text: normalizeMarkdownInline(headingMatch[2]),
+          level: headingMatch[1].length >= 3 ? 3 : 2,
+        },
+      });
+      continue;
+    }
+
+    if (unorderedListMatch || orderedListMatch) {
+      flushParagraph();
+      const ordered = Boolean(orderedListMatch);
+      const items = [normalizeMarkdownInline((orderedListMatch ?? unorderedListMatch)?.[1] ?? '')];
+
+      while (lines[lineIndex + 1]) {
+        const nextLine = lines[lineIndex + 1]?.trim() ?? '';
+        const nextMatch = ordered
+          ? nextLine.match(/^\d+\.\s+(.+)$/)
+          : nextLine.match(/^[-*]\s+(.+)$/);
+
+        if (!nextMatch) {
+          break;
+        }
+
+        items.push(normalizeMarkdownInline(nextMatch[1]));
+        lineIndex += 1;
+      }
+
+      pushBlock({
+        type: 'list',
+        data: {
+          ordered,
+          items,
+        },
+      });
+      continue;
+    }
+
+    if (quoteMatch) {
+      flushParagraph();
+      pushBlock({
+        type: 'quote',
+        data: {
+          text: normalizeMarkdownInline(quoteMatch[1]),
+          caption: '',
+        },
+      });
+      continue;
+    }
+
+    if (/^-{3,}$/.test(trimmedLine)) {
+      flushParagraph();
+      pushBlock({
+        type: 'delimiter',
+        data: {},
+      });
+      continue;
+    }
+
+    paragraphLines.push(trimmedLine);
+  }
+
+  flushParagraph();
+
+  if (isInCodeFence || codeFenceLines.length > 0) {
+    pushBlock({
+      type: 'code',
+      data: {
+        language: codeFenceLanguage,
+        code: codeFenceLines.join('\n'),
+      },
+    });
+  }
+
+  return blocks;
+}
+
+function createImportedAuthor(value: unknown, fallback: BlogPost['author']): BlogPost['author'] {
+  if (typeof value === 'string') {
+    return {
+      ...fallback,
+      name: requiredText(value, fallback.name),
+    };
+  }
+
+  if (!isRecord(value)) {
+    return fallback;
+  }
+
+  return {
+    ...fallback,
+    name: requiredText(getTrimmedString(value['name']), fallback.name),
+    title: getTrimmedString(value['title']) || fallback.title,
+  };
+}
+
+function createImportedOpenGraph(value: unknown): BlogPost['og'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const og = {
+    title: getTrimmedString(value['title']),
+    description: getTrimmedString(value['description']),
+    image: getTrimmedString(value['image']),
+    imageAlt: getTrimmedString(value['imageAlt']),
+  };
+
+  return og.title || og.description || og.image || og.imageAlt ? og : undefined;
+}
+
+function createImportedBlocks(value: Record<string, unknown>, fallback: readonly BlogContentBlock[]): readonly BlogContentBlock[] {
+  if (Array.isArray(value['blocks'])) {
+    const blocks = createBlogBlocksFromEditorDocument({
+      time: Date.now(),
+      blocks: value['blocks'] as OutputData['blocks'],
+    });
+
+    if (blocks.length > 0) {
+      return blocks;
+    }
+  }
+
+  const content = getTrimmedString(value['content']) || getTrimmedString(value['markdown']);
+
+  if (content) {
+    return createBlogBlocksFromMarkdown(content);
+  }
+
+  return fallback;
+}
+
+function createLooseImportedPost(value: Record<string, unknown>, currentPost: BlogPost): BlogPost | null {
+  const title = getTrimmedString(value['title']);
+  const slug = getTrimmedString(value['slug']);
+  const content = getTrimmedString(value['content']) || getTrimmedString(value['markdown']);
+
+  if (!title && !slug && !content) {
+    return null;
+  }
+
+  const seo = isRecord(value['seo']) ? value['seo'] : {};
+  const og = createImportedOpenGraph(value['og']);
+  const importedTitle = title || currentPost.title;
+  const excerpt = getTrimmedString(value['excerpt']) || getTrimmedString(value['description']) || currentPost.excerpt;
+  const coverImage = getTrimmedString(value['coverImage']) || getTrimmedString(value['cover']) || currentPost.coverImage || DEFAULT_COVER_IMAGE;
+  const thumbnailImage = getTrimmedString(value['thumbnailImage']) || getTrimmedString(value['thumbnail']);
+  const categories = getImportedStringArray(value['categories']);
+  const subcategories = getImportedStringArray(value['subcategories']);
+  const tags = getImportedStringArray(value['tags']);
+  const seoTitle = getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']) || og?.title || importedTitle;
+  const seoDescription = getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']) || og?.description || excerpt;
+  const openGraphImage = getTrimmedString(seo['openGraphImage']) || og?.image;
+  const metaTitle = getTrimmedString(seo['metaTitle']);
+  const metaDescription = getTrimmedString(seo['metaDescription']);
+  const canonical = getTrimmedString(seo['canonical']);
+  const createdAt = getImportedIsoDate(value['createdAt']) ?? currentPost.createdAt;
+  const updatedAt = getImportedIsoDate(value['updatedAt']) ?? currentPost.updatedAt;
+  const publishedAt = getImportedIsoDate(value['publishedAt']) ?? currentPost.publishedAt;
+  const status = isBlogPostStatus(value['status']) ? value['status'] : currentPost.status;
+  const post: BlogPost = {
+    ...currentPost,
+    id: getTrimmedString(value['id']) || currentPost.id,
+    slug: slug || createBlogSlug(importedTitle),
+    title: importedTitle,
+    excerpt,
+    coverImage,
+    author: createImportedAuthor(value['author'], currentPost.author),
+    categories: categories.length > 0 ? categories : currentPost.categories,
+    subcategories: subcategories.length > 0 ? subcategories : currentPost.subcategories,
+    tags: tags.length > 0 ? tags : currentPost.tags,
+    status,
+    seo: {
+      title: seoTitle,
+      description: seoDescription,
+      ...(metaTitle ? {metaTitle} : {}),
+      ...(metaDescription ? {metaDescription} : {}),
+      ...(canonical ? {canonical} : {}),
+      openGraphImage: normalizeOpenGraphImage(openGraphImage, coverImage),
+    },
+    contentFormat: 'editorjs',
+    blocks: createImportedBlocks(value, currentPost.blocks),
+    createdAt,
+    updatedAt,
+    publishedAt,
+  };
+
+  return {
+    ...post,
+    ...(thumbnailImage ? {thumbnailImage} : {}),
+    ...(og ? {og} : {}),
+  };
 }
 
 function getErrorMessage(error: unknown): string {
@@ -968,6 +1306,15 @@ export class CmsPostEditorComponent {
       };
     }
 
+    const looseNestedPost = isRecord(nestedPost) ? createLooseImportedPost(nestedPost, currentPost) : null;
+
+    if (looseNestedPost) {
+      return {
+        post: looseNestedPost,
+        sourceLabel: `post "${looseNestedPost.title || looseNestedPost.slug}"`,
+      };
+    }
+
     if (isRecord(value) && Array.isArray(value['posts'])) {
       const posts = value['posts'].filter(isBlogPost);
       const matchingPost = posts.find(post => post.id === currentPost.id || post.slug === currentPost.slug) ?? posts[0];
@@ -978,6 +1325,28 @@ export class CmsPostEditorComponent {
           sourceLabel: `backup post "${matchingPost.title || matchingPost.slug}"`,
         };
       }
+
+      const loosePosts = value['posts']
+        .filter(isRecord)
+        .map(post => createLooseImportedPost(post, currentPost))
+        .filter((post): post is BlogPost => Boolean(post));
+      const matchingLoosePost = loosePosts.find(post => post.id === currentPost.id || post.slug === currentPost.slug) ?? loosePosts[0];
+
+      if (matchingLoosePost) {
+        return {
+          post: matchingLoosePost,
+          sourceLabel: `backup post "${matchingLoosePost.title || matchingLoosePost.slug}"`,
+        };
+      }
+    }
+
+    const loosePost = isRecord(value) ? createLooseImportedPost(value, currentPost) : null;
+
+    if (loosePost) {
+      return {
+        post: loosePost,
+        sourceLabel: `post "${loosePost.title || loosePost.slug}"`,
+      };
     }
 
     if (isEditorDocument(value)) {
@@ -1000,6 +1369,7 @@ export class CmsPostEditorComponent {
 
     const importedTitle = requiredText(importedPost.title, this.currentPost.title);
     const importedCoverImage = requiredText(importedPost.coverImage, DEFAULT_COVER_IMAGE);
+    const importedOpenGraphImage = importedPost.seo.openGraphImage || importedPost.og?.image;
     const importedSlug = this.blogRepository.createUniqueSlug(
       importedPost.slug || createBlogSlug(importedTitle),
       this.currentPost.id
@@ -1020,10 +1390,13 @@ export class CmsPostEditorComponent {
       tags: [...importedPost.tags],
       seo: {
         ...importedPost.seo,
-        title: requiredText(importedPost.seo.title, importedTitle),
-        description: requiredText(importedPost.seo.description, importedPost.excerpt),
+        title: requiredText(importedPost.seo.title || importedPost.seo.metaTitle || importedPost.og?.title || '', importedTitle),
+        description: requiredText(
+          importedPost.seo.description || importedPost.seo.metaDescription || importedPost.og?.description || '',
+          importedPost.excerpt
+        ),
         canonical: importedPost.seo.canonical ?? this.createCanonicalUrl(importedSlug),
-        openGraphImage: normalizeOpenGraphImage(importedPost.seo.openGraphImage, importedCoverImage),
+        openGraphImage: normalizeOpenGraphImage(importedOpenGraphImage, importedCoverImage),
       },
       contentFormat: 'editorjs',
       blocks: importedPost.blocks,

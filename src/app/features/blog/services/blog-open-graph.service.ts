@@ -77,10 +77,19 @@ export class BlogOpenGraphService {
   }
 
   createBlogPostMetadata(post: BlogPost): BlogShareMetadata {
-    const title = this.toPlainText(post.seo.title || post.title);
-    const description = this.truncateDescription(this.toPlainText(post.seo.description || post.excerpt));
-    const image = this.seo.toAbsoluteUrl(post.seo.openGraphImage || post.coverImage || this.findFirstImageBlockUrl(post) || HOMEPAGE_OG_IMAGE);
-    const imageAlt = this.toPlainText(this.findFirstImageBlockAlt(post) || `${post.title} cover image`);
+    const title = this.toPlainText(post.og?.title || post.seo.title || post.seo.metaTitle || post.title);
+    const description = this.truncateDescription(this.toPlainText(
+      post.og?.description || post.seo.description || post.seo.metaDescription || post.excerpt
+    ));
+    const image = this.seo.toAbsoluteUrl(
+      post.seo.openGraphImage
+      || post.og?.image
+      || post.thumbnailImage
+      || post.coverImage
+      || this.findFirstImageBlockUrl(post)
+      || HOMEPAGE_OG_IMAGE
+    );
+    const imageAlt = this.toPlainText(post.og?.imageAlt || this.findFirstImageBlockAlt(post) || `${post.title} preview image`);
     const url = post.seo.canonical ? this.seo.toAbsoluteUrl(post.seo.canonical) : this.seo.createUrl(`/${PATH_NAMES.BLOG}/${post.slug}`);
 
     return {
