@@ -8,7 +8,11 @@ import {BlogCategoryNavComponent} from '../../components/category-nav/blog-categ
 import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
-import {createBlogCategorySlug, createBlogCategoryTitle} from '../../utils/blog-category-url.util';
+import {
+  createBlogCategorySlug,
+  createBlogCategoryTitle,
+  getBlogTaxonomyTerms
+} from '../../utils/blog-category-url.util';
 
 @Component({
   selector: 'app-blog-category',
@@ -79,7 +83,7 @@ export class BlogCategoryComponent {
   protected readonly categorySlugValue = computed(() => createBlogCategorySlug(this.categoryParam()));
 
   private readonly matchedCategory = computed(() => {
-    const categories = this.posts().flatMap(p => p.categories);
+    const categories = this.posts().flatMap(post => getBlogTaxonomyTerms(post));
     return categories.find(c => createBlogCategorySlug(c) === this.categorySlugValue()) ?? null;
   });
 
@@ -89,7 +93,7 @@ export class BlogCategoryComponent {
 
   protected readonly filteredPosts = computed(() => (
     this.posts().filter(post =>
-      post.categories.some(c => createBlogCategorySlug(c) === this.categorySlugValue())
+      getBlogTaxonomyTerms(post).some(term => createBlogCategorySlug(term) === this.categorySlugValue())
     )
   ));
 

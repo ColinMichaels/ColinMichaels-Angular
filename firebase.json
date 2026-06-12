@@ -51,6 +51,13 @@
     ],
     "rewrites": [
       {
+        "source": "/sitemap.xml",
+        "function": {
+          "functionId": "sitemapXml",
+          "region": "us-east1"
+        }
+      },
+      {
         "source": "**",
         "function": {
           "functionId": "renderSeoHtml",

@@ -71,6 +71,7 @@ export interface BlogPost {
   coverImage: string;
   author: BlogAuthor;
   categories: readonly string[];
+  subcategories?: readonly string[];
   tags: readonly string[];
   status: BlogPostStatus;
   seo: BlogSeoMetadata;
@@ -89,6 +90,7 @@ export interface BlogPostSummary {
   coverImage: string;
   author: BlogAuthor;
   categories: readonly string[];
+  subcategories?: readonly string[];
   tags: readonly string[];
   publishedAt: string | null;
   updatedAt: string;
