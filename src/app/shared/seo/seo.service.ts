@@ -4,7 +4,7 @@ import {Meta, Title} from '@angular/platform-browser';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {filter} from 'rxjs/operators';
 
-import {DEFAULT_LOCALE, SITE_NAME, SITE_URL} from './seo.metadata';
+import {DEFAULT_LOCALE, HOMEPAGE_OG_IMAGE, SITE_NAME, SITE_URL} from './seo.metadata';
 import {SeoMetadata, SeoStructuredDataObject} from './seo.model';
 
 const jsonLdScriptId = 'seo-json-ld';
@@ -50,7 +50,7 @@ export class SeoService {
 
   apply(metadata: SeoMetadata): void {
     const url = this.createUrl(metadata.path);
-    const image = this.toAbsoluteUrl(metadata.image);
+    const image = this.toOpenGraphCompatibleImage(metadata.image);
     const type = metadata.type ?? 'website';
     const imageWidth = String(metadata.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH);
     const imageHeight = String(metadata.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT);
@@ -106,6 +106,18 @@ export class SeoService {
     } catch {
       return trimmedValue;
     }
+  }
+
+  toOpenGraphCompatibleImage(value: string): string {
+    const image = this.toAbsoluteUrl(value || '');
+
+    if (!this.isWebpImageUrl(image)) {
+      return image;
+    }
+
+    const jpegAsset = this.createJpegAssetUrl(image);
+
+    return jpegAsset ? this.toAbsoluteUrl(jpegAsset) : this.toAbsoluteUrl(HOMEPAGE_OG_IMAGE);
   }
 
   createBlogPostingJsonLd(options: {
@@ -307,7 +319,23 @@ export class SeoService {
       return 'image/avif';
     }
 
-    return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  private isWebpImageUrl(value: string): boolean {
+    return this.parseUrlPathname(value).endsWith('.webp');
+  }
+
+  private createJpegAssetUrl(value: string): string {
+    try {
+      const url = new URL(value, SITE_URL);
+
+      return url.origin === SITE_URL && url.pathname.startsWith('/assets/')
+        ? `${url.pathname.replace(/\.webp$/i, '.jpg')}${url.search}${url.hash}`
+        : '';
+    } catch {
+      return '';
+    }
   }
 
   private parseUrlPathname(value: string): string {

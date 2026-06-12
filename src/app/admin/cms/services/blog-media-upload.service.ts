@@ -13,6 +13,7 @@ export interface BlogMediaOptimizationOptions {
   maxHeight?: number;
   quality?: number;
   outputType?: BlogMediaOptimizationOutputType;
+  forceOutputType?: boolean;
   minSavingsPercent?: number;
 }
 
@@ -64,6 +65,7 @@ interface ResolvedOptimizationOptions {
   maxHeight: number;
   quality: number;
   outputType: BlogMediaOptimizationOutputType;
+  forceOutputType: boolean;
   minSavingsPercent: number;
 }
 
@@ -86,6 +88,7 @@ const DEFAULT_OPTIMIZATION: ResolvedOptimizationOptions = {
   maxHeight: 1920,
   quality: 0.82,
   outputType: 'image/webp',
+  forceOutputType: false,
   minSavingsPercent: 3,
 };
 const OPTIMIZABLE_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -186,8 +189,15 @@ export class BlogMediaUploadService {
       const savingsPercent = file.size > 0 ? (savings / file.size) * 100 : 0;
       const maxSizeBytes = options.maxSizeBytes ?? DEFAULT_MAX_IMAGE_SIZE_BYTES;
       const optimizedFitsWhenOriginalDoesNot = file.size > maxSizeBytes && blob.size <= maxSizeBytes;
+      const forcedOutputFits = resolvedOptimization.forceOutputType
+        && blob.type === resolvedOptimization.outputType
+        && blob.type !== file.type
+        && blob.size <= maxSizeBytes;
 
-      if (savings <= 0 || (savingsPercent < resolvedOptimization.minSavingsPercent && !optimizedFitsWhenOriginalDoesNot)) {
+      if (
+        !forcedOutputFits
+        && (savings <= 0 || (savingsPercent < resolvedOptimization.minSavingsPercent && !optimizedFitsWhenOriginalDoesNot))
+      ) {
         return this.createPreparedUploadFile(file, file, false, image.width, image.height);
       }
 

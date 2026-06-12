@@ -17,7 +17,7 @@ export const BLOG_POSTS: readonly BlogPost[] = [
     seo: {
       title: 'Architecture Boundaries for ColinMichaels.com',
       description: 'How the public site, Core OS framework, labs, and admin tools are being separated incrementally.',
-      openGraphImage: '/assets/images/backgrounds/day.webp',
+      openGraphImage: '/assets/images/backgrounds/day.jpg',
     },
     contentFormat: 'editorjs',
     blocks: [
@@ -77,7 +77,7 @@ export const BLOG_POSTS: readonly BlogPost[] = [
     seo: {
       title: 'CMS Foundation Notes',
       description: 'Draft implementation notes for future blog publishing workflows.',
-      openGraphImage: '/assets/images/backgrounds/night.webp',
+      openGraphImage: '/assets/images/backgrounds/night.jpg',
     },
     contentFormat: 'editorjs',
     blocks: [
