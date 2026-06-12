@@ -27,6 +27,7 @@ const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Upd
 const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
+const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|ogg|otf|png|svg|ttf|txt|wav|webmanifest|webp|woff2?)$/i;
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
@@ -354,8 +355,19 @@ export const renderSeoHtml = onRequest(
       return;
     }
 
+    const requestPath = getRequestPath(request);
+
+    if (isStaticAssetRequest(requestPath)) {
+      response
+        .status(404)
+        .set('Cache-Control', 'public, max-age=60')
+        .set('Content-Type', 'text/plain; charset=utf-8')
+        .send(request.method === 'HEAD' ? '' : 'Not Found');
+      return;
+    }
+
     try {
-      const metadata = await createSeoMetadataForPath(getRequestPath(request));
+      const metadata = await createSeoMetadataForPath(requestPath);
       const html = injectSeoMetadata(readSeoIndexTemplate(), metadata);
 
       response
@@ -1024,6 +1036,10 @@ function normalizeSeoPath(path: string): string {
   const withoutTrailingSlash = withoutIndex.length > 1 ? withoutIndex.replace(/\/+$/, '') : withoutIndex;
 
   return withoutTrailingSlash || '/';
+}
+
+function isStaticAssetRequest(path: string): boolean {
+  return STATIC_ASSET_PATH_PATTERN.test(normalizeSeoPath(path));
 }
 
 function decodeSlugSegment(value: string): string {
