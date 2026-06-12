@@ -27,8 +27,17 @@ export type BlogBlockType =
 export interface BlogSeoMetadata {
   title: string;
   description: string;
+  metaTitle?: string;
+  metaDescription?: string;
   canonical?: string;
   openGraphImage?: string;
+}
+
+export interface BlogOpenGraphMetadata {
+  title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
 }
 
 export interface BlogAuthor {
@@ -69,12 +78,14 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   coverImage: string;
+  thumbnailImage?: string;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];
   tags: readonly string[];
   status: BlogPostStatus;
   seo: BlogSeoMetadata;
+  og?: BlogOpenGraphMetadata;
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
   createdAt: string;
@@ -88,6 +99,7 @@ export interface BlogPostSummary {
   title: string;
   excerpt: string;
   coverImage: string;
+  thumbnailImage?: string;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];

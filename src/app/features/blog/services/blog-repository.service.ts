@@ -25,6 +25,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     title: post.title,
     excerpt: post.excerpt,
     coverImage: post.coverImage,
+    thumbnailImage: post.thumbnailImage,
     author: post.author,
     categories: post.categories,
     subcategories: post.subcategories ?? [],
