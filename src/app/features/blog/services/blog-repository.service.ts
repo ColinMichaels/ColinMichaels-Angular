@@ -2,6 +2,7 @@ import {Injectable, inject} from '@angular/core';
 import {map, Observable} from 'rxjs';
 
 import {BlogAdminStats, BlogPost, BlogPostSummary} from '../models/blog-post.model';
+import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
 
 const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
@@ -26,6 +27,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     coverImage: post.coverImage,
     author: post.author,
     categories: post.categories,
+    subcategories: post.subcategories ?? [],
     tags: post.tags,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
@@ -142,6 +144,7 @@ export class BlogRepositoryService {
         title: 'Frontend Engineer',
       },
       categories: [],
+      subcategories: [],
       tags: [],
       status: 'draft',
       seo: {
@@ -255,7 +258,7 @@ export class BlogRepositoryService {
   private createCategories(posts: readonly BlogPost[]): readonly string[] {
     const categories = posts
       .filter(post => post.status === 'published')
-      .flatMap(post => post.categories);
+      .flatMap(post => getBlogTaxonomyTerms(post));
 
     return [...new Set(categories)].sort();
   }

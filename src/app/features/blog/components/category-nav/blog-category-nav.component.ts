@@ -4,7 +4,7 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
-import {createBlogCategorySlug} from '../../utils/blog-category-url.util';
+import {createBlogCategorySlug, getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
 
 interface CategoryWithCount {
   name: string;
@@ -22,11 +22,11 @@ interface CategoryWithCount {
         <div class="flex min-w-max gap-2 pb-0.5">
           <a
             [routerLink]="['/', pathNames.BLOG]"
-            [class]="activeSlug() == null ? activeCls : inactiveCls"
-            [attr.aria-current]="activeSlug() == null ? 'page' : null"
+            [class]="activeSlug() === null ? activeCls : inactiveCls"
+            [attr.aria-current]="activeSlug() === null ? 'page' : null"
           >
             All
-            <span [class]="activeSlug() == null ? activeBadgeCls : inactiveBadgeCls">
+            <span [class]="activeSlug() === null ? activeBadgeCls : inactiveBadgeCls">
               {{ totalCount() }}
             </span>
           </a>
@@ -71,7 +71,7 @@ export class BlogCategoryNavComponent {
     const countMap = new Map<string, { name: string; count: number }>();
 
     for (const post of this.posts()) {
-      for (const category of post.categories) {
+      for (const category of getBlogTaxonomyTerms(post)) {
         const slug = createBlogCategorySlug(category);
         const entry = countMap.get(slug);
         if (entry) {
