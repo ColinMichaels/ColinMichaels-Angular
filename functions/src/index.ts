@@ -976,7 +976,7 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
 } {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
-  const image = createAbsoluteUrl(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
+  const image = createAbsoluteUrl(toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE));
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
   const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
@@ -1133,7 +1133,7 @@ function createStaticSeoMetadata(options: {
 function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
-  const image = post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE;
+  const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
   const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
@@ -1367,6 +1367,34 @@ function createAbsoluteUrl(value: string): string {
   }
 }
 
+function toOpenGraphCompatibleImage(value: string): string {
+  const image = createAbsoluteUrl(value || HOMEPAGE_OG_IMAGE);
+
+  if (!isWebpImageUrl(image)) {
+    return image;
+  }
+
+  const jpegAsset = createJpegAssetUrl(image);
+
+  return jpegAsset || HOMEPAGE_OG_IMAGE;
+}
+
+function isWebpImageUrl(value: string): boolean {
+  return parseUrlPathname(value).endsWith('.webp');
+}
+
+function createJpegAssetUrl(value: string): string {
+  try {
+    const url = new URL(value, SITE_URL);
+
+    return url.origin === SITE_URL && url.pathname.startsWith('/assets/')
+      ? `${url.pathname.replace(/\.webp$/i, '.jpg')}${url.search}${url.hash}`
+      : '';
+  } catch {
+    return '';
+  }
+}
+
 function createHomeJsonLd(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
@@ -1514,7 +1542,7 @@ function getImageMimeType(imageUrl: string): string {
     return 'image/avif';
   }
 
-  return 'image/webp';
+  return 'image/jpeg';
 }
 
 function parseUrlPathname(value: string): string {

@@ -12,7 +12,7 @@ describe('blog SEO checklist', () => {
     seoDescription: 'A practical implementation note on Angular CMS architecture, publishing workflows, and metadata systems for public-facing blogs.',
     canonical: 'https://colinmichaels.com/blog/practical-angular-cms-architecture-notes',
     generatedCanonicalUrl: 'https://colinmichaels.com/blog/practical-angular-cms-architecture-notes',
-    openGraphImage: '/assets/social/post.webp',
+    openGraphImage: '/assets/social/post.jpg',
     blocks: [
       {
         id: 'heading',
@@ -65,5 +65,17 @@ describe('blog SEO checklist', () => {
 
     expect(checklist.items.find(item => item.id === 'open-graph-image')?.status).toBe('warning');
     expect(createSocialPreviewImage({...baseInput, openGraphImage: ''})).toBe(baseInput.coverImage);
+  });
+
+  it('fails WebP Open Graph images for social preview compatibility', () => {
+    const checklist = createSeoChecklist({
+      ...baseInput,
+      openGraphImage: '/assets/social/post.webp',
+    });
+
+    const socialImage = checklist.items.find(item => item.id === 'open-graph-image');
+
+    expect(socialImage?.status).toBe('fail');
+    expect(socialImage?.description).toContain('JPEG or PNG');
   });
 });
