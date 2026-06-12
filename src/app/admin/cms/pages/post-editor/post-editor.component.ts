@@ -547,7 +547,7 @@ function getErrorMessage(error: unknown): string {
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="min-h-screen bg-zinc-950 px-5 pb-36 pt-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-6xl space-y-8">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
@@ -600,18 +600,6 @@ function getErrorMessage(error: unknown): string {
                     class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
                     (blur)="normalizeSlug()"
                   >
-                </label>
-
-                <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Status</span>
-                  <select
-                    formControlName="status"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                    @for (status of statuses; track status) {
-                      <option [value]="status">{{ status }}</option>
-                    }
-                  </select>
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
@@ -759,6 +747,7 @@ function getErrorMessage(error: unknown): string {
               <app-editor-js
                 [title]="editorTitle"
                 [saveLabel]="'Save Post'"
+                [showSaveAction]="false"
                 [initialData]="initialData"
                 [imageUploader]="uploadEditorImage"
                 (saved)="onSaved($event)"
@@ -1025,6 +1014,52 @@ function getErrorMessage(error: unknown): string {
               }
             </aside>
           </section>
+
+          <section
+            class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-3 shadow-2xl shadow-black/40 backdrop-blur sm:px-8 lg:px-12"
+            aria-label="Post actions"
+          >
+            <div class="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label class="flex flex-col gap-1 sm:min-w-52">
+                  <span class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Status</span>
+                  <select
+                    [formControl]="postForm.controls.status"
+                    class="border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm font-medium text-zinc-100 outline-none focus:border-cyan-300"
+                  >
+                    @for (status of statuses; track status) {
+                      <option [value]="status">{{ status }}</option>
+                    }
+                  </select>
+                </label>
+
+                <div class="text-sm text-zinc-400">
+                  <p class="font-medium text-zinc-200">{{ editorTitle }}</p>
+                  <p class="break-all text-xs text-zinc-500">/{{ postForm.controls.slug.value }}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
+                <button
+                  type="button"
+                  class="border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                  [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
+                  (click)="deleteCurrentPost()"
+                >
+                  {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
+                </button>
+
+                <button
+                  type="button"
+                  class="border border-cyan-400 bg-cyan-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
+                  [disabled]="isSaveInProgress || isDeleteInProgress"
+                  (click)="savePost()"
+                >
+                  {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
+                </button>
+              </div>
+            </div>
+          </section>
         } @else if (isPostLoading()) {
           <section class="border border-zinc-800 bg-zinc-900 p-6">
             <h1 class="text-2xl font-semibold text-zinc-50">Loading post</h1>
@@ -1066,6 +1101,8 @@ export class CmsPostEditorComponent {
   protected lastSaved: EditorSavedDocument | null = null;
   protected saveMessage = '';
   protected saveError = '';
+  protected isSaveInProgress = false;
+  protected isDeleteInProgress = false;
   protected assistantResult: BlogAssistantResult | null = null;
   protected assistantMessage = '';
   protected assistantError = '';
@@ -1382,6 +1419,66 @@ export class CmsPostEditorComponent {
     }
 
     this.postForm.markAsDirty();
+  }
+
+  protected async savePost(): Promise<void> {
+    this.saveError = '';
+    this.saveMessage = '';
+
+    if (!this.editorComponent) {
+      this.saveError = 'The editor is still loading. Try saving again in a moment.';
+      return;
+    }
+
+    this.isSaveInProgress = true;
+
+    try {
+      const data = await this.editorComponent.getDocument();
+
+      await this.onSaved({
+        data,
+        savedAt: new Date().toISOString(),
+        blockCount: data.blocks.length,
+      });
+    } catch (error) {
+      this.saveError = error instanceof Error ? error.message : 'Unable to save editor content.';
+    } finally {
+      this.isSaveInProgress = false;
+    }
+  }
+
+  protected async deleteCurrentPost(): Promise<void> {
+    this.saveError = '';
+    this.saveMessage = '';
+
+    if (!this.currentPost || this.isNewPost) {
+      this.saveError = 'Save this post before deleting it.';
+      return;
+    }
+
+    const post = this.currentPost;
+    const confirmed = window.confirm(`Delete "${post.title}" from Firestore? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isDeleteInProgress = true;
+
+    try {
+      const result = await this.blogRepository.deletePost(post.id);
+
+      if (result === 'not-found') {
+        this.saveError = `Could not delete "${post.title}" because it was not found.`;
+        return;
+      }
+
+      await this.router.navigate(['/admin/cms']);
+    } catch (error) {
+      this.saveError = error instanceof Error ? error.message : 'Unable to delete post from Firestore.';
+    } finally {
+      this.isDeleteInProgress = false;
+    }
   }
 
   protected async onSaved(saved: EditorSavedDocument): Promise<void> {

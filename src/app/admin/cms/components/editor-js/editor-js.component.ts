@@ -118,14 +118,16 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
           >
             Reset
           </button>
-          <button
-            type="button"
-            class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-            [disabled]="isLoading() || isSaving()"
-            (click)="save()"
-          >
-            {{ isSaving() ? 'Saving' : saveLabel }}
-          </button>
+          @if (showSaveAction) {
+            <button
+              type="button"
+              class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+              [disabled]="isLoading() || isSaving()"
+              (click)="save()"
+            >
+              {{ isSaving() ? 'Saving' : saveLabel }}
+            </button>
+          }
         </div>
       </div>
 
@@ -378,6 +380,7 @@ export class EditorJsComponent implements AfterViewInit {
   @Input({required: true}) initialData!: OutputData;
   @Input() title = 'Post Editor';
   @Input() saveLabel = 'Save Draft';
+  @Input() showSaveAction = true;
   @Input() imageUploader: ((file: File) => Promise<EditorImageUploadResult>) | null = null;
   @Output() saved = new EventEmitter<EditorSavedDocument>();
 

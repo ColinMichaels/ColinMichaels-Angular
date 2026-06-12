@@ -16,6 +16,7 @@ import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
+import {AuthService} from '../../../../services/auth.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
@@ -102,6 +103,14 @@ import {
                 <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
                 @if (currentPost.tags.length > 0) {
                   <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
+                }
+                @if (canEditPost()) {
+                  <a
+                    [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS, currentPost.slug, 'edit']"
+                    class="inline-flex rounded border border-amber-300/50 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100 transition-colors hover:border-amber-200 hover:bg-amber-300/20 hover:text-white"
+                  >
+                    Edit post
+                  </a>
                 }
                 @if (shareMetadata(); as share) {
                   <app-blog-share-actions
@@ -295,6 +304,7 @@ export class BlogDetailComponent {
   @ViewChild('articleElement') private articleElement?: ElementRef<HTMLElement>;
 
   private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly openGraph = inject(BlogOpenGraphService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -314,6 +324,12 @@ export class BlogDetailComponent {
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly canEditPost = toSignal(
+    this.authService.getAdminAuthorization().pipe(
+      map(authorization => authorization.isAuthenticated && authorization.isAdmin)
+    ),
+    {initialValue: false}
+  );
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
   protected readonly activeContentSectionId = signal<string | null>(null);
