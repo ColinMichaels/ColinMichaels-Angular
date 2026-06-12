@@ -1,9 +1,10 @@
-import {Component, computed, effect, inject, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
+import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
 import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -13,37 +14,16 @@ import {createBlogCategorySlug, createBlogCategoryTitle} from '../../utils/blog-
   selector: 'app-blog-category',
   imports: [
     RouterLink,
+    BlogCategoryNavComponent,
     BlogPostCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-5xl">
-        <header class="mb-10 grid gap-6 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-4">
-            <h1 class="text-4xl font-semibold text-zinc-50 sm:text-5xl">{{ categoryTitle() }}</h1>
-            <p class="max-w-2xl text-sm leading-6 text-zinc-400">
-              Published posts filed under this category.
-            </p>
-          </div>
-
-          <div class="flex flex-wrap gap-2 md:justify-end">
-            <a
-              [routerLink]="['/', pathNames.BLOG]"
-              class="rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-cyan-300 hover:text-cyan-200"
-            >
-              All
-            </a>
-            @for (category of categories(); track category) {
-              <a
-                [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
-                [class]="isActiveCategory(category) ? activeCategoryClass : inactiveCategoryClass"
-                [attr.aria-current]="isActiveCategory(category) ? 'page' : null"
-              >
-                {{ category }}
-              </a>
-            }
-          </div>
+        <header class="mb-10 border-b border-zinc-800 pb-8">
+          <h1 class="mb-6 text-3xl font-semibold text-zinc-50 sm:text-5xl">{{ categoryTitle() }}</h1>
+          <app-blog-category-nav [activeSlug]="categorySlugValue()"></app-blog-category-nav>
         </header>
 
         <section>
@@ -88,37 +68,34 @@ export class BlogCategoryComponent {
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
-  protected readonly categories = toSignal(this.blogRepository.getCategories$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
-  protected readonly activeCategoryClass = 'rounded border border-cyan-300 bg-cyan-400 px-3 py-2 text-sm font-medium text-zinc-950';
-  protected readonly inactiveCategoryClass = 'rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-cyan-300 hover:text-cyan-200';
+
   private readonly categoryParam = toSignal(
     this.route.paramMap.pipe(map(params => params.get('category') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('category') ?? ''}
   );
-  private readonly categorySlugValue = computed(() => createBlogCategorySlug(this.categoryParam()));
-  protected readonly matchedCategory = computed(() => (
-    this.categories().find(category => createBlogCategorySlug(category) === this.categorySlugValue()) ?? null
-  ));
+
+  protected readonly categorySlugValue = computed(() => createBlogCategorySlug(this.categoryParam()));
+
+  private readonly matchedCategory = computed(() => {
+    const categories = this.posts().flatMap(p => p.categories);
+    return categories.find(c => createBlogCategorySlug(c) === this.categorySlugValue()) ?? null;
+  });
+
   protected readonly categoryTitle = computed(() => (
     this.matchedCategory() ?? createBlogCategoryTitle(this.categoryParam())
   ));
+
   protected readonly filteredPosts = computed(() => (
-    this.posts().filter(post => post.categories.some(category => createBlogCategorySlug(category) === this.categorySlugValue()))
+    this.posts().filter(post =>
+      post.categories.some(c => createBlogCategorySlug(c) === this.categorySlugValue())
+    )
   ));
 
   constructor() {
     effect(() => {
       this.openGraph.applyBlogCategory(this.categoryTitle());
     });
-  }
-
-  protected categorySlug(category: string): string {
-    return createBlogCategorySlug(category);
-  }
-
-  protected isActiveCategory(category: string): boolean {
-    return createBlogCategorySlug(category) === this.categorySlugValue();
   }
 }
