@@ -120,6 +120,23 @@ function getTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function getPositiveInteger(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value.trim());
+    return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : undefined;
+  }
+
+  return undefined;
+}
+
+function isOptionalPositiveInteger(value: unknown): boolean {
+  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value > 0);
+}
+
 function isBlogAuthor(value: unknown): value is BlogPost['author'] {
   return isRecord(value)
     && typeof value['name'] === 'string'
@@ -133,7 +150,9 @@ function isBlogSeo(value: unknown): value is BlogPost['seo'] {
     && (typeof value['metaTitle'] === 'string' || typeof value['metaTitle'] === 'undefined')
     && (typeof value['metaDescription'] === 'string' || typeof value['metaDescription'] === 'undefined')
     && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
-    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined');
+    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined')
+    && isOptionalPositiveInteger(value['openGraphImageWidth'])
+    && isOptionalPositiveInteger(value['openGraphImageHeight']);
 }
 
 function isBlogOpenGraph(value: unknown): value is NonNullable<BlogPost['og']> {
@@ -141,7 +160,9 @@ function isBlogOpenGraph(value: unknown): value is NonNullable<BlogPost['og']> {
     && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined')
     && (typeof value['description'] === 'string' || typeof value['description'] === 'undefined')
     && (typeof value['image'] === 'string' || typeof value['image'] === 'undefined')
-    && (typeof value['imageAlt'] === 'string' || typeof value['imageAlt'] === 'undefined');
+    && (typeof value['imageAlt'] === 'string' || typeof value['imageAlt'] === 'undefined')
+    && isOptionalPositiveInteger(value['imageWidth'])
+    && isOptionalPositiveInteger(value['imageHeight']);
 }
 
 function isBlogPost(value: unknown): value is BlogPost {
@@ -401,14 +422,18 @@ function createImportedOpenGraph(value: unknown): BlogPost['og'] | undefined {
     return undefined;
   }
 
+  const imageWidth = getPositiveInteger(value['imageWidth']) ?? getPositiveInteger(value['width']);
+  const imageHeight = getPositiveInteger(value['imageHeight']) ?? getPositiveInteger(value['height']);
   const og = {
     title: getTrimmedString(value['title']),
     description: getTrimmedString(value['description']),
     image: getTrimmedString(value['image']),
     imageAlt: getTrimmedString(value['imageAlt']),
+    ...(imageWidth ? {imageWidth} : {}),
+    ...(imageHeight ? {imageHeight} : {}),
   };
 
-  return og.title || og.description || og.image || og.imageAlt ? og : undefined;
+  return og.title || og.description || og.image || og.imageAlt || og.imageWidth || og.imageHeight ? og : undefined;
 }
 
 function createImportedBlocks(value: Record<string, unknown>, fallback: readonly BlogContentBlock[]): readonly BlogContentBlock[] {
@@ -453,6 +478,8 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
   const seoTitle = getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']) || og?.title || importedTitle;
   const seoDescription = getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']) || og?.description || excerpt;
   const openGraphImage = getTrimmedString(seo['openGraphImage']) || og?.image;
+  const openGraphImageWidth = getPositiveInteger(seo['openGraphImageWidth']) ?? og?.imageWidth;
+  const openGraphImageHeight = getPositiveInteger(seo['openGraphImageHeight']) ?? og?.imageHeight;
   const metaTitle = getTrimmedString(seo['metaTitle']);
   const metaDescription = getTrimmedString(seo['metaDescription']);
   const canonical = getTrimmedString(seo['canonical']);
@@ -479,6 +506,8 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
       ...(metaDescription ? {metaDescription} : {}),
       ...(canonical ? {canonical} : {}),
       openGraphImage: normalizeOpenGraphImage(openGraphImage, coverImage),
+      ...(openGraphImageWidth ? {openGraphImageWidth} : {}),
+      ...(openGraphImageHeight ? {openGraphImageHeight} : {}),
     },
     contentFormat: 'editorjs',
     blocks: createImportedBlocks(value, currentPost.blocks),

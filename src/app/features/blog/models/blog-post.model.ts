@@ -31,6 +31,8 @@ export interface BlogSeoMetadata {
   metaDescription?: string;
   canonical?: string;
   openGraphImage?: string;
+  openGraphImageWidth?: number;
+  openGraphImageHeight?: number;
 }
 
 export interface BlogOpenGraphMetadata {
@@ -38,6 +40,8 @@ export interface BlogOpenGraphMetadata {
   description?: string;
   image?: string;
   imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 export interface BlogAuthor {
