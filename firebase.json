@@ -44,6 +44,10 @@
   },
   "hosting": {
     "public": "dist/colin-michaels-firebase/browser",
+    "predeploy": [
+      "npm run build",
+      "npm run prepare:functions-seo"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
