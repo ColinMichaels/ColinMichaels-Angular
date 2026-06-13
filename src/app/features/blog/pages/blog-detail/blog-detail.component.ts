@@ -16,6 +16,7 @@ import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
+import {AuthService} from '../../../../services/auth.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
@@ -52,21 +53,6 @@ import {
       }
 
       <article #articleElement class="mx-auto max-w-7xl">
-        <nav class="mb-10 flex items-center justify-between text-sm text-zinc-400">
-          <a
-            routerLink="/blog"
-            class="inline-flex rounded border border-zinc-800 px-3 py-2 transition-colors hover:border-cyan-400 hover:bg-zinc-900 hover:text-zinc-100"
-          >
-            Blog
-          </a>
-          <a
-            routerLink="/"
-            class="inline-flex rounded border border-zinc-800 px-3 py-2 transition-colors hover:border-cyan-400 hover:bg-zinc-900 hover:text-zinc-100"
-          >
-            Home
-          </a>
-        </nav>
-
         @if (post(); as currentPost) {
           <div
             class="mx-auto grid max-w-4xl gap-10 xl:items-start"
@@ -74,15 +60,6 @@ import {
           >
             <div class="min-w-0 xl:col-start-1">
               <header class="mb-10 space-y-6 border-b border-zinc-800 pb-8">
-                <div class="flex flex-wrap gap-2 text-cyan-200">
-                  @for (category of currentPost.categories; track category) {
-                    <span
-                      class="rounded border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
-                    >
-                      {{ category }}
-                    </span>
-                  }
-                </div>
                 <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl"
                     [innerHTML]="currentPost.title"></h1>
                 <div class="flex flex-wrap gap-x-4 gap-y-1 border-y border-zinc-800/80 py-3 text-sm text-zinc-500">
@@ -99,18 +76,23 @@ import {
                     <span>{{ stats.wordCount | number }} words</span>
                   }
                 </div>
+                <div class="flex flex-wrap gap-2 text-cyan-200">
+                  @for (category of currentPost.categories; track category) {
+                    <span
+                      class="rounded border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
+                    >
+                      {{ category }}
+                    </span>
+                  }
+                </div>
                 <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
-                @if (currentPost.tags.length > 0) {
-                  <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
-                }
-                @if (shareMetadata(); as share) {
-                  <app-blog-share-actions
-                    [title]="share.title"
-                    [excerpt]="share.description"
-                    [path]="pathNames.BLOG + '/' + currentPost.slug"
-                    [url]="share.url"
-                    variant="panel"
-                  ></app-blog-share-actions>
+                @if (canEditPost()) {
+                  <a
+                    [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS, currentPost.slug, 'edit']"
+                    class="inline-flex rounded border border-amber-300/50 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100 transition-colors hover:border-amber-200 hover:bg-amber-300/20 hover:text-white"
+                  >
+                    Edit post
+                  </a>
                 }
                 <img
                   [src]="currentPost.coverImage"
@@ -165,6 +147,23 @@ import {
                       </a>
                     }
                   </nav>
+                }
+
+                @if (currentPost.tags.length > 0 || shareMetadata()) {
+                  <section class="mt-10 grid gap-4 border-t border-zinc-800 pt-8">
+                    @if (currentPost.tags.length > 0) {
+                      <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
+                    }
+                    @if (shareMetadata(); as share) {
+                      <app-blog-share-actions
+                        [title]="share.title"
+                        [excerpt]="share.description"
+                        [path]="pathNames.BLOG + '/' + currentPost.slug"
+                        [url]="share.url"
+                        variant="panel"
+                      ></app-blog-share-actions>
+                    }
+                  </section>
                 }
 
                 @if (suggestedPosts().length > 0) {
@@ -295,6 +294,7 @@ export class BlogDetailComponent {
   @ViewChild('articleElement') private articleElement?: ElementRef<HTMLElement>;
 
   private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly openGraph = inject(BlogOpenGraphService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -314,6 +314,12 @@ export class BlogDetailComponent {
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly canEditPost = toSignal(
+    this.authService.getAdminAuthorization().pipe(
+      map(authorization => authorization.isAuthenticated && authorization.isAdmin)
+    ),
+    {initialValue: false}
+  );
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
   protected readonly activeContentSectionId = signal<string | null>(null);

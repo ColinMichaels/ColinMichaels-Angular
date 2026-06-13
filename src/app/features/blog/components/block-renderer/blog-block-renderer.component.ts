@@ -1,5 +1,5 @@
-import {Component, Input, OnChanges, inject, ChangeDetectionStrategy} from '@angular/core';
-import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
+import {Component, Input, OnChanges, SecurityContext, inject, ChangeDetectionStrategy} from '@angular/core';
+import {DomSanitizer, SafeHtml, SafeResourceUrl} from '@angular/platform-browser';
 
 import {BlogContentBlock} from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
@@ -9,13 +9,17 @@ interface RenderableBlogBlock {
   safeEmbedUrl: SafeResourceUrl | null;
   externalUrl: string | null;
   headingId: string | null;
+  textHtml: SafeHtml;
+  captionHtml: SafeHtml;
+  attributionHtml: SafeHtml;
+  itemHtml: readonly SafeHtml[];
 }
 
 @Component({
   selector: 'app-blog-block-renderer',
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <section class="space-y-6 text-base leading-8 text-zinc-300">
+    <section class="blog-content space-y-6 text-base leading-8 text-zinc-300">
       @for (row of renderedBlocks; track row.block.id) {
         @switch (row.block.type) {
           @case ('header') {
@@ -28,7 +32,7 @@ interface RenderableBlogBlock {
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
                   class="inline-flex items-baseline gap-2 hover:text-cyan-200"
                 >
-                  <span [innerHTML]="row.block.data.text"></span>
+                  <span [innerHTML]="row.textHtml"></span>
                   @if (row.headingId) {
                     <span aria-hidden="true"
                           class="text-sm text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
@@ -44,7 +48,7 @@ interface RenderableBlogBlock {
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
                   class="inline-flex items-baseline gap-2 hover:text-cyan-200"
                 >
-                  <span [innerHTML]="row.block.data.text"></span>
+                  <span [innerHTML]="row.textHtml"></span>
                   @if (row.headingId) {
                     <span aria-hidden="true"
                           class="text-base text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
@@ -54,58 +58,63 @@ interface RenderableBlogBlock {
             }
           }
           @case ('paragraph') {
-            <p [innerHTML]="row.block.data.text"></p>
+            <p [innerHTML]="row.textHtml"></p>
           }
           @case ('quote') {
             <blockquote class="border-l-2 border-cyan-300 pl-5 text-zinc-200">
-              <p [innerHTML]="row.block.data.text"></p>
+              <p [innerHTML]="row.textHtml"></p>
               @if (row.block.data.caption) {
-                <cite class="mt-2 block text-sm not-italic text-zinc-500" [innerHTML]="row.block.data.caption"></cite>
+                <cite class="mt-2 block text-sm not-italic text-zinc-500" [innerHTML]="row.captionHtml"></cite>
               }
             </blockquote>
           }
           @case ('typography') {
             @switch (row.block.data.variant) {
               @case ('eyebrow') {
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300" [innerHTML]="row.block.data.text"></p>
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300"
+                   [innerHTML]="row.textHtml"></p>
               }
               @case ('pullQuote') {
                 <blockquote class="my-10 border-y border-amber-300/40 py-7 text-zinc-100">
-                  <p class="text-2xl font-semibold leading-10 tracking-[-0.02em] sm:text-3xl" [innerHTML]="row.block.data.text"></p>
+                  <p class="text-2xl font-semibold leading-10 tracking-[-0.02em] sm:text-3xl"
+                     [innerHTML]="row.textHtml"></p>
                   @if (row.block.data.attribution) {
-                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-200" [innerHTML]="row.block.data.attribution"></cite>
+                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-200"
+                          [innerHTML]="row.attributionHtml"></cite>
                   }
                 </blockquote>
               }
               @case ('callout') {
                 <aside class="border border-emerald-400/30 bg-emerald-950/30 p-5 text-emerald-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300" [innerHTML]="row.block.data.attribution"></p>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300"
+                       [innerHTML]="row.attributionHtml"></p>
                   }
-                  <div class="leading-8" [innerHTML]="row.block.data.text"></div>
+                  <div class="leading-8" [innerHTML]="row.textHtml"></div>
                 </aside>
               }
               @case ('aside') {
-                <aside class="border-l border-zinc-600 pl-5 text-sm leading-7 text-zinc-400" [innerHTML]="row.block.data.text"></aside>
+                <aside class="border-l border-zinc-600 pl-5 text-sm leading-7 text-zinc-400"
+                       [innerHTML]="row.textHtml"></aside>
               }
               @case ('caption') {
-                <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.block.data.text"></p>
+                <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.textHtml"></p>
               }
               @default {
-                <p class="text-xl leading-9 tracking-[-0.01em] text-zinc-100" [innerHTML]="row.block.data.text"></p>
+                <p class="text-xl leading-9 tracking-[-0.01em] text-zinc-100" [innerHTML]="row.textHtml"></p>
               }
             }
           }
           @case ('list') {
             @if (row.block.data.ordered) {
               <ol class="list-decimal space-y-2 pl-6">
-                @for (item of row.block.data.items ?? []; track item) {
+                @for (item of row.itemHtml; track $index) {
                   <li [innerHTML]="item"></li>
                 }
               </ol>
             } @else {
               <ul class="list-disc space-y-2 pl-6">
-                @for (item of row.block.data.items ?? []; track item) {
+                @for (item of row.itemHtml; track $index) {
                   <li [innerHTML]="item"></li>
                 }
               </ul>
@@ -134,7 +143,7 @@ interface RenderableBlogBlock {
                   decoding="async"
                 >
                 @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.block.data.caption"></figcaption>
+                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
                 }
               </figure>
             }
@@ -153,13 +162,13 @@ interface RenderableBlogBlock {
                   ></iframe>
                 </div>
                 @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.block.data.caption"></figcaption>
+                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
                 }
               </figure>
             } @else if (row.externalUrl) {
               <p>
-                <a [href]="row.externalUrl" target="_blank" rel="noreferrer" class="text-cyan-300 hover:text-cyan-200">
-                  <span [innerHTML]="row.block.data.caption || row.externalUrl"></span>
+                <a [href]="row.externalUrl" target="_blank" rel="noopener noreferrer" class="blog-inline-link">
+                  <span [innerHTML]="row.captionHtml || row.externalUrl"></span>
                 </a>
               </p>
             }
@@ -174,6 +183,24 @@ interface RenderableBlogBlock {
       }
     </section>
   `,
+  styles: [`
+    :host ::ng-deep .blog-inline-link {
+      border-bottom: 1px solid rgba(34, 211, 238, 0.65);
+      color: #67e8f9;
+      font-size: 0.95em;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    }
+
+    :host ::ng-deep .blog-inline-link:hover,
+    :host ::ng-deep .blog-inline-link:focus-visible {
+      background: rgba(8, 145, 178, 0.18);
+      border-color: #fde68a;
+      color: #fde68a;
+      outline: none;
+    }
+  `],
 })
 export class BlogBlockRendererComponent implements OnChanges {
   @Input() blocks: readonly BlogContentBlock[] = [];
@@ -198,7 +225,35 @@ export class BlogBlockRendererComponent implements OnChanges {
       safeEmbedUrl: this.createSafeEmbedUrl(block),
       externalUrl: this.createExternalUrl(block),
       headingId: headingIdMap.get(block.id) ?? null,
+      textHtml: this.createInlineHtml(block.data.text),
+      captionHtml: this.createInlineHtml(block.data.caption),
+      attributionHtml: this.createInlineHtml(block.data.attribution),
+      itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
     }));
+  }
+
+  private createInlineHtml(value: string | undefined): SafeHtml {
+    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
+
+    if (!sanitizedHtml) {
+      return '';
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = sanitizedHtml;
+
+    template.content.querySelectorAll('a[href]').forEach(anchor => {
+      const href = anchor.getAttribute('href')?.trim() ?? '';
+
+      anchor.classList.add('blog-inline-link');
+
+      if (this.shouldOpenInNewTab(href)) {
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+
+    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
   }
 
   private createSafeEmbedUrl(block: BlogContentBlock): SafeResourceUrl | null {
@@ -238,5 +293,9 @@ export class BlogBlockRendererComponent implements OnChanges {
     } catch {
       return null;
     }
+  }
+
+  private shouldOpenInNewTab(href: string): boolean {
+    return href.length > 0 && !href.startsWith('#');
   }
 }

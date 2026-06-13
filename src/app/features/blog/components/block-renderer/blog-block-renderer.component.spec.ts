@@ -92,4 +92,46 @@ describe('BlogBlockRendererComponent', () => {
     expect(heading?.id).toBe('anchor-heading');
     expect(link?.getAttribute('href')).toBe('/blog/test-post#anchor-heading');
   });
+
+  it('opens rich text links in a new tab by default', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'paragraph-1',
+        type: 'paragraph',
+        data: {
+          text: 'Read the <a href="https://example.com/story">source note</a>.',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const link = element.querySelector<HTMLAnchorElement>('p a');
+
+    expect(link?.getAttribute('href')).toBe('https://example.com/story');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link?.classList).toContain('blog-inline-link');
+  });
+
+  it('keeps same-page rich text anchors in the current tab', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'paragraph-2',
+        type: 'paragraph',
+        data: {
+          text: 'Jump to <a href="#details">details</a>.',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const link = element.querySelector<HTMLAnchorElement>('p a');
+
+    expect(link?.getAttribute('href')).toBe('#details');
+    expect(link?.getAttribute('target')).toBeNull();
+    expect(link?.getAttribute('rel')).toBeNull();
+    expect(link?.classList).toContain('blog-inline-link');
+  });
 });

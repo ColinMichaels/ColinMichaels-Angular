@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
+import {DOCUMENT, isPlatformBrowser} from '@angular/common';
+import {ChangeDetectionStrategy, Component, Input, PLATFORM_ID, inject} from '@angular/core';
 
 import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
 
@@ -31,6 +32,7 @@ import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
               [class.bg-cyan-300/10]="item.id === activeHeadingId"
             [class.text-cyan-100]="item.id === activeHeadingId"
             [class.font-medium]="item.id === activeHeadingId"
+            (click)="scrollToHeading($event, item.id)"
             >
             {{ item.text }}
             </a>
@@ -45,9 +47,28 @@ export class BlogTableOfContentsComponent {
   @Input() postPath = '';
   @Input() activeHeadingId: string | null = null;
 
+  private readonly document = inject(DOCUMENT);
+  private readonly platformId = inject(PLATFORM_ID);
+
   protected createAnchorHref(headingId: string): string {
     const normalizedPath = this.postPath.trim().replace(/\/+$/, '');
 
     return normalizedPath ? `${normalizedPath}#${headingId}` : `#${headingId}`;
+  }
+
+  protected scrollToHeading(event: MouseEvent, headingId: string): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const target = this.document.getElementById(headingId);
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    this.document.defaultView?.history.pushState(null, '', this.createAnchorHref(headingId));
+    target.scrollIntoView({behavior: 'smooth', block: 'start'});
   }
 }

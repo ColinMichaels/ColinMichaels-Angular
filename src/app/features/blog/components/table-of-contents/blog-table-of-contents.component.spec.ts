@@ -43,4 +43,32 @@ describe('BlogTableOfContentsComponent', () => {
     expect(links[1].getAttribute('aria-current')).toBe('location');
     expect(links[1].classList).toContain('border-cyan-300');
   });
+
+  it('smooth-scrolls to headings when a TOC link is clicked', () => {
+    const heading = document.createElement('h2');
+    heading.id = 'smooth-heading';
+    heading.scrollIntoView = jasmine.createSpy('scrollIntoView');
+    document.body.appendChild(heading);
+
+    fixture.componentRef.setInput('items', [
+      {
+        blockId: 'heading-1',
+        id: 'smooth-heading',
+        level: 2,
+        text: 'Smooth Heading',
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const link = element.querySelector<HTMLAnchorElement>('a');
+    const clickEvent = new MouseEvent('click', {bubbles: true, cancelable: true});
+
+    link?.dispatchEvent(clickEvent);
+
+    expect(clickEvent.defaultPrevented).toBeTrue();
+    expect(heading.scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'smooth', block: 'start'});
+
+    document.body.removeChild(heading);
+  });
 });

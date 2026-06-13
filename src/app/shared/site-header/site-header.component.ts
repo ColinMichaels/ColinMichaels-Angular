@@ -31,13 +31,11 @@ interface SiteNavItem {
           aria-label="Go to homepage"
           (click)="closeMenu()"
         >
-          <span
+          <h1
             class="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 transition-colors group-hover:text-cyan-700 dark:text-zinc-500 dark:group-hover:text-cyan-300">
             Colin Michaels
-          </span>
-          <span class="block truncate text-sm font-semibold text-slate-950 dark:text-zinc-50 sm:text-base">
-            Developer / Drone Pilot
-          </span>
+          </h1>
+
         </a>
 
         <nav class="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
