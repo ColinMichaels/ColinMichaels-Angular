@@ -618,11 +618,22 @@ export class EditorJsComponent implements AfterViewInit {
         holder: this.editorHolder.nativeElement,
         data: this.initialData,
         autofocus: false,
+        inlineToolbar: true,
         placeholder: 'Start writing...',
+        sanitizer: {
+          a: {
+            href: true,
+            target: true,
+            rel: true,
+          },
+          b: true,
+          i: true,
+          mark: true,
+        },
         tools: {
           header: {
             class: tools.Header,
-            inlineToolbar: ['link'],
+            inlineToolbar: true,
             config: {
               levels: [2, 3],
               defaultLevel: 2,
