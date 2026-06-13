@@ -51,6 +51,8 @@ type BlogShareVariant = 'compact' | 'panel';
         </a>
         <a
           [href]="emailShareUrl"
+          target="_blank"
+          rel="noopener noreferrer"
           [class]="iconClass"
           [attr.aria-label]="'Share ' + plainTitle + ' by email'"
           title="Share by email"
