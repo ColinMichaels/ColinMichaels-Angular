@@ -12,7 +12,7 @@
       <div
         class="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-slate-50 to-transparent dark:from-neutral-950"></div>
 
-      <div class="mx-auto flex min-h-[22svh] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
+      <div class="mx-auto flex min-h-[22svh] max-w-7xl items-center px-4 py-12 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
           <p class="text-sm uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">Blog / Links / Labs</p>
           <h1
@@ -25,12 +25,6 @@
               class="inline-flex border border-cyan-600 px-4 py-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
             >
               Read the blog
-            </a>
-            <a
-              [routerLink]="['/', pathNames.OS_LOGIN]"
-              class="inline-flex border border-emerald-600 px-4 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-300 dark:text-emerald-100 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
-            >
-              Launch OS
             </a>
           </div>
         </div>
@@ -91,6 +85,78 @@
       }
       </div>
     }
+    </section>
+
+    <section id="health-recovery" class="border-y border-white/10 bg-neutral-900/80 py-12">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.28em] text-emerald-300">Health & Recovery</p>
+            <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Weekly Updates</h2>
+            <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">
+              Weekly recovery notes, personal updates, and posts about the recent open heart surgery process.
+            </p>
+          </div>
+          <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
+            Browse the blog
+          </a>
+        </div>
+
+        @if (blogLoadError(); as error) {
+          <div class="mt-8 border border-white/10 bg-zinc-950 p-5 text-zinc-400">
+            <p class="font-medium text-zinc-100">Unable to load health and recovery posts.</p>
+            <p class="mt-2 text-sm">{{ error }}</p>
+          </div>
+        } @else if (blogIsLoading()) {
+          <p class="mt-8 border border-white/10 bg-zinc-950 p-5 text-zinc-400">Loading health and recovery posts.</p>
+        } @else {
+          <div class="mt-8 divide-y divide-zinc-800">
+            @for (post of healthRecoveryPosts(); track post.id) {
+              <app-blog-post-card [post]="post"></app-blog-post-card>
+            } @empty {
+              <p class="border border-white/10 bg-zinc-950 p-5 text-sm leading-6 text-zinc-400">
+                No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
+                open heart surgery, or cardiac recovery will appear here.
+              </p>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section id="medical-information" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-sm uppercase tracking-[0.28em] text-rose-300">Things I learned in the Hospital</p>
+          <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Medical advice from a friend</h2>
+          <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">
+            Sharing some of the things I learned while in the hospital that I wish someone told me.
+          </p>
+        </div>
+        <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
+          View all writing
+        </a>
+      </div>
+
+      @if (blogLoadError(); as error) {
+        <div class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">
+          <p class="font-medium text-zinc-100">Unable to load medical information posts.</p>
+          <p class="mt-2 text-sm">{{ error }}</p>
+        </div>
+      } @else if (blogIsLoading()) {
+        <p class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">Loading medical information posts.</p>
+      } @else {
+        <div class="mt-8 divide-y divide-zinc-800">
+          @for (post of medicalInfoPosts(); track post.id) {
+            <app-blog-post-card [post]="post"></app-blog-post-card>
+          } @empty {
+            <p class="border border-white/10 bg-zinc-900 p-5 text-sm leading-6 text-zinc-400">
+              No published medical information posts yet. Posts tagged or categorized with medical information,
+              procedures, medications, cardiology, or related surgery-care terms will appear here.
+            </p>
+          }
+        </div>
+      }
     </section>
 
     <app-youtube-latest-videos [maxResults]="3"></app-youtube-latest-videos>

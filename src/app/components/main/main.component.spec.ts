@@ -1,17 +1,81 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, of} from 'rxjs';
 
+import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
+import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.service';
 import {NotificationService} from '../game/services/notification.service';
 import {TypewriterService} from '../game/services/typewriter.service';
 import {User, UserService} from '../game/services/user.service';
 import {MainComponent} from './main.component';
+
+const MOCK_POSTS: readonly BlogPostSummary[] = [
+  {
+    id: 'post-architecture-boundaries',
+    slug: 'architecture-boundaries',
+    title: 'Architecture Boundaries for the Site and OS',
+    excerpt: 'A short implementation note on separating the public site, reusable OS framework, labs, and future admin tools.',
+    coverImage: '/assets/images/backgrounds/day.webp',
+    author: {
+      name: 'Colin Michaels',
+      title: 'Frontend Engineer',
+    },
+    categories: ['Architecture'],
+    tags: ['Angular', 'Refactor', 'Core OS'],
+    publishedAt: '2026-05-13T19:30:00.000Z',
+    updatedAt: '2026-05-13T19:30:00.000Z',
+  },
+  {
+    id: 'post-open-heart-weekly-update',
+    slug: 'open-heart-surgery-weekly-update',
+    title: 'Open heart surgery weekly update',
+    excerpt: 'A personal recovery note after recent open heart surgery.',
+    coverImage: '/assets/images/backgrounds/night.webp',
+    author: {
+      name: 'Colin Michaels',
+    },
+    categories: ['Health and Recovery'],
+    tags: ['Open Heart Surgery', 'Weekly Updates'],
+    publishedAt: '2026-06-01T12:00:00.000Z',
+    updatedAt: '2026-06-01T12:00:00.000Z',
+  },
+  {
+    id: 'post-surgery-medical-notes',
+    slug: 'open-heart-surgery-medical-notes',
+    title: 'Open heart surgery medical information',
+    excerpt: 'Procedure notes, medications, and cardiology context from the surgery.',
+    coverImage: '/assets/images/backgrounds/day.webp',
+    author: {
+      name: 'Colin Michaels',
+    },
+    categories: ['Medical Information'],
+    tags: ['Cardiology', 'Medications'],
+    publishedAt: '2026-06-02T12:00:00.000Z',
+    updatedAt: '2026-06-02T12:00:00.000Z',
+  },
+];
 
 describe('MainComponent', () => {
   let fixture: ComponentFixture<MainComponent>;
 
   beforeEach(async () => {
     const notificationService = jasmine.createSpyObj<Pick<NotificationService, 'show'>>('NotificationService', ['show']);
+    const blogRepositoryService = {
+      getPublishedPosts$: jasmine.createSpy('getPublishedPosts$').and.returnValue(of(MOCK_POSTS)),
+      loading$: of(false),
+      error$: of(null),
+    } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'loading$' | 'error$'>;
+    const youtubeFeedService = {
+      getLatestVideos$: jasmine.createSpy('getLatestVideos$').and.returnValue(of({
+        fetchedAt: '2026-06-14T00:00:00.000Z',
+        source: 'youtube-api',
+        channelId: 'channel-id',
+        channelTitle: 'Captain Colin',
+        channelUrl: 'https://www.youtube.com/CaptainColin',
+        videos: [],
+      })),
+    } satisfies Pick<YouTubeFeedService, 'getLatestVideos$'>;
     const typewriterService = jasmine.createSpyObj<Pick<TypewriterService, 'enableSound' | 'setVolume' | 'clear' | 'enqueueLine'>>(
       'TypewriterService',
       ['enableSound', 'setVolume', 'clear', 'enqueueLine'],
@@ -28,9 +92,11 @@ describe('MainComponent', () => {
         RouterTestingModule,
       ],
       providers: [
+        {provide: BlogRepositoryService, useValue: blogRepositoryService},
         {provide: NotificationService, useValue: notificationService},
         {provide: TypewriterService, useValue: typewriterService},
         {provide: UserService, useValue: {user}},
+        {provide: YouTubeFeedService, useValue: youtubeFeedService},
       ],
     }).compileComponents();
 
@@ -44,6 +110,8 @@ describe('MainComponent', () => {
 
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
+    expect(element.querySelector('#health-recovery')).not.toBeNull();
+    expect(element.querySelector('#medical-information')).not.toBeNull();
     expect(element.querySelector('#labs')).not.toBeNull();
     expect(element.querySelector('#os')).toBeNull();
     expect(element.textContent?.match(/Launch OS/g)?.length).toBe(1);
@@ -56,5 +124,14 @@ describe('MainComponent', () => {
 
     expect(element.textContent).toContain('Latest writing');
     expect(element.textContent).toContain('Architecture Boundaries for the Site and OS');
+  });
+
+  it('shows health recovery and medical information blog sections', () => {
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('#health-recovery')?.textContent).toContain('Open heart surgery weekly update');
+    expect(element.querySelector('#medical-information')?.textContent).toContain('Open heart surgery medical information');
   });
 });
