@@ -75,6 +75,8 @@ Generated thumbnails are written to Firebase Storage under `cms/blog-thumbnails/
 
 Manual blog media uploads use the reusable `BlogMediaUploaderComponent` and `BlogMediaUploadService`. Uploaded cover, Open Graph, and Editor.js image assets are written to Firebase Storage under `cms/blog-media/{slug}/{assetRole}/`. The uploader previews stored images in a lightbox and optimizes JPEG, PNG, and WebP files client-side before upload when the optimized result is smaller. Open Graph uploads force JPEG output for social crawler compatibility. Storage rules keep reads public for published blog rendering and restrict writes to admin-capable Firebase Auth custom claims.
 
+Draft preview links are generated from the CMS editor for posts that remain in `draft` status. The editor saves the latest draft, writes a temporary `postPreviews/{token}` snapshot, and exposes it at `/blog/preview/{token}`. Firestore rules allow public single-document reads only while the embedded post is still a draft and the preview expiry timestamp is in the future; listing preview documents remains admin-only.
+
 Admin authorization is enforced through Firebase Auth custom claims. The UI, callable functions, Realtime Database rules, Firestore rules, and Storage rules treat these claims as admin-capable:
 
 - `admin: true`

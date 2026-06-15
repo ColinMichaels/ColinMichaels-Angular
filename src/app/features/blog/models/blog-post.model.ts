@@ -49,6 +49,12 @@ export interface BlogAuthor {
   title?: string;
 }
 
+export interface BlogPostPreview {
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface BlogBlockData {
   text?: string;
   level?: 2 | 3;
@@ -92,6 +98,7 @@ export interface BlogPost {
   og?: BlogOpenGraphMetadata;
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
+  preview?: BlogPostPreview;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;

@@ -785,6 +785,81 @@ function getErrorMessage(error: unknown): string {
                 </dl>
               </section>
 
+              <section class="space-y-3 border-t border-zinc-800 pt-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 class="text-lg font-semibold text-zinc-50">Draft Preview</h2>
+                    <p class="mt-1 text-sm text-zinc-400">Temporary public link for reviewing unpublished draft content.</p>
+                  </div>
+                  @if (hasActivePreview) {
+                    <span class="border border-amber-500/60 px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-amber-200">
+                      Active
+                    </span>
+                  }
+                </div>
+
+                @if (postForm.controls.status.value === 'draft') {
+                  @if (previewUrl) {
+                    <a
+                      [href]="previewUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="block break-all border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-cyan-200 hover:border-cyan-400"
+                    >
+                      {{ previewUrl }}
+                    </a>
+                    <p class="text-xs leading-5 text-zinc-500">Expires {{ previewExpiresAtLabel }}.</p>
+                  } @else {
+                    <p class="text-sm leading-6 text-zinc-500">No active preview link exists for this draft.</p>
+                  }
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      class="border border-cyan-400 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+                      [disabled]="isPreviewInProgress || isSaveInProgress || isDeleteInProgress"
+                      (click)="generatePreviewLink()"
+                    >
+                      {{ hasActivePreview ? 'Refresh Link' : 'Create Link' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                      [disabled]="!previewUrl || isPreviewInProgress"
+                      (click)="copyPreviewLink()"
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      type="button"
+                      class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                      [disabled]="!previewUrl || isPreviewInProgress"
+                      (click)="revokePreviewLink()"
+                    >
+                      Revoke
+                    </button>
+                    <a
+                      [href]="previewUrl || null"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="border border-zinc-700 px-3 py-2 text-center text-xs text-zinc-200 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-600"
+                      [attr.aria-disabled]="previewUrl ? null : 'true'"
+                    >
+                      Open
+                    </a>
+                  </div>
+                } @else {
+                  <p class="text-sm leading-6 text-zinc-500">Preview links are only available while the post status is draft.</p>
+                }
+
+                @if (previewMessage) {
+                  <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">{{ previewMessage }}</p>
+                }
+                @if (previewError) {
+                  <p class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ previewError }}</p>
+                }
+              </section>
+
               <section class="space-y-4 border-t border-zinc-800 pt-5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
@@ -1110,6 +1185,9 @@ export class CmsPostEditorComponent {
   protected isThumbnailLoading: string | null = null;
   protected thumbnailError = '';
   protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
+  protected isPreviewInProgress = false;
+  protected previewMessage = '';
+  protected previewError = '';
   protected readonly uploadEditorImage = async (file: File): Promise<EditorImageUploadResult> => {
     const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
       slug: this.mediaUploadSlug,
@@ -1222,6 +1300,36 @@ export class CmsPostEditorComponent {
 
   protected get socialPreviewImage(): string {
     return createSocialPreviewImage(this.createSeoChecklistInput());
+  }
+
+  protected get previewUrl(): string {
+    const preview = this.currentPost?.preview;
+
+    return preview && this.hasActivePreview
+      ? this.blogRepository.createPreviewUrl(preview.token)
+      : '';
+  }
+
+  protected get hasActivePreview(): boolean {
+    const preview = this.currentPost?.preview;
+
+    if (!preview || this.currentPost?.status !== 'draft') {
+      return false;
+    }
+
+    const expiresAt = new Date(preview.expiresAt).getTime();
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  }
+
+  protected get previewExpiresAtLabel(): string {
+    const preview = this.currentPost?.preview;
+
+    if (!preview) {
+      return 'not set';
+    }
+
+    const expiresAt = new Date(preview.expiresAt);
+    return Number.isNaN(expiresAt.getTime()) ? 'not set' : postedDateFormatter.format(expiresAt);
   }
 
   protected getSeoChecklistStatusLabel(status: SeoChecklistStatus): string {
@@ -1478,6 +1586,79 @@ export class CmsPostEditorComponent {
       this.saveError = error instanceof Error ? error.message : 'Unable to delete post from Firestore.';
     } finally {
       this.isDeleteInProgress = false;
+    }
+  }
+
+  protected async generatePreviewLink(): Promise<void> {
+    this.previewError = '';
+    this.previewMessage = '';
+
+    if (this.postForm.controls.status.value !== 'draft') {
+      this.previewError = 'Set the post status to draft before creating a preview link.';
+      return;
+    }
+
+    this.isPreviewInProgress = true;
+
+    try {
+      await this.savePost();
+
+      if (this.saveError || !this.currentPost) {
+        this.previewError = this.saveError || 'Save the draft before creating a preview link.';
+        return;
+      }
+
+      const result = await this.blogRepository.createPreviewForPost(this.currentPost);
+      this.currentPost = result.post;
+      this.previewMessage = `Created a temporary draft preview link. It expires ${this.previewExpiresAtLabel}.`;
+      this.saveMessage = 'Saved the draft and refreshed its public preview link.';
+    } catch (error) {
+      this.previewError = error instanceof Error ? error.message : 'Unable to create a preview link.';
+    } finally {
+      this.isPreviewInProgress = false;
+    }
+  }
+
+  protected async revokePreviewLink(): Promise<void> {
+    this.previewError = '';
+    this.previewMessage = '';
+
+    if (!this.currentPost?.preview) {
+      this.previewMessage = 'There is no active preview link to revoke.';
+      return;
+    }
+
+    this.isPreviewInProgress = true;
+
+    try {
+      this.currentPost = await this.blogRepository.revokePreviewForPost(this.currentPost);
+      this.previewMessage = 'Revoked the draft preview link.';
+    } catch (error) {
+      this.previewError = error instanceof Error ? error.message : 'Unable to revoke the preview link.';
+    } finally {
+      this.isPreviewInProgress = false;
+    }
+  }
+
+  protected async copyPreviewLink(): Promise<void> {
+    this.previewError = '';
+    this.previewMessage = '';
+
+    if (!this.previewUrl) {
+      this.previewError = 'Create a preview link before copying it.';
+      return;
+    }
+
+    if (!navigator.clipboard) {
+      this.previewError = 'Clipboard access is unavailable in this browser.';
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(this.previewUrl);
+      this.previewMessage = 'Copied the preview link.';
+    } catch (error) {
+      this.previewError = error instanceof Error ? error.message : 'Unable to copy the preview link.';
     }
   }
 
