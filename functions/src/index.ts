@@ -675,6 +675,17 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createBlogTagSeoMetadata(tag);
   }
 
+  if (normalizedPath.startsWith('/blog/preview/')) {
+    const previewToken = decodeSlugSegment(normalizedPath.slice('/blog/preview/'.length));
+    const post = await fetchPreviewSeoBlogPost(previewToken);
+
+    if (post) {
+      return createBlogPreviewSeoMetadata(post, previewToken);
+    }
+
+    return createMissingBlogPostSeoMetadata('preview');
+  }
+
   if (normalizedPath.startsWith('/blog/')) {
     const slug = decodeSlugSegment(normalizedPath.slice('/blog/'.length));
     const post = await fetchPublishedSeoBlogPost(slug);
@@ -1166,6 +1177,32 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
   };
 }
 
+function createBlogPreviewSeoMetadata(post: SeoBlogPostDocument, previewToken: string): SeoMetadata {
+  const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
+  const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
+  const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
+  const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
+  const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
+
+  return {
+    title,
+    description,
+    path: `/blog/preview/${previewToken}`,
+    image,
+    imageAlt: post.ogImageAlt || post.imageAlt || `${title} preview image`,
+    imageWidth,
+    imageHeight,
+    type: 'article',
+    robots: 'noindex,nofollow',
+    article: {
+      modifiedAt: post.updatedAt,
+      author: post.authorName,
+      section: post.categories[0],
+      tags: post.tags,
+    },
+  };
+}
+
 async function fetchPublishedSeoBlogPost(slug: string): Promise<SeoBlogPostDocument | null> {
   if (!slug) {
     return null;
@@ -1184,6 +1221,30 @@ async function fetchPublishedSeoBlogPost(slug: string): Promise<SeoBlogPostDocum
   }
 
   return toSeoBlogPostDocument(document.data());
+}
+
+async function fetchPreviewSeoBlogPost(previewToken: string): Promise<SeoBlogPostDocument | null> {
+  if (!previewToken) {
+    return null;
+  }
+
+  const document = await getFirestore()
+    .collection('postPreviews')
+    .doc(previewToken)
+    .get();
+  const value = document.data();
+
+  if (!isRecord(value) || typeof value['expiresAtMillis'] !== 'number' || value['expiresAtMillis'] <= Date.now()) {
+    return null;
+  }
+
+  const post = isRecord(value['post']) ? value['post'] : null;
+
+  if (!post || getTrimmedString(post['status']) !== 'draft') {
+    return null;
+  }
+
+  return toSeoBlogPostDocument(post);
 }
 
 function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {

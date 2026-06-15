@@ -23,7 +23,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
-  public published post views, category/tag archives, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
+  public published post views, tokenized draft previews, category/tag archives, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:
@@ -35,7 +35,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 - Labs:
   public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:
-  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source.
+  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source. Temporary draft previews are stored as token-addressed `postPreviews` snapshots with public single-document reads and admin-only listing.
 - Media/audio:
   icon/media helpers, sound playback, music and effects.
 - Overlay and notifications:

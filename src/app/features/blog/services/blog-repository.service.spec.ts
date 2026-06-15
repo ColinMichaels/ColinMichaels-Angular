@@ -34,6 +34,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
 
 class FakeBlogStorageService {
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
+  private readonly previews = new Map<string, BlogPost>();
 
   readonly posts$ = this.postsSubject.asObservable();
   readonly loading$ = of(false);
@@ -49,6 +50,25 @@ class FakeBlogStorageService {
 
   async savePost(post: BlogPost): Promise<void> {
     this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), post]);
+  }
+
+  async savePostPreview(post: BlogPost): Promise<void> {
+    await this.savePost(post);
+
+    if (post.preview) {
+      this.previews.set(post.preview.token, post);
+    }
+  }
+
+  async loadPostPreview(token: string): Promise<BlogPost | undefined> {
+    const post = this.previews.get(token);
+    const expiresAt = post?.preview ? new Date(post.preview.expiresAt).getTime() : 0;
+
+    return post?.status === 'draft' && expiresAt > Date.now() ? post : undefined;
+  }
+
+  async deletePostPreview(token: string): Promise<void> {
+    this.previews.delete(token);
   }
 
   async deletePost(postId: string): Promise<void> {
@@ -223,6 +243,31 @@ describe('BlogRepositoryService', () => {
     }));
 
     expect(savedPost.seo.openGraphImage).toBe('');
+  });
+
+  it('creates a temporary public preview for draft posts', async () => {
+    const result = await service.createPreviewForPost(draftPost);
+
+    expect(result.url).toContain('/blog/preview/');
+    expect(result.post.preview?.token).toBeTruthy();
+    expect(result.post.status).toBe('draft');
+    await expectAsync(service.getPreviewPostByToken(result.post.preview?.token ?? ''))
+      .toBeResolvedTo(result.post);
+  });
+
+  it('rejects preview links for published posts', async () => {
+    await expectAsync(service.createPreviewForPost(publishedPost)).toBeRejectedWithError(
+      'Preview links can only be generated for draft posts.'
+    );
+  });
+
+  it('revokes draft preview links', async () => {
+    const result = await service.createPreviewForPost(draftPost);
+    const token = result.post.preview?.token ?? '';
+    const revokedPost = await service.revokePreviewForPost(result.post);
+
+    expect(revokedPost.preview).toBeUndefined();
+    await expectAsync(service.getPreviewPostByToken(token)).toBeResolvedTo(undefined);
   });
 
   it('uses the controlled published date for public post ordering', async () => {
