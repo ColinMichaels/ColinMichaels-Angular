@@ -22,6 +22,10 @@ export const blogRoutes: Routes = [
     loadComponent: () => import('./pages/blog-tag/blog-tag.component').then(m => m.BlogTagComponent),
   },
   {
+    path: `${PATH_NAMES.BLOG}/preview/:previewToken`,
+    loadComponent: () => import('./pages/blog-detail/blog-detail.component').then(m => m.BlogDetailComponent),
+  },
+  {
     path: `${PATH_NAMES.BLOG}/:slug`,
     loadComponent: () => import('./pages/blog-detail/blog-detail.component').then(m => m.BlogDetailComponent),
   },

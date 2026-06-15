@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-15
+
+- Added temporary public draft preview links for CMS blog posts at `/blog/preview/{token}`, backed by Firestore `postPreviews` snapshots with expiry checks.
+- Added CMS editor controls to create, refresh, copy, open, and revoke draft preview links, plus post-list access for active previews.
+- Updated Firestore rules so published posts remain publicly listable while preview documents are only publicly readable by direct active token.
+
 ## 2026-06-12
 
 - Added RSS and JSON Feed endpoints for published blog posts, with Firebase Hosting rewrites at `/feed.xml` and `/feed.json`.

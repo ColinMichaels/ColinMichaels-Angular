@@ -19,8 +19,20 @@ service cloud.firestore {
       return resource.data.status == 'published';
     }
 
+    function isActiveDraftPreview() {
+      return resource.data.post.status == 'draft'
+        && resource.data.expiresAtTimestamp is timestamp
+        && resource.data.expiresAtTimestamp > request.time;
+    }
+
     match /posts/{postId} {
       allow get, list: if isAdmin() || isPublishedPost();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /postPreviews/{previewId} {
+      allow get: if isAdmin() || isActiveDraftPreview();
+      allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 

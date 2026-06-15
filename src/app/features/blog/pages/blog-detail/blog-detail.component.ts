@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
-import {map, switchMap} from 'rxjs';
+import {catchError, finalize, map, of, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
@@ -86,6 +86,11 @@ import {
                   }
                 </div>
                 <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
+                @if (isPreviewRoute()) {
+                  <div class="border border-amber-400/50 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                    Draft preview. This temporary link is rendering unpublished CMS content.
+                  </div>
+                }
                 @if (canEditPost()) {
                   <a
                     [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS, currentPost.slug, 'edit']"
@@ -106,7 +111,7 @@ import {
               <aside class="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-stretch">
                 <app-blog-table-of-contents
                   [items]="tableOfContents()"
-                  [postPath]="createPostPath(currentPost.slug)"
+                  [postPath]="createCurrentPostPath(currentPost.slug)"
                   [activeHeadingId]="activeContentSectionId()"
                 ></app-blog-table-of-contents>
               </aside>
@@ -116,7 +121,7 @@ import {
               <app-blog-block-renderer
                 [blocks]="currentPost.blocks"
                 [fallbackAlt]="currentPost.title"
-                [anchorPath]="createPostPath(currentPost.slug)"
+                [anchorPath]="createCurrentPostPath(currentPost.slug)"
               ></app-blog-block-renderer>
 
               <footer class="mt-14 border-t border-zinc-800 pt-8">
@@ -158,8 +163,8 @@ import {
                       <app-blog-share-actions
                         [title]="share.title"
                         [excerpt]="share.description"
-                        [path]="pathNames.BLOG + '/' + currentPost.slug"
-                        [url]="share.url"
+                        [path]="createSharePath(currentPost.slug)"
+                        [url]="isPreviewRoute() ? '' : share.url"
                         variant="panel"
                       ></app-blog-share-actions>
                     }
@@ -304,16 +309,41 @@ export class BlogDetailComponent {
     this.route.paramMap.pipe(map(params => params.get('slug') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''}
   );
+  protected readonly previewToken = toSignal(
+    this.route.paramMap.pipe(map(params => params.get('previewToken') ?? '')),
+    {initialValue: this.route.snapshot.paramMap.get('previewToken') ?? ''}
+  );
+  protected readonly isPreviewRoute = computed(() => this.previewToken().length > 0);
+  protected readonly previewLoading = signal(false);
+  protected readonly previewLoadError = signal<string | null>(null);
   protected readonly post = toSignal(
     this.route.paramMap.pipe(
-      map(params => params.get('slug') ?? ''),
-      switchMap(slug => this.blogRepository.getPublishedPostBySlug$(slug))
+      switchMap(params => {
+        const previewToken = params.get('previewToken') ?? '';
+
+        if (previewToken) {
+          this.previewLoading.set(true);
+          this.previewLoadError.set(null);
+
+          return this.blogRepository.getPreviewPostByToken$(previewToken).pipe(
+            catchError(error => {
+              this.previewLoadError.set(error instanceof Error ? error.message : 'Unable to load draft preview.');
+              return of(undefined);
+            }),
+            finalize(() => this.previewLoading.set(false))
+          );
+        }
+
+        return this.blogRepository.getPublishedPostBySlug$(params.get('slug') ?? '');
+      })
     ),
     {initialValue: undefined}
   );
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
-  protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  private readonly repositoryLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
+  private readonly repositoryLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly isLoading = computed(() => this.isPreviewRoute() ? this.previewLoading() : this.repositoryLoading());
+  protected readonly loadError = computed(() => this.isPreviewRoute() ? this.previewLoadError() : this.repositoryLoadError());
   protected readonly canEditPost = toSignal(
     this.authService.getAdminAuthorization().pipe(
       map(authorization => authorization.isAuthenticated && authorization.isAdmin)
@@ -385,7 +415,7 @@ export class BlogDetailComponent {
       this.activeContentSectionId.set(null);
 
       if (!this.isLoading() && !this.loadError()) {
-        this.openGraph.applyMissingBlogPost(this.slug());
+        this.openGraph.applyMissingBlogPost(this.slug() || 'preview');
       }
     });
   }
@@ -429,8 +459,16 @@ export class BlogDetailComponent {
     return post.thumbnailImage?.trim() || post.coverImage;
   }
 
-  protected createPostPath(slug: string): string {
-    return `/${this.pathNames.BLOG}/${slug}`;
+  protected createCurrentPostPath(slug: string): string {
+    const previewToken = this.previewToken();
+
+    return previewToken
+      ? `/${this.pathNames.BLOG}/preview/${previewToken}`
+      : `/${this.pathNames.BLOG}/${slug}`;
+  }
+
+  protected createSharePath(slug: string): string {
+    return this.createCurrentPostPath(slug).replace(/^\//, '');
   }
 
   private queueReadingStateRefresh(): void {

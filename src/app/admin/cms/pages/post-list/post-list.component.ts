@@ -286,6 +286,15 @@ function getErrorMessage(error: unknown): string {
                     <a [routerLink]="['/admin/cms', row.post.slug, 'edit']" class="text-cyan-300 hover:text-cyan-200">Edit</a>
                     @if (row.post.status === 'published') {
                       <a [routerLink]="['/blog', row.post.slug]" class="text-cyan-300 hover:text-cyan-200">View</a>
+                    } @else if (hasActivePreview(row.post)) {
+                      <a
+                        [href]="previewUrl(row.post)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-amber-300 hover:text-amber-200"
+                      >
+                        Preview
+                      </a>
                     } @else {
                     <span class="text-zinc-600">Hidden</span>
                   }
@@ -404,6 +413,19 @@ export class CmsPostListComponent {
       case 'archived':
         return `${baseClass} border-zinc-600 text-zinc-400`;
     }
+  }
+
+  protected hasActivePreview(post: BlogPost): boolean {
+    if (!post.preview || post.status !== 'draft') {
+      return false;
+    }
+
+    const expiresAt = new Date(post.preview.expiresAt).getTime();
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  }
+
+  protected previewUrl(post: BlogPost): string {
+    return post.preview ? this.blogRepository.createPreviewUrl(post.preview.token) : '';
   }
 
   protected updateSearch(event: Event): void {
