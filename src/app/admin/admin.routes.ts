@@ -2,6 +2,8 @@ import {Routes} from '@angular/router';
 
 import {PATH_NAMES} from '../app-route-paths';
 import {AdminAuthGuard} from '../guards/admin-auth.guard';
+import {USER_MANAGEMENT_SEO_METADATA} from '../shared/seo/seo.metadata';
+import {ADMIN_CONSOLE_ROLES, USER_MANAGEMENT_ACCESS_ROLES} from '../shared/user-account/user-account.model';
 import {cmsRoutes} from './cms/cms.routes';
 
 export const adminRoutes: Routes = [
@@ -13,9 +15,15 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./pages/admin-access-denied/admin-access-denied.component').then(m => m.AdminAccessDeniedComponent),
       },
       {
+        path: PATH_NAMES.ADMIN_USERS,
+        canActivate: [AdminAuthGuard],
+        data: {roles: USER_MANAGEMENT_ACCESS_ROLES, seo: USER_MANAGEMENT_SEO_METADATA},
+        loadComponent: () => import('./user-management/user-management-page.component').then(m => m.UserManagementPageComponent),
+      },
+      {
         path: '',
         canActivateChild: [AdminAuthGuard],
-        data: {roles: ['admin', 'cmsAdmin']},
+        data: {roles: ADMIN_CONSOLE_ROLES},
         children: [
           {
             path: '',

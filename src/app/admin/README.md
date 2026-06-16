@@ -48,6 +48,12 @@ Grant the first admin from a trusted shell with Application Default Credentials 
 npm --prefix functions run set-admin -- --email user@example.com
 ```
 
+If Application Default Credentials cannot infer the Firebase project, pass it explicitly:
+
+```bash
+npm --prefix functions run set-admin -- --project colinmichaels --email user@example.com
+```
+
 Grant a future role:
 
 ```bash
@@ -83,7 +89,40 @@ Admin authorization is enforced through Firebase Auth custom claims. The UI, cal
 - `cmsAdmin: true`
 - `roles.admin: true`
 
-Route guards can also require future named roles by setting route data, for example `data: {roles: ['admin', 'contentEditor']}`. Any route-level role must also be enforced in Firebase Functions and Security Rules before it protects real data.
+Route guards can also require named roles by setting route data, for example `data: {roles: ['admin', 'contentEditor']}`. The `admin` role is the super-admin override for protected admin routes. `cmsAdmin` only authorizes routes that explicitly list it. Any route-level role must also be enforced in Firebase Functions and Security Rules before it protects real data.
+
+Known admin-console roles are defined in `src/app/shared/user-account/user-account.model.ts`:
+
+- `admin`
+- `cmsAdmin`
+- `contentEditor`
+- `mediaManager`
+- `viewer`
+
+The `/admin` overview accepts these roles and conditionally displays available tools. CMS routes are limited to content-capable roles. Media routes are limited to media-capable roles. User management remains limited to `admin`.
+
+Signed-in users can inspect their current Firebase Auth profile, provider IDs, and role claims at `/profile`.
+
+## User Management
+
+The user management console is available at `/admin/users` and is restricted to the `admin` role, not `cmsAdmin`.
+
+It calls Firebase callable functions:
+
+- `listAdminUsers`
+- `updateAdminUserRoles`
+
+Both functions require an authenticated Firebase user with `admin: true` or `roles.admin: true`. Role updates preserve unrelated custom claims, store future permissions under the `roles` custom-claim map, and mirror `admin` / `cmsAdmin` at the top level for compatibility with existing rules. Users must refresh their Firebase ID token, usually by signing out and back in, before new role claims affect their session.
+
+Component inventory:
+
+- `UserManagementPageComponent` lists Firebase Auth users, filters loaded rows, pages through Auth results, and edits role claims.
+- `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables.
+
+Migration notes:
+
+- Existing admins created by `functions/scripts/set-admin-claim.mjs` remain compatible because the UI reads both top-level `admin` / `cmsAdmin` claims and the nested `roles` map.
+- Keep future permission names in the `roles` map; only mirror top-level claims when existing Firebase rules require backwards compatibility.
 
 ## Media Library Organizer
 

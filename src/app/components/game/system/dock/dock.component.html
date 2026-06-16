@@ -32,10 +32,12 @@
     <section class="flex space-x-2 pointer-events-auto">
       <ng-container *ngFor="let app of generalApps">
         <div class="relative" [tooltipShowArrow]="true" [appTooltip]="app.title">
-          <div (dblclick)="openApp(app.id)"
-               (click)="focusApp(app.id)"
-               [class.dock-icon]="!app.icon"
-               class="pointer-events-auto" [class.-translate-y-1]="app.running">
+          <button type="button"
+                  (dblclick)="openApp(app.id)"
+                  (click)="focusApp(app.id)"
+                  [class.dock-icon]="!app.icon"
+                  class="pointer-events-auto border-0 bg-transparent p-0 text-inherit"
+                  [class.-translate-y-1]="app.running">
             <div *ngIf="app.icon; else showTitle">
               <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
             </div>
@@ -43,7 +45,7 @@
               <span>{{ app.title | abbreviation }}</span>
             </ng-template>
 
-          </div>
+          </button>
           <div *ngIf="app.running"
                class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-none bg-zinc-400 h-1 w-1 rounded-full"></div>
         </div>
@@ -54,27 +56,41 @@
     <!-- /Divider -->
     <section class="flex flex-grow-0 space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
 
-      <div class="dock-animation">
-        <fa-stack [size]="'xs'"
-                  (click)="notify()" [tooltipShowArrow]="true"
-                  [appTooltip]="'TEST Notifications'">
+      <button *ngIf="isSignedIn()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+              (click)="navigateTo('/profile')" [tooltipShowArrow]="true" [appTooltip]="'Profile'">
+        <fa-icon [icon]="faUser">
+        </fa-icon>
+      </button>
+      <button *ngIf="canOpenAdmin()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+              (click)="navigateTo('/admin')" [tooltipShowArrow]="true" [appTooltip]="'Admin'">
+        <fa-icon [icon]="faShield">
+        </fa-icon>
+      </button>
+      <button *ngIf="canManageUsers()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+              (click)="navigateTo('/admin/users')" [tooltipShowArrow]="true" [appTooltip]="'User Management'">
+        <fa-icon [icon]="faUsers">
+        </fa-icon>
+      </button>
+      <button type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+              (click)="notify()" [tooltipShowArrow]="true" [appTooltip]="'TEST Notifications'">
+        <fa-stack [size]="'xs'">
           <fa-icon [icon]="faSquare" [stackItemSize]="'2x'" class="text-purple-800 active:text-yellow-500"></fa-icon>
           <fa-icon [icon]="faBell" [stackItemSize]="'1x'" [inverse]="true"
                    class="text-yellow-400 hover:text-yellow-500 active:text-purple-800"></fa-icon>
         </fa-stack>
-      </div>
-      <div class="dock-animation">
-        <fa-icon [icon]="faRightFromBracket"
-                 (click)="logout()" [tooltipShowArrow]="true" [appTooltip]="'Log Out'">
+      </button>
+      <button type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+              (click)="logout()" [tooltipShowArrow]="true" [appTooltip]="'Log Out'">
+        <fa-icon [icon]="faRightFromBracket">
         </fa-icon>
-      </div>
-      <div class="dock-animation text-zinc-500/50 hover:text-white/50">
-        <fa-icon [icon]="faTrashCan"
-                 (click)="openApp('finder', {path: 'trash'})" (dblclick)="trash('user')"
-                 tooltipSize="sm"
-                 [appTooltip]="'Trash'">
+      </button>
+      <button type="button"
+              class="dock-animation border-0 bg-transparent p-0 text-inherit text-zinc-500/50 hover:text-white/50"
+              (click)="openApp('finder', {path: 'trash'})" (dblclick)="trash('user')" tooltipSize="sm"
+              [appTooltip]="'Trash'">
+        <fa-icon [icon]="faTrashCan">
         </fa-icon>
-      </div>
+      </button>
 
     </section>
   </div>

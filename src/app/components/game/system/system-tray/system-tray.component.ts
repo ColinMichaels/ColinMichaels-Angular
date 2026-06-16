@@ -7,7 +7,7 @@ import {RouterLink} from '@angular/router';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faApple} from '@fortawesome/free-brands-svg-icons';
 import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {FileSystemService, VIEW_MODES} from '../../services/file-system.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {SoundPlayerComponent} from '../sound-player/sound-player.component';
@@ -57,7 +57,7 @@ export class SystemTrayComponent {
   batteryLevel: string = '66';
 
   constructor(
-    private userService: UserService,
+    private userService: OsUserService,
     private fileService: FileSystemService,
     public appManager: ApplicationManagerService,
     private destroyRef: DestroyRef

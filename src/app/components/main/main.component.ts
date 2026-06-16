@@ -1,5 +1,5 @@
 import {DatePipe, NgClass} from '@angular/common';
-import {Component, OnInit, ChangeDetectionStrategy, computed, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
@@ -13,10 +13,7 @@ import {
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
 import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {SocialsComponent} from './socials/socials.component';
-import {NotificationService} from '../game/services/notification.service';
-import {User, UserService} from '../game/services/user.service';
 import {HomeTerminalWindowComponent} from './home-terminal-window/home-terminal-window.component';
-import {HOME_NOTIFY_CLASSES} from './main.constants';
 
 interface HomeHighlight {
   eyebrow: string;
@@ -84,13 +81,9 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: `./home-page.scss`
 })
-export class MainComponent implements OnInit {
-  private readonly notificationService = inject(NotificationService);
-  private readonly userService = inject(UserService);
+export class MainComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
   protected readonly theme = inject(SiteThemeService);
-
-  user = new User();
 
   protected readonly capabilities: readonly HomeCapability[] = [
     {
@@ -143,19 +136,4 @@ export class MainComponent implements OnInit {
   protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly pathNames = PATH_NAMES;
-
-  constructor() {
-    this.user = this.userService.user;
-  }
-
-  ngOnInit(): void {
-    if (this.user?.name !== '') {
-      this.notificationService.show({
-        title: 'Welcome back ',
-        message: (this.user?.name || '') + '',
-        classList: HOME_NOTIFY_CLASSES
-      });
-    }
-  }
-
 }

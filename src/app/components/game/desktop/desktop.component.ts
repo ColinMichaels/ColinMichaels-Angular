@@ -5,7 +5,7 @@ import {AppWindowComponent} from '../templates/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
 import {TypewriterService} from '../services/typewriter.service';
 import {SoundService} from '../services/sound.service';
-import {UserService} from '../services/user.service';
+import {OsUserService} from '../services/os-user.service';
 import {OverlayService} from '../services/overlay.service';
 import {
   ApplicationManagerService
@@ -58,7 +58,7 @@ export class DesktopComponent implements OnInit, AfterViewInit {
               private readonly soundService: SoundService,
               private readonly overlay: OverlayService,
               private readonly notify: NotificationService,
-              private readonly userService: UserService,
+              private readonly userService: OsUserService,
               private readonly route: ActivatedRoute,
               private readonly logger: LogService,
               private readonly destroyRef: DestroyRef) {

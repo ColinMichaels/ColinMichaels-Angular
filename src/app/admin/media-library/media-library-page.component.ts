@@ -137,7 +137,9 @@ const allowedSortModes: readonly MediaSortMode[] = [
         <section class="mx-auto max-w-7xl space-y-8">
           <nav class="flex items-center justify-between text-sm text-zinc-400">
             <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
-            <a routerLink="/admin" class="hover:text-zinc-100">Admin</a>
+            <div class="flex items-center gap-3">
+              <a routerLink="/admin" class="hover:text-zinc-100">Admin</a>
+            </div>
           </nav>
 
           <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">

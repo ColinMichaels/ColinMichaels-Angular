@@ -1,7 +1,16 @@
 # Changelog
 
+## 2026-06-16
+
+- Added a signed-in profile route at `/profile` with current Firebase Auth account details, provider IDs, and role claims.
+- Replaced the top-right Sign Out text control with a user avatar/icon link to the profile page.
+- Added shared user role definitions and opened the admin overview to limited roles while keeping CMS, media, and user-management routes role-scoped.
+- Added a route-backed `/logout` flow and visible Sign Out controls for authenticated site/admin users.
+
 ## 2026-06-15
 
+- Added an admin-only `/admin/users` user management console backed by Firebase callable functions for listing Auth users and updating role custom claims.
+- Tightened route authorization so `admin` remains the super-admin override while `cmsAdmin` only authorizes routes that explicitly allow it.
 - Added temporary public draft preview links for CMS blog posts at `/blog/preview/{token}`, backed by Firestore `postPreviews` snapshots with expiry checks.
 - Added CMS editor controls to create, refresh, copy, open, and revoke draft preview links, plus post-list access for active previews.
 - Updated Firestore rules so published posts remain publicly listable while preview documents are only publicly readable by direct active token.

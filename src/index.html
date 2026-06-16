@@ -11,6 +11,14 @@
   <link rel="canonical" href="https://colinmichaels.com">
   <!-- Google Tag Manager -->
   <script>(function (w, d, s, l, i) {
+    var hostname = w.location.hostname;
+    var isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    var isAdminRoute = w.location.pathname === '/admin' || w.location.pathname.indexOf('/admin/') === 0;
+
+    if (isLocalHost || isAdminRoute) {
+      return;
+    }
+
     w[l] = w[l] || [];
     w[l].push({
       'gtm.start':

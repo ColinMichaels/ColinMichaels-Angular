@@ -1,12 +1,12 @@
 import {fakeAsync, tick} from '@angular/core/testing';
 import {SoundService} from './sound.service';
 import {TypewriterService} from './typewriter.service';
-import {UserService} from './user.service';
+import {OsUserService} from './os-user.service';
 
 describe('TypewriterService', () => {
   let service: TypewriterService;
   let soundServiceMock: jasmine.SpyObj<Pick<SoundService, 'playVariant'>>;
-  let userServiceMock: Pick<UserService, 'user'>;
+  let userServiceMock: Pick<OsUserService, 'user'>;
 
   beforeEach(() => {
     soundServiceMock = jasmine.createSpyObj<Pick<SoundService, 'playVariant'>>('SoundService', ['playVariant']);
@@ -22,7 +22,7 @@ describe('TypewriterService', () => {
 
     service = new TypewriterService(
       soundServiceMock as unknown as SoundService,
-      userServiceMock as UserService
+      userServiceMock as OsUserService
     );
   });
 

@@ -1,6 +1,6 @@
 import {Component, EventEmitter, OnInit, Output, ChangeDetectionStrategy} from '@angular/core';
 import { GameConfigService, GameLevel } from '../../services/game-config.service';
-import { UserService } from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {NgIf} from '@angular/common';
 
 
@@ -26,7 +26,7 @@ export class LevelLoaderComponent implements OnInit {
 
   constructor(
     private gameConfig: GameConfigService,
-    private userService: UserService
+    private userService: OsUserService
   ) {}
 
   ngOnInit() {

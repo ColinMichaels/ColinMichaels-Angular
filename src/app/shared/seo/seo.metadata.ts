@@ -94,6 +94,36 @@ export const MEDIA_LIBRARY_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
+export const USER_MANAGEMENT_SEO_METADATA: SeoMetadata = {
+  title: 'User Management | ColinMichaels.com',
+  description: 'Protected admin user role and permission management.',
+  path: '/admin/users',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: 'Colin Michaels admin user management preview card',
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
+export const LOGOUT_SEO_METADATA: SeoMetadata = {
+  title: 'Sign Out | ColinMichaels.com',
+  description: 'End the current ColinMichaels.com authenticated session.',
+  path: '/logout',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: 'Colin Michaels sign out page preview card',
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
+export const PROFILE_SEO_METADATA: SeoMetadata = {
+  title: 'Profile | ColinMichaels.com',
+  description: 'Signed-in user account profile, roles, and permissions.',
+  path: '/profile',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: 'Colin Michaels profile page preview card',
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
 export function createBlogCategorySeoMetadata(category: string): SeoMetadata {
   const categoryTitle = category.trim() || 'Blog Category';
 

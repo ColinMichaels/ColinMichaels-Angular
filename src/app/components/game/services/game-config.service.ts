@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of} from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import {UserService} from './user.service';
+import {OsUserService} from './os-user.service';
 
 export interface LogFile {
   name: string;
@@ -34,7 +34,7 @@ export class GameConfigService {
   levels$ = this.levelsSubject.asObservable();
   private currentLevelIndex = 0;
 
-  constructor(private readonly http: HttpClient, private readonly userService: UserService) {
+  constructor(private readonly http: HttpClient, private readonly userService: OsUserService) {
   }
 
   async loadLevelsForProgress(currentLevel = this.currentLevelIndex, preloadNext = 0): Promise<Observable<GameLevel[]>> {

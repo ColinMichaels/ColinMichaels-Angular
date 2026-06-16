@@ -551,7 +551,9 @@ function getErrorMessage(error: unknown): string {
       <section class="mx-auto max-w-6xl space-y-8">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
-          <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
+          <div class="flex items-center gap-3">
+            <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
+          </div>
         </nav>
 
         @if (currentPost; as post) {

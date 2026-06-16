@@ -55,5 +55,7 @@ tampered storage payloads can produce runtime errors or unintended behavior.
 ## Operational Notes
 
 - Firebase database rules are present; keep auth checks strict and avoid widening `.read` scopes.
+- Admin user management is restricted to Firebase Auth users with `admin: true` or `roles.admin: true`; `cmsAdmin` does not grant access to `/admin/users` or the user-management callable functions.
+- The admin overview can be entered by limited roles such as `contentEditor`, `mediaManager`, and `viewer`, but protected child routes still require their own route role data and matching backend/security-rule enforcement before exposing data.
+- Role updates are made through Firebase callable functions using the Admin SDK. The client must never write role or permission claims directly.
 - Use supported Node LTS for reproducible builds and security patch coverage.
-

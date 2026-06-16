@@ -1,9 +1,19 @@
-import {Component, effect, signal, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, inject, signal} from '@angular/core';
 import {CommonModule} from "@angular/common";
+import {toSignal} from '@angular/core/rxjs-interop';
+import {map} from 'rxjs';
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCog, faTrashCan, faBell, faSquare, faRightFromBracket} from '@fortawesome/free-solid-svg-icons';
+import {
+  faBell,
+  faRightFromBracket,
+  faShield,
+  faSquare,
+  faTrashCan,
+  faUser,
+  faUsers
+} from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
 import {TooltipDirective} from '../../directives/tooltip.directive';
 import {SvgService} from '../../services/svg.service';
@@ -11,6 +21,7 @@ import {SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
 import {Router} from '@angular/router';
 import {AuthService} from '../../../../services/auth.service';
+import {ADMIN_CONSOLE_ROLES, USER_MANAGEMENT_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
 
 @Component({
   selector: 'app-dock',
@@ -59,6 +70,7 @@ import {AuthService} from '../../../../services/auth.service';
   `
 })
 export class DockComponent {
+  private readonly authService = inject(AuthService);
 
   isVisible = signal(true);
   cursorY = signal(1000);
@@ -66,11 +78,22 @@ export class DockComponent {
   autoHide = signal(false);
   isHoveringMenu = signal(false);
   menuOpen = signal('');
+  protected readonly isSignedIn = toSignal(
+    this.authService.user$.pipe(map(user => !!user)),
+    {initialValue: false}
+  );
+  protected readonly canOpenAdmin = toSignal(
+    this.authService.getRoleAuthorization(ADMIN_CONSOLE_ROLES, true).pipe(map(authorization => authorization.isAuthorized)),
+    {initialValue: false}
+  );
+  protected readonly canManageUsers = toSignal(
+    this.authService.getRoleAuthorization(USER_MANAGEMENT_ACCESS_ROLES, true).pipe(map(authorization => authorization.isAuthorized)),
+    {initialValue: false}
+  );
 
   constructor(
     private appManager: ApplicationManagerService,
     private notificationService: NotificationService,
-    private readonly authService: AuthService,
     private svg: SvgService,
     private router: Router
     ) {
@@ -117,7 +140,7 @@ export class DockComponent {
     return this.appManager.getRunningApps('app');
   }
 
-  openApp(id: string, args?: any) {
+  openApp(id: string, args?: unknown) {
     this.appManager.openApplication(id, args);
   }
 
@@ -140,6 +163,10 @@ export class DockComponent {
 
   }
 
+  navigateTo(path: string): void {
+    void this.router.navigateByUrl(path);
+  }
+
   logout() {
     console.warn('logging out');
     this.authService.logout().pipe().subscribe((res) => {
@@ -147,11 +174,13 @@ export class DockComponent {
     });
   }
 
-  protected readonly faCog = faCog;
   protected readonly faTrashCan = faTrashCan;
   protected readonly faBell = faBell;
   protected readonly faSquare = faSquare;
   protected readonly faRightFromBracket = faRightFromBracket;
+  protected readonly faUser = faUser;
+  protected readonly faShield = faShield;
+  protected readonly faUsers = faUsers;
 
 
 }

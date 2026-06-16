@@ -3,7 +3,7 @@ import {ActivatedRoute, convertToParamMap} from '@angular/router';
 import {of} from 'rxjs';
 import {RouterTestingModule} from '@angular/router/testing';
 import {AuthService} from '../../../../services/auth.service';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
 import {LogService} from '../../services/log.service';
@@ -34,7 +34,7 @@ describe('LoginScreenComponent', () => {
       imports: [LoginScreenComponent, RouterTestingModule],
       providers: [
         {provide: AuthService, useValue: authServiceMock},
-        {provide: UserService, useValue: userServiceMock},
+        {provide: OsUserService, useValue: userServiceMock},
         {provide: SoundService, useValue: soundServiceMock},
         {provide: MusicService, useValue: musicServiceMock},
         {provide: LogService, useValue: loggerMock},
