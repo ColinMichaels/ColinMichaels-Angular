@@ -16,7 +16,9 @@ import {AuthService} from '../../../services/auth.service';
       <section class="mx-auto max-w-3xl space-y-8">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/" class="hover:text-zinc-100">Home</a>
-          <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
+          <div class="flex items-center gap-3">
+            <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
+          </div>
         </nav>
 
         <section class="space-y-5 border border-amber-500/40 bg-amber-950/20 p-6">
@@ -24,11 +26,12 @@ import {AuthService} from '../../../services/auth.service';
           <h1 class="text-3xl font-semibold text-zinc-50">This account is signed in but not authorized for admin
             tools.</h1>
           <p class="text-zinc-300">
-            Admin publishing actions require a Firebase Auth custom claim such as
+            Admin tools require a Firebase Auth custom claim such as
             <code class="text-amber-100">admin: true</code>,
-            <code class="text-amber-100">cmsAdmin: true</code>, or
-            <code class="text-amber-100">roles.admin: true</code>.
-            Ask an existing project owner to grant the claim, then sign out and sign back in to refresh your token.
+            <code class="text-amber-100">cmsAdmin: true</code>,
+            <code class="text-amber-100">roles.contentEditor: true</code>, or
+            <code class="text-amber-100">roles.mediaManager: true</code>.
+            Ask an existing project owner to grant the right role, then sign out and sign back in to refresh your token.
           </p>
 
           <div class="flex flex-wrap gap-3">

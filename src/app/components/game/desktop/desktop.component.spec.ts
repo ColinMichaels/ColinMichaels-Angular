@@ -4,7 +4,7 @@ import { ApplicationManagerService } from '../services/application-manager.servi
 import { ContextMenuService } from '../services/context-menu.service';
 import { OverlayService } from '../services/overlay.service';
 import { NotificationService } from '../services/notification.service';
-import { UserService } from '../services/user.service';
+import {OsUserService} from '../services/os-user.service';
 import { TypewriterService } from '../services/typewriter.service';
 import { SoundService } from '../services/sound.service';
 import { ActivatedRoute } from '@angular/router';
@@ -79,7 +79,7 @@ describe('DesktopComponent', () => {
         { provide: ContextMenuService, useValue: contextMenuServiceMock },
         { provide: OverlayService, useValue: overlayServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
-        { provide: UserService, useValue: userServiceMock },
+        {provide: OsUserService, useValue: userServiceMock},
         { provide: TypewriterService, useValue: typewriterServiceMock },
         { provide: SoundService, useValue: soundServiceMock },
         { provide: ActivatedRoute, useValue: activatedRouteMock },

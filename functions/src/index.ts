@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {existsSync, readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 
+import {getAuth, UserRecord} from 'firebase-admin/auth';
 import {initializeApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
@@ -19,6 +20,12 @@ const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
 const YOUTUBE_DEFAULT_MAX_RESULTS = 3;
 const YOUTUBE_MAX_RESULTS = 6;
 const YOUTUBE_FEED_CACHE_MS = 10 * 60 * 1000;
+const USER_MANAGEMENT_DEFAULT_PAGE_SIZE = 50;
+const USER_MANAGEMENT_MAX_PAGE_SIZE = 100;
+const MAX_USER_MANAGEMENT_ROLES = 32;
+const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
+const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
 const SITE_URL = 'https://colinmichaels.com';
 const SITE_NAME = 'ColinMichaels.com';
 const DEFAULT_LOCALE = 'en_US';
@@ -308,6 +315,30 @@ interface AdminCallableAuth {
   token: Record<string, unknown>;
 }
 
+interface AdminManagedUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  disabled: boolean;
+  emailVerified: boolean;
+  createdAt: string | null;
+  lastSignInAt: string | null;
+  roles: readonly string[];
+  customClaims: Record<string, unknown>;
+}
+
+interface AdminUsersResponse {
+  users: readonly AdminManagedUser[];
+  nextPageToken: string | null;
+  fetchedAt: string;
+}
+
+interface UpdateAdminUserRolesResponse {
+  user: AdminManagedUser;
+  updatedAt: string;
+}
+
 const metadataSchema = {
   type: 'object',
   additionalProperties: false,
@@ -559,7 +590,7 @@ export const generateBlogMetadata = onCall(
     invoker: 'public',
   },
   async request => {
-    requireAdmin(request.auth);
+    requireCmsAccess(request.auth);
     const context = parseAssistantContext(request.data);
     const response = await callOpenAiResponses(context);
     const parsed = parseAssistantResult(response);
@@ -583,11 +614,70 @@ export const generateAndStoreBlogThumbnail = onCall(
     invoker: 'public',
   },
   async request => {
-    requireAdmin(request.auth);
+    requireCmsAccess(request.auth);
     const data = parseThumbnailRequest(request.data);
     const model = openAiImageModel.value();
     const image = await generateImage(data.prompt, model);
     return await storeThumbnailImage(data, image, model);
+  }
+);
+
+export const listAdminUsers = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    requireUserManagementAdmin(request.auth);
+
+    const {pageSize, pageToken} = parseListUsersRequest(request.data);
+    const auth = getAuth();
+    const result = await auth.listUsers(pageSize, pageToken ?? undefined);
+
+    return {
+      users: result.users.map(toAdminManagedUser),
+      nextPageToken: result.pageToken ?? null,
+      fetchedAt: new Date().toISOString(),
+    } satisfies AdminUsersResponse;
+  }
+);
+
+export const updateAdminUserRoles = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireUserManagementAdmin(request.auth);
+    const {uid, roles} = parseUpdateUserRolesRequest(request.data);
+
+    if (actorUid === uid && !roles.includes('admin')) {
+      throw new HttpsError('failed-precondition', 'You cannot remove your own admin role from User Management.');
+    }
+
+    const auth = getAuth();
+    const user = await auth.getUser(uid);
+    const nextClaims = createClaimsWithRoles(user.customClaims ?? {}, roles);
+
+    await auth.setCustomUserClaims(uid, nextClaims);
+
+    const updatedUser = await auth.getUser(uid);
+    logger.info('Updated managed user roles.', {
+      actorUid,
+      targetUid: uid,
+      roles,
+    });
+
+    return {
+      user: toAdminManagedUser(updatedUser),
+      updatedAt: new Date().toISOString(),
+    } satisfies UpdateAdminUserRolesResponse;
   }
 );
 
@@ -721,6 +811,36 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
       description: 'Protected CMS media management for Firebase-backed blog assets.',
       path: '/admin/cms/media-library',
       imageAlt: 'Colin Michaels CMS media library preview card',
+      robots: 'noindex,nofollow',
+    });
+  }
+
+  if (normalizedPath === '/admin/users') {
+    return createStaticSeoMetadata({
+      title: 'User Management | ColinMichaels.com',
+      description: 'Protected admin user role and permission management.',
+      path: '/admin/users',
+      imageAlt: 'Colin Michaels admin user management preview card',
+      robots: 'noindex,nofollow',
+    });
+  }
+
+  if (normalizedPath === '/logout') {
+    return createStaticSeoMetadata({
+      title: 'Sign Out | ColinMichaels.com',
+      description: 'End the current ColinMichaels.com authenticated session.',
+      path: '/logout',
+      imageAlt: 'Colin Michaels sign out page preview card',
+      robots: 'noindex,nofollow',
+    });
+  }
+
+  if (normalizedPath === '/profile') {
+    return createStaticSeoMetadata({
+      title: 'Profile | ColinMichaels.com',
+      description: 'Signed-in user account profile, roles, and permissions.',
+      path: '/profile',
+      imageAlt: 'Colin Michaels profile page preview card',
       robots: 'noindex,nofollow',
     });
   }
@@ -1786,24 +1906,139 @@ function getPositiveInteger(value: unknown): number | null {
   return null;
 }
 
-function requireAdmin(auth: AdminCallableAuth | undefined): string {
+function requireCmsAccess(auth: AdminCallableAuth | undefined): string {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'You must be signed in to use CMS AI functions.');
   }
 
-  if (!hasAdminClaim(auth.token)) {
-    throw new HttpsError('permission-denied', 'You must be an authorized admin to use CMS AI functions.');
+  if (!hasAnyRoleClaim(auth.token, CMS_ACCESS_ROLES)) {
+    throw new HttpsError('permission-denied', 'You must have CMS access to use CMS AI functions.');
   }
 
   return auth.uid;
 }
 
-function hasAdminClaim(claims: Record<string, unknown>): boolean {
+function requireUserManagementAdmin(auth: AdminCallableAuth | undefined): string {
+  if (!auth?.uid) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to manage users.');
+  }
+
+  if (!hasAnyRoleClaim(auth.token, USER_MANAGEMENT_ACCESS_ROLES)) {
+    throw new HttpsError('permission-denied', 'Only admins can manage user roles.');
+  }
+
+  return auth.uid;
+}
+
+function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
   const roles = claims['roles'];
 
-  return claims['admin'] === true
-    || claims['cmsAdmin'] === true
-    || (isRecord(roles) && roles['admin'] === true);
+  return claims[role] === true || (isRecord(roles) && roles[role] === true);
+}
+
+function hasAnyRoleClaim(claims: Record<string, unknown>, roles: readonly string[]): boolean {
+  return roles.some(role => hasRoleClaim(claims, role));
+}
+
+function parseListUsersRequest(value: unknown): { pageSize: number; pageToken: string | null } {
+  const record = isRecord(value) ? value : {};
+  const requestedPageSize = getPositiveInteger(record['pageSize']) ?? USER_MANAGEMENT_DEFAULT_PAGE_SIZE;
+  const pageToken = getTrimmedString(record['pageToken']);
+
+  return {
+    pageSize: Math.min(USER_MANAGEMENT_MAX_PAGE_SIZE, requestedPageSize),
+    pageToken: pageToken || null,
+  };
+}
+
+function parseUpdateUserRolesRequest(value: unknown): { uid: string; roles: string[] } {
+  const record = requireRecord(value, 'User role update must be an object.');
+  const uid = getTrimmedString(record['uid']);
+  const rawRoles = record['roles'];
+
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'User uid is required.');
+  }
+
+  if (!Array.isArray(rawRoles)) {
+    throw new HttpsError('invalid-argument', 'Roles must be an array.');
+  }
+
+  const roles = [...new Set(rawRoles.map(role => getTrimmedString(role)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  if (roles.length > MAX_USER_MANAGEMENT_ROLES) {
+    throw new HttpsError('invalid-argument', `A user can have at most ${MAX_USER_MANAGEMENT_ROLES} roles.`);
+  }
+
+  const invalidRole = roles.find(role => !ROLE_NAME_PATTERN.test(role));
+
+  if (invalidRole) {
+    throw new HttpsError('invalid-argument', `Invalid role "${invalidRole}". Use letters, numbers, underscores, or hyphens, starting with a letter.`);
+  }
+
+  return {uid, roles};
+}
+
+function createClaimsWithRoles(
+  existingClaims: Record<string, unknown>,
+  roles: readonly string[]
+): Record<string, unknown> {
+  const nextClaims: Record<string, unknown> = {...existingClaims};
+  const nextRoles = Object.fromEntries(roles.map(role => [role, true]));
+
+  if (Object.keys(nextRoles).length > 0) {
+    nextClaims['roles'] = nextRoles;
+  } else {
+    delete nextClaims['roles'];
+  }
+
+  for (const mirroredRole of ['admin', 'cmsAdmin']) {
+    if (roles.includes(mirroredRole)) {
+      nextClaims[mirroredRole] = true;
+    } else {
+      delete nextClaims[mirroredRole];
+    }
+  }
+
+  return nextClaims;
+}
+
+function toAdminManagedUser(user: UserRecord): AdminManagedUser {
+  const customClaims = user.customClaims ?? {};
+
+  return {
+    uid: user.uid,
+    email: user.email ?? null,
+    displayName: user.displayName ?? null,
+    photoURL: user.photoURL ?? null,
+    disabled: user.disabled,
+    emailVerified: user.emailVerified,
+    createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime).toISOString() : null,
+    lastSignInAt: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toISOString() : null,
+    roles: getClaimRoles(customClaims),
+    customClaims,
+  };
+}
+
+function getClaimRoles(claims: Record<string, unknown>): string[] {
+  const roles = claims['roles'];
+  const roleNames = new Set<string>();
+
+  if (isRecord(roles)) {
+    for (const [role, enabled] of Object.entries(roles)) {
+      if (enabled === true && ROLE_NAME_PATTERN.test(role)) {
+        roleNames.add(role);
+      }
+    }
+  }
+
+  for (const mirroredRole of ['admin', 'cmsAdmin']) {
+    if (claims[mirroredRole] === true) {
+      roleNames.add(mirroredRole);
+    }
+  }
+
+  return [...roleNames].sort((a, b) => a.localeCompare(b));
 }
 
 function parseAssistantContext(value: unknown): BlogAssistantContext {

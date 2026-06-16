@@ -11,8 +11,10 @@ import {Observable, map, take} from 'rxjs';
 
 import {PATH_NAMES} from '../app-route-paths';
 import {AuthService} from '../services/auth.service';
+import {writeAuthDebug} from '../shared/debug/auth-debug';
+import {ADMIN_CONSOLE_ROLES} from '../shared/user-account/user-account.model';
 
-const DEFAULT_ADMIN_ROLES = ['admin', 'cmsAdmin'] as const;
+const DEFAULT_ADMIN_ROLES = ADMIN_CONSOLE_ROLES;
 
 @Injectable({
   providedIn: 'root',
@@ -40,16 +42,35 @@ export class AdminAuthGuard implements CanActivate, CanActivateChild {
     return this.authService.getRoleAuthorization(requiredRoles, true).pipe(
       take(1),
       map(authorization => {
+        this.debugAdminGuard('authorization resolved', {
+          redirectUrl,
+          targetRoute,
+          requiredRoles,
+          uid: authorization.uid,
+          email: authorization.email,
+          isAuthenticated: authorization.isAuthenticated,
+          isAdmin: authorization.isAdmin,
+          isAuthorized: authorization.isAuthorized,
+          claimKeys: Object.keys(authorization.claims).sort((a, b) => a.localeCompare(b)),
+        });
+
         if (authorization.isAuthorized) {
+          this.debugAdminGuard('route allowed', {redirectUrl, targetRoute});
           return true;
         }
 
         if (!authorization.isAuthenticated) {
+          this.debugAdminGuard('route redirected to login', {redirectUrl, targetRoute});
           return this.router.createUrlTree([`/${PATH_NAMES.OS_LOGIN}`], {
             queryParams: {redirectUrl},
           });
         }
 
+        this.debugAdminGuard('route redirected to access denied', {
+          redirectUrl,
+          targetRoute,
+          requiredRoles,
+        });
         return this.router.createUrlTree(['/', PATH_NAMES.ADMIN, PATH_NAMES.ADMIN_ACCESS_DENIED], {
           queryParams: {
             redirectUrl,
@@ -71,5 +92,9 @@ export class AdminAuthGuard implements CanActivate, CanActivateChild {
 
   private isRoleList(value: unknown): value is string[] {
     return Array.isArray(value) && value.length > 0 && value.every(role => typeof role === 'string');
+  }
+
+  private debugAdminGuard(event: string, details?: unknown): void {
+    writeAuthDebug('AdminGuardDebug', event, details);
   }
 }

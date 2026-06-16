@@ -21,6 +21,14 @@ import {catchError, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
 import {FIREBASE_AUTH} from './firebase/firebase.tokens';
+import {PATH_NAMES} from '../app-route-paths';
+import {
+  getClaimRoles,
+  hasAnyRoleClaim,
+  USER_MANAGEMENT_ACCESS_ROLES,
+  UserAccountProfile,
+} from '../shared/user-account/user-account.model';
+import {writeAuthDebug} from '../shared/debug/auth-debug';
 
 export interface AdminAuthorization {
   uid: string | null;
@@ -32,22 +40,28 @@ export interface AdminAuthorization {
   requiredRoles: readonly string[];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+interface AuthDebugUserSummary {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  emailVerified: boolean;
+  isAnonymous: boolean;
+  providerIds: readonly string[];
 }
 
-function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
-  const roles = claims['roles'];
-
-  return claims[role] === true || (isRecord(roles) && roles[role] === true);
-}
-
-function hasAnyRoleClaim(claims: Record<string, unknown>, requiredRoles: readonly string[]): boolean {
-  return requiredRoles.some(role => hasRoleClaim(claims, role));
+interface AuthDebugClaimSummary {
+  claimKeys: readonly string[];
+  roles: readonly string[];
+  topLevelRoleClaims: Record<string, boolean>;
+  nestedRoleKeys: readonly string[];
 }
 
 function hasAdminClaim(claims: Record<string, unknown>): boolean {
   return hasAnyRoleClaim(claims, ['admin', 'cmsAdmin']);
+}
+
+function hasSuperAdminClaim(claims: Record<string, unknown>): boolean {
+  return hasAnyRoleClaim(claims, USER_MANAGEMENT_ACCESS_ROLES);
 }
 
 @Injectable({
@@ -72,8 +86,17 @@ export class AuthService {
     this.user$ = new Observable<User | null>(observer => {
       return onAuthStateChanged(
         auth,
-        currentUser => observer.next(currentUser),
-        error => observer.error(error)
+        currentUser => {
+          this.debugAuth('auth state changed', {
+            signedIn: !!currentUser,
+            user: currentUser ? this.createUserDebugSummary(currentUser) : null,
+          });
+          observer.next(currentUser);
+        },
+        error => {
+          this.debugAuth('auth state listener error', this.createErrorDebugSummary(error));
+          observer.error(error);
+        }
       );
     })
       .pipe(shareReplay({bufferSize: 1, refCount: true}));
@@ -86,9 +109,15 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.debugAuth('email sign-in start', {email});
+
     return this.fromAuthOperation(() => signInWithEmailAndPassword(auth, email, password)).pipe(
-      tap(result => this.logger.info('Signed in!', result.user)),
+      tap(result => {
+        this.logger.info('Signed in!', result.user);
+        this.debugAuth('email sign-in success', {user: this.createUserDebugSummary(result.user)});
+      }),
       catchError(error => {
+        this.debugAuth('email sign-in failed', this.createErrorDebugSummary(error));
         this.logger.error('Login failed:', error);
         return throwError(() => error);
       })
@@ -102,13 +131,19 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.debugAuth('email registration start', {email});
+
     return this.fromAuthOperation(() => createUserWithEmailAndPassword(auth, email, password)).pipe(
+      tap(credentials => this.debugAuth('email registration auth user created', {
+        user: this.createUserDebugSummary(credentials.user),
+      })),
       switchMap(credentials => {
         return this.fromAuthOperation(() => sendEmailVerification(credentials.user)).pipe(
           map(() => credentials)
         );
       }),
       catchError(error => {
+        this.debugAuth('email registration failed', this.createErrorDebugSummary(error));
         this.logger.error('Registration failed:', error);
         return throwError(() => error);
       })
@@ -122,8 +157,14 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.debugAuth('google popup sign-in start');
+
     return this.fromAuthOperation(() => signInWithPopup(auth, this.createGoogleProvider())).pipe(
+      tap(result => this.debugAuth('google popup sign-in success', {
+        user: this.createUserDebugSummary(result.user),
+      })),
       catchError(error => {
+        this.debugAuth('google popup sign-in failed', this.createErrorDebugSummary(error));
         this.logger.error('Google popup login failed:', error);
         return throwError(() => error);
       })
@@ -136,8 +177,12 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.debugAuth('google redirect sign-in start');
+
     return this.fromAuthOperation(() => signInWithRedirect(auth, this.createGoogleProvider())).pipe(
+      tap(() => this.debugAuth('google redirect sign-in dispatched')),
       catchError(error => {
+        this.debugAuth('google redirect sign-in failed', this.createErrorDebugSummary(error));
         this.logger.error('Google redirect login failed:', error);
         return throwError(() => error);
       })
@@ -156,9 +201,15 @@ export class AuthService {
         tap(result => {
           if (result) {
             this.logger.info('Signed in with Google!', result.user);
+            this.debugAuth('google redirect result received', {
+              user: this.createUserDebugSummary(result.user),
+            });
+          } else {
+            this.debugAuth('google redirect result empty');
           }
         }),
         catchError(error => {
+          this.debugAuth('google redirect result failed', this.createErrorDebugSummary(error));
           this.logger.error('Google login failed:', error);
           return of(null);
         })
@@ -188,12 +239,18 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.debugAuth('logout start', {
+      currentUser: auth.currentUser ? this.createUserDebugSummary(auth.currentUser) : null,
+    });
+
     return this.fromAuthOperation(() => signOut(auth)).pipe(
       tap(() => {
         this.logger.info('Signed out');
-        this.router.navigate(['/login']);
+        this.debugAuth('logout success', {redirectTo: `/${PATH_NAMES.OS_LOGIN}`});
+        this.router.navigate(['/', PATH_NAMES.OS_LOGIN]);
       }),
       catchError(error => {
+        this.debugAuth('logout failed', this.createErrorDebugSummary(error));
         this.logger.error('Sign out error:', error);
         return throwError(() => error);
       })
@@ -223,10 +280,74 @@ export class AuthService {
     return this.getRoleAuthorization(['admin', 'cmsAdmin'], forceRefresh);
   }
 
+  getCurrentUserProfile(forceRefresh = false): Observable<UserAccountProfile | null> {
+    return this.user$.pipe(
+      switchMap(currentUser => {
+        if (!currentUser) {
+          this.debugAuth('profile requested without signed-in user', {forceRefresh});
+          return of(null);
+        }
+
+        this.debugAuth('profile token load start', {
+          forceRefresh,
+          user: this.createUserDebugSummary(currentUser),
+        });
+
+        return this.fromAuthOperation(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
+          map(tokenResult => {
+            const claims = tokenResult.claims as Record<string, unknown>;
+            const roles = getClaimRoles(claims);
+
+            this.debugAuth('profile token load success', {
+              forceRefresh,
+              user: this.createUserDebugSummary(currentUser),
+              claims: this.createClaimDebugSummary(claims),
+              authTime: tokenResult.authTime,
+              issuedAtTime: tokenResult.issuedAtTime,
+              expirationTime: tokenResult.expirationTime,
+            });
+
+            return {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+              emailVerified: currentUser.emailVerified,
+              isAnonymous: currentUser.isAnonymous,
+              providerIds: currentUser.providerData.map(provider => provider.providerId),
+              roles,
+              claims,
+            };
+          }),
+          catchError(error => {
+            this.debugAuth('profile token load failed', this.createErrorDebugSummary(error));
+            this.logger.error('User profile claim load failed:', error);
+
+            return of({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+              emailVerified: currentUser.emailVerified,
+              isAnonymous: currentUser.isAnonymous,
+              providerIds: currentUser.providerData.map(provider => provider.providerId),
+              roles: [],
+              claims: {},
+            });
+          })
+        );
+      })
+    );
+  }
+
   getRoleAuthorization(requiredRoles: readonly string[], forceRefresh = false): Observable<AdminAuthorization> {
     return this.user$.pipe(
       switchMap(currentUser => {
         if (!currentUser) {
+          this.debugAuth('role authorization without signed-in user', {
+            requiredRoles,
+            forceRefresh,
+          });
           return of({
             uid: null,
             email: null,
@@ -238,22 +359,45 @@ export class AuthService {
           });
         }
 
+        this.debugAuth('role authorization token load start', {
+          requiredRoles,
+          forceRefresh,
+          user: this.createUserDebugSummary(currentUser),
+        });
+
         return this.fromAuthOperation(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
           map(tokenResult => {
             const claims = tokenResult.claims as Record<string, unknown>;
             const isAdmin = hasAdminClaim(claims);
+            const isSuperAdmin = hasSuperAdminClaim(claims);
+            const isAuthorized = isSuperAdmin || hasAnyRoleClaim(claims, requiredRoles);
+
+            this.debugAuth('role authorization result', {
+              requiredRoles,
+              forceRefresh,
+              isAuthenticated: true,
+              isAdmin,
+              isSuperAdmin,
+              isAuthorized,
+              user: this.createUserDebugSummary(currentUser),
+              claims: this.createClaimDebugSummary(claims),
+              authTime: tokenResult.authTime,
+              issuedAtTime: tokenResult.issuedAtTime,
+              expirationTime: tokenResult.expirationTime,
+            });
 
             return {
               uid: currentUser.uid,
               email: currentUser.email,
               isAuthenticated: true,
               isAdmin,
-              isAuthorized: isAdmin || hasAnyRoleClaim(claims, requiredRoles),
+              isAuthorized,
               claims,
               requiredRoles,
             };
           }),
           catchError(error => {
+            this.debugAuth('role authorization token load failed', this.createErrorDebugSummary(error));
             this.logger.error('Admin claim check failed:', error);
 
             return of({
@@ -285,5 +429,63 @@ export class AuthService {
 
   private fromAuthOperation<T>(operation: () => Promise<T>): Observable<T> {
     return defer(() => from(operation()));
+  }
+
+  private createUserDebugSummary(user: User): AuthDebugUserSummary {
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified,
+      isAnonymous: user.isAnonymous,
+      providerIds: user.providerData.map(provider => provider.providerId),
+    };
+  }
+
+  private createClaimDebugSummary(claims: Record<string, unknown>): AuthDebugClaimSummary {
+    const rolesClaim = claims['roles'];
+    const nestedRoleKeys = rolesClaim && typeof rolesClaim === 'object'
+      ? Object.keys(rolesClaim as Record<string, unknown>).sort((a, b) => a.localeCompare(b))
+      : [];
+    const roleNames = getClaimRoles(claims);
+
+    return {
+      claimKeys: Object.keys(claims).sort((a, b) => a.localeCompare(b)),
+      roles: roleNames,
+      topLevelRoleClaims: {
+        admin: claims['admin'] === true,
+        cmsAdmin: claims['cmsAdmin'] === true,
+        contentEditor: claims['contentEditor'] === true,
+        mediaManager: claims['mediaManager'] === true,
+        viewer: claims['viewer'] === true,
+      },
+      nestedRoleKeys,
+    };
+  }
+
+  private createErrorDebugSummary(error: unknown): Record<string, unknown> {
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        code: this.getFirebaseErrorCode(error),
+      };
+    }
+
+    return {
+      message: String(error),
+    };
+  }
+
+  private getFirebaseErrorCode(error: Error): string | undefined {
+    if ('code' in error && typeof error.code === 'string') {
+      return error.code;
+    }
+
+    return undefined;
+  }
+
+  private debugAuth(event: string, details?: unknown): void {
+    writeAuthDebug('AuthDebug', event, details);
   }
 }

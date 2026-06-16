@@ -2,7 +2,7 @@ import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {NgClass, NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {SettingsSubpanelComponent} from './sub-settings-panel/sub-settings-panel.component';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {faCog, faNetworkWired, faPalette} from '@fortawesome/free-solid-svg-icons';
 import {faUserCircle} from '@fortawesome/free-regular-svg-icons';
 
@@ -35,7 +35,7 @@ export class SettingsPanelComponent {
     // add more
   ];
 
-  constructor(private userService: UserService) {
+  constructor(private userService: OsUserService) {
     this.userName = this.userService.user.name;
   }
 

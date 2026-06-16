@@ -7,7 +7,7 @@ import {
   ValidationErrors,
   Validators
 } from '@angular/forms';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {NgIf} from '@angular/common';
 import {
   faChevronRight,
@@ -27,6 +27,7 @@ import {LogService} from '../../services/log.service';
 import {type User, type UserCredential} from 'firebase/auth';
 import {AuthService} from '../../../../services/auth.service';
 import {faGoogle} from '@fortawesome/free-brands-svg-icons';
+import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
 
 @Component({
   selector: 'app-login-screen',
@@ -74,7 +75,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private readonly authService: AuthService,
-    private userService: UserService,
+    private userService: OsUserService,
     private soundService: SoundService,
     private musicService: MusicService,
     private logger: LogService,
@@ -107,8 +108,14 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.redirectUrl = this.getSafeRedirectUrl(this.route.snapshot.queryParamMap.get('redirectUrl'));
+    this.debugLogin('initialized', {
+      redirectUrl: this.redirectUrl,
+      isLocalHost: this.isLocalHost,
+      bypassLogin: this.shouldBypassLoginForLocalDevelopment(),
+    });
 
     if (this.shouldBypassLoginForLocalDevelopment()) {
+      this.debugLogin('local development bypass active', {redirectUrl: this.redirectUrl});
       this.navigateToDestination();
       return;
     }
@@ -117,12 +124,20 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         this.redirectUrl = this.getSafeRedirectUrl(params['redirectUrl']);
+        this.debugLogin('query params observed', {
+          rawRedirectUrl: params['redirectUrl'] ?? null,
+          safeRedirectUrl: this.redirectUrl,
+        });
       });
 
     // Check for redirect results
     this.authService.handleRedirectResult()
       .pipe(takeUntil(this.destroy$))
       .subscribe((result: UserCredential | null) => {
+        this.debugLogin('redirect result observed', {
+          hasResult: !!result,
+          user: result ? this.createUserDebugSummary(result.user) : null,
+        });
         if (result) {
           this.loading = true;
           this.googleLoading = true;
@@ -138,6 +153,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.authService.user$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
+        this.debugLogin('auth user observed', {
+          signedIn: !!user,
+          user: user ? this.createUserDebugSummary(user) : null,
+        });
         if (user) {
           this.finishFirebaseLogin(user, 'existing session');
         }
@@ -156,11 +175,21 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     return password === confirmPassword ? null : {passwordMismatch: true};
   }
 
-  private navigateToDestination() {
-    const destination = this.redirectUrl ?? (this.isLocalHost ? `/${PATH_NAMES.OS_MAIN}/cli` : `/${PATH_NAMES.OS_MAIN}`);
+  private getDestinationUrl(): string {
+    return this.redirectUrl ?? (this.isLocalHost ? `/${PATH_NAMES.OS_MAIN}/cli` : `/${PATH_NAMES.OS_MAIN}`);
+  }
+
+  private navigateToDestination(destination = this.getDestinationUrl()) {
+    this.debugLogin('navigation requested', {destination});
     this.router.navigateByUrl(destination)
-      .then(success => this.logger.info('Navigation success:', success))
-      .catch(error => this.logger.error('Navigation failed:', error));
+      .then(success => {
+        this.debugLogin('navigation completed', {destination, success});
+        this.logger.info('Navigation success:', success);
+      })
+      .catch(error => {
+        this.debugLogin('navigation failed', {destination, error: this.createErrorDebugSummary(error)});
+        this.logger.error('Navigation failed:', error);
+      });
   }
 
   private detectLocalHost(): boolean {
@@ -237,58 +266,84 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
 
   onLogin() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.debugLogin('email login blocked by invalid form', {
+        formStatus: this.loginForm.status,
+        emailErrors: this.loginForm.get('email')?.errors ?? null,
+        passwordErrors: this.loginForm.get('password')?.errors ?? null,
+      });
+      return;
+    }
 
     this.loading = true;
     this.error = '';
     const {email, password} = this.loginForm.value;
+    this.debugLogin('email login submitted', {email});
 
     this.authService.signInWithEmail(email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
+          this.debugLogin('email login succeeded', {user: this.createUserDebugSummary(result.user)});
           this.logger.info('User logged in:', result.user.email);
           this.finishFirebaseLogin(result.user, 'email');
         },
         error: (error) => {
           this.loading = false;
           this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.debugLogin('email login failed', {
+            error: this.createErrorDebugSummary(error),
+            displayedMessage: this.error,
+          });
           this.logger.error('Login error:', error);
         }
       });
   }
 
   onRegister() {
-    if (this.registerForm.invalid) return;
+    if (this.registerForm.invalid) {
+      this.debugLogin('registration blocked by invalid form', {
+        formStatus: this.registerForm.status,
+        displayNameErrors: this.registerForm.get('displayName')?.errors ?? null,
+        emailErrors: this.registerForm.get('email')?.errors ?? null,
+        passwordErrors: this.registerForm.get('password')?.errors ?? null,
+        confirmPasswordErrors: this.registerForm.get('confirmPassword')?.errors ?? null,
+      });
+      return;
+    }
 
     this.loading = true;
     this.error = '';
     const {email, password, displayName} = this.registerForm.value;
+    this.debugLogin('registration submitted', {email, displayName});
 
     this.authService.registerWithEmail(email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result: UserCredential) => {
+          this.debugLogin('registration auth user created', {user: this.createUserDebugSummary(result.user)});
           this.logger.info('User registered:', result.user.email);
 
           this.authService.updateUserProfile(result.user, {displayName})
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
-                this.userService.updateUser({name: displayName})
-                  .then(() => {
-                    this.navigateToDestination();
-                    this.loading = false;
-                  })
-                  .catch((error) => {
-                    this.loading = false;
-                    this.error = 'Failed to update local user information';
-                    this.logger.error('Local profile update error:', error);
-                  });
+                this.debugLogin('firebase display profile updated', {
+                  user: this.createUserDebugSummary(result.user),
+                  displayName,
+                });
+                const destination = this.getDestinationUrl();
+
+                this.syncOsUserForDestination(result.user, 'registration', destination);
+                this.navigateToDestination(destination);
+                this.loading = false;
               },
               error: (error) => {
                 this.loading = false;
                 this.error = 'Failed to update profile information';
+                this.debugLogin('firebase display profile update failed', {
+                  error: this.createErrorDebugSummary(error),
+                });
                 this.logger.error('Profile update error:', error);
               }
             });
@@ -296,6 +351,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.loading = false;
           this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.debugLogin('registration failed', {
+            error: this.createErrorDebugSummary(error),
+            displayedMessage: this.error,
+          });
           this.logger.error('Registration error:', error);
         }
       });
@@ -305,16 +364,22 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.googleLoading = true;
     this.error = '';
+    this.debugLogin('google popup login submitted');
 
     this.authService.loginWithGoogle()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result: UserCredential) => {
+          this.debugLogin('google popup login succeeded', {user: this.createUserDebugSummary(result.user)});
           this.logger.info('User logged in with Google:', result.user.email);
           this.finishFirebaseLogin(result.user, 'Google');
         },
         error: (error) => {
           const errorCode = this.getErrorCode(error);
+          this.debugLogin('google popup login failed', {
+            error: this.createErrorDebugSummary(error),
+            willFallbackToRedirect: this.shouldFallbackToGoogleRedirect(errorCode),
+          });
 
           if (this.shouldFallbackToGoogleRedirect(errorCode)) {
             this.error = 'Popup blocked. Redirecting to Google sign-in...';
@@ -336,10 +401,12 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   private startGoogleRedirectSignIn(): void {
+    this.debugLogin('google redirect login submitted');
     this.authService.loginWithGoogleRedirect()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
+          this.debugLogin('google redirect login dispatched');
           this.loading = false;
           this.googleLoading = false;
         },
@@ -347,6 +414,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           this.loading = false;
           this.googleLoading = false;
           this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.debugLogin('google redirect login failed', {
+            error: this.createErrorDebugSummary(error),
+            displayedMessage: this.error,
+          });
           this.logger.error('Google redirect login error:', error);
         }
       });
@@ -354,21 +425,51 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   private finishFirebaseLogin(user: User, method: string): void {
     if (this.completingLogin) {
+      this.debugLogin('finish login skipped because completion is already in progress', {
+        method,
+        user: this.createUserDebugSummary(user),
+      });
       return;
     }
 
     this.completingLogin = true;
+    this.debugLogin('finish login started', {
+      method,
+      user: this.createUserDebugSummary(user),
+      redirectUrl: this.redirectUrl,
+    });
+    const destination = this.getDestinationUrl();
+
+    this.syncOsUserForDestination(user, method, destination);
+    this.navigateToDestination(destination);
+    this.loading = false;
+    this.googleLoading = false;
+  }
+
+  private syncOsUserForDestination(user: User, method: string, destination: string): void {
+    if (!this.isOsDestination(destination)) {
+      this.debugLogin('OS user sync skipped for non-OS destination', {method, destination});
+      return;
+    }
+
     this.userService.updateUser({
       name: user.displayName ?? user.email?.split('@')[0] ?? 'User'
     }).then(() => {
-      this.navigateToDestination();
+      this.debugLogin('OS user session synced', {method, destination});
     }).catch(error => {
-      this.loading = false;
-      this.googleLoading = false;
-      this.completingLogin = false;
-      this.error = 'Signed in, but failed to update the local user session';
-      this.logger.error(`${method} login profile update error:`, error);
+      this.debugLogin('OS user session sync failed without blocking Firebase auth', {
+        method,
+        destination,
+        error: this.createErrorDebugSummary(error),
+      });
+      this.logger.warn(`${method} login OS profile sync failed:`, error);
     });
+  }
+
+  private isOsDestination(destination: string): boolean {
+    const osRoot = `/${PATH_NAMES.OS_MAIN}`;
+
+    return destination === osRoot || destination.startsWith(`${osRoot}/`);
   }
 
   resetPassword() {
@@ -420,8 +521,38 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.debugLogin('destroyed');
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private createUserDebugSummary(user: User): Record<string, unknown> {
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified,
+      isAnonymous: user.isAnonymous,
+      providerIds: user.providerData.map(provider => provider.providerId),
+    };
+  }
+
+  private createErrorDebugSummary(error: unknown): Record<string, unknown> {
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        code: this.getErrorCode(error),
+      };
+    }
+
+    return {
+      message: String(error),
+    };
+  }
+
+  private debugLogin(event: string, details?: unknown): void {
+    writeAuthDebug('LoginDebug', event, details);
   }
 
   protected readonly faRedo = faRedo;

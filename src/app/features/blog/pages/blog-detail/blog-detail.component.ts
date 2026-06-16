@@ -17,6 +17,7 @@ import {catchError, finalize, map, of, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
+import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
@@ -345,8 +346,8 @@ export class BlogDetailComponent {
   protected readonly isLoading = computed(() => this.isPreviewRoute() ? this.previewLoading() : this.repositoryLoading());
   protected readonly loadError = computed(() => this.isPreviewRoute() ? this.previewLoadError() : this.repositoryLoadError());
   protected readonly canEditPost = toSignal(
-    this.authService.getAdminAuthorization().pipe(
-      map(authorization => authorization.isAuthenticated && authorization.isAdmin)
+    this.authService.getRoleAuthorization(CMS_ACCESS_ROLES, true).pipe(
+      map(authorization => authorization.isAuthorized)
     ),
     {initialValue: false}
   );

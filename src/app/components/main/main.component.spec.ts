@@ -5,9 +5,7 @@ import {BehaviorSubject, of} from 'rxjs';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.service';
-import {NotificationService} from '../game/services/notification.service';
 import {TypewriterService} from '../game/services/typewriter.service';
-import {User, UserService} from '../game/services/user.service';
 import {MainComponent} from './main.component';
 
 const MOCK_POSTS: readonly BlogPostSummary[] = [
@@ -60,7 +58,6 @@ describe('MainComponent', () => {
   let fixture: ComponentFixture<MainComponent>;
 
   beforeEach(async () => {
-    const notificationService = jasmine.createSpyObj<Pick<NotificationService, 'show'>>('NotificationService', ['show']);
     const blogRepositoryService = {
       getPublishedPosts$: jasmine.createSpy('getPublishedPosts$').and.returnValue(of(MOCK_POSTS)),
       loading$: of(false),
@@ -83,9 +80,6 @@ describe('MainComponent', () => {
       typedText$: BehaviorSubject<string>;
     };
     typewriterService.typedText$ = new BehaviorSubject('');
-    const user = new User();
-    user.name = '';
-
     await TestBed.configureTestingModule({
       imports: [
         MainComponent,
@@ -93,9 +87,7 @@ describe('MainComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepositoryService},
-        {provide: NotificationService, useValue: notificationService},
         {provide: TypewriterService, useValue: typewriterService},
-        {provide: UserService, useValue: {user}},
         {provide: YouTubeFeedService, useValue: youtubeFeedService},
       ],
     }).compileComponents();
@@ -114,7 +106,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('#medical-information')).not.toBeNull();
     expect(element.querySelector('#labs')).not.toBeNull();
     expect(element.querySelector('#os')).toBeNull();
-    expect(element.textContent?.match(/Launch OS/g)?.length).toBe(1);
+    expect(element.textContent?.match(/Report a Bug/g)?.length).toBe(1);
   });
 
   it('embeds published blog content on the homepage', () => {

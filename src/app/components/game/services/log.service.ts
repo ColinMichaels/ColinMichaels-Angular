@@ -6,7 +6,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogEntry {
   level: LogLevel;
-  message: any;
+  message: unknown;
   timestamp: Date;
 }
 
@@ -16,6 +16,9 @@ export class LogService {
   private logSubject = new BehaviorSubject<LogEntry[]>([]);
   private mutedLevels: Set<LogLevel> = new Set();
   private globalMute = false;
+  private remoteLoggingDisabled = false;
+  private remoteLoggingWarningShown = false;
+  private readonly persistRemoteLogs = !this.isLocalHost();
   private firestore: FirestoreService | null = (() => {
     try {
       return inject(FirestoreService);
@@ -61,42 +64,42 @@ export class LogService {
     this.globalMute = false;
   }
 
-  debug(message: any, params?: any) {
+  debug(message: unknown, params?: unknown) {
     message = this.prepareMessage(message, params);
     this.log('debug', message);
   }
 
-  info(message: any, params?: any) {
+  info(message: unknown, params?: unknown) {
     message = this.prepareMessage(message, params);
     this.log('info', message);
   }
 
-  private prepareMessage(message: any, params?: any) {
+  private prepareMessage(message: unknown, params?: unknown) {
     if (!params) return message;
     return `${message} (${this.parseParams(params)})`;
   }
 
-  private parseParams(params: any) {
-    if (!params) return '';
-    return Object.keys(params).map(key => `${key}=${params[key]}`).join(', ');
+  private parseParams(params: unknown) {
+    if (!params || typeof params !== 'object') return '';
+    return Object.entries(params).map(([key, value]) => `${key}=${value}`).join(', ');
   }
 
-  warn(message: any, params?: any) {
+  warn(message: unknown, params?: unknown) {
     message = this.prepareMessage(message, params);
     this.log('warn', message);
   }
 
-  error(message: any, params?: any) {
+  error(message: unknown, params?: unknown) {
     message = this.prepareMessage(message, params);
     this.log('error', message);
   }
 
-  private log(level: LogLevel, message: any) {
+  private log(level: LogLevel, message: unknown) {
     if (this.globalMute || this.mutedLevels.has(level)) return;
 
     const entry: LogEntry = {level, message, timestamp: new Date()};
 
-    if (this.firestore) {
+    if (this.firestore && this.persistRemoteLogs && !this.remoteLoggingDisabled) {
       this.firestore.saveLogEntry(
         {
           level: entry.level,
@@ -109,6 +112,17 @@ export class LogService {
           // Successfully saved log to Firestore
         },
         error: (err) => {
+          if (this.isPermissionDeniedError(err)) {
+            this.remoteLoggingDisabled = true;
+
+            if (!this.remoteLoggingWarningShown) {
+              this.remoteLoggingWarningShown = true;
+              console.warn('Firestore log persistence disabled: missing permission for logs collection.');
+            }
+
+            return;
+          }
+
           console.error('Failed to save log to Firestore:', err);
         }
       });
@@ -135,5 +149,21 @@ export class LogService {
   clear() {
     this.logBuffer = [];
     this.logSubject.next([]);
+  }
+
+  private isLocalHost(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const hostname = window.location.hostname;
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  }
+
+  private isPermissionDeniedError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+
+    const firebaseError = error as { code?: unknown; message?: unknown };
+    const message = typeof firebaseError.message === 'string' ? firebaseError.message : '';
+
+    return firebaseError.code === 'permission-denied' || message.includes('Missing or insufficient permissions');
   }
 }

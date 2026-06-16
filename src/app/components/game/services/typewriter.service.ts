@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {SoundService} from './sound.service';
-import {UserService} from './user.service';
+import {OsUserService} from './os-user.service';
 
 export type TypingMode = 'default' | 'glitch' | 'system' | 'dramatic';
 
@@ -37,7 +37,7 @@ export class TypewriterService {
   public soundEnabled$ = new BehaviorSubject<boolean>(true);
   public volume = new BehaviorSubject(0.2);
 
-  constructor(private soundService: SoundService, private userService: UserService) {
+  constructor(private soundService: SoundService, private userService: OsUserService) {
   }
 
   // Public method to enable/disable sounds

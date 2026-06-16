@@ -6,7 +6,7 @@ import {CLIService} from '../../services/cli.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {ApplicationManagerService} from '../../services/application-manager.service';
 import {AiChatService} from '../../services/ai-chat.service';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {NotificationService} from '../../services/notification.service';
 import {LogService} from '../../services/log.service';
 
@@ -59,7 +59,7 @@ describe('CliGameComponent', () => {
         {provide: GameConfigService, useValue: gameConfigServiceMock},
         {provide: ApplicationManagerService, useValue: appManagerServiceMock},
         {provide: AiChatService, useValue: aiChatServiceMock},
-        {provide: UserService, useValue: userServiceMock},
+        {provide: OsUserService, useValue: userServiceMock},
         {provide: NotificationService, useValue: notificationServiceMock},
         {provide: LogService, useValue: loggerMock}
       ]

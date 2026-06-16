@@ -1,12 +1,12 @@
 import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
-import {UserService, User} from '../../services/user.service';
+import {OsUser, OsUserService} from '../../services/os-user.service';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {NotificationService} from '../../services/notification.service';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faUserInjured} from '@fortawesome/free-solid-svg-icons';
 
 
-export class Player extends User {
+export class Player extends OsUser {
   override level: number;
   avatarUrl?: string;
   preferredRole?: string;
@@ -38,7 +38,7 @@ export class PlayerConfiguratorComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly notify: NotificationService,
-    private readonly userService: UserService
+    private readonly userService: OsUserService
   ) {}
 
   ngOnInit(): void {

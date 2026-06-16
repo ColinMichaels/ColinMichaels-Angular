@@ -1,11 +1,14 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink, RouterLinkActive} from '@angular/router';
-import {map} from 'rxjs';
+import {User} from 'firebase/auth';
+import {map, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {AuthService} from '../../services/auth.service';
+import {AdminAuthorization, AuthService} from '../../services/auth.service';
 import {SiteThemeService} from '../theme/site-theme.service';
+import {ADMIN_CONSOLE_ROLES} from '../user-account/user-account.model';
+import {writeAuthDebug} from '../debug/auth-debug';
 
 interface SiteNavItem {
   label: string;
@@ -80,6 +83,31 @@ interface SiteNavItem {
             OS
           </a>
 
+          @if (currentUser(); as user) {
+            <a
+              [routerLink]="['/', pathNames.PROFILE]"
+              class="inline-grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+              [attr.aria-label]="'Open profile for ' + (user.displayName || user.email || user.uid)"
+            >
+              @if (user.photoURL) {
+                <img [src]="user.photoURL" [alt]="(user.displayName || user.email || 'User') + ' avatar'"
+                     class="h-full w-full object-cover">
+              } @else {
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor"
+                     stroke-width="1.8">
+                  <path d="M20 21a8 8 0 0 0-16 0"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              }
+            </a>
+            <a
+              [routerLink]="['/', pathNames.LOGOUT]"
+              class="hidden h-10 items-center justify-center rounded-full border border-rose-500/60 px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 dark:border-rose-400/70 dark:text-rose-200 dark:hover:bg-rose-300 dark:hover:text-neutral-950 sm:inline-flex"
+            >
+              Sign Out
+            </a>
+          }
+
           <button
             type="button"
             class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:text-cyan-200 md:hidden"
@@ -126,6 +154,22 @@ interface SiteNavItem {
             >
               Launch OS
             </a>
+            @if (isSignedIn()) {
+              <a
+                [routerLink]="['/', pathNames.PROFILE]"
+                class="rounded-lg border border-cyan-500/50 px-3 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-500 hover:text-white dark:border-cyan-400/70 dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+                (click)="closeMenu()"
+              >
+                Profile
+              </a>
+              <a
+                [routerLink]="['/', pathNames.LOGOUT]"
+                class="rounded-lg border border-rose-500/50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-500 hover:text-white dark:border-rose-400/70 dark:text-rose-200 dark:hover:bg-rose-300 dark:hover:text-neutral-950"
+                (click)="closeMenu()"
+              >
+                Sign Out
+              </a>
+            }
           </div>
         </nav>
       }
@@ -138,9 +182,28 @@ export class SiteHeaderComponent {
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
   protected readonly canViewAdminLinks = toSignal(
-    this.authService.getAdminAuthorization().pipe(map(authorization => authorization.isAdmin)),
+    this.authService.getRoleAuthorization(ADMIN_CONSOLE_ROLES, true).pipe(
+      tap(authorization => this.debugHeader('admin navigation authorization resolved', {
+        authorization: this.createAuthorizationDebugSummary(authorization),
+      })),
+      map(authorization => authorization.isAuthorized)
+    ),
     {initialValue: false}
   );
+  protected readonly currentUser = toSignal(
+    this.authService.user$.pipe(
+      tap(user => this.debugHeader('account controls auth state resolved', {
+        signedIn: !!user,
+        shouldShowProfileIcon: !!user,
+        shouldShowMobileProfileLink: !!user,
+        shouldShowMobileLogoutLink: !!user,
+        shouldShowLogoutButton: !!user,
+        user: user ? this.createUserDebugSummary(user) : null,
+      }))
+    ),
+    {initialValue: null}
+  );
+  protected readonly isSignedIn = computed(() => !!this.currentUser());
   protected readonly navItems: readonly SiteNavItem[] = [
     {label: 'Home', route: ['/'], exact: true},
     {label: 'Blog', route: ['/', PATH_NAMES.BLOG], exact: false},
@@ -166,5 +229,32 @@ export class SiteHeaderComponent {
 
   protected closeMenu(): void {
     this.isMenuOpen.set(false);
+  }
+
+  private createUserDebugSummary(user: User): Record<string, unknown> {
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified,
+      isAnonymous: user.isAnonymous,
+      providerIds: user.providerData.map(provider => provider.providerId),
+    };
+  }
+
+  private createAuthorizationDebugSummary(authorization: AdminAuthorization): Record<string, unknown> {
+    return {
+      uid: authorization.uid,
+      email: authorization.email,
+      isAuthenticated: authorization.isAuthenticated,
+      isAdmin: authorization.isAdmin,
+      isAuthorized: authorization.isAuthorized,
+      requiredRoles: authorization.requiredRoles,
+      claimKeys: Object.keys(authorization.claims).sort((a, b) => a.localeCompare(b)),
+    };
+  }
+
+  private debugHeader(event: string, details?: unknown): void {
+    writeAuthDebug('HeaderDebug', event, details);
   }
 }

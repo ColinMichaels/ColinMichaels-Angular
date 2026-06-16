@@ -19,6 +19,7 @@ import {
 import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
+import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {BlogPost, BlogPostStatus} from '../models/blog-post.model';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
@@ -217,7 +218,7 @@ export class BlogStorageService implements OnDestroy {
       const tokenResult = await getIdTokenResult(user);
       const claims = tokenResult.claims as Record<string, unknown>;
 
-      if (this.hasAdminClaim(claims)) {
+      if (canManageCmsContent(claims)) {
         this.listenToAllFirestorePosts();
         return;
       }
@@ -397,13 +398,5 @@ export class BlogStorageService implements OnDestroy {
     }
 
     return this.firestore;
-  }
-
-  private hasAdminClaim(claims: Record<string, unknown>): boolean {
-    const roles = claims['roles'];
-
-    return claims['admin'] === true
-      || claims['cmsAdmin'] === true
-      || (isRecord(roles) && roles['admin'] === true);
   }
 }

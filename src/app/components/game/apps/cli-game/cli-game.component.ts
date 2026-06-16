@@ -3,7 +3,7 @@ import {FormsModule} from '@angular/forms';
 import {TypewriterService, TypingMode} from '../../services/typewriter.service';
 import {SoundService} from '../../services/sound.service';
 import {NgClass} from '@angular/common';
-import {UserService} from '../../services/user.service';
+import {OsUserService} from '../../services/os-user.service';
 import {CLIService, CLIResponse} from '../../services/cli.service';
 import {AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
@@ -69,7 +69,7 @@ export class CliGameComponent implements OnInit {
     private readonly gameConfig: GameConfigService,
     private readonly terminalManager: ApplicationManagerService,
     private readonly aiChat: AiChatService,
-    private readonly userService: UserService,
+    private readonly userService: OsUserService,
     private readonly notify: NotificationService,
     private readonly logger: LogService,
     private readonly destroyRef: DestroyRef

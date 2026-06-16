@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GameConfigService } from './game-config.service';
-import {UserService} from './user.service';
+import {OsUserService} from './os-user.service';
 
 export interface CLIResponse {
   output: string;
@@ -23,7 +23,7 @@ export interface CLICommand {
 export class CLIService {
   private commands = new Map<string, CLICommand>();
 
-  constructor(private config: GameConfigService, private userService: UserService) {
+  constructor(private config: GameConfigService, private userService: OsUserService) {
     this.config.loadLevelsForProgress()
       .then(() => this.registerBuiltins())
       .catch(() => this.registerBuiltins());
