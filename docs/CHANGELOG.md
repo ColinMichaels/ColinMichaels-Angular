@@ -4,6 +4,7 @@
 
 - Replaced the homepage About placeholder with a full Colin Michaels bio section, profile image, recovery disclaimer, and reusable author profile data.
 - Added a linked blog-post author byline and author bio card that points readers back to the homepage bio section.
+- Added the Editor.js YouTube embed tool to the CMS and normalized saved YouTube blocks into the existing public blog embed renderer.
 
 ## 2026-06-16
 

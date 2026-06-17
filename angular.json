@@ -37,6 +37,9 @@
             "styles": [
               "src/styles.scss"
             ],
+            "allowedCommonJsDependencies": [
+              "editorjs-youtube-embed"
+            ],
             "scripts": []
           },
           "configurations": {
