@@ -20,6 +20,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'delimiter',
   'typography',
 ]);
+const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -67,6 +68,58 @@ function toListData(blockData: BlogBlockData): Record<string, unknown> {
   };
 }
 
+function parseHttpUrl(value: string | undefined): URL | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function getYouTubeVideoId(value: string | undefined): string {
+  const url = parseHttpUrl(value);
+
+  if (!url) {
+    return '';
+  }
+
+  if (url.hostname === 'youtu.be') {
+    return url.pathname.split('/').filter(Boolean)[0] ?? '';
+  }
+
+  if (!['youtube.com', 'www.youtube.com', 'm.youtube.com', 'www.youtube-nocookie.com'].includes(url.hostname)) {
+    return '';
+  }
+
+  if (url.pathname === '/watch') {
+    return url.searchParams.get('v') ?? '';
+  }
+
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const embedIndex = pathParts.findIndex(part => ['embed', 'shorts', 'live'].includes(part));
+
+  return embedIndex >= 0 ? pathParts[embedIndex + 1] ?? '' : '';
+}
+
+function createYouTubeEmbedUrl(value: string | undefined): string {
+  const videoId = getYouTubeVideoId(value);
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+}
+
+function createYouTubeWatchUrl(value: string | undefined): string {
+  const videoId = getYouTubeVideoId(value);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
+}
+
+function isYouTubeUrl(value: string | undefined): boolean {
+  return getYouTubeVideoId(value).length > 0;
+}
+
 function toEditorBlock(block: BlogContentBlock): OutputBlockData {
   switch (block.type) {
     case 'list':
@@ -94,6 +147,18 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
         },
       };
     case 'embed':
+      if (isYouTubeUrl(block.data.url) || isYouTubeUrl(block.data.embedUrl)) {
+        const youtubeUrl = createYouTubeWatchUrl(block.data.url) || createYouTubeWatchUrl(block.data.embedUrl);
+
+        return {
+          id: block.id,
+          type: YOUTUBE_EDITOR_BLOCK_TYPE,
+          data: {
+            url: youtubeUrl,
+          },
+        };
+      }
+
       return {
         id: block.id,
         type: block.type,
@@ -198,6 +263,20 @@ export function createEditorDocument(post: BlogPost): OutputData {
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
   return document.blocks.flatMap((block, index) => {
+    if (block.type === YOUTUBE_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
+      const url = getString(block.data, 'url') ?? '';
+
+      return {
+        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+        type: 'embed',
+        data: {
+          provider: 'youtube',
+          url,
+          embedUrl: createYouTubeEmbedUrl(url),
+        },
+      };
+    }
+
     if (!supportedBlockTypes.has(block.type as BlogBlockType) || !isRecord(block.data)) {
       return [];
     }

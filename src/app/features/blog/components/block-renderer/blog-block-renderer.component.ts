@@ -213,6 +213,8 @@ export class BlogBlockRendererComponent implements OnChanges {
   private readonly trustedEmbedHosts = new Set([
     'www.youtube.com',
     'youtube.com',
+    'm.youtube.com',
+    'youtu.be',
     'www.youtube-nocookie.com',
     'player.vimeo.com',
   ]);
@@ -261,7 +263,7 @@ export class BlogBlockRendererComponent implements OnChanges {
       return null;
     }
 
-    const url = this.parseHttpUrl(block.data.embedUrl ?? block.data.url);
+    const url = this.createTrustedEmbedUrl(block.data.embedUrl ?? block.data.url);
 
     if (!url || url.protocol !== 'https:' || !this.trustedEmbedHosts.has(url.hostname)) {
       return null;
@@ -293,6 +295,45 @@ export class BlogBlockRendererComponent implements OnChanges {
     } catch {
       return null;
     }
+  }
+
+  private createTrustedEmbedUrl(value: string | undefined): URL | null {
+    const url = this.parseHttpUrl(value);
+
+    if (!url || !this.trustedEmbedHosts.has(url.hostname)) {
+      return null;
+    }
+
+    if (this.isYouTubeHost(url.hostname)) {
+      return this.createYouTubeEmbedUrl(url);
+    }
+
+    return url;
+  }
+
+  private createYouTubeEmbedUrl(url: URL): URL | null {
+    const videoId = this.getYouTubeVideoId(url);
+
+    return videoId ? new URL(`https://www.youtube.com/embed/${videoId}`) : null;
+  }
+
+  private getYouTubeVideoId(url: URL): string {
+    if (url.hostname === 'youtu.be') {
+      return url.pathname.split('/').filter(Boolean)[0] ?? '';
+    }
+
+    if (url.pathname === '/watch') {
+      return url.searchParams.get('v') ?? '';
+    }
+
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const embedIndex = pathParts.findIndex(part => ['embed', 'shorts', 'live'].includes(part));
+
+    return embedIndex >= 0 ? pathParts[embedIndex + 1] ?? '' : '';
+  }
+
+  private isYouTubeHost(hostname: string): boolean {
+    return ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtube-nocookie.com'].includes(hostname);
   }
 
   private shouldOpenInNewTab(href: string): boolean {
