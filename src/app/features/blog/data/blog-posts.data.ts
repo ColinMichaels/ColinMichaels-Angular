@@ -9,7 +9,7 @@ export const BLOG_POSTS: readonly BlogPost[] = [
     coverImage: '/assets/images/backgrounds/day.webp',
     author: {
       name: 'Colin Michaels',
-      title: 'Frontend Engineer',
+      title: 'Applications Developer',
     },
     categories: ['Architecture'],
     tags: ['Angular', 'Refactor', 'Core OS'],
@@ -69,7 +69,7 @@ export const BLOG_POSTS: readonly BlogPost[] = [
     coverImage: '/assets/images/backgrounds/night.webp',
     author: {
       name: 'Colin Michaels',
-      title: 'Frontend Engineer',
+      title: 'Applications Developer',
     },
     categories: ['CMS'],
     tags: ['Editor.js', 'Firebase', 'Drafts'],

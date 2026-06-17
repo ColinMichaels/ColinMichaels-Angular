@@ -15,7 +15,7 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
     coverImage: '/assets/images/backgrounds/night.webp',
     author: {
       name: 'Colin Michaels',
-      title: 'Frontend Engineer',
+      title: 'Applications Developer',
     },
     categories: ['UX'],
     tags: ['Reading'],

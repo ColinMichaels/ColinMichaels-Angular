@@ -12,8 +12,8 @@ import {
   YouTubeLatestVideosComponent
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
 import {SiteThemeService} from '../../shared/theme/site-theme.service';
+import {AuthorBioComponent} from '../../shared/author/author-bio.component';
 import {SocialsComponent} from './socials/socials.component';
-import {HomeTerminalWindowComponent} from './home-terminal-window/home-terminal-window.component';
 
 interface HomeHighlight {
   eyebrow: string;
@@ -69,8 +69,8 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   imports: [
     BlogPostCardComponent,
     BlogShareActionsComponent,
+    AuthorBioComponent,
     DatePipe,
-    HomeTerminalWindowComponent,
     NgClass,
     RouterLink,
     SocialsComponent,
