@@ -30,6 +30,7 @@ interface EditorToolModules {
   Code: ToolConstructable;
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
+  YoutubeEmbed: ToolConstructable;
   ImageTool: ToolConstructable;
   TypographyBlock: ToolConstructable;
 }
@@ -47,6 +48,28 @@ export interface EditorImageUploadResult {
 type EditorImageInsertTab = 'library' | 'upload';
 type EditorImageLayoutMode = 'fit-width' | 'intrinsic';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getDefaultExport(value: unknown): unknown {
+  if (isRecord(value) && 'default' in value) {
+    return getDefaultExport(value['default']);
+  }
+
+  return value;
+}
+
+function getToolConstructable(value: unknown, toolName: string): ToolConstructable {
+  const candidate = getDefaultExport(value);
+
+  if (typeof candidate !== 'function') {
+    throw new Error(`Unable to load ${toolName} Editor.js tool.`);
+  }
+
+  return candidate as unknown as ToolConstructable;
+}
+
 async function loadEditorTools(): Promise<EditorToolModules> {
   const [
     headerModule,
@@ -55,6 +78,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     codeModule,
     delimiterModule,
     embedModule,
+    youtubeEmbedModule,
     imageModule,
   ] = await Promise.all([
     import('@editorjs/header'),
@@ -63,17 +87,19 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     import('@editorjs/code'),
     import('@editorjs/delimiter'),
     import('@editorjs/embed'),
+    import('editorjs-youtube-embed'),
     import('@editorjs/image'),
   ]);
 
   return {
-    Header: headerModule.default as unknown as ToolConstructable,
-    List: listModule.default as unknown as ToolConstructable,
-    Quote: quoteModule.default as unknown as ToolConstructable,
-    Code: codeModule.default as unknown as ToolConstructable,
-    Delimiter: delimiterModule.default as unknown as ToolConstructable,
-    Embed: embedModule.default as unknown as ToolConstructable,
-    ImageTool: imageModule.default as unknown as ToolConstructable,
+    Header: getToolConstructable(headerModule, 'Header'),
+    List: getToolConstructable(listModule, 'List'),
+    Quote: getToolConstructable(quoteModule, 'Quote'),
+    Code: getToolConstructable(codeModule, 'Code'),
+    Delimiter: getToolConstructable(delimiterModule, 'Delimiter'),
+    Embed: getToolConstructable(embedModule, 'Embed'),
+    YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
+    ImageTool: getToolConstructable(imageModule, 'Image'),
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
   };
 }
@@ -658,6 +684,10 @@ export class EditorJsComponent implements AfterViewInit {
           delimiter: tools.Delimiter,
           embed: {
             class: tools.Embed,
+            inlineToolbar: false,
+          },
+          youtubeEmbed: {
+            class: tools.YoutubeEmbed,
             inlineToolbar: false,
           },
           image: {

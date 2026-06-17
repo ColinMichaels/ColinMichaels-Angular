@@ -44,6 +44,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "chart.js": "^4.4.9",
     "dayjs": "^1.11.13",
+    "editorjs-youtube-embed": "^1.0.3",
     "firebase": "^12.14.0",
     "marked": "^18.0.5",
     "marked-katex-extension": "^5.1.10",

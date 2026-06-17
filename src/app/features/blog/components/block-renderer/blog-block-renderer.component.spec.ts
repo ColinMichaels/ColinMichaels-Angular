@@ -32,6 +32,24 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.querySelector('figcaption')?.textContent).toContain('Architecture walkthrough');
   });
 
+  it('renders YouTube watch URLs as embed iframes', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'embed-watch-url',
+        type: 'embed',
+        data: {
+          url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const iframe = (fixture.nativeElement as HTMLElement).querySelector('iframe');
+
+    expect(iframe).not.toBeNull();
+    expect(iframe?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
+  });
+
   it('renders untrusted embeds as outbound links', () => {
     fixture.componentRef.setInput('blocks', [
       {
