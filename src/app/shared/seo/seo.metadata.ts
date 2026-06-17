@@ -5,7 +5,7 @@ export const SITE_NAME = 'ColinMichaels.com';
 export const DEFAULT_LOCALE = 'en_US';
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
-export const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
+export const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida-based writer sharing projects, creative experiments, media, and recovery updates.';
 
 const personId = `${SITE_URL}/#person`;
 const websiteId = `${SITE_URL}/#website`;
@@ -18,7 +18,9 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       '@id': personId,
       name: 'Colin Michaels',
       url: SITE_URL,
-      jobTitle: 'Frontend Engineer',
+      jobTitle: 'Applications Developer',
+      image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
+      description: 'Applications developer, FPV drone pilot, creative technologist, and recovering overthinker based in Florida.',
       sameAs: [
         'https://github.com/ColinMichaels',
         'https://www.linkedin.com/in/colinmichaels',
