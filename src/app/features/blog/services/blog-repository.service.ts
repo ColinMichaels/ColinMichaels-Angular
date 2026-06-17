@@ -191,7 +191,7 @@ export class BlogRepositoryService {
       coverImage: DEFAULT_COVER_IMAGE,
       author: {
         name: 'Colin Michaels',
-        title: 'Frontend Engineer',
+        title: 'Applications Developer',
       },
       categories: [],
       subcategories: [],

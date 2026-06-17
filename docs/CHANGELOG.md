@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-17
+
+- Replaced the homepage About placeholder with a full Colin Michaels bio section, profile image, recovery disclaimer, and reusable author profile data.
+- Added a linked blog-post author byline and author bio card that points readers back to the homepage bio section.
+
 ## 2026-06-16
 
 - Added a signed-in profile route at `/profile` with current Firebase Auth account details, provider IDs, and role claims.

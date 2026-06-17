@@ -47,6 +47,9 @@ export interface BlogOpenGraphMetadata {
 export interface BlogAuthor {
   name: string;
   title?: string;
+  bio?: string;
+  avatarUrl?: string;
+  profileUrl?: string;
 }
 
 export interface BlogPostPreview {

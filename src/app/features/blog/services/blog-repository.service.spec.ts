@@ -14,7 +14,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     coverImage: overrides.coverImage ?? '/assets/images/backgrounds/night.webp',
     author: overrides.author ?? {
       name: 'Colin Michaels',
-      title: 'Frontend Engineer',
+      title: 'Applications Developer',
     },
     categories: overrides.categories ?? ['CMS'],
     tags: overrides.tags ?? ['Firebase'],

@@ -17,7 +17,7 @@ const MOCK_POSTS: readonly BlogPostSummary[] = [
     coverImage: '/assets/images/backgrounds/day.webp',
     author: {
       name: 'Colin Michaels',
-      title: 'Frontend Engineer',
+      title: 'Applications Developer',
     },
     categories: ['Architecture'],
     tags: ['Angular', 'Refactor', 'Core OS'],
@@ -101,6 +101,7 @@ describe('MainComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('#work')).not.toBeNull();
+    expect(element.querySelector('#about')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
     expect(element.querySelector('#health-recovery')).not.toBeNull();
     expect(element.querySelector('#medical-information')).not.toBeNull();
@@ -116,6 +117,16 @@ describe('MainComponent', () => {
 
     expect(element.textContent).toContain('Latest writing');
     expect(element.textContent).toContain('Architecture Boundaries for the Site and OS');
+  });
+
+  it('renders the homepage author bio section', () => {
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('#about')?.textContent).toContain('About Colin Michaels');
+    expect(element.querySelector('#about')?.textContent).toContain('applications developer, FPV drone pilot');
+    expect(element.querySelector('#about img')?.getAttribute('src')).toBe('/assets/social/colin-michaels-og.jpg');
   });
 
   it('shows health recovery and medical information blog sections', () => {

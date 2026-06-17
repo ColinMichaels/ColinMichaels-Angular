@@ -26,6 +26,8 @@ import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
+import {AuthorBioComponent} from '../../../../shared/author/author-bio.component';
+import {COLIN_AUTHOR_PROFILE} from '../../../../shared/author/author-profile.data';
 import {
   createBlogReadingStats,
   createBlogTableOfContents,
@@ -42,6 +44,7 @@ import {
     BlogShareActionsComponent,
     BlogTableOfContentsComponent,
     BlogTagListComponent,
+    AuthorBioComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -64,6 +67,13 @@ import {
                 <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl"
                     [innerHTML]="currentPost.title"></h1>
                 <div class="flex flex-wrap gap-x-4 gap-y-1 border-y border-zinc-800/80 py-3 text-sm text-zinc-500">
+                  <span>
+                    By
+                    <a routerLink="/" [fragment]="authorProfile.profileFragment"
+                       class="text-zinc-300 hover:text-cyan-200">
+                      {{ currentPost.author.name }}
+                    </a>
+                  </span>
                   <span>
                     Posted {{ currentPost.publishedAt ? (currentPost.publishedAt | date: 'MMM d, y') : (currentPost.updatedAt | date: 'MMM d, y') }}
                   </span>
@@ -171,6 +181,10 @@ import {
                     }
                   </section>
                 }
+
+                <section class="mt-10">
+                  <app-author-bio></app-author-bio>
+                </section>
 
                 @if (suggestedPosts().length > 0) {
                   <section aria-labelledby="suggested-posts-heading" class="mt-10">
@@ -306,6 +320,7 @@ export class BlogDetailComponent {
   private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly authorProfile = COLIN_AUTHOR_PROFILE;
   protected readonly slug = toSignal(
     this.route.paramMap.pipe(map(params => params.get('slug') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''}

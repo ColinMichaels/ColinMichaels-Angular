@@ -33,7 +33,7 @@ const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
-const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, featuring software projects, creative experiments, photography, videos, recovery updates, and long-form writing.';
+const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida-based writer sharing projects, creative experiments, media, and recovery updates.';
 const BLOG_FEED_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
@@ -1585,7 +1585,9 @@ function createHomeJsonLd(): Record<string, unknown> {
         '@id': `${SITE_URL}/#person`,
         name: 'Colin Michaels',
         url: SITE_URL,
-        jobTitle: 'Frontend Engineer',
+        jobTitle: 'Applications Developer',
+        image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
+        description: 'Applications developer, FPV drone pilot, creative technologist, and recovering overthinker based in Florida.',
         sameAs: [
           'https://github.com/ColinMichaels',
           'https://www.linkedin.com/in/colinmichaels',
