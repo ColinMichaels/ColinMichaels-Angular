@@ -6,6 +6,7 @@ import {faCode, faMagnifyingGlass, faRss} from '@fortawesome/free-solid-svg-icon
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
+import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
 import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -16,6 +17,7 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
     RouterLink,
     FontAwesomeModule,
     BlogCategoryNavComponent,
+    BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,

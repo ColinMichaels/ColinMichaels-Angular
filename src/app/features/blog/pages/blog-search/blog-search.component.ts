@@ -4,6 +4,7 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
+import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
 import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -14,6 +15,7 @@ import {BlogPost} from '../../models/blog-post.model';
   imports: [
     RouterLink,
     BlogCategoryNavComponent,
+    BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
