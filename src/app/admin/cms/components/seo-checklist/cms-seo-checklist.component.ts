@@ -1,4 +1,4 @@
-import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
+import {Component, Input, ChangeDetectionStrategy, signal} from '@angular/core';
 
 import {
   createSearchPreviewDescription,
@@ -14,25 +14,31 @@ import {
   selector: 'app-cms-seo-checklist',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="space-y-4 border-t border-zinc-800 pt-5">
+    <section class="space-y-3 border-t border-zinc-800 pt-4">
       <div class="flex items-start justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold text-zinc-50">SEO Checklist</h2>
           <p class="mt-1 text-sm text-zinc-400">Authoring checks for search, sharing, and discovery.</p>
         </div>
-        <span
-          class="shrink-0 border px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em]"
-          [class.border-emerald-500]="checklist.failCount === 0 && checklist.warningCount === 0"
-          [class.text-emerald-200]="checklist.failCount === 0 && checklist.warningCount === 0"
-          [class.border-amber-500]="checklist.failCount === 0 && checklist.warningCount > 0"
-          [class.text-amber-200]="checklist.failCount === 0 && checklist.warningCount > 0"
-          [class.border-red-500]="checklist.failCount > 0"
-          [class.text-red-200]="checklist.failCount > 0"
-        >
-          {{ checklist.passCount }}/{{ checklist.items.length }}
-        </span>
+        <div class="flex items-center gap-2">
+          <span
+            class="shrink-0 border px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em]"
+            [class.border-emerald-500]="checklist.failCount === 0 && checklist.warningCount === 0"
+            [class.text-emerald-200]="checklist.failCount === 0 && checklist.warningCount === 0"
+            [class.border-amber-500]="checklist.failCount === 0 && checklist.warningCount > 0"
+            [class.text-amber-200]="checklist.failCount === 0 && checklist.warningCount > 0"
+            [class.border-red-500]="checklist.failCount > 0"
+            [class.text-red-200]="checklist.failCount > 0"
+          >
+            {{ checklist.passCount }}/{{ checklist.items.length }}
+          </span>
+          <button type="button" (click)="isOpen.set(!isOpen())" class="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <span class="block transition-transform duration-200" [class.rotate-180]="isOpen()">▾</span>
+          </button>
+        </div>
       </div>
 
+      @if (isOpen()) {
       <div class="grid grid-cols-3 gap-2 text-center text-xs">
         <div class="border border-emerald-500/40 bg-emerald-950/20 px-2 py-2 text-emerald-100">
           <span class="block text-lg font-semibold">{{ checklist.passCount }}</span>
@@ -97,10 +103,13 @@ import {
           </div>
         </article>
       </section>
+      }
     </section>
   `,
 })
 export class CmsSeoChecklistComponent {
+  protected readonly isOpen = signal(true);
+
   @Input({required: true}) checklistInput!: SeoChecklistInput;
 
   get checklist(): SeoChecklistSummary {

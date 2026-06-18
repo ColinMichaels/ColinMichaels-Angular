@@ -1,5 +1,5 @@
 import {JsonPipe} from '@angular/common';
-import {Component, ViewChild, effect, inject, ChangeDetectionStrategy} from '@angular/core';
+import {Component, ViewChild, effect, inject, ChangeDetectionStrategy, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
@@ -32,6 +32,8 @@ import {EditorSavedDocument} from '../../models/editor-document.model';
 import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog-media-upload.service';
+import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
+import {CmsToastService} from '../../services/cms-toast.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
@@ -299,11 +301,12 @@ function getErrorMessage(error: unknown): string {
     CmsAssistantPanelComponent,
     CmsDraftPreviewPanelComponent,
     CmsSeoChecklistComponent,
+    CmsToastContainerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 pb-36 pt-10 text-zinc-100 sm:px-8 lg:px-12">
-      <section class="mx-auto max-w-6xl space-y-8">
+      <section class="mx-auto max-w-6xl space-y-6">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
           <div class="flex items-center gap-3">
@@ -333,14 +336,33 @@ function getErrorMessage(error: unknown): string {
               >
                 Import JSON
               </button>
+              @if (post.status === 'published') {
+                <a
+                  [routerLink]="['/blog', post.slug]"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                >
+                  View Post
+                </a>
+              } @else if (hasActiveDraftPreview) {
+                <a
+                  [href]="draftPreviewUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex justify-center border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-950/30"
+                >
+                  View Preview
+                </a>
+              }
             </div>
           </header>
 
           <section class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <section class="space-y-8">
-              <form [formGroup]="postForm" class="grid gap-5 border border-zinc-800 bg-zinc-900/70 p-5 md:grid-cols-2">
+            <section class="space-y-6">
+              <form [formGroup]="postForm" class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 md:grid-cols-2">
                 <label class="space-y-2 md:col-span-2">
-                  <span class="text-sm font-medium text-zinc-200">Title</span>
+                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Title</span>
                   <input
                     type="text"
                     formControlName="title"
@@ -350,7 +372,7 @@ function getErrorMessage(error: unknown): string {
                 </label>
 
                 <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Slug</span>
+                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Slug</span>
                   <input
                     type="text"
                     formControlName="slug"
@@ -361,10 +383,10 @@ function getErrorMessage(error: unknown): string {
 
                 <label class="space-y-2 md:col-span-2">
                   <span class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium text-zinc-200">Posted on</span>
+                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Posted on</span>
                     <button
                       type="button"
-                      class="text-xs font-medium text-cyan-300 hover:text-cyan-200"
+                      class="text-xs font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
                       (click)="setPublishedAtNow()"
                     >
                       Use current time
@@ -381,7 +403,7 @@ function getErrorMessage(error: unknown): string {
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
-                  <span class="text-sm font-medium text-zinc-200">Excerpt</span>
+                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Excerpt</span>
                   <textarea
                     formControlName="excerpt"
                     rows="3"
@@ -403,7 +425,7 @@ function getErrorMessage(error: unknown): string {
                 ></app-blog-media-uploader>
 
                 <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Categories</span>
+                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Categories</span>
                   <input
                     type="text"
                     formControlName="categories"
@@ -413,7 +435,7 @@ function getErrorMessage(error: unknown): string {
                 </label>
 
                 <label class="space-y-2">
-                  <span class="text-sm font-medium text-zinc-200">Tags</span>
+                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Tags</span>
                   <input
                     type="text"
                     formControlName="tags"
@@ -423,7 +445,15 @@ function getErrorMessage(error: unknown): string {
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
-                  <span class="text-sm font-medium text-zinc-200">SEO Title</span>
+                  <span class="flex items-center justify-between gap-3">
+                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">SEO Title</span>
+                    <span
+                      class="text-xs tabular-nums transition-colors"
+                      [class.text-zinc-500]="postForm.controls.seoTitle.value.length < 50"
+                      [class.text-amber-400]="postForm.controls.seoTitle.value.length >= 50 && postForm.controls.seoTitle.value.length <= 60"
+                      [class.text-red-400]="postForm.controls.seoTitle.value.length > 60"
+                    >{{ postForm.controls.seoTitle.value.length }} / 60</span>
+                  </span>
                   <input
                     type="text"
                     formControlName="seoTitle"
@@ -432,7 +462,15 @@ function getErrorMessage(error: unknown): string {
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
-                  <span class="text-sm font-medium text-zinc-200">SEO Description</span>
+                  <span class="flex items-center justify-between gap-3">
+                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">SEO Description</span>
+                    <span
+                      class="text-xs tabular-nums transition-colors"
+                      [class.text-zinc-500]="postForm.controls.seoDescription.value.length < 140"
+                      [class.text-amber-400]="postForm.controls.seoDescription.value.length >= 140 && postForm.controls.seoDescription.value.length <= 160"
+                      [class.text-red-400]="postForm.controls.seoDescription.value.length > 160"
+                    >{{ postForm.controls.seoDescription.value.length }} / 160</span>
+                  </span>
                   <textarea
                     formControlName="seoDescription"
                     rows="2"
@@ -442,10 +480,10 @@ function getErrorMessage(error: unknown): string {
 
                 <label class="space-y-2 md:col-span-2">
                   <span class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium text-zinc-200">Canonical URL</span>
+                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Canonical URL</span>
                     <button
                       type="button"
-                      class="text-xs font-medium text-cyan-300 hover:text-cyan-200"
+                      class="text-xs font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
                       (click)="useGeneratedCanonicalUrl()"
                     >
                       Use generated
@@ -493,14 +531,6 @@ function getErrorMessage(error: unknown): string {
                 </div>
               </form>
 
-              @if (saveError) {
-                <p class="border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{{ saveError }}</p>
-              }
-
-              @if (saveMessage) {
-                <p class="border border-emerald-500/50 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">{{ saveMessage }}</p>
-              }
-
               <app-editor-js
                 [title]="editorTitle"
                 [saveLabel]="'Save Post'"
@@ -511,13 +541,15 @@ function getErrorMessage(error: unknown): string {
               ></app-editor-js>
             </section>
 
-            <aside class="space-y-5 border-t border-zinc-800 pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+            <aside class="space-y-4 border-t border-zinc-800 pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
               <section class="space-y-3">
                 <h2 class="text-lg font-semibold text-zinc-50">Post State</h2>
                 <dl class="space-y-3 text-sm">
                   <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Status</dt>
-                    <dd class="text-zinc-200">{{ postForm.controls.status.value }}</dd>
+                    <dd
+                      [class]="statusColorClass(postForm.controls.status.value)">{{ postForm.controls.status.value }}
+                    </dd>
                   </div>
                   <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Slug</dt>
@@ -574,13 +606,23 @@ function getErrorMessage(error: unknown): string {
               ></app-cms-assistant-panel>
 
               @if (lastSaved; as saved) {
-                <section class="space-y-3 border-t border-zinc-800 pt-5">
-                  <h2 class="text-lg font-semibold text-zinc-50">Last Saved</h2>
-                  <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
-                  <pre class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ saved.data | json }}</pre>
+                <section class="space-y-3 border-t border-zinc-800 pt-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-lg font-semibold text-zinc-50">Last Saved</h2>
+                    <button type="button" (click)="isLastSavedOpen.set(!isLastSavedOpen())"
+                            class="text-zinc-500 hover:text-zinc-300 transition-colors">
+                      <span class="block transition-transform duration-200"
+                            [class.rotate-180]="isLastSavedOpen()">▾</span>
+                    </button>
+                  </div>
+                  @if (isLastSavedOpen()) {
+                    <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
+                    <pre
+                      class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ saved.data | json }}</pre>
+                  }
                 </section>
               } @else {
-                <section class="border-t border-zinc-800 pt-5 text-sm text-zinc-500">
+                <section class="border-t border-zinc-800 pt-4 text-sm text-zinc-500">
                   Saved post JSON will appear here after the first save.
                 </section>
               }
@@ -611,7 +653,11 @@ function getErrorMessage(error: unknown): string {
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
+              <div class="flex items-center gap-4">
+                @if (postForm.dirty) {
+                  <span class="text-xs text-amber-300/80">● Unsaved changes</span>
+                }
+                <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
                 <button
                   type="button"
                   class="border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
@@ -630,6 +676,7 @@ function getErrorMessage(error: unknown): string {
                   {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
                 </button>
               </div>
+              </div>
             </div>
           </section>
         } @else if (isPostLoading()) {
@@ -646,6 +693,7 @@ function getErrorMessage(error: unknown): string {
         }
       </section>
     </main>
+    <app-cms-toast-container></app-cms-toast-container>
   `,
 })
 export class CmsPostEditorComponent {
@@ -658,6 +706,7 @@ export class CmsPostEditorComponent {
   private readonly blogAssistant = inject(BlogAiAssistantService);
   private readonly blogAiFunctions = inject(BlogAiFunctionsService);
   private readonly blogMediaUpload = inject(BlogMediaUploadService);
+  private readonly toast = inject(CmsToastService);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
   private readonly firestorePost = this.slug
     ? toSignal(this.blogRepository.getAdminPostBySlug$(this.slug), {initialValue: undefined})
@@ -671,9 +720,8 @@ export class CmsPostEditorComponent {
   protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
+  protected readonly isLastSavedOpen = signal(false);
   protected lastSaved: EditorSavedDocument | null = null;
-  protected saveMessage = '';
-  protected saveError = '';
   protected isSaveInProgress = false;
   protected isDeleteInProgress = false;
   protected assistantResult: BlogAssistantResult | null = null;
@@ -717,6 +765,18 @@ export class CmsPostEditorComponent {
 
       void this.applyFirestorePost(post);
     });
+  }
+
+  protected get hasActiveDraftPreview(): boolean {
+    const post = this.currentPost;
+    if (!post?.preview || post.status !== 'draft') return false;
+    const expiresAt = new Date(post.preview.expiresAt).getTime();
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  }
+
+  protected get draftPreviewUrl(): string {
+    const preview = this.currentPost?.preview;
+    return preview ? this.blogRepository.createPreviewUrl(preview.token) : '';
   }
 
   protected get editorTitle(): string {
@@ -824,15 +884,13 @@ export class CmsPostEditorComponent {
       return;
     }
 
-    this.clearSaveMessages();
-
     try {
       const parsedJson: unknown = JSON.parse(await file.text());
       const importedDocument = this.createImportedPostDocument(parsedJson);
       await this.applyImportedPost(importedDocument.post);
-      this.saveMessage = `Imported ${importedDocument.sourceLabel} from ${file.name}. Review and save to persist it.`;
+      this.toast.success(`Imported ${importedDocument.sourceLabel} from ${file.name}. Review and save to persist it.`);
     } catch (error) {
-      this.saveError = `Unable to import JSON: ${getErrorMessage(error)}`;
+      this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
     }
   }
 
@@ -951,36 +1009,32 @@ export class CmsPostEditorComponent {
     this.postForm.markAsDirty();
   }
 
-  protected async savePost(): Promise<void> {
-    this.clearSaveMessages();
-
+  protected async savePost(): Promise<boolean> {
     if (!this.editorComponent) {
-      this.saveError = 'The editor is still loading. Try saving again in a moment.';
-      return;
+      this.toast.error('The editor is still loading. Try saving again in a moment.');
+      return false;
     }
 
     this.isSaveInProgress = true;
 
     try {
       const data = await this.editorComponent.getDocument();
-
-      await this.onSaved({
+      return await this.onSaved({
         data,
         savedAt: new Date().toISOString(),
         blockCount: data.blocks.length,
       });
     } catch (error) {
-      this.saveError = error instanceof Error ? error.message : 'Unable to save editor content.';
+      this.toast.error(error instanceof Error ? error.message : 'Unable to save editor content.');
+      return false;
     } finally {
       this.isSaveInProgress = false;
     }
   }
 
   protected async deleteCurrentPost(): Promise<void> {
-    this.clearSaveMessages();
-
     if (!this.currentPost || this.isNewPost) {
-      this.saveError = 'Save this post before deleting it.';
+      this.toast.error('Save this post before deleting it.');
       return;
     }
 
@@ -997,13 +1051,13 @@ export class CmsPostEditorComponent {
       const result = await this.blogRepository.deletePost(post.id);
 
       if (result === 'not-found') {
-        this.saveError = `Could not delete "${post.title}" because it was not found.`;
+        this.toast.error(`Could not delete "${post.title}" because it was not found.`);
         return;
       }
 
       await this.router.navigate(['/admin/cms']);
     } catch (error) {
-      this.saveError = error instanceof Error ? error.message : 'Unable to delete post from Firestore.';
+      this.toast.error(error instanceof Error ? error.message : 'Unable to delete post from Firestore.');
     } finally {
       this.isDeleteInProgress = false;
     }
@@ -1018,16 +1072,16 @@ export class CmsPostEditorComponent {
     }
 
     try {
-      await this.savePost();
+      const saved = await this.savePost();
 
-      if (this.saveError || !this.currentPost) {
-        this.draftPreviewPanel?.onPreviewError(this.saveError || 'Save the draft before creating a preview link.');
+      if (!saved || !this.currentPost) {
+        this.draftPreviewPanel?.onPreviewError('Save the draft before creating a preview link.');
         return;
       }
 
       const result = await this.blogRepository.createPreviewForPost(this.currentPost);
       this.currentPost = result.post;
-      this.saveMessage = 'Saved the draft and refreshed its public preview link.';
+      this.toast.success('Saved the draft and refreshed its public preview link.');
       this.draftPreviewPanel?.onPreviewGenerated(result.post);
     } catch (error) {
       this.draftPreviewPanel?.onPreviewError(error instanceof Error ? error.message : 'Unable to create a preview link.');
@@ -1038,18 +1092,17 @@ export class CmsPostEditorComponent {
     this.currentPost = post;
   }
 
-  protected async onSaved(saved: EditorSavedDocument): Promise<void> {
-    this.clearSaveMessages();
+  protected async onSaved(saved: EditorSavedDocument): Promise<boolean> {
     this.postForm.markAllAsTouched();
 
     if (!this.currentPost) {
-      this.saveError = 'Unable to save because the source post is missing.';
-      return;
+      this.toast.error('Unable to save because the source post is missing.');
+      return false;
     }
 
     if (this.postForm.invalid) {
-      this.saveError = 'Title, slug, excerpt, and cover image are required before saving.';
-      return;
+      this.toast.error('Title, slug, excerpt, and cover image are required before saving.');
+      return false;
     }
 
     const formValue = this.postForm.getRawValue();
@@ -1084,14 +1137,17 @@ export class CmsPostEditorComponent {
       this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
       this.postForm.markAsPristine();
       this.lastSaved = saved;
-      this.saveMessage = `Saved ${savedPost.title} to Firestore CMS storage.`;
+      this.toast.success(`Saved "${savedPost.title}" to Firestore.`);
 
       if (this.isNewPost && !this.hasCreatedPost) {
         this.hasCreatedPost = true;
         void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {replaceUrl: true});
       }
+
+      return true;
     } catch (error) {
-      this.saveError = error instanceof Error ? error.message : 'Unable to save post to Firestore.';
+      this.toast.error(error instanceof Error ? error.message : 'Unable to save post to Firestore.');
+      return false;
     }
   }
 
@@ -1359,14 +1415,21 @@ export class CmsPostEditorComponent {
     return status === 'published' ? currentValue ?? savedAt : null;
   }
 
-  private clearSaveMessages(): void {
-    this.saveError = '';
-    this.saveMessage = '';
+  protected statusColorClass(status: BlogPostStatus): string {
+    switch (status) {
+      case 'draft':
+        return 'text-amber-300';
+      case 'scheduled':
+        return 'text-blue-300';
+      case 'published':
+        return 'text-emerald-300';
+      case 'archived':
+        return 'text-zinc-500';
+    }
   }
 
   private markUploadedMedia(upload: BlogMediaUploadResult): void {
     this.postForm.markAsDirty();
-    this.saveMessage = `Uploaded ${upload.originalName}. Save the post to persist the media URL.`;
-    this.saveError = '';
+    this.toast.success(`Uploaded ${upload.originalName}. Save the post to persist the media URL.`);
   }
 }
