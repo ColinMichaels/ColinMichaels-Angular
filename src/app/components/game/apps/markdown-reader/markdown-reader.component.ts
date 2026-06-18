@@ -1,10 +1,11 @@
 import {ChangeDetectionStrategy, Component, Input, ViewEncapsulation} from '@angular/core';
-import {MarkdownComponent} from 'ngx-markdown';
+import {MarkdownComponent, provideMarkdown} from 'ngx-markdown';
 import {ApplicationManagerService} from '../../services/application-manager.service';
 
 @Component({
   selector: 'app-markdown-reader',
   imports: [MarkdownComponent],
+  providers: [provideMarkdown()],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
