@@ -5,10 +5,7 @@ import {BlogAdminStats, BlogPost, BlogPostSummary} from '../models/blog-post.mod
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
-
-const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
-const BLOG_PREVIEW_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-const BLOG_PREVIEW_TOKEN_BYTE_LENGTH = 18;
+import {DEFAULT_COVER_IMAGE, BLOG_PREVIEW_DURATION_MS, BLOG_PREVIEW_TOKEN_BYTE_LENGTH} from '../blog.constants';
 
 export interface BlogPostPreviewResult {
   post: BlogPost;

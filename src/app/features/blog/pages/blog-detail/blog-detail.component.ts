@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
+import {FirebaseError} from 'firebase/app';
 import {catchError, finalize, map, of, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
@@ -47,7 +48,7 @@ import {
     AuthorBioComponent,
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       @if (post()) {
@@ -64,8 +65,7 @@ import {
           >
             <div class="min-w-0 xl:col-start-1">
               <header class="mb-10 space-y-6 border-b border-zinc-800 pb-8">
-                <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl"
-                    [innerHTML]="currentPost.title"></h1>
+                <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
                 <div class="flex flex-wrap gap-x-4 gap-y-1 border-y border-zinc-800/80 py-3 text-sm text-zinc-500">
                   <span>
                     By
@@ -96,7 +96,7 @@ import {
                     </span>
                   }
                 </div>
-                <p class="text-lg leading-8 text-zinc-400" [innerHTML]="currentPost.excerpt"></p>
+                <p class="text-lg leading-8 text-zinc-400">{{ currentPost.excerpt }}</p>
                 @if (isPreviewRoute()) {
                   <div class="border border-amber-400/50 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
                     Draft preview. This temporary link is rendering unpublished CMS content.
@@ -145,8 +145,8 @@ import {
                       >
                         <span
                           class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Previous post</span>
-                        <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
-                              [innerHTML]="previous.title"></span>
+                        <span
+                          class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200">{{ previous.title }}</span>
                       </a>
                     } @else {
                       <span aria-hidden="true" class="hidden sm:block"></span>
@@ -158,8 +158,8 @@ import {
                         class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900 sm:text-right"
                       >
                         <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Next post</span>
-                        <span class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200"
-                              [innerHTML]="next.title"></span>
+                        <span
+                          class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200">{{ next.title }}</span>
                       </a>
                     }
                   </nav>
@@ -225,10 +225,9 @@ import {
                               {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
                             </span>
                             <span
-                              class="mt-1 block text-lg font-semibold leading-6 text-zinc-100 group-hover:text-cyan-200"
-                              [innerHTML]="suggestedPost.title"></span>
-                            <span class="mt-2 line-clamp-3 block text-sm leading-6 text-zinc-400"
-                                  [innerHTML]="suggestedPost.excerpt"></span>
+                              class="mt-1 block text-lg font-semibold leading-6 text-zinc-100 group-hover:text-cyan-200">{{ suggestedPost.title }}</span>
+                            <span
+                              class="mt-2 line-clamp-3 block text-sm leading-6 text-zinc-400">{{ suggestedPost.excerpt }}</span>
                           </span>
                         </a>
                       }
@@ -343,7 +342,7 @@ export class BlogDetailComponent {
 
           return this.blogRepository.getPreviewPostByToken$(previewToken).pipe(
             catchError(error => {
-              this.previewLoadError.set(error instanceof Error ? error.message : 'Unable to load draft preview.');
+              this.previewLoadError.set(this.describePreviewError(error));
               return of(undefined);
             }),
             finalize(() => this.previewLoading.set(false))
@@ -407,11 +406,13 @@ export class BlogDetailComponent {
     }
 
     return this.posts()
-      .filter(post => post.slug !== currentPost.slug && this.getSharedTaxonomyCount(post, currentPost) > 0)
+      .map(post => ({post, count: this.getSharedTaxonomyCount(post, currentPost)}))
+      .filter(({post, count}) => post.slug !== currentPost.slug && count > 0)
       .sort((left, right) => (
-        this.getSharedTaxonomyCount(right, currentPost) - this.getSharedTaxonomyCount(left, currentPost)
-        || this.getPostDate(right).localeCompare(this.getPostDate(left))
+        right.count - left.count
+        || this.getPostDate(right.post).localeCompare(this.getPostDate(left.post))
       ))
+      .map(({post}) => post)
       .slice(0, 3);
   });
 
@@ -521,5 +522,22 @@ export class BlogDetailComponent {
     }
 
     this.activeContentSectionId.set(activeHeadingId);
+  }
+
+  private describePreviewError(error: unknown): string {
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'This preview link is not accessible. It may have been revoked.';
+        case 'not-found':
+          return 'This preview link has expired or been revoked.';
+        case 'unavailable':
+          return 'Unable to load the draft preview: the service is temporarily unavailable.';
+        default:
+          return `Unable to load the draft preview: ${error.message}`;
+      }
+    }
+
+    return error instanceof Error ? error.message : 'Unable to load the draft preview.';
   }
 }
