@@ -46,6 +46,11 @@ export class AppComponent {
 
     return !SITE_HEADER_EXCLUDED_ROUTES.some(route => currentUrl === route || currentUrl.startsWith(`${route}/`));
   });
+  protected readonly showOsNotifications = computed(() => {
+    const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
+
+    return SITE_HEADER_EXCLUDED_ROUTES.some(route => currentUrl === route || currentUrl.startsWith(`${route}/`));
+  });
 
   constructor() {
     this.seo.initializeRouteTracking();

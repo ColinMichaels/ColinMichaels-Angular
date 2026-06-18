@@ -1,9 +1,8 @@
 import {ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
-import {PreloadAllModules, provideRouter, withInMemoryScrolling, withPreloading} from '@angular/router';
+import {provideRouter, withInMemoryScrolling} from '@angular/router';
 
 import {routes} from './app.routes';
 import {provideHttpClient, withXhr} from '@angular/common/http';
-import {provideMarkdown} from 'ngx-markdown';
 import {provideAnimations} from '@angular/platform-browser/animations';
 import {environment} from '../environments/environment';
 import {
@@ -26,13 +25,11 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({eventCoalescing: true}),
     provideRouter(
       routes,
-      withPreloading(PreloadAllModules),
       withInMemoryScrolling({
         anchorScrolling: 'enabled',
         scrollPositionRestoration: 'top'
       })
     ),
-    provideMarkdown(),
     provideAnimations(),
     {
       provide: SOUND_SERVICE_CONFIG,
