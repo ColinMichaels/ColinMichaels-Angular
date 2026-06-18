@@ -14,15 +14,14 @@
 
       <div class="mx-auto flex min-h-[22svh] max-w-7xl items-center px-4 py-12 sm:px-6 lg:px-8">
         <div class="max-w-3xl">
-          <p class="text-sm uppercase tracking-[0.32em] text-cyan-700 dark:text-cyan-200">Blog / Links / Labs</p>
-          <h1
-            class="mt-5 max-w-4xl text-5xl font-semibold leading-none text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
+          <p class="eyebrow eyebrow-cyan">Blog / Links / Labs</p>
+          <h1 class="mt-5 max-w-4xl heading-display">
             Colin Michaels
           </h1>
           <div class="mt-8 flex flex-wrap gap-3">
             <a
               [routerLink]="['/', pathNames.BLOG]"
-              class="inline-flex border border-cyan-600 px-4 py-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+              class="btn-primary"
             >
               Read the blog
             </a>
@@ -34,9 +33,9 @@
     <section id="blog" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Latest writing</h2>
+          <h2 class="mt-3 heading-section">Latest writing</h2>
         </div>
-        <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
+        <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
           View all posts
         </a>
       </div>
@@ -46,57 +45,76 @@
           <p class="font-medium text-zinc-100">Unable to load latest posts.</p>
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
-      } @else if (blogIsLoading()) {
-        <p class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">Loading latest posts.</p>
-    } @else {
-      <div class="mt-8 grid gap-5 lg:grid-cols-3">
-        @for (post of publishedPosts(); track post.id) {
-          <article class="flex h-full flex-col overflow-hidden border border-white/10 bg-zinc-900">
-            <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="block">
-              <img [src]="post.coverImage" [alt]="post.title + ' cover image'"
-                   class="aspect-[16/10] w-full object-cover">
-            </a>
-            <div class="flex flex-1 flex-col p-5">
-              <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">
-                {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
-              </p>
-              <h3 class="mt-3 text-xl font-semibold text-zinc-50">
-                <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
-              </h3>
-              <p class="mt-3 text-sm leading-6 text-zinc-400">{{ post.excerpt }}</p>
-              <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
-                <a
-                  [routerLink]="['/', pathNames.BLOG, post.slug]"
-                  class="inline-flex items-center rounded border border-cyan-300 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-300 hover:text-zinc-950"
-                >
-                  Read more
+      } @else {
+        @defer (when !blogIsLoading()) {
+          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+            @for (post of publishedPosts(); track post.id) {
+              <article class="flex h-full flex-col overflow-hidden border border-white/10 bg-zinc-900">
+                <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="group block overflow-hidden">
+                  <img [src]="post.coverImage" [alt]="post.title + ' cover image'"
+                       class="aspect-[16/10] w-full object-cover transition duration-300 ease-in-out group-hover:scale-105 group-hover:brightness-110"
+                       loading="lazy">
                 </a>
-                <app-blog-share-actions
-                  [title]="post.title"
-                  [excerpt]="post.excerpt"
-                  [path]="pathNames.BLOG + '/' + post.slug"
-                ></app-blog-share-actions>
-              </div>
-            </div>
-          </article>
-        } @empty {
-        <p class="border border-white/10 p-5 text-zinc-400">No published posts yet.</p>
+                <div class="flex flex-1 flex-col p-5">
+                  <p class="eyebrow-sm eyebrow-muted">
+                    {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
+                  </p>
+                  <h3 class="mt-3 heading-card">
+                    <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
+                  </h3>
+                  <p class="mt-3 text-body">{{ post.excerpt }}</p>
+                  <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+                    <a
+                      [routerLink]="['/', pathNames.BLOG, post.slug]"
+                      class="btn-secondary"
+                    >
+                      Read more
+                    </a>
+                    <app-blog-share-actions
+                      [title]="post.title"
+                      [excerpt]="post.excerpt"
+                      [path]="pathNames.BLOG + '/' + post.slug"
+                    ></app-blog-share-actions>
+                  </div>
+                </div>
+              </article>
+            } @empty {
+              <p class="border border-white/10 p-5 text-zinc-400">No published posts yet.</p>
+            }
+          </div>
+        } @placeholder (minimum 300ms) {
+          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+            @for (i of [1, 2, 3]; track i) {
+              <article
+                class="flex h-full flex-col overflow-hidden border border-zinc-200 bg-zinc-100 dark:border-white/10 dark:bg-zinc-900"
+                       aria-hidden="true">
+                <div class="aspect-[16/10] w-full animate-pulse bg-zinc-200 dark:bg-zinc-800"></div>
+                <div class="flex flex-1 flex-col gap-3 p-5">
+                  <div class="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                  <div class="h-6 w-3/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                  <div class="space-y-2">
+                    <div class="h-3 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                    <div class="h-3 w-4/5 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
       }
-      </div>
-    }
     </section>
 
-    <section id="health-recovery" class="border-y border-white/10 bg-neutral-900/80 py-12">
+    <section id="health-recovery" class="border-y border-white/10 bg-neutral-900/10 py-12">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p class="text-sm uppercase tracking-[0.28em] text-emerald-300">Health & Recovery</p>
-            <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Weekly Updates</h2>
-            <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">
+            <p class="eyebrow eyebrow-emerald">Health & Recovery</p>
+            <h2 class="mt-3 heading-section">Weekly Updates</h2>
+            <p class="mt-4 max-w-3xl text-body">
               Weekly recovery notes, personal updates, and posts about the recent open heart surgery process.
             </p>
           </div>
-          <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
+          <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
             Browse the blog
           </a>
         </div>
@@ -106,19 +124,24 @@
             <p class="font-medium text-zinc-100">Unable to load health and recovery posts.</p>
             <p class="mt-2 text-sm">{{ error }}</p>
           </div>
-        } @else if (blogIsLoading()) {
-          <p class="mt-8 border border-white/10 bg-zinc-950 p-5 text-zinc-400">Loading health and recovery posts.</p>
         } @else {
-          <div class="mt-8 divide-y divide-zinc-800">
-            @for (post of healthRecoveryPosts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
-            } @empty {
-              <p class="border border-white/10 bg-zinc-950 p-5 text-sm leading-6 text-zinc-400">
-                No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
-                open heart surgery, or cardiac recovery will appear here.
-              </p>
-            }
-          </div>
+          @defer (when !blogIsLoading()) {
+            <div class="mt-8 divide-y divide-zinc-800">
+              @for (post of healthRecoveryPosts(); track post.id) {
+                <app-blog-post-card [post]="post"></app-blog-post-card>
+              } @empty {
+                <p class="border border-white/10 bg-zinc-950 p-5 text-sm leading-6 text-zinc-400">
+                  No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
+                  open heart surgery, or cardiac recovery will appear here.
+                </p>
+              }
+            </div>
+          } @placeholder (minimum 300ms) {
+            <div class="mt-8 divide-y divide-zinc-800">
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+            </div>
+          }
         }
       </div>
     </section>
@@ -126,13 +149,13 @@
     <section id="medical-information" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p class="text-sm uppercase tracking-[0.28em] text-rose-300">Things I learned in the Hospital</p>
-          <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Medical advice from a friend</h2>
-          <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">
+          <p class="eyebrow eyebrow-rose">Things I learned in the Hospital</p>
+          <h2 class="mt-3 heading-section">Medical advice from a friend</h2>
+          <p class="mt-4 max-w-3xl text-body">
             Sharing some of the things I learned while in the hospital that I wish someone told me.
           </p>
         </div>
-        <a [routerLink]="['/', pathNames.BLOG]" class="text-sm font-medium text-cyan-300 hover:text-cyan-200">
+        <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
           View all writing
         </a>
       </div>
@@ -142,19 +165,24 @@
           <p class="font-medium text-zinc-100">Unable to load medical information posts.</p>
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
-      } @else if (blogIsLoading()) {
-        <p class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">Loading medical information posts.</p>
       } @else {
-        <div class="mt-8 divide-y divide-zinc-800">
-          @for (post of medicalInfoPosts(); track post.id) {
-            <app-blog-post-card [post]="post"></app-blog-post-card>
-          } @empty {
-            <p class="border border-white/10 bg-zinc-900 p-5 text-sm leading-6 text-zinc-400">
-              No published medical information posts yet. Posts tagged or categorized with medical information,
-              procedures, medications, cardiology, or related surgery-care terms will appear here.
-            </p>
-          }
-        </div>
+        @defer (when !blogIsLoading()) {
+          <div class="mt-8 divide-y divide-zinc-800">
+            @for (post of medicalInfoPosts(); track post.id) {
+              <app-blog-post-card [post]="post"></app-blog-post-card>
+            } @empty {
+              <p class="border border-white/10 bg-zinc-900 p-5 text-sm leading-6 text-zinc-400">
+                No published medical information posts yet. Posts tagged or categorized with medical information,
+                procedures, medications, cardiology, or related surgery-care terms will appear here.
+              </p>
+            }
+          </div>
+        } @placeholder (minimum 300ms) {
+          <div class="mt-8 divide-y divide-zinc-800">
+            <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+            <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+          </div>
+        }
       }
     </section>
 
@@ -172,9 +200,9 @@
     <section id="links" class="mx-auto grid max-w-7xl gap-4 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
       @for (capability of capabilities; track capability.title) {
         <article class="border border-white/10 bg-zinc-900/70 p-5">
-          <p class="text-xs uppercase tracking-[0.24em] text-zinc-500">{{ capability.meta }}</p>
-          <h2 class="mt-4 text-2xl font-semibold text-zinc-50">{{ capability.title }}</h2>
-          <p class="mt-3 text-sm leading-6 text-zinc-400">{{ capability.description }}</p>
+          <p class="eyebrow-sm eyebrow-muted">{{ capability.meta }}</p>
+          <h2 class="mt-4 heading-subsection">{{ capability.title }}</h2>
+          <p class="mt-3 text-body">{{ capability.description }}</p>
         </article>
       }
     </section>
@@ -184,9 +212,9 @@
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div>
-            <p class="text-sm uppercase tracking-[0.28em] text-amber-300">Labs</p>
-            <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Experimental systems stay visible.</h2>
-            <p class="mt-5 text-base leading-8 text-zinc-400">
+            <p class="eyebrow eyebrow-amber">Labs</p>
+            <h2 class="mt-3 heading-section">Experimental systems stay visible.</h2>
+            <p class="mt-5 text-base leading-8 text-body">
               Labs collect visual and interaction prototypes without mixing them into production page logic.
             </p>
           </div>
@@ -194,9 +222,9 @@
           <div class="grid gap-4 sm:grid-cols-2">
             @for (lab of labItems; track lab.title) {
               <article class="border border-white/10 bg-neutral-950 p-5">
-                <p class="text-xs uppercase tracking-[0.24em] text-zinc-500">{{ lab.eyebrow }}</p>
-                <h3 class="mt-4 text-2xl font-semibold text-zinc-50">{{ lab.title }}</h3>
-                <p class="mt-3 text-sm leading-6 text-zinc-400">{{ lab.description }}</p>
+                <p class="eyebrow-sm eyebrow-muted">{{ lab.eyebrow }}</p>
+                <h3 class="mt-4 heading-subsection">{{ lab.title }}</h3>
+                <p class="mt-3 text-body">{{ lab.description }}</p>
                 <a [routerLink]="lab.route"
                    class="mt-6 inline-flex border px-3 py-2 text-sm font-medium transition hover:bg-white hover:text-neutral-950"
                    [ngClass]="lab.accentClass">
@@ -212,13 +240,13 @@
     <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p class="text-sm uppercase tracking-[0.28em] text-zinc-500">Status</p>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+          <p class="eyebrow eyebrow-muted">Status</p>
+          <p class="mt-2 max-w-2xl text-body">
             The public site, blog, and labs now share one homepage surface while the OS entry stays singular.
           </p>
         </div>
         <a
-          class="inline-flex w-fit border border-white/20 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-cyan-300 hover:text-cyan-200"
+          class="btn-ghost w-fit"
           href="https://forms.gle/kfsZYFRzJcQYfruw9"
           rel="noreferrer"
           target="_blank"

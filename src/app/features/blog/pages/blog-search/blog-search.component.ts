@@ -5,6 +5,7 @@ import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
 import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
+import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {BlogPost} from '../../models/blog-post.model';
@@ -15,6 +16,7 @@ import {BlogPost} from '../../models/blog-post.model';
     RouterLink,
     BlogCategoryNavComponent,
     BlogPostCardComponent,
+    BlogPostCardSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -54,32 +56,40 @@ import {BlogPost} from '../../models/blog-post.model';
               <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
               <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
             </div>
-          } @else if (isLoading()) {
-            <p class="border-t border-zinc-800 py-8 text-zinc-400">
-              Loading posts from Firestore.
-            </p>
-          } @else if (normalizedSearchTerm().length === 0) {
-            <div class="border-t border-zinc-800 py-8">
-              <p class="text-lg font-medium text-zinc-100">Enter a search term.</p>
-              <p class="mt-2 text-sm text-zinc-400">
-                Search covers titles, excerpts, categories, tags, and article body text.
-              </p>
-            </div>
           } @else {
-            <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
-              Showing {{ filteredPosts().length }} result{{ filteredPosts().length === 1 ? '' : 's' }}
-              for <span class="text-cyan-300">{{ searchTerm().trim() }}</span>.
-            </p>
+            @defer (when !isLoading()) {
+              @if (normalizedSearchTerm().length === 0) {
+                <div class="border-t border-zinc-800 py-8">
+                  <p class="text-lg font-medium text-zinc-100">Enter a search term.</p>
+                  <p class="mt-2 text-sm text-zinc-400">
+                    Search covers titles, excerpts, categories, tags, and article body text.
+                  </p>
+                </div>
+              } @else {
+                <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
+                  Showing {{ filteredPosts().length }} result{{ filteredPosts().length === 1 ? '' : 's' }}
+                  for <span class="text-cyan-300">{{ searchTerm().trim() }}</span>.
+                </p>
 
-            @for (post of filteredPosts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
-            } @empty {
-              <div class="border-t border-zinc-800 py-8">
-                <p class="text-lg font-medium text-zinc-100">No matching posts.</p>
-                <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
-                  View all posts
-                </a>
-              </div>
+                @for (post of filteredPosts(); track post.id) {
+                  <app-blog-post-card [post]="post"></app-blog-post-card>
+                } @empty {
+                  <div class="border-t border-zinc-800 py-8">
+                    <p class="text-lg font-medium text-zinc-100">No matching posts.</p>
+                    <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
+                      View all posts
+                    </a>
+                  </div>
+                }
+              }
+            } @placeholder (minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+            } @loading (after 150ms; minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
             }
           }
         </section>
