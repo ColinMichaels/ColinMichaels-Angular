@@ -1,4 +1,8 @@
-<app-notification-server/>
+@if (showOsNotifications()) {
+  @defer (on idle) {
+    <app-notification-server/>
+  }
+}
 @if (showSiteHeader()) {
   <app-site-header/>
 }

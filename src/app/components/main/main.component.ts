@@ -1,16 +1,9 @@
-import {DatePipe, NgClass} from '@angular/common';
+import {NgClass, NgOptimizedImage} from '@angular/common';
 import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
-import {
-  BlogPostCardSkeletonComponent
-} from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
-import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
-import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
-import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {HomeBlogSectionsComponent} from './home-blog-sections.component';
 import {
   YouTubeLatestVideosComponent
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
@@ -33,49 +26,13 @@ interface HomeCapability {
   meta: string;
 }
 
-const WEEKLY_UPDATES_TERMS = [
-  'weekly update',
-  'weekly updates'
-] as const;
-
-const MEDICAL_INFORMATION_TERMS = [
-  'medical information',
-  'medical info',
-  'medical notes',
-  'health and recovery'
-] as const;
-
-function normalizeSearchValue(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): boolean {
-  const searchableText = normalizeSearchValue([
-    post.title,
-    post.excerpt,
-    post.slug,
-    ...post.categories,
-    ...(post.subcategories ?? []),
-    ...post.tags,
-  ].join(' '));
-
-  return terms.some(term => searchableText.includes(normalizeSearchValue(term)));
-}
-
 @Component({
   selector: 'app-main',
   imports: [
-    BlogPostCardComponent,
-    BlogPostCardSkeletonComponent,
-    BlogShareActionsComponent,
     AuthorBioComponent,
-    DatePipe,
+    HomeBlogSectionsComponent,
     NgClass,
+    NgOptimizedImage,
     RouterLink,
     SocialsComponent,
     YouTubeLatestVideosComponent,
@@ -86,8 +43,13 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   styleUrl: `./home-page.scss`
 })
 export class MainComponent {
-  private readonly blogRepository = inject(BlogRepositoryService);
   protected readonly theme = inject(SiteThemeService);
+  protected readonly heroBackgroundImage = computed(() => (
+    this.theme.isDark() ? '/assets/images/backgrounds/night.webp' : '/assets/images/backgrounds/day.webp'
+  ));
+  protected readonly heroBackgroundAlt = computed(() => (
+    this.theme.isDark() ? 'Night aerial landscape background' : 'Day aerial landscape background'
+  ));
 
   protected readonly capabilities: readonly HomeCapability[] = [
     {
@@ -126,18 +88,5 @@ export class MainComponent {
     },
   ];
 
-  protected readonly allPublishedPosts = toSignal(
-    this.blogRepository.getPublishedPosts$(),
-    {initialValue: []}
-  );
-  protected readonly publishedPosts = computed(() => this.allPublishedPosts().slice(0, 3));
-  protected readonly healthRecoveryPosts = computed(() => (
-    this.allPublishedPosts().filter(post => postMatchesTerms(post, WEEKLY_UPDATES_TERMS))
-  ));
-  protected readonly medicalInfoPosts = computed(() => (
-    this.allPublishedPosts().filter(post => postMatchesTerms(post, MEDICAL_INFORMATION_TERMS))
-  ));
-  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly pathNames = PATH_NAMES;
 }
