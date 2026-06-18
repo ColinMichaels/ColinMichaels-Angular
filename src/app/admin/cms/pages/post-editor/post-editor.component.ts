@@ -8,9 +8,19 @@ import {lastValueFrom} from 'rxjs';
 
 import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
+import {DEFAULT_COVER_IMAGE} from '../../../../features/blog/blog.constants';
+import {
+  BLOG_POST_STATUSES,
+  isBlogPost,
+  isRecord,
+  isStringArray
+} from '../../../../features/blog/utils/blog-validation.util';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
 import {BlogMediaUploaderComponent} from '../../components/media-uploader/blog-media-uploader.component';
+import {CmsAssistantPanelComponent} from '../../components/assistant-panel/cms-assistant-panel.component';
+import {CmsDraftPreviewPanelComponent} from '../../components/draft-preview-panel/cms-draft-preview-panel.component';
+import {CmsSeoChecklistComponent} from '../../components/seo-checklist/cms-seo-checklist.component';
 import {
   BlogAssistantContext,
   BlogAssistantResult,
@@ -23,15 +33,8 @@ import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog-media-upload.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
-import {
-  createSearchPreviewDescription,
-  createSearchPreviewTitle,
-  createSeoChecklist,
-  createSocialPreviewImage,
-  SeoChecklistInput,
-  SeoChecklistStatus,
-  SeoChecklistSummary,
-} from '../../utils/blog-seo-checklist';
+import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
+import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
 
 interface PostEditorForm {
   title: FormControl<string>;
@@ -53,9 +56,8 @@ interface ImportedPostDocument {
   sourceLabel: string;
 }
 
-const DEFAULT_COVER_IMAGE = '/assets/images/backgrounds/night.webp';
 const BLOG_CANONICAL_BASE_URL = `${SITE_URL}/blog`;
-const statusOptions: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
+const statusOptions: readonly BlogPostStatus[] = BLOG_POST_STATUSES;
 const postedDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -113,14 +115,6 @@ function fromDateTimeLocalValue(value: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
-
 function isBlogPostStatus(value: unknown): value is BlogPostStatus {
   return typeof value === 'string' && statusOptions.includes(value as BlogPostStatus);
 }
@@ -140,63 +134,6 @@ function getPositiveInteger(value: unknown): number | undefined {
   }
 
   return undefined;
-}
-
-function isOptionalPositiveInteger(value: unknown): boolean {
-  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value > 0);
-}
-
-function isBlogAuthor(value: unknown): value is BlogPost['author'] {
-  return isRecord(value)
-    && typeof value['name'] === 'string'
-    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined');
-}
-
-function isBlogSeo(value: unknown): value is BlogPost['seo'] {
-  return isRecord(value)
-    && typeof value['title'] === 'string'
-    && typeof value['description'] === 'string'
-    && (typeof value['metaTitle'] === 'string' || typeof value['metaTitle'] === 'undefined')
-    && (typeof value['metaDescription'] === 'string' || typeof value['metaDescription'] === 'undefined')
-    && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
-    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined')
-    && isOptionalPositiveInteger(value['openGraphImageWidth'])
-    && isOptionalPositiveInteger(value['openGraphImageHeight']);
-}
-
-function isBlogOpenGraph(value: unknown): value is NonNullable<BlogPost['og']> {
-  return isRecord(value)
-    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined')
-    && (typeof value['description'] === 'string' || typeof value['description'] === 'undefined')
-    && (typeof value['image'] === 'string' || typeof value['image'] === 'undefined')
-    && (typeof value['imageAlt'] === 'string' || typeof value['imageAlt'] === 'undefined')
-    && isOptionalPositiveInteger(value['imageWidth'])
-    && isOptionalPositiveInteger(value['imageHeight']);
-}
-
-function isBlogPost(value: unknown): value is BlogPost {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value['id'] === 'string'
-    && typeof value['slug'] === 'string'
-    && typeof value['title'] === 'string'
-    && typeof value['excerpt'] === 'string'
-    && typeof value['coverImage'] === 'string'
-    && (typeof value['thumbnailImage'] === 'string' || typeof value['thumbnailImage'] === 'undefined')
-    && isBlogAuthor(value['author'])
-    && isStringArray(value['categories'])
-    && (isStringArray(value['subcategories']) || typeof value['subcategories'] === 'undefined')
-    && isStringArray(value['tags'])
-    && isBlogPostStatus(value['status'])
-    && isBlogSeo(value['seo'])
-    && (isBlogOpenGraph(value['og']) || typeof value['og'] === 'undefined')
-    && value['contentFormat'] === 'editorjs'
-    && Array.isArray(value['blocks'])
-    && typeof value['createdAt'] === 'string'
-    && typeof value['updatedAt'] === 'string'
-    && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
 }
 
 function isEditorDocument(value: unknown): value is OutputData {
@@ -220,191 +157,6 @@ function getImportedIsoDate(value: unknown): string | null {
 
   const date = new Date(dateValue);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-function createImportedBlockId(index: number): string {
-  return `imported-${Date.now().toString(36)}-${index}`;
-}
-
-function normalizeMarkdownInline(value: string): string {
-  return value
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-}
-
-function createMarkdownParagraph(lines: readonly string[], index: number): BlogContentBlock {
-  return {
-    id: createImportedBlockId(index),
-    type: 'paragraph',
-    data: {
-      text: normalizeMarkdownInline(lines.join(' ')),
-    },
-  };
-}
-
-function createBlogBlocksFromMarkdown(content: string): readonly BlogContentBlock[] {
-  const blocks: BlogContentBlock[] = [];
-  const paragraphLines: string[] = [];
-  const lines = content.replace(/\r\n/g, '\n').split('\n');
-  let index = 0;
-  let isInCodeFence = false;
-  let codeFenceLanguage = '';
-  let codeFenceLines: string[] = [];
-
-  const flushParagraph = (): void => {
-    if (paragraphLines.length === 0) {
-      return;
-    }
-
-    blocks.push(createMarkdownParagraph(paragraphLines, index));
-    paragraphLines.length = 0;
-    index += 1;
-  };
-
-  const pushBlock = (block: Omit<BlogContentBlock, 'id'>): void => {
-    blocks.push({
-      ...block,
-      id: createImportedBlockId(index),
-    });
-    index += 1;
-  };
-
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-    const line = lines[lineIndex];
-    const trimmedLine = line.trim();
-    const codeFenceMatch = trimmedLine.match(/^```([a-z0-9_-]*)/i);
-
-    if (codeFenceMatch) {
-      if (isInCodeFence) {
-        pushBlock({
-          type: 'code',
-          data: {
-            language: codeFenceLanguage,
-            code: codeFenceLines.join('\n'),
-          },
-        });
-        isInCodeFence = false;
-        codeFenceLanguage = '';
-        codeFenceLines = [];
-      } else {
-        flushParagraph();
-        isInCodeFence = true;
-        codeFenceLanguage = codeFenceMatch[1] ?? '';
-      }
-
-      continue;
-    }
-
-    if (isInCodeFence) {
-      codeFenceLines.push(line);
-      continue;
-    }
-
-    if (!trimmedLine) {
-      flushParagraph();
-      continue;
-    }
-
-    const imageMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    const headingMatch = trimmedLine.match(/^(#{1,3})\s+(.+)$/);
-    const unorderedListMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
-    const orderedListMatch = trimmedLine.match(/^\d+\.\s+(.+)$/);
-    const quoteMatch = trimmedLine.match(/^>\s+(.+)$/);
-
-    if (imageMatch) {
-      flushParagraph();
-      pushBlock({
-        type: 'image',
-        data: {
-          url: imageMatch[2],
-          alt: imageMatch[1],
-          caption: '',
-          stretched: true,
-        },
-      });
-      continue;
-    }
-
-    if (headingMatch) {
-      flushParagraph();
-      pushBlock({
-        type: 'header',
-        data: {
-          text: normalizeMarkdownInline(headingMatch[2]),
-          level: headingMatch[1].length >= 3 ? 3 : 2,
-        },
-      });
-      continue;
-    }
-
-    if (unorderedListMatch || orderedListMatch) {
-      flushParagraph();
-      const ordered = Boolean(orderedListMatch);
-      const items = [normalizeMarkdownInline((orderedListMatch ?? unorderedListMatch)?.[1] ?? '')];
-
-      while (lines[lineIndex + 1]) {
-        const nextLine = lines[lineIndex + 1]?.trim() ?? '';
-        const nextMatch = ordered
-          ? nextLine.match(/^\d+\.\s+(.+)$/)
-          : nextLine.match(/^[-*]\s+(.+)$/);
-
-        if (!nextMatch) {
-          break;
-        }
-
-        items.push(normalizeMarkdownInline(nextMatch[1]));
-        lineIndex += 1;
-      }
-
-      pushBlock({
-        type: 'list',
-        data: {
-          ordered,
-          items,
-        },
-      });
-      continue;
-    }
-
-    if (quoteMatch) {
-      flushParagraph();
-      pushBlock({
-        type: 'quote',
-        data: {
-          text: normalizeMarkdownInline(quoteMatch[1]),
-          caption: '',
-        },
-      });
-      continue;
-    }
-
-    if (/^-{3,}$/.test(trimmedLine)) {
-      flushParagraph();
-      pushBlock({
-        type: 'delimiter',
-        data: {},
-      });
-      continue;
-    }
-
-    paragraphLines.push(trimmedLine);
-  }
-
-  flushParagraph();
-
-  if (isInCodeFence || codeFenceLines.length > 0) {
-    pushBlock({
-      type: 'code',
-      data: {
-        language: codeFenceLanguage,
-        code: codeFenceLines.join('\n'),
-      },
-    });
-  }
-
-  return blocks;
 }
 
 function createImportedAuthor(value: unknown, fallback: BlogPost['author']): BlogPost['author'] {
@@ -544,8 +296,11 @@ function getErrorMessage(error: unknown): string {
     RouterLink,
     EditorJsComponent,
     BlogMediaUploaderComponent,
+    CmsAssistantPanelComponent,
+    CmsDraftPreviewPanelComponent,
+    CmsSeoChecklistComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 pb-36 pt-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-6xl space-y-8">
@@ -787,296 +542,36 @@ function getErrorMessage(error: unknown): string {
                 </dl>
               </section>
 
-              <section class="space-y-3 border-t border-zinc-800 pt-5">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 class="text-lg font-semibold text-zinc-50">Draft Preview</h2>
-                    <p class="mt-1 text-sm text-zinc-400">Temporary public link for reviewing unpublished draft content.</p>
-                  </div>
-                  @if (hasActivePreview) {
-                    <span class="border border-amber-500/60 px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-amber-200">
-                      Active
-                    </span>
-                  }
-                </div>
+              <app-cms-draft-preview-panel
+                #draftPreviewPanel
+                [post]="currentPost"
+                [status]="postForm.controls.status.value"
+                [isSaving]="isSaveInProgress"
+                [isDeleting]="isDeleteInProgress"
+                (generateRequested)="generatePreviewLink()"
+                (postChanged)="onPreviewPostChanged($event)"
+              ></app-cms-draft-preview-panel>
 
-                @if (postForm.controls.status.value === 'draft') {
-                  @if (previewUrl) {
-                    <a
-                      [href]="previewUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="block break-all border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-cyan-200 hover:border-cyan-400"
-                    >
-                      {{ previewUrl }}
-                    </a>
-                    <p class="text-xs leading-5 text-zinc-500">Expires {{ previewExpiresAtLabel }}.</p>
-                  } @else {
-                    <p class="text-sm leading-6 text-zinc-500">No active preview link exists for this draft.</p>
-                  }
+              <app-cms-seo-checklist
+                [checklistInput]="createSeoChecklistInput()"
+              ></app-cms-seo-checklist>
 
-                  <div class="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      class="border border-cyan-400 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                      [disabled]="isPreviewInProgress || isSaveInProgress || isDeleteInProgress"
-                      (click)="generatePreviewLink()"
-                    >
-                      {{ hasActivePreview ? 'Refresh Link' : 'Create Link' }}
-                    </button>
-                    <button
-                      type="button"
-                      class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-                      [disabled]="!previewUrl || isPreviewInProgress"
-                      (click)="copyPreviewLink()"
-                    >
-                      Copy Link
-                    </button>
-                    <button
-                      type="button"
-                      class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-                      [disabled]="!previewUrl || isPreviewInProgress"
-                      (click)="revokePreviewLink()"
-                    >
-                      Revoke
-                    </button>
-                    <a
-                      [href]="previewUrl || null"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="border border-zinc-700 px-3 py-2 text-center text-xs text-zinc-200 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-600"
-                      [attr.aria-disabled]="previewUrl ? null : 'true'"
-                    >
-                      Open
-                    </a>
-                  </div>
-                } @else {
-                  <p class="text-sm leading-6 text-zinc-500">Preview links are only available while the post status is draft.</p>
-                }
-
-                @if (previewMessage) {
-                  <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">{{ previewMessage }}</p>
-                }
-                @if (previewError) {
-                  <p class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ previewError }}</p>
-                }
-              </section>
-
-              <section class="space-y-4 border-t border-zinc-800 pt-5">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 class="text-lg font-semibold text-zinc-50">SEO Checklist</h2>
-                    <p class="mt-1 text-sm text-zinc-400">Authoring checks for search, sharing, and discovery.</p>
-                  </div>
-                  @if (seoChecklist; as checklist) {
-                    <span
-                      class="shrink-0 border px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em]"
-                      [class.border-emerald-500]="checklist.failCount === 0 && checklist.warningCount === 0"
-                      [class.text-emerald-200]="checklist.failCount === 0 && checklist.warningCount === 0"
-                      [class.border-amber-500]="checklist.failCount === 0 && checklist.warningCount > 0"
-                      [class.text-amber-200]="checklist.failCount === 0 && checklist.warningCount > 0"
-                      [class.border-red-500]="checklist.failCount > 0"
-                      [class.text-red-200]="checklist.failCount > 0"
-                    >
-                      {{ checklist.passCount }}/{{ checklist.items.length }}
-                    </span>
-                  }
-                </div>
-
-                @if (seoChecklist; as checklist) {
-                  <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div class="border border-emerald-500/40 bg-emerald-950/20 px-2 py-2 text-emerald-100">
-                      <span class="block text-lg font-semibold">{{ checklist.passCount }}</span>
-                      <span class="uppercase tracking-[0.16em]">Pass</span>
-                    </div>
-                    <div class="border border-amber-500/40 bg-amber-950/20 px-2 py-2 text-amber-100">
-                      <span class="block text-lg font-semibold">{{ checklist.warningCount }}</span>
-                      <span class="uppercase tracking-[0.16em]">Warn</span>
-                    </div>
-                    <div class="border border-red-500/40 bg-red-950/20 px-2 py-2 text-red-100">
-                      <span class="block text-lg font-semibold">{{ checklist.failCount }}</span>
-                      <span class="uppercase tracking-[0.16em]">Fix</span>
-                    </div>
-                  </div>
-
-                  <div class="space-y-2">
-                    @for (item of checklist.items; track item.id) {
-                      <article class="border border-zinc-800 bg-zinc-900/60 p-3">
-                        <div class="flex items-start justify-between gap-3">
-                          <div class="min-w-0">
-                            <h3 class="text-sm font-medium text-zinc-100">{{ item.label }}</h3>
-                            <p class="mt-1 text-xs leading-5 text-zinc-500">{{ item.description }}</p>
-                            @if (item.metric) {
-                              <p class="mt-1 break-all text-xs text-zinc-400">{{ item.metric }}</p>
-                            }
-                          </div>
-                          <span
-                            class="shrink-0 border px-2 py-1 text-[0.65rem] uppercase tracking-[0.16em]"
-                            [class]="getSeoChecklistStatusClass(item.status)"
-                          >
-                            {{ getSeoChecklistStatusLabel(item.status) }}
-                          </span>
-                        </div>
-                      </article>
-                    }
-                  </div>
-                }
-
-                <section class="space-y-3 border border-zinc-800 bg-black/30 p-4">
-                  <h3 class="text-sm font-semibold text-zinc-50">Search Preview</h3>
-                  <div class="space-y-1 rounded bg-zinc-950 p-3">
-                    <p class="truncate text-sm text-emerald-300">{{ searchPreviewUrl }}</p>
-                    <p class="text-base leading-6 text-blue-300">{{ searchPreviewTitle }}</p>
-                    <p class="line-clamp-3 text-sm leading-5 text-zinc-400">{{ searchPreviewDescription }}</p>
-                  </div>
-                </section>
-
-                <section class="space-y-3 border border-zinc-800 bg-black/30 p-4">
-                  <h3 class="text-sm font-semibold text-zinc-50">Social Preview</h3>
-                  <article class="overflow-hidden border border-zinc-800 bg-zinc-950">
-                    @if (socialPreviewImage) {
-                      <img
-                        [src]="socialPreviewImage"
-                        [alt]="searchPreviewTitle + ' social preview'"
-                        class="aspect-[1.91/1] w-full object-cover"
-                        loading="lazy"
-                      >
-                    }
-                    <div class="space-y-1 p-3">
-                      <p class="truncate text-xs uppercase tracking-[0.16em] text-zinc-500">colinmichaels.com</p>
-                      <p class="line-clamp-2 text-sm font-medium leading-5 text-zinc-100">{{ searchPreviewTitle }}</p>
-                      <p class="line-clamp-2 text-xs leading-5 text-zinc-500">{{ searchPreviewDescription }}</p>
-                    </div>
-                  </article>
-                </section>
-              </section>
-
-              <section class="space-y-4 border-t border-zinc-800 pt-5">
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-lg font-semibold text-zinc-50">AI Writing Assistant</h2>
-                    <span
-                      class="border border-amber-500/50 px-2 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-amber-200">
-                      {{ assistantSourceLabel }}
-                    </span>
-                  </div>
-                  <p class="text-sm text-zinc-400">
-                    Suggests titles, descriptions, categories, tags, and thumbnail prompts from the current draft.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  class="w-full border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                  [disabled]="isAssistantLoading"
-                  (click)="generateAssistantSuggestions()"
-                >
-                  {{ isAssistantLoading ? 'Generating Suggestions' : 'Suggest Metadata' }}
-                </button>
-
-                @if (assistantError) {
-                  <p
-                    class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ assistantError }}</p>
-                }
-
-                @if (assistantMessage) {
-                  <p
-                    class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">{{ assistantMessage }}</p>
-                }
-
-                @if (assistantResult; as result) {
-                  <div class="space-y-4">
-                    @for (suggestion of result.suggestions; track suggestion.id) {
-                      <article class="space-y-3 border border-zinc-800 bg-zinc-900/70 p-4">
-                        <div class="space-y-2">
-                          <h3 class="text-base font-semibold text-zinc-50">{{ suggestion.title }}</h3>
-                          <p class="text-sm leading-6 text-zinc-400">{{ suggestion.description }}</p>
-                          <p class="text-xs text-zinc-500">{{ suggestion.rationale }}</p>
-                        </div>
-
-                        <div class="space-y-2 text-xs text-zinc-400">
-                          <p><span class="text-zinc-500">Categories:</span> {{ suggestion.categories.join(', ') }}</p>
-                          <p><span class="text-zinc-500">Tags:</span> {{ suggestion.tags.join(', ') }}</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
-                            (click)="applySuggestion(suggestion)"
-                          >
-                            Apply All
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
-                            (click)="applyTitleSuggestion(suggestion)"
-                          >
-                            Use Title
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
-                            (click)="applyDescriptionSuggestion(suggestion)"
-                          >
-                            Use Description
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-zinc-700 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
-                            (click)="applyTaxonomySuggestion(suggestion)"
-                          >
-                            Use Taxonomy
-                          </button>
-                        </div>
-                      </article>
-                    }
-
-                    <section class="space-y-3 border border-dashed border-zinc-700 bg-black/30 p-4">
-                      <div>
-                        <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-300">Thumbnail Generator
-                          Prep</h3>
-                        <p class="mt-2 text-xs leading-5 text-zinc-500">
-                          These prompts are ready for a future server-backed image generation endpoint.
-                        </p>
-                      </div>
-
-                      @for (thumbnail of result.thumbnailSuggestions; track thumbnail.id) {
-                        <article class="space-y-2 border-t border-zinc-800 pt-3">
-                          <p class="text-xs font-medium uppercase tracking-wide text-cyan-300">{{ thumbnail.style }}</p>
-                          <p class="text-sm leading-6 text-zinc-300">{{ thumbnail.prompt }}</p>
-                          <p class="text-xs text-zinc-500">Alt text: {{ thumbnail.altText }}</p>
-                          <button
-                            type="button"
-                            class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                            [disabled]="isThumbnailLoading === thumbnail.id"
-                            (click)="generateAndStoreThumbnail(thumbnail)"
-                          >
-                            {{ isThumbnailLoading === thumbnail.id ? 'Generating Image' : 'Generate & Store' }}
-                          </button>
-                        </article>
-                      }
-
-                      @if (thumbnailError) {
-                        <p
-                          class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ thumbnailError }}</p>
-                      }
-
-                      @if (lastGeneratedThumbnail; as storedThumbnail) {
-                        <div
-                          class="space-y-2 border border-emerald-500/40 bg-emerald-950/20 p-3 text-xs text-emerald-100">
-                          <p class="font-medium">Stored thumbnail and applied it to the Cover Image. The Open Graph
-                            image remains independent.</p>
-                          <a [href]="storedThumbnail.downloadUrl" target="_blank" rel="noopener noreferrer"
-                             class="break-all text-cyan-200 hover:text-cyan-100">
-                            {{ storedThumbnail.storagePath }}
-                          </a>
-                        </div>
-                      }
-                    </section>
-                  </div>
-                }
-              </section>
+              <app-cms-assistant-panel
+                [result]="assistantResult"
+                [isLoading]="isAssistantLoading"
+                [message]="assistantMessage"
+                [error]="assistantError"
+                [sourceLabel]="assistantSourceLabel"
+                [isThumbnailLoading]="isThumbnailLoading"
+                [thumbnailError]="thumbnailError"
+                [lastGeneratedThumbnail]="lastGeneratedThumbnail"
+                (generateRequested)="generateAssistantSuggestions()"
+                (applyAll)="applySuggestion($event)"
+                (applyTitle)="applyTitleSuggestion($event)"
+                (applyDescription)="applyDescriptionSuggestion($event)"
+                (applyTaxonomy)="applyTaxonomySuggestion($event)"
+                (generateThumbnail)="generateAndStoreThumbnail($event)"
+              ></app-cms-assistant-panel>
 
               @if (lastSaved; as saved) {
                 <section class="space-y-3 border-t border-zinc-800 pt-5">
@@ -1155,6 +650,7 @@ function getErrorMessage(error: unknown): string {
 })
 export class CmsPostEditorComponent {
   @ViewChild(EditorJsComponent) private editorComponent?: EditorJsComponent;
+  @ViewChild(CmsDraftPreviewPanelComponent) private draftPreviewPanel?: CmsDraftPreviewPanelComponent;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -1187,9 +683,6 @@ export class CmsPostEditorComponent {
   protected isThumbnailLoading: string | null = null;
   protected thumbnailError = '';
   protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
-  protected isPreviewInProgress = false;
-  protected previewMessage = '';
-  protected previewError = '';
   protected readonly uploadEditorImage = async (file: File): Promise<EditorImageUploadResult> => {
     const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
       slug: this.mediaUploadSlug,
@@ -1284,78 +777,6 @@ export class CmsPostEditorComponent {
     return 'Using custom Open Graph image.';
   }
 
-  protected get seoChecklist(): SeoChecklistSummary {
-    return createSeoChecklist(this.createSeoChecklistInput());
-  }
-
-  protected get searchPreviewTitle(): string {
-    return createSearchPreviewTitle(this.createSeoChecklistInput());
-  }
-
-  protected get searchPreviewDescription(): string {
-    return createSearchPreviewDescription(this.createSeoChecklistInput());
-  }
-
-  protected get searchPreviewUrl(): string {
-    return this.postForm.controls.canonical.value.trim() || this.generatedCanonicalUrl;
-  }
-
-  protected get socialPreviewImage(): string {
-    return createSocialPreviewImage(this.createSeoChecklistInput());
-  }
-
-  protected get previewUrl(): string {
-    const preview = this.currentPost?.preview;
-
-    return preview && this.hasActivePreview
-      ? this.blogRepository.createPreviewUrl(preview.token)
-      : '';
-  }
-
-  protected get hasActivePreview(): boolean {
-    const preview = this.currentPost?.preview;
-
-    if (!preview || this.currentPost?.status !== 'draft') {
-      return false;
-    }
-
-    const expiresAt = new Date(preview.expiresAt).getTime();
-    return Number.isFinite(expiresAt) && expiresAt > Date.now();
-  }
-
-  protected get previewExpiresAtLabel(): string {
-    const preview = this.currentPost?.preview;
-
-    if (!preview) {
-      return 'not set';
-    }
-
-    const expiresAt = new Date(preview.expiresAt);
-    return Number.isNaN(expiresAt.getTime()) ? 'not set' : postedDateFormatter.format(expiresAt);
-  }
-
-  protected getSeoChecklistStatusLabel(status: SeoChecklistStatus): string {
-    switch (status) {
-      case 'pass':
-        return 'Pass';
-      case 'warning':
-        return 'Warn';
-      case 'fail':
-        return 'Fix';
-    }
-  }
-
-  protected getSeoChecklistStatusClass(status: SeoChecklistStatus): string {
-    switch (status) {
-      case 'pass':
-        return 'border-emerald-500/60 text-emerald-200';
-      case 'warning':
-        return 'border-amber-500/60 text-amber-200';
-      case 'fail':
-        return 'border-red-500/60 text-red-200';
-    }
-  }
-
   protected syncSlugFromTitle(): void {
     const slugControl = this.postForm.controls.slug;
 
@@ -1403,8 +824,7 @@ export class CmsPostEditorComponent {
       return;
     }
 
-    this.saveError = '';
-    this.saveMessage = '';
+    this.clearSaveMessages();
 
     try {
       const parsedJson: unknown = JSON.parse(await file.text());
@@ -1532,8 +952,7 @@ export class CmsPostEditorComponent {
   }
 
   protected async savePost(): Promise<void> {
-    this.saveError = '';
-    this.saveMessage = '';
+    this.clearSaveMessages();
 
     if (!this.editorComponent) {
       this.saveError = 'The editor is still loading. Try saving again in a moment.';
@@ -1558,8 +977,7 @@ export class CmsPostEditorComponent {
   }
 
   protected async deleteCurrentPost(): Promise<void> {
-    this.saveError = '';
-    this.saveMessage = '';
+    this.clearSaveMessages();
 
     if (!this.currentPost || this.isNewPost) {
       this.saveError = 'Save this post before deleting it.';
@@ -1592,81 +1010,36 @@ export class CmsPostEditorComponent {
   }
 
   protected async generatePreviewLink(): Promise<void> {
-    this.previewError = '';
-    this.previewMessage = '';
+    this.draftPreviewPanel?.clearMessages();
 
     if (this.postForm.controls.status.value !== 'draft') {
-      this.previewError = 'Set the post status to draft before creating a preview link.';
+      this.draftPreviewPanel?.onPreviewError('Set the post status to draft before creating a preview link.');
       return;
     }
-
-    this.isPreviewInProgress = true;
 
     try {
       await this.savePost();
 
       if (this.saveError || !this.currentPost) {
-        this.previewError = this.saveError || 'Save the draft before creating a preview link.';
+        this.draftPreviewPanel?.onPreviewError(this.saveError || 'Save the draft before creating a preview link.');
         return;
       }
 
       const result = await this.blogRepository.createPreviewForPost(this.currentPost);
       this.currentPost = result.post;
-      this.previewMessage = `Created a temporary draft preview link. It expires ${this.previewExpiresAtLabel}.`;
       this.saveMessage = 'Saved the draft and refreshed its public preview link.';
+      this.draftPreviewPanel?.onPreviewGenerated(result.post);
     } catch (error) {
-      this.previewError = error instanceof Error ? error.message : 'Unable to create a preview link.';
-    } finally {
-      this.isPreviewInProgress = false;
+      this.draftPreviewPanel?.onPreviewError(error instanceof Error ? error.message : 'Unable to create a preview link.');
     }
   }
 
-  protected async revokePreviewLink(): Promise<void> {
-    this.previewError = '';
-    this.previewMessage = '';
-
-    if (!this.currentPost?.preview) {
-      this.previewMessage = 'There is no active preview link to revoke.';
-      return;
-    }
-
-    this.isPreviewInProgress = true;
-
-    try {
-      this.currentPost = await this.blogRepository.revokePreviewForPost(this.currentPost);
-      this.previewMessage = 'Revoked the draft preview link.';
-    } catch (error) {
-      this.previewError = error instanceof Error ? error.message : 'Unable to revoke the preview link.';
-    } finally {
-      this.isPreviewInProgress = false;
-    }
-  }
-
-  protected async copyPreviewLink(): Promise<void> {
-    this.previewError = '';
-    this.previewMessage = '';
-
-    if (!this.previewUrl) {
-      this.previewError = 'Create a preview link before copying it.';
-      return;
-    }
-
-    if (!navigator.clipboard) {
-      this.previewError = 'Clipboard access is unavailable in this browser.';
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(this.previewUrl);
-      this.previewMessage = 'Copied the preview link.';
-    } catch (error) {
-      this.previewError = error instanceof Error ? error.message : 'Unable to copy the preview link.';
-    }
+  protected onPreviewPostChanged(post: BlogPost): void {
+    this.currentPost = post;
   }
 
   protected async onSaved(saved: EditorSavedDocument): Promise<void> {
-    this.saveError = '';
-    this.saveMessage = '';
+    this.clearSaveMessages();
     this.postForm.markAllAsTouched();
 
     if (!this.currentPost) {
@@ -1912,7 +1285,7 @@ export class CmsPostEditorComponent {
     });
   }
 
-  private createSeoChecklistInput(): SeoChecklistInput {
+  protected createSeoChecklistInput(): SeoChecklistInput {
     const formValue = this.postForm.getRawValue();
 
     return {
@@ -1984,6 +1357,11 @@ export class CmsPostEditorComponent {
     }
 
     return status === 'published' ? currentValue ?? savedAt : null;
+  }
+
+  private clearSaveMessages(): void {
+    this.saveError = '';
+    this.saveMessage = '';
   }
 
   private markUploadedMedia(upload: BlogMediaUploadResult): void {

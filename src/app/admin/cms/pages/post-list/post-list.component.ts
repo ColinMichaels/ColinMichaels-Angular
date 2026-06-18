@@ -4,6 +4,12 @@ import {RouterLink} from '@angular/router';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogPostDeleteResult, BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {
+  isBlogPost,
+  isBlogPostStatus,
+  isRecord,
+  isStringArray
+} from '../../../../features/blog/utils/blog-validation.util';
 
 interface AdminPostRow {
   post: BlogPost;
@@ -47,8 +53,6 @@ const sortOptions: readonly AdminPostSortOption[] = [
 ];
 const sortModes = new Set<AdminPostSortMode>(sortOptions.map(option => option.value));
 const pageSizeOptions: readonly number[] = [5, 10, 25, 50];
-const blogPostStatuses = new Set<BlogPostStatus>(['draft', 'scheduled', 'published', 'archived']);
-
 function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : 'Not published';
 }
@@ -72,54 +76,6 @@ function createBackupFileName(): string {
 
 function isAdminPostSortMode(value: string): value is AdminPostSortMode {
   return sortModes.has(value as AdminPostSortMode);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
-
-function isBlogPostStatus(value: unknown): value is BlogPostStatus {
-  return typeof value === 'string' && blogPostStatuses.has(value as BlogPostStatus);
-}
-
-function isBlogAuthor(value: unknown): value is BlogPost['author'] {
-  return isRecord(value)
-    && typeof value['name'] === 'string'
-    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined');
-}
-
-function isBlogSeo(value: unknown): value is BlogPost['seo'] {
-  return isRecord(value)
-    && typeof value['title'] === 'string'
-    && typeof value['description'] === 'string'
-    && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
-    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined');
-}
-
-function isBlogPost(value: unknown): value is BlogPost {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value['id'] === 'string'
-    && typeof value['slug'] === 'string'
-    && typeof value['title'] === 'string'
-    && typeof value['excerpt'] === 'string'
-    && typeof value['coverImage'] === 'string'
-    && isBlogAuthor(value['author'])
-    && isStringArray(value['categories'])
-    && isStringArray(value['tags'])
-    && isBlogPostStatus(value['status'])
-    && isBlogSeo(value['seo'])
-    && value['contentFormat'] === 'editorjs'
-    && Array.isArray(value['blocks'])
-    && typeof value['createdAt'] === 'string'
-    && typeof value['updatedAt'] === 'string'
-    && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
 }
 
 function getErrorMessage(error: unknown): string {
