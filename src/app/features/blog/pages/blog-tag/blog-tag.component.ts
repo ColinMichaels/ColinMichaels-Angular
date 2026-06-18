@@ -6,6 +6,7 @@ import {map} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
 import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
+import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-category-url.util';
@@ -16,6 +17,7 @@ import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-categ
     RouterLink,
     BlogCategoryNavComponent,
     BlogPostCardComponent,
+    BlogPostCardSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -40,28 +42,34 @@ import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-categ
               <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
               <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
             </div>
-          } @else if (isLoading()) {
-            <p class="border-t border-zinc-800 py-8 text-zinc-400">
-              Loading posts tagged {{ tagTitle() }} from Firestore.
-            </p>
           } @else {
-            <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
-              Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
-              tagged <span class="text-cyan-300">{{ tagTitle() }}</span>.
-            </p>
+            @defer (when !isLoading()) {
+              <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
+                Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
+                tagged <span class="text-cyan-300">{{ tagTitle() }}</span>.
+              </p>
 
-            @for (post of filteredPosts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
-            } @empty {
-              <div class="border-t border-zinc-800 py-8">
-                <p class="text-lg font-medium text-zinc-100">No published posts with this tag.</p>
-                <p class="mt-2 text-sm text-zinc-400">
-                  This tag may not exist yet, or its posts may still be drafts.
-                </p>
-                <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
-                  View all posts
-                </a>
-              </div>
+              @for (post of filteredPosts(); track post.id) {
+                <app-blog-post-card [post]="post"></app-blog-post-card>
+              } @empty {
+                <div class="border-t border-zinc-800 py-8">
+                  <p class="text-lg font-medium text-zinc-100">No published posts with this tag.</p>
+                  <p class="mt-2 text-sm text-zinc-400">
+                    This tag may not exist yet, or its posts may still be drafts.
+                  </p>
+                  <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
+                    View all posts
+                  </a>
+                </div>
+              }
+            } @placeholder (minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+            } @loading (after 150ms; minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
             }
           }
         </section>

@@ -17,11 +17,12 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="grid gap-4 border-t border-zinc-800 py-6 md:grid-cols-[220px_1fr]">
-      <a [routerLink]="['/blog', post.slug]" class="block overflow-hidden rounded bg-zinc-900">
+      <a [routerLink]="['/blog', post.slug]" class="group block overflow-hidden rounded-md bg-zinc-900 shadow-md">
         <img
           [src]="post.coverImage"
           [alt]="post.title + ' cover image'"
-          class="aspect-[4/3] h-full w-full object-cover"
+          class="aspect-[4/3] h-full w-full object-cover transition duration-300 ease-in-out group-hover:scale-105 group-hover:brightness-110"
+          loading="lazy"
         >
       </a>
 

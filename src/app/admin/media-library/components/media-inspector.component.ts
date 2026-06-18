@@ -45,7 +45,7 @@ interface InspectorDraft {
           <section class="space-y-5">
             <figure class="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
               @if (singleItem.thumbnailUrl || singleItem.previewUrl || singleItem.downloadUrl) {
-                <img class="max-h-56 w-full object-contain" [src]="singleItem.thumbnailUrl || singleItem.previewUrl || singleItem.downloadUrl" [alt]="singleItem.altText || singleItem.displayName">
+                <img class="max-h-56 w-full object-contain" loading="lazy" [src]="singleItem.thumbnailUrl || singleItem.previewUrl || singleItem.downloadUrl" [alt]="singleItem.altText || singleItem.displayName">
               } @else {
                 <div class="flex h-44 items-center justify-center text-3xl text-gray-400">{{ fileIcon(singleItem) }}</div>
               }

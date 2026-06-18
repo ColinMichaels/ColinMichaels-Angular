@@ -91,7 +91,7 @@ interface SiteNavItem {
             >
               @if (user.photoURL) {
                 <img [src]="user.photoURL" [alt]="(user.displayName || user.email || 'User') + ' avatar'"
-                     class="h-full w-full object-cover">
+                     class="h-full w-full object-cover" loading="lazy">
               } @else {
                 <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor"
                      stroke-width="1.8">

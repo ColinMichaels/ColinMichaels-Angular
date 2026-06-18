@@ -1,0 +1,102 @@
+@layer components {
+
+  /* ─── Buttons ────────────────────────────────────────────────────────────── */
+  // Outlined primary — fills on hover. Light: cyan-800 text. Dark: cyan-100 text.
+  .btn-primary {
+    @apply inline-flex border border-cyan-600 px-4 py-3 text-sm font-semibold
+    text-cyan-800 transition
+    hover:bg-cyan-600 hover:text-white
+    dark:border-cyan-300 dark:text-cyan-100
+    dark:hover:bg-cyan-300 dark:hover:text-neutral-950;
+  }
+
+  // Smaller rounded outlined — "Read more" cards style.
+  .btn-secondary {
+    @apply inline-flex items-center rounded border border-cyan-600 px-3 py-2
+    text-sm font-medium text-cyan-700 transition
+    hover:bg-cyan-600 hover:text-white
+    dark:border-cyan-300 dark:text-cyan-200
+    dark:hover:bg-cyan-300 dark:hover:text-zinc-950;
+  }
+
+  // Minimal ghost — subtle border, hover reveals cyan accent.
+  .btn-ghost {
+    @apply inline-flex border border-zinc-300 px-4 py-3 text-sm font-medium
+    text-zinc-700 transition
+    hover:border-cyan-600 hover:text-cyan-700
+    dark:border-white/20 dark:text-zinc-200
+    dark:hover:border-cyan-300 dark:hover:text-cyan-200;
+  }
+
+  // Text-only nav link — "View all posts" style.
+  .btn-link {
+    @apply text-sm font-medium text-cyan-700 hover:text-cyan-600
+    dark:text-cyan-300 dark:hover:text-cyan-200;
+  }
+
+  /* ─── Headings ───────────────────────────────────────────────────────────── */
+  // Hero h1 — large responsive display heading.
+  .heading-display {
+    @apply text-5xl font-semibold leading-none
+    text-slate-950 dark:text-white
+    sm:text-6xl lg:text-7xl;
+  }
+
+  // Section h2 — primary page section titles.
+  .heading-section {
+    @apply text-3xl font-semibold text-zinc-900 dark:text-zinc-50 sm:text-4xl;
+  }
+
+  // Sub-section h2/h3 — card group titles, lab headings.
+  .heading-subsection {
+    @apply text-2xl font-semibold text-zinc-900 dark:text-zinc-50;
+  }
+
+  // Card h3 — post and item titles inside cards.
+  .heading-card {
+    @apply text-xl font-semibold text-zinc-900 dark:text-zinc-50;
+  }
+
+  /* ─── Eyebrow Labels ─────────────────────────────────────────────────────── */
+  // Large eyebrow — section labels above h2 headings.
+  .eyebrow {
+    @apply text-sm font-semibold uppercase tracking-[0.28em];
+  }
+
+  // Small eyebrow — card metadata and date labels.
+  .eyebrow-sm {
+    @apply text-xs font-semibold uppercase tracking-[0.24em];
+  }
+
+  // Color modifiers — compose with .eyebrow or .eyebrow-sm
+  .eyebrow-cyan {
+    @apply text-cyan-700 dark:text-cyan-200;
+  }
+
+  .eyebrow-emerald {
+    @apply text-emerald-600 dark:text-emerald-300;
+  }
+
+  .eyebrow-rose {
+    @apply text-rose-600 dark:text-rose-300;
+  }
+
+  .eyebrow-amber {
+    @apply text-amber-600 dark:text-amber-300;
+  }
+
+  .eyebrow-muted {
+    @apply text-zinc-500 dark:text-zinc-400;
+  }
+
+  /* ─── Body Text ──────────────────────────────────────────────────────────── */
+  // Standard paragraph / description text.
+  .text-body {
+    @apply text-sm leading-6 text-zinc-700 dark:text-zinc-400;
+  }
+
+  // Dimmed supporting / secondary text.
+  .text-muted {
+    @apply text-sm text-zinc-500 dark:text-zinc-500;
+  }
+}
