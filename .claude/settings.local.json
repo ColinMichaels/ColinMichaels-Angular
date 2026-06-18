@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git log *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

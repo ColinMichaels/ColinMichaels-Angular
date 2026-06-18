@@ -17,7 +17,7 @@ interface RenderableBlogBlock {
 
 @Component({
   selector: 'app-blog-block-renderer',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="blog-content space-y-6 text-base leading-8 text-zinc-300">
       @for (row of renderedBlocks; track row.block.id) {

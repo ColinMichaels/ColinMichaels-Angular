@@ -1,4 +1,5 @@
-import {Injectable, OnDestroy, inject} from '@angular/core';
+import {DestroyRef, Injectable, inject} from '@angular/core';
+import {FirebaseError} from 'firebase/app';
 import {Auth, getIdTokenResult, onAuthStateChanged, User} from 'firebase/auth';
 import {
   collection,
@@ -20,76 +21,11 @@ import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
-import {BlogPost, BlogPostStatus} from '../models/blog-post.model';
+import {BlogPost} from '../models/blog-post.model';
+import {isBlogPost, isRecord} from '../utils/blog-validation.util';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
 export const BLOG_POST_PREVIEWS_COLLECTION = 'postPreviews';
-const blogPostStatuses = new Set<BlogPostStatus>(['draft', 'scheduled', 'published', 'archived']);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
-
-function isBlogPostStatus(value: unknown): value is BlogPostStatus {
-  return typeof value === 'string' && blogPostStatuses.has(value as BlogPostStatus);
-}
-
-function isOptionalPositiveInteger(value: unknown): boolean {
-  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value > 0);
-}
-
-function isBlogOpenGraphMetadata(value: unknown): boolean {
-  return value === undefined || (
-    isRecord(value)
-    && (value['title'] === undefined || typeof value['title'] === 'string')
-    && (value['description'] === undefined || typeof value['description'] === 'string')
-    && (value['image'] === undefined || typeof value['image'] === 'string')
-    && (value['imageAlt'] === undefined || typeof value['imageAlt'] === 'string')
-    && isOptionalPositiveInteger(value['imageWidth'])
-    && isOptionalPositiveInteger(value['imageHeight'])
-  );
-}
-
-function isBlogPostPreview(value: unknown): boolean {
-  return value === undefined || (
-    isRecord(value)
-    && typeof value['token'] === 'string'
-    && typeof value['createdAt'] === 'string'
-    && typeof value['expiresAt'] === 'string'
-  );
-}
-
-function isBlogPost(value: unknown): value is BlogPost {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value['id'] === 'string'
-    && typeof value['slug'] === 'string'
-    && typeof value['title'] === 'string'
-    && typeof value['excerpt'] === 'string'
-    && typeof value['coverImage'] === 'string'
-    && (value['thumbnailImage'] === undefined || typeof value['thumbnailImage'] === 'string')
-    && isRecord(value['author'])
-    && isStringArray(value['categories'])
-    && (value['subcategories'] === undefined || isStringArray(value['subcategories']))
-    && isStringArray(value['tags'])
-    && isBlogPostStatus(value['status'])
-    && isRecord(value['seo'])
-    && isOptionalPositiveInteger(value['seo']['openGraphImageWidth'])
-    && isOptionalPositiveInteger(value['seo']['openGraphImageHeight'])
-    && isBlogOpenGraphMetadata(value['og'])
-    && value['contentFormat'] === 'editorjs'
-    && Array.isArray(value['blocks'])
-    && isBlogPostPreview(value['preview'])
-    && typeof value['createdAt'] === 'string'
-    && typeof value['updatedAt'] === 'string'
-    && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
-}
 
 function isPreviewDocument(value: unknown): value is { post: BlogPost; expiresAtMillis: number } {
   return isRecord(value)
@@ -120,22 +56,25 @@ function removeUndefinedFields(value: unknown): unknown {
 @Injectable({
   providedIn: 'root',
 })
-export class BlogStorageService implements OnDestroy {
+export class BlogStorageService {
   private readonly firestore: Firestore | null = inject(FIREBASE_FIRESTORE, {optional: true});
   private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
+  private readonly destroyRef = inject(DestroyRef);
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(Boolean(this.firestore));
   private readonly errorSubject = new BehaviorSubject<string | null>(this.firestore ? null : 'Firebase Firestore is not initialized.');
-  private readonly authUnsubscribe = this.startAuthAwareFirestoreSync();
   private firestoreUnsubscribe: (() => void) | undefined;
 
   readonly posts$ = this.postsSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
   readonly error$ = this.errorSubject.asObservable();
 
-  ngOnDestroy(): void {
-    this.authUnsubscribe?.();
-    this.firestoreUnsubscribe?.();
+  constructor() {
+    const authUnsubscribe = this.startAuthAwareFirestoreSync();
+    this.destroyRef.onDestroy(() => {
+      authUnsubscribe?.();
+      this.firestoreUnsubscribe?.();
+    });
   }
 
   getPosts(): readonly BlogPost[] {
@@ -250,9 +189,10 @@ export class BlogStorageService implements OnDestroy {
         this.loadingSubject.next(false);
       },
       error => {
+        console.error('[BlogStorageService] Admin posts snapshot error:', error);
         this.postsSubject.next([]);
         this.loadingSubject.next(false);
-        this.errorSubject.next(error.message);
+        this.errorSubject.next(this.describeSnapshotError(error));
       }
     );
   }
@@ -278,11 +218,29 @@ export class BlogStorageService implements OnDestroy {
         this.loadingSubject.next(false);
       },
       error => {
+        console.error('[BlogStorageService] Published posts snapshot error:', error);
         this.postsSubject.next([]);
         this.loadingSubject.next(false);
-        this.errorSubject.next(error.message);
+        this.errorSubject.next(this.describeSnapshotError(error));
       }
     );
+  }
+
+  private describeSnapshotError(error: unknown): string {
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'Unable to load posts: access was denied.';
+        case 'unavailable':
+          return 'Unable to load posts: the service is temporarily unavailable.';
+        case 'not-found':
+          return 'Unable to load posts: the posts collection was not found.';
+        default:
+          return `Unable to load posts: ${error.message}`;
+      }
+    }
+
+    return error instanceof Error ? error.message : 'Unable to load posts.';
   }
 
   private async savePostToFirestore(post: BlogPost): Promise<void> {

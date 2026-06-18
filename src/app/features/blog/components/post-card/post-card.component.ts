@@ -14,7 +14,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
     RouterLink,
     BlogTagListComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="grid gap-4 border-t border-zinc-800 py-6 md:grid-cols-[220px_1fr]">
       <a [routerLink]="['/blog', post.slug]" class="block overflow-hidden rounded bg-zinc-900">
@@ -41,9 +41,9 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
 
         <div class="space-y-2">
           <h2 class="text-2xl font-semibold text-zinc-50">
-            <a [routerLink]="['/blog', post.slug]" class="hover:text-cyan-300" [innerHTML]="post.title"></a>
+            <a [routerLink]="['/blog', post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
           </h2>
-          <p class="max-w-2xl text-sm leading-6 text-zinc-400" [innerHTML]="post.excerpt"></p>
+          <p class="max-w-2xl text-sm leading-6 text-zinc-400">{{ post.excerpt }}</p>
         </div>
 
         <app-blog-tag-list [tags]="post.tags"></app-blog-tag-list>

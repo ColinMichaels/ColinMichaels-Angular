@@ -3,7 +3,15 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
-import {BlogPostDeleteResult, BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
+import {CmsToastService} from '../../services/cms-toast.service';
+import {
+  isBlogPost,
+  isBlogPostStatus,
+  isRecord,
+  isStringArray
+} from '../../../../features/blog/utils/blog-validation.util';
 
 interface AdminPostRow {
   post: BlogPost;
@@ -47,8 +55,6 @@ const sortOptions: readonly AdminPostSortOption[] = [
 ];
 const sortModes = new Set<AdminPostSortMode>(sortOptions.map(option => option.value));
 const pageSizeOptions: readonly number[] = [5, 10, 25, 50];
-const blogPostStatuses = new Set<BlogPostStatus>(['draft', 'scheduled', 'published', 'archived']);
-
 function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : 'Not published';
 }
@@ -74,54 +80,6 @@ function isAdminPostSortMode(value: string): value is AdminPostSortMode {
   return sortModes.has(value as AdminPostSortMode);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
-
-function isBlogPostStatus(value: unknown): value is BlogPostStatus {
-  return typeof value === 'string' && blogPostStatuses.has(value as BlogPostStatus);
-}
-
-function isBlogAuthor(value: unknown): value is BlogPost['author'] {
-  return isRecord(value)
-    && typeof value['name'] === 'string'
-    && (typeof value['title'] === 'string' || typeof value['title'] === 'undefined');
-}
-
-function isBlogSeo(value: unknown): value is BlogPost['seo'] {
-  return isRecord(value)
-    && typeof value['title'] === 'string'
-    && typeof value['description'] === 'string'
-    && (typeof value['canonical'] === 'string' || typeof value['canonical'] === 'undefined')
-    && (typeof value['openGraphImage'] === 'string' || typeof value['openGraphImage'] === 'undefined');
-}
-
-function isBlogPost(value: unknown): value is BlogPost {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value['id'] === 'string'
-    && typeof value['slug'] === 'string'
-    && typeof value['title'] === 'string'
-    && typeof value['excerpt'] === 'string'
-    && typeof value['coverImage'] === 'string'
-    && isBlogAuthor(value['author'])
-    && isStringArray(value['categories'])
-    && isStringArray(value['tags'])
-    && isBlogPostStatus(value['status'])
-    && isBlogSeo(value['seo'])
-    && value['contentFormat'] === 'editorjs'
-    && Array.isArray(value['blocks'])
-    && typeof value['createdAt'] === 'string'
-    && typeof value['updatedAt'] === 'string'
-    && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
-}
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
 }
@@ -130,6 +88,7 @@ function getErrorMessage(error: unknown): string {
   selector: 'app-cms-post-list',
   imports: [
     RouterLink,
+    CmsToastContainerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -341,19 +300,14 @@ function getErrorMessage(error: unknown): string {
           </div>
         </section>
 
-        @if (statusMessage) {
-          <p
-            class="border border-emerald-500/50 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">{{ statusMessage }}</p>
-        } @if (statusError) {
-        <p
-          class="border border-red-500/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">{{ statusError }}</p>
-        }
       </section>
     </main>
+    <app-cms-toast-container></app-cms-toast-container>
   `,
 })
 export class CmsPostListComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly toast = inject(CmsToastService);
 
   protected readonly sortOptions = sortOptions;
   protected readonly pageSizeOptions = pageSizeOptions;
@@ -365,8 +319,6 @@ export class CmsPostListComponent {
   protected currentPage = 1;
   protected backupInProgress = false;
   protected importInProgress = false;
-  protected statusMessage = '';
-  protected statusError = '';
 
   protected get filteredRows(): readonly AdminPostRow[] {
     const normalizedSearchTerm = normalizeSearchText(this.searchTerm);
@@ -471,9 +423,6 @@ export class CmsPostListComponent {
   }
 
   protected exportPosts(): void {
-    this.statusMessage = '';
-    this.statusError = '';
-
     const exportDocument = this.blogRepository.createExportDocument();
     const blob = new Blob([JSON.stringify(exportDocument, null, 2)], {type: 'application/json'});
     const objectUrl = URL.createObjectURL(blob);
@@ -484,7 +433,7 @@ export class CmsPostListComponent {
     anchor.click();
     URL.revokeObjectURL(objectUrl);
 
-    this.statusMessage = `Exported ${exportDocument.totalPosts} blog posts as JSON.`;
+    this.toast.success(`Exported ${exportDocument.totalPosts} blog posts as JSON.`);
   }
 
   protected async importPostsJson(event: Event): Promise<void> {
@@ -499,8 +448,6 @@ export class CmsPostListComponent {
       return;
     }
 
-    this.statusMessage = '';
-    this.statusError = '';
     this.importInProgress = true;
 
     try {
@@ -511,7 +458,6 @@ export class CmsPostListComponent {
       );
 
       if (!confirmed) {
-        this.statusMessage = 'Import cancelled.';
         return;
       }
 
@@ -525,47 +471,49 @@ export class CmsPostListComponent {
         ? `Public published query can read ${importedPublicCount} imported published post${importedPublicCount === 1 ? '' : 's'}.`
         : `Public published query can only read ${importedPublicCount} of ${importedPublishedCount} imported published posts; check deployed Firestore rules and Firebase project config.`;
 
-      this.statusMessage = [
-        `Imported ${importedCount} blog post${importedCount === 1 ? '' : 's'} from ${file.name} into Firestore /posts.`,
+      this.toast.success([
+        `Imported ${importedCount} blog post${importedCount === 1 ? '' : 's'} from ${file.name}.`,
         publicVisibilityMessage,
-        `Total public published posts visible: ${publiclyReadablePosts.length}.`,
-      ].join(' ');
+      ].join(' '), 8000);
     } catch (error) {
-      this.statusError = `Unable to import JSON: ${getErrorMessage(error)}`;
+      this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
     } finally {
       this.importInProgress = false;
     }
   }
 
   protected async refreshPostsFromFirestore(): Promise<void> {
-    this.statusMessage = '';
-    this.statusError = '';
     this.backupInProgress = true;
 
     try {
       const posts = await this.blogRepository.loadPostsFromFirestore();
-      this.statusMessage = `Refreshed ${posts.length} blog posts from Firestore /posts.`;
+      this.toast.success(`Refreshed ${posts.length} blog posts from Firestore.`);
     } catch (error) {
-      this.statusError = error instanceof Error
-        ? error.message
-        : 'Unable to refresh blog posts from Firestore.';
+      this.toast.error(error instanceof Error ? error.message : 'Unable to refresh blog posts from Firestore.');
     } finally {
       this.backupInProgress = false;
     }
   }
 
   protected async deletePost(post: BlogPost): Promise<void> {
-    this.statusError = '';
     const confirmed = window.confirm(`Delete "${post.title}" from Firestore?`);
 
     if (!confirmed) {
       return;
     }
 
-    const result = await this.blogRepository.deletePost(post.id);
+    try {
+      const result = await this.blogRepository.deletePost(post.id);
+      this.currentPage = Math.min(this.currentPage, this.totalPages);
 
-    this.currentPage = Math.min(this.currentPage, this.totalPages);
-    this.statusMessage = this.getDeleteMessage(result, post.title);
+      if (result === 'not-found') {
+        this.toast.error(`Could not delete "${post.title}" because it was not found.`);
+      } else {
+        this.toast.success(`Deleted "${post.title}" from Firestore.`);
+      }
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : `Unable to delete "${post.title}".`);
+    }
   }
 
   private createRows(posts: readonly BlogPost[]): readonly AdminPostRow[] {
@@ -647,12 +595,5 @@ export class CmsPostListComponent {
     return left.post.title.localeCompare(right.post.title, undefined, {numeric: true, sensitivity: 'base'});
   }
 
-  private getDeleteMessage(result: BlogPostDeleteResult, title: string): string {
-    switch (result) {
-      case 'deleted-cms-post':
-        return `Deleted CMS post "${title}" from Firestore.`;
-      case 'not-found':
-        return `Could not delete "${title}" because it was not found.`;
-    }
-  }
 }
+
