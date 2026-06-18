@@ -22,6 +22,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
           [src]="post.coverImage"
           [alt]="post.title + ' cover image'"
           class="aspect-[4/3] h-full w-full object-cover"
+          loading="lazy"
         >
       </a>
 

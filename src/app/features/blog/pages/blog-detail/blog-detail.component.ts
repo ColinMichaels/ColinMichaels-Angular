@@ -114,6 +114,7 @@ import {
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
                   class="aspect-[16/9] w-full rounded border border-zinc-800 bg-zinc-900 object-cover shadow-2xl shadow-black/25"
+                  loading="eager"
                 >
               </header>
             </div>

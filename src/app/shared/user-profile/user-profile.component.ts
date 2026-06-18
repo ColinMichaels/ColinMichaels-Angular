@@ -34,7 +34,7 @@ function getDisplayName(profile: UserAccountProfile): string {
           <header class="grid gap-5 border-b border-zinc-800 pb-8 sm:grid-cols-[auto_1fr] sm:items-center">
             <div class="grid h-20 w-20 place-items-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 text-2xl font-semibold text-cyan-100">
               @if (account.photoURL) {
-                <img [src]="account.photoURL" [alt]="displayName() + ' avatar'" class="h-full w-full object-cover">
+                <img [src]="account.photoURL" [alt]="displayName() + ' avatar'" class="h-full w-full object-cover" loading="lazy">
               } @else {
                 {{ initials() }}
               }

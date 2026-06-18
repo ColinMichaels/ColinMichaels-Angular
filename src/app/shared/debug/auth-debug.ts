@@ -25,7 +25,10 @@ function isLocalHost(activeWindow: Window): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }
 
+const AUTH_DEBUG_ENABLED = false; // set to true or use ?authDebug=true to re-enable
+
 export function isAuthDebugEnabled(): boolean {
+  if (!AUTH_DEBUG_ENABLED) return false;
   const activeWindow = getWindow();
 
   if (!activeWindow) {

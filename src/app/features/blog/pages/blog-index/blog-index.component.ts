@@ -6,7 +6,7 @@ import {faCode, faMagnifyingGlass, faRss} from '@fortawesome/free-solid-svg-icon
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
-import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
+import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 
@@ -16,7 +16,7 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
     RouterLink,
     FontAwesomeModule,
     BlogCategoryNavComponent,
-    BlogPostCardComponent,
+    BlogPostCardSkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -65,17 +65,23 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
               <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
               <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
             </div>
-          } @else if (isLoading()) {
-            <p class="border-t border-zinc-800 py-8 text-zinc-400">
-              Loading posts from Firestore.
-            </p>
           } @else {
-            @for (post of posts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
-            } @empty {
-              <p class="border-t border-zinc-800 py-8 text-zinc-400">
-                No published posts yet.
-              </p>
+            @defer (when !isLoading()) {
+              @for (post of posts(); track post.id) {
+                <app-blog-post-card [post]="post"></app-blog-post-card>
+              } @empty {
+                <p class="border-t border-zinc-800 py-8 text-zinc-400">
+                  No published posts yet.
+                </p>
+              }
+            } @placeholder (minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+            } @loading (after 150ms; minimum 300ms) {
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
+              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
             }
           }
         </section>

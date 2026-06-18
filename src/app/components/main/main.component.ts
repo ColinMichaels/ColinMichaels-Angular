@@ -5,6 +5,9 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
+import {
+  BlogPostCardSkeletonComponent
+} from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
@@ -68,6 +71,7 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   selector: 'app-main',
   imports: [
     BlogPostCardComponent,
+    BlogPostCardSkeletonComponent,
     BlogShareActionsComponent,
     AuthorBioComponent,
     DatePipe,
