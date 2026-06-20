@@ -2,13 +2,25 @@ name: Manual Firebase Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_hosting:
+        description: Deploy Firebase Hosting
+        required: true
+        type: boolean
+        default: true
+      deploy_functions:
+        description: Rebuild and deploy Firebase Functions
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   checks: write
   contents: read
 
 jobs:
-  deploy:
+  validate_production_environment:
+    if: ${{ inputs.deploy_hosting || inputs.deploy_functions }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -23,21 +35,6 @@ jobs:
       FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
       FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.3
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Firebase Functions dependencies
-        run: npm --prefix functions ci
-
       - name: Validate required environment variables
         run: |
           missing=()
@@ -67,14 +64,126 @@ jobs:
             exit 1
           fi
 
+  build_hosting:
+    needs: validate_production_environment
+    if: ${{ inputs.deploy_hosting }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Generate Angular environment files
         run: npm run generate:env
 
-      - name: Build
+      - name: Build Angular app
         run: npm run build
+
+      - name: Upload Hosting build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-hosting-manual
+          path: dist/colin-michaels-firebase/browser
+          if-no-files-found: error
+          retention-days: 1
+
+  build_functions:
+    needs:
+      - validate_production_environment
+      - build_hosting
+    if: ${{ always() && inputs.deploy_functions && needs.validate_production_environment.result == 'success' && (needs.build_hosting.result == 'success' || needs.build_hosting.result == 'skipped') && !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install Functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Download Hosting build artifact for SEO template
+        if: ${{ inputs.deploy_hosting }}
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-hosting-manual
+          path: dist/colin-michaels-firebase/browser
+
+      - name: Build Angular app for SEO template
+        if: ${{ !inputs.deploy_hosting }}
+        run: |
+          npm ci
+          npm run generate:env
+          npm run build
 
       - name: Prepare SEO HTML template for Functions
         run: npm run prepare:functions-seo
+
+      - name: Build Firebase Functions
+        run: npm --prefix functions run build
+
+      - name: Upload Functions build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-functions-manual
+          path: |
+            functions/lib
+            functions/seo-index.html
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy_functions:
+    needs: build_functions
+    if: ${{ inputs.deploy_functions && needs.build_functions.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Functions build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-functions-manual
+          path: functions
 
       - name: Authenticate Firebase CLI
         env:
@@ -89,16 +198,61 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials_file"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
 
-      - name: Build Firebase Functions
-        run: npm run build:functions
+      - name: Create Firebase Functions deploy config
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          if (config.functions) {
+            delete config.functions.predeploy;
+          }
+          fs.writeFileSync('firebase.ci.json', `${JSON.stringify(config, null, 2)}\n`);
+          NODE
 
       - name: Deploy Firebase Functions
-        run: npx --yes firebase-tools@14 deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
 
-      - name: Deploy to Firebase
+  deploy_hosting:
+    needs:
+      - build_hosting
+      - deploy_functions
+    if: ${{ always() && inputs.deploy_hosting && needs.build_hosting.result == 'success' && (!inputs.deploy_functions || needs.deploy_functions.result == 'success') }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Hosting build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-hosting-manual
+          path: dist/colin-michaels-firebase/browser
+
+      - name: Create Firebase Hosting deploy config
+        run: |
+          mkdir -p "$RUNNER_TEMP/firebase-hosting-manual"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          if (config.hosting) {
+            delete config.hosting.predeploy;
+          }
+          if (config.functions) {
+            delete config.functions.predeploy;
+          }
+          const outputRoot = path.join(process.env.RUNNER_TEMP, 'firebase-hosting-manual');
+          fs.writeFileSync(path.join(outputRoot, 'firebase.json'), `${JSON.stringify(config, null, 2)}\n`);
+          NODE
+          mkdir -p "$RUNNER_TEMP/firebase-hosting-manual/dist/colin-michaels-firebase"
+          cp -R dist/colin-michaels-firebase/browser "$RUNNER_TEMP/firebase-hosting-manual/dist/colin-michaels-firebase/browser"
+
+      - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+          entryPoint: ${{ runner.temp }}/firebase-hosting-manual

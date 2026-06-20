@@ -1,4 +1,5 @@
 name: Deploy Firebase Hosting preview on dev PR
+
 on:
   pull_request:
     branches:
@@ -14,8 +15,30 @@ permissions:
   pull-requests: write
 
 jobs:
-  build_and_preview:
+  detect_changes:
     if: ${{ github.base_ref == 'dev' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    outputs:
+      hosting_changed: ${{ steps.scope.outputs.hosting_changed }}
+      functions_changed: ${{ steps.scope.outputs.functions_changed }}
+      seo_template_changed: ${{ steps.scope.outputs.seo_template_changed }}
+      functions_deploy_needed: ${{ steps.scope.outputs.functions_deploy_needed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Firebase deploy scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: .github/scripts/detect-firebase-deploy-scope.sh
+
+  validate_preview_environment:
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.hosting_changed == 'true' || needs.detect_changes.outputs.functions_deploy_needed == 'true' }}
     runs-on: ubuntu-latest
     environment: preview
     env:
@@ -32,18 +55,6 @@ jobs:
       FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
       FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.3
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Validate preview environment variables
         run: |
           missing=()
@@ -76,11 +87,143 @@ jobs:
             exit 1
           fi
 
+  build_hosting_preview:
+    needs:
+      - detect_changes
+      - validate_preview_environment
+    if: ${{ needs.detect_changes.outputs.hosting_changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || vars.OPENAI_API_KEY }}
+      OPEN_WEATHER_MAP_API_KEY: ${{ secrets.OPEN_WEATHER_MAP_API_KEY || vars.OPEN_WEATHER_MAP_API_KEY }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Generate Angular environment files
         run: npm run generate:env
 
       - name: Build Angular app
         run: npm run build
+
+      - name: Upload Hosting build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-hosting-preview
+          path: dist/colin-michaels-firebase/browser
+          if-no-files-found: error
+          retention-days: 1
+
+  build_functions_preview:
+    needs:
+      - detect_changes
+      - validate_preview_environment
+      - build_hosting_preview
+    if: ${{ always() && needs.detect_changes.outputs.functions_deploy_needed == 'true' && needs.validate_preview_environment.result == 'success' && (needs.build_hosting_preview.result == 'success' || needs.build_hosting_preview.result == 'skipped') && !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || vars.OPENAI_API_KEY }}
+      OPEN_WEATHER_MAP_API_KEY: ${{ secrets.OPEN_WEATHER_MAP_API_KEY || vars.OPEN_WEATHER_MAP_API_KEY }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install Functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Download Hosting build artifact for SEO template
+        if: ${{ needs.detect_changes.outputs.hosting_changed == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-hosting-preview
+          path: dist/colin-michaels-firebase/browser
+
+      - name: Build Angular app for SEO template
+        if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
+        run: |
+          npm ci
+          npm run generate:env
+          npm run build
+
+      - name: Prepare SEO HTML template for Functions
+        run: npm run prepare:functions-seo
+
+      - name: Build Firebase Functions
+        run: npm --prefix functions run build
+
+  deploy_hosting_preview:
+    needs:
+      - detect_changes
+      - build_hosting_preview
+      - build_functions_preview
+    if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting_preview.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.build_functions_preview.result == 'success') }}
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Hosting build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-hosting-preview
+          path: dist/colin-michaels-firebase/browser
+
+      - name: Create Firebase Hosting deploy config
+        run: |
+          mkdir -p "$RUNNER_TEMP/firebase-hosting-preview"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          if (config.hosting) {
+            delete config.hosting.predeploy;
+          }
+          if (config.functions) {
+            delete config.functions.predeploy;
+          }
+          const outputRoot = path.join(process.env.RUNNER_TEMP, 'firebase-hosting-preview');
+          fs.writeFileSync(path.join(outputRoot, 'firebase.json'), `${JSON.stringify(config, null, 2)}\n`);
+          NODE
+          mkdir -p "$RUNNER_TEMP/firebase-hosting-preview/dist/colin-michaels-firebase"
+          cp -R dist/colin-michaels-firebase/browser "$RUNNER_TEMP/firebase-hosting-preview/dist/colin-michaels-firebase/browser"
 
       - name: Deploy Firebase Hosting preview
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -89,3 +232,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: pr-${{ github.event.pull_request.number }}
           projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+          entryPoint: ${{ runner.temp }}/firebase-hosting-preview
