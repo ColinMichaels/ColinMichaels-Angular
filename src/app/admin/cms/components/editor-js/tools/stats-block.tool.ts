@@ -1,6 +1,13 @@
 import type {BlockTool, BlockToolConstructorOptions, SanitizerConfig} from '@editorjs/editorjs';
 
 import {BlogStatItem} from '../../../../../features/blog/models/blog-post.model';
+import {
+  downloadTextImportExample,
+  parseStatsImport,
+  readTextImportFile,
+  STATS_IMPORT_EXAMPLE_CSV,
+  STATS_IMPORT_EXAMPLE_JSON,
+} from './tabular-block-import.util';
 
 export interface StatsBlockData {
   title?: string;
@@ -65,6 +72,18 @@ export class StatsBlockTool implements BlockTool {
       list.append(createStatRow(item, this.readOnly));
     };
 
+    const replaceRows = (items: readonly BlogStatItem[]): void => {
+      list.replaceChildren();
+
+      for (const item of items) {
+        addRow(item);
+      }
+
+      if (items.length === 0) {
+        addRow();
+      }
+    };
+
     for (const item of this.data.stats) {
       addRow(item);
     }
@@ -80,11 +99,13 @@ export class StatsBlockTool implements BlockTool {
     addButton.style.cssText = 'margin-top:12px;border:1px solid #22c55e;background:#ecfdf5;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;color:#14532d;cursor:pointer';
     addButton.addEventListener('click', () => addRow());
 
+    const importPanel = createStatsImportPanel(this.readOnly, replaceRows);
+
     const caption = createTextArea('Caption', 'Optional context below the stats...', this.data.caption, this.readOnly, 2);
     setFieldDataset(caption, 'statsCaption');
     caption.style.marginTop = '12px';
 
-    wrapper.append(heading, titleInput, list, addButton, caption);
+    wrapper.append(heading, titleInput, list, addButton, importPanel, caption);
 
     return wrapper;
   }
@@ -139,6 +160,118 @@ function createStatRow(item: BlogStatItem | undefined, readOnly: boolean): HTMLE
   return row;
 }
 
+function createStatsImportPanel(readOnly: boolean, replaceRows: (items: readonly BlogStatItem[]) => void): HTMLElement {
+  const panel = document.createElement('section');
+  panel.setAttribute('aria-label', 'Import stats');
+  panel.style.cssText = 'margin-top:12px;border:1px dashed #86efac;background:#f0fdf4;padding:12px';
+
+  const heading = document.createElement('p');
+  heading.textContent = 'Import stats';
+  heading.style.cssText = 'margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#166534';
+
+  const helpText = document.createElement('p');
+  helpText.textContent = 'Required fields: label and value. Optional field: caption. Paste CSV with a header row like label,value,caption, or use JSON with a stats, rows, items, or data array.';
+  helpText.style.cssText = 'margin:0 0 8px;font-size:12px;line-height:1.45;color:#3f6212';
+
+  const formatText = document.createElement('p');
+  formatText.textContent = 'Copy/paste format: one stat per line. If you skip the header row, columns are read as label, value, then caption.';
+  formatText.style.cssText = 'margin:0 0 10px;font-size:12px;line-height:1.45;color:#3f6212';
+
+  const exampleControls = document.createElement('div');
+  exampleControls.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px';
+
+  const csvExampleButton = createExampleDownloadButton('Download CSV example', readOnly);
+  csvExampleButton.addEventListener('click', () => {
+    downloadTextImportExample('stats-import-example.csv', STATS_IMPORT_EXAMPLE_CSV, 'text/csv;charset=utf-8');
+  });
+
+  const jsonExampleButton = createExampleDownloadButton('Download JSON example', readOnly);
+  jsonExampleButton.addEventListener('click', () => {
+    downloadTextImportExample('stats-import-example.json', STATS_IMPORT_EXAMPLE_JSON, 'application/json;charset=utf-8');
+  });
+
+  exampleControls.append(csvExampleButton, jsonExampleButton);
+
+  const textareaLabel = createTextArea(
+    'Paste CSV or JSON',
+    'label,value,caption\nHorsepower,480 hp,5.0L V8\nTorque,415 lb-ft,Peak torque',
+    '',
+    readOnly,
+    4
+  );
+  const textarea = textareaLabel.querySelector('textarea');
+
+  const controls = document.createElement('div');
+  controls.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px';
+
+  const message = document.createElement('p');
+  message.setAttribute('role', 'status');
+  message.style.cssText = 'margin:8px 0 0;font-size:12px;line-height:1.45;color:#3f6212';
+
+  const importButton = createImportButton('Import pasted rows', readOnly);
+  importButton.addEventListener('click', () => {
+    importStatsText(textarea?.value ?? '', replaceRows, message);
+  });
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.csv,.json,text/csv,application/json';
+  fileInput.disabled = readOnly;
+  fileInput.style.cssText = 'max-width:220px;font:inherit;font-size:12px;color:#166534';
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    void readTextImportFile(file)
+      .then(text => importStatsText(text, replaceRows, message))
+      .catch(error => showImportMessage(message, getErrorMessage(error), true));
+  });
+
+  controls.append(importButton, fileInput);
+  panel.append(heading, helpText, formatText, exampleControls, textareaLabel, controls, message);
+
+  return panel;
+}
+
+function createExampleDownloadButton(text: string, readOnly: boolean): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = text;
+  button.disabled = readOnly;
+  button.style.cssText = 'border:1px solid #86efac;background:#fff;padding:7px 10px;font:inherit;font-size:12px;font-weight:700;color:#166534;cursor:pointer';
+
+  return button;
+}
+
+function createImportButton(text: string, readOnly: boolean): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = text;
+  button.disabled = readOnly;
+  button.style.cssText = 'border:1px solid #22c55e;background:#dcfce7;padding:8px 12px;font:inherit;font-size:12px;font-weight:700;color:#14532d;cursor:pointer';
+
+  return button;
+}
+
+function importStatsText(source: string, replaceRows: (items: readonly BlogStatItem[]) => void, message: HTMLElement): void {
+  try {
+    const result = parseStatsImport(source);
+    replaceRows(result.items);
+    showImportMessage(message, `${result.message} Current rows were replaced.`, false);
+  } catch (error) {
+    showImportMessage(message, getErrorMessage(error), true);
+  }
+}
+
+function showImportMessage(message: HTMLElement, text: string, isError: boolean): void {
+  message.textContent = text;
+  message.style.color = isError ? '#b91c1c' : '#166534';
+}
+
 function createInput(labelText: string, placeholder: string, value: string, readOnly: boolean): HTMLLabelElement {
   const label = document.createElement('label');
   label.style.cssText = 'display:block;min-width:0';
@@ -191,6 +324,10 @@ function setFieldDataset(label: HTMLLabelElement, key: string): void {
   if (field) {
     field.dataset[key] = 'true';
   }
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unable to import stats.';
 }
 
 function normalizeStatsData(data: StatsBlockData | undefined): Required<StatsBlockData> {
