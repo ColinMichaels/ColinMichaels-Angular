@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy_functions:
+  validate_production_environment:
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -22,21 +22,6 @@ jobs:
       FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
       FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.3
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Functions dependencies
-        run: npm --prefix functions ci
-
       - name: Validate required environment variables
         run: |
           missing=()
@@ -66,19 +51,99 @@ jobs:
             exit 1
           fi
 
+  build_functions:
+    needs: validate_production_environment
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Functions dependencies
+        run: npm --prefix functions ci
+
       - name: Generate Angular environment files
         run: npm run generate:env
 
-      - name: Build Angular app
+      - name: Build Angular app for SEO template
         run: npm run build
 
       - name: Prepare SEO HTML template for Functions
         run: npm run prepare:functions-seo
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Build Firebase Functions
+        run: npm --prefix functions run build
+
+      - name: Upload Functions build artifact
+        uses: actions/upload-artifact@v4
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          name: firebase-functions-manual-only
+          path: |
+            functions/lib
+            functions/seo-index.html
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy_functions:
+    needs: build_functions
+    if: ${{ needs.build_functions.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Functions build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firebase-functions-manual-only
+          path: functions
+
+      - name: Authenticate Firebase CLI
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "Missing Firebase service account secret."
+            exit 1
+          fi
+
+          credentials_file="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
+
+      - name: Create Firebase Functions deploy config
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          if (config.functions) {
+            delete config.functions.predeploy;
+          }
+          fs.writeFileSync('firebase.ci.json', `${JSON.stringify(config, null, 2)}\n`);
+          NODE
 
       - name: Deploy Cloud Functions
-        run: npx firebase-tools deploy --only functions --project "${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}" --non-interactive
+        run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
