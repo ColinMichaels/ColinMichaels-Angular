@@ -152,4 +152,119 @@ describe('BlogBlockRendererComponent', () => {
     expect(link?.getAttribute('rel')).toBeNull();
     expect(link?.classList).toContain('blog-inline-link');
   });
+
+  it('opens post body images in a lightbox with a download action', () => {
+    fixture.componentRef.setInput('fallbackAlt', 'Fallback post title');
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'image-1',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'First detail image',
+          caption: 'First <strong>caption</strong>',
+        },
+      },
+      {
+        id: 'image-2',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/night.webp?token=abc',
+          alt: 'Second detail image',
+          caption: 'Second caption',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('figure button')?.click();
+    fixture.detectChanges();
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    const lightboxImage = element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]');
+    const download = element.querySelector<HTMLAnchorElement>('[data-testid="blog-lightbox-download"]');
+
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('1 / 2');
+    expect(lightboxImage?.getAttribute('src')).toBe('/assets/images/backgrounds/day.webp');
+    expect(lightboxImage?.getAttribute('alt')).toBe('First detail image');
+    expect(download?.getAttribute('href')).toBe('/assets/images/backgrounds/day.webp');
+    expect(download?.getAttribute('download')).toBe('day.webp');
+    expect(download?.getAttribute('aria-label')).toBe('Download image: First detail image');
+    expect(dialog?.textContent).toContain('First caption');
+  });
+
+  it('navigates image galleries with controls and keyboard shortcuts', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'image-1',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'First detail image',
+        },
+      },
+      {
+        id: 'image-2',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/night.webp',
+          alt: 'Second detail image',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('figure button')?.click();
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-next"]')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLElement>('[role="dialog"]')?.textContent).toContain('2 / 2');
+    expect(element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]')?.getAttribute('src'))
+      .toBe('/assets/images/backgrounds/night.webp');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft'}));
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLElement>('[role="dialog"]')?.textContent).toContain('1 / 2');
+    expect(element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]')?.getAttribute('src'))
+      .toBe('/assets/images/backgrounds/day.webp');
+  });
+
+  it('closes the image lightbox with the close control and escape key', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'image-1',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'First detail image',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('figure button')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('[role="dialog"]')).not.toBeNull();
+
+    element.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-close"]')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+
+    element.querySelector<HTMLButtonElement>('figure button')?.click();
+    fixture.detectChanges();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
+    fixture.detectChanges();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+  });
 });
