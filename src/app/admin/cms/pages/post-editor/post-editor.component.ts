@@ -220,6 +220,25 @@ function createImportedBlocks(value: Record<string, unknown>, fallback: readonly
   return fallback;
 }
 
+function normalizeImportedPostBlocks(blocks: readonly BlogContentBlock[]): readonly BlogContentBlock[] {
+  return blocks.map(block => {
+    if (block.type !== 'stats' && block.type !== 'chart') {
+      return block;
+    }
+
+    const normalizedBlocks = createBlogBlocksFromEditorDocument({
+      time: Date.now(),
+      blocks: [{
+        id: block.id,
+        type: block.type,
+        data: {...block.data},
+      }],
+    });
+
+    return normalizedBlocks[0] ?? block;
+  });
+}
+
 function createLooseImportedPost(value: Record<string, unknown>, currentPost: BlogPost): BlogPost | null {
   const title = getTrimmedString(value['title']);
   const slug = getTrimmedString(value['slug']);
@@ -1268,6 +1287,7 @@ export class CmsPostEditorComponent {
       },
       categories: [...importedPost.categories],
       tags: [...importedPost.tags],
+      blocks: normalizeImportedPostBlocks(importedPost.blocks),
       seo: {
         ...importedPost.seo,
         title: requiredText(importedPost.seo.title || importedPost.seo.metaTitle || importedPost.og?.title || '', importedTitle),
@@ -1279,7 +1299,6 @@ export class CmsPostEditorComponent {
         openGraphImage: normalizeOpenGraphImage(importedOpenGraphImage, importedCoverImage),
       },
       contentFormat: 'editorjs',
-      blocks: importedPost.blocks,
       createdAt: this.currentPost.createdAt,
       updatedAt: new Date().toISOString(),
       publishedAt: importedPost.publishedAt,

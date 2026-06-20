@@ -3,6 +3,7 @@
 ## 2026-06-20
 
 - Added custom CMS Editor.js blocks for blog stats, simple bar/line charts, and sanitized HTML sections, with typed post storage, assistant text extraction, reading stats, and public blog rendering.
+- Added CSV/JSON file import, downloadable import examples, required-field help, and pasted comma-separated row import to CMS stats and chart blocks, including looser JSON normalization for full post imports.
 - Split Firebase GitHub Actions into explicit detect, validate, build, and deploy jobs, with Functions rebuild/deploy skipped unless Functions or SEO-template inputs changed.
 
 ## 2026-06-17

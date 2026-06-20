@@ -214,4 +214,60 @@ describe('blog-editorjs-adapter', () => {
       },
     ]);
   });
+
+  it('normalizes imported stats and chart blocks from common JSON row shapes', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'stats-1',
+          type: 'stats',
+          data: {
+            items: [
+              {metric: 'Horsepower', figure: '480 hp', notes: '5.0L V8'},
+              ['Torque', '415 lb-ft', 'Peak torque'],
+            ],
+          },
+        },
+        {
+          id: 'chart-1',
+          type: 'chart',
+          data: {
+            points: [
+              {name: 'EcoBoost', y: '315', notes: 'Turbo four'},
+              ['GT', '480 hp', 'Manual coupe'],
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'stats-1',
+        type: 'stats',
+        data: {
+          title: '',
+          caption: '',
+          stats: [
+            {label: 'Horsepower', value: '480 hp', caption: '5.0L V8'},
+            {label: 'Torque', value: '415 lb-ft', caption: 'Peak torque'},
+          ],
+        },
+      },
+      {
+        id: 'chart-1',
+        type: 'chart',
+        data: {
+          title: '',
+          caption: '',
+          chartType: 'bar',
+          unit: '',
+          chartPoints: [
+            {label: 'EcoBoost', value: 315, note: 'Turbo four'},
+            {label: 'GT', value: 480, note: 'Manual coupe'},
+          ],
+        },
+      },
+    ]);
+  });
 });
