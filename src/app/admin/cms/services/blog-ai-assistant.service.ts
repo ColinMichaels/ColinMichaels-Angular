@@ -148,6 +148,21 @@ export class BlogAiAssistantService {
         return [data.caption, data.alt, data.provider].filter(Boolean).join(' ');
       case 'code':
         return [data.language, data.code].filter(Boolean).join(' ');
+      case 'stats':
+        return [
+          data.title,
+          data.caption,
+          ...(data.stats ?? []).flatMap(item => [item.label, item.value, item.caption]),
+        ].filter(Boolean).join(' ');
+      case 'chart':
+        return [
+          data.title,
+          data.caption,
+          data.unit,
+          ...(data.chartPoints ?? []).flatMap(point => [point.label, String(point.value), point.note]),
+        ].filter(Boolean).join(' ');
+      case 'html':
+        return [data.title, data.html].filter(Boolean).join(' ');
       case 'delimiter':
         return '';
     }

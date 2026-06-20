@@ -1,7 +1,28 @@
-import {Component, Input, OnChanges, SecurityContext, inject, ChangeDetectionStrategy} from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  SecurityContext,
+  inject,
+  ChangeDetectionStrategy,
+  HostListener,
+} from '@angular/core';
 import {DomSanitizer, SafeHtml, SafeResourceUrl} from '@angular/platform-browser';
+import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import {
+  faChevronLeft,
+  faChevronRight,
+  faDownload,
+  faMagnifyingGlassPlus,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 
-import {BlogContentBlock} from '../../models/blog-post.model';
+import {
+  BlogChartPoint,
+  BlogChartType,
+  BlogContentBlock,
+  BlogStatItem,
+} from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
 
 interface RenderableBlogBlock {
@@ -12,11 +33,51 @@ interface RenderableBlogBlock {
   textHtml: SafeHtml;
   captionHtml: SafeHtml;
   attributionHtml: SafeHtml;
+  blockHtml: SafeHtml;
   itemHtml: readonly SafeHtml[];
+  stats: readonly RenderableBlogStat[];
+  chart: RenderableBlogChart | null;
+  imageAlt: string;
+  galleryIndex: number | null;
+}
+
+interface RenderableBlogStat {
+  label: string;
+  value: string;
+  caption: string;
+}
+
+interface RenderableBlogChartPoint {
+  label: string;
+  value: number;
+  note: string;
+  displayValue: string;
+  magnitudePercent: number;
+  x: number;
+  y: number;
+}
+
+interface RenderableBlogChart {
+  type: BlogChartType;
+  title: string;
+  unit: string;
+  caption: string;
+  points: readonly RenderableBlogChartPoint[];
+  polyline: string;
+  ariaLabel: string;
+}
+
+interface RenderableBlogImage {
+  url: string;
+  alt: string;
+  captionHtml: SafeHtml;
+  captionText: string;
+  downloadName: string;
 }
 
 @Component({
   selector: 'app-blog-block-renderer',
+  imports: [FaIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="blog-content space-y-6 text-base leading-8 text-zinc-300">
@@ -105,6 +166,107 @@ interface RenderableBlogBlock {
               }
             }
           }
+          @case ('stats') {
+            @if (row.stats.length > 0) {
+              <section class="space-y-3" [attr.aria-label]="row.block.data.title || 'Statistics'">
+                @if (row.block.data.title) {
+                  <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+                }
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  @for (stat of row.stats; track $index) {
+                    <article class="border border-zinc-800 bg-zinc-950/60 p-4">
+                      <p class="text-2xl font-semibold leading-8 text-zinc-50">{{ stat.value }}</p>
+                      <p
+                        class="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{{ stat.label }}</p>
+                      @if (stat.caption) {
+                        <p class="mt-3 text-sm leading-6 text-zinc-500">{{ stat.caption }}</p>
+                      }
+                    </article>
+                  }
+                </div>
+                @if (row.block.data.caption) {
+                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                }
+              </section>
+            }
+          }
+          @case ('chart') {
+            @if (row.chart; as chart) {
+              <section class="space-y-4" [attr.aria-label]="chart.ariaLabel">
+                @if (chart.title) {
+                  <h3 class="text-lg font-semibold text-zinc-50">{{ chart.title }}</h3>
+                }
+                @if (chart.type === 'line') {
+                  <div class="overflow-x-auto rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                    <svg
+                      viewBox="0 0 100 64"
+                      preserveAspectRatio="none"
+                      class="h-56 min-w-[520px] w-full"
+                      role="img"
+                      [attr.aria-label]="chart.ariaLabel"
+                    >
+                      <line x1="8" y1="56" x2="96" y2="56" stroke="rgba(113,113,122,.65)" stroke-width=".6"></line>
+                      <polyline
+                        [attr.points]="chart.polyline"
+                        fill="none"
+                        stroke="#22d3ee"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></polyline>
+                      @for (point of chart.points; track $index) {
+                        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="1.8" fill="#fef3c7" stroke="#18181b"
+                                stroke-width=".8"></circle>
+                      }
+                    </svg>
+                    <div class="mt-3 grid min-w-[520px] gap-2"
+                         [style.grid-template-columns]="'repeat(' + chart.points.length + ', minmax(0, 1fr))'">
+                      @for (point of chart.points; track $index) {
+                        <div class="text-xs leading-5">
+                          <p class="font-semibold text-zinc-100">{{ point.displayValue }}</p>
+                          <p class="text-zinc-500">{{ point.label }}</p>
+                          @if (point.note) {
+                            <p class="text-zinc-600">{{ point.note }}</p>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="space-y-4 rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                    @for (point of chart.points; track $index) {
+                      <div class="space-y-2">
+                        <div class="flex items-baseline justify-between gap-3">
+                          <p class="text-sm font-medium text-zinc-200">{{ point.label }}</p>
+                          <p class="text-sm font-semibold text-zinc-50">{{ point.displayValue }}</p>
+                        </div>
+                        <div class="h-2 overflow-hidden rounded-full bg-zinc-800" aria-hidden="true">
+                          <span
+                            class="block h-full rounded-full bg-cyan-300"
+                            [style.width.%]="point.magnitudePercent"
+                          ></span>
+                        </div>
+                        @if (point.note) {
+                          <p class="text-xs leading-5 text-zinc-500">{{ point.note }}</p>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+                @if (chart.caption) {
+                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                }
+              </section>
+            }
+          }
+          @case ('html') {
+            @if (row.block.data.html) {
+              @if (row.block.data.title) {
+                <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+              }
+              <section class="blog-custom-html" [innerHTML]="row.blockHtml"></section>
+            }
+          }
           @case ('list') {
             @if (row.block.data.ordered) {
               <ol class="list-decimal space-y-2 pl-6">
@@ -128,20 +290,38 @@ interface RenderableBlogBlock {
                 [class.bg-zinc-900]="row.block.data.withBackground"
                 [class.p-4]="row.block.data.withBackground"
               >
-                <img
-                  [src]="row.block.data.url"
-                  [alt]="row.block.data.alt || fallbackAlt"
-                  [attr.width]="row.block.data.width || null"
-                  [attr.height]="row.block.data.height || null"
-                  class="rounded object-contain"
+                <button
+                  type="button"
+                  class="group relative block cursor-zoom-in overflow-hidden rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
                   [class.w-full]="row.block.data.stretched"
                   [class.mx-auto]="!row.block.data.stretched"
                   [class.max-w-full]="!row.block.data.stretched"
-                  [class.border]="row.block.data.withBorder"
-                  [class.border-zinc-700]="row.block.data.withBorder"
-                  loading="lazy"
-                  decoding="async"
+                  [class.w-fit]="!row.block.data.stretched"
+                  [attr.aria-label]="'View image full screen: ' + row.imageAlt"
+                  title="View image full screen"
+                  (click)="openImageLightbox(row.galleryIndex)"
                 >
+                  <img
+                    [src]="row.block.data.url"
+                    [alt]="row.imageAlt"
+                    [attr.width]="row.block.data.width || null"
+                    [attr.height]="row.block.data.height || null"
+                    class="rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]"
+                    [class.w-full]="row.block.data.stretched"
+                    [class.mx-auto]="!row.block.data.stretched"
+                    [class.max-w-full]="!row.block.data.stretched"
+                    [class.border]="row.block.data.withBorder"
+                    [class.border-zinc-700]="row.block.data.withBorder"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <span
+                    aria-hidden="true"
+                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/70 text-sm text-zinc-50 opacity-0 shadow-lg shadow-black/30 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+                  >
+                    <fa-icon [icon]="faMagnifyingGlassPlus"></fa-icon>
+                  </span>
+                </button>
                 @if (row.block.data.caption) {
                   <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
                 }
@@ -182,6 +362,93 @@ interface RenderableBlogBlock {
         }
       }
     </section>
+
+    @if (activeImage; as image) {
+      <div
+        class="fixed inset-0 z-[100] bg-black/92 p-4 text-zinc-100 backdrop-blur-sm sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Blog image gallery"
+      >
+        <button
+          type="button"
+          class="absolute inset-0 h-full w-full cursor-default"
+          aria-label="Close image gallery"
+          title="Close image gallery"
+          (click)="closeImageLightbox()"
+          data-testid="blog-lightbox-backdrop"
+        ></button>
+        <div class="pointer-events-none relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-4">
+          <header class="pointer-events-auto flex items-center justify-between gap-3">
+            <p class="text-sm font-medium text-zinc-300" aria-live="polite">{{ activeImagePositionLabel }}</p>
+            <div class="flex items-center gap-2">
+              <a
+                [href]="image.url"
+                [attr.download]="image.downloadName"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-zinc-100 transition hover:border-cyan-200 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+                [attr.aria-label]="'Download image: ' + image.alt"
+                title="Download image"
+                data-testid="blog-lightbox-download"
+              >
+                <fa-icon [icon]="faDownload"></fa-icon>
+              </a>
+              <button
+                type="button"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-zinc-100 transition hover:border-cyan-200 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300"
+                aria-label="Close image gallery"
+                title="Close"
+                (click)="closeImageLightbox()"
+                data-testid="blog-lightbox-close"
+              >
+                <fa-icon [icon]="faXmark"></fa-icon>
+              </button>
+            </div>
+          </header>
+
+          <div class="relative grid min-h-0 place-items-center">
+            @if (hasMultipleImages) {
+              <button
+                type="button"
+                class="pointer-events-auto absolute left-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/60 text-zinc-100 transition hover:border-cyan-200 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300 sm:left-2"
+                aria-label="View previous image"
+                title="Previous image"
+                (click)="showPreviousImage($event)"
+                data-testid="blog-lightbox-previous"
+              >
+                <fa-icon [icon]="faChevronLeft"></fa-icon>
+              </button>
+              <button
+                type="button"
+                class="pointer-events-auto absolute right-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/60 text-zinc-100 transition hover:border-cyan-200 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300 sm:right-2"
+                aria-label="View next image"
+                title="Next image"
+                (click)="showNextImage($event)"
+                data-testid="blog-lightbox-next"
+              >
+                <fa-icon [icon]="faChevronRight"></fa-icon>
+              </button>
+            }
+            <img
+              [src]="image.url"
+              [alt]="image.alt"
+              class="pointer-events-auto max-h-full max-w-full rounded object-contain shadow-2xl shadow-black/50"
+              decoding="async"
+              data-testid="blog-lightbox-image"
+            >
+          </div>
+
+          <footer class="pointer-events-auto mx-auto max-w-4xl text-center">
+            @if (image.captionText) {
+              <p class="text-sm leading-6 text-zinc-300" [innerHTML]="image.captionHtml"></p>
+            } @else {
+              <p class="sr-only">{{ image.alt }}</p>
+            }
+          </footer>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     :host ::ng-deep .blog-inline-link {
@@ -200,6 +467,72 @@ interface RenderableBlogBlock {
       color: #fde68a;
       outline: none;
     }
+
+    :host ::ng-deep .blog-custom-html {
+      color: #d4d4d8;
+      line-height: 1.75;
+      overflow-x: auto;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
+      color: #fafafa;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 1.5rem 0 .75rem;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(p, ul, ol, table, figure, blockquote, pre) {
+      margin: 1rem 0;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(ul, ol) {
+      padding-left: 1.5rem;
+    }
+
+    :host ::ng-deep .blog-custom-html ul {
+      list-style: disc;
+    }
+
+    :host ::ng-deep .blog-custom-html ol {
+      list-style: decimal;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(img, svg) {
+      display: block;
+      height: auto;
+      max-width: 100%;
+    }
+
+    :host ::ng-deep .blog-custom-html table {
+      border-collapse: collapse;
+      min-width: 100%;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(th, td) {
+      border: 1px solid #3f3f46;
+      padding: .65rem .75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    :host ::ng-deep .blog-custom-html th {
+      background: #18181b;
+      color: #fafafa;
+      font-weight: 700;
+    }
+
+    :host ::ng-deep .blog-custom-html blockquote {
+      border-left: 2px solid #22d3ee;
+      color: #e4e4e7;
+      padding-left: 1rem;
+    }
+
+    :host ::ng-deep .blog-custom-html pre {
+      background: #000;
+      color: #cffafe;
+      overflow-x: auto;
+      padding: 1rem;
+    }
   `],
 })
 export class BlogBlockRendererComponent implements OnChanges {
@@ -208,6 +541,13 @@ export class BlogBlockRendererComponent implements OnChanges {
   @Input() anchorPath = '';
 
   protected renderedBlocks: readonly RenderableBlogBlock[] = [];
+  protected imageGallery: readonly RenderableBlogImage[] = [];
+  protected activeImageIndex: number | null = null;
+  protected readonly faChevronLeft = faChevronLeft;
+  protected readonly faChevronRight = faChevronRight;
+  protected readonly faDownload = faDownload;
+  protected readonly faMagnifyingGlassPlus = faMagnifyingGlassPlus;
+  protected readonly faXmark = faXmark;
 
   private readonly sanitizer = inject(DomSanitizer);
   private readonly trustedEmbedHosts = new Set([
@@ -221,17 +561,118 @@ export class BlogBlockRendererComponent implements OnChanges {
 
   ngOnChanges(): void {
     const headingIdMap = createBlogHeadingIdMap(this.blocks);
+    const imageGallery: RenderableBlogImage[] = [];
 
-    this.renderedBlocks = this.blocks.map(block => ({
-      block,
-      safeEmbedUrl: this.createSafeEmbedUrl(block),
-      externalUrl: this.createExternalUrl(block),
-      headingId: headingIdMap.get(block.id) ?? null,
-      textHtml: this.createInlineHtml(block.data.text),
-      captionHtml: this.createInlineHtml(block.data.caption),
-      attributionHtml: this.createInlineHtml(block.data.attribution),
-      itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
-    }));
+    this.renderedBlocks = this.blocks.map(block => {
+      const captionHtml = this.createInlineHtml(block.data.caption);
+      const imageAlt = this.createImageAlt(block);
+      let galleryIndex: number | null = null;
+
+      if (block.type === 'image' && block.data.url) {
+        galleryIndex = imageGallery.length;
+        imageGallery.push({
+          url: block.data.url,
+          alt: imageAlt,
+          captionHtml,
+          captionText: this.createPlainText(block.data.caption),
+          downloadName: this.createDownloadFileName(block),
+        });
+      }
+
+      return {
+        block,
+        safeEmbedUrl: this.createSafeEmbedUrl(block),
+        externalUrl: this.createExternalUrl(block),
+        headingId: headingIdMap.get(block.id) ?? null,
+        textHtml: this.createInlineHtml(block.data.text),
+        captionHtml,
+        attributionHtml: this.createInlineHtml(block.data.attribution),
+        blockHtml: this.createBlockHtml(block.data.html),
+        itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
+        stats: this.createStats(block.data.stats),
+        chart: this.createChart(block),
+        imageAlt,
+        galleryIndex,
+      };
+    });
+    this.imageGallery = imageGallery;
+
+    if (this.activeImageIndex !== null && !this.imageGallery[this.activeImageIndex]) {
+      this.closeImageLightbox();
+    }
+  }
+
+  protected get activeImage(): RenderableBlogImage | null {
+    return this.activeImageIndex === null ? null : this.imageGallery[this.activeImageIndex] ?? null;
+  }
+
+  protected get activeImagePositionLabel(): string {
+    if (this.activeImageIndex === null || this.imageGallery.length === 0) {
+      return '';
+    }
+
+    return `${this.activeImageIndex + 1} / ${this.imageGallery.length}`;
+  }
+
+  protected get hasMultipleImages(): boolean {
+    return this.imageGallery.length > 1;
+  }
+
+  protected openImageLightbox(galleryIndex: number | null): void {
+    if (galleryIndex === null || !this.imageGallery[galleryIndex]) {
+      return;
+    }
+
+    this.activeImageIndex = galleryIndex;
+  }
+
+  protected closeImageLightbox(): void {
+    this.activeImageIndex = null;
+  }
+
+  protected showPreviousImage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.activeImageIndex === null || this.imageGallery.length < 2) {
+      return;
+    }
+
+    this.activeImageIndex = (this.activeImageIndex - 1 + this.imageGallery.length) % this.imageGallery.length;
+  }
+
+  protected showNextImage(event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.activeImageIndex === null || this.imageGallery.length < 2) {
+      return;
+    }
+
+    this.activeImageIndex = (this.activeImageIndex + 1) % this.imageGallery.length;
+  }
+
+  @HostListener('document:keydown.escape')
+  protected handleEscapeKey(): void {
+    this.closeImageLightbox();
+  }
+
+  @HostListener('document:keydown.arrowleft', ['$event'])
+  protected handleArrowLeftKey(event: Event): void {
+    if (!this.activeImage || !this.hasMultipleImages) {
+      return;
+    }
+
+    event.preventDefault();
+    this.showPreviousImage();
+  }
+
+  @HostListener('document:keydown.arrowright', ['$event'])
+  protected handleArrowRightKey(event: Event): void {
+    if (!this.activeImage || !this.hasMultipleImages) {
+      return;
+    }
+
+    event.preventDefault();
+    this.showNextImage();
   }
 
   private createInlineHtml(value: string | undefined): SafeHtml {
@@ -244,6 +685,122 @@ export class BlogBlockRendererComponent implements OnChanges {
     const template = document.createElement('template');
     template.innerHTML = sanitizedHtml;
 
+    this.enhanceAnchors(template);
+
+    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
+  }
+
+  private createBlockHtml(value: string | undefined): SafeHtml {
+    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
+
+    if (!sanitizedHtml) {
+      return '';
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = sanitizedHtml;
+    template.content.querySelectorAll('script, style').forEach(element => element.remove());
+    template.content.querySelectorAll('img').forEach(image => {
+      image.setAttribute('loading', image.getAttribute('loading') ?? 'lazy');
+      image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
+    });
+    this.enhanceAnchors(template);
+
+    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
+  }
+
+  private createStats(stats: readonly BlogStatItem[] | undefined): readonly RenderableBlogStat[] {
+    return (stats ?? [])
+      .map(item => ({
+        label: item.label.trim(),
+        value: item.value.trim(),
+        caption: item.caption?.trim() ?? '',
+      }))
+      .filter(item => item.label.length > 0 || item.value.length > 0);
+  }
+
+  private createChart(block: BlogContentBlock): RenderableBlogChart | null {
+    if (block.type !== 'chart') {
+      return null;
+    }
+
+    const points = this.createChartPoints(block.data.chartPoints, block.data.unit);
+
+    if (points.length === 0) {
+      return null;
+    }
+
+    const title = block.data.title?.trim() ?? '';
+    const caption = this.createPlainText(block.data.caption);
+    const type = block.data.chartType ?? 'bar';
+    const polyline = points.map(point => `${point.x},${point.y}`).join(' ');
+
+    return {
+      type,
+      title,
+      unit: block.data.unit?.trim() ?? '',
+      caption,
+      points,
+      polyline,
+      ariaLabel: this.createChartAriaLabel(title, type, points),
+    };
+  }
+
+  private createChartPoints(
+    chartPoints: readonly BlogChartPoint[] | undefined,
+    unit: string | undefined
+  ): readonly RenderableBlogChartPoint[] {
+    const points = (chartPoints ?? []).filter(point => Number.isFinite(point.value));
+
+    if (points.length === 0) {
+      return [];
+    }
+
+    const values = points.map(point => point.value);
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(...values);
+    const valueRange = maxValue - minValue || 1;
+    const maxMagnitude = Math.max(...values.map(value => Math.abs(value)), 1);
+    const xStep = points.length > 1 ? 88 / (points.length - 1) : 0;
+
+    return points.map((point, index) => ({
+      label: point.label.trim() || `Point ${index + 1}`,
+      value: point.value,
+      note: point.note?.trim() ?? '',
+      displayValue: this.formatChartValue(point.value, unit),
+      magnitudePercent: this.clampPercent(Math.abs(point.value) / maxMagnitude * 100),
+      x: points.length > 1 ? 8 + xStep * index : 52,
+      y: 56 - ((point.value - minValue) / valueRange * 48),
+    }));
+  }
+
+  private formatChartValue(value: number, unit: string | undefined): string {
+    const formattedValue = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Math.abs(value) >= 100 ? 0 : 2,
+    }).format(value);
+    const normalizedUnit = unit?.trim();
+
+    return normalizedUnit ? `${formattedValue} ${normalizedUnit}` : formattedValue;
+  }
+
+  private createChartAriaLabel(
+    title: string,
+    type: BlogChartType,
+    points: readonly RenderableBlogChartPoint[]
+  ): string {
+    const chartTitle = title || `${type === 'line' ? 'Line' : 'Bar'} chart`;
+    const pointSummary = points
+      .map(point => `${point.label}: ${point.displayValue}`)
+      .join(', ');
+
+    return `${chartTitle}. ${pointSummary}`;
+  }
+
+  private clampPercent(value: number): number {
+    return Math.max(0, Math.min(100, value));
+  }
+
+  private enhanceAnchors(template: HTMLTemplateElement): void {
     template.content.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href')?.trim() ?? '';
 
@@ -254,8 +811,57 @@ export class BlogBlockRendererComponent implements OnChanges {
         anchor.setAttribute('rel', 'noopener noreferrer');
       }
     });
+  }
 
-    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
+  private createPlainText(value: string | undefined): string {
+    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
+
+    if (!sanitizedHtml) {
+      return '';
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = sanitizedHtml;
+
+    return template.content.textContent?.trim() ?? '';
+  }
+
+  private createImageAlt(block: BlogContentBlock): string {
+    return block.data.alt?.trim() || this.fallbackAlt.trim() || 'Blog content image';
+  }
+
+  private createDownloadFileName(block: BlogContentBlock): string {
+    const sourceName = this.getFileNameFromUrl(block.data.url);
+
+    if (sourceName) {
+      return sourceName;
+    }
+
+    return `${this.sanitizeFileName(block.data.alt || this.fallbackAlt || block.id) || 'blog-image'}.jpg`;
+  }
+
+  private getFileNameFromUrl(value: string | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    try {
+      const url = new URL(value, 'https://colinmichaels.local');
+      const pathName = decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() ?? '');
+
+      return this.sanitizeFileName(pathName);
+    } catch {
+      return '';
+    }
+  }
+
+  private sanitizeFileName(value: string): string {
+    return value
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9._-]/g, '')
+      .replace(/^[._-]+/, '')
+      .slice(0, 120);
   }
 
   private createSafeEmbedUrl(block: BlogContentBlock): SafeResourceUrl | null {

@@ -4,6 +4,8 @@ import {catchError, map, startWith} from 'rxjs/operators';
 
 import {
   BlogMediaUploadProgress,
+  BlogMediaOptimizationOptions,
+  BlogMediaAssetRole,
   BlogMediaUploadResult,
   BlogMediaUploadService,
 } from '../../cms/services/blog-media-upload.service';
@@ -84,6 +86,14 @@ interface UploadedFileMetadata {
   height?: number;
 }
 
+export interface MediaLibraryUploadOptions {
+  slug?: string;
+  role?: BlogMediaAssetRole | string;
+  altText?: string;
+  maxSizeBytes?: number;
+  optimization?: BlogMediaOptimizationOptions;
+}
+
 @Injectable({providedIn: 'root'})
 export class MediaLibraryService {
   private readonly firestore = inject(FirestoreService);
@@ -108,12 +118,16 @@ export class MediaLibraryService {
     );
   }
 
-  uploadFiles(files: readonly File[], folder: MediaLibraryFolder | null): Observable<MediaUploadEvent> {
+  uploadFiles(
+    files: readonly File[],
+    folder: MediaLibraryFolder | null,
+    options: MediaLibraryUploadOptions = {}
+  ): Observable<MediaUploadEvent> {
     if (files.length === 0) {
       return of({fileName: '', progress: 0, status: 'complete'});
     }
 
-    return merge(...files.map(file => this.uploadFile(file, folder)));
+    return merge(...files.map(file => this.uploadFile(file, folder, options)));
   }
 
   updateMediaMetadata(mediaId: string, patch: MediaMetadataPatch): Observable<void> {
@@ -271,22 +285,33 @@ export class MediaLibraryService {
     return Promise.reject(new Error('Clipboard access is not available in this browser.'));
   }
 
-  private uploadFile(file: File, folder: MediaLibraryFolder | null): Observable<MediaUploadEvent> {
+  private uploadFile(
+    file: File,
+    folder: MediaLibraryFolder | null,
+    options: MediaLibraryUploadOptions
+  ): Observable<MediaUploadEvent> {
     return file.type.startsWith('image/')
-      ? this.uploadImageFile(file, folder)
+      ? this.uploadImageFile(file, folder, options)
       : this.uploadGenericFile(file, folder);
   }
 
-  private uploadImageFile(file: File, folder: MediaLibraryFolder | null): Observable<MediaUploadEvent> {
+  private uploadImageFile(
+    file: File,
+    folder: MediaLibraryFolder | null,
+    options: MediaLibraryUploadOptions
+  ): Observable<MediaUploadEvent> {
     return this.blogMediaUpload.uploadImage(file, {
-      slug: DEFAULT_LIBRARY_SLUG,
-      role: folder ? createSafePathSegment(folder.path) : 'library',
+      slug: options.slug ?? DEFAULT_LIBRARY_SLUG,
+      role: options.role ?? (folder ? createSafePathSegment(folder.path) : 'library'),
+      altText: options.altText,
+      maxSizeBytes: options.maxSizeBytes,
       optimization: {
         enabled: true,
         maxWidth: 2400,
         maxHeight: 2400,
         quality: 0.86,
         outputType: 'image/webp',
+        ...options.optimization,
       },
     }).pipe(
       concatMap(progress => this.handleImageUploadProgress(file, folder, progress)),

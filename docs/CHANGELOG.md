@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-20
+
+- Added custom CMS Editor.js blocks for blog stats, simple bar/line charts, and sanitized HTML sections, with typed post storage, assistant text extraction, reading stats, and public blog rendering.
+
 ## 2026-06-17
 
 - Replaced the homepage About placeholder with a full Colin Michaels bio section, profile image, recovery disclaimer, and reusable author profile data.

@@ -79,4 +79,139 @@ describe('blog-editorjs-adapter', () => {
       },
     });
   });
+
+  it('normalizes custom stats, chart, and HTML editor blocks', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'stats-1',
+          type: 'stats',
+          data: {
+            title: 'Performance Snapshot',
+            caption: 'Factory figures.',
+            stats: [
+              {label: 'Horsepower', value: '480 hp', caption: '5.0L V8'},
+              {label: '', value: ''},
+            ],
+          },
+        },
+        {
+          id: 'chart-1',
+          type: 'chart',
+          data: {
+            title: 'Power by Trim',
+            chartType: 'line',
+            unit: 'hp',
+            chartPoints: [
+              {label: 'EcoBoost', value: 315, note: 'Turbo four'},
+              {label: 'GT', value: 480},
+              {label: 'Invalid', value: 'fast'},
+            ],
+          },
+        },
+        {
+          id: 'html-1',
+          type: 'html',
+          data: {
+            title: 'Custom spec table',
+            html: '<table><tr><td>0-60 mph</td><td>4.2 sec</td></tr></table>',
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'stats-1',
+        type: 'stats',
+        data: {
+          title: 'Performance Snapshot',
+          caption: 'Factory figures.',
+          stats: [
+            {label: 'Horsepower', value: '480 hp', caption: '5.0L V8'},
+          ],
+        },
+      },
+      {
+        id: 'chart-1',
+        type: 'chart',
+        data: {
+          title: 'Power by Trim',
+          caption: '',
+          chartType: 'line',
+          unit: 'hp',
+          chartPoints: [
+            {label: 'EcoBoost', value: 315, note: 'Turbo four'},
+            {label: 'GT', value: 480},
+          ],
+        },
+      },
+      {
+        id: 'html-1',
+        type: 'html',
+        data: {
+          title: 'Custom spec table',
+          html: '<table><tr><td>0-60 mph</td><td>4.2 sec</td></tr></table>',
+        },
+      },
+    ]);
+  });
+
+  it('round trips custom blog blocks back into Editor.js documents', () => {
+    const document = createEditorDocument(createPost({
+      blocks: [
+        {
+          id: 'stats-1',
+          type: 'stats',
+          data: {
+            title: 'Quick Specs',
+            stats: [{label: 'Torque', value: '415 lb-ft'}],
+          },
+        },
+        {
+          id: 'chart-1',
+          type: 'chart',
+          data: {
+            chartType: 'bar',
+            chartPoints: [{label: 'GT', value: 480}],
+            unit: 'hp',
+          },
+        },
+        {
+          id: 'html-1',
+          type: 'html',
+          data: {
+            html: '<section><p>Custom body</p></section>',
+          },
+        },
+      ],
+    }));
+
+    expect(document.blocks).toEqual([
+      {
+        id: 'stats-1',
+        type: 'stats',
+        data: {
+          title: 'Quick Specs',
+          stats: [{label: 'Torque', value: '415 lb-ft'}],
+        },
+      },
+      {
+        id: 'chart-1',
+        type: 'chart',
+        data: {
+          chartType: 'bar',
+          chartPoints: [{label: 'GT', value: 480}],
+          unit: 'hp',
+        },
+      },
+      {
+        id: 'html-1',
+        type: 'html',
+        data: {
+          html: '<section><p>Custom body</p></section>',
+        },
+      },
+    ]);
+  });
 });

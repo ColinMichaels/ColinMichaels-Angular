@@ -1,11 +1,15 @@
 import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 
 import {
+  BLOG_CHART_TYPES,
   BLOG_TYPOGRAPHY_VARIANTS,
   BlogBlockData,
   BlogBlockType,
+  BlogChartPoint,
+  BlogChartType,
   BlogContentBlock,
   BlogPost,
+  BlogStatItem,
   BlogTypographyVariant,
 } from '../../../features/blog/models/blog-post.model';
 
@@ -19,6 +23,9 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'code',
   'delimiter',
   'typography',
+  'stats',
+  'chart',
+  'html',
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
 
@@ -59,6 +66,12 @@ function toTypographyVariant(value: unknown): BlogTypographyVariant {
   return typeof value === 'string' && (BLOG_TYPOGRAPHY_VARIANTS as readonly string[]).includes(value)
     ? value as BlogTypographyVariant
     : 'lead';
+}
+
+function toChartType(value: unknown): BlogChartType {
+  return typeof value === 'string' && (BLOG_CHART_TYPES as readonly string[]).includes(value)
+    ? value as BlogChartType
+    : 'bar';
 }
 
 function toListData(blockData: BlogBlockData): Record<string, unknown> {
@@ -199,6 +212,61 @@ function extractListItems(value: unknown): readonly string[] {
     .filter(item => item.length > 0);
 }
 
+function extractStatItems(value: unknown): readonly BlogStatItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const stats: BlogStatItem[] = [];
+
+  for (const item of value) {
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const label = getString(item, 'label')?.trim() ?? '';
+    const statValue = getString(item, 'value')?.trim() ?? '';
+    const caption = getString(item, 'caption')?.trim() ?? '';
+
+    if (label || statValue) {
+      stats.push({
+        label,
+        value: statValue,
+        ...(caption ? {caption} : {}),
+      });
+    }
+  }
+
+  return stats;
+}
+
+function extractChartPoints(value: unknown): readonly BlogChartPoint[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const points: BlogChartPoint[] = [];
+
+  for (const [index, item] of value.entries()) {
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const pointValue = getNumber(item, 'value');
+
+    if (pointValue !== undefined) {
+      const note = getString(item, 'note')?.trim() ?? '';
+      points.push({
+        label: getString(item, 'label')?.trim() || `Point ${index + 1}`,
+        value: pointValue,
+        ...(note ? {note} : {}),
+      });
+    }
+  }
+
+  return points;
+}
+
 function createBlockData(type: BlogBlockType, data: Record<string, unknown>): BlogBlockData {
   switch (type) {
     case 'header':
@@ -250,6 +318,25 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         variant: toTypographyVariant(data['variant']),
         text: getString(data, 'text') ?? '',
         attribution: getString(data, 'attribution') ?? '',
+      };
+    case 'stats':
+      return {
+        title: getString(data, 'title') ?? '',
+        caption: getString(data, 'caption') ?? '',
+        stats: extractStatItems(data['stats']),
+      };
+    case 'chart':
+      return {
+        title: getString(data, 'title') ?? '',
+        caption: getString(data, 'caption') ?? '',
+        chartType: toChartType(data['chartType']),
+        unit: getString(data, 'unit') ?? '',
+        chartPoints: extractChartPoints(data['chartPoints']),
+      };
+    case 'html':
+      return {
+        title: getString(data, 'title') ?? '',
+        html: getString(data, 'html') ?? '',
       };
   }
 }

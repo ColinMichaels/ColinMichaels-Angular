@@ -110,7 +110,7 @@ Relevant areas:
 
 ### Blog and CMS
 
-The blog supports structured Editor.js blocks, Firestore persistence, post statuses, categories, tags, search, social sharing, Open Graph/Twitter metadata, BlogPosting JSON-LD, RSS, JSON Feed, sitemap entries, reading time, table of contents, heading anchors, and CMS SEO/share validation.
+The blog supports structured Editor.js blocks, custom typography/stats/chart/sanitized-HTML content blocks, Firestore persistence, post statuses, categories, tags, search, social sharing, Open Graph/Twitter metadata, BlogPosting JSON-LD, RSS, JSON Feed, sitemap entries, reading time, table of contents, heading anchors, and CMS SEO/share validation.
 
 Relevant areas:
 

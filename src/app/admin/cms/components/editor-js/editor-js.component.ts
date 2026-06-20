@@ -21,6 +21,9 @@ import type {BlockToolData, EditorConfig, OutputData, ToolConstructable} from '@
 import {MediaLibraryItem} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {ChartBlockTool} from './tools/chart-block.tool';
+import {HtmlBlockTool} from './tools/html-block.tool';
+import {StatsBlockTool} from './tools/stats-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
 
 interface EditorToolModules {
@@ -33,6 +36,9 @@ interface EditorToolModules {
   YoutubeEmbed: ToolConstructable;
   ImageTool: ToolConstructable;
   TypographyBlock: ToolConstructable;
+  StatsBlock: ToolConstructable;
+  ChartBlock: ToolConstructable;
+  HtmlBlock: ToolConstructable;
 }
 
 export interface EditorImageUploadResult {
@@ -101,6 +107,9 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
     ImageTool: getToolConstructable(imageModule, 'Image'),
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
+    StatsBlock: StatsBlockTool as unknown as ToolConstructable,
+    ChartBlock: ChartBlockTool as unknown as ToolConstructable,
+    HtmlBlock: HtmlBlockTool as unknown as ToolConstructable,
   };
 }
 
@@ -679,6 +688,15 @@ export class EditorJsComponent implements AfterViewInit {
           },
           typography: {
             class: tools.TypographyBlock,
+          },
+          stats: {
+            class: tools.StatsBlock,
+          },
+          chart: {
+            class: tools.ChartBlock,
+          },
+          html: {
+            class: tools.HtmlBlock,
           },
           code: tools.Code,
           delimiter: tools.Delimiter,
