@@ -153,6 +153,78 @@ describe('BlogBlockRendererComponent', () => {
     expect(link?.classList).toContain('blog-inline-link');
   });
 
+  it('renders stat cards and chart values for custom data blocks', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'stats-1',
+        type: 'stats',
+        data: {
+          title: 'Quick Specs',
+          stats: [
+            {label: 'Horsepower', value: '480 hp', caption: 'GT trim'},
+            {label: 'Torque', value: '415 lb-ft'},
+          ],
+          caption: 'Factory published figures.',
+        },
+      },
+      {
+        id: 'chart-1',
+        type: 'chart',
+        data: {
+          title: 'Power by Trim',
+          chartType: 'bar',
+          unit: 'hp',
+          chartPoints: [
+            {label: 'EcoBoost', value: 315},
+            {label: 'GT', value: 480, note: 'Manual coupe'},
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Quick Specs');
+    expect(element.textContent).toContain('480 hp');
+    expect(element.textContent).toContain('Factory published figures.');
+    expect(element.textContent).toContain('Power by Trim');
+    expect(element.textContent).toContain('315 hp');
+    expect(element.textContent).toContain('Manual coupe');
+    expect(element.querySelector('[aria-label^="Power by Trim"]')).not.toBeNull();
+  });
+
+  it('renders sanitized custom HTML blocks', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'html-1',
+        type: 'html',
+        data: {
+          title: 'Spec Table',
+          html: `
+            <section>
+              <a href="https://example.com/window-sticker">Window sticker</a>
+              <script>window.bad = true;</script>
+              <table><tr><th>0-60 mph</th><td>4.2 sec</td></tr></table>
+            </section>
+          `,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const customHtml = element.querySelector<HTMLElement>('.blog-custom-html');
+    const link = customHtml?.querySelector<HTMLAnchorElement>('a');
+
+    expect(element.textContent).toContain('Spec Table');
+    expect(customHtml?.textContent).toContain('0-60 mph');
+    expect(customHtml?.querySelector('script')).toBeNull();
+    expect(link?.getAttribute('href')).toBe('https://example.com/window-sticker');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.classList).toContain('blog-inline-link');
+  });
+
   it('opens post body images in a lightbox with a download action', () => {
     fixture.componentRef.setInput('fallbackAlt', 'Fallback post title');
     fixture.componentRef.setInput('blocks', [

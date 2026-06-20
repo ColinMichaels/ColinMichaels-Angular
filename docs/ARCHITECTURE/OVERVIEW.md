@@ -23,7 +23,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
-  public published post views, tokenized draft previews, category/tag archives, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data, Firestore-backed CMS storage for create/edit workflows.
+  public published post views, tokenized draft previews, category/tag archives, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data including custom typography, stats, chart, and sanitized HTML blocks, Firestore-backed CMS storage for create/edit workflows.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:

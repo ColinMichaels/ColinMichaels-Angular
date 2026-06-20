@@ -47,7 +47,11 @@ export function createBlogReadingStats(post: BlogPost): BlogReadingStats {
       block.data.text,
       block.data.caption,
       block.data.attribution,
+      block.data.title,
+      block.data.html,
       ...(block.data.items ?? []),
+      ...(block.data.stats ?? []).flatMap(item => [item.label, item.value, item.caption]),
+      ...(block.data.chartPoints ?? []).flatMap(point => [point.label, String(point.value), point.note]),
     ]),
   ].filter((value): value is string => typeof value === 'string').join(' '));
 

@@ -17,7 +17,12 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 
-import {BlogContentBlock} from '../../models/blog-post.model';
+import {
+  BlogChartPoint,
+  BlogChartType,
+  BlogContentBlock,
+  BlogStatItem,
+} from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
 
 interface RenderableBlogBlock {
@@ -28,9 +33,38 @@ interface RenderableBlogBlock {
   textHtml: SafeHtml;
   captionHtml: SafeHtml;
   attributionHtml: SafeHtml;
+  blockHtml: SafeHtml;
   itemHtml: readonly SafeHtml[];
+  stats: readonly RenderableBlogStat[];
+  chart: RenderableBlogChart | null;
   imageAlt: string;
   galleryIndex: number | null;
+}
+
+interface RenderableBlogStat {
+  label: string;
+  value: string;
+  caption: string;
+}
+
+interface RenderableBlogChartPoint {
+  label: string;
+  value: number;
+  note: string;
+  displayValue: string;
+  magnitudePercent: number;
+  x: number;
+  y: number;
+}
+
+interface RenderableBlogChart {
+  type: BlogChartType;
+  title: string;
+  unit: string;
+  caption: string;
+  points: readonly RenderableBlogChartPoint[];
+  polyline: string;
+  ariaLabel: string;
 }
 
 interface RenderableBlogImage {
@@ -130,6 +164,107 @@ interface RenderableBlogImage {
               @default {
                 <p class="text-xl leading-9 tracking-[-0.01em] text-zinc-100" [innerHTML]="row.textHtml"></p>
               }
+            }
+          }
+          @case ('stats') {
+            @if (row.stats.length > 0) {
+              <section class="space-y-3" [attr.aria-label]="row.block.data.title || 'Statistics'">
+                @if (row.block.data.title) {
+                  <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+                }
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  @for (stat of row.stats; track $index) {
+                    <article class="border border-zinc-800 bg-zinc-950/60 p-4">
+                      <p class="text-2xl font-semibold leading-8 text-zinc-50">{{ stat.value }}</p>
+                      <p
+                        class="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{{ stat.label }}</p>
+                      @if (stat.caption) {
+                        <p class="mt-3 text-sm leading-6 text-zinc-500">{{ stat.caption }}</p>
+                      }
+                    </article>
+                  }
+                </div>
+                @if (row.block.data.caption) {
+                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                }
+              </section>
+            }
+          }
+          @case ('chart') {
+            @if (row.chart; as chart) {
+              <section class="space-y-4" [attr.aria-label]="chart.ariaLabel">
+                @if (chart.title) {
+                  <h3 class="text-lg font-semibold text-zinc-50">{{ chart.title }}</h3>
+                }
+                @if (chart.type === 'line') {
+                  <div class="overflow-x-auto rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                    <svg
+                      viewBox="0 0 100 64"
+                      preserveAspectRatio="none"
+                      class="h-56 min-w-[520px] w-full"
+                      role="img"
+                      [attr.aria-label]="chart.ariaLabel"
+                    >
+                      <line x1="8" y1="56" x2="96" y2="56" stroke="rgba(113,113,122,.65)" stroke-width=".6"></line>
+                      <polyline
+                        [attr.points]="chart.polyline"
+                        fill="none"
+                        stroke="#22d3ee"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></polyline>
+                      @for (point of chart.points; track $index) {
+                        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="1.8" fill="#fef3c7" stroke="#18181b"
+                                stroke-width=".8"></circle>
+                      }
+                    </svg>
+                    <div class="mt-3 grid min-w-[520px] gap-2"
+                         [style.grid-template-columns]="'repeat(' + chart.points.length + ', minmax(0, 1fr))'">
+                      @for (point of chart.points; track $index) {
+                        <div class="text-xs leading-5">
+                          <p class="font-semibold text-zinc-100">{{ point.displayValue }}</p>
+                          <p class="text-zinc-500">{{ point.label }}</p>
+                          @if (point.note) {
+                            <p class="text-zinc-600">{{ point.note }}</p>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="space-y-4 rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                    @for (point of chart.points; track $index) {
+                      <div class="space-y-2">
+                        <div class="flex items-baseline justify-between gap-3">
+                          <p class="text-sm font-medium text-zinc-200">{{ point.label }}</p>
+                          <p class="text-sm font-semibold text-zinc-50">{{ point.displayValue }}</p>
+                        </div>
+                        <div class="h-2 overflow-hidden rounded-full bg-zinc-800" aria-hidden="true">
+                          <span
+                            class="block h-full rounded-full bg-cyan-300"
+                            [style.width.%]="point.magnitudePercent"
+                          ></span>
+                        </div>
+                        @if (point.note) {
+                          <p class="text-xs leading-5 text-zinc-500">{{ point.note }}</p>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+                @if (chart.caption) {
+                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                }
+              </section>
+            }
+          }
+          @case ('html') {
+            @if (row.block.data.html) {
+              @if (row.block.data.title) {
+                <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+              }
+              <section class="blog-custom-html" [innerHTML]="row.blockHtml"></section>
             }
           }
           @case ('list') {
@@ -332,6 +467,72 @@ interface RenderableBlogImage {
       color: #fde68a;
       outline: none;
     }
+
+    :host ::ng-deep .blog-custom-html {
+      color: #d4d4d8;
+      line-height: 1.75;
+      overflow-x: auto;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
+      color: #fafafa;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 1.5rem 0 .75rem;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(p, ul, ol, table, figure, blockquote, pre) {
+      margin: 1rem 0;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(ul, ol) {
+      padding-left: 1.5rem;
+    }
+
+    :host ::ng-deep .blog-custom-html ul {
+      list-style: disc;
+    }
+
+    :host ::ng-deep .blog-custom-html ol {
+      list-style: decimal;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(img, svg) {
+      display: block;
+      height: auto;
+      max-width: 100%;
+    }
+
+    :host ::ng-deep .blog-custom-html table {
+      border-collapse: collapse;
+      min-width: 100%;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(th, td) {
+      border: 1px solid #3f3f46;
+      padding: .65rem .75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    :host ::ng-deep .blog-custom-html th {
+      background: #18181b;
+      color: #fafafa;
+      font-weight: 700;
+    }
+
+    :host ::ng-deep .blog-custom-html blockquote {
+      border-left: 2px solid #22d3ee;
+      color: #e4e4e7;
+      padding-left: 1rem;
+    }
+
+    :host ::ng-deep .blog-custom-html pre {
+      background: #000;
+      color: #cffafe;
+      overflow-x: auto;
+      padding: 1rem;
+    }
   `],
 })
 export class BlogBlockRendererComponent implements OnChanges {
@@ -386,7 +587,10 @@ export class BlogBlockRendererComponent implements OnChanges {
         textHtml: this.createInlineHtml(block.data.text),
         captionHtml,
         attributionHtml: this.createInlineHtml(block.data.attribution),
+        blockHtml: this.createBlockHtml(block.data.html),
         itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
+        stats: this.createStats(block.data.stats),
+        chart: this.createChart(block),
         imageAlt,
         galleryIndex,
       };
@@ -481,6 +685,122 @@ export class BlogBlockRendererComponent implements OnChanges {
     const template = document.createElement('template');
     template.innerHTML = sanitizedHtml;
 
+    this.enhanceAnchors(template);
+
+    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
+  }
+
+  private createBlockHtml(value: string | undefined): SafeHtml {
+    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
+
+    if (!sanitizedHtml) {
+      return '';
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = sanitizedHtml;
+    template.content.querySelectorAll('script, style').forEach(element => element.remove());
+    template.content.querySelectorAll('img').forEach(image => {
+      image.setAttribute('loading', image.getAttribute('loading') ?? 'lazy');
+      image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
+    });
+    this.enhanceAnchors(template);
+
+    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
+  }
+
+  private createStats(stats: readonly BlogStatItem[] | undefined): readonly RenderableBlogStat[] {
+    return (stats ?? [])
+      .map(item => ({
+        label: item.label.trim(),
+        value: item.value.trim(),
+        caption: item.caption?.trim() ?? '',
+      }))
+      .filter(item => item.label.length > 0 || item.value.length > 0);
+  }
+
+  private createChart(block: BlogContentBlock): RenderableBlogChart | null {
+    if (block.type !== 'chart') {
+      return null;
+    }
+
+    const points = this.createChartPoints(block.data.chartPoints, block.data.unit);
+
+    if (points.length === 0) {
+      return null;
+    }
+
+    const title = block.data.title?.trim() ?? '';
+    const caption = this.createPlainText(block.data.caption);
+    const type = block.data.chartType ?? 'bar';
+    const polyline = points.map(point => `${point.x},${point.y}`).join(' ');
+
+    return {
+      type,
+      title,
+      unit: block.data.unit?.trim() ?? '',
+      caption,
+      points,
+      polyline,
+      ariaLabel: this.createChartAriaLabel(title, type, points),
+    };
+  }
+
+  private createChartPoints(
+    chartPoints: readonly BlogChartPoint[] | undefined,
+    unit: string | undefined
+  ): readonly RenderableBlogChartPoint[] {
+    const points = (chartPoints ?? []).filter(point => Number.isFinite(point.value));
+
+    if (points.length === 0) {
+      return [];
+    }
+
+    const values = points.map(point => point.value);
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(...values);
+    const valueRange = maxValue - minValue || 1;
+    const maxMagnitude = Math.max(...values.map(value => Math.abs(value)), 1);
+    const xStep = points.length > 1 ? 88 / (points.length - 1) : 0;
+
+    return points.map((point, index) => ({
+      label: point.label.trim() || `Point ${index + 1}`,
+      value: point.value,
+      note: point.note?.trim() ?? '',
+      displayValue: this.formatChartValue(point.value, unit),
+      magnitudePercent: this.clampPercent(Math.abs(point.value) / maxMagnitude * 100),
+      x: points.length > 1 ? 8 + xStep * index : 52,
+      y: 56 - ((point.value - minValue) / valueRange * 48),
+    }));
+  }
+
+  private formatChartValue(value: number, unit: string | undefined): string {
+    const formattedValue = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Math.abs(value) >= 100 ? 0 : 2,
+    }).format(value);
+    const normalizedUnit = unit?.trim();
+
+    return normalizedUnit ? `${formattedValue} ${normalizedUnit}` : formattedValue;
+  }
+
+  private createChartAriaLabel(
+    title: string,
+    type: BlogChartType,
+    points: readonly RenderableBlogChartPoint[]
+  ): string {
+    const chartTitle = title || `${type === 'line' ? 'Line' : 'Bar'} chart`;
+    const pointSummary = points
+      .map(point => `${point.label}: ${point.displayValue}`)
+      .join(', ');
+
+    return `${chartTitle}. ${pointSummary}`;
+  }
+
+  private clampPercent(value: number): number {
+    return Math.max(0, Math.min(100, value));
+  }
+
+  private enhanceAnchors(template: HTMLTemplateElement): void {
     template.content.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href')?.trim() ?? '';
 
@@ -491,8 +811,6 @@ export class BlogBlockRendererComponent implements OnChanges {
         anchor.setAttribute('rel', 'noopener noreferrer');
       }
     });
-
-    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
   }
 
   private createPlainText(value: string | undefined): string {

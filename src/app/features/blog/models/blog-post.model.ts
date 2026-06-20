@@ -13,6 +13,13 @@ export const BLOG_TYPOGRAPHY_VARIANTS = [
 
 export type BlogTypographyVariant = typeof BLOG_TYPOGRAPHY_VARIANTS[number];
 
+export const BLOG_CHART_TYPES = [
+  'bar',
+  'line',
+] as const;
+
+export type BlogChartType = typeof BLOG_CHART_TYPES[number];
+
 export type BlogBlockType =
   'paragraph'
   | 'header'
@@ -22,7 +29,22 @@ export type BlogBlockType =
   | 'quote'
   | 'code'
   | 'delimiter'
-  | 'typography';
+  | 'typography'
+  | 'stats'
+  | 'chart'
+  | 'html';
+
+export interface BlogStatItem {
+  label: string;
+  value: string;
+  caption?: string;
+}
+
+export interface BlogChartPoint {
+  label: string;
+  value: number;
+  note?: string;
+}
 
 export interface BlogSeoMetadata {
   title: string;
@@ -59,6 +81,7 @@ export interface BlogPostPreview {
 }
 
 export interface BlogBlockData {
+  title?: string;
   text?: string;
   level?: 2 | 3;
   url?: string;
@@ -77,6 +100,11 @@ export interface BlogBlockData {
   withBackground?: boolean;
   variant?: BlogTypographyVariant;
   attribution?: string;
+  stats?: readonly BlogStatItem[];
+  chartType?: BlogChartType;
+  chartPoints?: readonly BlogChartPoint[];
+  unit?: string;
+  html?: string;
 }
 
 export interface BlogContentBlock {

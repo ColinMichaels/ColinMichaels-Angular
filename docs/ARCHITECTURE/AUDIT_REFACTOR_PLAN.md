@@ -289,11 +289,11 @@ Initial implementation status:
 - `features/blog/models/blog-post.model.ts`: typed post, SEO, status, and block contracts.
 - `features/blog/services/blog-storage.service.ts`: browser-local storage for initial CMS create/edit workflows.
 - `features/blog/services/blog-repository.service.ts`: local typed repository for published/admin reads plus local CMS create/save operations.
-- `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content.
+- `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content, including custom typography, stats, chart, and sanitized HTML blocks.
 - `admin/admin.routes.ts`: protected admin route boundary.
 - `guards/admin-auth.guard.ts`: Firebase Auth custom-claim guard for all admin routes.
 - `admin/cms/cms.routes.ts`: protected CMS post list, new post, and post editor routes.
-- `admin/cms/components/editor-js`: browser-only Editor.js wrapper using dynamic imports.
+- `admin/cms/components/editor-js`: browser-only Editor.js wrapper using dynamic imports and CMS-only custom tools for typography, stats, charts, and sanitized HTML sections.
 - `admin/cms/services/blog-ai-functions.service.ts`: callable Firebase Functions client for server-side CMS AI metadata and thumbnail generation.
 - `admin/cms/services/blog-ai-assistant.service.ts`: CMS-local writing assistant fallback for draft metadata and thumbnail prompt suggestions when the backend is unavailable.
 - `functions/src/index.ts`: Firebase callable functions that call OpenAI server-side and store generated blog thumbnails in Firebase Storage.
@@ -312,7 +312,7 @@ Minimum content model:
 - `status`: `draft | scheduled | published | archived`
 - `seo`: title, description, canonical, open graph image
 - `contentFormat`: `editorjs`
-- `blocks`: Editor.js block JSON
+- `blocks`: Editor.js block JSON, normalized into typed blog block data before public rendering
 - `createdAt`, `updatedAt`, `publishedAt`
 
 Firebase collections:
@@ -329,8 +329,8 @@ Migration stance:
 - [~] Add Editor.js as an admin-only editor, not a public runtime dependency.
   - Progress: the post editor lazy-loads Editor.js/tools in `admin/cms`; persistence is still local save-preview only.
 - [x] Render published Editor.js blocks through a read-only public renderer.
-  - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, and delimiter blocks without importing Editor.js.
-- Store block JSON, not HTML, and sanitize embeds at render time.
+  - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, delimiter, typography, stats, chart, and sanitized HTML blocks without importing Editor.js.
+- Store structured block JSON when possible, keep raw HTML as an explicit sanitized fallback, and sanitize embeds/HTML at render time.
 - Keep secret-bearing AI calls out of Angular browser code. CMS writing assistance and thumbnail generation run through authenticated Firebase callable functions with `OPENAI_API_KEY` bound as a Functions secret.
 - Admin authorization uses Firebase Auth custom claims (`admin`, `cmsAdmin`, or `roles.admin`) across route guards, callable functions, Firestore rules, Realtime Database rules, and Storage rules. The login screen supports Google sign-in, and admin route guards can read future role requirements from route `data.roles`; any role that protects data must also be enforced server-side and in Firebase Security Rules.
 
@@ -343,7 +343,7 @@ Implementation requirements:
 - Lazy-load Editor.js only in `admin/cms`.
 - Wrap Editor.js in an Angular standalone component using `AfterViewInit` and `DestroyRef`.
 - Guard initialization behind `isPlatformBrowser`.
-- Define strict block DTOs for paragraph, header, image, embed, list, quote, code, delimiter, table, and raw HTML only if explicitly allowed.
+- Define strict block DTOs for paragraph, header, image, embed, list, quote, code, delimiter, typography, stats, chart, and raw HTML only when explicitly allowed.
 - Build a public renderer that maps block types to Angular components.
 - Store image assets in Firebase Storage and references in Firestore.
 - Keep draft autosave separate from publish.
