@@ -31,8 +31,8 @@ Supported typography variants:
 
 Supported custom content blocks:
 
-- Stats: repeated label/value/caption items for specification snapshots and key metrics
-- Chart: simple bar or line charts with visible point labels, values, units, notes, and captions
+- Stats: repeated label/value/caption items for specification snapshots and key metrics, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
+- Chart: simple bar or line charts with visible point labels, values, units, notes, and captions, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
 - HTML: sanitized custom markup for one-off sections such as spec tables or static SVG snippets; scripts and unsafe markup are not rendered
 
 Required backend setup:

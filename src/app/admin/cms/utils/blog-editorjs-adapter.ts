@@ -29,6 +29,12 @@ const supportedBlockTypes = new Set<BlogBlockType>([
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
 
+interface ImportedChartPoint {
+  label: string;
+  value: number | undefined;
+  note?: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -220,19 +226,17 @@ function extractStatItems(value: unknown): readonly BlogStatItem[] {
   const stats: BlogStatItem[] = [];
 
   for (const item of value) {
-    if (!isRecord(item)) {
+    const stat = toImportedStatItem(item);
+
+    if (!stat) {
       continue;
     }
 
-    const label = getString(item, 'label')?.trim() ?? '';
-    const statValue = getString(item, 'value')?.trim() ?? '';
-    const caption = getString(item, 'caption')?.trim() ?? '';
-
-    if (label || statValue) {
+    if (stat.label || stat.value) {
       stats.push({
-        label,
-        value: statValue,
-        ...(caption ? {caption} : {}),
+        label: stat.label,
+        value: stat.value,
+        ...(stat.caption ? {caption: stat.caption} : {}),
       });
     }
   }
@@ -248,23 +252,160 @@ function extractChartPoints(value: unknown): readonly BlogChartPoint[] {
   const points: BlogChartPoint[] = [];
 
   for (const [index, item] of value.entries()) {
-    if (!isRecord(item)) {
+    const point = toImportedChartPoint(item);
+
+    if (!point) {
       continue;
     }
 
-    const pointValue = getNumber(item, 'value');
-
-    if (pointValue !== undefined) {
-      const note = getString(item, 'note')?.trim() ?? '';
+    if (point.value !== undefined) {
       points.push({
-        label: getString(item, 'label')?.trim() || `Point ${index + 1}`,
-        value: pointValue,
-        ...(note ? {note} : {}),
+        label: point.label || `Point ${index + 1}`,
+        value: point.value,
+        ...(point.note ? {note: point.note} : {}),
       });
     }
   }
 
   return points;
+}
+
+function toImportedStatItem(item: unknown): BlogStatItem | null {
+  if (Array.isArray(item)) {
+    return {
+      label: toStringValue(item[0]),
+      value: toStringValue(item[1]),
+      caption: toStringValue(item[2]),
+    };
+  }
+
+  if (!isRecord(item)) {
+    return null;
+  }
+
+  return {
+    label: getStringByAlias(item, ['label', 'name', 'metric', 'stat', 'spec', 'feature']),
+    value: getStringByAlias(item, ['value', 'figure', 'amount', 'measurement', 'result']),
+    caption: getStringByAlias(item, ['caption', 'note', 'notes', 'description', 'detail', 'details']),
+  };
+}
+
+function toImportedChartPoint(item: unknown): ImportedChartPoint | null {
+  if (Array.isArray(item)) {
+    return {
+      label: toStringValue(item[0]),
+      value: toFiniteNumber(item[1]),
+      note: toStringValue(item[2]),
+    };
+  }
+
+  if (!isRecord(item)) {
+    return null;
+  }
+
+  return {
+    label: getStringByAlias(item, ['label', 'name', 'x', 'category', 'trim', 'model']),
+    value: getNumberByAlias(item, ['value', 'y', 'amount', 'score', 'number', 'metric']),
+    note: getStringByAlias(item, ['note', 'notes', 'caption', 'description', 'detail', 'details']),
+  };
+}
+
+function extractArrayByAlias(data: Record<string, unknown>, aliases: readonly string[]): unknown {
+  for (const alias of aliases) {
+    const value = data[alias];
+
+    if (Array.isArray(value)) {
+      return value;
+    }
+  }
+
+  const nestedData = data['data'];
+
+  if (!isRecord(nestedData)) {
+    return undefined;
+  }
+
+  for (const alias of aliases) {
+    const value = nestedData[alias];
+
+    if (Array.isArray(value)) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function getStringByAlias(record: Record<string, unknown>, aliases: readonly string[]): string {
+  for (const alias of aliases) {
+    const normalizedAlias = normalizeImportKey(alias);
+    const entry = Object.entries(record)
+      .find(([key]) => normalizeImportKey(key) === normalizedAlias);
+    const value = entry ? toStringValue(entry[1]) : '';
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return '';
+}
+
+function getNumberByAlias(record: Record<string, unknown>, aliases: readonly string[]): number | undefined {
+  for (const alias of aliases) {
+    const normalizedAlias = normalizeImportKey(alias);
+    const entry = Object.entries(record)
+      .find(([key]) => normalizeImportKey(key) === normalizedAlias);
+    const value = entry ? toFiniteNumber(entry[1]) : undefined;
+
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function toStringValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  return '';
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  const normalizedValue = trimmedValue.replace(/,/g, '');
+
+  if (/^[+-]?(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?$/i.test(normalizedValue)) {
+    return Number(normalizedValue);
+  }
+
+  const firstNumber = trimmedValue.match(/[+-]?\d[\d,]*(?:\.\d+)?/);
+
+  return firstNumber ? Number(firstNumber[0].replace(/,/g, '')) : undefined;
+}
+
+function normalizeImportKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 }
 
 function createBlockData(type: BlogBlockType, data: Record<string, unknown>): BlogBlockData {
@@ -323,7 +464,7 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
       return {
         title: getString(data, 'title') ?? '',
         caption: getString(data, 'caption') ?? '',
-        stats: extractStatItems(data['stats']),
+        stats: extractStatItems(extractArrayByAlias(data, ['stats', 'rows', 'items', 'data'])),
       };
     case 'chart':
       return {
@@ -331,7 +472,7 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         caption: getString(data, 'caption') ?? '',
         chartType: toChartType(data['chartType']),
         unit: getString(data, 'unit') ?? '',
-        chartPoints: extractChartPoints(data['chartPoints']),
+        chartPoints: extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data'])),
       };
     case 'html':
       return {
