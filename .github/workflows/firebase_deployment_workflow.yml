@@ -195,14 +195,11 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/validate-firebase-service-account.mjs
 
-      - name: Authenticate Firebase CLI
+      - name: Create Firebase ADC credentials file
         id: firebase-auth
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          project_id: ${{ env.FIREBASE_PROJECT_ID }}
-          create_credentials_file: true
-          export_environment_variables: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/write-firebase-service-account.mjs
 
       - name: Create Firebase Functions deploy config
         run: |
@@ -236,14 +233,11 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/validate-firebase-service-account.mjs
 
-      - name: Authenticate Firebase CLI
+      - name: Create Firebase ADC credentials file
         id: firebase-auth
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          project_id: ${{ env.FIREBASE_PROJECT_ID }}
-          create_credentials_file: true
-          export_environment_variables: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/write-firebase-service-account.mjs
 
       - name: Deploy Firebase security rules
         env:
@@ -276,14 +270,11 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/validate-firebase-service-account.mjs
 
-      - name: Authenticate Firebase CLI
+      - name: Create Firebase ADC credentials file
         id: firebase-auth
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          project_id: ${{ env.FIREBASE_PROJECT_ID }}
-          create_credentials_file: true
-          export_environment_variables: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/write-firebase-service-account.mjs
 
       - name: Create Firebase Hosting deploy config
         run: |

@@ -23,11 +23,11 @@ Add these under `Settings -> Secrets and variables -> Actions -> Variables` for 
 
 Add these under `Settings -> Secrets and variables -> Actions -> Secrets` for repository-wide access, or add them to each GitHub Environment used by the workflows.
 
-| Name                                     | Description                                                                                                                                               | Example Value                                                |
-|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
-| `OPENAI_API_KEY`                         | API key used by the legacy browser AI chat service. CMS AI uses a Firebase Functions secret with the same name instead of this browser environment value. | `example_openai_api_key_value`                               |
-| `OPEN_WEATHER_MAP_API_KEY`               | API key used by weather data calls.                                                                                                                       | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`                           |
-| `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` | Firebase service account JSON used by GitHub Action deploy.                                                                                               | `{"type":"service_account","project_id":"your-project",...}` |
+| Name                                     | Description                                                                                                                                                       | Example Value                                                |
+|------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `OPENAI_API_KEY`                         | API key used by the legacy browser AI chat service. CMS AI uses a Firebase Functions secret with the same name instead of this browser environment value.         | `example_openai_api_key_value`                               |
+| `OPEN_WEATHER_MAP_API_KEY`               | API key used by weather data calls.                                                                                                                               | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`                           |
+| `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` | Raw Firebase service account JSON used by GitHub Actions deploy jobs. The workflows validate this JSON and write it to a temporary ADC file for the Firebase CLI. | `{"type":"service_account","project_id":"your-project",...}` |
 
 ## Optional Compatibility Keys
 
@@ -48,6 +48,8 @@ Hosting deploys are intentionally split by branch target:
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
 All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
+
+Firebase CLI deploy jobs authenticate with Application Default Credentials by writing the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
 
 ## Local Development Files
 
