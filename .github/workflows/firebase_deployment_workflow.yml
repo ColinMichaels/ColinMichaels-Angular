@@ -201,6 +201,9 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/write-firebase-service-account.mjs
 
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
       - name: Create Firebase Functions deploy config
         run: |
           node <<'NODE'
@@ -216,7 +219,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
           CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
-        run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: bash .github/scripts/deploy-firebase-with-gcloud-token.sh --only functions --config firebase.ci.json
 
   deploy_rules:
     if: ${{ inputs.deploy_rules }}
@@ -239,11 +242,14 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/write-firebase-service-account.mjs
 
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
       - name: Deploy Firebase security rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
           CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
-        run: npx --yes firebase-tools@14 deploy --only firestore:rules,database,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: bash .github/scripts/deploy-firebase-with-gcloud-token.sh --only firestore:rules,database,storage
 
   deploy_hosting:
     needs:
@@ -276,6 +282,9 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/write-firebase-service-account.mjs
 
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
       - name: Create Firebase Hosting deploy config
         run: |
           node <<'NODE'
@@ -294,4 +303,4 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
           CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
-        run: npx --yes firebase-tools@14 deploy --only hosting --config firebase.hosting.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: bash .github/scripts/deploy-firebase-with-gcloud-token.sh --only hosting --config firebase.hosting.ci.json
