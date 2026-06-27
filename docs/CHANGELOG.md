@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-27
+
+- Hardened Firebase GitHub Actions deploy authentication by writing the validated service account JSON secret to an explicit temporary Application Default Credentials file before Firebase CLI deploy steps.
+
 ## 2026-06-20
 
 - Added custom CMS Editor.js blocks for blog stats, simple bar/line charts, and sanitized HTML sections, with typed post storage, assistant text extraction, reading stats, and public blog rendering.
