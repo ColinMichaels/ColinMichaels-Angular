@@ -342,6 +342,39 @@ jobs:
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive
 
+  deploy_rules:
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.rules_changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Validate Firebase service account secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/validate-firebase-service-account.mjs
+
+      - name: Authenticate Firebase CLI
+        id: firebase-auth
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          project_id: ${{ env.FIREBASE_PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Deploy Firebase security rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: npx --yes firebase-tools@14 deploy --only firestore:rules,database,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
+
   deploy_hosting:
     needs:
       - detect_changes
