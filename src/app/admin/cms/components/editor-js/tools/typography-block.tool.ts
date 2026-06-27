@@ -29,6 +29,14 @@ const typographyVariantConfigs: Record<BlogTypographyVariant, TypographyVariantC
     showAttribution: false,
     attributionPlaceholder: 'Optional label',
   },
+  sectionIntro: {
+    label: 'Section intro',
+    description: 'Medium-weight copy that opens a new section without feeling like a hero lead.',
+    placeholder: 'Set up this section...',
+    accent: '#38bdf8',
+    showAttribution: false,
+    attributionPlaceholder: 'Optional label',
+  },
   pullQuote: {
     label: 'Pull quote',
     description: 'A large editorial quote or standout line.',
@@ -37,6 +45,14 @@ const typographyVariantConfigs: Record<BlogTypographyVariant, TypographyVariantC
     showAttribution: true,
     attributionPlaceholder: 'Attribution, source, or context',
   },
+  keyTakeaway: {
+    label: 'Key takeaway',
+    description: 'A crisp conclusion or practical point readers should remember.',
+    placeholder: 'Write the main takeaway...',
+    accent: '#14b8a6',
+    showAttribution: true,
+    attributionPlaceholder: 'Optional label, for example Takeaway',
+  },
   callout: {
     label: 'Callout',
     description: 'A highlighted note, warning, or key takeaway.',
@@ -44,6 +60,14 @@ const typographyVariantConfigs: Record<BlogTypographyVariant, TypographyVariantC
     accent: '#22c55e',
     showAttribution: true,
     attributionPlaceholder: 'Optional label, for example Note or Update',
+  },
+  warning: {
+    label: 'Warning / update',
+    description: 'Use for caveats, changed details, or information that needs extra attention.',
+    placeholder: 'Add the warning or update...',
+    accent: '#fb7185',
+    showAttribution: true,
+    attributionPlaceholder: 'Optional label, for example Warning or Update',
   },
   aside: {
     label: 'Aside',

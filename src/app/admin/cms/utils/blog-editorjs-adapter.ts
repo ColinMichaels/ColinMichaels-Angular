@@ -2,12 +2,14 @@ import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 
 import {
   BLOG_CHART_TYPES,
+  BLOG_IMAGE_LAYOUTS,
   BLOG_TYPOGRAPHY_VARIANTS,
   BlogBlockData,
   BlogBlockType,
   BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
+  BlogImageLayout,
   BlogPost,
   BlogStatItem,
   BlogTypographyVariant,
@@ -72,6 +74,14 @@ function toTypographyVariant(value: unknown): BlogTypographyVariant {
   return typeof value === 'string' && (BLOG_TYPOGRAPHY_VARIANTS as readonly string[]).includes(value)
     ? value as BlogTypographyVariant
     : 'lead';
+}
+
+function toImageLayout(value: unknown, stretched: unknown): BlogImageLayout {
+  if (typeof value === 'string' && (BLOG_IMAGE_LAYOUTS as readonly string[]).includes(value)) {
+    return value as BlogImageLayout;
+  }
+
+  return stretched === true ? 'fullWidth' : 'contained';
 }
 
 function toChartType(value: unknown): BlogChartType {
@@ -163,6 +173,7 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
           withBorder: block.data.withBorder ?? false,
           withBackground: block.data.withBackground ?? false,
           stretched: block.data.stretched ?? false,
+          imageLayout: block.data.imageLayout ?? (block.data.stretched ? 'fullWidth' : 'contained'),
         },
       };
     case 'embed':
@@ -439,6 +450,7 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         stretched: getBoolean(data, 'stretched'),
         withBorder: getBoolean(data, 'withBorder'),
         withBackground: getBoolean(data, 'withBackground'),
+        imageLayout: toImageLayout(data['imageLayout'], data['stretched']),
       };
     case 'embed':
       return {

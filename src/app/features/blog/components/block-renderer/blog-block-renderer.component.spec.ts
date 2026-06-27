@@ -267,6 +267,33 @@ describe('BlogBlockRendererComponent', () => {
     expect(dialog?.textContent).toContain('First caption');
   });
 
+  it('renders inline image layouts for text wrapping on wider screens', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'image-inline',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'Inline detail image',
+          caption: 'Inline image caption',
+          imageLayout: 'inlineStart',
+          withBorder: true,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const figure = element.querySelector('figure');
+    const image = figure?.querySelector('img');
+
+    expect(figure?.classList).toContain('sm:float-left');
+    expect(figure?.classList).toContain('sm:mr-6');
+    expect(image?.classList).toContain('w-full');
+    expect(image?.classList).toContain('border');
+    expect(figure?.querySelector('figcaption')?.textContent).toContain('Inline image caption');
+  });
+
   it('navigates image galleries with controls and keyboard shortcuts', () => {
     fixture.componentRef.setInput('blocks', [
       {

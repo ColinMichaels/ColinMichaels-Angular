@@ -100,6 +100,7 @@ export function createBlogBlocksFromMarkdown(content: string): readonly BlogCont
           alt: imageMatch[1],
           caption: '',
           stretched: true,
+          imageLayout: 'fullWidth',
         },
       });
       continue;
