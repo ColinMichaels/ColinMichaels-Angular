@@ -18,9 +18,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
+  BLOG_IMAGE_LAYOUTS,
+  BlogBlockData,
   BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
+  BlogImageLayout,
   BlogStatItem,
 } from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
@@ -135,9 +138,13 @@ interface RenderableBlogImage {
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300"
                    [innerHTML]="row.textHtml"></p>
               }
+              @case ('sectionIntro') {
+                <p class="border-l border-sky-300/60 pl-5 text-lg leading-8 text-sky-50"
+                   [innerHTML]="row.textHtml"></p>
+              }
               @case ('pullQuote') {
                 <blockquote class="my-10 border-y border-amber-300/40 py-7 text-zinc-100">
-                  <p class="text-2xl font-semibold leading-10 tracking-[-0.02em] sm:text-3xl"
+                  <p class="text-2xl font-semibold leading-10 sm:text-3xl"
                      [innerHTML]="row.textHtml"></p>
                   @if (row.block.data.attribution) {
                     <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-200"
@@ -145,10 +152,28 @@ interface RenderableBlogImage {
                   }
                 </blockquote>
               }
+              @case ('keyTakeaway') {
+                <aside class="border border-teal-300/35 bg-teal-950/30 p-5 text-teal-50">
+                  @if (row.block.data.attribution) {
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-200"
+                       [innerHTML]="row.attributionHtml"></p>
+                  }
+                  <div class="text-lg font-medium leading-8" [innerHTML]="row.textHtml"></div>
+                </aside>
+              }
               @case ('callout') {
                 <aside class="border border-emerald-400/30 bg-emerald-950/30 p-5 text-emerald-50">
                   @if (row.block.data.attribution) {
                     <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300"
+                       [innerHTML]="row.attributionHtml"></p>
+                  }
+                  <div class="leading-8" [innerHTML]="row.textHtml"></div>
+                </aside>
+              }
+              @case ('warning') {
+                <aside class="border border-rose-300/35 bg-rose-950/25 p-5 text-rose-50">
+                  @if (row.block.data.attribution) {
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200"
                        [innerHTML]="row.attributionHtml"></p>
                   }
                   <div class="leading-8" [innerHTML]="row.textHtml"></div>
@@ -162,7 +187,7 @@ interface RenderableBlogImage {
                 <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.textHtml"></p>
               }
               @default {
-                <p class="text-xl leading-9 tracking-[-0.01em] text-zinc-100" [innerHTML]="row.textHtml"></p>
+                <p class="text-xl leading-9 text-zinc-100" [innerHTML]="row.textHtml"></p>
               }
             }
           }
@@ -285,18 +310,11 @@ interface RenderableBlogImage {
           @case ('image') {
             @if (row.block.data.url) {
               <figure
-                class="space-y-2"
-                [class.rounded]="row.block.data.withBackground"
-                [class.bg-zinc-900]="row.block.data.withBackground"
-                [class.p-4]="row.block.data.withBackground"
+                [class]="imageFigureClass(row)"
               >
                 <button
                   type="button"
-                  class="group relative block cursor-zoom-in overflow-hidden rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-                  [class.w-full]="row.block.data.stretched"
-                  [class.mx-auto]="!row.block.data.stretched"
-                  [class.max-w-full]="!row.block.data.stretched"
-                  [class.w-fit]="!row.block.data.stretched"
+                  [class]="imageButtonClass(row)"
                   [attr.aria-label]="'View image full screen: ' + row.imageAlt"
                   title="View image full screen"
                   (click)="openImageLightbox(row.galleryIndex)"
@@ -306,12 +324,7 @@ interface RenderableBlogImage {
                     [alt]="row.imageAlt"
                     [attr.width]="row.block.data.width || null"
                     [attr.height]="row.block.data.height || null"
-                    class="rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]"
-                    [class.w-full]="row.block.data.stretched"
-                    [class.mx-auto]="!row.block.data.stretched"
-                    [class.max-w-full]="!row.block.data.stretched"
-                    [class.border]="row.block.data.withBorder"
-                    [class.border-zinc-700]="row.block.data.withBorder"
+                    [class]="imageClass(row)"
                     loading="lazy"
                     decoding="async"
                   >
@@ -323,7 +336,7 @@ interface RenderableBlogImage {
                   </span>
                 </button>
                 @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
+                  <figcaption [class]="imageCaptionClass(row)" [innerHTML]="row.captionHtml"></figcaption>
                 }
               </figure>
             }
@@ -550,6 +563,7 @@ export class BlogBlockRendererComponent implements OnChanges {
   protected readonly faXmark = faXmark;
 
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly imageLayoutSet = new Set<string>(BLOG_IMAGE_LAYOUTS);
   private readonly trustedEmbedHosts = new Set([
     'www.youtube.com',
     'youtube.com',
@@ -624,6 +638,51 @@ export class BlogBlockRendererComponent implements OnChanges {
     }
 
     this.activeImageIndex = galleryIndex;
+  }
+
+  protected imageFigureClass(row: RenderableBlogBlock): string {
+    const layout = this.getImageLayout(row.block.data);
+    const frameClass = row.block.data.withBackground ? ' rounded bg-zinc-900 p-4' : '';
+
+    switch (layout) {
+      case 'inlineStart':
+        return `space-y-2 sm:float-left sm:clear-left sm:mb-4 sm:mr-6 sm:mt-1 sm:w-72${frameClass}`;
+      case 'inlineEnd':
+        return `space-y-2 sm:float-right sm:clear-right sm:mb-4 sm:ml-6 sm:mt-1 sm:w-72${frameClass}`;
+      case 'contained':
+        return `clear-both space-y-2${frameClass}`;
+      case 'fullWidth':
+        return `clear-both space-y-2${frameClass}`;
+    }
+  }
+
+  protected imageButtonClass(row: RenderableBlogBlock): string {
+    const layout = this.getImageLayout(row.block.data);
+    const baseClass = 'group relative block cursor-zoom-in overflow-hidden rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300';
+
+    switch (layout) {
+      case 'inlineStart':
+      case 'inlineEnd':
+      case 'fullWidth':
+        return `${baseClass} w-full`;
+      case 'contained':
+        return `${baseClass} mx-auto w-fit max-w-full`;
+    }
+  }
+
+  protected imageClass(row: RenderableBlogBlock): string {
+    const layout = this.getImageLayout(row.block.data);
+    const borderClass = row.block.data.withBorder ? ' border border-zinc-700' : '';
+    const layoutClass = layout === 'contained' ? ' mx-auto max-w-full' : ' w-full';
+
+    return `rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${layoutClass}${borderClass}`;
+  }
+
+  protected imageCaptionClass(row: RenderableBlogBlock): string {
+    const layout = this.getImageLayout(row.block.data);
+    const widthClass = layout === 'contained' ? ' mx-auto max-w-full' : '';
+
+    return `text-sm leading-6 text-zinc-500${widthClass}`;
   }
 
   protected closeImageLightbox(): void {
@@ -828,6 +887,14 @@ export class BlogBlockRendererComponent implements OnChanges {
 
   private createImageAlt(block: BlogContentBlock): string {
     return block.data.alt?.trim() || this.fallbackAlt.trim() || 'Blog content image';
+  }
+
+  private getImageLayout(data: BlogBlockData): BlogImageLayout {
+    if (data.imageLayout && this.imageLayoutSet.has(data.imageLayout)) {
+      return data.imageLayout;
+    }
+
+    return data.stretched ? 'fullWidth' : 'contained';
   }
 
   private createDownloadFileName(block: BlogContentBlock): string {

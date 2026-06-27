@@ -157,6 +157,69 @@ describe('blog-editorjs-adapter', () => {
     ]);
   });
 
+  it('preserves CMS image layout metadata across editor conversions', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'image-1',
+          type: 'image',
+          data: {
+            file: {
+              url: '/assets/images/backgrounds/day.webp',
+              alt: 'Inline detail',
+              width: 960,
+              height: 640,
+            },
+            alt: 'Inline detail',
+            caption: 'Placed beside supporting copy.',
+            imageLayout: 'inlineEnd',
+            withBorder: true,
+            withBackground: true,
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'image-1',
+        type: 'image',
+        data: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'Inline detail',
+          caption: 'Placed beside supporting copy.',
+          width: 960,
+          height: 640,
+          stretched: false,
+          withBorder: true,
+          withBackground: true,
+          imageLayout: 'inlineEnd',
+        },
+      },
+    ]);
+
+    const document = createEditorDocument(createPost({blocks}));
+
+    expect(document.blocks[0]).toEqual({
+      id: 'image-1',
+      type: 'image',
+      data: {
+        file: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: 'Inline detail',
+          width: 960,
+          height: 640,
+        },
+        alt: 'Inline detail',
+        caption: 'Placed beside supporting copy.',
+        withBorder: true,
+        withBackground: true,
+        stretched: false,
+        imageLayout: 'inlineEnd',
+      },
+    });
+  });
+
   it('round trips custom blog blocks back into Editor.js documents', () => {
     const document = createEditorDocument(createPost({
       blocks: [
