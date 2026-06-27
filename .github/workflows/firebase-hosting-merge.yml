@@ -20,6 +20,7 @@ jobs:
       functions_changed: ${{ steps.scope.outputs.functions_changed }}
       seo_template_changed: ${{ steps.scope.outputs.seo_template_changed }}
       functions_deploy_needed: ${{ steps.scope.outputs.functions_deploy_needed }}
+      rules_changed: ${{ steps.scope.outputs.rules_changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -242,12 +243,45 @@ jobs:
       - name: Deploy Firebase Functions
         run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
 
+  deploy_rules:
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.rules_changed == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Validate Firebase service account secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "Missing Firebase service account secret."
+            echo "Add the raw service account JSON as FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS or FIREBASE_SERVICE_ACCOUNT."
+            exit 1
+          fi
+
+      - name: Authenticate Firebase CLI
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          project_id: ${{ env.FIREBASE_PROJECT_ID }}
+
+      - name: Deploy Firebase security rules
+        run: npx --yes firebase-tools@14 deploy --only firestore:rules,database,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
+
   deploy_hosting:
     needs:
       - detect_changes
       - build_hosting
       - deploy_functions
-    if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.deploy_functions.result == 'success') }}
+      - deploy_rules
+    if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.deploy_functions.result == 'success') && (needs.detect_changes.outputs.rules_changed != 'true' || needs.deploy_rules.result == 'success') }}
     runs-on: ubuntu-latest
     environment: production
     steps:
