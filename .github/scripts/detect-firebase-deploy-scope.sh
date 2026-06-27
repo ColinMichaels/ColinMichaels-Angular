@@ -13,6 +13,7 @@ fi
 hosting_changed=false
 functions_changed=false
 seo_template_changed=false
+rules_changed=false
 
 while IFS= read -r file; do
   [ -z "$file" ] && continue
@@ -22,9 +23,13 @@ while IFS= read -r file; do
       hosting_changed=true
       functions_changed=true
       seo_template_changed=true
+      rules_changed=true
       ;;
     functions/**|functions/package.json|functions/package-lock.json)
       functions_changed=true
+      ;;
+    firestore.rules|database.rules.json|storage.rules)
+      rules_changed=true
       ;;
     scripts/prepare-functions-seo.mjs)
       functions_changed=true
@@ -58,11 +63,16 @@ if [ "${FORCE_FUNCTIONS:-false}" = true ]; then
   functions_deploy_needed=true
 fi
 
+if [ "${FORCE_RULES:-false}" = true ]; then
+  rules_changed=true
+fi
+
 {
   echo "hosting_changed=$hosting_changed"
   echo "functions_changed=$functions_changed"
   echo "seo_template_changed=$seo_template_changed"
   echo "functions_deploy_needed=$functions_deploy_needed"
+  echo "rules_changed=$rules_changed"
   echo "changed_files<<EOF"
   printf '%s\n' "$changed_files"
   echo "EOF"
@@ -75,6 +85,7 @@ fi
   echo "- Functions source/config changed: \`$functions_changed\`"
   echo "- SEO HTML template may change: \`$seo_template_changed\`"
   echo "- Functions deploy needed: \`$functions_deploy_needed\`"
+  echo "- Security rules changed: \`$rules_changed\`"
   echo ""
   echo "<details><summary>Changed files</summary>"
   echo ""
