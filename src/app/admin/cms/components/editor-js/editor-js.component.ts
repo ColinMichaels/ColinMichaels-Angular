@@ -20,8 +20,10 @@ import type {BlockToolData, EditorConfig, OutputData, ToolConstructable} from '@
 
 import {MediaLibraryItem} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
+import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {ChartBlockTool} from './tools/chart-block.tool';
+import {CmsImageBlockTool} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
@@ -34,7 +36,7 @@ interface EditorToolModules {
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
   YoutubeEmbed: ToolConstructable;
-  ImageTool: ToolConstructable;
+  CmsImageBlock: ToolConstructable;
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
   ChartBlock: ToolConstructable;
@@ -52,7 +54,36 @@ export interface EditorImageUploadResult {
 }
 
 type EditorImageInsertTab = 'library' | 'upload';
-type EditorImageLayoutMode = 'fit-width' | 'intrinsic';
+type EditorImageLayoutMode = BlogImageLayout;
+
+interface EditorImageLayoutOption {
+  value: EditorImageLayoutMode;
+  label: string;
+  description: string;
+}
+
+const imageLayoutOptions: readonly EditorImageLayoutOption[] = [
+  {
+    value: 'fullWidth',
+    label: 'Full width',
+    description: 'Best for hero-like images and visual breaks.',
+  },
+  {
+    value: 'contained',
+    label: 'Contained',
+    description: 'Center the image inside the text column.',
+  },
+  {
+    value: 'inlineStart',
+    label: 'Inline left',
+    description: 'Float beside following copy on desktop.',
+  },
+  {
+    value: 'inlineEnd',
+    label: 'Inline right',
+    description: 'Float beside following copy on desktop.',
+  },
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -85,7 +116,6 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     delimiterModule,
     embedModule,
     youtubeEmbedModule,
-    imageModule,
   ] = await Promise.all([
     import('@editorjs/header'),
     import('@editorjs/list'),
@@ -94,7 +124,6 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     import('@editorjs/delimiter'),
     import('@editorjs/embed'),
     import('editorjs-youtube-embed'),
-    import('@editorjs/image'),
   ]);
 
   return {
@@ -105,7 +134,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     Delimiter: getToolConstructable(delimiterModule, 'Delimiter'),
     Embed: getToolConstructable(embedModule, 'Embed'),
     YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
-    ImageTool: getToolConstructable(imageModule, 'Image'),
+    CmsImageBlock: CmsImageBlockTool as unknown as ToolConstructable,
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
     ChartBlock: ChartBlockTool as unknown as ToolConstructable,
@@ -357,30 +386,21 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
 
               <fieldset class="space-y-3">
                 <legend class="text-xs uppercase tracking-[0.2em] text-zinc-500">Layout</legend>
-                <button
-                  type="button"
-                  class="block w-full border px-3 py-3 text-left"
-                  [class.border-cyan-300]="imageLayoutMode === 'fit-width'"
-                  [class.bg-cyan-950]="imageLayoutMode === 'fit-width'"
-                  [class.border-zinc-800]="imageLayoutMode !== 'fit-width'"
-                  [class.bg-zinc-900]="imageLayoutMode !== 'fit-width'"
-                  (click)="setImageLayoutMode('fit-width')"
-                >
-                  <span class="block text-sm font-medium text-zinc-100">Fit text area</span>
-                  <span class="mt-1 block text-xs text-zinc-500">Stretch to the editor width without cropping.</span>
-                </button>
-                <button
-                  type="button"
-                  class="block w-full border px-3 py-3 text-left"
-                  [class.border-cyan-300]="imageLayoutMode === 'intrinsic'"
-                  [class.bg-cyan-950]="imageLayoutMode === 'intrinsic'"
-                  [class.border-zinc-800]="imageLayoutMode !== 'intrinsic'"
-                  [class.bg-zinc-900]="imageLayoutMode !== 'intrinsic'"
-                  (click)="setImageLayoutMode('intrinsic')"
-                >
-                  <span class="block text-sm font-medium text-zinc-100">Maintain aspect ratio</span>
-                  <span class="mt-1 block text-xs text-zinc-500">Keep a contained image layout inside the text column.</span>
-                </button>
+                @for (option of imageLayoutOptions; track option.value) {
+                  <button
+                    type="button"
+                    class="block w-full border px-3 py-3 text-left"
+                    [class.border-cyan-300]="imageLayoutMode === option.value"
+                    [class.bg-cyan-950]="imageLayoutMode === option.value"
+                    [class.border-zinc-800]="imageLayoutMode !== option.value"
+                    [class.bg-zinc-900]="imageLayoutMode !== option.value"
+                    [attr.aria-pressed]="imageLayoutMode === option.value"
+                    (click)="setImageLayoutMode(option.value)"
+                  >
+                    <span class="block text-sm font-medium text-zinc-100">{{ option.label }}</span>
+                    <span class="mt-1 block text-xs text-zinc-500">{{ option.description }}</span>
+                  </button>
+                }
               </fieldset>
 
               @if (imageInsertMessage(); as message) {
@@ -432,12 +452,13 @@ export class EditorJsComponent implements AfterViewInit {
   protected readonly mediaLibraryItems = signal<readonly MediaLibraryItem[]>([]);
   protected readonly activeImageTabClass = 'border border-cyan-300 bg-cyan-400 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-950';
   protected readonly inactiveImageTabClass = 'border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-300 hover:border-cyan-300 hover:text-cyan-200';
+  protected readonly imageLayoutOptions = imageLayoutOptions;
   protected imageInsertTab: EditorImageInsertTab = 'library';
   protected imageLibrarySearch = '';
   protected selectedMediaItemId: string | null = null;
   protected imageCaption = '';
   protected imageAltText = '';
-  protected imageLayoutMode: EditorImageLayoutMode = 'fit-width';
+  protected imageLayoutMode: EditorImageLayoutMode = 'fullWidth';
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly mediaLibrary = inject(MediaLibraryService);
@@ -709,22 +730,10 @@ export class EditorJsComponent implements AfterViewInit {
             inlineToolbar: false,
           },
           image: {
-            class: tools.ImageTool,
+            class: tools.CmsImageBlock,
             config: {
-              captionPlaceholder: 'Image caption',
-              buttonContent: 'Upload image',
-              types: 'image/*',
-              features: {
-                border: true,
-                background: true,
-                stretch: true,
-              },
               uploader: {
                 uploadByFile: async (file: File) => this.uploadImageFile(file),
-                uploadByUrl: async (url: string): Promise<EditorImageUploadResult> => ({
-                  success: 1,
-                  file: {url},
-                }),
               },
             },
           },
@@ -771,7 +780,7 @@ export class EditorJsComponent implements AfterViewInit {
     url: string;
     alt: string;
     width?: number;
-    height?: number
+    height?: number;
   }): Promise<void> {
     if (!this.editor) {
       this.imageInsertMessage.set('The editor is not ready yet.');
@@ -791,7 +800,7 @@ export class EditorJsComponent implements AfterViewInit {
     url: string;
     alt: string;
     width?: number;
-    height?: number
+    height?: number;
   }): BlockToolData {
     const file: Record<string, string | number> = {
       url: source.url,
@@ -812,7 +821,8 @@ export class EditorJsComponent implements AfterViewInit {
       caption: this.imageCaption.trim(),
       withBorder: false,
       withBackground: false,
-      stretched: this.imageLayoutMode === 'fit-width',
+      imageLayout: this.imageLayoutMode,
+      stretched: this.imageLayoutMode === 'fullWidth',
     };
   }
 
@@ -820,7 +830,7 @@ export class EditorJsComponent implements AfterViewInit {
     this.selectedMediaItemId = null;
     this.imageCaption = '';
     this.imageAltText = '';
-    this.imageLayoutMode = 'fit-width';
+    this.imageLayoutMode = 'fullWidth';
   }
 
   private getMediaSourceUrl(item: MediaLibraryItem): string {

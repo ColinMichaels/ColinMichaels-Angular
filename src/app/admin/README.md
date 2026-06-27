@@ -23,11 +23,21 @@ The CMS editor extends the base Editor.js toolset with custom `typography`, `sta
 Supported typography variants:
 
 - Lead paragraph
+- Section intro
 - Pull quote with optional attribution
+- Key takeaway with optional label
 - Callout with optional label
+- Warning / update with optional label
 - Aside
 - Caption / note
 - Eyebrow text
+
+Supported image layouts:
+
+- Full width
+- Contained
+- Inline left
+- Inline right
 
 Supported custom content blocks:
 

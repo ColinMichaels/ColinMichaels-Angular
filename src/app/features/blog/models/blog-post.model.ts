@@ -4,14 +4,26 @@ export type BlogContentFormat = 'editorjs';
 
 export const BLOG_TYPOGRAPHY_VARIANTS = [
   'lead',
+  'sectionIntro',
   'pullQuote',
+  'keyTakeaway',
   'callout',
+  'warning',
   'aside',
   'caption',
   'eyebrow',
 ] as const;
 
 export type BlogTypographyVariant = typeof BLOG_TYPOGRAPHY_VARIANTS[number];
+
+export const BLOG_IMAGE_LAYOUTS = [
+  'fullWidth',
+  'contained',
+  'inlineStart',
+  'inlineEnd',
+] as const;
+
+export type BlogImageLayout = typeof BLOG_IMAGE_LAYOUTS[number];
 
 export const BLOG_CHART_TYPES = [
   'bar',
@@ -98,6 +110,7 @@ export interface BlogBlockData {
   stretched?: boolean;
   withBorder?: boolean;
   withBackground?: boolean;
+  imageLayout?: BlogImageLayout;
   variant?: BlogTypographyVariant;
   attribution?: string;
   stats?: readonly BlogStatItem[];

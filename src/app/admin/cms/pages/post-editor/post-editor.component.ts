@@ -1,4 +1,3 @@
-import {JsonPipe} from '@angular/common';
 import {Component, ViewChild, effect, inject, ChangeDetectionStrategy, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
@@ -67,6 +66,10 @@ const postedDateFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 });
+
+function createPostBackupFileName(slug: string): string {
+  return `cms-blog-post-${createBlogSlug(slug)}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+}
 
 function toCsv(values: readonly string[]): string {
   return values.join(', ');
@@ -312,7 +315,6 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-post-editor',
   imports: [
-    JsonPipe,
     ReactiveFormsModule,
     RouterLink,
     EditorJsComponent,
@@ -354,6 +356,13 @@ function getErrorMessage(error: unknown): string {
                 (click)="postJsonImportInput.click()"
               >
                 Import JSON
+              </button>
+              <button
+                type="button"
+                class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                (click)="exportPostJson()"
+              >
+                Export JSON
               </button>
               @if (post.status === 'published') {
                 <a
@@ -629,15 +638,32 @@ function getErrorMessage(error: unknown): string {
                   <div class="flex items-center justify-between gap-3">
                     <h2 class="text-lg font-semibold text-zinc-50">Last Saved</h2>
                     <button type="button" (click)="isLastSavedOpen.set(!isLastSavedOpen())"
-                            class="text-zinc-500 hover:text-zinc-300 transition-colors">
+                            class="text-zinc-500 hover:text-zinc-300 transition-colors"
+                            [attr.aria-label]="isLastSavedOpen() ? 'Collapse last saved JSON' : 'Expand last saved JSON'">
                       <span class="block transition-transform duration-200"
                             [class.rotate-180]="isLastSavedOpen()">▾</span>
                     </button>
                   </div>
                   @if (isLastSavedOpen()) {
                     <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
+                        (click)="copyLastSavedJson()"
+                      >
+                        Copy JSON
+                      </button>
+                      <button
+                        type="button"
+                        class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
+                        (click)="downloadLastSavedJson()"
+                      >
+                        Download JSON
+                      </button>
+                    </div>
                     <pre
-                      class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ saved.data | json }}</pre>
+                      class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ lastSavedBackupJson }}</pre>
                   }
                 </section>
               } @else {
@@ -677,24 +703,52 @@ function getErrorMessage(error: unknown): string {
                   <span class="text-xs text-amber-300/80">● Unsaved changes</span>
                 }
                 <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
-                <button
-                  type="button"
-                  class="border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
-                  [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
-                  (click)="deleteCurrentPost()"
-                >
-                  {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
-                </button>
+                  @if (post.status === 'published') {
+                    <a
+                      [routerLink]="['/blog', post.slug]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="col-span-2 inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 sm:col-span-1"
+                    >
+                      View Post
+                    </a>
+                  } @else if (hasActiveDraftPreview) {
+                    <a
+                      [href]="draftPreviewUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="col-span-2 inline-flex justify-center border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-950/30 sm:col-span-1"
+                    >
+                      View Preview
+                    </a>
+                  } @else {
+                    <button
+                      type="button"
+                      class="col-span-2 border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-600 sm:col-span-1"
+                      disabled
+                    >
+                      View Post
+                    </button>
+                  }
 
-                <button
-                  type="button"
-                  class="border border-cyan-400 bg-cyan-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
-                  [disabled]="isSaveInProgress || isDeleteInProgress"
-                  (click)="savePost()"
-                >
-                  {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    class="border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
+                    (click)="deleteCurrentPost()"
+                  >
+                    {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="border border-cyan-400 bg-cyan-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
+                    [disabled]="isSaveInProgress || isDeleteInProgress"
+                    (click)="savePost()"
+                  >
+                    {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -741,6 +795,7 @@ export class CmsPostEditorComponent {
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly isLastSavedOpen = signal(false);
   protected lastSaved: EditorSavedDocument | null = null;
+  protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
   protected isDeleteInProgress = false;
   protected assistantResult: BlogAssistantResult | null = null;
@@ -911,6 +966,40 @@ export class CmsPostEditorComponent {
     } catch (error) {
       this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
     }
+  }
+
+  protected async exportPostJson(): Promise<void> {
+    try {
+      const backupPost = await this.createCurrentBackupPost();
+      this.downloadJson(this.createPostBackupJson(backupPost), createPostBackupFileName(backupPost.slug));
+      this.toast.success(`Exported "${backupPost.title}" as JSON.`);
+    } catch (error) {
+      this.toast.error(`Unable to export JSON: ${getErrorMessage(error)}`);
+    }
+  }
+
+  protected async copyLastSavedJson(): Promise<void> {
+    if (!this.lastSavedBackupJson) {
+      this.toast.error('Save this post before copying its JSON backup.');
+      return;
+    }
+
+    try {
+      await this.copyTextToClipboard(this.lastSavedBackupJson);
+      this.toast.success('Copied the last saved post JSON.');
+    } catch (error) {
+      this.toast.error(`Unable to copy JSON: ${getErrorMessage(error)}`);
+    }
+  }
+
+  protected downloadLastSavedJson(): void {
+    if (!this.lastSavedBackupJson || !this.currentPost) {
+      this.toast.error('Save this post before downloading its JSON backup.');
+      return;
+    }
+
+    this.downloadJson(this.lastSavedBackupJson, createPostBackupFileName(this.currentPost.slug));
+    this.toast.success(`Downloaded the last saved JSON for "${this.currentPost.title}".`);
   }
 
   protected async generateAssistantSuggestions(): Promise<void> {
@@ -1100,6 +1189,7 @@ export class CmsPostEditorComponent {
 
       const result = await this.blogRepository.createPreviewForPost(this.currentPost);
       this.currentPost = result.post;
+      this.syncLastSavedBackupJson();
       this.toast.success('Saved the draft and refreshed its public preview link.');
       this.draftPreviewPanel?.onPreviewGenerated(result.post);
     } catch (error) {
@@ -1109,6 +1199,7 @@ export class CmsPostEditorComponent {
 
   protected onPreviewPostChanged(post: BlogPost): void {
     this.currentPost = post;
+    this.syncLastSavedBackupJson();
   }
 
   protected async onSaved(saved: EditorSavedDocument): Promise<boolean> {
@@ -1156,6 +1247,7 @@ export class CmsPostEditorComponent {
       this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
       this.postForm.markAsPristine();
       this.lastSaved = saved;
+      this.lastSavedBackupJson = this.createPostBackupJson(savedPost);
       this.toast.success(`Saved "${savedPost.title}" to Firestore.`);
 
       if (this.isNewPost && !this.hasCreatedPost) {
@@ -1308,6 +1400,7 @@ export class CmsPostEditorComponent {
     this.setFormFromPost(nextPost);
     this.postForm.markAsDirty();
     this.lastSaved = null;
+    this.lastSavedBackupJson = '';
     await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
   }
 
@@ -1324,6 +1417,88 @@ export class CmsPostEditorComponent {
       tags: fromCsv(formValue.tags),
       blocks: createBlogBlocksFromEditorDocument(document),
     };
+  }
+
+  private async createCurrentBackupPost(): Promise<BlogPost> {
+    if (!this.currentPost) {
+      throw new Error('No current post is available to export.');
+    }
+
+    const document = await (this.editorComponent?.getDocument() ?? Promise.resolve(this.initialData));
+    const formValue = this.postForm.getRawValue();
+    const backupCreatedAt = new Date().toISOString();
+    const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
+    const openGraphImage = normalizeOpenGraphImage(formValue.openGraphImage, coverImage);
+    const slug = this.blogRepository.createUniqueSlug(
+      formValue.slug || formValue.title || this.currentPost.slug,
+      this.currentPost.id
+    );
+
+    return {
+      ...this.currentPost,
+      title: requiredText(formValue.title, 'Untitled Post'),
+      slug,
+      excerpt: formValue.excerpt.trim(),
+      coverImage,
+      status: formValue.status,
+      categories: fromCsv(formValue.categories),
+      tags: fromCsv(formValue.tags),
+      seo: {
+        ...this.currentPost.seo,
+        title: requiredText(formValue.seoTitle, formValue.title),
+        description: requiredText(formValue.seoDescription, formValue.excerpt),
+        canonical: this.resolveCanonicalUrlForSave(formValue.canonical, formValue.slug, slug),
+        openGraphImage,
+      },
+      blocks: createBlogBlocksFromEditorDocument(document),
+      updatedAt: backupCreatedAt,
+      publishedAt: this.getPublishedAt(formValue.status, formValue.publishedAt, this.currentPost.publishedAt, backupCreatedAt),
+    };
+  }
+
+  private createPostBackupJson(post: BlogPost): string {
+    return JSON.stringify(this.blogRepository.createExportDocument([post]), null, 2);
+  }
+
+  private syncLastSavedBackupJson(): void {
+    if (!this.lastSaved || !this.currentPost) {
+      return;
+    }
+
+    this.lastSavedBackupJson = this.createPostBackupJson(this.currentPost);
+  }
+
+  private downloadJson(contents: string, fileName: string): void {
+    const blob = new Blob([contents], {type: 'application/json'});
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  private async copyTextToClipboard(value: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const didCopy = document.execCommand('copy');
+    textarea.remove();
+
+    if (!didCopy) {
+      throw new Error('Clipboard access is unavailable in this browser.');
+    }
   }
 
   private createForm(post: BlogPost): FormGroup<PostEditorForm> {
