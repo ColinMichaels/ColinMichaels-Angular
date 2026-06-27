@@ -10,7 +10,7 @@ try {
 
   appendGitHubOutput('credentials_file_path', credentialsFilePath);
 
-  console.log(`Firebase Application Default Credentials file created for project "${credential.project_id}".`);
+  console.log('Firebase Application Default Credentials file created.');
 } catch (error) {
   console.error(error.message);
   process.exit(1);
