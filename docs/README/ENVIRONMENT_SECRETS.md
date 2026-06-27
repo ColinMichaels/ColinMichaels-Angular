@@ -49,7 +49,7 @@ The dev PR workflow uses the GitHub Environment named `preview`. If CI reports e
 
 All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
 
-Firebase CLI deploy jobs authenticate with Application Default Credentials by writing the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
+Firebase CLI deploy jobs write the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. The deploy helper activates that key with `gcloud auth activate-service-account`, prints the active account for diagnostics, mints a short-lived access token with `gcloud auth print-access-token`, and passes that token to `firebase-tools@14`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
 
 ## Local Development Files
 
