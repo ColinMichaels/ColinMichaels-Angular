@@ -216,18 +216,16 @@ jobs:
       - name: Validate Firebase service account secret
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "Missing Firebase service account secret."
-            echo "Add the raw service account JSON as FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS or FIREBASE_SERVICE_ACCOUNT."
-            exit 1
-          fi
+        run: node .github/scripts/validate-firebase-service-account.mjs
 
       - name: Authenticate Firebase CLI
+        id: firebase-auth
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           project_id: ${{ env.FIREBASE_PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
 
       - name: Create Firebase Functions deploy config
         run: |
@@ -241,6 +239,9 @@ jobs:
           NODE
 
       - name: Deploy Firebase Functions
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
         run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
 
   deploy_rules:
@@ -259,20 +260,21 @@ jobs:
       - name: Validate Firebase service account secret
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "Missing Firebase service account secret."
-            echo "Add the raw service account JSON as FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS or FIREBASE_SERVICE_ACCOUNT."
-            exit 1
-          fi
+        run: node .github/scripts/validate-firebase-service-account.mjs
 
       - name: Authenticate Firebase CLI
+        id: firebase-auth
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
           project_id: ${{ env.FIREBASE_PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
 
       - name: Deploy Firebase security rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
         run: npx --yes firebase-tools@14 deploy --only firestore:rules,database,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
 
   deploy_hosting:
@@ -284,6 +286,8 @@ jobs:
     if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.deploy_functions.result == 'success') && (needs.detect_changes.outputs.rules_changed != 'true' || needs.deploy_rules.result == 'success') }}
     runs-on: ubuntu-latest
     environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -296,12 +300,24 @@ jobs:
           name: firebase-hosting-production
           path: dist/colin-michaels-firebase/browser
 
+      - name: Validate Firebase service account secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/validate-firebase-service-account.mjs
+
+      - name: Authenticate Firebase CLI
+        id: firebase-auth
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+          project_id: ${{ env.FIREBASE_PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
+
       - name: Create Firebase Hosting deploy config
         run: |
-          mkdir -p "$RUNNER_TEMP/firebase-hosting-production"
           node <<'NODE'
           const fs = require('node:fs');
-          const path = require('node:path');
           const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
           if (config.hosting) {
             delete config.hosting.predeploy;
@@ -309,17 +325,11 @@ jobs:
           if (config.functions) {
             delete config.functions.predeploy;
           }
-          const outputRoot = path.join(process.env.RUNNER_TEMP, 'firebase-hosting-production');
-          fs.writeFileSync(path.join(outputRoot, 'firebase.json'), `${JSON.stringify(config, null, 2)}\n`);
+          fs.writeFileSync('firebase.hosting.ci.json', `${JSON.stringify(config, null, 2)}\n`);
           NODE
-          mkdir -p "$RUNNER_TEMP/firebase-hosting-production/dist/colin-michaels-firebase"
-          cp -R dist/colin-michaels-firebase/browser "$RUNNER_TEMP/firebase-hosting-production/dist/colin-michaels-firebase/browser"
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
-          entryPoint: ${{ runner.temp }}/firebase-hosting-production
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+          CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: npx --yes firebase-tools@14 deploy --only hosting --config firebase.hosting.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
