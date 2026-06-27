@@ -1,8 +1,8 @@
 try {
   const { readFirebaseServiceAccountFromEnv } = await import('./firebase-service-account.mjs');
-  const credential = readFirebaseServiceAccountFromEnv();
+  readFirebaseServiceAccountFromEnv();
 
-  console.log(`Firebase service account JSON is valid for project "${credential.project_id}".`);
+  console.log('Firebase service account JSON is valid.');
 } catch (error) {
   console.error(error.message);
   process.exit(1);
