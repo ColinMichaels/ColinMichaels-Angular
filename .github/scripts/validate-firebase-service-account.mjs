@@ -25,7 +25,7 @@ if (missingFields.length > 0) {
 }
 
 if (credential.type !== 'service_account') {
-  console.error(`Firebase credential JSON has type "${credential.type}", but expected "service_account".`);
+  console.error('Firebase credential JSON has an invalid "type" field; expected "service_account".');
   process.exit(1);
 }
 
@@ -35,8 +35,8 @@ if (!credential.private_key.includes('BEGIN PRIVATE KEY')) {
 }
 
 if (expectedProjectId && credential.project_id !== expectedProjectId) {
-  console.error(`Firebase service account project_id "${credential.project_id}" does not match FIREBASE_PROJECT_ID "${expectedProjectId}".`);
+  console.error('Firebase service account project_id does not match FIREBASE_PROJECT_ID.');
   process.exit(1);
 }
 
-console.log(`Firebase service account JSON is valid for project "${credential.project_id}".`);
+console.log('Firebase service account JSON is valid.');
