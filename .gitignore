@@ -49,6 +49,7 @@ Thumbs.db
 
 # Firebase local config
 .firebase/*
+gha-creds-*.json
 
 # Environment files
 .env
