@@ -47,7 +47,7 @@ Hosting deploys are intentionally split by branch target:
 
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
-All hosting workflows install with `npm ci`, generate Angular environment files with `npm run generate:env`, build with `npm run build`, and use Node `22.22.3` to match the repository engine requirement.
+All Firebase workflows use Node `22.22.3` to match the repository engine requirement. Build jobs install with `npm ci`, generate Angular environment files with `npm run generate:env`, and build with `npm run build`. Deploy jobs also set up Node before invoking `npx firebase-tools@14` so the Firebase CLI does not run on the GitHub runner's default Node version.
 
 Firebase CLI deploy jobs write the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. Each deploy step activates that key with `gcloud auth activate-service-account`, prints the active account for diagnostics, verifies that gcloud can mint an access token, clears any inherited `FIREBASE_TOKEN`, and then lets `firebase-tools@14` authenticate through `GOOGLE_APPLICATION_CREDENTIALS`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
 

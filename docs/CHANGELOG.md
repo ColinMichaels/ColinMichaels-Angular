@@ -4,6 +4,7 @@
 
 - Hardened Firebase GitHub Actions deploy authentication by writing the validated service account JSON secret to an explicit temporary Application Default Credentials file before Firebase CLI deploy steps.
 - Added gcloud-backed Firebase deploy steps that activate and verify the service account before running `firebase-tools@14` with Application Default Credentials, while clearing legacy `FIREBASE_TOKEN` auth.
+- Pinned Firebase deploy jobs to Node `22.22.3` before invoking `npx firebase-tools@14`, matching the build jobs and repository engine requirement.
 
 ## 2026-06-20
 
