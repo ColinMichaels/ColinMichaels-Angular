@@ -5,6 +5,8 @@
 - Consolidated production Firebase deploys into a single push/manual workflow with shared deploy-scope and Firebase CLI helper scripts, replacing separate production merge, manual, and Functions-only workflows.
 - Updated production deploy scope so any Functions deploy also deploys the matching Hosting assets, keeping `renderSeoHtml` deep-link shells aligned with Angular's hashed bundles.
 - Fixed target-specific Firebase deploy configs so rules, Hosting, and Functions paths resolve from the repository workspace instead of the GitHub runner temp directory.
+- Documented the Firebase Storage Admin IAM role required for GitHub Actions storage-rules deploys.
+- Documented the Firebase Rules Admin IAM role required for GitHub Actions Firestore and Storage rules deploys.
 
 ## 2026-06-27
 

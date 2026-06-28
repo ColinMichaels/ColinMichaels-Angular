@@ -56,14 +56,10 @@ export class BlogCategoryNavComponent {
 
   protected readonly pathNames = PATH_NAMES;
 
-  protected readonly activeCls =
-    'inline-flex items-center gap-1.5 whitespace-nowrap rounded border border-cyan-300 bg-cyan-400 px-3 py-1.5 text-sm font-medium text-zinc-950 transition-colors';
-  protected readonly inactiveCls =
-    'inline-flex items-center gap-1.5 whitespace-nowrap rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-cyan-300 hover:text-cyan-200';
-  protected readonly activeBadgeCls =
-    'inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-zinc-950/25 px-1.5 py-0.5 text-xs font-semibold';
-  protected readonly inactiveBadgeCls =
-    'inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-zinc-800 px-1.5 py-0.5 text-xs font-medium text-zinc-400';
+  protected readonly activeCls = 'blog-chip-active';
+  protected readonly inactiveCls = 'blog-chip';
+  protected readonly activeBadgeCls = 'blog-chip-count-active';
+  protected readonly inactiveBadgeCls = 'blog-chip-count';
 
   protected readonly totalCount = computed(() => this.posts().length);
 

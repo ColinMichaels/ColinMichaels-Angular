@@ -8,7 +8,6 @@ import {
   BlogPostCardSkeletonComponent
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
 import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
-import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 
@@ -51,15 +50,14 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   imports: [
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
-    BlogShareActionsComponent,
     DatePipe,
     RouterLink,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <section id="blog" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <section id="blog" class="site-section">
+      <div class="site-section-header">
         <div>
           <h2 class="mt-3 heading-section">Latest writing</h2>
         </div>
@@ -69,60 +67,53 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
       </div>
 
       @if (blogLoadError(); as error) {
-        <div class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">
-          <p class="font-medium text-zinc-100">Unable to load latest posts.</p>
+        <div class="site-error-panel mt-8">
+          <p class="font-medium text-rose-950 dark:text-red-100">Unable to load latest posts.</p>
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
       } @else {
         @defer (when !blogIsLoading()) {
-          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+          <div class="site-card-grid">
             @for (post of publishedPosts(); track post.id) {
-              <article class="flex h-full flex-col overflow-hidden border border-white/10 bg-zinc-900">
-                <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="group block overflow-hidden">
+              <article class="site-card flex h-full flex-col overflow-hidden">
+                <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="site-media-link group">
                   <img [src]="post.coverImage" [alt]="post.title + ' cover image'"
-                       class="aspect-[16/10] w-full object-cover transition duration-300 ease-in-out group-hover:scale-105 group-hover:brightness-110"
+                       class="site-media-image aspect-[16/10]"
                        loading="lazy">
                 </a>
-                <div class="flex flex-1 flex-col p-5">
-                  <p class="eyebrow-sm eyebrow-muted">
+                <div class="site-card-body flex flex-1 flex-col">
+                  <p class="site-meta">
                     {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
                   </p>
                   <h3 class="mt-3 heading-card">
                     <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
                   </h3>
                   <p class="mt-3 text-body">{{ post.excerpt }}</p>
-                  <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+                  <div class="mt-auto pt-5">
                     <a
                       [routerLink]="['/', pathNames.BLOG, post.slug]"
                       class="btn-secondary"
                     >
                       Read more
                     </a>
-                    <app-blog-share-actions
-                      [title]="post.title"
-                      [excerpt]="post.excerpt"
-                      [path]="pathNames.BLOG + '/' + post.slug"
-                    ></app-blog-share-actions>
                   </div>
                 </div>
               </article>
             } @empty {
-              <p class="border border-white/10 p-5 text-zinc-400">No published posts yet.</p>
+              <p class="site-empty-panel">No published posts yet.</p>
             }
           </div>
         } @placeholder (minimum 300ms) {
-          <div class="mt-8 grid gap-5 lg:grid-cols-3">
+          <div class="site-card-grid">
             @for (i of [1, 2, 3]; track i) {
-              <article
-                class="flex h-full flex-col overflow-hidden border border-zinc-200 bg-zinc-100 dark:border-white/10 dark:bg-zinc-900"
-                aria-hidden="true">
-                <div class="aspect-[16/10] w-full animate-pulse bg-zinc-200 dark:bg-zinc-800"></div>
+              <article class="site-skeleton-card" aria-hidden="true">
+                <div class="site-skeleton-block aspect-[16/10] w-full"></div>
                 <div class="flex flex-1 flex-col gap-3 p-5">
-                  <div class="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
-                  <div class="h-6 w-3/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                  <div class="site-skeleton-block h-3 w-24"></div>
+                  <div class="site-skeleton-block h-6 w-3/4"></div>
                   <div class="space-y-2">
-                    <div class="h-3 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
-                    <div class="h-3 w-4/5 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                    <div class="site-skeleton-block h-3 w-full"></div>
+                    <div class="site-skeleton-block h-3 w-4/5"></div>
                   </div>
                 </div>
               </article>
@@ -132,13 +123,13 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
       }
     </section>
 
-    <section id="health-recovery" class="border-y border-white/10 bg-neutral-900/10 py-12">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <section id="health-recovery" class="site-section-band">
+      <div class="site-section-inner">
+        <div class="site-section-header">
           <div>
             <p class="eyebrow eyebrow-emerald">Health & Recovery</p>
             <h2 class="mt-3 heading-section">Weekly Updates</h2>
-            <p class="mt-4 max-w-3xl text-body">
+            <p class="site-section-copy">
               Weekly recovery notes, personal updates, and posts about the recent open heart surgery process.
             </p>
           </div>
@@ -148,24 +139,24 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
         </div>
 
         @if (blogLoadError(); as error) {
-          <div class="mt-8 border border-white/10 bg-zinc-950 p-5 text-zinc-400">
-            <p class="font-medium text-zinc-100">Unable to load health and recovery posts.</p>
+          <div class="site-error-panel mt-8">
+            <p class="font-medium text-rose-950 dark:text-red-100">Unable to load health and recovery posts.</p>
             <p class="mt-2 text-sm">{{ error }}</p>
           </div>
         } @else {
           @defer (when !blogIsLoading()) {
-            <div class="mt-8 divide-y divide-zinc-800">
+            <div class="site-divided-list">
               @for (post of healthRecoveryPosts(); track post.id) {
-                <app-blog-post-card [post]="post"></app-blog-post-card>
+                <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
               } @empty {
-                <p class="border border-white/10 bg-zinc-950 p-5 text-sm leading-6 text-zinc-400">
+                <p class="site-empty-panel">
                   No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
                   open heart surgery, or cardiac recovery will appear here.
                 </p>
               }
             </div>
           } @placeholder (minimum 300ms) {
-            <div class="mt-8 divide-y divide-zinc-800">
+            <div class="site-divided-list">
               <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
               <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
             </div>
@@ -174,12 +165,12 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
       </div>
     </section>
 
-    <section id="medical-information" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <section id="medical-information" class="site-section">
+      <div class="site-section-header">
         <div>
           <p class="eyebrow eyebrow-rose">Things I learned in the Hospital</p>
           <h2 class="mt-3 heading-section">Medical advice from a friend</h2>
-          <p class="mt-4 max-w-3xl text-body">
+          <p class="site-section-copy">
             Sharing some of the things I learned while in the hospital that I wish someone told me.
           </p>
         </div>
@@ -189,24 +180,24 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
       </div>
 
       @if (blogLoadError(); as error) {
-        <div class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">
-          <p class="font-medium text-zinc-100">Unable to load medical information posts.</p>
+        <div class="site-error-panel mt-8">
+          <p class="font-medium text-rose-950 dark:text-red-100">Unable to load posts.</p>
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
       } @else {
         @defer (when !blogIsLoading()) {
-          <div class="mt-8 divide-y divide-zinc-800">
+          <div class="site-divided-list">
             @for (post of medicalInfoPosts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
+              <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
             } @empty {
-              <p class="border border-white/10 bg-zinc-900 p-5 text-sm leading-6 text-zinc-400">
+              <p class="site-empty-panel">
                 No published medical information posts yet. Posts tagged or categorized with medical information,
                 procedures, medications, cardiology, or related surgery-care terms will appear here.
               </p>
             }
           </div>
         } @placeholder (minimum 300ms) {
-          <div class="mt-8 divide-y divide-zinc-800">
+          <div class="site-divided-list">
             <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
             <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
           </div>

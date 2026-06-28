@@ -25,35 +25,35 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="blog-page">
       <section class="mx-auto max-w-5xl">
-        <header class="mb-10 border-b border-zinc-800 pb-8">
-          <h1 class="mb-6 text-3xl font-semibold text-zinc-50 sm:text-5xl">{{ categoryTitle() }}</h1>
+        <header class="blog-section-rule blog-page-header">
+          <h1 class="blog-page-title mb-6">{{ categoryTitle() }}</h1>
           <app-blog-category-nav [activeSlug]="categorySlugValue()"></app-blog-category-nav>
         </header>
 
         <section>
           @if (loadError(); as error) {
-            <div class="border-t border-zinc-800">
-              <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
+            <div class="blog-section-rule blog-state-panel">
+              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
+              <p class="mt-2 text-sm">{{ error }}</p>
             </div>
           } @else {
             @defer (when !isLoading()) {
-              <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
+              <p class="blog-section-rule blog-results-summary">
                 Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
-                in <span class="text-cyan-300">{{ categoryTitle() }}</span>.
+                in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ categoryTitle() }}</span>.
               </p>
 
               @for (post of filteredPosts(); track post.id) {
                 <app-blog-post-card [post]="post"></app-blog-post-card>
               } @empty {
-                <div class="border-t border-zinc-800 py-8">
-                  <p class="text-lg font-medium text-zinc-100">No published posts in this category.</p>
-                  <p class="mt-2 text-sm text-zinc-400">
+                <div class="blog-section-rule blog-state-panel">
+                  <p class="blog-state-title">No published posts in this category.</p>
+                  <p class="mt-2 text-sm">
                     This category may not exist yet, or its posts may still be drafts.
                   </p>
-                  <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
+                  <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link mt-5 inline-block">
                     View all posts
                   </a>
                 </div>
