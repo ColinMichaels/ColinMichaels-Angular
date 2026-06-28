@@ -9,6 +9,10 @@
 
 :root,
 .dark {
+  --font-body: 'Source Sans 3', 'Arimo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Lexend', 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-subheading: 'K2D', 'Lexend', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-accent: 'K2D', 'Lexend', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --site-bg: #09090b;
   --site-panel: #18181b;
   --site-panel-soft: rgba(24, 24, 27, 0.72);
@@ -36,7 +40,6 @@
   --site-subtle: #64748b;
 }
 
-/* Set Roboto as the default font */
 body {
   font-family: 'Arimo', sans-serif;
   background: var(--site-bg);
@@ -47,6 +50,39 @@ body {
   background: var(--site-bg);
   color: var(--site-text);
   color-scheme: dark;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-optical-sizing: auto;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+.site-theme-scope :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.site-theme-scope :is(button, input, textarea, select) {
+  font-family: inherit;
+}
+
+.site-theme-scope :is(app-site-header, .eyebrow, .eyebrow-sm, .site-meta, .site-meta-row, .blog-post-meta-row, .blog-action-primary, .blog-chip, .blog-chip-active, .blog-tag-chip, .btn-primary, .btn-secondary, .btn-ghost, .btn-link, .btn-youtube, .link-youtube) {
+  font-family: var(--font-accent);
+}
+
+.site-theme-scope :is(.heading-display, .heading-section, .blog-page-title) {
+  font-family: var(--font-heading);
+}
+
+.site-theme-scope :is(.heading-subsection, .heading-card, .blog-state-title) {
+  font-family: var(--font-subheading);
+}
+
+app-site-header,
+app-site-header :is(h1, a, button),
+.site-theme-scope app-site-header :is(h1, a, button) {
+  font-family: var(--font-accent);
 }
 
 .light .site-theme-scope {
@@ -103,6 +139,3 @@ body {
   outline: 2px solid #005fcc; /* Adjust style as needed */
   border-radius: 4px; /* Optional: rounding for better visuals */
 }
-
-
-
