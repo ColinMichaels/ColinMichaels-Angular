@@ -22,27 +22,27 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="blog-page">
       <section class="mx-auto max-w-5xl">
-        <header class="mb-10 border-b border-zinc-800 pb-8">
+        <header class="blog-section-rule blog-page-header">
           <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 class="text-4xl font-semibold text-zinc-50 sm:text-5xl">Blog</h1>
-              <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+              <h1 class="blog-page-title">Blog</h1>
+              <p class="blog-page-description">
                 Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <a
                 [routerLink]="['/', pathNames.BLOG, 'search']"
-                class="inline-flex min-h-10 items-center gap-2 border border-cyan-400 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                class="blog-action-primary"
               >
                 <fa-icon [icon]="faMagnifyingGlass"></fa-icon>
                 Search
               </a>
               <a
                 href="/feed.xml"
-                class="inline-flex h-10 w-10 items-center justify-center border border-zinc-700 text-zinc-300 hover:border-cyan-300 hover:text-cyan-200"
+                class="blog-action-icon"
                 aria-label="Open RSS feed"
                 title="RSS feed"
               >
@@ -50,7 +50,7 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
               </a>
               <a
                 href="/feed.json"
-                class="inline-flex h-10 w-10 items-center justify-center border border-zinc-700 text-zinc-300 hover:border-cyan-300 hover:text-cyan-200"
+                class="blog-action-icon"
                 aria-label="Open JSON Feed"
                 title="JSON Feed"
               >
@@ -63,16 +63,16 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
 
         <section>
           @if (loadError(); as error) {
-            <div class="border-t border-zinc-800 py-8">
-              <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
+            <div class="blog-section-rule blog-state-panel">
+              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
+              <p class="mt-2 text-sm">{{ error }}</p>
             </div>
           } @else {
             @defer (when !isLoading()) {
               @for (post of posts(); track post.id) {
                 <app-blog-post-card [post]="post"></app-blog-post-card>
               } @empty {
-                <p class="border-t border-zinc-800 py-8 text-zinc-400">
+                <p class="blog-section-rule blog-state-panel">
                   No published posts yet.
                 </p>
               }

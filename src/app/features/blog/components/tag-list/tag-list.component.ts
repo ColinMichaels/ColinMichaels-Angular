@@ -13,7 +13,7 @@ import {createBlogTagSlug} from '../../utils/blog-category-url.util';
       @for (tag of tags; track tag) {
         <a
           [routerLink]="['/', pathNames.BLOG, 'tag', tagSlug(tag)]"
-          class="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-xs uppercase tracking-wide text-zinc-300 hover:border-cyan-300 hover:text-cyan-200">
+          class="blog-tag-chip">
           {{ tag }}
         </a>
       }

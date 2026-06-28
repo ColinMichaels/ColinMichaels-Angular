@@ -83,39 +83,39 @@ interface RenderableBlogImage {
   imports: [FaIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="blog-content space-y-6 text-base leading-8 text-zinc-300">
+    <section class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300">
       @for (row of renderedBlocks; track row.block.id) {
         @switch (row.block.type) {
           @case ('header') {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="group scroll-mt-24 pt-4 text-xl font-semibold text-zinc-50"
+                class="group scroll-mt-24 pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="inline-flex items-baseline gap-2 hover:text-cyan-200"
+                  class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
                 >
                   <span [innerHTML]="row.textHtml"></span>
                   @if (row.headingId) {
                     <span aria-hidden="true"
-                          class="text-sm text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
+                          class="text-sm text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
                   }
                 </a>
               </h3>
             } @else {
               <h2
                 [id]="row.headingId"
-                class="group scroll-mt-24 pt-4 text-2xl font-semibold text-zinc-50"
+                class="group scroll-mt-24 pt-4 text-2xl font-semibold text-slate-950 dark:text-zinc-50"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="inline-flex items-baseline gap-2 hover:text-cyan-200"
+                  class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
                 >
                   <span [innerHTML]="row.textHtml"></span>
                   @if (row.headingId) {
                     <span aria-hidden="true"
-                          class="text-base text-zinc-600 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">#</span>
+                          class="text-base text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
                   }
                 </a>
               </h2>
@@ -125,69 +125,69 @@ interface RenderableBlogImage {
             <p [innerHTML]="row.textHtml"></p>
           }
           @case ('quote') {
-            <blockquote class="border-l-2 border-cyan-300 pl-5 text-zinc-200">
+            <blockquote class="border-l-2 border-cyan-600 pl-5 text-slate-800 dark:border-cyan-300 dark:text-zinc-200">
               <p [innerHTML]="row.textHtml"></p>
               @if (row.block.data.caption) {
-                <cite class="mt-2 block text-sm not-italic text-zinc-500" [innerHTML]="row.captionHtml"></cite>
+                <cite class="mt-2 block text-sm not-italic text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></cite>
               }
             </blockquote>
           }
           @case ('typography') {
             @switch (row.block.data.variant) {
               @case ('eyebrow') {
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-300"
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300"
                    [innerHTML]="row.textHtml"></p>
               }
               @case ('sectionIntro') {
-                <p class="border-l border-sky-300/60 pl-5 text-lg leading-8 text-sky-50"
+                <p class="border-l border-sky-600/70 pl-5 text-lg leading-8 text-slate-800 dark:border-sky-300/60 dark:text-sky-50"
                    [innerHTML]="row.textHtml"></p>
               }
               @case ('pullQuote') {
-                <blockquote class="my-10 border-y border-amber-300/40 py-7 text-zinc-100">
+                <blockquote class="my-10 border-y border-amber-500/50 py-7 text-slate-950 dark:border-amber-300/40 dark:text-zinc-100">
                   <p class="text-2xl font-semibold leading-10 sm:text-3xl"
                      [innerHTML]="row.textHtml"></p>
                   @if (row.block.data.attribution) {
-                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-200"
+                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200"
                           [innerHTML]="row.attributionHtml"></cite>
                   }
                 </blockquote>
               }
               @case ('keyTakeaway') {
-                <aside class="border border-teal-300/35 bg-teal-950/30 p-5 text-teal-50">
+                <aside class="border border-teal-600/35 bg-teal-50 p-5 text-teal-950 dark:border-teal-300/35 dark:bg-teal-950/30 dark:text-teal-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-200"
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 dark:text-teal-200"
                        [innerHTML]="row.attributionHtml"></p>
                   }
                   <div class="text-lg font-medium leading-8" [innerHTML]="row.textHtml"></div>
                 </aside>
               }
               @case ('callout') {
-                <aside class="border border-emerald-400/30 bg-emerald-950/30 p-5 text-emerald-50">
+                <aside class="border border-emerald-600/35 bg-emerald-50 p-5 text-emerald-950 dark:border-emerald-400/30 dark:bg-emerald-950/30 dark:text-emerald-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300"
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300"
                        [innerHTML]="row.attributionHtml"></p>
                   }
                   <div class="leading-8" [innerHTML]="row.textHtml"></div>
                 </aside>
               }
               @case ('warning') {
-                <aside class="border border-rose-300/35 bg-rose-950/25 p-5 text-rose-50">
+                <aside class="border border-rose-600/35 bg-rose-50 p-5 text-rose-950 dark:border-rose-300/35 dark:bg-rose-950/25 dark:text-rose-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-rose-200"
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-rose-700 dark:text-rose-200"
                        [innerHTML]="row.attributionHtml"></p>
                   }
                   <div class="leading-8" [innerHTML]="row.textHtml"></div>
                 </aside>
               }
               @case ('aside') {
-                <aside class="border-l border-zinc-600 pl-5 text-sm leading-7 text-zinc-400"
+                <aside class="border-l border-slate-300 pl-5 text-sm leading-7 text-slate-600 dark:border-zinc-600 dark:text-zinc-400"
                        [innerHTML]="row.textHtml"></aside>
               }
               @case ('caption') {
-                <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.textHtml"></p>
+                <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.textHtml"></p>
               }
               @default {
-                <p class="text-xl leading-9 text-zinc-100" [innerHTML]="row.textHtml"></p>
+                <p class="text-xl leading-9 text-slate-900 dark:text-zinc-100" [innerHTML]="row.textHtml"></p>
               }
             }
           }
@@ -195,22 +195,22 @@ interface RenderableBlogImage {
             @if (row.stats.length > 0) {
               <section class="space-y-3" [attr.aria-label]="row.block.data.title || 'Statistics'">
                 @if (row.block.data.title) {
-                  <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+                  <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ row.block.data.title }}</h3>
                 }
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   @for (stat of row.stats; track $index) {
-                    <article class="border border-zinc-800 bg-zinc-950/60 p-4">
-                      <p class="text-2xl font-semibold leading-8 text-zinc-50">{{ stat.value }}</p>
+                    <article class="border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
+                      <p class="text-2xl font-semibold leading-8 text-slate-950 dark:text-zinc-50">{{ stat.value }}</p>
                       <p
-                        class="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">{{ stat.label }}</p>
+                        class="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-300">{{ stat.label }}</p>
                       @if (stat.caption) {
-                        <p class="mt-3 text-sm leading-6 text-zinc-500">{{ stat.caption }}</p>
+                        <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-zinc-500">{{ stat.caption }}</p>
                       }
                     </article>
                   }
                 </div>
                 @if (row.block.data.caption) {
-                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></p>
                 }
               </section>
             }
@@ -219,10 +219,10 @@ interface RenderableBlogImage {
             @if (row.chart; as chart) {
               <section class="space-y-4" [attr.aria-label]="chart.ariaLabel">
                 @if (chart.title) {
-                  <h3 class="text-lg font-semibold text-zinc-50">{{ chart.title }}</h3>
+                  <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ chart.title }}</h3>
                 }
                 @if (chart.type === 'line') {
-                  <div class="overflow-x-auto rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                  <div class="overflow-x-auto rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
                     <svg
                       viewBox="0 0 100 64"
                       preserveAspectRatio="none"
@@ -248,38 +248,38 @@ interface RenderableBlogImage {
                          [style.grid-template-columns]="'repeat(' + chart.points.length + ', minmax(0, 1fr))'">
                       @for (point of chart.points; track $index) {
                         <div class="text-xs leading-5">
-                          <p class="font-semibold text-zinc-100">{{ point.displayValue }}</p>
-                          <p class="text-zinc-500">{{ point.label }}</p>
+                          <p class="font-semibold text-slate-900 dark:text-zinc-100">{{ point.displayValue }}</p>
+                          <p class="text-slate-500 dark:text-zinc-500">{{ point.label }}</p>
                           @if (point.note) {
-                            <p class="text-zinc-600">{{ point.note }}</p>
+                            <p class="text-slate-400 dark:text-zinc-600">{{ point.note }}</p>
                           }
                         </div>
                       }
                     </div>
                   </div>
                 } @else {
-                  <div class="space-y-4 rounded border border-zinc-800 bg-zinc-950/60 p-4">
+                  <div class="space-y-4 rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
                     @for (point of chart.points; track $index) {
                       <div class="space-y-2">
                         <div class="flex items-baseline justify-between gap-3">
-                          <p class="text-sm font-medium text-zinc-200">{{ point.label }}</p>
-                          <p class="text-sm font-semibold text-zinc-50">{{ point.displayValue }}</p>
+                          <p class="text-sm font-medium text-slate-700 dark:text-zinc-200">{{ point.label }}</p>
+                          <p class="text-sm font-semibold text-slate-950 dark:text-zinc-50">{{ point.displayValue }}</p>
                         </div>
-                        <div class="h-2 overflow-hidden rounded-full bg-zinc-800" aria-hidden="true">
+                        <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800" aria-hidden="true">
                           <span
-                            class="block h-full rounded-full bg-cyan-300"
+                            class="block h-full rounded-full bg-cyan-600 dark:bg-cyan-300"
                             [style.width.%]="point.magnitudePercent"
                           ></span>
                         </div>
                         @if (point.note) {
-                          <p class="text-xs leading-5 text-zinc-500">{{ point.note }}</p>
+                          <p class="text-xs leading-5 text-slate-500 dark:text-zinc-500">{{ point.note }}</p>
                         }
                       </div>
                     }
                   </div>
                 }
                 @if (chart.caption) {
-                  <p class="text-sm leading-6 text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></p>
                 }
               </section>
             }
@@ -287,7 +287,7 @@ interface RenderableBlogImage {
           @case ('html') {
             @if (row.block.data.html) {
               @if (row.block.data.title) {
-                <h3 class="text-lg font-semibold text-zinc-50">{{ row.block.data.title }}</h3>
+                <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ row.block.data.title }}</h3>
               }
               <section class="blog-custom-html" [innerHTML]="row.blockHtml"></section>
             }
@@ -370,7 +370,7 @@ interface RenderableBlogImage {
             <pre class="overflow-x-auto rounded bg-black p-4 text-sm leading-6 text-cyan-100"><code>{{ row.block.data.code }}</code></pre>
           }
           @case ('delimiter') {
-            <hr class="border-zinc-800">
+            <hr class="border-slate-200 dark:border-zinc-800">
           }
         }
       }
@@ -481,10 +481,26 @@ interface RenderableBlogImage {
       outline: none;
     }
 
+    :host-context(.light) ::ng-deep .blog-inline-link {
+      border-color: rgba(8, 145, 178, 0.6);
+      color: #0e7490;
+    }
+
+    :host-context(.light) ::ng-deep .blog-inline-link:hover,
+    :host-context(.light) ::ng-deep .blog-inline-link:focus-visible {
+      background: rgba(8, 145, 178, 0.1);
+      border-color: #0f172a;
+      color: #0f172a;
+    }
+
     :host ::ng-deep .blog-custom-html {
       color: #d4d4d8;
       line-height: 1.75;
       overflow-x: auto;
+    }
+
+    :host-context(.light) ::ng-deep .blog-custom-html {
+      color: #334155;
     }
 
     :host ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
@@ -492,6 +508,10 @@ interface RenderableBlogImage {
       font-weight: 700;
       line-height: 1.25;
       margin: 1.5rem 0 .75rem;
+    }
+
+    :host-context(.light) ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
+      color: #0f172a;
     }
 
     :host ::ng-deep .blog-custom-html :where(p, ul, ol, table, figure, blockquote, pre) {
@@ -528,16 +548,30 @@ interface RenderableBlogImage {
       vertical-align: top;
     }
 
+    :host-context(.light) ::ng-deep .blog-custom-html :where(th, td) {
+      border-color: #cbd5e1;
+    }
+
     :host ::ng-deep .blog-custom-html th {
       background: #18181b;
       color: #fafafa;
       font-weight: 700;
     }
 
+    :host-context(.light) ::ng-deep .blog-custom-html th {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
     :host ::ng-deep .blog-custom-html blockquote {
       border-left: 2px solid #22d3ee;
       color: #e4e4e7;
       padding-left: 1rem;
+    }
+
+    :host-context(.light) ::ng-deep .blog-custom-html blockquote {
+      border-left-color: #0891b2;
+      color: #1e293b;
     }
 
     :host ::ng-deep .blog-custom-html pre {
@@ -642,7 +676,7 @@ export class BlogBlockRendererComponent implements OnChanges {
 
   protected imageFigureClass(row: RenderableBlogBlock): string {
     const layout = this.getImageLayout(row.block.data);
-    const frameClass = row.block.data.withBackground ? ' rounded bg-zinc-900 p-4' : '';
+    const frameClass = row.block.data.withBackground ? ' rounded bg-slate-100 p-4 dark:bg-zinc-900' : '';
 
     switch (layout) {
       case 'inlineStart':
@@ -672,7 +706,7 @@ export class BlogBlockRendererComponent implements OnChanges {
 
   protected imageClass(row: RenderableBlogBlock): string {
     const layout = this.getImageLayout(row.block.data);
-    const borderClass = row.block.data.withBorder ? ' border border-zinc-700' : '';
+    const borderClass = row.block.data.withBorder ? ' border border-slate-300 dark:border-zinc-700' : '';
     const layoutClass = layout === 'contained' ? ' mx-auto max-w-full' : ' w-full';
 
     return `rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${layoutClass}${borderClass}`;
@@ -682,7 +716,7 @@ export class BlogBlockRendererComponent implements OnChanges {
     const layout = this.getImageLayout(row.block.data);
     const widthClass = layout === 'contained' ? ' mx-auto max-w-full' : '';
 
-    return `text-sm leading-6 text-zinc-500${widthClass}`;
+    return `text-sm leading-6 text-slate-500 dark:text-zinc-500${widthClass}`;
   }
 
   protected closeImageLightbox(): void {

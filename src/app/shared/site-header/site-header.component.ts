@@ -21,7 +21,7 @@ interface SiteNavItem {
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <header
-      class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/92 dark:text-zinc-100">
+      class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <a
           routerLink="/"
@@ -40,9 +40,9 @@ interface SiteNavItem {
           @for (item of navItems; track item.label) {
             <a
               [routerLink]="item.route"
-              routerLinkActive="border-cyan-500 bg-cyan-50 text-cyan-700 dark:border-cyan-300 dark:bg-cyan-400 dark:text-zinc-950"
+              routerLinkActive="border-cyan-700 bg-cyan-600 text-white shadow-sm shadow-cyan-950/15 dark:border-cyan-300 dark:bg-cyan-400 dark:text-zinc-950"
               [routerLinkActiveOptions]="{exact: item.exact}"
-              class="rounded-full border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:text-cyan-200"
+              class="rounded-full border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:bg-transparent dark:hover:text-cyan-200"
             >
               {{ item.label }}
             </a>
@@ -73,7 +73,7 @@ interface SiteNavItem {
 
           <a
             [routerLink]="['/', pathNames.OS_LOGIN]"
-            class="hidden h-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/60 px-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500 hover:text-white dark:border-emerald-400/70 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950 sm:inline-flex"
+            class="hidden h-10 shrink-0 items-center justify-center rounded-full border border-emerald-600/70 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-400/70 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950 sm:inline-flex"
           >
             OS
           </a>
@@ -107,15 +107,15 @@ interface SiteNavItem {
 
       @if (isMenuOpen()) {
         <nav id="site-mobile-menu"
-             class="border-t border-slate-200 bg-white/96 px-4 py-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-neutral-950/96 md:hidden"
+             class="border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-neutral-950/95 md:hidden"
              aria-label="Mobile navigation">
           <div class="grid gap-2">
             @for (item of navItems; track item.label) {
               <a
                 [routerLink]="item.route"
-                routerLinkActive="border-cyan-500 bg-cyan-50 text-cyan-700 dark:border-cyan-300 dark:bg-cyan-400 dark:text-zinc-950"
+                routerLinkActive="border-cyan-700 bg-cyan-600 text-white dark:border-cyan-300 dark:bg-cyan-400 dark:text-zinc-950"
                 [routerLinkActiveOptions]="{exact: item.exact}"
-                class="rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:text-cyan-200"
+                class="rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:bg-transparent dark:hover:text-cyan-200"
                 (click)="closeMenu()"
               >
                 {{ item.label }}
@@ -123,7 +123,7 @@ interface SiteNavItem {
             }
             <a
               [routerLink]="['/', pathNames.OS_LOGIN]"
-              class="rounded-lg border border-emerald-500/50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500 hover:text-white dark:border-emerald-400/70 dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
+              class="rounded-lg border border-emerald-600/70 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-400/70 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
               (click)="closeMenu()"
             >
               Launch OS

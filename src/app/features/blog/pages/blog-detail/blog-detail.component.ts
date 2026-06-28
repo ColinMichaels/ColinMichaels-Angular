@@ -50,7 +50,7 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="blog-page">
       @if (post()) {
         <div class="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-transparent">
           <div class="h-full bg-cyan-300 transition-[width] duration-150" [style.width.%]="readingProgress()"></div>
@@ -64,13 +64,14 @@ import {
             [ngClass]="hasTableOfContents() ? 'xl:max-w-7xl xl:grid-cols-[minmax(0,1fr)_20rem]' : 'xl:max-w-5xl'"
           >
             <div class="min-w-0 xl:col-start-1">
-              <header class="mb-10 space-y-6 border-b border-zinc-800 pb-8">
-                <h1 class="text-4xl font-semibold leading-tight text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
-                <div class="flex flex-wrap gap-x-4 gap-y-1 border-y border-zinc-800/80 py-3 text-sm text-zinc-500">
+              <header class="blog-section-rule blog-page-header space-y-6">
+                <h1
+                  class="text-4xl font-semibold leading-tight text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
+                <div class="blog-post-meta-row">
                   <span>
                     By
                     <a routerLink="/" [fragment]="authorProfile.profileFragment"
-                       class="text-zinc-300 hover:text-cyan-200">
+                       class="font-medium text-slate-800 hover:text-cyan-800 dark:text-zinc-300 dark:hover:text-cyan-200">
                       {{ currentPost.author.name }}
                     </a>
                   </span>
@@ -87,25 +88,24 @@ import {
                     <span>{{ stats.wordCount | number }} words</span>
                   }
                 </div>
-                <div class="flex flex-wrap gap-2 text-cyan-200">
+                <div class="flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
                   @for (category of currentPost.categories; track category) {
-                    <span
-                      class="rounded border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
-                    >
+                    <span class="blog-category-badge">
                       {{ category }}
                     </span>
                   }
                 </div>
-                <p class="text-lg leading-8 text-zinc-400">{{ currentPost.excerpt }}</p>
+                <p class="text-lg leading-8 text-slate-600 dark:text-zinc-400">{{ currentPost.excerpt }}</p>
                 @if (isPreviewRoute()) {
-                  <div class="border border-amber-400/50 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                  <div
+                    class="border border-amber-500/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/50 dark:bg-amber-400/10 dark:text-amber-100">
                     Draft preview. This temporary link is rendering unpublished CMS content.
                   </div>
                 }
                 @if (canEditPost()) {
                   <a
                     [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS, currentPost.slug, 'edit']"
-                    class="inline-flex rounded border border-amber-300/50 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100 transition-colors hover:border-amber-200 hover:bg-amber-300/20 hover:text-white"
+                    class="inline-flex rounded border border-amber-600/60 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-500 hover:text-white dark:border-amber-300/50 dark:bg-amber-300/10 dark:text-amber-100 dark:hover:border-amber-200 dark:hover:bg-amber-300/20 dark:hover:text-white"
                   >
                     Edit post
                   </a>
@@ -113,7 +113,7 @@ import {
                 <img
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
-                  class="aspect-[16/9] w-full rounded border border-zinc-800 bg-zinc-900 object-cover shadow-2xl shadow-black/25"
+                  class="blog-media-frame aspect-[16/9] w-full object-cover shadow-xl dark:shadow-black/25"
                   loading="eager"
                 >
               </header>
@@ -136,18 +136,17 @@ import {
                 [anchorPath]="createCurrentPostPath(currentPost.slug)"
               ></app-blog-block-renderer>
 
-              <footer class="mt-14 border-t border-zinc-800 pt-8">
+              <footer class="blog-section-rule mt-14">
                 @if (previousPost() || nextPost()) {
                   <nav aria-label="Post navigation" class="grid gap-4 sm:grid-cols-2">
                     @if (previousPost(); as previous) {
                       <a
                         [routerLink]="['/', pathNames.BLOG, previous.slug]"
-                        class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
+                        class="site-card-interactive group p-4"
                       >
+                        <span class="site-meta block">Previous post</span>
                         <span
-                          class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Previous post</span>
-                        <span
-                          class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200">{{ previous.title }}</span>
+                          class="mt-2 block text-base font-medium leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ previous.title }}</span>
                       </a>
                     } @else {
                       <span aria-hidden="true" class="hidden sm:block"></span>
@@ -156,18 +155,18 @@ import {
                     @if (nextPost(); as next) {
                       <a
                         [routerLink]="['/', pathNames.BLOG, next.slug]"
-                        class="group rounded border border-zinc-800 p-4 transition-colors hover:border-cyan-400 hover:bg-zinc-900 sm:text-right"
+                        class="site-card-interactive group p-4 sm:text-right"
                       >
-                        <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">Next post</span>
+                        <span class="site-meta block">Next post</span>
                         <span
-                          class="mt-2 block text-base font-medium leading-6 text-zinc-100 group-hover:text-cyan-200">{{ next.title }}</span>
+                          class="mt-2 block text-base font-medium leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ next.title }}</span>
                       </a>
                     }
                   </nav>
                 }
 
                 @if (currentPost.tags.length > 0 || shareMetadata()) {
-                  <section class="mt-10 grid gap-4 border-t border-zinc-800 pt-8">
+                  <section class="blog-section-rule mt-10 grid gap-4">
                     @if (currentPost.tags.length > 0) {
                       <app-blog-tag-list [tags]="currentPost.tags"></app-blog-tag-list>
                     }
@@ -183,20 +182,22 @@ import {
                   </section>
                 }
 
-                <section class="mt-10">
+                <section class="blog-section-rule mt-10">
                   <app-author-bio></app-author-bio>
                 </section>
 
                 @if (suggestedPosts().length > 0) {
-                  <section aria-labelledby="suggested-posts-heading" class="mt-10">
+                  <section aria-labelledby="suggested-posts-heading" class="blog-section-rule mt-10">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                       <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-cyan-300">Keep reading</p>
-                        <h2 id="suggested-posts-heading" class="mt-1 text-2xl font-semibold text-zinc-50">Suggested
+                        <p class="eyebrow-sm eyebrow-cyan">Keep
+                          reading</p>
+                        <h2 id="suggested-posts-heading"
+                            class="mt-1 text-2xl font-semibold text-slate-950 dark:text-zinc-50">Suggested
                           posts</h2>
                       </div>
                       <a [routerLink]="['/', pathNames.BLOG]"
-                         class="text-sm font-medium text-zinc-400 hover:text-cyan-200">
+                         class="text-sm font-medium text-slate-600 hover:text-cyan-800 dark:text-zinc-400 dark:hover:text-cyan-200">
                         View all posts
                       </a>
                     </div>
@@ -204,9 +205,9 @@ import {
                       @for (suggestedPost of suggestedPosts(); track suggestedPost.id) {
                         <a
                           [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
-                          class="group flex min-h-full flex-col overflow-hidden rounded border border-zinc-800 bg-zinc-900/70 transition-colors hover:border-cyan-400 hover:bg-zinc-900"
+                          class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
                         >
-                          <span class="relative block overflow-hidden bg-zinc-900">
+                          <span class="relative block overflow-hidden bg-slate-100 dark:bg-zinc-900">
                             <img
                               [src]="suggestedPostImage(suggestedPost)"
                               [alt]="suggestedPost.title + ' thumbnail image'"
@@ -222,13 +223,13 @@ import {
                             </span>
                           </span>
                           <span class="flex flex-1 min-w-0 flex-col p-4">
-                            <span class="text-xs text-zinc-500">
+                            <span class="text-xs text-slate-500 dark:text-zinc-500">
                               {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
                             </span>
                             <span
-                              class="mt-1 block text-lg font-semibold leading-6 text-zinc-100 group-hover:text-cyan-200">{{ suggestedPost.title }}</span>
+                              class="mt-1 block text-lg font-semibold leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ suggestedPost.title }}</span>
                             <span
-                              class="mt-2 line-clamp-3 block text-sm leading-6 text-zinc-400">{{ suggestedPost.excerpt }}</span>
+                              class="mt-2 line-clamp-3 block text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ suggestedPost.excerpt }}</span>
                           </span>
                         </a>
                       }
@@ -239,53 +240,61 @@ import {
             </div>
           </div>
         } @else if (loadError(); as error) {
-          <section class="rounded border border-zinc-800 bg-zinc-900 p-6">
-            <h1 class="text-2xl font-semibold text-zinc-50">Unable to load post</h1>
-            <p class="mt-2 text-zinc-400">{{ error }}</p>
-            <a routerLink="/blog" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">Back to blog</a>
+          <section
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Unable to load post</h1>
+            <p class="mt-2 text-body">{{ error }}</p>
+            <a routerLink="/blog"
+               class="site-inline-link mt-5 inline-block">Back
+              to blog</a>
           </section>
         } @else if (isLoading()) {
-          <section class="rounded border border-zinc-800 bg-zinc-900 p-6">
-            <h1 class="text-2xl font-semibold text-zinc-50">Loading post</h1>
-            <p class="mt-2 text-zinc-400">Fetching the latest post data from Firestore.</p>
+          <section
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Loading post</h1>
+            <p class="mt-2 text-body">Fetching the latest post data from Firestore.</p>
           </section>
         } @else {
-          <section class="rounded border border-zinc-800 bg-zinc-900 p-6">
-            <h1 class="text-2xl font-semibold text-zinc-50">Post not found</h1>
-            <p class="mt-2 text-zinc-400">This post is unavailable or has not been published.</p>
-            <a routerLink="/blog" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">Back to blog</a>
+          <section
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Post not found</h1>
+            <p class="mt-2 text-body">This post is unavailable or has not been published.</p>
+            <a routerLink="/blog"
+               class="site-inline-link mt-5 inline-block">Back
+              to blog</a>
           </section>
         }
       </article>
 
-      <footer class="mx-auto mt-16 max-w-5xl border-t border-zinc-800 pb-8 pt-8 text-sm text-zinc-400">
+      <footer class="blog-section-rule mx-auto mt-16 max-w-5xl pb-8 text-sm text-slate-600 dark:text-zinc-400">
         <div class="grid gap-8 md:grid-cols-[1.25fr_1fr_1fr]">
           <section>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">ColinMichaels.com</p>
+            <p class="site-meta">
+              ColinMichaels.com</p>
             <p class="mt-3 max-w-md leading-6">
               Projects, writing, media, and notes on frontend engineering, recovery, and creative systems.
             </p>
           </section>
 
           <nav aria-label="Footer navigation">
-            <h2 class="text-sm font-semibold text-zinc-100">Explore</h2>
+            <h2 class="text-sm font-semibold text-slate-950 dark:text-zinc-100">Explore</h2>
             <div class="mt-3 grid gap-2">
-              <a routerLink="/" class="hover:text-cyan-200">Home</a>
-              <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-200">Blog</a>
-              <a [routerLink]="['/', pathNames.LABS]" class="hover:text-cyan-200">Labs</a>
-              <a [routerLink]="['/', pathNames.OS_LOGIN]" class="hover:text-cyan-200">OS</a>
+              <a routerLink="/" class="hover:text-cyan-800 dark:hover:text-cyan-200">Home</a>
+              <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Blog</a>
+              <a [routerLink]="['/', pathNames.LABS]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Labs</a>
+              <a [routerLink]="['/', pathNames.OS_LOGIN]" class="hover:text-cyan-800 dark:hover:text-cyan-200">OS</a>
             </div>
           </nav>
 
           <nav aria-label="Footer utilities">
-            <h2 class="text-sm font-semibold text-zinc-100">Resources</h2>
+            <h2 class="text-sm font-semibold text-slate-950 dark:text-zinc-100">Resources</h2>
             <div class="mt-3 grid gap-2">
-              <a href="/sitemap.xml" class="hover:text-cyan-200">Sitemap</a>
+              <a href="/sitemap.xml" class="hover:text-cyan-800 dark:hover:text-cyan-200">Sitemap</a>
               <a
                 href="https://github.com/ColinMichaels"
                 rel="noreferrer"
                 target="_blank"
-                class="hover:text-cyan-200"
+                class="hover:text-cyan-800 dark:hover:text-cyan-200"
               >
                 GitHub
               </a>
@@ -293,7 +302,7 @@ import {
                 href="https://forms.gle/kfsZYFRzJcQYfruw9"
                 rel="noreferrer"
                 target="_blank"
-                class="hover:text-cyan-200"
+                class="hover:text-cyan-800 dark:hover:text-cyan-200"
               >
                 Report a Bug
               </a>
@@ -302,7 +311,7 @@ import {
         </div>
 
         <div
-          class="mt-8 flex flex-col gap-2 border-t border-zinc-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          class="mt-8 flex flex-col gap-2 border-t border-slate-200 pt-5 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {{ currentYear }} Colin Michaels. All rights reserved.</p>
           <p>Built with Angular and Firebase.</p>
         </div>
