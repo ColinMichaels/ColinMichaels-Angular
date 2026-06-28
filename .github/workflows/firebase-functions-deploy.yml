@@ -126,6 +126,9 @@ jobs:
           name: firebase-functions-manual-only
           path: functions
 
+      - name: Install Functions runtime dependencies
+        run: npm --prefix functions ci --omit=dev
+
       - name: Validate Firebase service account secret
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
