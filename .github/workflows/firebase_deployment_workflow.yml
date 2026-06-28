@@ -195,6 +195,9 @@ jobs:
           name: firebase-functions-manual
           path: functions
 
+      - name: Install Functions runtime dependencies
+        run: npm --prefix functions ci --omit=dev
+
       - name: Validate Firebase service account secret
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -283,6 +286,16 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
+      - name: Create Firebase rules deploy config
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          delete config.functions;
+          delete config.hosting;
+          fs.writeFileSync('firebase.rules.ci.json', `${JSON.stringify(config, null, 2)}\n`);
+          NODE
+
       - name: Deploy Firebase security rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
@@ -313,6 +326,7 @@ jobs:
 
           env -u FIREBASE_TOKEN npx --yes firebase-tools@14 deploy \
             --only firestore:rules,database,storage \
+            --config firebase.rules.ci.json \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive
 

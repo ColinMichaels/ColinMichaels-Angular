@@ -82,7 +82,7 @@ Generates Angular environment files and prepares the SEO HTML shell used by Fire
 
 Firebase Hosting serves the built Angular app from `dist/colin-michaels-firebase/browser` and rewrites application routes through `renderSeoHtml` for crawler-friendly HTML. Feed and sitemap routes are handled by dedicated Functions.
 
-The Functions runtime is configured as Node 20 in `firebase.json` and `functions/package.json`. Hosting and Functions predeploy hooks run the Angular build, prepare the SEO shell, and build Functions.
+The Functions runtime is configured as Node 22 in `firebase.json` and `functions/package.json`. Hosting and Functions predeploy hooks run the Angular build, prepare the SEO shell, and build Functions.
 
 ## Environment Files
 
