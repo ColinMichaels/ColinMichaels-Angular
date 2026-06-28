@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-28
+
+- Consolidated production Firebase deploys into a single push/manual workflow with shared deploy-scope and Firebase CLI helper scripts, replacing separate production merge, manual, and Functions-only workflows.
+
 ## 2026-06-27
 
 - Hardened Firebase GitHub Actions deploy authentication by writing the validated service account JSON secret to an explicit temporary Application Default Credentials file before Firebase CLI deploy steps.

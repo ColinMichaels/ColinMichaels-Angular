@@ -1,0 +1,176 @@
+name: Deploy Firebase Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      deploy_site:
+        description: Build and deploy Hosting plus Functions SEO/runtime
+        required: true
+        type: boolean
+        default: true
+      deploy_functions:
+        description: Deploy Functions without Hosting
+        required: true
+        type: boolean
+        default: false
+      deploy_rules:
+        description: Deploy Firestore, Realtime Database, and Storage rules
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: firebase-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan_deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_hosting: ${{ steps.scope.outputs.deploy_hosting }}
+      deploy_functions: ${{ steps.scope.outputs.deploy_functions }}
+      deploy_rules: ${{ steps.scope.outputs.deploy_rules }}
+      deploy_site_build: ${{ steps.scope.outputs.deploy_site_build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve Firebase deploy scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          INPUT_DEPLOY_SITE: ${{ inputs.deploy_site || false }}
+          INPUT_DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions || false }}
+          INPUT_DEPLOY_RULES: ${{ inputs.deploy_rules || false }}
+        run: .github/scripts/resolve-firebase-production-deploy-scope.sh
+
+  deploy_production:
+    needs: plan_deploy
+    if: ${{ needs.plan_deploy.outputs.deploy_hosting == 'true' || needs.plan_deploy.outputs.deploy_functions == 'true' || needs.plan_deploy.outputs.deploy_rules == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
+      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
+      FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Validate production web environment
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
+        run: |
+          missing=()
+          required=(
+            APP_TITLE
+            APP_API_URL
+            FIREBASE_API_KEY
+            FIREBASE_AUTH_DOMAIN
+            FIREBASE_DATABASE_URL
+            FIREBASE_PROJECT_ID
+            FIREBASE_STORAGE_BUCKET
+            FIREBASE_MESSAGING_SENDER_ID
+            FIREBASE_APP_ID
+            FIREBASE_MEASUREMENT_ID
+          )
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required workflow environment variables:"
+            printf -- '- %s\n' "${missing[@]}"
+            echo "Check GitHub repository/environment Variables and Secrets configuration."
+            exit 1
+          fi
+
+      - name: Install app dependencies
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
+        run: npm ci
+
+      - name: Generate Angular environment files
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
+        run: npm run generate:env
+
+      - name: Build Angular app
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
+        run: npm run build
+
+      - name: Install Functions dependencies
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        run: npm --prefix functions ci
+
+      - name: Prepare SEO HTML template for Functions
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        run: npm run prepare:functions-seo
+
+      - name: Build Firebase Functions
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        run: npm --prefix functions run build
+
+      - name: Set up Node.js for rules-only deploy
+        if: ${{ needs.plan_deploy.outputs.deploy_site_build != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+
+      - name: Validate Firebase service account secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/validate-firebase-service-account.mjs
+
+      - name: Create Firebase ADC credentials file
+        id: firebase-auth
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/write-firebase-service-account.mjs
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy Firebase security rules
+        if: ${{ needs.plan_deploy.outputs.deploy_rules == 'true' }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: .github/scripts/deploy-firebase-target.sh rules firestore:rules,database,storage
+
+      - name: Deploy Firebase Functions
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: .github/scripts/deploy-firebase-target.sh functions functions
+
+      - name: Deploy Firebase Hosting
+        if: ${{ needs.plan_deploy.outputs.deploy_hosting == 'true' }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: .github/scripts/deploy-firebase-target.sh hosting hosting
