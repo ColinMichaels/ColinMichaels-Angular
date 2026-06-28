@@ -39,17 +39,17 @@ Workflows support fallbacks for legacy names:
 
 ## Firebase Hosting Workflows
 
-Hosting deploys are intentionally split by branch target:
+Firebase deploys are intentionally split by production and preview target:
 
 - Pull requests targeting `dev` run `.github/workflows/firebase-hosting-pull-request.yml` and deploy only to a preview channel named `pr-<number>`.
-- Merged pull requests targeting `master` run `.github/workflows/firebase-hosting-merge.yml`, deploy Firebase Functions, then deploy Firebase Hosting production with `channelId: live`.
-- `.github/workflows/firebase_deployment_workflow.yml` remains a manual production deploy override for Firebase Functions and Hosting.
+- Pushes to `master` run `.github/workflows/firebase-production.yml`, resolve the changed Firebase scope, then deploy only the required production targets.
+- Manual production deploys use `.github/workflows/firebase-production.yml` with inputs for site, Functions-only, and security-rules deploys. Selecting the site deploy also deploys Functions so the packaged SEO HTML shell stays in sync with Hosting.
 
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
 All Firebase workflows use Node `22.22.3` to match the repository engine requirement. Build jobs install with `npm ci`, generate Angular environment files with `npm run generate:env`, and build with `npm run build`. Deploy jobs also set up Node before invoking `npx firebase-tools@14` so the Firebase CLI does not run on the GitHub runner's default Node version.
 
-Firebase CLI deploy jobs write the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. Each deploy step activates that key with `gcloud auth activate-service-account`, prints the active account for diagnostics, verifies that gcloud can mint an access token, clears any inherited `FIREBASE_TOKEN`, and then lets `firebase-tools@14` authenticate through `GOOGLE_APPLICATION_CREDENTIALS`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
+Firebase CLI deploy jobs write the raw `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` or `FIREBASE_SERVICE_ACCOUNT` JSON secret to a temporary credentials file under `$RUNNER_TEMP`. The shared deploy helper activates that key with `gcloud auth activate-service-account`, prints the active account for diagnostics, verifies that gcloud can mint an access token, clears any inherited `FIREBASE_TOKEN`, generates a target-specific Firebase CI config, and then lets `firebase-tools@14` authenticate through `GOOGLE_APPLICATION_CREDENTIALS`. Keep the secret value as the full raw JSON content, not a path, filename, or base64 wrapper.
 
 ## Local Development Files
 
