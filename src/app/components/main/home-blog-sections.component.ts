@@ -8,7 +8,6 @@ import {
   BlogPostCardSkeletonComponent
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
 import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
-import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 
@@ -51,7 +50,6 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   imports: [
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
-    BlogShareActionsComponent,
     DatePipe,
     RouterLink,
   ],
@@ -59,7 +57,8 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section id="blog" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        class="blog-section-rule flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-white/10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 class="mt-3 heading-section">Latest writing</h2>
         </div>
@@ -91,18 +90,13 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
                     <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
                   </h3>
                   <p class="mt-3 text-body">{{ post.excerpt }}</p>
-                  <div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+                  <div class="mt-auto pt-5">
                     <a
                       [routerLink]="['/', pathNames.BLOG, post.slug]"
                       class="btn-secondary"
                     >
                       Read more
                     </a>
-                    <app-blog-share-actions
-                      [title]="post.title"
-                      [excerpt]="post.excerpt"
-                      [path]="pathNames.BLOG + '/' + post.slug"
-                    ></app-blog-share-actions>
                   </div>
                 </div>
               </article>
@@ -134,7 +128,8 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
 
     <section id="health-recovery" class="border-y border-white/10 bg-neutral-900/10 py-12">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div
+          class="blog-section-rule flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-white/10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p class="eyebrow eyebrow-emerald">Health & Recovery</p>
             <h2 class="mt-3 heading-section">Weekly Updates</h2>
@@ -156,7 +151,7 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
           @defer (when !blogIsLoading()) {
             <div class="mt-8 divide-y divide-zinc-800">
               @for (post of healthRecoveryPosts(); track post.id) {
-                <app-blog-post-card [post]="post"></app-blog-post-card>
+                <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
               } @empty {
                 <p class="border border-white/10 bg-zinc-950 p-5 text-sm leading-6 text-zinc-400">
                   No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
@@ -175,7 +170,8 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
     </section>
 
     <section id="medical-information" class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        class="blog-section-rule flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-white/10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="eyebrow eyebrow-rose">Things I learned in the Hospital</p>
           <h2 class="mt-3 heading-section">Medical advice from a friend</h2>
@@ -190,14 +186,14 @@ function postMatchesTerms(post: BlogPostSummary, terms: readonly string[]): bool
 
       @if (blogLoadError(); as error) {
         <div class="mt-8 border border-white/10 bg-zinc-900 p-5 text-zinc-400">
-          <p class="font-medium text-zinc-100">Unable to load medical information posts.</p>
+          <p class="font-medium text-zinc-100">Unable to load posts.</p>
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
       } @else {
         @defer (when !blogIsLoading()) {
           <div class="mt-8 divide-y divide-zinc-800">
             @for (post of medicalInfoPosts(); track post.id) {
-              <app-blog-post-card [post]="post"></app-blog-post-card>
+              <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
             } @empty {
               <p class="border border-white/10 bg-zinc-900 p-5 text-sm leading-6 text-zinc-400">
                 No published medical information posts yet. Posts tagged or categorized with medical information,

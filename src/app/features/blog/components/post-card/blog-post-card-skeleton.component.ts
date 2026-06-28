@@ -4,9 +4,9 @@ import {Component, ChangeDetectionStrategy} from '@angular/core';
   selector: 'app-blog-post-card-skeleton',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="grid gap-4 border-t border-zinc-200 py-6 dark:border-zinc-800 md:grid-cols-[220px_1fr]"
+    <article class="blog-post-row"
              aria-hidden="true">
-      <div class="overflow-hidden rounded bg-zinc-100 dark:bg-zinc-900">
+      <div class="blog-media-frame overflow-hidden rounded bg-zinc-100 dark:bg-zinc-900">
         <div class="aspect-[4/3] h-full w-full animate-pulse bg-zinc-200 dark:bg-zinc-800"></div>
       </div>
       <div class="flex min-w-0 flex-col gap-3">

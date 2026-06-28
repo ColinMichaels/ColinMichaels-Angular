@@ -98,14 +98,14 @@ export class BlogShareActionsComponent implements OnDestroy {
 
   protected get containerClass(): string {
     return this.variant === 'panel'
-      ? 'flex flex-wrap items-center justify-between gap-3 rounded border border-zinc-800 bg-zinc-900/70 px-4 py-3'
+      ? 'flex flex-wrap items-center justify-between gap-3 rounded border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-900/70 dark:shadow-black/20'
       : 'flex items-center gap-2';
   }
 
   protected get iconClass(): string {
     return this.variant === 'panel'
-      ? 'inline-flex h-10 w-10 items-center justify-center rounded border border-zinc-700 text-zinc-300 transition hover:border-cyan-300 hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-zinc-950'
-      : 'inline-flex h-8 w-8 items-center justify-center rounded border border-white/10 text-zinc-400 transition hover:border-cyan-300 hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-zinc-900';
+      ? 'inline-flex h-10 w-10 items-center justify-center rounded border border-slate-300 bg-slate-50 text-slate-700 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:border-cyan-300 dark:hover:bg-transparent dark:hover:text-cyan-200 dark:focus:ring-cyan-300 dark:focus:ring-offset-zinc-950'
+      : 'inline-flex h-8 w-8 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-white dark:border-white/10 dark:bg-transparent dark:text-zinc-400 dark:hover:border-cyan-300 dark:hover:bg-transparent dark:hover:text-cyan-200 dark:focus:ring-cyan-300 dark:focus:ring-offset-zinc-900';
   }
 
   protected get xShareUrl(): string {

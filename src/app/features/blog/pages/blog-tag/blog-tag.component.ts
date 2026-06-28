@@ -21,16 +21,16 @@ import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-categ
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="blog-page">
       <section class="mx-auto max-w-5xl">
-        <header class="mb-10 border-b border-zinc-800 pb-8">
-          <nav class="mb-6 text-sm text-zinc-400" aria-label="Blog navigation">
-            <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-200">Blog</a>
+        <header class="blog-section-rule mb-10 border-b border-slate-200 pb-8 dark:border-zinc-800">
+          <nav class="mb-6 text-sm text-slate-600 dark:text-zinc-400" aria-label="Blog navigation">
+            <a [routerLink]="['/', pathNames.BLOG]" class="font-medium hover:text-cyan-800 dark:hover:text-cyan-200">Blog</a>
             <span aria-hidden="true" class="mx-2">/</span>
-            <span class="text-zinc-200">Tag</span>
+            <span class="text-slate-900 dark:text-zinc-200">Tag</span>
           </nav>
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Tagged posts</p>
-          <h1 class="mt-2 text-3xl font-semibold text-zinc-50 sm:text-5xl">{{ tagTitle() }}</h1>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-700 dark:text-cyan-300">Tagged posts</p>
+          <h1 class="mt-2 text-3xl font-semibold text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ tagTitle() }}</h1>
           <div class="mt-6">
             <app-blog-category-nav></app-blog-category-nav>
           </div>
@@ -38,26 +38,28 @@ import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-categ
 
         <section>
           @if (loadError(); as error) {
-            <div class="border-t border-zinc-800">
-              <p class="text-lg font-medium text-zinc-100">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm text-zinc-400">{{ error }}</p>
+            <div class="blog-section-rule py-8">
+              <p class="text-lg font-medium text-slate-950 dark:text-zinc-100">Unable to load blog posts from
+                Firestore.</p>
+              <p class="mt-2 text-sm text-slate-600 dark:text-zinc-400">{{ error }}</p>
             </div>
           } @else {
             @defer (when !isLoading()) {
-              <p class="border-t border-zinc-800 py-4 text-sm text-zinc-500">
+              <p class="blog-section-rule py-4 text-sm text-slate-600 dark:text-zinc-500">
                 Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
-                tagged <span class="text-cyan-300">{{ tagTitle() }}</span>.
+                tagged <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ tagTitle() }}</span>.
               </p>
 
               @for (post of filteredPosts(); track post.id) {
                 <app-blog-post-card [post]="post"></app-blog-post-card>
               } @empty {
-                <div class="border-t border-zinc-800 py-8">
-                  <p class="text-lg font-medium text-zinc-100">No published posts with this tag.</p>
-                  <p class="mt-2 text-sm text-zinc-400">
+                <div class="blog-section-rule py-8">
+                  <p class="text-lg font-medium text-slate-950 dark:text-zinc-100">No published posts with this tag.</p>
+                  <p class="mt-2 text-sm text-slate-600 dark:text-zinc-400">
                     This tag may not exist yet, or its posts may still be drafts.
                   </p>
-                  <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">
+                  <a [routerLink]="['/', pathNames.BLOG]"
+                     class="mt-5 inline-block font-medium text-cyan-700 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200">
                     View all posts
                   </a>
                 </div>

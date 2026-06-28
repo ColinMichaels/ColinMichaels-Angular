@@ -14,7 +14,7 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
   template: `
     <section id="youtube" class="border-y border-white/10 bg-neutral-950 py-14">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div class="blog-section-rule flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div class="max-w-2xl">
             <p class="text-sm uppercase tracking-[0.28em] text-red-300">YouTube</p>
             <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Latest videos</h2>

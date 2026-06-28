@@ -133,6 +133,10 @@ Cloud Run Functions require Cloud Build, Artifact Registry, Cloud Run, Secret Ma
 
 The Firebase CLI also checks Firebase Extensions during deploy. If deploy fails with `firebaseextensions.googleapis.com ... instances ... HTTP Error: 403, The caller does not have permission`, grant the deploy service account the Firebase Extensions Viewer role so it can list extension instances.
 
+Firestore and Storage rules deploys require Firebase Rules API permissions. If security-rules deploy fails with `firebaserules.googleapis.com ... projects/...:test ... 403`, grant the deploy service account the Firebase Rules Admin role so Firebase CLI can compile, test, and release `firestore.rules` and `storage.rules`.
+
+Storage rules deploys also require Cloud Storage for Firebase permissions. If security-rules deploy fails with `firebasestorage.defaultBucket.get denied`, grant the deploy service account the Firebase Storage Admin role so Firebase CLI can read the default bucket and release `storage.rules`.
+
 Cloud Functions deploys also require the deploy caller to act as the runtime service account. If deploy fails with `Caller is missing permission 'iam.serviceaccounts.actAs' on service account ...-compute@developer.gserviceaccount.com`, grant the deploy service account `roles/iam.serviceAccountUser` on the default Compute Engine service account.
 
 If browser calls fail as CORS errors but an `OPTIONS` probe returns `403 Forbidden` from Google Frontend with no `Access-Control-Allow-Origin`, the Gen 2 Function's underlying Cloud Run service is private. The source sets public invokers for browser-facing Functions, but the deployed services may need public Cloud Run invoker bindings after a first deploy or failed IAM update.
@@ -162,6 +166,14 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
   --role "roles/firebaseextensions.viewer"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+  --role "roles/firebaserules.admin"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+  --role "roles/firebasestorage.admin"
 
 gcloud iam service-accounts add-iam-policy-binding "$COMPUTE_SERVICE_ACCOUNT" \
   --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \

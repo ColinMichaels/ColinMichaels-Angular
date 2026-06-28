@@ -14,6 +14,8 @@
   --site-panel-soft: rgba(24, 24, 27, 0.72);
   --site-section: #171717;
   --site-border: rgba(255, 255, 255, 0.1);
+  --site-accent: #22d3ee;
+  --site-accent-strong: #67e8f9;
   --site-heading: #fafafa;
   --site-text: #e4e4e7;
   --site-muted: #a1a1aa;
@@ -26,6 +28,8 @@
   --site-panel-soft: rgba(255, 255, 255, 0.82);
   --site-section: #f1f5f9;
   --site-border: rgba(15, 23, 42, 0.12);
+  --site-accent: #0891b2;
+  --site-accent-strong: #0e7490;
   --site-heading: #0f172a;
   --site-text: #1e293b;
   --site-muted: #475569;
@@ -99,7 +103,6 @@ body {
   outline: 2px solid #005fcc; /* Adjust style as needed */
   border-radius: 4px; /* Optional: rounding for better visuals */
 }
-
 
 
 
