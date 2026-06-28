@@ -84,7 +84,7 @@ Firebase Hosting serves the built Angular app from `dist/colin-michaels-firebase
 
 The Functions runtime is configured as Node 22 in `firebase.json` and `functions/package.json`. Hosting and Functions predeploy hooks run the Angular build, prepare the SEO shell, and build Functions.
 
-Production deploys run through `.github/workflows/firebase-production.yml` on pushes to `master` and through the same workflow's manual dispatch controls. The dev PR preview workflow remains separate because it deploys temporary Hosting preview channels only.
+Production deploys run through `.github/workflows/firebase-production.yml` on pushes to `master` and through the same workflow's manual dispatch controls. Deploying Functions also deploys the matching Hosting assets because `renderSeoHtml` serves deep-link HTML that references the current Angular bundle filenames. The dev PR preview workflow remains separate because it deploys temporary Hosting preview channels only.
 
 ## Environment Files
 

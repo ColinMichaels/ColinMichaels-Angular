@@ -41,7 +41,9 @@ fi
 echo "gcloud active account: $active_account"
 gcloud auth print-access-token >/dev/null
 
-config_path="${RUNNER_TEMP:-/tmp}/firebase-${target}.ci.json"
+config_path="$(mktemp "$PWD/.firebase-${target}.ci.XXXXXX.json")"
+trap 'rm -f "$config_path"' EXIT
+
 node .github/scripts/create-firebase-deploy-config.mjs "$target" "$config_path"
 
 env -u FIREBASE_TOKEN npx --yes firebase-tools@14 deploy \

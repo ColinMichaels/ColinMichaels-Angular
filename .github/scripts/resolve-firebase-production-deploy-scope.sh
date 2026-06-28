@@ -37,6 +37,12 @@ else
   deploy_rules="$rules_changed"
 fi
 
+if [ "$deploy_functions" = true ]; then
+  # Deep links are served by renderSeoHtml, whose generated index shell points
+  # at hashed Hosting assets. Keep the Function bundle and Hosting release in sync.
+  deploy_hosting=true
+fi
+
 deploy_site_build=false
 if [ "$deploy_hosting" = true ] || [ "$deploy_functions" = true ]; then
   deploy_site_build=true
