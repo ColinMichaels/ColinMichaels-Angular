@@ -12,7 +12,7 @@ on:
         type: boolean
         default: true
       deploy_functions:
-        description: Deploy Functions without Hosting
+        description: Deploy Functions plus matching Hosting assets
         required: true
         type: boolean
         default: false

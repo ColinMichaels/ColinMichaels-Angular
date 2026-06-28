@@ -43,7 +43,7 @@ Firebase deploys are intentionally split by production and preview target:
 
 - Pull requests targeting `dev` run `.github/workflows/firebase-hosting-pull-request.yml` and deploy only to a preview channel named `pr-<number>`.
 - Pushes to `master` run `.github/workflows/firebase-production.yml`, resolve the changed Firebase scope, then deploy only the required production targets.
-- Manual production deploys use `.github/workflows/firebase-production.yml` with inputs for site, Functions-only, and security-rules deploys. Selecting the site deploy also deploys Functions so the packaged SEO HTML shell stays in sync with Hosting.
+- Manual production deploys use `.github/workflows/firebase-production.yml` with inputs for site, Functions plus matching Hosting assets, and security-rules deploys. Selecting either the site or Functions deploy includes both Hosting and Functions so the packaged SEO HTML shell stays in sync with the deployed Angular bundles.
 
 The dev PR workflow uses the GitHub Environment named `preview`. If CI reports every generated environment variable as missing, the values are probably stored only under the `production` GitHub Environment. Copy the required variables and secrets into `preview`, or move non-sensitive build values to repository-level Actions variables/secrets.
 
