@@ -115,6 +115,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+
       - name: Download Functions build artifact
         uses: actions/download-artifact@v4
         with:
@@ -126,14 +131,14 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node .github/scripts/validate-firebase-service-account.mjs
 
-      - name: Authenticate Firebase CLI
+      - name: Create Firebase ADC credentials file
         id: firebase-auth
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
-          project_id: ${{ env.FIREBASE_PROJECT_ID }}
-          create_credentials_file: true
-          export_environment_variables: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS || secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node .github/scripts/write-firebase-service-account.mjs
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Create Firebase Functions deploy config
         run: |
@@ -150,4 +155,32 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
           CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
-        run: npx --yes firebase-tools@14 deploy --only functions --config firebase.ci.json --project "$FIREBASE_PROJECT_ID" --non-interactive
+        run: |
+          set -euo pipefail
+
+          export CLOUDSDK_CORE_PROJECT="$FIREBASE_PROJECT_ID"
+          export GOOGLE_CLOUD_PROJECT="$FIREBASE_PROJECT_ID"
+          export GCLOUD_PROJECT="$FIREBASE_PROJECT_ID"
+          export GCP_PROJECT="$FIREBASE_PROJECT_ID"
+          export CLOUDSDK_CONFIG="${RUNNER_TEMP:-/tmp}/gcloud"
+          mkdir -p "$CLOUDSDK_CONFIG"
+
+          gcloud auth activate-service-account \
+            --key-file="$GOOGLE_APPLICATION_CREDENTIALS" \
+            --project="$FIREBASE_PROJECT_ID"
+          gcloud config set project "$FIREBASE_PROJECT_ID"
+
+          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)')"
+          if [ -z "$active_account" ]; then
+            echo "gcloud did not activate a service account." >&2
+            exit 1
+          fi
+
+          echo "gcloud active account: $active_account"
+          gcloud auth print-access-token >/dev/null
+
+          env -u FIREBASE_TOKEN npx --yes firebase-tools@14 deploy \
+            --only functions \
+            --config firebase.ci.json \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
