@@ -64,11 +64,10 @@ import {
             [ngClass]="hasTableOfContents() ? 'xl:max-w-7xl xl:grid-cols-[minmax(0,1fr)_20rem]' : 'xl:max-w-5xl'"
           >
             <div class="min-w-0 xl:col-start-1">
-              <header class="blog-section-rule mb-10 space-y-6 border-b border-slate-200 pb-8 dark:border-zinc-800">
+              <header class="blog-section-rule blog-page-header space-y-6">
                 <h1
                   class="text-4xl font-semibold leading-tight text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
-                <div
-                  class="flex flex-wrap gap-x-4 gap-y-1 border-y border-slate-200 py-3 text-sm text-slate-500 dark:border-zinc-800/80 dark:text-zinc-500">
+                <div class="blog-post-meta-row">
                   <span>
                     By
                     <a routerLink="/" [fragment]="authorProfile.profileFragment"
@@ -91,9 +90,7 @@ import {
                 </div>
                 <div class="flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
                   @for (category of currentPost.categories; track category) {
-                    <span
-                      class="rounded border border-cyan-700/40 bg-cyan-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide dark:border-cyan-300/30 dark:bg-cyan-300/10"
-                    >
+                    <span class="blog-category-badge">
                       {{ category }}
                     </span>
                   }
@@ -116,7 +113,7 @@ import {
                 <img
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
-                  class="aspect-[16/9] w-full rounded border border-slate-200 bg-white object-cover shadow-xl shadow-slate-950/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/25"
+                  class="blog-media-frame aspect-[16/9] w-full object-cover shadow-xl dark:shadow-black/25"
                   loading="eager"
                 >
               </header>
@@ -145,10 +142,9 @@ import {
                     @if (previousPost(); as previous) {
                       <a
                         [routerLink]="['/', pathNames.BLOG, previous.slug]"
-                        class="group rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 transition-colors hover:border-cyan-500 hover:bg-cyan-50 dark:border-zinc-800 dark:bg-transparent dark:shadow-none dark:hover:border-cyan-400 dark:hover:bg-zinc-900"
+                        class="site-card-interactive group p-4"
                       >
-                        <span
-                          class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-500">Previous post</span>
+                        <span class="site-meta block">Previous post</span>
                         <span
                           class="mt-2 block text-base font-medium leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ previous.title }}</span>
                       </a>
@@ -159,10 +155,9 @@ import {
                     @if (nextPost(); as next) {
                       <a
                         [routerLink]="['/', pathNames.BLOG, next.slug]"
-                        class="group rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 transition-colors hover:border-cyan-500 hover:bg-cyan-50 dark:border-zinc-800 dark:bg-transparent dark:shadow-none dark:hover:border-cyan-400 dark:hover:bg-zinc-900 sm:text-right"
+                        class="site-card-interactive group p-4 sm:text-right"
                       >
-                        <span
-                          class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-500">Next post</span>
+                        <span class="site-meta block">Next post</span>
                         <span
                           class="mt-2 block text-base font-medium leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ next.title }}</span>
                       </a>
@@ -195,7 +190,7 @@ import {
                   <section aria-labelledby="suggested-posts-heading" class="blog-section-rule mt-10">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                       <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300">Keep
+                        <p class="eyebrow-sm eyebrow-cyan">Keep
                           reading</p>
                         <h2 id="suggested-posts-heading"
                             class="mt-1 text-2xl font-semibold text-slate-950 dark:text-zinc-50">Suggested
@@ -210,7 +205,7 @@ import {
                       @for (suggestedPost of suggestedPosts(); track suggestedPost.id) {
                         <a
                           [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
-                          class="group flex min-h-full flex-col overflow-hidden rounded border border-slate-200 bg-white shadow-sm shadow-slate-950/5 transition-colors hover:border-cyan-500 hover:bg-cyan-50 dark:border-zinc-800 dark:bg-zinc-900/70 dark:shadow-black/20 dark:hover:border-cyan-400 dark:hover:bg-zinc-900"
+                          class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
                         >
                           <span class="relative block overflow-hidden bg-slate-100 dark:bg-zinc-900">
                             <img
@@ -246,26 +241,26 @@ import {
           </div>
         } @else if (loadError(); as error) {
           <section
-            class="blog-section-rule rounded border border-slate-200 bg-white p-6 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/20">
-            <h1 class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Unable to load post</h1>
-            <p class="mt-2 text-slate-600 dark:text-zinc-400">{{ error }}</p>
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Unable to load post</h1>
+            <p class="mt-2 text-body">{{ error }}</p>
             <a routerLink="/blog"
-               class="mt-5 inline-block font-medium text-cyan-700 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200">Back
+               class="site-inline-link mt-5 inline-block">Back
               to blog</a>
           </section>
         } @else if (isLoading()) {
           <section
-            class="blog-section-rule rounded border border-slate-200 bg-white p-6 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/20">
-            <h1 class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Loading post</h1>
-            <p class="mt-2 text-slate-600 dark:text-zinc-400">Fetching the latest post data from Firestore.</p>
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Loading post</h1>
+            <p class="mt-2 text-body">Fetching the latest post data from Firestore.</p>
           </section>
         } @else {
           <section
-            class="blog-section-rule rounded border border-slate-200 bg-white p-6 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/20">
-            <h1 class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Post not found</h1>
-            <p class="mt-2 text-slate-600 dark:text-zinc-400">This post is unavailable or has not been published.</p>
+            class="blog-section-rule site-card p-6">
+            <h1 class="heading-subsection">Post not found</h1>
+            <p class="mt-2 text-body">This post is unavailable or has not been published.</p>
             <a routerLink="/blog"
-               class="mt-5 inline-block font-medium text-cyan-700 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200">Back
+               class="site-inline-link mt-5 inline-block">Back
               to blog</a>
           </section>
         }
@@ -274,7 +269,7 @@ import {
       <footer class="blog-section-rule mx-auto mt-16 max-w-5xl pb-8 text-sm text-slate-600 dark:text-zinc-400">
         <div class="grid gap-8 md:grid-cols-[1.25fr_1fr_1fr]">
           <section>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-zinc-500">
+            <p class="site-meta">
               ColinMichaels.com</p>
             <p class="mt-3 max-w-md leading-6">
               Projects, writing, media, and notes on frontend engineering, recovery, and creative systems.

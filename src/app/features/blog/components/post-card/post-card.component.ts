@@ -27,8 +27,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
       </a>
 
       <div class="flex min-w-0 flex-col gap-3">
-        <div
-          class="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-slate-500 dark:text-zinc-500">
+        <div class="site-meta-row">
           <span>{{ post.publishedAt ? (post.publishedAt | date: 'MMM d, y') : (post.updatedAt | date: 'MMM d, y') }}</span>
           @for (category of post.categories; track category) {
             <span aria-hidden="true">/</span>
@@ -42,11 +41,11 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
         </div>
 
         <div class="space-y-2">
-          <h2 class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">
+          <h2 class="heading-subsection">
             <a [routerLink]="['/blog', post.slug]"
                class="hover:text-cyan-700 dark:hover:text-cyan-300">{{ post.title }}</a>
           </h2>
-          <p class="max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ post.excerpt }}</p>
+          <p class="max-w-2xl text-body">{{ post.excerpt }}</p>
         </div>
 
         @if (showTags) {

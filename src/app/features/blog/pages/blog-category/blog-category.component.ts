@@ -27,20 +27,20 @@ import {
   template: `
     <main class="blog-page">
       <section class="mx-auto max-w-5xl">
-        <header class="blog-section-rule mb-10 border-b border-slate-200 pb-8 dark:border-zinc-800">
-          <h1 class="mb-6 text-3xl font-semibold text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ categoryTitle() }}</h1>
+        <header class="blog-section-rule blog-page-header">
+          <h1 class="blog-page-title mb-6">{{ categoryTitle() }}</h1>
           <app-blog-category-nav [activeSlug]="categorySlugValue()"></app-blog-category-nav>
         </header>
 
         <section>
           @if (loadError(); as error) {
-            <div class="blog-section-rule py-8">
-              <p class="text-lg font-medium text-slate-950 dark:text-zinc-100">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm text-slate-600 dark:text-zinc-400">{{ error }}</p>
+            <div class="blog-section-rule blog-state-panel">
+              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
+              <p class="mt-2 text-sm">{{ error }}</p>
             </div>
           } @else {
             @defer (when !isLoading()) {
-              <p class="blog-section-rule py-4 text-sm text-slate-600 dark:text-zinc-500">
+              <p class="blog-section-rule blog-results-summary">
                 Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
                 in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ categoryTitle() }}</span>.
               </p>
@@ -48,12 +48,12 @@ import {
               @for (post of filteredPosts(); track post.id) {
                 <app-blog-post-card [post]="post"></app-blog-post-card>
               } @empty {
-                <div class="blog-section-rule py-8">
-                  <p class="text-lg font-medium text-slate-950 dark:text-zinc-100">No published posts in this category.</p>
-                  <p class="mt-2 text-sm text-slate-600 dark:text-zinc-400">
+                <div class="blog-section-rule blog-state-panel">
+                  <p class="blog-state-title">No published posts in this category.</p>
+                  <p class="mt-2 text-sm">
                     This category may not exist yet, or its posts may still be drafts.
                   </p>
-                  <a [routerLink]="['/', pathNames.BLOG]" class="mt-5 inline-block font-medium text-cyan-700 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200">
+                  <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link mt-5 inline-block">
                     View all posts
                   </a>
                 </div>

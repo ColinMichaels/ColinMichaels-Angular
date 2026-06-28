@@ -12,13 +12,13 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <section id="youtube" class="border-y border-white/10 bg-neutral-950 py-14">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="blog-section-rule flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <section id="youtube" class="site-section-band-dark">
+      <div class="site-section-inner">
+        <div class="site-section-header">
           <div class="max-w-2xl">
-            <p class="text-sm uppercase tracking-[0.28em] text-red-300">YouTube</p>
-            <h2 class="mt-3 text-3xl font-semibold text-zinc-50 sm:text-4xl">Latest videos</h2>
-            <p class="mt-4 text-sm leading-6 text-zinc-400">
+            <p class="eyebrow eyebrow-red">YouTube</p>
+            <h2 class="mt-3 heading-section">Latest videos</h2>
+            <p class="site-section-copy">
               Recent uploads from the channel, pulled through the site backend so API credentials stay off the client.
             </p>
           </div>
@@ -27,45 +27,45 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
             [href]="channelUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex w-fit border border-red-300/70 px-4 py-3 text-sm font-medium text-red-100 transition hover:bg-red-300 hover:text-neutral-950"
+            class="btn-youtube"
           >
             View channel
           </a>
         </div>
 
         @if (loadError(); as error) {
-          <div class="mt-8 border border-red-300/30 bg-red-950/20 p-5 text-zinc-300">
-            <p class="font-medium text-red-100">Unable to load latest videos.</p>
-            <p class="mt-2 text-sm leading-6 text-zinc-400">{{ error }}</p>
+          <div class="site-error-panel mt-8">
+            <p class="font-medium text-rose-950 dark:text-red-100">Unable to load latest videos.</p>
+            <p class="mt-2">{{ error }}</p>
           </div>
         } @else if (isLoading()) {
-        <div class="mt-8 grid gap-5 lg:grid-cols-3" aria-label="Loading latest YouTube videos">
+          <div class="site-card-grid" aria-label="Loading latest YouTube videos">
           @for (item of loadingCards; track item) {
-            <div class="animate-pulse border border-white/10 bg-zinc-900/70">
-              <div class="aspect-video bg-zinc-800"></div>
+            <div class="site-skeleton-card animate-pulse">
+              <div class="aspect-video bg-zinc-200 dark:bg-zinc-800"></div>
               <div class="space-y-3 p-5">
-                <div class="h-3 w-28 bg-zinc-800"></div>
-                <div class="h-5 w-4/5 bg-zinc-800"></div>
-                <div class="h-3 w-full bg-zinc-800"></div>
-                <div class="h-3 w-2/3 bg-zinc-800"></div>
+                <div class="site-skeleton-block h-3 w-28"></div>
+                <div class="site-skeleton-block h-5 w-4/5"></div>
+                <div class="site-skeleton-block h-3 w-full"></div>
+                <div class="site-skeleton-block h-3 w-2/3"></div>
               </div>
             </div>
           }
         </div>
       } @else {
-        <div class="mt-8 grid gap-5 lg:grid-cols-3">
+          <div class="site-card-grid">
           @for (video of videos; track video.id) {
-            <article class="group flex h-full flex-col overflow-hidden border border-white/10">
-              <a [href]="video.videoUrl" target="_blank" rel="noopener noreferrer" class="block overflow-hidden">
+            <article class="site-card group flex h-full flex-col overflow-hidden">
+              <a [href]="video.videoUrl" target="_blank" rel="noopener noreferrer" class="site-media-link">
                 <img
                   [src]="video.thumbnailUrl"
                   [alt]="video.thumbnailAlt"
-                  class="aspect-video w-full object-cover transition duration-300 group-hover:scale-105"
+                  class="site-media-image aspect-video"
                   loading="lazy"
                 >
               </a>
-              <div class="flex flex-1 flex-col p-5">
-                <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">
+              <div class="site-card-body flex flex-1 flex-col">
+                <p class="site-meta">
                   {{ video.publishedAt | date: 'MMM d, y':'UTC' }}
                 </p>
                 <h3 class="mt-3 text-xl font-semibold leading-snug text-zinc-50">
@@ -78,14 +78,14 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
                   [href]="video.videoUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="mt-auto inline-flex w-fit pt-5 text-sm font-medium text-red-200 hover:text-red-100"
+                  class="link-youtube mt-auto inline-flex w-fit pt-5"
                 >
                   Watch on YouTube
                 </a>
               </div>
             </article>
           } @empty {
-          <p class="border border-white/10 p-5 text-zinc-400">No public YouTube videos are available yet.</p>
+            <p class="site-empty-panel">No public YouTube videos are available yet.</p>
         }
         </div>
       }

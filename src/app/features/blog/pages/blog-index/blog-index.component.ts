@@ -24,11 +24,11 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
   template: `
     <main class="blog-page">
       <section class="mx-auto max-w-5xl">
-        <header class="blog-section-rule mb-10 border-b border-slate-200 pb-8 dark:border-zinc-800">
+        <header class="blog-section-rule blog-page-header">
           <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 class="text-4xl font-semibold text-slate-950 dark:text-zinc-50 sm:text-5xl">Blog</h1>
-              <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-400">
+              <h1 class="blog-page-title">Blog</h1>
+              <p class="blog-page-description">
                 Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.
               </p>
             </div>
@@ -63,16 +63,16 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
 
         <section>
           @if (loadError(); as error) {
-            <div class="blog-section-rule py-8">
-              <p class="text-lg font-medium text-slate-950 dark:text-zinc-100">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm text-slate-600 dark:text-zinc-400">{{ error }}</p>
+            <div class="blog-section-rule blog-state-panel">
+              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
+              <p class="mt-2 text-sm">{{ error }}</p>
             </div>
           } @else {
             @defer (when !isLoading()) {
               @for (post of posts(); track post.id) {
                 <app-blog-post-card [post]="post"></app-blog-post-card>
               } @empty {
-                <p class="blog-section-rule py-8 text-slate-600 dark:text-zinc-400">
+                <p class="blog-section-rule blog-state-panel">
                   No published posts yet.
                 </p>
               }
