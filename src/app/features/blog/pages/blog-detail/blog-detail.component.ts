@@ -113,7 +113,7 @@ import {
                 <img
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
-                  class="blog-media-frame aspect-[16/9] w-full object-cover shadow-xl dark:shadow-black/25"
+                  class="blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
                   loading="eager"
                 >
               </header>
@@ -207,11 +207,12 @@ import {
                           [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
                           class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
                         >
-                          <span class="relative block overflow-hidden bg-slate-100 dark:bg-zinc-900">
+                          <span
+                            class="blog-post-image-frame relative block aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-zinc-900">
                             <img
                               [src]="suggestedPostImage(suggestedPost)"
                               [alt]="suggestedPost.title + ' thumbnail image'"
-                              class="aspect-[16/10] w-full object-cover transition duration-300 group-hover:scale-105"
+                              class="blog-post-image-fill"
                               loading="lazy"
                             >
                             <span

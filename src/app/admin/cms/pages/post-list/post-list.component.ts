@@ -8,9 +8,7 @@ import {CmsToastContainerComponent} from '../../components/toast/cms-toast.compo
 import {CmsToastService} from '../../services/cms-toast.service';
 import {
   isBlogPost,
-  isBlogPostStatus,
   isRecord,
-  isStringArray
 } from '../../../../features/blog/utils/blog-validation.util';
 
 interface AdminPostRow {
@@ -222,12 +220,15 @@ function getErrorMessage(error: unknown): string {
             @for (row of pagedRows; track row.post.id) {
               <tr class="bg-zinc-950 align-top">
                 <td class="px-4 py-4">
-                  <img
-                    [src]="row.post.coverImage"
-                    [alt]="row.post.title + ' thumbnail'"
-                    loading="lazy"
-                    class="h-16 w-24 rounded border border-zinc-800 bg-zinc-900 object-cover"
-                  >
+                  <span
+                    class="grid h-16 w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
+                    <img
+                      [src]="row.post.thumbnailImage || row.post.coverImage"
+                      [alt]="row.post.title + ' thumbnail'"
+                      loading="lazy"
+                      class="h-full w-full object-contain"
+                    >
+                  </span>
                 </td>
                   <td class="px-4 py-4">
                     <p class="font-medium text-zinc-50">{{ row.post.title }}</p>
@@ -596,4 +597,3 @@ export class CmsPostListComponent {
   }
 
 }
-
