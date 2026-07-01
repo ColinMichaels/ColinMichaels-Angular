@@ -348,7 +348,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
                   <img
                     [src]="getMediaPreviewUrl(item)"
                     [alt]="item.altText || item.displayName"
-                    class="aspect-video w-full object-cover"
+                    class="aspect-video w-full object-contain"
                     loading="lazy"
                   >
                   <figcaption class="space-y-1 px-3 py-2">

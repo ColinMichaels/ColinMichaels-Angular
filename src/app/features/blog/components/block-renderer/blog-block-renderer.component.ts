@@ -446,7 +446,7 @@ interface RenderableBlogImage {
             <img
               [src]="image.url"
               [alt]="image.alt"
-              class="pointer-events-auto max-h-full max-w-full rounded object-contain shadow-2xl shadow-black/50"
+              class="pointer-events-auto h-auto max-h-[calc(100vh-8rem)] w-auto max-w-full rounded object-contain shadow-2xl shadow-black/50"
               decoding="async"
               data-testid="blog-lightbox-image"
             >
@@ -709,7 +709,7 @@ export class BlogBlockRendererComponent implements OnChanges {
     const borderClass = row.block.data.withBorder ? ' border border-slate-300 dark:border-zinc-700' : '';
     const layoutClass = layout === 'contained' ? ' mx-auto max-w-full' : ' w-full';
 
-    return `rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${layoutClass}${borderClass}`;
+    return `h-auto max-h-[72vh] rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${layoutClass}${borderClass}`;
   }
 
   protected imageCaptionClass(row: RenderableBlogBlock): string {
