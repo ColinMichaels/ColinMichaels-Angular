@@ -106,15 +106,15 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
       }
 
       @if (value) {
-        <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
+        <figure class="overflow-hidden border border-zinc-800 bg-black">
           <button
             type="button"
-            class="group relative block w-full text-left"
+            class="group relative flex w-full items-center justify-center text-left"
             [attr.aria-label]="'Preview ' + label"
             (click)="openLightbox()"
           >
             <img
-              class="max-h-56 w-full object-cover"
+              class="max-h-56 max-w-full object-contain"
               [src]="value"
               [alt]="previewAlt"
               loading="lazy"
@@ -351,7 +351,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                 @if (selectedLibraryItem; as selected) {
                   <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
                     <img
-                      class="aspect-[16/10] w-full object-cover"
+                      class="aspect-[16/10] w-full object-contain"
                       [src]="getMediaItemThumbnailUrl(selected)"
                       [alt]="selected.altText || selected.displayName"
                     >

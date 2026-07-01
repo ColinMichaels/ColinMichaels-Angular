@@ -17,11 +17,11 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="blog-post-row">
-      <a [routerLink]="['/blog', post.slug]" class="blog-media-frame group">
+      <a [routerLink]="['/blog', post.slug]" class="blog-media-frame blog-post-image-frame group aspect-[4/3]">
         <img
-          [src]="post.coverImage"
+          [src]="postImage(post)"
           [alt]="post.title + ' cover image'"
-          class="aspect-[4/3] h-full w-full object-cover transition duration-300 ease-in-out group-hover:scale-105 group-hover:brightness-110"
+          class="blog-post-image-fill"
           loading="lazy"
         >
       </a>
@@ -63,5 +63,9 @@ export class BlogPostCardComponent {
 
   protected categorySlug(category: string): string {
     return createBlogCategorySlug(category);
+  }
+
+  protected postImage(post: BlogPostSummary): string {
+    return post.thumbnailImage?.trim() || post.coverImage;
   }
 }
