@@ -7,7 +7,9 @@ import {BlogRepositoryService} from '../../../../features/blog/services/blog-rep
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {
+  BLOG_POST_STATUSES,
   isBlogPost,
+  isBlogPostStatus,
   isRecord,
 } from '../../../../features/blog/utils/blog-validation.util';
 
@@ -194,6 +196,9 @@ function getErrorMessage(error: unknown): string {
           <p>
             Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredRows.length }} posts
             <span class="text-zinc-600">/ {{ rows().length }} total</span>
+            @if (selectedCount > 0) {
+              <span class="text-cyan-300">/ {{ selectedCount }} selected</span>
+            }
           </p>
 
           @if (searchTerm) {
@@ -203,10 +208,92 @@ function getErrorMessage(error: unknown): string {
           }
         </section>
 
+        <section
+          class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 text-sm text-zinc-300 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto] xl:items-end"
+          aria-label="Bulk post actions"
+        >
+          <div class="space-y-2">
+            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500">Bulk actions</p>
+            <p class="text-zinc-400">
+              {{ selectedCount }} selected
+              <span class="text-zinc-600">/ {{ filteredRows.length }} matching current filters</span>
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                [disabled]="pagedRows.length === 0 || bulkActionInProgress"
+                (click)="selectPagedRows()"
+              >
+                Select visible
+              </button>
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                [disabled]="filteredRows.length === 0 || bulkActionInProgress"
+                (click)="selectFilteredRows()"
+              >
+                Select filtered
+              </button>
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                [disabled]="selectedCount === 0 || bulkActionInProgress"
+                (click)="clearSelection()"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <label class="space-y-2">
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Change status to</span>
+            <select
+              [value]="bulkStatus"
+              class="w-full min-w-40 border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+              [disabled]="bulkActionInProgress"
+              (change)="updateBulkStatus($event)"
+            >
+              @for (status of bulkStatusOptions; track status) {
+                <option [value]="status">{{ statusLabel(status) }}</option>
+              }
+            </select>
+          </label>
+
+          <button
+            type="button"
+            class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+            [disabled]="selectedCount === 0 || bulkActionInProgress"
+            (click)="bulkUpdateSelectedStatus()"
+          >
+            {{ bulkActionInProgress ? 'Working...' : 'Apply status' }}
+          </button>
+
+          <button
+            type="button"
+            class="inline-flex justify-center border border-red-400 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+            [disabled]="selectedCount === 0 || bulkActionInProgress"
+            (click)="bulkDeleteSelectedPosts()"
+          >
+            Delete selected
+          </button>
+        </section>
+
         <section class="overflow-x-auto border border-zinc-800">
           <table class="min-w-full divide-y divide-zinc-800 text-left text-sm">
             <thead class="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
+                <th class="w-12 px-4 py-3 font-medium">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-400 focus:ring-cyan-300"
+                    aria-label="Select all posts on this page"
+                    [checked]="allPagedRowsSelected"
+                    [indeterminate]="somePagedRowsSelected"
+                    [disabled]="pagedRows.length === 0 || bulkActionInProgress"
+                    (change)="togglePagedRowsSelection($event)"
+                  >
+                </th>
                 <th class="px-4 py-3 font-medium">Image</th>
                 <th class="px-4 py-3 font-medium">Title</th>
                 <th class="px-4 py-3 font-medium">Status</th>
@@ -219,6 +306,16 @@ function getErrorMessage(error: unknown): string {
             <tbody class="divide-y divide-zinc-800">
             @for (row of pagedRows; track row.post.id) {
               <tr class="bg-zinc-950 align-top">
+                <td class="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-400 focus:ring-cyan-300"
+                    [attr.aria-label]="'Select ' + row.post.title"
+                    [checked]="isSelected(row.post.id)"
+                    [disabled]="bulkActionInProgress"
+                    (change)="togglePostSelection(row.post.id, $event)"
+                  >
+                </td>
                 <td class="px-4 py-4">
                   <span
                     class="grid h-16 w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
@@ -268,7 +365,7 @@ function getErrorMessage(error: unknown): string {
               </tr>
             } @empty {
               <tr class="bg-zinc-950">
-                <td colspan="7" class="px-4 py-12 text-center">
+                <td colspan="8" class="px-4 py-12 text-center">
                   <p class="text-base font-medium text-zinc-200">No posts match your search.</p>
                   <p class="mt-2 text-sm text-zinc-500">Clear the search or adjust the sort options.</p>
                   </td>
@@ -312,6 +409,7 @@ export class CmsPostListComponent {
 
   protected readonly sortOptions = sortOptions;
   protected readonly pageSizeOptions = pageSizeOptions;
+  protected readonly bulkStatusOptions = BLOG_POST_STATUSES;
   protected readonly posts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
   protected readonly rows = computed(() => this.createRows(this.posts()));
   protected searchTerm = '';
@@ -320,6 +418,9 @@ export class CmsPostListComponent {
   protected currentPage = 1;
   protected backupInProgress = false;
   protected importInProgress = false;
+  protected bulkStatus: BlogPostStatus = 'draft';
+  protected bulkActionInProgress = false;
+  protected selectedPostIds = new Set<string>();
 
   protected get filteredRows(): readonly AdminPostRow[] {
     const normalizedSearchTerm = normalizeSearchText(this.searchTerm);
@@ -355,6 +456,25 @@ export class CmsPostListComponent {
     return Math.min(this.visiblePage * this.pageSize, this.filteredRows.length);
   }
 
+  protected get selectedPosts(): readonly BlogPost[] {
+    const selectedPostIds = this.selectedPostIds;
+    return this.rows()
+      .filter(row => selectedPostIds.has(row.post.id))
+      .map(row => row.post);
+  }
+
+  protected get selectedCount(): number {
+    return this.selectedPosts.length;
+  }
+
+  protected get allPagedRowsSelected(): boolean {
+    return this.pagedRows.length > 0 && this.pagedRows.every(row => this.selectedPostIds.has(row.post.id));
+  }
+
+  protected get somePagedRowsSelected(): boolean {
+    return !this.allPagedRowsSelected && this.pagedRows.some(row => this.selectedPostIds.has(row.post.id));
+  }
+
   protected statusClass(status: BlogPostStatus): string {
     const baseClass = 'rounded border px-2 py-1 text-xs uppercase tracking-wide';
 
@@ -368,6 +488,10 @@ export class CmsPostListComponent {
       case 'archived':
         return `${baseClass} border-zinc-600 text-zinc-400`;
     }
+  }
+
+  protected statusLabel(status: BlogPostStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
   protected hasActivePreview(post: BlogPost): boolean {
@@ -413,6 +537,70 @@ export class CmsPostListComponent {
 
     this.pageSize = value;
     this.currentPage = 1;
+  }
+
+  protected updateBulkStatus(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement ? event.target.value : this.bulkStatus;
+
+    if (isBlogPostStatus(value)) {
+      this.bulkStatus = value;
+    }
+  }
+
+  protected isSelected(postId: string): boolean {
+    return this.selectedPostIds.has(postId);
+  }
+
+  protected togglePostSelection(postId: string, event: Event): void {
+    const checked = event.target instanceof HTMLInputElement && event.target.checked;
+    const nextSelection = new Set(this.selectedPostIds);
+
+    if (checked) {
+      nextSelection.add(postId);
+    } else {
+      nextSelection.delete(postId);
+    }
+
+    this.selectedPostIds = nextSelection;
+  }
+
+  protected togglePagedRowsSelection(event: Event): void {
+    const checked = event.target instanceof HTMLInputElement && event.target.checked;
+    const nextSelection = new Set(this.selectedPostIds);
+
+    for (const row of this.pagedRows) {
+      if (checked) {
+        nextSelection.add(row.post.id);
+      } else {
+        nextSelection.delete(row.post.id);
+      }
+    }
+
+    this.selectedPostIds = nextSelection;
+  }
+
+  protected selectPagedRows(): void {
+    const nextSelection = new Set(this.selectedPostIds);
+
+    for (const row of this.pagedRows) {
+      nextSelection.add(row.post.id);
+    }
+
+    this.selectedPostIds = nextSelection;
+  }
+
+  protected selectFilteredRows(): void {
+    const nextSelection = new Set(this.selectedPostIds);
+
+    for (const row of this.filteredRows) {
+      nextSelection.add(row.post.id);
+    }
+
+    this.selectedPostIds = nextSelection;
+  }
+
+  protected clearSelection(): void {
+    this.selectedPostIds = new Set<string>();
   }
 
   protected goToPreviousPage(): void {
@@ -505,6 +693,7 @@ export class CmsPostListComponent {
 
     try {
       const result = await this.blogRepository.deletePost(post.id);
+      this.removeSelectedPostIds([post.id]);
       this.currentPage = Math.min(this.currentPage, this.totalPages);
 
       if (result === 'not-found') {
@@ -514,6 +703,79 @@ export class CmsPostListComponent {
       }
     } catch (error) {
       this.toast.error(error instanceof Error ? error.message : `Unable to delete "${post.title}".`);
+    }
+  }
+
+  protected async bulkUpdateSelectedStatus(): Promise<void> {
+    const postsToUpdate = this.selectedPosts.filter(post => post.status !== this.bulkStatus);
+
+    if (postsToUpdate.length === 0) {
+      this.toast.success(`Selected posts are already ${this.bulkStatus}.`);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Change ${postsToUpdate.length} selected post${postsToUpdate.length === 1 ? '' : 's'} to ${this.bulkStatus}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.bulkActionInProgress = true;
+
+    try {
+      const result = await this.blogRepository.updatePostStatuses(
+        postsToUpdate.map(post => post.id),
+        this.bulkStatus
+      );
+
+      this.removeSelectedPostIds(postsToUpdate.map(post => post.id));
+      this.currentPage = Math.min(this.currentPage, this.totalPages);
+      this.toast.success(this.createBulkActionMessage(
+        `Updated ${result.affectedCount} post${result.affectedCount === 1 ? '' : 's'} to ${this.bulkStatus}.`,
+        result.notFoundIds.length
+      ));
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : 'Unable to update selected posts.');
+    } finally {
+      this.bulkActionInProgress = false;
+    }
+  }
+
+  protected async bulkDeleteSelectedPosts(): Promise<void> {
+    const postsToDelete = this.selectedPosts;
+    const firstPost = postsToDelete[0];
+
+    if (postsToDelete.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      postsToDelete.length === 1 && firstPost
+        ? `Delete "${firstPost.title}" from Firestore? This cannot be undone.`
+        : `Delete ${postsToDelete.length} selected posts from Firestore? This cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.bulkActionInProgress = true;
+
+    try {
+      const result = await this.blogRepository.deletePosts(postsToDelete.map(post => post.id));
+
+      this.removeSelectedPostIds(postsToDelete.map(post => post.id));
+      this.currentPage = Math.min(this.currentPage, this.totalPages);
+      this.toast.success(this.createBulkActionMessage(
+        `Deleted ${result.affectedCount} post${result.affectedCount === 1 ? '' : 's'} from Firestore.`,
+        result.notFoundIds.length
+      ));
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : 'Unable to delete selected posts.');
+    } finally {
+      this.bulkActionInProgress = false;
     }
   }
 
@@ -594,6 +856,22 @@ export class CmsPostListComponent {
 
   private compareTitles(left: AdminPostRow, right: AdminPostRow): number {
     return left.post.title.localeCompare(right.post.title, undefined, {numeric: true, sensitivity: 'base'});
+  }
+
+  private removeSelectedPostIds(postIds: readonly string[]): void {
+    const nextSelection = new Set(this.selectedPostIds);
+
+    for (const postId of postIds) {
+      nextSelection.delete(postId);
+    }
+
+    this.selectedPostIds = nextSelection;
+  }
+
+  private createBulkActionMessage(message: string, notFoundCount: number): string {
+    return notFoundCount > 0
+      ? `${message} ${notFoundCount} selected post${notFoundCount === 1 ? ' was' : 's were'} not found.`
+      : message;
   }
 
 }
