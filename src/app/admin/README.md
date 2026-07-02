@@ -18,7 +18,7 @@ The editor calls Firebase callable functions first and falls back to the determi
 
 ## CMS Editor.js Tools
 
-The CMS editor extends the base Editor.js toolset with custom `typography`, `stats`, `chart`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently.
+The CMS editor extends the base Editor.js toolset with custom `code`, `typography`, `stats`, `chart`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently. Editor blocks are styled with hover/focus block-type hints and preview-oriented rendering so drafts better resemble the published post while editing.
 
 Supported typography variants:
 
@@ -41,6 +41,7 @@ Supported image layouts:
 
 Supported custom content blocks:
 
+- Code: multi-line snippets with optional language labels, soft-wrapped CMS previews, and reader-facing copy actions on public posts
 - Stats: repeated label/value/caption items for specification snapshots and key metrics, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
 - Chart: simple bar or line charts with visible point labels, values, units, notes, and captions, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
 - HTML: sanitized custom markup for one-off sections such as spec tables or static SVG snippets; scripts and unsafe markup are not rendered
