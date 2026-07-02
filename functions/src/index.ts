@@ -53,6 +53,15 @@ const TOPIC_HUBS = [
     description: 'Practical setup guides for ChatGPT, Claude, Copilot, Gemini, prompting, projects, and AI-assisted workflows.',
     imageAlt: 'AI setup guides preview card',
     terms: ['ai', 'chatgpt', 'claude', 'copilot', 'gemini', 'prompting', 'ai tools', 'ai workflow', 'productivity'],
+    assetTitle: 'AI Setup Checklist',
+    assetIntro: 'A practical starting checklist for setting up AI tools so they support real work instead of becoming another tab to babysit.',
+    assetItems: [
+      'Pick the job before the tool: drafting, research, code review, planning, editing, image ideation, or task triage.',
+      'Create reusable project instructions with the goal, audience, tone, constraints, examples, and review standards.',
+      'Keep source material close so notes, documents, transcripts, or code snippets govern the answer.',
+      'Ask for verification steps such as assumptions, source checks, tests, or human review points.',
+      'Set privacy boundaries for credentials, private client data, health details, and financial identifiers.',
+    ],
   },
   {
     slug: 'recovery-planning',
@@ -61,6 +70,15 @@ const TOPIC_HUBS = [
     description: 'Personal recovery notes, emergency planning resources, and practical lessons from open-heart surgery recovery.',
     imageAlt: 'Recovery and medical planning resources preview card',
     terms: ['recovery', 'health', 'medical', 'heart surgery', 'open heart surgery', 'cardiac', 'insurance', 'planning'],
+    assetTitle: 'Recovery And Emergency Planning Checklist',
+    assetIntro: 'A patient-perspective organizer for practical details that become hard to find when appointments, recovery limits, and paperwork all collide.',
+    assetItems: [
+      'Centralize emergency contacts, pharmacy details, insurance contacts, and backup contacts.',
+      'Maintain medication, allergy, discharge instruction, restriction, and follow-up question notes.',
+      'Prepare appointment questions and bring someone who can help listen and take notes.',
+      'Track symptoms, activity limits, sleep, milestones, and care-team watch points.',
+      'Confirm medical, legal, insurance, and medication choices with qualified professionals.',
+    ],
   },
   {
     slug: 'angular-firebase-architecture',
@@ -69,6 +87,15 @@ const TOPIC_HUBS = [
     description: 'Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.',
     imageAlt: 'Angular and Firebase architecture notes preview card',
     terms: ['angular', 'firebase', 'architecture', 'cms', 'editor.js', 'typescript', 'web development'],
+    assetTitle: 'Angular And Firebase Architecture Note',
+    assetIntro: 'A compact architecture reference for keeping a public Angular/Firebase site crawlable, maintainable, and safe to evolve.',
+    assetItems: [
+      'Separate public, admin, labs, and OS routes into clear route and folder boundaries.',
+      'Render crawler metadata through Firebase Functions with route classification, real 404s, and fallback content.',
+      'Keep sitemap policy explicit so low-count tags and categories do not flood the sitemap.',
+      'Preserve CMS contracts for Editor.js blocks, SEO fields, statuses, media attachments, and previews.',
+      'Validate with app build, Functions build, route checks, metadata checks, and post-deploy curl checks.',
+    ],
   },
   {
     slug: 'labs-projects',
@@ -77,6 +104,15 @@ const TOPIC_HUBS = [
     description: 'Interactive demos, browser experiments, UI systems, and public notes from Colin Michaels project labs.',
     imageAlt: 'Labs and project demos preview card',
     terms: ['labs', 'projects', 'game development', 'browser game', 'creative coding', 'music tools', 'web app'],
+    assetTitle: 'Labs And Demo Showcase Checklist',
+    assetIntro: 'A simple publishing checklist for turning experiments into useful public demos without blurring them into production page logic.',
+    assetItems: [
+      'State what the demo tests, what is finished, what is rough, and what someone should try first.',
+      'Keep experimental code isolated in labs, playground, or archive boundaries.',
+      'Link demos to a writeup, changelog note, screenshot, or project post when context helps.',
+      'Lazy-load heavier demos and keep keyboard, mobile, and performance basics intact.',
+      'Promote only durable work while keeping unfinished or risky ideas clearly labeled.',
+    ],
   },
 ] as const;
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
@@ -1909,6 +1945,11 @@ function renderBlogPostFallbackHtml(
 }
 
 function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string {
+  const assetItems = [
+    '<ol>',
+    ...topicHub.assetItems.map(item => `  <li>${escapeHtml(item)}</li>`),
+    '</ol>',
+  ].join('\n');
   const quickLinks = [
     '<ul class="seo-fallback-list">',
     ...topicHub.terms.slice(0, 8).map(term => (
@@ -1925,6 +1966,9 @@ function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string
       '<section class="seo-fallback-article">',
       '  <h2>Start here</h2>',
       `  <p>${escapeHtml(topicHub.description)}</p>`,
+      `  <h2>${escapeHtml(topicHub.assetTitle)}</h2>`,
+      `  <p>${escapeHtml(topicHub.assetIntro)}</p>`,
+      assetItems,
       '  <h2>Related searches</h2>',
       quickLinks,
       '</section>',

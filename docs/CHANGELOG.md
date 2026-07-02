@@ -6,6 +6,8 @@
 - Pruned sitemap taxonomy output with thresholds of `2` published posts for categories/subcategories and `3` published posts for tags, while keeping low-count taxonomy pages navigable with `noindex,follow`.
 - Added visible server-rendered fallback content for the blog index, article pages, and topic hubs so crawlers and no-JS readers can see links, metadata, and sanitized article body text before Angular hydrates.
 - Added route-backed topic hubs for AI setup, recovery planning, Angular/Firebase architecture, and labs/projects, with homepage internal links and sitemap inclusion.
+- Expanded topic hubs with fuller linkable asset sections and mirrored the asset content in Firebase SEO fallback HTML.
+- Added a link-building outreach operating doc with asset URLs, prospecting criteria, tracker structure, pitch templates, and a 48-candidate seed prospect list.
 - Strengthened author/trust signals and reframed health/recovery sections as patient-perspective resources instead of medical advice.
 - Added SEO policy regression specs for route order, taxonomy robots thresholds, and missing-post noindex metadata.
 - Documented the 90-day SEO implementation schedule and SEO rendering/sitemap policy.
