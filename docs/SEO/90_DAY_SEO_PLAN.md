@@ -6,6 +6,38 @@ This plan starts with technical SEO fixes in July 2026, improves crawler-visible
 
 Primary domain: `https://colinmichaels.com`.
 
+## Current Implementation Snapshot
+
+Updated: July 2, 2026.
+
+Completed in code and documentation:
+
+- Week 1 route classification and soft-404 behavior.
+- Week 2 sitemap pruning with taxonomy thresholds.
+- Week 3 regression specs for route order and metadata threshold policy.
+- Week 4 local build documentation and architecture/changelog updates.
+- Week 5 server-rendered blog and article fallback content.
+- Week 6 priority topic hubs and homepage internal links.
+- Week 7 author/trust improvements and health-content disclaimers.
+- Week 9 first-pass linkable public assets on each topic hub.
+- Week 10 outreach/prospecting operating document and 48-prospect seed list.
+
+Validated locally:
+
+- `npm --prefix functions run build` passed.
+- `npm run build` passed with existing bundle/CommonJS warnings.
+- Focused SEO specs passed.
+- Changed-file lint passed.
+- Full `npm run lint` still fails because of the existing unrelated game/OS/Firebase lint backlog.
+
+Still pending outside local code:
+
+- Deploy and run live-style `curl` checks against production URLs.
+- Run Lighthouse/PageSpeed checks on representative pages.
+- Inspect representative URLs in Search Console.
+- Expand the named prospect list from 12 to 25-40 qualified prospects per pillar and begin personalized outreach.
+- Review Search Console performance after deployment and iterate titles, descriptions, and internal links.
+
 ## Month 1: Technical Foundation, July 2026
 
 ### Week 1, Jul 6-12: Route Classification And Soft 404s
@@ -60,7 +92,8 @@ Implementation status:
 Implementation status:
 
 - This document plus architecture and changelog updates cover the documentation requirement.
-- Local validation results should be recorded in the implementation summary for each change set.
+- Local validation results are recorded in the current implementation snapshot above.
+- Production `curl`, Lighthouse/PageSpeed, and Search Console checks remain pending until deployment.
 
 ## Month 2: Crawler-Visible Content And Trust, August 2026
 
@@ -125,8 +158,13 @@ Implementation status:
 
 Implementation status:
 
-- Topic hubs now include lightweight checklist-style linkable assets.
-- Longer downloadable or printable assets are still future content work.
+- Public topic hubs now include fuller linkable asset sections:
+  - `/topics/ai-setup`
+  - `/topics/recovery-planning`
+  - `/topics/angular-firebase-architecture`
+  - `/topics/labs-projects`
+- Firebase SEO fallback content now exposes the same asset summaries before JavaScript runs.
+- Longer downloadable or printable assets remain optional future content work.
 
 ### Week 10, Sep 7-13: Prospect Lists
 
@@ -142,7 +180,9 @@ Implementation status:
 
 Implementation status:
 
-- Not started in code. This is operating work after the technical foundation is deployed.
+- Outreach/prospecting operating doc created at `docs/SEO/LINK_BUILDING_OUTREACH.md`.
+- Seed prospect collection started with `48` researched candidates: `12` per pillar.
+- Remaining target: expand each pillar from `12` candidates to `25-40` qualified prospects after deployment checks confirm the target assets are live.
 
 ### Week 11, Sep 14-20: Outreach
 
@@ -154,7 +194,8 @@ Implementation status:
 
 Implementation status:
 
-- Not started. Outreach should happen after indexable hubs and assets are live.
+- Outreach templates and guardrails are documented in `docs/SEO/LINK_BUILDING_OUTREACH.md`.
+- Sending outreach remains pending until named prospects are collected and live URLs are verified.
 
 ### Week 12, Sep 21-27: Measure And Iterate
 
@@ -212,3 +253,11 @@ Implementation status:
 - September 2026:
   linkable assets, prospect list building, editorial outreach, Search Console measurement, CTR and internal-linking iteration.
 
+## Next Execution Queue
+
+1. Deploy the SEO changes.
+2. Run the live-style checks listed in the test plan.
+3. Recheck contact paths and fit for the 48 seed prospects in `docs/SEO/LINK_BUILDING_OUTREACH.md`.
+4. Expand the prospect tracker to 25-40 qualified prospects per pillar.
+5. Send personalized pitches only where the live asset genuinely helps that audience.
+6. Review Search Console after indexing and update titles, descriptions, and internal links for pages with impressions but weak CTR.
