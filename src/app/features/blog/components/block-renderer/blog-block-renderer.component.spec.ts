@@ -2,6 +2,24 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 
 import {BlogBlockRendererComponent} from './blog-block-renderer.component';
 
+function installClipboardSpy(writeText: jasmine.Spy): () => void {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: {writeText},
+  });
+
+  return () => {
+    if (originalDescriptor) {
+      Object.defineProperty(navigator, 'clipboard', originalDescriptor);
+      return;
+    }
+
+    Reflect.deleteProperty(navigator, 'clipboard');
+  };
+}
+
 describe('BlogBlockRendererComponent', () => {
   let fixture: ComponentFixture<BlogBlockRendererComponent>;
 
@@ -132,6 +150,39 @@ describe('BlogBlockRendererComponent', () => {
     expect(link?.classList).toContain('blog-inline-link');
   });
 
+  it('renders ordered and unordered lists with enhanced marker styling hooks', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'ordered-list',
+        type: 'list',
+        data: {
+          ordered: true,
+          items: ['Plan the post structure', 'Draft the examples'],
+        },
+      },
+      {
+        id: 'unordered-list',
+        type: 'list',
+        data: {
+          ordered: false,
+          items: ['Practical AI tips', 'Reusable prompts'],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const orderedList = element.querySelector('ol');
+    const unorderedList = element.querySelector('ul');
+
+    expect(orderedList?.classList).toContain('blog-list');
+    expect(orderedList?.classList).toContain('blog-list-ordered');
+    expect(unorderedList?.classList).toContain('blog-list');
+    expect(unorderedList?.classList).toContain('blog-list-unordered');
+    expect(orderedList?.querySelectorAll('.blog-list-item-ordered').length).toBe(2);
+    expect(unorderedList?.querySelectorAll('.blog-list-item-unordered').length).toBe(2);
+  });
+
   it('keeps same-page rich text anchors in the current tab', () => {
     fixture.componentRef.setInput('blocks', [
       {
@@ -151,6 +202,52 @@ describe('BlogBlockRendererComponent', () => {
     expect(link?.getAttribute('target')).toBeNull();
     expect(link?.getAttribute('rel')).toBeNull();
     expect(link?.classList).toContain('blog-inline-link');
+  });
+
+  it('renders soft-wrapped code blocks with language labels and copy feedback', async () => {
+    const code = 'const reallyLongExampleName = "this code should soft wrap inside the public blog code block instead of requiring horizontal scrolling";\nconsole.log(reallyLongExampleName);';
+    const writeText = jasmine.createSpy('writeText').and.returnValue(Promise.resolve());
+    const restoreClipboard = installClipboardSpy(writeText);
+
+    try {
+      fixture.componentRef.setInput('blocks', [
+        {
+          id: 'code-1',
+          type: 'code',
+          data: {
+            language: 'typescript',
+            code,
+          },
+        },
+      ]);
+      fixture.detectChanges();
+
+      const element = fixture.nativeElement as HTMLElement;
+      const button = element.querySelector<HTMLButtonElement>('[data-testid="blog-code-copy"]');
+      const pre = element.querySelector<HTMLPreElement>('pre');
+      const codeElement = element.querySelector<HTMLElement>('code');
+
+      expect(element.textContent).toContain('TYPESCRIPT');
+      expect(codeElement?.textContent).toBe(code);
+      expect(codeElement?.getAttribute('data-language')).toBe('typescript');
+      expect(pre?.classList).toContain('whitespace-pre-wrap');
+      expect(pre?.classList).toContain('overflow-x-hidden');
+      expect(pre?.classList).toContain('break-words');
+      expect(codeElement?.classList).toContain('[overflow-wrap:anywhere]');
+      expect(button?.textContent).toContain('Copy');
+      expect(button?.getAttribute('aria-label')).toBe('Copy typescript code block');
+
+      button?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      expect(writeText).toHaveBeenCalledOnceWith(code);
+      expect(button?.textContent).toContain('Copied');
+      expect(button?.getAttribute('aria-label')).toBe('Copied typescript code block');
+    } finally {
+      restoreClipboard();
+    }
   });
 
   it('renders stat cards and chart values for custom data blocks', () => {

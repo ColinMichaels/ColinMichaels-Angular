@@ -23,6 +23,7 @@ import {MediaLibraryService} from '../../../media-library/services/media-library
 import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {ChartBlockTool} from './tools/chart-block.tool';
+import {CmsCodeBlockTool} from './tools/code-block.tool';
 import {CmsImageBlockTool} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
@@ -32,10 +33,10 @@ interface EditorToolModules {
   Header: ToolConstructable;
   List: ToolConstructable;
   Quote: ToolConstructable;
-  Code: ToolConstructable;
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
   YoutubeEmbed: ToolConstructable;
+  CmsCodeBlock: ToolConstructable;
   CmsImageBlock: ToolConstructable;
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
@@ -112,7 +113,6 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     headerModule,
     listModule,
     quoteModule,
-    codeModule,
     delimiterModule,
     embedModule,
     youtubeEmbedModule,
@@ -120,7 +120,6 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     import('@editorjs/header'),
     import('@editorjs/list'),
     import('@editorjs/quote'),
-    import('@editorjs/code'),
     import('@editorjs/delimiter'),
     import('@editorjs/embed'),
     import('editorjs-youtube-embed'),
@@ -130,10 +129,10 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     Header: getToolConstructable(headerModule, 'Header'),
     List: getToolConstructable(listModule, 'List'),
     Quote: getToolConstructable(quoteModule, 'Quote'),
-    Code: getToolConstructable(codeModule, 'Code'),
     Delimiter: getToolConstructable(delimiterModule, 'Delimiter'),
     Embed: getToolConstructable(embedModule, 'Embed'),
     YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
+    CmsCodeBlock: CmsCodeBlockTool as unknown as ToolConstructable,
     CmsImageBlock: CmsImageBlockTool as unknown as ToolConstructable,
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
@@ -205,7 +204,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
 
       <div
         #editorHolder
-        class="min-h-[420px] bg-zinc-50 px-5 py-5 text-zinc-950"
+        class="cms-editor-surface min-h-[420px] bg-zinc-50 px-5 py-5 text-zinc-950"
         [class.opacity-50]="isLoading()"
       ></div>
 
@@ -430,6 +429,211 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
       }
     </section>
   `,
+  styles: [`
+    :host ::ng-deep .cms-editor-surface {
+      border: 1px solid #d4d4d8;
+      color: #18181b;
+      font-family: Arimo, sans-serif;
+      overflow: visible;
+    }
+
+    :host ::ng-deep .cms-editor-surface .codex-editor {
+      margin: 0 auto;
+      max-width: 960px;
+      overflow: visible;
+      padding-inline: 70px 34px;
+    }
+
+    :host ::ng-deep .cms-editor-surface .codex-editor__redactor {
+      padding-bottom: 120px !important;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block {
+      margin: 0;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content,
+    :host ::ng-deep .cms-editor-surface .ce-toolbar__content {
+      max-width: 760px;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content {
+      border-left: 3px solid transparent;
+      padding: 10px 18px;
+      position: relative;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:focus-within {
+      background: #f8fafc;
+      border-left-color: #0891b2;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-paragraph)::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-header)::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-list)::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-quote)::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-delimiter)::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.image-tool)::after {
+      background: #0f172a;
+      border-radius: 4px;
+      box-shadow: 0 8px 20px rgb(15 23 42 / 18%);
+      color: #e2e8f0;
+      opacity: 0;
+      padding: 4px 7px;
+      pointer-events: none;
+      position: absolute;
+      right: calc(100% + 10px);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      top: 12px;
+      transform: translateX(-4px);
+      transition: opacity 120ms ease, transform 120ms ease;
+      white-space: nowrap;
+      z-index: 30;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:hover::after,
+    :host ::ng-deep .cms-editor-surface .ce-block__content:focus-within::after {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-paragraph)::after {
+      content: 'Paragraph';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-header)::after {
+      content: 'Heading';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-list)::after {
+      content: 'List';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-quote)::after {
+      content: 'Quote';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-delimiter)::after {
+      content: 'Divider';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-block__content:has(.image-tool)::after {
+      content: 'Image';
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-toolbar {
+      z-index: 20;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-toolbar__plus,
+    :host ::ng-deep .cms-editor-surface .ce-toolbar__settings-btn {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 8px 18px rgb(15 23 42 / 12%);
+      color: #334155;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-toolbar__plus:hover,
+    :host ::ng-deep .cms-editor-surface .ce-toolbar__settings-btn:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-paragraph {
+      color: #334155;
+      font-size: 16px;
+      line-height: 1.85;
+      min-height: 1.85em;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-header {
+      color: #0f172a;
+      font-weight: 700;
+      line-height: 1.25;
+      padding: 0;
+    }
+
+    :host ::ng-deep .cms-editor-surface h2.ce-header {
+      font-size: 28px;
+    }
+
+    :host ::ng-deep .cms-editor-surface h3.ce-header {
+      font-size: 24px;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cdx-list {
+      color: #334155;
+      font-size: 16px;
+      line-height: 1.75;
+      padding-left: 1.35rem;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cdx-quote {
+      border-left: 3px solid #0891b2;
+      color: #1e293b;
+      padding: 10px 0 10px 18px;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cdx-quote__text {
+      font-size: 18px;
+      line-height: 1.75;
+      min-height: 1.75em;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cdx-quote__caption {
+      color: #64748b;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-delimiter {
+      line-height: 1;
+      padding: 14px 0;
+    }
+
+    :host ::ng-deep .cms-editor-surface .ce-delimiter::before {
+      color: #94a3b8;
+      font-size: 28px;
+      letter-spacing: .3em;
+    }
+
+    :host ::ng-deep .cms-editor-surface .image-tool {
+      color: #334155;
+    }
+
+    :host ::ng-deep .cms-editor-surface .image-tool__image-picture {
+      border-radius: 6px;
+      max-height: 70vh;
+      object-fit: contain;
+    }
+
+    @media (max-width: 820px) {
+      :host ::ng-deep .cms-editor-surface .codex-editor {
+        padding-inline: 42px 12px;
+      }
+
+      :host ::ng-deep .cms-editor-surface .ce-block__content,
+      :host ::ng-deep .cms-editor-surface .ce-toolbar__content {
+        max-width: 100%;
+      }
+
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-paragraph)::after,
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-header)::after,
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-list)::after,
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-quote)::after,
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.ce-delimiter)::after,
+      :host ::ng-deep .cms-editor-surface .ce-block__content:has(.image-tool)::after {
+        left: 10px;
+        right: auto;
+        top: -16px;
+      }
+    }
+  `],
 })
 export class EditorJsComponent implements AfterViewInit {
   @Input({required: true}) initialData!: OutputData;
@@ -719,7 +923,9 @@ export class EditorJsComponent implements AfterViewInit {
           html: {
             class: tools.HtmlBlock,
           },
-          code: tools.Code,
+          code: {
+            class: tools.CmsCodeBlock,
+          },
           delimiter: tools.Delimiter,
           embed: {
             class: tools.Embed,

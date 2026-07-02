@@ -1,3 +1,4 @@
+@use 'styles/fonts';
 @use "styles/game-globals";
 @use 'styles/scrollbars.scss';
 @use 'styles/animations.scss';
@@ -41,7 +42,7 @@
 }
 
 body {
-  font-family: 'Arimo', sans-serif;
+  font-family: var(--font-body);
   background: var(--site-bg);
   color: var(--site-text);
 }
