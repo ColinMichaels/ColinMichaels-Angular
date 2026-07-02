@@ -46,7 +46,7 @@ trap 'rm -f "$config_path"' EXIT
 
 node .github/scripts/create-firebase-deploy-config.mjs "$target" "$config_path"
 
-env -u FIREBASE_TOKEN npx --yes firebase-tools@14 deploy \
+env -u FIREBASE_TOKEN npx --yes firebase-tools@14.27.0 deploy \
   --only "$only" \
   --config "$config_path" \
   --project "$FIREBASE_PROJECT_ID" \
