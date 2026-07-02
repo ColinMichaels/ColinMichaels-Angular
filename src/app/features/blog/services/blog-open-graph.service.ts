@@ -81,15 +81,15 @@ export class BlogOpenGraphService {
     return metadata;
   }
 
-  applyBlogCategory(category: string): BlogShareMetadata {
-    const metadata = createBlogCategorySeoMetadata(category);
+  applyBlogCategory(category: string, postCount?: number): BlogShareMetadata {
+    const metadata = createBlogCategorySeoMetadata(category, postCount);
     this.seo.apply(metadata);
 
     return this.toShareMetadata(metadata);
   }
 
-  applyBlogTag(tag: string): BlogShareMetadata {
-    const metadata = createBlogTagSeoMetadata(tag);
+  applyBlogTag(tag: string, postCount?: number): BlogShareMetadata {
+    const metadata = createBlogTagSeoMetadata(tag, postCount);
     this.seo.apply(metadata);
 
     return this.toShareMetadata(metadata);

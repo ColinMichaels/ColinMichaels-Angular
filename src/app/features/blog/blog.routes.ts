@@ -1,7 +1,7 @@
 import {Routes} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {BLOG_INDEX_SEO_METADATA} from '../../shared/seo/seo.metadata';
+import {BLOG_INDEX_SEO_METADATA, BLOG_SEARCH_SEO_METADATA} from '../../shared/seo/seo.metadata';
 
 export const blogRoutes: Routes = [
   {
@@ -11,7 +11,8 @@ export const blogRoutes: Routes = [
   },
   {
     path: `${PATH_NAMES.BLOG}/search`,
-    loadComponent: () => import('./pages/blog-search/blog-search.component').then(m => m.BlogSearchComponent),
+    data: {seo: BLOG_SEARCH_SEO_METADATA},
+    loadComponent: () => import('../search/pages/site-search-page.component').then(m => m.SiteSearchPageComponent),
   },
   {
     path: `${PATH_NAMES.BLOG}/category/:category`,

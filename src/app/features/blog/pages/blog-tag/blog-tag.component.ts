@@ -113,7 +113,11 @@ export class BlogTagComponent {
 
   constructor() {
     effect(() => {
-      this.openGraph.applyBlogTag(this.tagTitle());
+      if (this.isLoading()) {
+        return;
+      }
+
+      this.openGraph.applyBlogTag(this.tagTitle(), this.filteredPosts().length);
     });
   }
 }

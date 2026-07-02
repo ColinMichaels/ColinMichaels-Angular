@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-02
+
+- Added explicit Firebase SEO route classification so unknown public paths return `404` with `noindex,follow`, missing blog posts return `404` missing-post metadata, and valid OS/admin routes remain `noindex,nofollow`.
+- Pruned sitemap taxonomy output with thresholds of `2` published posts for categories/subcategories and `3` published posts for tags, while keeping low-count taxonomy pages navigable with `noindex,follow`.
+- Added visible server-rendered fallback content for the blog index, article pages, and topic hubs so crawlers and no-JS readers can see links, metadata, and sanitized article body text before Angular hydrates.
+- Added route-backed topic hubs for AI setup, recovery planning, Angular/Firebase architecture, and labs/projects, with homepage internal links and sitemap inclusion.
+- Strengthened author/trust signals and reframed health/recovery sections as patient-perspective resources instead of medical advice.
+- Added SEO policy regression specs for route order, taxonomy robots thresholds, and missing-post noindex metadata.
+- Documented the 90-day SEO implementation schedule and SEO rendering/sitemap policy.
+
 ## 2026-06-28
 
 - Consolidated production Firebase deploys into a single push/manual workflow with shared deploy-scope and Firebase CLI helper scripts, replacing separate production merge, manual, and Functions-only workflows.

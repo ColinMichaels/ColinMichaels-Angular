@@ -34,7 +34,7 @@ import {BlogRepositoryService} from '../../services/blog-repository.service';
             </div>
             <div class="flex flex-wrap gap-2">
               <a
-                [routerLink]="['/', pathNames.BLOG, 'search']"
+                [routerLink]="['/', pathNames.SEARCH]"
                 class="blog-action-primary"
               >
                 <fa-icon [icon]="faMagnifyingGlass"></fa-icon>

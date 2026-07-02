@@ -107,7 +107,11 @@ export class BlogCategoryComponent {
 
   constructor() {
     effect(() => {
-      this.openGraph.applyBlogCategory(this.categoryTitle());
+      if (this.isLoading()) {
+        return;
+      }
+
+      this.openGraph.applyBlogCategory(this.categoryTitle(), this.filteredPosts().length);
     });
   }
 }

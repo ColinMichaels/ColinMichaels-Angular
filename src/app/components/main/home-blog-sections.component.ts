@@ -14,6 +14,7 @@ import {
   createBlogCategorySlug,
   getBlogTaxonomyTerms
 } from '../../features/blog/utils/blog-category-url.util';
+import {TOPIC_HUBS} from '../../features/topics/topic-hubs.data';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -71,6 +72,18 @@ function postHasTaxonomyTerm(post: BlogPostSummary, terms: readonly string[]): b
 
   return getBlogTaxonomyTerms(post)
     .some(term => normalizedTerms.has(normalizeSearchValue(term)));
+}
+
+function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): boolean {
+  const searchableText = normalizeSearchValue([
+    post.title,
+    post.excerpt,
+    post.slug,
+    ...getBlogTaxonomyTerms(post),
+    ...post.tags,
+  ].join(' '));
+
+  return terms.some(term => searchableText.includes(normalizeSearchValue(term)));
 }
 
 @Component({
@@ -150,6 +163,40 @@ function postHasTaxonomyTerm(post: BlogPostSummary, terms: readonly string[]): b
           </div>
         }
       }
+    </section>
+
+    <section id="topic-guides" class="site-section-band">
+      <div class="site-section-inner">
+        <div class="site-section-header">
+          <div>
+            <p class="eyebrow eyebrow-cyan">Start here</p>
+            <h2 class="mt-3 heading-section">Topic guides</h2>
+            <p class="site-section-copy">
+              Indexable hubs for the main things this site is building around: AI workflows, recovery planning,
+              Angular/Firebase architecture, and public experiments.
+            </p>
+          </div>
+          <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
+            Browse all writing
+          </a>
+        </div>
+
+        <div class="site-card-grid mt-8">
+          @for (hub of topicHubCards(); track hub.slug) {
+            <a
+              [routerLink]="['/', pathNames.TOPICS, hub.slug]"
+              class="site-card-interactive site-card-body block"
+            >
+              <p class="site-meta">{{ hub.eyebrow }}</p>
+              <h3 class="mt-3 heading-card">{{ hub.title }}</h3>
+              <p class="mt-3 text-body">{{ hub.description }}</p>
+              <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                {{ hub.count }} related post{{ hub.count === 1 ? '' : 's' }}
+              </p>
+            </a>
+          }
+        </div>
+      </div>
     </section>
 
     <section id="tech-tips" class="site-section-band-dark">
@@ -307,11 +354,15 @@ function postHasTaxonomyTerm(post: BlogPostSummary, terms: readonly string[]): b
             <p class="eyebrow eyebrow-emerald">Health & Recovery</p>
             <h2 class="mt-3 heading-section">Weekly Updates</h2>
             <p class="site-section-copy">
-              Weekly recovery notes, personal updates, and posts about the recent open heart surgery process.
+              Weekly recovery notes, personal updates, and patient-perspective posts about the recent open heart
+              surgery process.
+            </p>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-400">
+              Health-related posts are personal experience and organization notes only, not medical advice.
             </p>
           </div>
-          <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
-            Browse the blog
+          <a [routerLink]="['/', pathNames.TOPICS, 'recovery-planning']" class="btn-link">
+            Recovery planning hub
           </a>
         </div>
 
@@ -346,13 +397,17 @@ function postHasTaxonomyTerm(post: BlogPostSummary, terms: readonly string[]): b
       <div class="site-section-header">
         <div>
           <p class="eyebrow eyebrow-rose">Things I learned in the Hospital</p>
-          <h2 class="mt-3 heading-section">Medical advice from a friend</h2>
+          <h2 class="mt-3 heading-section">Hospital lessons from a patient</h2>
           <p class="site-section-copy">
-            Sharing some of the things I learned while in the hospital that I wish someone told me.
+            Personal resource notes from the hospital experience: questions to ask, details to organize, and
+            practical things I wish I had known sooner.
+          </p>
+          <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-400">
+            Always confirm care decisions, medications, symptoms, and insurance questions with qualified professionals.
           </p>
         </div>
-        <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
-          View all writing
+        <a [routerLink]="['/', pathNames.TOPICS, 'recovery-planning']" class="btn-link">
+          View resources
         </a>
       </div>
 
@@ -396,6 +451,12 @@ export class HomeBlogSectionsComponent {
   ));
   protected readonly medicalInfoPosts = computed(() => (
     this.allPublishedPosts().filter(post => postMatchesTerms(post, MEDICAL_INFORMATION_TERMS))
+  ));
+  protected readonly topicHubCards = computed(() => (
+    TOPIC_HUBS.map(hub => ({
+      ...hub,
+      count: this.allPublishedPosts().filter(post => postMatchesHubTerms(post, hub.terms)).length,
+    }))
   ));
   protected readonly techTipsPosts = computed(() => (
     this.allPublishedPosts().filter(post => postHasTaxonomyTerm(post, [TECH_TIPS_CATEGORY]))

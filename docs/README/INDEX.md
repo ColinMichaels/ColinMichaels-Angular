@@ -19,5 +19,6 @@ This folder is the entry point for project documentation.
 
 ## Planning
 
+- [90-Day SEO Plan](../SEO/90_DAY_SEO_PLAN.md)
 - [Tech Debt TODOs](../TODOS/TECH_DEBT.md)
 - [Future Roadmap](../FUTURE_FEATURES/ROADMAP.md)
