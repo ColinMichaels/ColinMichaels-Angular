@@ -42,6 +42,34 @@ function normalizeSearchValue(value: string): string {
           <p class="blog-page-description">{{ hub().summary }}</p>
         </header>
 
+        <section class="blog-section-rule" aria-labelledby="topic-asset-heading">
+          <p class="site-meta">Linkable asset</p>
+          <div class="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start">
+            <div>
+              <h2 id="topic-asset-heading" class="mt-2 heading-subsection">{{ hub().asset.title }}</h2>
+              <p class="mt-3 text-body">{{ hub().asset.intro }}</p>
+            </div>
+            <ol class="grid gap-3">
+              @for (item of hub().asset.items; track item.label; let index = $index) {
+                <li
+                  class="grid gap-3 border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-900/70 sm:grid-cols-[2.5rem_minmax(0,1fr)]">
+                  <span
+                    class="flex h-10 w-10 items-center justify-center border border-cyan-600 text-sm font-semibold text-cyan-800 dark:border-cyan-300 dark:text-cyan-200"
+                    aria-hidden="true"
+                  >
+                    {{ index + 1 }}
+                  </span>
+                  <span>
+                    <span class="block text-base font-semibold text-slate-950 dark:text-zinc-50">{{ item.label }}</span>
+                    <span
+                      class="mt-1 block text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ item.description }}</span>
+                  </span>
+                </li>
+              }
+            </ol>
+          </div>
+        </section>
+
         <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
           <div class="min-w-0">
             <div class="blog-section-rule">
@@ -77,7 +105,7 @@ function normalizeSearchValue(value: string): string {
           </div>
 
           <aside class="site-card site-card-body lg:sticky lg:top-24">
-            <p class="site-meta">Linkable asset</p>
+            <p class="site-meta">Quick reference</p>
             <h2 class="mt-3 heading-subsection">Checklist</h2>
             <ul class="mt-4 grid gap-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">
               @for (item of hub().checklist; track item) {
