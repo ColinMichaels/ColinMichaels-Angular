@@ -35,6 +35,29 @@ import {
   hasMeaningfulPostUpdate
 } from '../../utils/blog-reading.util';
 
+const HEALTH_CONTENT_TERMS = [
+  'cardiac',
+  'cardiology',
+  'health',
+  'heart surgery',
+  'hospital',
+  'insurance',
+  'medical',
+  'medication',
+  'open heart',
+  'procedure',
+  'recovery',
+] as const;
+
+function normalizeHealthTerm(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 @Component({
   selector: 'app-blog-detail',
   imports: [
@@ -100,6 +123,13 @@ import {
                   <div
                     class="border border-amber-500/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/50 dark:bg-amber-400/10 dark:text-amber-100">
                     Draft preview. This temporary link is rendering unpublished CMS content.
+                  </div>
+                }
+                @if (showHealthDisclaimer()) {
+                  <div
+                    class="border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-950 dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-rose-100">
+                    {{ authorProfile.healthDisclaimer }} Confirm medical, medication, recovery, and insurance decisions
+                    with qualified professionals.
                   </div>
                 }
                 @if (canEditPost()) {
@@ -395,6 +425,22 @@ export class BlogDetailComponent {
     const post = this.post();
 
     return post ? hasMeaningfulPostUpdate(post) : false;
+  });
+  protected readonly showHealthDisclaimer = computed(() => {
+    const post = this.post();
+
+    if (!post) {
+      return false;
+    }
+
+    const searchableText = normalizeHealthTerm([
+      post.title,
+      post.excerpt,
+      ...getBlogTaxonomyTerms(post),
+      ...post.tags,
+    ].join(' '));
+
+    return HEALTH_CONTENT_TERMS.some(term => searchableText.includes(normalizeHealthTerm(term)));
   });
   protected readonly currentPostIndex = computed(() => (
     this.posts().findIndex(post => post.slug === this.slug())

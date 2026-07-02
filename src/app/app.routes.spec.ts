@@ -11,12 +11,17 @@ describe('routes', () => {
   it('preserves the root route order and appends new public/admin boundaries before OS routes', () => {
     expect(routePaths(routes)).toEqual([
       '',
+      PATH_NAMES.SEARCH,
       PATH_NAMES.BLOG,
       `${PATH_NAMES.BLOG}/search`,
       `${PATH_NAMES.BLOG}/category/:category`,
       `${PATH_NAMES.BLOG}/tag/:tag`,
       `${PATH_NAMES.BLOG}/preview/:previewToken`,
       `${PATH_NAMES.BLOG}/:slug`,
+      `${PATH_NAMES.TOPICS}/ai-setup`,
+      `${PATH_NAMES.TOPICS}/recovery-planning`,
+      `${PATH_NAMES.TOPICS}/angular-firebase-architecture`,
+      `${PATH_NAMES.TOPICS}/labs-projects`,
       PATH_NAMES.LABS,
       PATH_NAMES.FS_BACKGROUND,
       PATH_NAMES.ADMIN,
