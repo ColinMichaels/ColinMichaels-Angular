@@ -1,7 +1,7 @@
 import {Injectable, inject} from '@angular/core';
 import {from, map, Observable} from 'rxjs';
 
-import {BlogAdminStats, BlogPost, BlogPostSummary} from '../models/blog-post.model';
+import {BlogAdminStats, BlogPost, BlogPostStatus, BlogPostSummary} from '../models/blog-post.model';
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
@@ -22,6 +22,12 @@ export interface BlogPostsExportDocument {
 }
 
 export type BlogPostDeleteResult = 'deleted-cms-post' | 'not-found';
+
+export interface BlogPostBulkActionResult {
+  requestedCount: number;
+  affectedCount: number;
+  notFoundIds: readonly string[];
+}
 
 function toSummary(post: BlogPost): BlogPostSummary {
   return {
@@ -89,6 +95,10 @@ function isActivePreview(post: BlogPost): boolean {
 
   const expiresAt = new Date(post.preview.expiresAt).getTime();
   return Number.isFinite(expiresAt) && expiresAt > Date.now();
+}
+
+function getUniquePostIds(postIds: readonly string[]): readonly string[] {
+  return [...new Set(postIds.filter(Boolean))];
 }
 
 @Injectable({
@@ -325,6 +335,87 @@ export class BlogRepositoryService {
     }
 
     return 'deleted-cms-post';
+  }
+
+  async updatePostStatuses(postIds: readonly string[], status: BlogPostStatus): Promise<BlogPostBulkActionResult> {
+    const uniquePostIds = getUniquePostIds(postIds);
+    const postsById = new Map(this.storage.getPosts().map(post => [post.id, post]));
+    const now = new Date().toISOString();
+    const updatedPosts: BlogPost[] = [];
+    const previewTokensToDelete: string[] = [];
+    const notFoundIds: string[] = [];
+
+    for (const postId of uniquePostIds) {
+      const post = postsById.get(postId);
+
+      if (!post) {
+        notFoundIds.push(postId);
+        continue;
+      }
+
+      const preview = status === 'draft' && isActivePreview(post) ? post.preview : undefined;
+
+      if (post.preview && !preview) {
+        previewTokensToDelete.push(post.preview.token);
+      }
+
+      updatedPosts.push({
+        ...post,
+        status,
+        preview,
+        updatedAt: now,
+        publishedAt: status === 'published' ? post.publishedAt ?? now : post.publishedAt,
+      });
+    }
+
+    if (updatedPosts.length > 0) {
+      await this.storage.savePosts(updatedPosts);
+    }
+
+    if (previewTokensToDelete.length > 0) {
+      await this.storage.deletePostPreviews(previewTokensToDelete);
+    }
+
+    return {
+      requestedCount: uniquePostIds.length,
+      affectedCount: updatedPosts.length,
+      notFoundIds,
+    };
+  }
+
+  async deletePosts(postIds: readonly string[]): Promise<BlogPostBulkActionResult> {
+    const uniquePostIds = getUniquePostIds(postIds);
+    const postsById = new Map(this.storage.getPosts().map(post => [post.id, post]));
+    const postsToDelete: BlogPost[] = [];
+    const notFoundIds: string[] = [];
+
+    for (const postId of uniquePostIds) {
+      const post = postsById.get(postId);
+
+      if (post) {
+        postsToDelete.push(post);
+      } else {
+        notFoundIds.push(postId);
+      }
+    }
+
+    if (postsToDelete.length > 0) {
+      await this.storage.deletePosts(postsToDelete.map(post => post.id));
+    }
+
+    const previewTokens = postsToDelete
+      .map(post => post.preview?.token)
+      .filter((token): token is string => Boolean(token));
+
+    if (previewTokens.length > 0) {
+      await this.storage.deletePostPreviews(previewTokens);
+    }
+
+    return {
+      requestedCount: uniquePostIds.length,
+      affectedCount: postsToDelete.length,
+      notFoundIds,
+    };
   }
 
   createUniqueSlug(value: string, currentPostId?: string): string {

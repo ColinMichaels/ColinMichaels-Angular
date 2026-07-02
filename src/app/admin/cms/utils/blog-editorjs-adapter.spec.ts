@@ -220,6 +220,41 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('preserves code block language metadata across editor conversions', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'code-1',
+          type: 'code',
+          data: {
+            language: 'typescript',
+            code: 'const answer = 42;',
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'code-1',
+        type: 'code',
+        data: {
+          language: 'typescript',
+          code: 'const answer = 42;',
+        },
+      },
+    ]);
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'code-1',
+      type: 'code',
+      data: {
+        language: 'typescript',
+        code: 'const answer = 42;',
+      },
+    });
+  });
+
   it('round trips custom blog blocks back into Editor.js documents', () => {
     const document = createEditorDocument(createPost({
       blocks: [

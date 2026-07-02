@@ -26,6 +26,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     },
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
+    ...(overrides.preview ? {preview: overrides.preview} : {}),
     createdAt: overrides.createdAt ?? '2026-01-01T12:00:00.000Z',
     updatedAt: overrides.updatedAt ?? '2026-01-01T12:00:00.000Z',
     publishedAt: overrides.publishedAt ?? null,
@@ -52,6 +53,13 @@ class FakeBlogStorageService {
     this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), post]);
   }
 
+  async savePosts(posts: readonly BlogPost[]): Promise<void> {
+    const updatedPostsById = new Map(posts.map(post => [post.id, post]));
+    const unchangedPosts = this.getPosts().filter(post => !updatedPostsById.has(post.id));
+
+    this.setPosts([...unchangedPosts, ...posts]);
+  }
+
   async savePostPreview(post: BlogPost): Promise<void> {
     await this.savePost(post);
 
@@ -71,8 +79,19 @@ class FakeBlogStorageService {
     this.previews.delete(token);
   }
 
+  async deletePostPreviews(tokens: readonly string[]): Promise<void> {
+    for (const token of tokens) {
+      this.previews.delete(token);
+    }
+  }
+
   async deletePost(postId: string): Promise<void> {
     this.setPosts(this.getPosts().filter(post => post.id !== postId));
+  }
+
+  async deletePosts(postIds: readonly string[]): Promise<void> {
+    const postIdsToDelete = new Set(postIds);
+    this.setPosts(this.getPosts().filter(post => !postIdsToDelete.has(post.id)));
   }
 
   async backupPostsToFirestore(posts: readonly BlogPost[]): Promise<number> {
@@ -82,6 +101,10 @@ class FakeBlogStorageService {
 
   async loadPostsFromFirestore(): Promise<readonly BlogPost[]> {
     return this.getPosts();
+  }
+
+  async loadPublishedPostsFromFirestore(): Promise<readonly BlogPost[]> {
+    return this.getPosts().filter(post => post.status === 'published');
   }
 }
 
@@ -301,5 +324,42 @@ describe('BlogRepositoryService', () => {
 
     expect(result).toBe('deleted-cms-post');
     expect(service.getAdminPostBySlug(draftPost.slug)).toBeUndefined();
+  });
+
+  it('updates multiple post statuses and clears draft previews when publishing', async () => {
+    const previewDraft = createPost({
+      id: 'preview-draft',
+      slug: 'preview-draft',
+      status: 'draft',
+      preview: {
+        token: 'preview-token',
+        createdAt: '2026-01-01T12:00:00.000Z',
+        expiresAt: '2999-01-01T12:00:00.000Z',
+      },
+    });
+
+    await storage.savePostPreview(previewDraft);
+
+    const result = await service.updatePostStatuses([draftPost.id, previewDraft.id], 'published');
+
+    expect(result).toEqual({
+      requestedCount: 2,
+      affectedCount: 2,
+      notFoundIds: [],
+    });
+    expect(service.getAdminPostBySlug(draftPost.slug)?.status).toBe('published');
+    expect(service.getAdminPostBySlug(previewDraft.slug)?.preview).toBeUndefined();
+    await expectAsync(service.getPreviewPostByToken('preview-token')).toBeResolvedTo(undefined);
+  });
+
+  it('deletes multiple posts from Firestore storage', async () => {
+    const result = await service.deletePosts([publishedPost.id, draftPost.id, 'missing-post']);
+
+    expect(result).toEqual({
+      requestedCount: 3,
+      affectedCount: 2,
+      notFoundIds: ['missing-post'],
+    });
+    expect(service.getAdminStats().total).toBe(0);
   });
 });

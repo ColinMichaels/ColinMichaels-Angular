@@ -1,5 +1,7 @@
 import {
+  ChangeDetectorRef,
   Component,
+  OnDestroy,
   Input,
   OnChanges,
   SecurityContext,
@@ -10,8 +12,10 @@ import {
 import {DomSanitizer, SafeHtml, SafeResourceUrl} from '@angular/platform-browser';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
+  faCheck,
   faChevronLeft,
   faChevronRight,
+  faCopy,
   faDownload,
   faMagnifyingGlassPlus,
   faXmark,
@@ -294,15 +298,15 @@ interface RenderableBlogImage {
           }
           @case ('list') {
             @if (row.block.data.ordered) {
-              <ol class="list-decimal space-y-2 pl-6">
+              <ol class="blog-list blog-list-ordered">
                 @for (item of row.itemHtml; track $index) {
-                  <li [innerHTML]="item"></li>
+                  <li class="blog-list-item blog-list-item-ordered" [innerHTML]="item"></li>
                 }
               </ol>
             } @else {
-              <ul class="list-disc space-y-2 pl-6">
+              <ul class="blog-list blog-list-unordered">
                 @for (item of row.itemHtml; track $index) {
-                  <li [innerHTML]="item"></li>
+                  <li class="blog-list-item blog-list-item-unordered" [innerHTML]="item"></li>
                 }
               </ul>
             }
@@ -367,7 +371,25 @@ interface RenderableBlogImage {
             }
           }
           @case ('code') {
-            <pre class="overflow-x-auto rounded bg-black p-4 text-sm leading-6 text-cyan-100"><code>{{ row.block.data.code }}</code></pre>
+            <figure class="overflow-hidden rounded border border-slate-200 bg-slate-950 text-zinc-100 shadow-sm dark:border-zinc-800">
+              <figcaption class="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-900 px-4 py-2">
+                <span class="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                  {{ formatCodeLanguageLabel(row.block.data.language) }}
+                </span>
+                <button
+                  type="button"
+                  class="inline-flex shrink-0 items-center gap-2 rounded border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-cyan-200 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="!row.block.data.code"
+                  [attr.aria-label]="getCodeCopyLabel(row.block)"
+                  (click)="copyCodeBlock(row.block)"
+                  data-testid="blog-code-copy"
+                >
+                  <fa-icon [icon]="isCodeBlockCopied(row.block.id) ? faCheck : faCopy"></fa-icon>
+                  <span aria-live="polite">{{ isCodeBlockCopied(row.block.id) ? 'Copied' : 'Copy' }}</span>
+                </button>
+              </figcaption>
+              <pre class="m-0 max-w-full overflow-x-hidden whitespace-pre-wrap break-words p-4 text-sm leading-6 text-cyan-100"><code class="break-words [overflow-wrap:anywhere]" [attr.data-language]="row.block.data.language || null">{{ row.block.data.code }}</code></pre>
+            </figure>
           }
           @case ('delimiter') {
             <hr class="border-slate-200 dark:border-zinc-800">
@@ -493,6 +515,79 @@ interface RenderableBlogImage {
       color: #0f172a;
     }
 
+    .blog-list {
+      --blog-list-bullet-color: #fbbf24;
+      --blog-list-bullet-ring: rgba(251, 191, 36, 0.22);
+      --blog-list-number-bg: rgba(8, 145, 178, 0.22);
+      --blog-list-number-border: rgba(103, 232, 249, 0.38);
+      --blog-list-number-color: #67e8f9;
+      display: grid;
+      gap: .85rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    :host-context(.light) .blog-list {
+      --blog-list-bullet-color: #0891b2;
+      --blog-list-bullet-ring: rgba(8, 145, 178, 0.14);
+      --blog-list-number-bg: rgba(8, 145, 178, 0.12);
+      --blog-list-number-border: rgba(8, 145, 178, 0.28);
+      --blog-list-number-color: #0e7490;
+    }
+
+    .blog-list-ordered {
+      counter-reset: blog-list-item;
+    }
+
+    .blog-list-item {
+      line-height: 1.85;
+      padding-left: 3rem;
+      position: relative;
+    }
+
+    .blog-list-item-ordered {
+      counter-increment: blog-list-item;
+    }
+
+    .blog-list-item-ordered::before {
+      align-items: center;
+      background: var(--blog-list-number-bg);
+      border: 1px solid var(--blog-list-number-border);
+      border-radius: 999px;
+      color: var(--blog-list-number-color);
+      content: counter(blog-list-item);
+      display: inline-flex;
+      font-size: 1.05rem;
+      font-weight: 800;
+      height: 2rem;
+      justify-content: center;
+      left: 0;
+      line-height: 1;
+      min-width: 2rem;
+      padding: 0 .45rem;
+      position: absolute;
+      top: .15rem;
+    }
+
+    .blog-list-item-unordered::before {
+      background: var(--blog-list-bullet-color);
+      border-radius: 999px;
+      box-shadow: 0 0 0 .3rem var(--blog-list-bullet-ring);
+      content: '';
+      height: .72rem;
+      left: .65rem;
+      position: absolute;
+      top: .82rem;
+      width: .72rem;
+    }
+
+    @media (min-width: 640px) {
+      .blog-list-item {
+        padding-left: 3.35rem;
+      }
+    }
+
     :host ::ng-deep .blog-custom-html {
       color: #d4d4d8;
       line-height: 1.75;
@@ -519,7 +614,7 @@ interface RenderableBlogImage {
     }
 
     :host ::ng-deep .blog-custom-html :where(ul, ol) {
-      padding-left: 1.5rem;
+      padding-left: 2.25rem;
     }
 
     :host ::ng-deep .blog-custom-html ul {
@@ -528,6 +623,27 @@ interface RenderableBlogImage {
 
     :host ::ng-deep .blog-custom-html ol {
       list-style: decimal;
+    }
+
+    :host ::ng-deep .blog-custom-html :where(li) {
+      margin: .45rem 0;
+      padding-left: .35rem;
+    }
+
+    :host ::ng-deep .blog-custom-html ol li::marker {
+      color: #67e8f9;
+      font-size: 1.18em;
+      font-weight: 800;
+    }
+
+    :host ::ng-deep .blog-custom-html ul li::marker {
+      color: #fbbf24;
+      font-size: 1.25em;
+    }
+
+    :host-context(.light) ::ng-deep .blog-custom-html ol li::marker,
+    :host-context(.light) ::ng-deep .blog-custom-html ul li::marker {
+      color: #0e7490;
     }
 
     :host ::ng-deep .blog-custom-html :where(img, svg) {
@@ -582,7 +698,7 @@ interface RenderableBlogImage {
     }
   `],
 })
-export class BlogBlockRendererComponent implements OnChanges {
+export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   @Input() blocks: readonly BlogContentBlock[] = [];
   @Input() fallbackAlt = 'Blog content';
   @Input() anchorPath = '';
@@ -592,12 +708,18 @@ export class BlogBlockRendererComponent implements OnChanges {
   protected activeImageIndex: number | null = null;
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faChevronRight = faChevronRight;
+  protected readonly faCheck = faCheck;
+  protected readonly faCopy = faCopy;
   protected readonly faDownload = faDownload;
   protected readonly faMagnifyingGlassPlus = faMagnifyingGlassPlus;
   protected readonly faXmark = faXmark;
 
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly imageLayoutSet = new Set<string>(BLOG_IMAGE_LAYOUTS);
+  private readonly copiedCodeBlockIds = new Set<string>();
+  private readonly codeCopyTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly copyFeedbackDurationMs = 2000;
   private readonly trustedEmbedHosts = new Set([
     'www.youtube.com',
     'youtube.com',
@@ -650,6 +772,14 @@ export class BlogBlockRendererComponent implements OnChanges {
     }
   }
 
+  ngOnDestroy(): void {
+    for (const timer of this.codeCopyTimers.values()) {
+      clearTimeout(timer);
+    }
+
+    this.codeCopyTimers.clear();
+  }
+
   protected get activeImage(): RenderableBlogImage | null {
     return this.activeImageIndex === null ? null : this.imageGallery[this.activeImageIndex] ?? null;
   }
@@ -664,6 +794,38 @@ export class BlogBlockRendererComponent implements OnChanges {
 
   protected get hasMultipleImages(): boolean {
     return this.imageGallery.length > 1;
+  }
+
+  protected formatCodeLanguageLabel(language: string | undefined): string {
+    const normalizedLanguage = language?.trim();
+
+    return normalizedLanguage ? normalizedLanguage.toUpperCase() : 'Code';
+  }
+
+  protected isCodeBlockCopied(blockId: string): boolean {
+    return this.copiedCodeBlockIds.has(blockId);
+  }
+
+  protected getCodeCopyLabel(block: BlogContentBlock): string {
+    const state = this.isCodeBlockCopied(block.id) ? 'Copied' : 'Copy';
+    const language = block.data.language?.trim();
+
+    return language ? `${state} ${language.toLowerCase()} code block` : `${state} code block`;
+  }
+
+  protected async copyCodeBlock(block: BlogContentBlock): Promise<void> {
+    const code = block.data.code ?? '';
+
+    if (!code) {
+      return;
+    }
+
+    try {
+      await this.writeClipboardText(code);
+      this.markCodeBlockCopied(block.id);
+    } catch {
+      return;
+    }
   }
 
   protected openImageLightbox(galleryIndex: number | null): void {
@@ -963,6 +1125,60 @@ export class BlogBlockRendererComponent implements OnChanges {
       .replace(/[^a-zA-Z0-9._-]/g, '')
       .replace(/^[._-]+/, '')
       .slice(0, 120);
+  }
+
+  private async writeClipboardText(value: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return;
+      } catch {
+        this.writeClipboardTextWithFallback(value);
+        return;
+      }
+    }
+
+    this.writeClipboardTextWithFallback(value);
+  }
+
+  private writeClipboardTextWithFallback(value: string): void {
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.readOnly = true;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.append(textarea);
+    textarea.select();
+
+    try {
+      const didCopy = document.execCommand('copy');
+
+      if (!didCopy) {
+        throw new Error('Copy command was not accepted.');
+      }
+    } finally {
+      textarea.remove();
+    }
+  }
+
+  private markCodeBlockCopied(blockId: string): void {
+    const existingTimer = this.codeCopyTimers.get(blockId);
+
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    this.copiedCodeBlockIds.add(blockId);
+    this.cdr.markForCheck();
+
+    const timer = setTimeout(() => {
+      this.copiedCodeBlockIds.delete(blockId);
+      this.codeCopyTimers.delete(blockId);
+      this.cdr.markForCheck();
+    }, this.copyFeedbackDurationMs);
+
+    this.codeCopyTimers.set(blockId, timer);
   }
 
   private createSafeEmbedUrl(block: BlogContentBlock): SafeResourceUrl | null {

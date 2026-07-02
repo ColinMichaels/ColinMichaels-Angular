@@ -233,3 +233,4 @@ jobs:
           channelId: pr-${{ github.event.pull_request.number }}
           projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
           entryPoint: ${{ runner.temp }}/firebase-hosting-preview
+          firebaseToolsVersion: 14.27.0

@@ -26,6 +26,9 @@ import {isBlogPost, isRecord} from '../utils/blog-validation.util';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
 export const BLOG_POST_PREVIEWS_COLLECTION = 'postPreviews';
+const FIRESTORE_BATCH_LIMIT = 450;
+
+type FirestoreWriteBatch = ReturnType<typeof writeBatch>;
 
 function isPreviewDocument(value: unknown): value is { post: BlogPost; expiresAtMillis: number } {
   return isRecord(value)
@@ -51,6 +54,10 @@ function removeUndefinedFields(value: unknown): unknown {
   }
 
   return cleanedValue;
+}
+
+function getUniqueValues(values: readonly string[]): readonly string[] {
+  return [...new Set(values.filter(Boolean))];
 }
 
 @Injectable({
@@ -85,6 +92,10 @@ export class BlogStorageService {
     await this.savePostToFirestore(post);
   }
 
+  async savePosts(posts: readonly BlogPost[]): Promise<void> {
+    await this.savePostsToFirestore(posts);
+  }
+
   async savePostPreview(post: BlogPost): Promise<void> {
     await this.savePostPreviewToFirestore(post);
   }
@@ -97,8 +108,16 @@ export class BlogStorageService {
     await this.deletePostPreviewFromFirestore(token);
   }
 
+  async deletePostPreviews(tokens: readonly string[]): Promise<void> {
+    await this.deletePostPreviewsFromFirestore(tokens);
+  }
+
   async deletePost(postId: string): Promise<void> {
     await this.deletePostFromFirestore(postId);
+  }
+
+  async deletePosts(postIds: readonly string[]): Promise<void> {
+    await this.deletePostsFromFirestore(postIds);
   }
 
   async backupPostsToFirestore(posts: readonly BlogPost[]): Promise<number> {
@@ -248,6 +267,13 @@ export class BlogStorageService {
     await setDoc(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
   }
 
+  private async savePostsToFirestore(posts: readonly BlogPost[]): Promise<void> {
+    const firestore = this.requireFirestore();
+    await this.commitInBatches(firestore, posts, (batch, post) => {
+      batch.set(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
+    });
+  }
+
   private async savePostPreviewToFirestore(post: BlogPost): Promise<void> {
     const firestore = this.requireFirestore();
 
@@ -283,9 +309,40 @@ export class BlogStorageService {
     await deleteDoc(doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, token));
   }
 
+  private async deletePostPreviewsFromFirestore(tokens: readonly string[]): Promise<void> {
+    const firestore = this.requireFirestore();
+    await this.commitInBatches(firestore, getUniqueValues(tokens), (batch, token) => {
+      batch.delete(doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, token));
+    });
+  }
+
   private async deletePostFromFirestore(postId: string): Promise<void> {
     const firestore = this.requireFirestore();
     await deleteDoc(doc(firestore, BLOG_POSTS_COLLECTION, postId));
+  }
+
+  private async deletePostsFromFirestore(postIds: readonly string[]): Promise<void> {
+    const firestore = this.requireFirestore();
+    await this.commitInBatches(firestore, getUniqueValues(postIds), (batch, postId) => {
+      batch.delete(doc(firestore, BLOG_POSTS_COLLECTION, postId));
+    });
+  }
+
+  private async commitInBatches<T>(
+    firestore: Firestore,
+    items: readonly T[],
+    enqueue: (batch: FirestoreWriteBatch, item: T) => void
+  ): Promise<void> {
+    for (let index = 0; index < items.length; index += FIRESTORE_BATCH_LIMIT) {
+      const batch = writeBatch(firestore);
+      const chunk = items.slice(index, index + FIRESTORE_BATCH_LIMIT);
+
+      for (const item of chunk) {
+        enqueue(batch, item);
+      }
+
+      await batch.commit();
+    }
   }
 
   private toFirestorePost(post: BlogPost): Record<string, unknown> {
