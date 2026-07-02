@@ -33,6 +33,26 @@ export type AuthorBioVariant = 'home' | 'blog';
             @for (paragraph of profile.homeParagraphs; track paragraph) {
               <p>{{ paragraph }}</p>
             }
+            <div class="border border-neutral-200 bg-white p-4">
+              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500">Writing focus</p>
+              <ul class="mt-3 grid gap-2 text-sm leading-6 text-neutral-700 sm:grid-cols-2">
+                @for (topic of profile.expertiseTopics; track topic) {
+                  <li class="border-l-2 border-cyan-500 pl-3">{{ topic }}</li>
+                }
+              </ul>
+              <div class="mt-4 flex flex-wrap gap-3">
+                @for (externalProfile of profile.externalProfiles; track externalProfile.href) {
+                  <a
+                    [href]="externalProfile.href"
+                    target="_blank"
+                    rel="noopener noreferrer me"
+                    class="text-sm font-semibold text-cyan-800 hover:text-cyan-600"
+                  >
+                    {{ externalProfile.label }}
+                  </a>
+                }
+              </div>
+            </div>
             <p class="border-l-2 border-rose-500 pl-4 text-sm leading-7 text-neutral-600">
               {{ profile.healthDisclaimer }}
             </p>
@@ -67,6 +87,18 @@ export type AuthorBioVariant = 'home' | 'blog';
             </h2>
             <p class="mt-1 text-sm text-cyan-700 dark:text-cyan-200">{{ profile.title }}</p>
             <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ profile.shortBio }}</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              @for (externalProfile of profile.externalProfiles; track externalProfile.href) {
+                <a
+                  [href]="externalProfile.href"
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  class="rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-600 hover:text-cyan-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+                >
+                  {{ externalProfile.label }}
+                </a>
+              }
+            </div>
             <a
               routerLink="/"
               [fragment]="profile.profileFragment"

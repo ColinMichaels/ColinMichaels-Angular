@@ -10,10 +10,16 @@ This section focuses on the key game/runtime services prioritized in the cleanup
   Angular `Router`, `Meta`, `Title`, and route `data.seo` objects.
 - Called by:
   `AppComponent`, blog OpenGraph service, public/blog/lab/media routes.
+- Server rendering:
+  Firebase `renderSeoHtml` classifies incoming clean URLs before Angular loads. Known public routes receive indexable metadata, unknown routes return `404` with `noindex,follow`, missing published blog posts return `404` missing-post metadata, OS/admin routes stay valid but `noindex,nofollow`, and blog/topic pages can receive visible fallback HTML inside `<app-root>`.
+- Sitemap policy:
+  `sitemapXml` includes static public pages, topic hubs, published posts, and taxonomy URLs that meet thresholds. Categories/subcategories require at least `2` published posts. Tags require at least `3` published posts. Lower-count taxonomy pages remain accessible but use `noindex,follow` metadata and are omitted from the sitemap.
+- Crawler fallback content:
+  `/blog` receives crawlable article links and summaries. `/blog/:slug` receives semantic article fallback with author, date, categories, tags, cover image, and sanitized body blocks. `/topics/:slug` receives a lightweight visible topic fallback.
 - Current risks:
-  social crawlers do not execute the Angular runtime consistently, so initial HTML metadata is provided by the Firebase `renderSeoHtml` Function for deployed clean URLs.
+  social crawlers do not execute the Angular runtime consistently, so deployed clean URLs depend on the Firebase `renderSeoHtml` Function and its packaged `seo-index.html` shell staying aligned with Angular hosting assets.
 - Planned cleanup:
-  add automated metadata snapshot tests for key public routes after the broader lint backlog is reduced.
+  extract pure Functions SEO policy helpers from `functions/src/index.ts` into a smaller testable module for direct unit coverage of status codes, robots directives, sitemap filtering, canonical URLs, and fallback HTML snippets.
 
 ## `youtube-feed.service.ts`
 

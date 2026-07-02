@@ -6,6 +6,8 @@ export const DEFAULT_LOCALE = 'en_US';
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
 export const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida-based writer sharing projects, creative experiments, media, and recovery updates.';
+export const TAXONOMY_INDEX_MIN_POSTS = 2;
+export const TAG_INDEX_MIN_POSTS = 3;
 
 const personId = `${SITE_URL}/#person`;
 const websiteId = `${SITE_URL}/#website`;
@@ -68,6 +70,16 @@ export const BLOG_SEARCH_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,follow',
 };
 
+export const SITE_SEARCH_SEO_METADATA: SeoMetadata = {
+  title: 'Search | ColinMichaels.com',
+  description: 'Search Colin Michaels blog posts, categories, tags, article body text, and public site pages.',
+  path: '/search',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: 'Colin Michaels site search preview card',
+  type: 'website',
+  robots: 'noindex,follow',
+};
+
 export const PROJECTS_SEO_METADATA: SeoMetadata = {
   title: 'Projects & Labs | ColinMichaels.com',
   description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
@@ -126,7 +138,7 @@ export const PROFILE_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
-export function createBlogCategorySeoMetadata(category: string): SeoMetadata {
+export function createBlogCategorySeoMetadata(category: string, postCount = TAXONOMY_INDEX_MIN_POSTS): SeoMetadata {
   const categoryTitle = category.trim() || 'Blog Category';
 
   return {
@@ -136,10 +148,11 @@ export function createBlogCategorySeoMetadata(category: string): SeoMetadata {
     image: HOMEPAGE_OG_IMAGE,
     imageAlt: `${categoryTitle} blog category preview card`,
     type: 'website',
+    robots: postCount >= TAXONOMY_INDEX_MIN_POSTS ? undefined : 'noindex,follow',
   };
 }
 
-export function createBlogTagSeoMetadata(tag: string): SeoMetadata {
+export function createBlogTagSeoMetadata(tag: string, postCount = TAG_INDEX_MIN_POSTS): SeoMetadata {
   const tagTitle = tag.trim() || 'Blog Tag';
 
   return {
@@ -149,6 +162,7 @@ export function createBlogTagSeoMetadata(tag: string): SeoMetadata {
     image: HOMEPAGE_OG_IMAGE,
     imageAlt: `${tagTitle} blog tag preview card`,
     type: 'website',
+    robots: postCount >= TAG_INDEX_MIN_POSTS ? undefined : 'noindex,follow',
   };
 }
 

@@ -2,6 +2,7 @@ import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core'
 import {RouterLink, RouterLinkActive} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
+import {SiteSearchDrawerComponent} from '../../features/search/components/site-search-drawer.component';
 import {SiteAuthControlsComponent} from './site-auth-controls.component';
 import {SiteThemeService} from '../theme/site-theme.service';
 
@@ -16,6 +17,7 @@ interface SiteNavItem {
   imports: [
     RouterLink,
     RouterLinkActive,
+    SiteSearchDrawerComponent,
     SiteAuthControlsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -47,6 +49,15 @@ interface SiteNavItem {
               {{ item.label }}
             </a>
           }
+          <button
+            type="button"
+            class="rounded-full border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:bg-transparent dark:hover:text-cyan-200"
+            aria-haspopup="dialog"
+            [attr.aria-expanded]="isSearchOpen()"
+            (click)="openSearch()"
+          >
+            Search
+          </button>
         </nav>
 
         <div class="flex h-10 shrink-0 items-center justify-end gap-2">
@@ -121,6 +132,15 @@ interface SiteNavItem {
                 {{ item.label }}
               </a>
             }
+            <button
+              type="button"
+              class="rounded-lg border border-transparent px-3 py-2 text-left text-sm font-medium text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:text-zinc-300 dark:hover:border-cyan-300/60 dark:hover:bg-transparent dark:hover:text-cyan-200"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="isSearchOpen()"
+              (click)="openSearch()"
+            >
+              Search
+            </button>
             <a
               [routerLink]="['/', pathNames.OS_LOGIN]"
               class="rounded-lg border border-emerald-600/70 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-400/70 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
@@ -134,6 +154,7 @@ interface SiteNavItem {
           </div>
         </nav>
       }
+      <app-site-search-drawer [isOpen]="isSearchOpen()" (closeSearch)="closeSearch()"/>
     </header>
   `,
 })
@@ -141,6 +162,7 @@ export class SiteHeaderComponent {
   protected readonly theme = inject(SiteThemeService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
+  protected readonly isSearchOpen = signal(false);
   protected readonly navItems: readonly SiteNavItem[] = [
     {label: 'Home', route: ['/'], exact: true},
     {label: 'Blog', route: ['/', PATH_NAMES.BLOG], exact: false},
@@ -153,5 +175,14 @@ export class SiteHeaderComponent {
 
   protected closeMenu(): void {
     this.isMenuOpen.set(false);
+  }
+
+  protected openSearch(): void {
+    this.isMenuOpen.set(false);
+    this.isSearchOpen.set(true);
+  }
+
+  protected closeSearch(): void {
+    this.isSearchOpen.set(false);
   }
 }
