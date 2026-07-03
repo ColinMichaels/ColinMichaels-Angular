@@ -1,6 +1,6 @@
 # ColinMichaels.com
 
-ColinMichaels.com is the personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. The site publishes practical software notes, Angular and Firebase architecture work, AI workflow guides, interactive project/lab demos, media experiments, and personal recovery writing.
+ColinMichaels.com is the personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. It combines a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs. The site publishes software architecture notes, AI workflow guides, interactive demos, media experiments, and patient-perspective recovery writing.
 
 ## Preferred URLs
 
