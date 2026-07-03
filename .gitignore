@@ -59,3 +59,5 @@ src/environments/.env.*
 /functions/.secret.local
 /functions/.env.local
 /functions/seo-index.html
+.seo-cache/
+/colinmichaels-com-audit-20260703-150233/

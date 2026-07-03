@@ -411,7 +411,7 @@ function getErrorMessage(error: unknown): string {
 
                 <label class="space-y-2 md:col-span-2">
                   <span class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Posted on</span>
+                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Publish Date</span>
                     <button
                       type="button"
                       class="text-xs font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
@@ -426,7 +426,8 @@ function getErrorMessage(error: unknown): string {
                     class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
                   >
                   <p class="text-xs leading-5 text-zinc-500">
-                    Controls public blog ordering and article published metadata. Published posts use this value; blank published posts fall back to first publish time.
+                    Required for scheduled posts and must be in the future. Published posts use this value for public
+                    ordering and article metadata; blank published posts fall back to first publish time.
                   </p>
                 </label>
 
@@ -584,7 +585,7 @@ function getErrorMessage(error: unknown): string {
                     <dd class="text-right text-zinc-200">{{ postForm.controls.slug.value }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Posted</dt>
+                    <dt class="text-zinc-500">Publish date</dt>
                     <dd class="text-right text-zinc-200">{{ postedOnPreview }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
@@ -892,12 +893,18 @@ export class CmsPostEditorComponent {
 
   protected get postedOnPreview(): string {
     const publishedAt = fromDateTimeLocalValue(this.postForm.controls.publishedAt.value);
+    const status = this.postForm.controls.status.value;
 
     if (!publishedAt) {
-      return this.postForm.controls.status.value === 'published' ? 'On first publish' : 'Not set';
+      if (status === 'published') {
+        return 'On first publish';
+      }
+
+      return status === 'scheduled' ? 'Required before scheduling' : 'Not set';
     }
 
-    return postedDateFormatter.format(new Date(publishedAt));
+    const formattedDate = postedDateFormatter.format(new Date(publishedAt));
+    return status === 'scheduled' ? `Scheduled for ${formattedDate}` : formattedDate;
   }
 
   protected get openGraphImageMode(): string {
@@ -1216,6 +1223,13 @@ export class CmsPostEditorComponent {
     }
 
     const formValue = this.postForm.getRawValue();
+    const scheduledPublishDateError = this.getScheduledPublishDateError(formValue.status, formValue.publishedAt);
+
+    if (scheduledPublishDateError) {
+      this.toast.error(scheduledPublishDateError);
+      return false;
+    }
+
     const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
     const openGraphImage = normalizeOpenGraphImage(formValue.openGraphImage, coverImage);
     const savedSlug = this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id);
@@ -1607,6 +1621,26 @@ export class CmsPostEditorComponent {
     }
 
     return status === 'published' ? currentValue ?? savedAt : null;
+  }
+
+  private getScheduledPublishDateError(status: BlogPostStatus, formValue: string): string | null {
+    if (status !== 'scheduled') {
+      return null;
+    }
+
+    const requestedValue = fromDateTimeLocalValue(formValue);
+
+    if (!requestedValue) {
+      return 'Choose a publish date before scheduling this post.';
+    }
+
+    const requestedTimestamp = new Date(requestedValue).getTime();
+
+    if (!Number.isFinite(requestedTimestamp) || requestedTimestamp <= Date.now()) {
+      return 'Choose a future publish date before scheduling this post.';
+    }
+
+    return null;
   }
 
   protected statusColorClass(status: BlogPostStatus): string {
