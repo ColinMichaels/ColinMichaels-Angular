@@ -4,11 +4,12 @@ import {resolve} from 'node:path';
 
 import {getAuth, UserRecord} from 'firebase-admin/auth';
 import {initializeApp} from 'firebase-admin/app';
-import {getFirestore} from 'firebase-admin/firestore';
+import {FieldValue, getFirestore} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
 import {HttpsError, onCall, onRequest} from 'firebase-functions/v2/https';
+import {onSchedule} from 'firebase-functions/v2/scheduler';
 
 initializeApp();
 
@@ -23,9 +24,11 @@ const YOUTUBE_FEED_CACHE_MS = 10 * 60 * 1000;
 const USER_MANAGEMENT_DEFAULT_PAGE_SIZE = 50;
 const USER_MANAGEMENT_MAX_PAGE_SIZE = 100;
 const MAX_USER_MANAGEMENT_ROLES = 32;
+const FIRESTORE_WRITE_BATCH_LIMIT = 450;
 const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
+const BLOG_POSTS_COLLECTION = 'posts';
 const SITE_URL = 'https://colinmichaels.com';
 const SITE_NAME = 'ColinMichaels.com';
 const DEFAULT_LOCALE = 'en_US';
@@ -33,7 +36,8 @@ const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
-const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida-based writer sharing projects, creative experiments, media, and recovery updates.';
+const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida writer sharing projects, media, and recovery notes.';
+const HOMEPAGE_ANSWER_SUMMARY = 'Colin Michaels is a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. ColinMichaels.com collects practical software notes, Angular and Firebase architecture work, AI workflow guides, public project demos, media experiments, and personal recovery writing in one crawlable home base. Start with the blog for current essays and implementation notes, visit topic hubs for focused guides on AI setup, recovery planning, Angular/Firebase architecture, and labs projects, or open Labs to explore interactive browser experiments and reusable OS-style interface systems. The site is maintained as both a personal portfolio and a working publishing system, with public pages kept separate from admin, Core OS, and experimental code paths.';
 const BLOG_FEED_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
@@ -133,6 +137,60 @@ const SITE_CALLABLE_CORS_ORIGINS = [
 
 let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
 
+export const publishScheduledPosts = onSchedule(
+  {
+    region: FUNCTION_REGION,
+    schedule: 'every 5 minutes',
+    timeZone: 'America/New_York',
+  },
+  async () => {
+    const firestore = getFirestore();
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const scheduledPostsSnapshot = await firestore
+      .collection(BLOG_POSTS_COLLECTION)
+      .where('status', '==', 'scheduled')
+      .get();
+    const duePosts = scheduledPostsSnapshot.docs.filter(postSnapshot => {
+      const publishedAt = postSnapshot.get('publishedAt');
+
+      if (typeof publishedAt !== 'string') {
+        return false;
+      }
+
+      const publishTime = new Date(publishedAt).getTime();
+      return Number.isFinite(publishTime) && publishTime <= now.getTime();
+    });
+
+    if (duePosts.length === 0) {
+      logger.info('No scheduled posts are ready to publish.', {
+        scheduledCount: scheduledPostsSnapshot.size,
+      });
+      return;
+    }
+
+    for (let index = 0; index < duePosts.length; index += FIRESTORE_WRITE_BATCH_LIMIT) {
+      const batch = firestore.batch();
+      const chunk = duePosts.slice(index, index + FIRESTORE_WRITE_BATCH_LIMIT);
+
+      for (const postSnapshot of chunk) {
+        batch.update(postSnapshot.ref, {
+          status: 'published',
+          updatedAt: nowIso,
+          syncedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+    }
+
+    logger.info('Published scheduled blog posts.', {
+      publishedCount: duePosts.length,
+      postIds: duePosts.map(postSnapshot => postSnapshot.id),
+    });
+  }
+);
+
 interface SeoArticleMetadata {
   publishedAt?: string;
   modifiedAt?: string;
@@ -185,13 +243,9 @@ interface SeoBlogPostDocument {
   blocks: readonly BlogContentBlock[];
 }
 
-type SitemapChangeFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
-
 interface SitemapUrl {
   path: string;
   lastmod?: string;
-  changefreq?: SitemapChangeFrequency;
-  priority?: number;
 }
 
 interface SitemapBlogPostDocument {
@@ -885,12 +939,7 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
   }
 
   if (normalizedPath === '/labs') {
-    return createStaticSeoMetadata({
-      title: 'Projects & Labs | ColinMichaels.com',
-      description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
-      path: '/labs',
-      imageAlt: 'Colin Michaels projects and labs preview card',
-    });
+    return createLabsSeoMetadata();
   }
 
   if (normalizedPath === '/background') {
@@ -973,14 +1022,10 @@ async function createSitemapXml(): Promise<string> {
     ...TOPIC_HUBS.map(topicHub => ({
       path: `/topics/${topicHub.slug}`,
       lastmod: latestPostUpdate,
-      changefreq: 'weekly',
-      priority: 0.7,
     } satisfies SitemapUrl)),
     ...posts.map(post => ({
       path: `/blog/${createSeoSlug(post.slug)}`,
       lastmod: getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString)),
-      changefreq: 'monthly',
-      priority: 0.7,
     } satisfies SitemapUrl)),
   ];
 
@@ -1000,24 +1045,16 @@ function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
   return [
     {
       path: '/',
-      changefreq: 'weekly',
-      priority: 1.0,
     },
     {
       path: '/blog',
       lastmod: blogLastmod,
-      changefreq: 'weekly',
-      priority: 0.8,
     },
     {
       path: '/labs',
-      changefreq: 'monthly',
-      priority: 0.6,
     },
     {
       path: '/background',
-      changefreq: 'monthly',
-      priority: 0.5,
     },
   ];
 }
@@ -1045,8 +1082,6 @@ function createSitemapTaxonomyUrls(posts: readonly SitemapBlogPostDocument[]): r
     .map(([slug, lastmod]) => ({
       path: `/blog/category/${slug}`,
       lastmod: lastmod || undefined,
-      changefreq: 'weekly',
-      priority: 0.6,
     }));
 }
 
@@ -1073,8 +1108,6 @@ function createSitemapTagUrls(posts: readonly SitemapBlogPostDocument[]): readon
     .map(([slug, lastmod]) => ({
       path: `/blog/tag/${slug}`,
       lastmod: lastmod || undefined,
-      changefreq: 'weekly',
-      priority: 0.5,
     }));
 }
 
@@ -1267,8 +1300,6 @@ function renderSitemapXml(urls: readonly SitemapUrl[]): string {
       '  <url>',
       `    <loc>${escapeXml(createAbsoluteUrl(url.path))}</loc>`,
       url.lastmod ? `    <lastmod>${escapeXml(url.lastmod)}</lastmod>` : '',
-      url.changefreq ? `    <changefreq>${escapeXml(url.changefreq)}</changefreq>` : '',
-      typeof url.priority === 'number' ? `    <priority>${url.priority.toFixed(1)}</priority>` : '',
       '  </url>',
     ].filter(Boolean).join('\n'))
     .join('\n');
@@ -1309,7 +1340,20 @@ function createHomeSeoMetadata(): SeoMetadata {
     imageAlt: 'Colin Michaels personal site preview card',
     type: 'website',
     structuredData: createHomeJsonLd(),
+    fallbackHtml: renderHomeFallbackHtml(),
     cacheControl: 'public, max-age=600, s-maxage=3600',
+  };
+}
+
+function createLabsSeoMetadata(): SeoMetadata {
+  return {
+    ...createStaticSeoMetadata({
+      title: 'Projects & Labs | ColinMichaels.com',
+      description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
+      path: '/labs',
+      imageAlt: 'Colin Michaels projects and labs preview card',
+    }),
+    fallbackHtml: renderLabsFallbackHtml(),
   };
 }
 
@@ -1799,12 +1843,16 @@ function createJpegAssetUrl(value: string): string {
 }
 
 function createHomeJsonLd(): Record<string, unknown> {
+  const personId = `${SITE_URL}/#person`;
+  const websiteId = `${SITE_URL}/#website`;
+  const homepageId = `${SITE_URL}/#homepage`;
+
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'Person',
-        '@id': `${SITE_URL}/#person`,
+        '@id': personId,
         name: 'Colin Michaels',
         url: SITE_URL,
         jobTitle: 'Applications Developer',
@@ -1817,12 +1865,28 @@ function createHomeJsonLd(): Record<string, unknown> {
       },
       {
         '@type': 'WebSite',
-        '@id': `${SITE_URL}/#website`,
+        '@id': websiteId,
         url: SITE_URL,
         name: SITE_NAME,
         description: HOMEPAGE_DESCRIPTION,
         publisher: {
-          '@id': `${SITE_URL}/#person`,
+          '@id': personId,
+        },
+      },
+      {
+        '@type': ['ProfilePage', 'WebPage'],
+        '@id': homepageId,
+        url: SITE_URL,
+        name: HOMEPAGE_TITLE,
+        description: HOMEPAGE_DESCRIPTION,
+        isPartOf: {
+          '@id': websiteId,
+        },
+        mainEntity: {
+          '@id': personId,
+        },
+        about: {
+          '@id': personId,
         },
       },
     ],
@@ -1884,6 +1948,102 @@ function createTopicHubJsonLd(topicHub: typeof TOPIC_HUBS[number]): Record<strin
       url: SITE_URL,
     },
   };
+}
+
+function renderHomeFallbackHtml(): string {
+  const primaryLinks = [
+    {
+      href: '/blog',
+      label: 'Read the blog',
+      description: 'Current essays, implementation notes, recovery updates, and project writeups.'
+    },
+    {
+      href: '/labs',
+      label: 'Open labs',
+      description: 'Interactive demos and reusable OS-style browser interface experiments.'
+    },
+    {
+      href: '/topics/ai-setup',
+      label: 'AI setup guides',
+      description: 'Practical notes for using AI tools with clearer context and safer workflows.'
+    },
+    {
+      href: '/topics/angular-firebase-architecture',
+      label: 'Angular and Firebase notes',
+      description: 'Architecture notes for the public site, CMS, routing, and SEO renderer.'
+    },
+  ];
+  const topicLinks = TOPIC_HUBS.map(topicHub => (
+    `<li><a href="${escapeHtml(createAbsoluteUrl(`/topics/${topicHub.slug}`))}">${escapeHtml(topicHub.heading)}</a> - ${escapeHtml(topicHub.description)}</li>`
+  )).join('\n');
+  const linkItems = primaryLinks.map(link => (
+    `<li><a href="${escapeHtml(createAbsoluteUrl(link.href))}">${escapeHtml(link.label)}</a> - ${escapeHtml(link.description)}</li>`
+  )).join('\n');
+
+  return renderFallbackShell({
+    eyebrow: 'Portfolio / Blog / Labs',
+    title: 'Colin Michaels',
+    description: HOMEPAGE_DESCRIPTION,
+    body: [
+      '<section class="seo-fallback-article">',
+      '  <h2>About Colin Michaels</h2>',
+      `  <p>${escapeHtml(HOMEPAGE_ANSWER_SUMMARY)}</p>`,
+      '  <p class="seo-fallback-meta">By Colin Michaels - Applications developer, FPV drone pilot, creative technologist, and writer based in Florida.</p>',
+      '  <h2>Start here</h2>',
+      '  <ul class="seo-fallback-list">',
+      linkItems,
+      '  </ul>',
+      '  <h2>Topic hubs</h2>',
+      '  <ul class="seo-fallback-list">',
+      topicLinks,
+      '  </ul>',
+      '</section>',
+    ].join('\n'),
+  });
+}
+
+function renderLabsFallbackHtml(): string {
+  const labItems = [
+    {
+      title: 'Core OS Framework',
+      href: '/os',
+      description: 'Reusable dock, window manager, terminal, tooltip, context menu, desktop UI, and command-system experiments.',
+    },
+    {
+      title: 'Full Screen Background Lab',
+      href: '/background',
+      description: 'Image, video, overlay, and parallax background tests for visual interaction work.',
+    },
+    {
+      title: 'Project and Blog Writeups',
+      href: '/blog/category/projects',
+      description: 'Public notes that explain which experiments are durable, rough, archived, or still evolving.',
+    },
+    {
+      title: 'Labs Topic Hub',
+      href: '/topics/labs-projects',
+      description: 'A guide to labs, project demos, browser experiments, UI systems, and creative coding notes.',
+    },
+  ].map(item => [
+    '<article class="seo-fallback-card">',
+    `  <h2><a href="${escapeHtml(createAbsoluteUrl(item.href))}">${escapeHtml(item.title)}</a></h2>`,
+    `  <p>${escapeHtml(item.description)}</p>`,
+    '</article>',
+  ].join('\n')).join('\n');
+
+  return renderFallbackShell({
+    eyebrow: 'Labs',
+    title: 'Projects & Labs',
+    description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
+    body: [
+      '<section class="seo-fallback-article">',
+      '  <h2>Experimental systems stay visible</h2>',
+      '  <p>Labs collect visual, browser, music, game, and interaction prototypes without mixing them into production website page logic. Durable OS-style systems belong in Core OS, while unfinished or exploratory work stays isolated in labs, archive, or playground paths.</p>',
+      '  <h2>Explore the public lab paths</h2>',
+      labItems,
+      '</section>',
+    ].join('\n'),
+  });
 }
 
 function renderBlogIndexFallbackHtml(posts: readonly SeoBlogPostDocument[]): string {

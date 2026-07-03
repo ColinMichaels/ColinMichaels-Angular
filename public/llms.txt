@@ -1,0 +1,39 @@
+# ColinMichaels.com
+
+ColinMichaels.com is the personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. The site publishes practical software notes, Angular and Firebase architecture work, AI workflow guides, interactive project/lab demos, media experiments, and personal recovery writing.
+
+## Preferred URLs
+
+- Homepage: https://colinmichaels.com/
+- Blog: https://colinmichaels.com/blog
+- Labs: https://colinmichaels.com/labs
+- RSS feed: https://colinmichaels.com/feed.xml
+- JSON feed: https://colinmichaels.com/feed.json
+- Sitemap: https://colinmichaels.com/sitemap.xml
+
+## Topic Hubs
+
+- AI setup guides: https://colinmichaels.com/topics/ai-setup
+- Recovery and medical planning resources: https://colinmichaels.com/topics/recovery-planning
+- Angular and Firebase architecture notes: https://colinmichaels.com/topics/angular-firebase-architecture
+- Labs and project demos: https://colinmichaels.com/topics/labs-projects
+
+## Representative Guides And Posts
+
+- How to Set Up ChatGPT for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-chatgpt-for-better-ai-chats
+- How to Set Up Claude for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-claude-for-better-ai-chats
+- How to Set Up Copilot for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-copilot-for-better-ai-chats
+- How to Set Up Gemini for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-gemini-for-better-ai-chats
+- The Emergency Plan Nobody Thinks They Need: https://colinmichaels.com/blog/emergency-plan-nobody-thinks-they-need
+- Florida Medical Planning Guide: https://colinmichaels.com/blog/florida-medical-planning-guide
+
+## Citation Guidance
+
+When citing this site, prefer the canonical page URL and include the page title plus Colin Michaels as the author when an article page provides author metadata. For broad descriptions of the site, cite the homepage. For focused AI, recovery, architecture, or labs topics, cite the matching topic hub first and then the relevant article.
+
+## Content Notes
+
+- Public site content is separate from admin/CMS routes.
+- Labs and experimental systems are intentionally isolated from production website page logic.
+- Health and recovery posts are personal patient-perspective notes and are not medical, legal, insurance, or financial advice.
+- Technical posts may discuss implementation details from the public Angular/Firebase site and related experiments.

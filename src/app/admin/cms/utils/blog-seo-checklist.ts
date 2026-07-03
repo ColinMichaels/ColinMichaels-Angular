@@ -35,10 +35,8 @@ export interface SeoChecklistSummary {
 
 const IDEAL_TITLE_MIN_LENGTH = 30;
 const IDEAL_TITLE_MAX_LENGTH = 60;
-const MAX_TITLE_LENGTH = 70;
 const IDEAL_DESCRIPTION_MIN_LENGTH = 120;
 const IDEAL_DESCRIPTION_MAX_LENGTH = 160;
-const MAX_DESCRIPTION_LENGTH = 180;
 
 export function createSeoChecklist(input: SeoChecklistInput): SeoChecklistSummary {
   const items: readonly SeoChecklistItem[] = [
@@ -82,12 +80,8 @@ function createTitleCheck(value: string): SeoChecklistItem {
     return createItem('title', 'SEO title', 'Add a search/share title before publishing.', 'fail');
   }
 
-  if (length > MAX_TITLE_LENGTH) {
-    return createItem('title', 'SEO title', 'Trim the title so it is less likely to truncate in search results.', 'warning', `${length} chars`);
-  }
-
   if (length < IDEAL_TITLE_MIN_LENGTH || length > IDEAL_TITLE_MAX_LENGTH) {
-    return createItem('title', 'SEO title', 'A stronger title usually lands between 30 and 60 characters.', 'warning', `${length} chars`);
+    return createItem('title', 'SEO title', 'A stronger title usually lands between 30 and 60 characters to reduce SERP truncation.', 'warning', `${length} chars`);
   }
 
   return createItem('title', 'SEO title', 'Title length is in the preferred range.', 'pass', `${length} chars`);
@@ -101,12 +95,8 @@ function createDescriptionCheck(value: string): SeoChecklistItem {
     return createItem('description', 'SEO description', 'Add a concise meta description before publishing.', 'fail');
   }
 
-  if (length > MAX_DESCRIPTION_LENGTH) {
-    return createItem('description', 'SEO description', 'Shorten the description so it is less likely to truncate.', 'warning', `${length} chars`);
-  }
-
   if (length < IDEAL_DESCRIPTION_MIN_LENGTH || length > IDEAL_DESCRIPTION_MAX_LENGTH) {
-    return createItem('description', 'SEO description', 'A stronger description usually lands between 120 and 160 characters.', 'warning', `${length} chars`);
+    return createItem('description', 'SEO description', 'A stronger description usually lands between 120 and 160 characters to reduce SERP truncation.', 'warning', `${length} chars`);
   }
 
   return createItem('description', 'SEO description', 'Description length is in the preferred range.', 'pass', `${length} chars`);

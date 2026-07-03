@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-03
+
+- Added a Firebase scheduled Function that promotes due CMS posts from `scheduled` to `published` based on their `publishedAt` timestamp.
+- Required a future publish date when saving scheduled CMS posts and kept undated bulk status changes from marking posts as scheduled.
+- Added homepage and labs server-rendered SEO fallback content, enriched homepage ProfilePage/WebPage JSON-LD, and shortened the homepage meta description.
+- Added `/llms.txt`, baseline Firebase Hosting security headers, and simplified sitemap XML to rely on canonical URLs plus `lastmod` instead of low-value `changefreq`/`priority` tags.
+- Tightened CMS SEO checklist copy for title and description truncation warnings and added extra homepage bottom spacing for the fixed social bar.
+
 ## 2026-07-02
 
 - Added explicit Firebase SEO route classification so unknown public paths return `404` with `noindex,follow`, missing blog posts return `404` missing-post metadata, and valid OS/admin routes remain `noindex,nofollow`.
