@@ -4,7 +4,7 @@ import {Meta, Title} from '@angular/platform-browser';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {filter} from 'rxjs/operators';
 
-import {DEFAULT_LOCALE, HOMEPAGE_OG_IMAGE, SITE_NAME, SITE_URL} from './seo.metadata';
+import {DEFAULT_LOCALE, HOMEPAGE_OG_IMAGE, PERSON_NAME, SITE_NAME, SITE_URL} from './seo.metadata';
 import {SeoMetadata, SeoStructuredDataObject} from './seo.model';
 
 const jsonLdScriptId = 'seo-json-ld';
@@ -13,13 +13,13 @@ const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const FEED_LINKS = [
   {
     id: 'rss-feed',
-    title: 'ColinMichaels.com Blog RSS Feed',
+    title: `${SITE_NAME} Blog RSS Feed`,
     type: 'application/rss+xml',
     href: '/feed.xml',
   },
   {
     id: 'json-feed',
-    title: 'ColinMichaels.com Blog JSON Feed',
+    title: `${SITE_NAME} Blog JSON Feed`,
     type: 'application/feed+json',
     href: '/feed.json',
   },
@@ -145,7 +145,7 @@ export class SeoService {
       },
       publisher: {
         '@type': 'Person',
-        name: 'Colin Michaels',
+        name: PERSON_NAME,
         url: SITE_URL,
       },
       mainEntityOfPage: {

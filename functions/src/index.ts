@@ -11,6 +11,30 @@ import {defineSecret, defineString} from 'firebase-functions/params';
 import {HttpsError, onCall, onRequest} from 'firebase-functions/v2/https';
 import {onSchedule} from 'firebase-functions/v2/scheduler';
 
+import {
+  BACKGROUND_LAB_DESCRIPTION,
+  BLOG_FEED_DESCRIPTION,
+  BLOG_SEARCH_DESCRIPTION,
+  DEFAULT_LOCALE,
+  HOMEPAGE_ANSWER_SUMMARY,
+  HOMEPAGE_DESCRIPTION,
+  HOMEPAGE_OG_IMAGE,
+  HOMEPAGE_TITLE,
+  LABS_DESCRIPTION,
+  PERSON_JOB_TITLE,
+  PERSON_KNOWS_ABOUT,
+  PERSON_NAME,
+  PERSON_PROFILE_DESCRIPTION,
+  PERSON_SAME_AS,
+  SEO_ENTITY_IDS,
+  SITE_ALTERNATE_NAMES,
+  SITE_NAME,
+  SITE_SEARCH_DESCRIPTION,
+  SITE_URL,
+  createPreviewImageAlt,
+  createSiteTitle,
+} from './seo-site';
+
 initializeApp();
 
 const FUNCTION_REGION = 'us-east1';
@@ -29,16 +53,8 @@ const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
 const BLOG_POSTS_COLLECTION = 'posts';
-const SITE_URL = 'https://colinmichaels.com';
-const SITE_NAME = 'ColinMichaels.com';
-const DEFAULT_LOCALE = 'en_US';
-const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
-const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
-const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida writer sharing projects, media, and recovery notes.';
-const HOMEPAGE_ANSWER_SUMMARY = 'Colin Michaels is a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. ColinMichaels.com collects practical software notes, Angular and Firebase architecture work, AI workflow guides, public project demos, media experiments, and personal recovery writing in one crawlable home base. Start with the blog for current essays and implementation notes, visit topic hubs for focused guides on AI setup, recovery planning, Angular/Firebase architecture, and labs projects, or open Labs to explore interactive browser experiments and reusable OS-style interface systems. The site is maintained as both a personal portfolio and a working publishing system, with public pages kept separate from admin, Core OS, and experimental code paths.';
-const BLOG_FEED_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
 const FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800';
@@ -52,7 +68,7 @@ const ADMIN_ROUTE_PREFIXES = ['/admin'] as const;
 const TOPIC_HUBS = [
   {
     slug: 'ai-setup',
-    title: 'AI Setup Guides | ColinMichaels.com',
+    title: createSiteTitle('AI Setup Guides'),
     heading: 'AI Setup Guides',
     description: 'Practical setup guides for ChatGPT, Claude, Copilot, Gemini, prompting, projects, and AI-assisted workflows.',
     imageAlt: 'AI setup guides preview card',
@@ -69,7 +85,7 @@ const TOPIC_HUBS = [
   },
   {
     slug: 'recovery-planning',
-    title: 'Recovery & Medical Planning Resources | ColinMichaels.com',
+    title: createSiteTitle('Recovery & Medical Planning Resources'),
     heading: 'Recovery & Medical Planning Resources',
     description: 'Personal recovery notes, emergency planning resources, and practical lessons from open-heart surgery recovery.',
     imageAlt: 'Recovery and medical planning resources preview card',
@@ -86,7 +102,7 @@ const TOPIC_HUBS = [
   },
   {
     slug: 'angular-firebase-architecture',
-    title: 'Angular & Firebase Architecture Notes | ColinMichaels.com',
+    title: createSiteTitle('Angular & Firebase Architecture Notes'),
     heading: 'Angular & Firebase Architecture Notes',
     description: 'Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.',
     imageAlt: 'Angular and Firebase architecture notes preview card',
@@ -103,9 +119,9 @@ const TOPIC_HUBS = [
   },
   {
     slug: 'labs-projects',
-    title: 'Labs & Project Demos | ColinMichaels.com',
+    title: createSiteTitle('Labs & Project Demos'),
     heading: 'Labs & Project Demos',
-    description: 'Interactive demos, browser experiments, UI systems, and public notes from Colin Michaels project labs.',
+    description: `Interactive demos, browser experiments, UI systems, and public notes from ${PERSON_NAME} project labs.`,
     imageAlt: 'Labs and project demos preview card',
     terms: ['labs', 'projects', 'game development', 'browser game', 'creative coding', 'music tools', 'web app'],
     assetTitle: 'Labs And Demo Showcase Checklist',
@@ -944,68 +960,68 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
 
   if (normalizedPath === '/background') {
     return createStaticSeoMetadata({
-      title: 'Full Screen Background Lab | ColinMichaels.com',
-      description: 'A visual lab for image, video, overlay, and parallax background experiments.',
+      title: createSiteTitle('Full Screen Background Lab'),
+      description: BACKGROUND_LAB_DESCRIPTION,
       path: '/background',
-      imageAlt: 'Colin Michaels visual background lab preview card',
+      imageAlt: createPreviewImageAlt('visual background lab'),
     });
   }
 
   if (normalizedPath === '/admin/cms/media-library') {
     return createStaticSeoMetadata({
-      title: 'CMS Media Library | ColinMichaels.com',
+      title: createSiteTitle('CMS Media Library'),
       description: 'Protected CMS media management for Firebase-backed blog assets.',
       path: '/admin/cms/media-library',
-      imageAlt: 'Colin Michaels CMS media library preview card',
+      imageAlt: createPreviewImageAlt('CMS media library'),
       robots: 'noindex,nofollow',
     });
   }
 
   if (normalizedPath === '/admin/users') {
     return createStaticSeoMetadata({
-      title: 'User Management | ColinMichaels.com',
+      title: createSiteTitle('User Management'),
       description: 'Protected admin user role and permission management.',
       path: '/admin/users',
-      imageAlt: 'Colin Michaels admin user management preview card',
+      imageAlt: createPreviewImageAlt('admin user management'),
       robots: 'noindex,nofollow',
     });
   }
 
   if (normalizedPath === '/logout') {
     return createStaticSeoMetadata({
-      title: 'Sign Out | ColinMichaels.com',
-      description: 'End the current ColinMichaels.com authenticated session.',
+      title: createSiteTitle('Sign Out'),
+      description: `End the current ${SITE_NAME} authenticated session.`,
       path: '/logout',
-      imageAlt: 'Colin Michaels sign out page preview card',
+      imageAlt: createPreviewImageAlt('sign out page'),
       robots: 'noindex,nofollow',
     });
   }
 
   if (normalizedPath === '/profile') {
     return createStaticSeoMetadata({
-      title: 'Profile | ColinMichaels.com',
+      title: createSiteTitle('Profile'),
       description: 'Signed-in user account profile, roles, and permissions.',
       path: '/profile',
-      imageAlt: 'Colin Michaels profile page preview card',
+      imageAlt: createPreviewImageAlt('profile page'),
       robots: 'noindex,nofollow',
     });
   }
 
   if (isOsRoute(normalizedPath)) {
     return createNoindexRouteSeoMetadata({
-      title: 'Core OS Route | ColinMichaels.com',
-      description: 'Protected OS-style route for ColinMichaels.com desktop experiments.',
+      title: createSiteTitle('Core OS Route'),
+      description: `Protected OS-style route for ${SITE_NAME} desktop experiments.`,
       path: normalizedPath,
-      imageAlt: 'Colin Michaels Core OS route preview card',
+      imageAlt: createPreviewImageAlt('Core OS route'),
     });
   }
 
   if (isAdminRoute(normalizedPath)) {
     return createNoindexRouteSeoMetadata({
-      title: 'Admin Route | ColinMichaels.com',
-      description: 'Protected ColinMichaels.com administration route.',
+      title: createSiteTitle('Admin Route'),
+      description: `Protected ${SITE_NAME} administration route.`,
       path: normalizedPath,
-      imageAlt: 'Colin Michaels admin route preview card',
+      imageAlt: createPreviewImageAlt('admin route'),
     });
   }
 
@@ -1230,7 +1246,7 @@ function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
     favicon: createAbsoluteUrl('/favicon.ico'),
     authors: [
       {
-        name: 'Colin Michaels',
+        name: PERSON_NAME,
         url: SITE_URL,
       },
     ],
@@ -1337,7 +1353,7 @@ function createHomeSeoMetadata(): SeoMetadata {
     description: HOMEPAGE_DESCRIPTION,
     path: '/',
     image: HOMEPAGE_OG_IMAGE,
-    imageAlt: 'Colin Michaels personal site preview card',
+    imageAlt: createPreviewImageAlt('personal site'),
     type: 'website',
     structuredData: createHomeJsonLd(),
     fallbackHtml: renderHomeFallbackHtml(),
@@ -1348,10 +1364,10 @@ function createHomeSeoMetadata(): SeoMetadata {
 function createLabsSeoMetadata(): SeoMetadata {
   return {
     ...createStaticSeoMetadata({
-      title: 'Projects & Labs | ColinMichaels.com',
-      description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
+      title: createSiteTitle('Projects & Labs'),
+      description: LABS_DESCRIPTION,
       path: '/labs',
-      imageAlt: 'Colin Michaels projects and labs preview card',
+      imageAlt: createPreviewImageAlt('projects and labs'),
     }),
     fallbackHtml: renderLabsFallbackHtml(),
   };
@@ -1360,10 +1376,10 @@ function createLabsSeoMetadata(): SeoMetadata {
 function createBlogIndexSeoMetadata(posts: readonly SeoBlogPostDocument[]): SeoMetadata {
   return {
     ...createStaticSeoMetadata({
-    title: 'Blog | ColinMichaels.com',
-    description: 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.',
-    path: '/blog',
-    imageAlt: 'Colin Michaels blog preview card',
+      title: createSiteTitle('Blog'),
+      description: BLOG_FEED_DESCRIPTION,
+      path: '/blog',
+      imageAlt: createPreviewImageAlt('blog'),
     }),
     fallbackHtml: renderBlogIndexFallbackHtml(posts),
   };
@@ -1371,20 +1387,20 @@ function createBlogIndexSeoMetadata(posts: readonly SeoBlogPostDocument[]): SeoM
 
 function createBlogSearchSeoMetadata(): SeoMetadata {
   return createStaticSeoMetadata({
-    title: 'Search Blog | ColinMichaels.com',
-    description: 'Search Colin Michaels blog posts by title, excerpt, category, tag, and article body text.',
+    title: createSiteTitle('Search Blog'),
+    description: BLOG_SEARCH_DESCRIPTION,
     path: '/blog/search',
-    imageAlt: 'Colin Michaels blog search preview card',
+    imageAlt: createPreviewImageAlt('blog search'),
     robots: 'noindex,follow',
   });
 }
 
 function createSiteSearchSeoMetadata(): SeoMetadata {
   return createStaticSeoMetadata({
-    title: 'Search | ColinMichaels.com',
-    description: 'Search Colin Michaels blog posts, categories, tags, article body text, and public site pages.',
+    title: createSiteTitle('Search'),
+    description: SITE_SEARCH_DESCRIPTION,
     path: '/search',
-    imageAlt: 'Colin Michaels site search preview card',
+    imageAlt: createPreviewImageAlt('site search'),
     robots: 'noindex,follow',
   });
 }
@@ -1393,8 +1409,8 @@ function createBlogCategorySeoMetadata(category: string, postCount: number): Seo
   const categoryTitle = createTitleFromSlug(category || 'blog-category');
 
   return createStaticSeoMetadata({
-    title: `${categoryTitle} Posts | ColinMichaels.com`,
-    description: `Published Colin Michaels blog posts in the ${categoryTitle} category.`,
+    title: createSiteTitle(`${categoryTitle} Posts`),
+    description: `Published ${PERSON_NAME} blog posts in the ${categoryTitle} category.`,
     path: `/blog/category/${createSeoSlug(categoryTitle)}`,
     imageAlt: `${categoryTitle} blog category preview card`,
     robots: postCount >= TAXONOMY_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
@@ -1405,8 +1421,8 @@ function createBlogTagSeoMetadata(tag: string, postCount: number): SeoMetadata {
   const tagTitle = createTitleFromSlug(tag || 'blog-tag');
 
   return createStaticSeoMetadata({
-    title: `${tagTitle} Articles | ColinMichaels.com`,
-    description: `Published Colin Michaels blog posts tagged ${tagTitle}.`,
+    title: createSiteTitle(`${tagTitle} Articles`),
+    description: `Published ${PERSON_NAME} blog posts tagged ${tagTitle}.`,
     path: `/blog/tag/${createBlogTagSlug(tagTitle)}`,
     imageAlt: `${tagTitle} blog tag preview card`,
     robots: postCount >= TAG_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
@@ -1415,11 +1431,11 @@ function createBlogTagSeoMetadata(tag: string, postCount: number): SeoMetadata {
 
 function createMissingBlogPostSeoMetadata(slug: string): SeoMetadata {
   return {
-    title: 'Post not found | ColinMichaels.com',
+    title: createSiteTitle('Post not found'),
     description: 'This post is unavailable or has not been published.',
     path: `/blog/${createSeoSlug(slug)}`,
     image: HOMEPAGE_OG_IMAGE,
-    imageAlt: 'Colin Michaels blog preview card',
+    imageAlt: createPreviewImageAlt('blog'),
     type: 'website',
     robots: 'noindex,nofollow',
     statusCode: 404,
@@ -1429,11 +1445,11 @@ function createMissingBlogPostSeoMetadata(slug: string): SeoMetadata {
 
 function createNotFoundSeoMetadata(path: string): SeoMetadata {
   return {
-    title: 'Page not found | ColinMichaels.com',
-    description: 'This page could not be found on ColinMichaels.com.',
+    title: createSiteTitle('Page not found'),
+    description: `This page could not be found on ${SITE_NAME}.`,
     path,
     image: HOMEPAGE_OG_IMAGE,
-    imageAlt: 'Colin Michaels page not found preview card',
+    imageAlt: createPreviewImageAlt('page not found'),
     type: 'website',
     robots: 'noindex,follow',
     statusCode: 404,
@@ -1641,7 +1657,7 @@ function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
     excerpt: getTrimmedString(value['excerpt']),
     coverImage: getTrimmedString(value['coverImage']),
     thumbnailImage: getTrimmedString(value['thumbnailImage']),
-    authorName: getTrimmedString(author['name']) || getTrimmedString(rawAuthor) || 'Colin Michaels',
+    authorName: getTrimmedString(author['name']) || getTrimmedString(rawAuthor) || PERSON_NAME,
     categories: getStringArrayValue(value['categories']),
     tags: getStringArrayValue(value['tags']),
     seoTitle: getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']),
@@ -1843,50 +1859,48 @@ function createJpegAssetUrl(value: string): string {
 }
 
 function createHomeJsonLd(): Record<string, unknown> {
-  const personId = `${SITE_URL}/#person`;
-  const websiteId = `${SITE_URL}/#website`;
-  const homepageId = `${SITE_URL}/#homepage`;
-
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'Person',
-        '@id': personId,
-        name: 'Colin Michaels',
+        '@id': SEO_ENTITY_IDS.person,
+        name: PERSON_NAME,
         url: SITE_URL,
-        jobTitle: 'Applications Developer',
+        jobTitle: PERSON_JOB_TITLE,
         image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
-        description: 'Applications developer, FPV drone pilot, creative technologist, and recovering overthinker based in Florida.',
-        sameAs: [
-          'https://github.com/ColinMichaels',
-          'https://www.linkedin.com/in/colinmichaels',
-        ],
+        description: PERSON_PROFILE_DESCRIPTION,
+        knowsAbout: PERSON_KNOWS_ABOUT,
+        sameAs: PERSON_SAME_AS,
       },
       {
         '@type': 'WebSite',
-        '@id': websiteId,
+        '@id': SEO_ENTITY_IDS.website,
         url: SITE_URL,
         name: SITE_NAME,
+        alternateName: SITE_ALTERNATE_NAMES,
         description: HOMEPAGE_DESCRIPTION,
         publisher: {
-          '@id': personId,
+          '@id': SEO_ENTITY_IDS.person,
         },
       },
       {
         '@type': ['ProfilePage', 'WebPage'],
-        '@id': homepageId,
+        '@id': SEO_ENTITY_IDS.homepage,
         url: SITE_URL,
         name: HOMEPAGE_TITLE,
         description: HOMEPAGE_DESCRIPTION,
         isPartOf: {
-          '@id': websiteId,
+          '@id': SEO_ENTITY_IDS.website,
+        },
+        publisher: {
+          '@id': SEO_ENTITY_IDS.person,
         },
         mainEntity: {
-          '@id': personId,
+          '@id': SEO_ENTITY_IDS.person,
         },
         about: {
-          '@id': personId,
+          '@id': SEO_ENTITY_IDS.person,
         },
       },
     ],
@@ -1918,7 +1932,7 @@ function createBlogPostingJsonLd(options: {
     },
     publisher: {
       '@type': 'Person',
-      name: 'Colin Michaels',
+      name: PERSON_NAME,
       url: SITE_URL,
     },
     mainEntityOfPage: {
@@ -1944,7 +1958,7 @@ function createTopicHubJsonLd(topicHub: typeof TOPIC_HUBS[number]): Record<strin
     },
     publisher: {
       '@type': 'Person',
-      name: 'Colin Michaels',
+      name: PERSON_NAME,
       url: SITE_URL,
     },
   };
@@ -1982,13 +1996,13 @@ function renderHomeFallbackHtml(): string {
 
   return renderFallbackShell({
     eyebrow: 'Portfolio / Blog / Labs',
-    title: 'Colin Michaels',
+    title: PERSON_NAME,
     description: HOMEPAGE_DESCRIPTION,
     body: [
       '<section class="seo-fallback-article">',
-      '  <h2>About Colin Michaels</h2>',
+      `  <h2>About ${escapeHtml(PERSON_NAME)}</h2>`,
       `  <p>${escapeHtml(HOMEPAGE_ANSWER_SUMMARY)}</p>`,
-      '  <p class="seo-fallback-meta">By Colin Michaels - Applications developer, FPV drone pilot, creative technologist, and writer based in Florida.</p>',
+      `  <p class="seo-fallback-meta">By ${escapeHtml(PERSON_NAME)} - applications developer, FPV drone pilot, creative technologist, and writer based in Florida.</p>`,
       '  <h2>Start here</h2>',
       '  <ul class="seo-fallback-list">',
       linkItems,
@@ -2034,7 +2048,7 @@ function renderLabsFallbackHtml(): string {
   return renderFallbackShell({
     eyebrow: 'Labs',
     title: 'Projects & Labs',
-    description: 'Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from Colin Michaels.',
+    description: LABS_DESCRIPTION,
     body: [
       '<section class="seo-fallback-article">',
       '  <h2>Experimental systems stay visible</h2>',

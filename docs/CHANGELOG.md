@@ -5,6 +5,8 @@
 - Added a Firebase scheduled Function that promotes due CMS posts from `scheduled` to `published` based on their `publishedAt` timestamp.
 - Required a future publish date when saving scheduled CMS posts and kept undated bulk status changes from marking posts as scheduled.
 - Added homepage and labs server-rendered SEO fallback content, enriched homepage ProfilePage/WebPage JSON-LD, and shortened the homepage meta description.
+- Centralized repeated site identity, title, description, image alt text, and JSON-LD values behind shared Angular and Firebase Functions SEO constants.
+- Reviewed and tuned the homepage site identity copy, AI citation summary, and homepage Person/WebSite/ProfilePage schema for full personal-site positioning.
 - Added `/llms.txt`, baseline Firebase Hosting security headers, and simplified sitemap XML to rely on canonical URLs plus `lastmod` instead of low-value `changefreq`/`priority` tags.
 - Tightened CMS SEO checklist copy for title and description truncation warnings and added extra homepage bottom spacing for the fixed social bar.
 
