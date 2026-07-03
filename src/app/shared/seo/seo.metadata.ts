@@ -5,12 +5,13 @@ export const SITE_NAME = 'ColinMichaels.com';
 export const DEFAULT_LOCALE = 'en_US';
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = 'Colin Michaels | Projects, Writing, Media & Recovery Updates';
-export const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida-based writer sharing projects, creative experiments, media, and recovery updates.';
+export const HOMEPAGE_DESCRIPTION = 'Personal site of Colin Michaels, an applications developer, FPV drone pilot, creative technologist, and Florida writer sharing projects, media, and recovery notes.';
 export const TAXONOMY_INDEX_MIN_POSTS = 2;
 export const TAG_INDEX_MIN_POSTS = 3;
 
 const personId = `${SITE_URL}/#person`;
 const websiteId = `${SITE_URL}/#website`;
+const homepageId = `${SITE_URL}/#homepage`;
 
 export const HOME_JSON_LD: SeoStructuredDataObject = {
   '@context': 'https://schema.org',
@@ -35,6 +36,22 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       name: SITE_NAME,
       description: HOMEPAGE_DESCRIPTION,
       publisher: {
+        '@id': personId,
+      },
+    },
+    {
+      '@type': ['ProfilePage', 'WebPage'],
+      '@id': homepageId,
+      url: SITE_URL,
+      name: HOMEPAGE_TITLE,
+      description: HOMEPAGE_DESCRIPTION,
+      isPartOf: {
+        '@id': websiteId,
+      },
+      mainEntity: {
+        '@id': personId,
+      },
+      about: {
         '@id': personId,
       },
     },

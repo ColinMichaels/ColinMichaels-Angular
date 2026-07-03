@@ -23,11 +23,11 @@ Current route group files are boundary markers only. They preserve existing URL 
 - CLI gameplay:
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
-  public published post views, tokenized draft previews, category/tag archives, topic hubs, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data including custom typography, stats, chart, and sanitized HTML blocks, Firestore-backed CMS storage for create/edit workflows.
+  public published post views, scheduled publishing through a Firebase Cloud Scheduler Function, tokenized draft previews, category/tag archives, topic hubs, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data including custom typography, stats, chart, and sanitized HTML blocks, Firestore-backed CMS storage for create/edit workflows.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:
-  shared route metadata lives under `shared/seo`; dynamic blog post metadata is injected both client-side and server-side through the Firebase `renderSeoHtml` Function. Unknown routes return `404` instead of homepage fallback metadata. Sitemap taxonomy output is thresholded to keep low-value category/tag pages out of the XML, while those routes remain accessible with `noindex,follow`. Blog and topic pages include visible fallback HTML in the initial shell for crawlers and no-JS readers. Blog feed endpoints are served by Firebase Functions at `/feed.xml` and `/feed.json`, with discovery links emitted in both Angular and server-rendered metadata.
+  shared route metadata lives under `shared/seo`; dynamic blog post metadata is injected both client-side and server-side through the Firebase `renderSeoHtml` Function. Unknown routes return `404` instead of homepage fallback metadata. Sitemap taxonomy output is thresholded to keep low-value category/tag pages out of the XML, while those routes remain accessible with `noindex,follow`; sitemap entries now rely on canonical URLs and `lastmod` instead of low-value `changefreq`/`priority` tags. Homepage, blog, labs, article, and topic pages include visible fallback HTML in the initial shell for crawlers and no-JS readers, and `/llms.txt` provides AI-search citation guidance. Blog feed endpoints are served by Firebase Functions at `/feed.xml` and `/feed.json`, with discovery links emitted in both Angular and server-rendered metadata.
 - Shared site shell:
   global header/menu and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
 - Admin media library:
@@ -35,7 +35,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 - Labs:
   public experiment index with one-at-a-time embedded component demos and preserved links to standalone playground routes.
 - Persistence:
-  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source. Temporary draft previews are stored as token-addressed `postPreviews` snapshots with public single-document reads and admin-only listing.
+  settings/user/tasks/patches through storage strategy; CMS blog posts are read and written through the Firestore `posts` collection so public and admin views use the same current data source. Posts with `status: scheduled` and a due `publishedAt` ISO timestamp are promoted to `published` by the scheduled backend Function. Temporary draft previews are stored as token-addressed `postPreviews` snapshots with public single-document reads and admin-only listing.
 - Media/audio:
   icon/media helpers, sound playback, music and effects.
 - Overlay and notifications:

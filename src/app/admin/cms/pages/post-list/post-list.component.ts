@@ -54,6 +54,7 @@ const sortOptions: readonly AdminPostSortOption[] = [
   {value: 'category-asc', label: 'Category'},
 ];
 const sortModes = new Set<AdminPostSortMode>(sortOptions.map(option => option.value));
+const bulkStatusOptions = BLOG_POST_STATUSES.filter(status => status !== 'scheduled');
 const pageSizeOptions: readonly number[] = [5, 10, 25, 50];
 function formatDate(value: string | null): string {
   return value ? dateFormatter.format(new Date(value)) : 'Not published';
@@ -409,7 +410,7 @@ export class CmsPostListComponent {
 
   protected readonly sortOptions = sortOptions;
   protected readonly pageSizeOptions = pageSizeOptions;
-  protected readonly bulkStatusOptions = BLOG_POST_STATUSES;
+  protected readonly bulkStatusOptions = bulkStatusOptions;
   protected readonly posts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
   protected readonly rows = computed(() => this.createRows(this.posts()));
   protected searchTerm = '';
