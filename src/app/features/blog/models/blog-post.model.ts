@@ -133,6 +133,7 @@ export interface BlogPost {
   excerpt: string;
   coverImage: string;
   thumbnailImage?: string;
+  featured?: boolean;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];
@@ -155,6 +156,7 @@ export interface BlogPostSummary {
   excerpt: string;
   coverImage: string;
   thumbnailImage?: string;
+  featured?: boolean;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];

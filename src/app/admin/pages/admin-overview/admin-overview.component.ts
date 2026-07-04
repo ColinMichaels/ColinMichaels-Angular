@@ -36,7 +36,7 @@ import {writeAuthDebug} from '../../../shared/debug/auth-debug';
         <header class="space-y-3 border-b border-zinc-800 pb-8">
           <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>
           <h1 class="text-4xl font-semibold text-zinc-50">Publishing Console</h1>
-          <p class="max-w-2xl text-zinc-400">Manage posts, drafts, and future media workflows from one protected area.</p>
+          <p class="max-w-2xl text-zinc-400">Manage posts, topics, drafts, and media workflows from one protected area.</p>
         </header>
 
         <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,6 +65,9 @@ import {writeAuthDebug} from '../../../shared/debug/auth-debug';
             </a>
             <a routerLink="/admin/cms/new" class="inline-flex border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
               New Post
+            </a>
+            <a routerLink="/admin/cms/topics" class="inline-flex border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
+              Topics
             </a>
           }
           @if (canManageMedia()) {

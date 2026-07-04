@@ -16,6 +16,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('../media-library/media-library-page.component').then(m => m.MediaLibraryPageComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_TOPICS}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./pages/topic-manager/topic-manager.component').then(m => m.CmsTopicManagerComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/new`,
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/post-editor/post-editor.component').then(m => m.CmsPostEditorComponent),

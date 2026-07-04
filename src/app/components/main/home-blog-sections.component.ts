@@ -14,7 +14,8 @@ import {
   createBlogCategorySlug,
   getBlogTaxonomyTerms
 } from '../../features/blog/utils/blog-category-url.util';
-import {TOPIC_HUBS} from '../../features/topics/topic-hubs.data';
+import {TopicKnowledgeMapComponent} from '../../features/topics/components/topic-knowledge-map/topic-knowledge-map.component';
+import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -82,8 +83,15 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
     ...getBlogTaxonomyTerms(post),
     ...post.tags,
   ].join(' '));
+  const searchableTokens = searchableText.split(' ');
 
-  return terms.some(term => searchableText.includes(normalizeSearchValue(term)));
+  return terms.some(term => {
+    const normalizedTerm = normalizeSearchValue(term);
+
+    return normalizedTerm.includes(' ')
+      ? searchableText.includes(normalizedTerm)
+      : searchableTokens.includes(normalizedTerm);
+  });
 }
 
 @Component({
@@ -92,6 +100,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
     DatePipe,
+    TopicKnowledgeMapComponent,
     RouterLink,
   ],
   standalone: true,
@@ -115,8 +124,11 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       } @else {
         @defer (when !blogIsLoading()) {
           <div class="site-card-grid">
-            @for (post of publishedPosts(); track post.id) {
-              <article class="site-card flex h-full flex-col overflow-hidden">
+            @for (post of publishedPosts(); track post.id; let first = $first) {
+              <article
+                class="site-card flex h-full flex-col overflow-hidden"
+                [class.home-featured-post-card]="first && post.featured"
+              >
                 <a [routerLink]="['/', pathNames.BLOG, post.slug]"
                    class="site-media-link blog-post-image-frame group aspect-[16/10]">
                   <img [src]="postImage(post)" [alt]="post.title + ' cover image'"
@@ -124,9 +136,14 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                        loading="lazy">
                 </a>
                 <div class="site-card-body flex flex-1 flex-col">
-                  <p class="site-meta">
-                    {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
-                  </p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    @if (first && post.featured) {
+                      <span class="home-featured-post-label">Featured</span>
+                    }
+                    <p class="site-meta">
+                      {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
+                    </p>
+                  </div>
                   <h3 class="mt-3 heading-card">
                     <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="hover:text-cyan-300">{{ post.title }}</a>
                   </h3>
@@ -165,39 +182,10 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       }
     </section>
 
-    <section id="topic-guides" class="site-section-band">
-      <div class="site-section-inner">
-        <div class="site-section-header">
-          <div>
-            <p class="eyebrow eyebrow-cyan">Start here</p>
-            <h2 class="mt-3 heading-section">Topic guides</h2>
-            <p class="site-section-copy">
-              Indexable hubs for the main things this site is building around: AI workflows, recovery planning,
-              Angular/Firebase architecture, and public experiments.
-            </p>
-          </div>
-          <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
-            Browse all writing
-          </a>
-        </div>
-
-        <div class="site-card-grid mt-8">
-          @for (hub of topicHubCards(); track hub.slug) {
-            <a
-              [routerLink]="['/', pathNames.TOPICS, hub.slug]"
-              class="site-card-interactive site-card-body block"
-            >
-              <p class="site-meta">{{ hub.eyebrow }}</p>
-              <h3 class="mt-3 heading-card">{{ hub.title }}</h3>
-              <p class="mt-3 text-body">{{ hub.description }}</p>
-              <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
-                {{ hub.count }} related post{{ hub.count === 1 ? '' : 's' }}
-              </p>
-            </a>
-          }
-        </div>
-      </div>
-    </section>
+    <app-topic-knowledge-map
+      [topics]="topicHubCards()"
+      [topicsPath]="pathNames.TOPICS"
+    ></app-topic-knowledge-map>
 
     <section id="tech-tips" class="site-section-band-dark">
       <div class="site-section-inner">
@@ -437,15 +425,73 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       }
     </section>
   `,
+  styles: [`
+    .home-featured-post-card {
+      border-color: rgba(34, 211, 238, 0.45);
+      background:
+        linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(255, 255, 255, 0.96) 42%),
+        #ffffff;
+      box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
+    }
+
+    .home-featured-post-label {
+      border: 1px solid rgba(8, 145, 178, 0.32);
+      background: rgba(236, 254, 255, 0.9);
+      color: #0e7490;
+      font-family: var(--font-accent);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      line-height: 1;
+      padding: 0.35rem 0.5rem;
+      text-transform: uppercase;
+    }
+
+    :host-context(.dark) .home-featured-post-card {
+      background:
+        linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(24, 24, 27, 0.78) 46%),
+        rgba(24, 24, 27, 0.72);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.28);
+    }
+
+    :host-context(.dark) .home-featured-post-label {
+      border-color: rgba(103, 232, 249, 0.36);
+      background: rgba(8, 145, 178, 0.16);
+      color: #a5f3fc;
+    }
+
+    @media (min-width: 1024px) {
+      .home-featured-post-card {
+        grid-column: span 2;
+      }
+    }
+  `],
 })
 export class HomeBlogSectionsComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
   protected readonly allPublishedPosts = toSignal(
     this.blogRepository.getPublishedPosts$(),
     {initialValue: []}
   );
-  protected readonly publishedPosts = computed(() => this.allPublishedPosts().slice(0, 3));
+  protected readonly topicHubs = toSignal(
+    this.topicHubRepository.getPublishedTopicHubs$(),
+    {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
+  );
+  protected readonly publishedPosts = computed(() => {
+    const posts = this.allPublishedPosts();
+    const featuredPost = posts.find(post => post.featured);
+
+    if (!featuredPost) {
+      return posts.slice(0, 3);
+    }
+
+    return [
+      featuredPost,
+      ...posts.filter(post => post.id !== featuredPost.id),
+    ].slice(0, 3);
+  });
   protected readonly healthRecoveryPosts = computed(() => (
     this.allPublishedPosts().filter(post => postMatchesTerms(post, WEEKLY_UPDATES_TERMS))
   ));
@@ -453,7 +499,7 @@ export class HomeBlogSectionsComponent {
     this.allPublishedPosts().filter(post => postMatchesTerms(post, MEDICAL_INFORMATION_TERMS))
   ));
   protected readonly topicHubCards = computed(() => (
-    TOPIC_HUBS.map(hub => ({
+    this.topicHubs().map(hub => ({
       ...hub,
       count: this.allPublishedPosts().filter(post => postMatchesHubTerms(post, hub.terms)).length,
     }))
