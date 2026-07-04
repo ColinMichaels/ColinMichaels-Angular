@@ -1,11 +1,12 @@
 import {Injectable, inject} from '@angular/core';
-import {map, Observable} from 'rxjs';
+import {combineLatest, map, Observable} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
 import {BlogPost} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
-import {TOPIC_HUBS} from '../../topics/topic-hubs.data';
+import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
+import {TopicHub} from '../../topics/topic-hubs.data';
 
 export type SiteSearchContentType = 'blog' | 'page';
 export type SiteSearchSortMode = 'relevance' | 'newest';
@@ -83,23 +84,6 @@ const RAW_STATIC_SEARCH_ITEMS: readonly Omit<SiteSearchItem, 'searchText'>[] = [
     tags: ['labs', 'experiments', 'os', 'frontend'],
     date: null,
   },
-  ...TOPIC_HUBS.map(topicHub => ({
-    id: `topic-${topicHub.slug}`,
-    type: 'page' as const,
-    title: topicHub.title,
-    excerpt: topicHub.description,
-    path: `/${PATH_NAMES.TOPICS}/${topicHub.slug}`,
-    titleText: `${topicHub.title} ${topicHub.eyebrow}`,
-    excerptText: `${topicHub.description} ${topicHub.summary}`,
-    taxonomyText: `topics ${topicHub.terms.join(' ')}`,
-    bodyText: [
-      ...topicHub.checklist,
-      ...topicHub.resources.flatMap(resource => [resource.label, resource.description]),
-    ].join(' '),
-    categories: ['Topics'],
-    tags: topicHub.terms,
-    date: null,
-  })),
 ];
 
 const STATIC_SEARCH_ITEMS: readonly SiteSearchItem[] = RAW_STATIC_SEARCH_ITEMS.map(item => ({
@@ -117,13 +101,18 @@ const STATIC_SEARCH_ITEMS: readonly SiteSearchItem[] = RAW_STATIC_SEARCH_ITEMS.m
 })
 export class SiteSearchService {
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
   readonly loading$ = this.blogRepository.loading$;
   readonly error$ = this.blogRepository.error$;
 
   getSearchItems$(): Observable<readonly SiteSearchItem[]> {
-    return this.blogRepository.getPublishedFullPosts$().pipe(
-      map(posts => [
+    return combineLatest([
+      this.blogRepository.getPublishedFullPosts$(),
+      this.topicHubRepository.getPublishedTopicHubs$(),
+    ]).pipe(
+      map(([posts, topicHubs]) => [
         ...posts.map(post => createBlogSearchItem(post)),
+        ...topicHubs.map(topicHub => createTopicSearchItem(topicHub)),
         ...STATIC_SEARCH_ITEMS,
       ])
     );
@@ -229,6 +218,43 @@ function createBlogPostBodyText(post: BlogPost): string {
     ])
     .filter((value): value is string => typeof value === 'string')
     .join(' ');
+}
+
+function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
+  const titleText = `${topicHub.title} ${topicHub.eyebrow}`;
+  const excerptText = `${topicHub.description} ${topicHub.summary}`;
+  const taxonomyText = `topics ${topicHub.terms.join(' ')}`;
+  const bodyText = [
+    topicHub.asset.title,
+    topicHub.asset.intro,
+    ...topicHub.asset.items.flatMap(item => [item.label, item.description]),
+    topicHub.featuredProject.title,
+    topicHub.featuredProject.description,
+    ...topicHub.learningPath.flatMap(step => [step.label, step.title, step.description]),
+    ...topicHub.checklist,
+    ...topicHub.resources.flatMap(resource => [resource.label, resource.description]),
+  ].join(' ');
+
+  return {
+    id: `topic-${topicHub.id}`,
+    type: 'page',
+    title: topicHub.title,
+    excerpt: topicHub.description,
+    path: `/${PATH_NAMES.TOPICS}/${topicHub.slug}`,
+    titleText: normalizeSearchValue(titleText),
+    excerptText: normalizeSearchValue(excerptText),
+    taxonomyText: normalizeSearchValue(taxonomyText),
+    bodyText: normalizeSearchValue(bodyText),
+    searchText: normalizeSearchValue([
+      titleText,
+      excerptText,
+      taxonomyText,
+      bodyText,
+    ].join(' ')),
+    categories: ['Topics'],
+    tags: topicHub.terms,
+    date: topicHub.updatedAt,
+  };
 }
 
 function matchesFilters(item: SiteSearchItem, filters: SiteSearchFilters): boolean {

@@ -8,6 +8,10 @@ export interface TopicHubResource {
   href: string;
 }
 
+export type TopicHubStatus = 'draft' | 'published' | 'archived';
+
+export const TOPIC_HUB_STATUSES: readonly TopicHubStatus[] = ['draft', 'published', 'archived'];
+
 export interface TopicHubAssetItem {
   label: string;
   description: string;
@@ -20,6 +24,8 @@ export interface TopicHubAsset {
 }
 
 export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask';
+
+export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask'];
 
 export interface TopicHubMapPlacement {
   xPercent: number;
@@ -54,11 +60,14 @@ export interface TopicHubLearningStep {
 }
 
 export interface TopicHub {
+  id: string;
   slug: string;
   eyebrow: string;
   title: string;
   description: string;
   summary: string;
+  status: TopicHubStatus;
+  displayOrder: number;
   terms: readonly string[];
   theme: TopicHubTheme;
   asset: TopicHubAsset;
@@ -66,15 +75,22 @@ export interface TopicHub {
   learningPath: readonly TopicHubLearningStep[];
   checklist: readonly string[];
   resources: readonly TopicHubResource[];
+  createdAt: string;
+  updatedAt: string;
 }
+
+export const DEFAULT_TOPIC_TIMESTAMP = '2026-07-04T00:00:00.000Z';
 
 export const TOPIC_HUBS: readonly TopicHub[] = [
   {
+    id: 'topic-ai-setup',
     slug: 'ai-setup',
     eyebrow: 'AI & Tech',
     title: 'AI Setup Guides',
     description: 'Practical setup guides for ChatGPT, Claude, Copilot, Gemini, prompting, projects, and AI-assisted workflows.',
     summary: 'Start here for approachable AI setup notes, model-choice habits, project organization, and prompts that make chat tools more useful in real work.',
+    status: 'published',
+    displayOrder: 10,
     terms: ['ai', 'chatgpt', 'claude', 'copilot', 'gemini', 'prompting', 'ai tools', 'ai workflow', 'productivity'],
     theme: {
       shortLabel: 'AI',
@@ -169,13 +185,18 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
         href: `/${PATH_NAMES.BLOG}/tag/ai-workflow`,
       },
     ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
   {
+    id: 'topic-recovery-planning',
     slug: 'recovery-planning',
     eyebrow: 'Health & Recovery',
     title: 'Recovery & Medical Planning Resources',
     description: 'Personal recovery notes, emergency planning resources, and practical lessons from open-heart surgery recovery.',
     summary: 'These posts are patient-perspective notes from recovery and planning work. They are meant to help readers ask better questions and get organized, not replace professional care.',
+    status: 'published',
+    displayOrder: 20,
     terms: ['recovery', 'health', 'medical', 'heart surgery', 'open heart surgery', 'cardiac', 'insurance', 'planning'],
     theme: {
       shortLabel: 'Recovery',
@@ -270,13 +291,18 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
         href: `/${PATH_NAMES.BLOG}/tag/open-heart-surgery`,
       },
     ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
   {
+    id: 'topic-angular-firebase-architecture',
     slug: 'angular-firebase-architecture',
     eyebrow: 'Architecture',
     title: 'Angular & Firebase Architecture Notes',
     description: 'Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.',
     summary: 'A technical trail through the site architecture: Angular routing, Firebase functions, CMS publishing, media workflows, and Core OS boundaries.',
+    status: 'published',
+    displayOrder: 30,
     terms: ['angular', 'firebase', 'architecture', 'cms', 'editor.js', 'typescript', 'web development'],
     theme: {
       shortLabel: 'Architecture',
@@ -371,13 +397,18 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
         href: `/${PATH_NAMES.BLOG}/category/cms`,
       },
     ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
   {
+    id: 'topic-labs-projects',
     slug: 'labs-projects',
     eyebrow: 'Labs',
     title: 'Labs & Project Demos',
     description: 'Interactive demos, browser experiments, UI systems, and public notes from Colin Michaels project labs.',
     summary: 'A home for experiments that should stay visible without being mixed into production page logic: games, UI tools, media demos, and creative coding trials.',
+    status: 'published',
+    displayOrder: 40,
     terms: ['labs', 'projects', 'game development', 'browser game', 'creative coding', 'music tools', 'web app'],
     theme: {
       shortLabel: 'Labs',
@@ -472,11 +503,25 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
         href: `/${PATH_NAMES.BLOG}/category/projects`,
       },
     ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
 ];
 
 export function getTopicHub(slug: string): TopicHub | undefined {
-  return TOPIC_HUBS.find(topicHub => topicHub.slug === slug);
+  return getPublishedTopicHubs().find(topicHub => topicHub.slug === slug);
+}
+
+export function getPublishedTopicHubs(topics: readonly TopicHub[] = TOPIC_HUBS): readonly TopicHub[] {
+  return sortTopicHubs(topics.filter(topicHub => topicHub.status === 'published'));
+}
+
+export function sortTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] {
+  return [...topics].sort((left, right) => (
+    left.displayOrder - right.displayOrder
+      || left.title.localeCompare(right.title)
+      || left.slug.localeCompare(right.slug)
+  ));
 }
 
 export function createTopicHubSeoMetadata(topicHub: TopicHub): SeoMetadata {

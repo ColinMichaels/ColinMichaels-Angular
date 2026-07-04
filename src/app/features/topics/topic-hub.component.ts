@@ -1,13 +1,16 @@
 import {DatePipe, NgStyle, NgTemplateOutlet} from '@angular/common';
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
-import {ActivatedRoute, RouterLink} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
+import {SeoService} from '../../shared/seo/seo.service';
 import {BlogPostSummary} from '../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../blog/utils/blog-category-url.util';
-import {getTopicHub, TopicHub, TOPIC_HUBS} from './topic-hubs.data';
+import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
+import {createTopicHubSeoMetadata, TopicHub} from './topic-hubs.data';
 
 function normalizeSearchValue(value: string): string {
   return value
@@ -1053,18 +1056,39 @@ function normalizeSearchValue(value: string): string {
 })
 export class TopicHubComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
+  private readonly seo = inject(SeoService);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  private readonly topicsLoading = toSignal(this.topicHubRepository.loading$, {initialValue: true});
+  protected readonly topicHubs = toSignal(
+    this.topicHubRepository.getPublishedTopicHubs$(),
+    {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
+  );
+  protected readonly topicSlug = toSignal(
+    this.route.paramMap.pipe(map(params => params.get('slug') ?? '')),
+    {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''}
+  );
   protected readonly hub = computed(() => {
-    const hubSlug = typeof this.route.snapshot.data['hubSlug'] === 'string'
-      ? this.route.snapshot.data['hubSlug']
-      : '';
+    const selectedHub = this.topicHubs().find(topicHub => topicHub.slug === this.topicSlug());
 
-    return getTopicHub(hubSlug) ?? TOPIC_HUBS[0];
+    return selectedHub ?? this.topicHubs()[0] ?? this.topicHubRepository.getPublishedTopicHubs()[0];
+  });
+  private readonly applyTopicSeo = effect(() => {
+    this.seo.apply(createTopicHubSeoMetadata(this.hub()));
+  });
+  private readonly redirectMissingTopic = effect(() => {
+    const slug = this.topicSlug();
+    const topicExists = this.topicHubs().some(topicHub => topicHub.slug === slug);
+
+    if (!this.topicsLoading() && slug && !topicExists) {
+      void this.router.navigateByUrl('/404', {replaceUrl: true});
+    }
   });
   protected readonly topicPosts = computed(() => (
     this.posts()
@@ -1072,7 +1096,7 @@ export class TopicHubComponent {
       .slice(0, 8)
   ));
   protected readonly relatedHubs = computed(() => (
-    TOPIC_HUBS.filter(topicHub => topicHub.slug !== this.hub().slug)
+    this.topicHubs().filter(topicHub => topicHub.slug !== this.hub().slug)
   ));
 
   protected topicThemeStyle(topicHub: TopicHub): Record<string, string> {

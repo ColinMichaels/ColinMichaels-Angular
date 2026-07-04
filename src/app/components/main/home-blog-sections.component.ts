@@ -15,7 +15,7 @@ import {
   getBlogTaxonomyTerms
 } from '../../features/blog/utils/blog-category-url.util';
 import {TopicKnowledgeMapComponent} from '../../features/topics/components/topic-knowledge-map/topic-knowledge-map.component';
-import {TOPIC_HUBS} from '../../features/topics/topic-hubs.data';
+import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -469,10 +469,15 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
 })
 export class HomeBlogSectionsComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
   protected readonly allPublishedPosts = toSignal(
     this.blogRepository.getPublishedPosts$(),
     {initialValue: []}
+  );
+  protected readonly topicHubs = toSignal(
+    this.topicHubRepository.getPublishedTopicHubs$(),
+    {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
   );
   protected readonly publishedPosts = computed(() => {
     const posts = this.allPublishedPosts();
@@ -494,7 +499,7 @@ export class HomeBlogSectionsComponent {
     this.allPublishedPosts().filter(post => postMatchesTerms(post, MEDICAL_INFORMATION_TERMS))
   ));
   protected readonly topicHubCards = computed(() => (
-    TOPIC_HUBS.map(hub => ({
+    this.topicHubs().map(hub => ({
       ...hub,
       count: this.allPublishedPosts().filter(post => postMatchesHubTerms(post, hub.terms)).length,
     }))

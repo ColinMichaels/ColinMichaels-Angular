@@ -9,6 +9,8 @@
 - Added light-mode variants for the topic knowledge map and topic hub pages so the blueprint UI remains readable in both persisted site themes.
 - Added an optional CMS blog `featured` flag so published posts can be prioritized in the homepage writing section without hardcoding a specific article.
 - Tightened topic post matching so one-word hub terms match whole normalized tokens instead of substrings inside unrelated words.
+- Added a protected `/admin/cms/topics` Topic Manager with Firestore-backed CRUD, default topic seeding, auth-aware topic storage, public published-topic queries, and topic search integration.
+- Switched public topic routes to a managed slug route while preserving the existing topic slugs as the default bootstrap/fallback topic set.
 
 ## 2026-07-03
 
