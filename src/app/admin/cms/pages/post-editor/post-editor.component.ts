@@ -42,6 +42,7 @@ interface PostEditorForm {
   slug: FormControl<string>;
   excerpt: FormControl<string>;
   coverImage: FormControl<string>;
+  featured: FormControl<boolean>;
   status: FormControl<BlogPostStatus>;
   publishedAt: FormControl<string>;
   categories: FormControl<string>;
@@ -260,6 +261,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
   const categories = getImportedStringArray(value['categories']);
   const subcategories = getImportedStringArray(value['subcategories']);
   const tags = getImportedStringArray(value['tags']);
+  const featured = typeof value['featured'] === 'boolean' ? value['featured'] : currentPost.featured;
   const seoTitle = getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']) || og?.title || importedTitle;
   const seoDescription = getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']) || og?.description || excerpt;
   const openGraphImage = getTrimmedString(seo['openGraphImage']) || og?.image;
@@ -279,6 +281,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
     title: importedTitle,
     excerpt,
     coverImage,
+    featured,
     author: createImportedAuthor(value['author'], currentPost.author),
     categories: categories.length > 0 ? categories : currentPost.categories,
     subcategories: subcategories.length > 0 ? subcategories : currentPost.subcategories,
@@ -471,6 +474,20 @@ function getErrorMessage(error: unknown): string {
                     placeholder="Editor.js, Drafts"
                     class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
                   >
+                </label>
+
+                <label class="flex items-start gap-3 border border-zinc-800 bg-zinc-950/70 p-3 md:col-span-2">
+                  <input
+                    type="checkbox"
+                    formControlName="featured"
+                    class="mt-1 border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300"
+                  >
+                  <span>
+                    <span class="block text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Featured post</span>
+                    <span class="mt-1 block text-sm leading-6 text-zinc-500">
+                      Prioritize this published post in the homepage writing section.
+                    </span>
+                  </span>
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
@@ -1241,6 +1258,7 @@ export class CmsPostEditorComponent {
         slug: savedSlug,
         excerpt: formValue.excerpt.trim(),
         coverImage,
+        featured: formValue.featured,
         status: formValue.status,
         categories: fromCsv(formValue.categories),
         tags: fromCsv(formValue.tags),
@@ -1454,6 +1472,7 @@ export class CmsPostEditorComponent {
       slug,
       excerpt: formValue.excerpt.trim(),
       coverImage,
+      featured: formValue.featured,
       status: formValue.status,
       categories: fromCsv(formValue.categories),
       tags: fromCsv(formValue.tags),
@@ -1521,6 +1540,7 @@ export class CmsPostEditorComponent {
       slug: new FormControl(post.slug, {nonNullable: true, validators: [Validators.required]}),
       excerpt: new FormControl(post.excerpt, {nonNullable: true, validators: [Validators.required]}),
       coverImage: new FormControl(post.coverImage, {nonNullable: true, validators: [Validators.required]}),
+      featured: new FormControl(Boolean(post.featured), {nonNullable: true}),
       status: new FormControl(post.status, {nonNullable: true, validators: [Validators.required]}),
       publishedAt: new FormControl(toDateTimeLocalValue(post.publishedAt), {nonNullable: true}),
       categories: new FormControl(toCsv(post.categories), {nonNullable: true}),
@@ -1538,6 +1558,7 @@ export class CmsPostEditorComponent {
       slug: post.slug,
       excerpt: post.excerpt,
       coverImage: post.coverImage,
+      featured: Boolean(post.featured),
       status: post.status,
       publishedAt: toDateTimeLocalValue(post.publishedAt),
       categories: toCsv(post.categories),

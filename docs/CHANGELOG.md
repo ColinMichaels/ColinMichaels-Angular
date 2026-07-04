@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-04
+
+- Replaced the homepage topic guide card grid with a reusable CSS/SVG `TopicKnowledgeMapComponent` that uses a blueprint-style map, themed topic nodes, responsive mobile rail layout, and dynamic published-post counts.
+- Refined the homepage topics section into a lighter 2.5D floating field with a smaller `Topics` heading, no explanatory subtitle, no center hub, depth-based placement metadata, and staggered mobile topic nodes.
+- Restored compact topic descriptor text inside homepage topic nodes while removing the mismatched section-level "Browse all writing" link.
+- Restyled topic hub pages around the same technical knowledge-map language with themed heroes, future 16:9 illustration placeholders, start-here checklists, featured project modules, latest article rows, learning paths, related topic nodes, and quick references.
+- Added light-mode variants for the topic knowledge map and topic hub pages so the blueprint UI remains readable in both persisted site themes.
+- Added an optional CMS blog `featured` flag so published posts can be prioritized in the homepage writing section without hardcoding a specific article.
+- Tightened topic post matching so one-word hub terms match whole normalized tokens instead of substrings inside unrelated words.
+
 ## 2026-07-03
 
 - Added a Firebase scheduled Function that promotes due CMS posts from `scheduled` to `published` based on their `publishedAt` timestamp.
