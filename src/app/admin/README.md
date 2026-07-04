@@ -94,7 +94,7 @@ Optional function params:
 - `OPENAI_TEXT_MODEL`, default `gpt-5.5`
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
 
-Generated thumbnails are written to Firebase Storage under `cms/blog-thumbnails/{slug}/` and the returned download URL is applied to the post Cover Image field.
+Generated 16:9 thumbnails are written to Firebase Storage under `cms/blog-thumbnails/{slug}/` and the returned download URL is applied to the post Cover Image field.
 
 Manual blog media uploads use the reusable `BlogMediaUploaderComponent` and `BlogMediaUploadService`. Uploaded cover, Open Graph, and Editor.js image assets are written to Firebase Storage under `cms/blog-media/{slug}/{assetRole}/`. The uploader previews stored images in a lightbox and optimizes JPEG, PNG, and WebP files client-side before upload when the optimized result is smaller. Open Graph uploads force JPEG output for social crawler compatibility. Storage rules keep reads public for published blog rendering and restrict writes to admin-capable Firebase Auth custom claims.
 

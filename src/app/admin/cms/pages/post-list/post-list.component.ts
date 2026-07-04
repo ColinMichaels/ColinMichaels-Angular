@@ -325,7 +325,7 @@ function getErrorMessage(error: unknown): string {
                 </td>
                 <td class="px-4 py-4">
                   <span
-                    class="grid h-16 w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
+                    class="grid aspect-[16/9] w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
                     <img
                       [src]="row.post.thumbnailImage || row.post.coverImage"
                       [alt]="row.post.title + ' thumbnail'"

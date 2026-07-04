@@ -176,7 +176,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
         @if (result.image) {
           <a
             [routerLink]="result.path"
-            class="blog-media-frame blog-post-image-frame group aspect-[4/3]"
+            class="blog-media-frame blog-post-image-frame group aspect-[16/9]"
           >
             <img
               [src]="result.image"
@@ -188,7 +188,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
         } @else {
           <a
             [routerLink]="result.path"
-            class="blog-media-frame grid aspect-[4/3] place-items-center bg-slate-100 text-slate-500 transition hover:border-cyan-600 hover:text-cyan-700 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+            class="blog-media-frame grid aspect-[16/9] place-items-center bg-slate-100 text-slate-500 transition hover:border-cyan-600 hover:text-cyan-700 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
             aria-label="Open {{ result.title }}"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.7">

@@ -17,7 +17,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="blog-post-row">
-      <a [routerLink]="['/blog', post.slug]" class="blog-media-frame blog-post-image-frame group aspect-[4/3]">
+      <a [routerLink]="['/blog', post.slug]" class="blog-media-frame blog-post-image-frame group aspect-[16/9]">
         <img
           [src]="postImage(post)"
           [alt]="post.title + ' cover image'"

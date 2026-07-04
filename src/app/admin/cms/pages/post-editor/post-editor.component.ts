@@ -447,7 +447,7 @@ function getErrorMessage(error: unknown): string {
                   class="md:col-span-2"
                   formControlName="coverImage"
                   label="Cover Image"
-                  description="Upload the post card and detail hero image. Social sharing falls back to this image unless a separate Open Graph image is selected."
+                  description="Upload the 16:9 post image used by cards, search results, suggested posts, and the detail hero. Social sharing falls back to this image unless a separate Open Graph image is selected."
                   buttonLabel="Choose Cover"
                   previewAlt="Cover image preview"
                   assetRole="cover"

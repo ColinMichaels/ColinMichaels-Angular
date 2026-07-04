@@ -130,7 +130,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                 [class.home-featured-post-card]="first && post.featured"
               >
                 <a [routerLink]="['/', pathNames.BLOG, post.slug]"
-                   class="site-media-link blog-post-image-frame group aspect-[16/10]">
+                   class="site-media-link blog-post-image-frame group aspect-[16/9]">
                   <img [src]="postImage(post)" [alt]="post.title + ' cover image'"
                        class="blog-post-image-fill"
                        loading="lazy">
@@ -166,7 +166,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
           <div class="site-card-grid">
             @for (i of [1, 2, 3]; track i) {
               <article class="site-skeleton-card" aria-hidden="true">
-                <div class="site-skeleton-block aspect-[16/10] w-full"></div>
+                <div class="site-skeleton-block aspect-[16/9] w-full"></div>
                 <div class="flex flex-1 flex-col gap-3 p-5">
                   <div class="site-skeleton-block h-3 w-24"></div>
                   <div class="site-skeleton-block h-6 w-3/4"></div>
@@ -216,7 +216,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
               <article class="site-card overflow-hidden bg-zinc-950 text-zinc-50 dark:bg-black">
                 <a
                   [routerLink]="['/', pathNames.BLOG, 'category', techTipsCategorySlug]"
-                  class="site-media-link blog-post-image-frame group aspect-[16/10] bg-zinc-950"
+                  class="site-media-link blog-post-image-frame group aspect-[16/9] bg-zinc-950"
                   aria-label="Browse Tech Tips posts"
                 >
                   <img
@@ -315,7 +315,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
           } @placeholder (minimum 300ms) {
             <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
               <article class="site-skeleton-card">
-                <div class="site-skeleton-block aspect-[16/10] w-full"></div>
+                <div class="site-skeleton-block aspect-[16/9] w-full"></div>
               </article>
               <article class="site-skeleton-card p-5">
                 <div class="site-skeleton-block h-3 w-28"></div>

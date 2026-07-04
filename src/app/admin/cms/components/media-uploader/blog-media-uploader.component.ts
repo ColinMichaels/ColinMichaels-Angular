@@ -281,7 +281,13 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                           (click)="selectLibraryItem(item)"
                           (dblclick)="applyMediaItem(item)"
                         >
-                          <span class="block aspect-[16/10] overflow-hidden bg-black">
+                          <span
+                            class="block overflow-hidden bg-black"
+                            [ngClass]="{
+                              'aspect-[16/9]': assetRole !== 'open-graph',
+                              'aspect-[1200/630]': assetRole === 'open-graph'
+                            }"
+                          >
                             <img
                               class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                               [src]="getMediaItemThumbnailUrl(item)"
@@ -351,7 +357,11 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                 @if (selectedLibraryItem; as selected) {
                   <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
                     <img
-                      class="aspect-[16/10] w-full object-contain"
+                      class="w-full object-contain"
+                      [ngClass]="{
+                        'aspect-[16/9]': assetRole !== 'open-graph',
+                        'aspect-[1200/630]': assetRole === 'open-graph'
+                      }"
                       [src]="getMediaItemThumbnailUrl(selected)"
                       [alt]="selected.altText || selected.displayName"
                     >

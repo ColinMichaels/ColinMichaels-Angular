@@ -2731,7 +2731,7 @@ async function callOpenAiResponses(context: BlogAssistantContext): Promise<OpenA
         },
         {
           role: 'user',
-          content: `Create blog metadata suggestions from this draft context: ${sourceText}`,
+          content: `Create blog metadata suggestions from this draft context: ${sourceText}. Thumbnail prompts should target a 16:9 editorial image that can also work as the post cover.`,
         },
       ],
       max_output_tokens: 1800,
@@ -2760,7 +2760,7 @@ async function generateImage(prompt: string, model: string): Promise<{ base64Dat
       model,
       prompt,
       n: 1,
-      size: '1536x1024',
+      size: '1536x864',
       quality: 'medium',
       output_format: 'webp',
     }),
