@@ -100,6 +100,23 @@ Manual blog media uploads use the reusable `BlogMediaUploaderComponent` and `Blo
 
 Draft preview links are generated from the CMS editor for posts that remain in `draft` status. The editor saves the latest draft, writes a temporary `postPreviews/{token}` snapshot, and exposes it at `/blog/preview/{token}`. Firestore rules allow public single-document reads only while the embedded post is still a draft and the preview expiry timestamp is in the future; listing preview documents remains admin-only.
 
+## Topic Manager
+
+The topic manager is available at `/admin/cms/topics` and is restricted to CMS content roles. It manages Firestore-backed topic hub documents that drive the homepage topic landing section, public topic detail pages, and site search topic entries.
+
+Component inventory:
+
+- `CmsTopicManagerComponent` provides topic list/search, create, edit, delete, refresh, and default seeding controls.
+- `TopicHubRepositoryService` owns topic templates, slug uniqueness, ordering, published/admin projections, default seeding, and public fallback behavior.
+- `TopicHubStorageService` mirrors the blog storage pattern with auth-aware Firestore listeners: CMS users read all `/topics`, public users read only published topics.
+- `topic-hub-validation.util.ts` validates Firestore topic documents before they enter public rendering.
+
+Migration notes:
+
+- Existing topic names and slugs remain unchanged for SEO. The shipped static topics are now the bootstrap/fallback set and can be seeded into Firestore from the manager.
+- Public pages continue to show the default topics when Firestore has not been seeded yet. Once `/topics` contains managed documents, published documents control public topic ordering and visibility.
+- Firestore rules allow public `get/list` only for published topics and restrict create, update, and delete to CMS content roles.
+
 Admin authorization is enforced through Firebase Auth custom claims. The UI, callable functions, Realtime Database rules, Firestore rules, and Storage rules treat these claims as admin-capable:
 
 - `admin: true`

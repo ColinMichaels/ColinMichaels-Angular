@@ -37,6 +37,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     excerpt: post.excerpt,
     coverImage: post.coverImage,
     thumbnailImage: post.thumbnailImage,
+    featured: post.featured,
     author: post.author,
     categories: post.categories,
     subcategories: post.subcategories ?? [],
@@ -196,6 +197,7 @@ export class BlogRepositoryService {
       title: 'Untitled Post',
       excerpt: '',
       coverImage: DEFAULT_COVER_IMAGE,
+      featured: false,
       author: {
         name: 'Colin Michaels',
         title: 'Applications Developer',

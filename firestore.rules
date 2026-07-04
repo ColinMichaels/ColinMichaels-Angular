@@ -42,6 +42,10 @@ service cloud.firestore {
       return resource.data.status == 'published';
     }
 
+    function isPublishedTopic() {
+      return resource.data.status == 'published';
+    }
+
     function isActiveDraftPreview() {
       return resource.data.post.status == 'draft'
         && resource.data.expiresAtTimestamp is timestamp
@@ -61,6 +65,11 @@ service cloud.firestore {
 
     match /postDrafts/{draftId} {
       allow read, write: if canManageCmsContent();
+    }
+
+    match /topics/{topicId} {
+      allow get, list: if canManageCmsContent() || isPublishedTopic();
+      allow create, update, delete: if canManageCmsContent();
     }
 
     match /media/{mediaId} {
