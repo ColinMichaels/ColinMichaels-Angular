@@ -102,22 +102,48 @@
     </section>
 
 
-    <section id="links" class="site-section grid gap-4 md:grid-cols-3">
-      @for (capability of capabilities; track capability.title) {
-        <article class="site-card site-card-body">
-          <p class="site-meta">{{ capability.meta }}</p>
-          <h2 class="mt-4 heading-subsection">{{ capability.title }}</h2>
-          <p class="mt-3 text-body">{{ capability.description }}</p>
-        </article>
-      }
+    <section id="links" class="site-section-band site-section-theme-soft topic-theme-architecture">
+      <div class="site-section-inner">
+        <div class="site-section-rule grid gap-8 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">
+          <div>
+            <p class="eyebrow eyebrow-topic">Recommended Sites</p>
+            <h2 class="mt-3 heading-section">Useful places worth leaving this site for.</h2>
+            <p class="mt-5 text-base leading-8 text-body">
+              A small, practical list of tools, shops, and docs I would actually point someone toward.
+            </p>
+          </div>
+
+          <div class="grid gap-4">
+            @for (recommendedSite of recommendedSites; track recommendedSite.href) {
+              <a
+                [href]="recommendedSite.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="site-resource-link"
+                [attr.aria-label]="'Open ' + recommendedSite.title + ' in a new tab'"
+              >
+                <div>
+                  <p class="site-meta">{{ recommendedSite.meta }}</p>
+                  <h3 class="mt-3 heading-subsection">{{ recommendedSite.title }}</h3>
+                  <p class="mt-3 text-body">{{ recommendedSite.description }}</p>
+                </div>
+                <span class="site-resource-action">
+                  <span>{{ recommendedSite.host }}</span>
+                  <fa-icon [icon]="faArrowUpRightFromSquare" aria-hidden="true"></fa-icon>
+                </span>
+              </a>
+            }
+          </div>
+        </div>
+      </div>
     </section>
 
 
-    <section id="labs" class="site-section-band">
+    <section id="labs" class="site-section-band site-section-theme-soft topic-theme-labs">
       <div class="site-section-inner">
         <div class="site-section-rule grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div>
-            <p class="eyebrow eyebrow-amber">Labs</p>
+            <p class="eyebrow eyebrow-topic">Labs</p>
             <h2 class="mt-3 heading-section">Experimental systems stay visible.</h2>
             <p class="mt-5 text-base leading-8 text-body">
               Labs collect visual and interaction prototypes without mixing them into production page logic.

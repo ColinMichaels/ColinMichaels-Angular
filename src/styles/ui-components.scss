@@ -36,6 +36,11 @@
     @apply text-sm font-medium text-cyan-700 hover:text-cyan-600
     dark:text-cyan-300 dark:hover:text-cyan-200;
     font-family: var(--font-accent);
+    color: var(--site-accent-strong);
+  }
+
+  .btn-link:hover {
+    color: var(--site-accent);
   }
 
   .btn-youtube {
@@ -117,6 +122,10 @@
     @apply text-zinc-500 dark:text-zinc-400;
   }
 
+  .eyebrow-topic {
+    color: var(--site-accent-strong);
+  }
+
   /* ─── Body Text ──────────────────────────────────────────────────────────── */
   // Standard paragraph / description text.
   .text-body {
@@ -147,6 +156,44 @@
   .site-section-band-dark {
     @apply border-y border-slate-200 bg-slate-100 py-14
     dark:border-white/10 dark:bg-neutral-950;
+  }
+
+  .site-section-theme-soft {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .site-section-theme-soft::before,
+  .site-section-theme-soft::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .site-section-theme-soft > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .site-section-theme-soft::before {
+    inset: 0;
+    background:
+      radial-gradient(circle at 14% 0%, rgb(var(--site-accent-rgb) / 0.14), transparent 28rem),
+      linear-gradient(180deg, rgb(var(--site-accent-rgb) / 0.055), transparent 70%);
+  }
+
+  .site-section-theme-soft::after {
+    inset: auto 0 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--site-accent-rgb) / 0.28), transparent);
+  }
+
+  .dark .site-section-theme-soft::before {
+    background:
+      radial-gradient(circle at 12% 0%, rgb(var(--site-accent-rgb) / 0.18), transparent 30rem),
+      radial-gradient(circle at 86% 100%, rgb(var(--site-accent-rgb) / 0.09), transparent 26rem);
   }
 
   .site-section-header {
@@ -189,6 +236,36 @@
     hover:border-cyan-500 hover:bg-cyan-50
     dark:border-white/10 dark:bg-zinc-900/70 dark:shadow-black/20
     dark:hover:border-cyan-400 dark:hover:bg-zinc-900;
+  }
+
+  .site-resource-link {
+    @apply grid gap-5 p-5 shadow-sm shadow-slate-950/5 transition duration-200
+    dark:shadow-black/20
+    sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center;
+    background: var(--site-panel);
+    border: 1px solid var(--site-border);
+  }
+
+  .site-resource-link:hover {
+    background: var(--site-accent-soft);
+    border-color: var(--site-accent);
+    transform: translateY(-2px);
+  }
+
+  .site-resource-link:hover .heading-subsection {
+    color: var(--site-accent-strong);
+  }
+
+  .site-resource-action {
+    @apply inline-flex w-fit items-center gap-2 border px-3 py-2 text-sm font-semibold transition-colors;
+    border-color: var(--site-accent);
+    color: var(--site-accent-strong);
+    font-family: var(--font-accent);
+  }
+
+  .site-resource-link:hover .site-resource-action {
+    background: var(--site-accent);
+    color: #0f172a;
   }
 
   .site-card-body {

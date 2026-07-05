@@ -1,4 +1,4 @@
-import {DatePipe} from '@angular/common';
+import {DatePipe, NgStyle} from '@angular/common';
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
@@ -16,6 +16,7 @@ import {
 } from '../../features/blog/utils/blog-category-url.util';
 import {TopicKnowledgeMapComponent} from '../../features/topics/components/topic-knowledge-map/topic-knowledge-map.component';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
+import type {TopicHub} from '../../features/topics/topic-hubs.data';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -100,13 +101,14 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
     DatePipe,
+    NgStyle,
     TopicKnowledgeMapComponent,
     RouterLink,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <section id="blog" class="site-section">
+    <section id="blog" class="site-section home-latest-section">
       <div class="site-section-header">
         <div>
           <h2 class="mt-3 heading-section">Latest writing</h2>
@@ -128,6 +130,8 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
               <article
                 class="site-card flex h-full flex-col overflow-hidden"
                 [class.home-featured-post-card]="first && post.featured"
+                [class.home-topic-post-card]="postTopic(post) !== null"
+                [ngStyle]="postTopicStyle(post)"
               >
                 <a [routerLink]="['/', pathNames.BLOG, post.slug]"
                    class="site-media-link blog-post-image-frame group aspect-[16/9]">
@@ -139,6 +143,9 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                   <div class="flex flex-wrap items-center gap-2">
                     @if (first && post.featured) {
                       <span class="home-featured-post-label">Featured</span>
+                    }
+                    @if (postTopic(post); as topic) {
+                      <span class="home-topic-post-label">{{ topic.theme.shortLabel }}</span>
                     }
                     <p class="site-meta">
                       {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
@@ -187,11 +194,11 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       [topicsPath]="pathNames.TOPICS"
     ></app-topic-knowledge-map>
 
-    <section id="tech-tips" class="site-section-band-dark">
+    <section id="tech-tips" class="site-section-band-dark site-section-theme-soft topic-theme-ai">
       <div class="site-section-inner">
         <div class="site-section-header">
           <div>
-            <p class="eyebrow eyebrow-cyan">AI & Tech</p>
+            <p class="eyebrow eyebrow-topic">AI & Tech</p>
             <h2 class="mt-3 heading-section">Tech Tips</h2>
             <p class="site-section-copy">
               Short, practical posts for newer tools, everyday workflows, and the places technology can remove friction.
@@ -225,19 +232,18 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                     class="blog-post-image-fill opacity-35 saturate-125"
                     loading="lazy"
                   >
-                  <div
-                    class="absolute inset-0 bg-gradient-to-br from-cyan-950/95 via-zinc-950/90 to-emerald-950/90"></div>
+                  <div class="home-tech-feature-overlay absolute inset-0"></div>
                   <div class="absolute inset-0 flex flex-col justify-between p-6 sm:p-8">
                     <div class="flex flex-wrap items-start justify-between gap-3">
-                      <p class="eyebrow-sm text-cyan-100">Tech Tips Series</p>
+                      <p class="eyebrow-sm home-topic-light-label">Tech Tips Series</p>
                       <span
-                        class="border border-cyan-200/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-50">
+                        class="home-topic-count-label">
                         {{ techTipsPosts().length }} post{{ techTipsPosts().length === 1 ? '' : 's' }}
                       </span>
                     </div>
 
                     <div class="max-w-xl">
-                      <p class="text-sm font-semibold uppercase tracking-[0.26em] text-emerald-200">AI & Tech</p>
+                      <p class="home-topic-feature-kicker">AI & Tech</p>
                       <h3 class="mt-3 text-4xl font-bold leading-none text-white sm:text-5xl">Tech Tips</h3>
                       <p class="mt-4 max-w-md text-sm leading-6 text-zinc-200 sm:text-base">
                         Practical guides for using AI, building better workflows, and making new tools feel useful.
@@ -261,13 +267,11 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                   @for (link of techTipsQuickLinks(); track link.category) {
                     <a
                       [routerLink]="['/', pathNames.BLOG, 'category', link.slug]"
-                      class="group flex items-start justify-between gap-4 border border-slate-200 p-4 transition
-                      hover:border-cyan-500 hover:bg-cyan-50
-                      dark:border-white/10 dark:hover:border-cyan-300 dark:hover:bg-cyan-300/10"
+                      class="home-topic-quick-link group flex items-start justify-between gap-4 border p-4 transition"
                     >
                       <span class="min-w-0">
                         <span
-                          class="block text-sm font-semibold text-slate-950 group-hover:text-cyan-800 dark:text-zinc-50 dark:group-hover:text-cyan-200">
+                          class="block text-sm font-semibold text-slate-950 dark:text-zinc-50">
                           {{ link.label }}
                         </span>
                         <span class="mt-1 block text-sm leading-6 text-zinc-600 dark:text-zinc-400">
@@ -294,7 +298,7 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
                           {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
                         </span>
                         <span
-                          class="mt-2 block text-sm font-semibold leading-6 text-slate-950 group-hover:text-cyan-700 dark:text-zinc-50 dark:group-hover:text-cyan-300">
+                          class="home-topic-text-link mt-2 block text-sm font-semibold leading-6">
                           {{ post.title }}
                         </span>
                         <span class="mt-1 block text-sm leading-6 text-zinc-600 dark:text-zinc-400">
@@ -335,11 +339,11 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       </div>
     </section>
 
-    <section id="health-recovery" class="site-section-band">
+    <section id="health-recovery" class="site-section-band site-section-theme-soft topic-theme-recovery">
       <div class="site-section-inner">
         <div class="site-section-header">
           <div>
-            <p class="eyebrow eyebrow-emerald">Health & Recovery</p>
+            <p class="eyebrow eyebrow-topic">Health & Recovery</p>
             <h2 class="mt-3 heading-section">Weekly Updates</h2>
             <p class="site-section-copy">
               Weekly recovery notes, personal updates, and patient-perspective posts about the recent open heart
@@ -363,7 +367,14 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
           @defer (when !blogIsLoading()) {
             <div class="site-divided-list">
               @for (post of healthRecoveryPosts(); track post.id) {
-                <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
+                <app-blog-post-card
+                  [post]="post"
+                  [showTags]="false"
+                  [topicLabel]="postTopic(post)?.theme?.shortLabel ?? null"
+                  [topicAccent]="postTopic(post)?.theme?.accent ?? null"
+                  [topicAccentStrong]="postTopic(post)?.theme?.accentStrong ?? null"
+                  [topicAccentRgb]="postTopic(post)?.theme?.accentRgb ?? null"
+                ></app-blog-post-card>
               } @empty {
                 <p class="site-empty-panel">
                   No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
@@ -381,10 +392,10 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       </div>
     </section>
 
-    <section id="medical-information" class="site-section">
+    <section id="medical-information" class="site-section site-section-theme-soft topic-theme-recovery home-medical-section">
       <div class="site-section-header">
         <div>
-          <p class="eyebrow eyebrow-rose">Things I learned in the Hospital</p>
+          <p class="eyebrow eyebrow-topic">Things I learned in the Hospital</p>
           <h2 class="mt-3 heading-section">Hospital lessons from a patient</h2>
           <p class="site-section-copy">
             Personal resource notes from the hospital experience: questions to ask, details to organize, and
@@ -408,7 +419,14 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
         @defer (when !blogIsLoading()) {
           <div class="site-divided-list">
             @for (post of medicalInfoPosts(); track post.id) {
-              <app-blog-post-card [post]="post" [showTags]="false"></app-blog-post-card>
+              <app-blog-post-card
+                [post]="post"
+                [showTags]="false"
+                [topicLabel]="postTopic(post)?.theme?.shortLabel ?? null"
+                [topicAccent]="postTopic(post)?.theme?.accent ?? null"
+                [topicAccentStrong]="postTopic(post)?.theme?.accentStrong ?? null"
+                [topicAccentRgb]="postTopic(post)?.theme?.accentRgb ?? null"
+              ></app-blog-post-card>
             } @empty {
               <p class="site-empty-panel">
                 No published medical information posts yet. Posts tagged or categorized with medical information,
@@ -426,18 +444,26 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
     </section>
   `,
   styles: [`
-    .home-featured-post-card {
-      border-color: rgba(34, 211, 238, 0.45);
+    .home-topic-post-card {
+      border-color: rgb(var(--post-topic-accent-rgb) / 0.28);
       background:
-        linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(255, 255, 255, 0.96) 42%),
+        linear-gradient(135deg, rgb(var(--post-topic-accent-rgb) / 0.08), rgba(255, 255, 255, 0.98) 44%),
+        #ffffff;
+    }
+
+    .home-featured-post-card {
+      border-color: rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.45);
+      background:
+        linear-gradient(135deg, rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.14), rgba(255, 255, 255, 0.96) 42%),
         #ffffff;
       box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
     }
 
-    .home-featured-post-label {
-      border: 1px solid rgba(8, 145, 178, 0.32);
-      background: rgba(236, 254, 255, 0.9);
-      color: #0e7490;
+    .home-featured-post-label,
+    .home-topic-post-label {
+      border: 1px solid rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.32);
+      background: rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.1);
+      color: color-mix(in srgb, var(--post-topic-accent, #22d3ee) 58%, #0f172a);
       font-family: var(--font-accent);
       font-size: 0.68rem;
       font-weight: 700;
@@ -447,17 +473,117 @@ function postMatchesHubTerms(post: BlogPostSummary, terms: readonly string[]): b
       text-transform: uppercase;
     }
 
+    .home-topic-post-label {
+      border-color: rgb(var(--post-topic-accent-rgb) / 0.28);
+    }
+
+    .home-topic-post-card .btn-secondary {
+      border-color: rgb(var(--post-topic-accent-rgb) / 0.55);
+      color: color-mix(in srgb, var(--post-topic-accent) 62%, #0f172a);
+    }
+
+    .home-topic-post-card .btn-secondary:hover {
+      background: var(--post-topic-accent);
+      color: #ffffff;
+    }
+
+    .home-topic-post-card .heading-card a:hover {
+      color: color-mix(in srgb, var(--post-topic-accent) 68%, #0f172a);
+    }
+
+    .home-tech-feature-overlay {
+      background:
+        radial-gradient(circle at 20% 18%, rgb(var(--site-accent-rgb) / 0.36), transparent 18rem),
+        radial-gradient(circle at 86% 92%, rgb(var(--topic-architecture-rgb) / 0.24), transparent 22rem),
+        linear-gradient(135deg, rgba(8, 47, 73, 0.95), rgba(9, 9, 11, 0.9) 52%, rgba(20, 83, 45, 0.78));
+    }
+
+    .home-topic-light-label,
+    .home-topic-feature-kicker {
+      color: color-mix(in srgb, var(--site-accent) 34%, #ffffff);
+    }
+
+    .home-topic-count-label {
+      border: 1px solid rgb(var(--site-accent-rgb) / 0.42);
+      color: color-mix(in srgb, var(--site-accent) 28%, #ffffff);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      padding: 0.25rem 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .home-topic-feature-kicker {
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+    }
+
+    .home-topic-quick-link {
+      border-color: rgba(203, 213, 225, 0.95);
+      background: rgba(255, 255, 255, 0.68);
+    }
+
+    .home-topic-quick-link:hover {
+      border-color: var(--site-accent);
+      background: rgb(var(--site-accent-rgb) / 0.08);
+    }
+
+    .home-topic-quick-link:hover span:first-child > span:first-child {
+      color: var(--site-accent-strong);
+    }
+
+    .home-topic-text-link {
+      color: var(--site-heading);
+    }
+
+    .home-topic-text-link:hover {
+      color: var(--site-accent-strong);
+    }
+
     :host-context(.dark) .home-featured-post-card {
       background:
-        linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(24, 24, 27, 0.78) 46%),
+        linear-gradient(135deg, rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.16), rgba(24, 24, 27, 0.78) 46%),
         rgba(24, 24, 27, 0.72);
       box-shadow: 0 22px 55px rgba(0, 0, 0, 0.28);
     }
 
-    :host-context(.dark) .home-featured-post-label {
-      border-color: rgba(103, 232, 249, 0.36);
-      background: rgba(8, 145, 178, 0.16);
-      color: #a5f3fc;
+    :host-context(.dark) .home-topic-post-card {
+      background:
+        linear-gradient(135deg, rgb(var(--post-topic-accent-rgb) / 0.12), rgba(24, 24, 27, 0.78) 46%),
+        rgba(24, 24, 27, 0.72);
+    }
+
+    :host-context(.dark) .home-featured-post-label,
+    :host-context(.dark) .home-topic-post-label {
+      border-color: rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.36);
+      background: rgb(var(--post-topic-accent-rgb, 34 211 238) / 0.14);
+      color: var(--post-topic-accent-strong, #a5f3fc);
+    }
+
+    :host-context(.dark) .home-topic-post-card .btn-secondary {
+      border-color: rgb(var(--post-topic-accent-rgb) / 0.5);
+      color: var(--post-topic-accent-strong);
+    }
+
+    :host-context(.dark) .home-topic-post-card .btn-secondary:hover {
+      background: var(--post-topic-accent);
+      color: #09090b;
+    }
+
+    :host-context(.dark) .home-topic-post-card .heading-card a:hover {
+      color: var(--post-topic-accent-strong);
+    }
+
+    :host-context(.dark) .home-topic-quick-link {
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(24, 24, 27, 0.58);
+    }
+
+    :host-context(.dark) .home-topic-quick-link:hover {
+      border-color: var(--site-accent);
+      background: rgb(var(--site-accent-rgb) / 0.12);
     }
 
     @media (min-width: 1024px) {
@@ -504,6 +630,16 @@ export class HomeBlogSectionsComponent {
       count: this.allPublishedPosts().filter(post => postMatchesHubTerms(post, hub.terms)).length,
     }))
   ));
+  protected readonly topicByPostId = computed(() => {
+    const topics = this.topicHubs();
+
+    return new Map(
+      this.allPublishedPosts().map(post => [
+        post.id,
+        topics.find(topic => postMatchesHubTerms(post, topic.terms)) ?? null,
+      ])
+    );
+  });
   protected readonly techTipsPosts = computed(() => (
     this.allPublishedPosts().filter(post => postHasTaxonomyTerm(post, [TECH_TIPS_CATEGORY]))
   ));
@@ -531,5 +667,23 @@ export class HomeBlogSectionsComponent {
 
   protected postImage(post: BlogPostSummary): string {
     return post.thumbnailImage?.trim() || post.coverImage;
+  }
+
+  protected postTopic(post: BlogPostSummary): TopicHub | null {
+    return this.topicByPostId().get(post.id) ?? null;
+  }
+
+  protected postTopicStyle(post: BlogPostSummary): Record<string, string> | null {
+    const topic = this.postTopic(post);
+
+    if (!topic) {
+      return null;
+    }
+
+    return {
+      '--post-topic-accent': topic.theme.accent,
+      '--post-topic-accent-strong': topic.theme.accentStrong,
+      '--post-topic-accent-rgb': topic.theme.accentRgb,
+    };
   }
 }
