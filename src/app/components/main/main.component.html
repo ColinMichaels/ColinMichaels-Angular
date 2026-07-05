@@ -102,41 +102,43 @@
     </section>
 
 
-    <section id="links" class="site-section-band site-section-theme-soft topic-theme-architecture">
-      <div class="site-section-inner">
-        <div class="site-section-rule grid gap-8 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">
-          <div>
-            <p class="eyebrow eyebrow-topic">Recommended Sites</p>
-            <h2 class="mt-3 heading-section">Useful places worth leaving this site for.</h2>
-            <p class="mt-5 text-base leading-8 text-body">
-              A small, practical list of tools, shops, and docs I would actually point someone toward.
-            </p>
-          </div>
+    @if (recommendedSites().length > 0) {
+      <section id="links" class="site-section-band site-section-theme-soft topic-theme-architecture">
+        <div class="site-section-inner">
+          <div class="site-section-rule grid gap-8 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">
+            <div>
+              <p class="eyebrow eyebrow-topic">Recommended Sites</p>
+              <h2 class="mt-3 heading-section">Useful places worth leaving this site for.</h2>
+              <p class="mt-5 text-base leading-8 text-body">
+                A small, practical list of tools, shops, and docs I would actually point someone toward.
+              </p>
+            </div>
 
-          <div class="grid gap-4">
-            @for (recommendedSite of recommendedSites; track recommendedSite.href) {
-              <a
-                [href]="recommendedSite.href"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="site-resource-link"
-                [attr.aria-label]="'Open ' + recommendedSite.title + ' in a new tab'"
-              >
-                <div>
-                  <p class="site-meta">{{ recommendedSite.meta }}</p>
-                  <h3 class="mt-3 heading-subsection">{{ recommendedSite.title }}</h3>
-                  <p class="mt-3 text-body">{{ recommendedSite.description }}</p>
-                </div>
-                <span class="site-resource-action">
-                  <span>{{ recommendedSite.host }}</span>
-                  <fa-icon [icon]="faArrowUpRightFromSquare" aria-hidden="true"></fa-icon>
-                </span>
-              </a>
-            }
+            <div class="grid gap-4">
+              @for (recommendedSite of recommendedSites(); track recommendedSite.id) {
+                <a
+                  [href]="recommendedSite.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="site-resource-link"
+                  [attr.aria-label]="'Open ' + recommendedSite.title + ' in a new tab'"
+                >
+                  <div>
+                    <p class="site-meta">{{ recommendedSite.meta }}</p>
+                    <h3 class="mt-3 heading-subsection">{{ recommendedSite.title }}</h3>
+                    <p class="mt-3 text-body">{{ recommendedSite.description }}</p>
+                  </div>
+                  <span class="site-resource-action">
+                    <span>{{ recommendedSite.host }}</span>
+                    <fa-icon [icon]="faArrowUpRightFromSquare" aria-hidden="true"></fa-icon>
+                  </span>
+                </a>
+              }
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    }
 
 
     <section id="labs" class="site-section-band site-section-theme-soft topic-theme-labs">

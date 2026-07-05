@@ -117,6 +117,23 @@ Migration notes:
 - Public pages continue to show the default topics when Firestore has not been seeded yet. Once `/topics` contains managed documents, published documents control public topic ordering and visibility.
 - Firestore rules allow public `get/list` only for published topics and restrict create, update, and delete to CMS content roles.
 
+## Recommended Links Manager
+
+The recommended links manager is available at `/admin/cms/recommended-links` and is restricted to CMS content roles. It manages the homepage links section below the author bio.
+
+Component inventory:
+
+- `CmsRecommendedLinksManagerComponent` provides link list/search, create, edit, delete, refresh, and default seeding controls.
+- `RecommendedLinkRepositoryService` owns default links, admin/public projections, normalization, stats, default seeding, and featured-slot conflict resolution.
+- `RecommendedLinkStorageService` mirrors the blog/topic storage pattern with auth-aware Firestore listeners: CMS users read all `/recommendedLinks`, public users read only published links.
+- `recommended-link-validation.util.ts` validates Firestore link documents before they enter public rendering.
+
+Migration notes:
+
+- The hardcoded homepage links are now the bootstrap/fallback set and can be seeded into Firestore from the manager.
+- Public rendering uses published links assigned to featured slots 1, 2, and 3. Saving a link into an occupied slot clears that slot from the previous link, keeping the homepage capped at three featured recommendations.
+- Firestore rules allow public `get/list` only for published recommended links and restrict create, update, and delete to CMS content roles.
+
 Admin authorization is enforced through Firebase Auth custom claims. The UI, callable functions, Realtime Database rules, Firestore rules, and Storage rules treat these claims as admin-capable:
 
 - `admin: true`

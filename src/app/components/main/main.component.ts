@@ -1,5 +1,6 @@
 import {NgClass, NgOptimizedImage} from '@angular/common';
 import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
 import {RouterLink} from '@angular/router';
@@ -12,6 +13,9 @@ import {
 import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {AuthorBioComponent} from '../../shared/author/author-bio.component';
 import {SocialsComponent} from './socials/socials.component';
+import {
+  RecommendedLinkRepositoryService
+} from '../../features/recommended-links/services/recommended-link-repository.service';
 
 interface HomeHighlight {
   eyebrow: string;
@@ -20,14 +24,6 @@ interface HomeHighlight {
   route: string;
   action: string;
   accentClass: string;
-}
-
-interface RecommendedSite {
-  title: string;
-  description: string;
-  meta: string;
-  href: string;
-  host: string;
 }
 
 @Component({
@@ -49,6 +45,7 @@ interface RecommendedSite {
 })
 export class MainComponent {
   protected readonly theme = inject(SiteThemeService);
+  private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);
   protected readonly heroBackgroundImage = computed(() => (
     this.theme.isDark() ? '/assets/images/backgrounds/night.webp' : '/assets/images/backgrounds/day.webp'
   ));
@@ -56,29 +53,10 @@ export class MainComponent {
     this.theme.isDark() ? 'Night aerial landscape background' : 'Day aerial landscape background'
   ));
 
-  protected readonly recommendedSites: readonly RecommendedSite[] = [
-    {
-      title: 'FutureTools.io',
-      description: 'A fast way to scan useful AI tools, news, and new software without opening twenty tabs first.',
-      meta: 'AI tools',
-      href: 'https://futuretools.io/',
-      host: 'futuretools.io',
-    },
-    {
-      title: 'iLoveDrones.Shop',
-      description: 'Drone parts, frames, props, motors, batteries, and FPV gear from a shop built for people who actually fly.',
-      meta: 'FPV gear',
-      href: 'https://ilovedrones.shop/',
-      host: 'ilovedrones.shop',
-    },
-    {
-      title: 'Chrome for Developers',
-      description: 'Official Chrome and web platform guidance for DevTools, performance, browser APIs, and production debugging.',
-      meta: 'Web platform',
-      href: 'https://developer.chrome.com/',
-      host: 'developer.chrome.com',
-    },
-  ];
+  protected readonly recommendedSites = toSignal(
+    this.recommendedLinkRepository.getFeaturedRecommendedLinks$(),
+    {initialValue: this.recommendedLinkRepository.getFeaturedRecommendedLinks()}
+  );
 
   protected readonly labItems: readonly HomeHighlight[] = [
     {

@@ -1,9 +1,13 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {RecommendedLink} from '../../features/recommended-links/models/recommended-link.model';
+import {
+  RecommendedLinkRepositoryService
+} from '../../features/recommended-links/services/recommended-link-repository.service';
 import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.service';
 import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
 import {TypewriterService} from '../game/services/typewriter.service';
@@ -54,6 +58,30 @@ const MOCK_POSTS: readonly BlogPostSummary[] = [
     updatedAt: '2026-06-02T12:00:00.000Z',
   },
 ];
+const MOCK_RECOMMENDED_LINKS: readonly RecommendedLink[] = [
+  {
+    id: 'recommended-link-futuretools',
+    title: 'FutureTools.io',
+    description: 'A fast way to scan useful AI tools.',
+    meta: 'AI tools',
+    href: 'https://futuretools.io/',
+    host: 'futuretools.io',
+    status: 'published',
+    featuredSlot: 1,
+    displayOrder: 10,
+    createdAt: '2026-07-05T00:00:00.000Z',
+    updatedAt: '2026-07-05T00:00:00.000Z',
+  },
+];
+
+async function renderDeferredHomepageContent(fixture: ComponentFixture<MainComponent>): Promise<void> {
+  fixture.detectChanges();
+
+  const deferBlocks = await fixture.getDeferBlocks();
+  await Promise.all(deferBlocks.map((deferBlock) => deferBlock.render(DeferBlockState.Complete)));
+
+  fixture.detectChanges();
+}
 
 describe('MainComponent', () => {
   let fixture: ComponentFixture<MainComponent>;
@@ -74,6 +102,10 @@ describe('MainComponent', () => {
         videos: [],
       })),
     } satisfies Pick<YouTubeFeedService, 'getLatestVideos$'>;
+    const recommendedLinkRepositoryService = {
+      getFeaturedRecommendedLinks$: jasmine.createSpy('getFeaturedRecommendedLinks$').and.returnValue(of(MOCK_RECOMMENDED_LINKS)),
+      getFeaturedRecommendedLinks: jasmine.createSpy('getFeaturedRecommendedLinks').and.returnValue(MOCK_RECOMMENDED_LINKS),
+    } satisfies Pick<RecommendedLinkRepositoryService, 'getFeaturedRecommendedLinks$' | 'getFeaturedRecommendedLinks'>;
     const typewriterService = jasmine.createSpyObj<Pick<TypewriterService, 'enableSound' | 'setVolume' | 'clear' | 'enqueueLine'>>(
       'TypewriterService',
       ['enableSound', 'setVolume', 'clear', 'enqueueLine'],
@@ -88,6 +120,7 @@ describe('MainComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepositoryService},
+        {provide: RecommendedLinkRepositoryService, useValue: recommendedLinkRepositoryService},
         {provide: TypewriterService, useValue: typewriterService},
         {provide: YouTubeFeedService, useValue: youtubeFeedService},
       ],
@@ -96,8 +129,8 @@ describe('MainComponent', () => {
     fixture = TestBed.createComponent(MainComponent);
   });
 
-  it('renders the SPA homepage sections', () => {
-    fixture.detectChanges();
+  it('renders the SPA homepage sections', async () => {
+    await renderDeferredHomepageContent(fixture);
 
     const element = fixture.nativeElement as HTMLElement;
 
@@ -111,8 +144,18 @@ describe('MainComponent', () => {
     expect(element.textContent?.match(/Report a Bug/g)?.length).toBe(1);
   });
 
-  it('embeds published blog content on the homepage', () => {
+  it('renders CMS-managed recommended links on the homepage', () => {
     fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('#links')?.textContent).toContain('Recommended Sites');
+    expect(element.querySelector('#links')?.textContent).toContain('FutureTools.io');
+    expect(element.querySelector<HTMLAnchorElement>('#links a')?.href).toBe('https://futuretools.io/');
+  });
+
+  it('embeds published blog content on the homepage', async () => {
+    await renderDeferredHomepageContent(fixture);
 
     const element = fixture.nativeElement as HTMLElement;
 
@@ -130,8 +173,8 @@ describe('MainComponent', () => {
     expect(element.querySelector('#about img')?.getAttribute('src')).toBe(COLIN_AUTHOR_PROFILE.imageUrl);
   });
 
-  it('shows health recovery and medical information blog sections', () => {
-    fixture.detectChanges();
+  it('shows health recovery and medical information blog sections', async () => {
+    await renderDeferredHomepageContent(fixture);
 
     const element = fixture.nativeElement as HTMLElement;
 

@@ -152,6 +152,12 @@ function getErrorMessage(error: unknown): string {
               Topics
             </a>
             <a
+              routerLink="/admin/cms/recommended-links"
+              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+            >
+              Recommended Links
+            </a>
+            <a
               routerLink="/admin/cms/media-library"
               class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
             >
