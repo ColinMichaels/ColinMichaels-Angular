@@ -6,7 +6,13 @@ import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {HomeBlogSectionsComponent} from './home-blog-sections.component';
+import {
+  BlogPostCardSkeletonComponent
+} from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
+import {HomeLatestWritingSectionComponent} from './home-latest-writing-section.component';
+import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
+import {HomeTechTipsSectionComponent} from './home-tech-tips-section.component';
+import {HomeTopicsSectionComponent} from './home-topics-section.component';
 import {
   YouTubeLatestVideosComponent
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
@@ -30,8 +36,12 @@ interface HomeHighlight {
   selector: 'app-main',
   imports: [
     AuthorBioComponent,
+    BlogPostCardSkeletonComponent,
     FaIconComponent,
-    HomeBlogSectionsComponent,
+    HomeLatestWritingSectionComponent,
+    HomeRecoveryBlogSectionsComponent,
+    HomeTechTipsSectionComponent,
+    HomeTopicsSectionComponent,
     NgClass,
     NgOptimizedImage,
     RouterLink,

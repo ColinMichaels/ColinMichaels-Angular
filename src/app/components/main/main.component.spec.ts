@@ -137,6 +137,8 @@ describe('MainComponent', () => {
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#about')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
+    expect(element.querySelector('#topic-guides')).not.toBeNull();
+    expect(element.querySelector('#tech-tips')).not.toBeNull();
     expect(element.querySelector('#health-recovery')).not.toBeNull();
     expect(element.querySelector('#medical-information')).not.toBeNull();
     expect(element.querySelector('#labs')).not.toBeNull();
