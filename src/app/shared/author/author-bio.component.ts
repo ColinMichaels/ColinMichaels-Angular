@@ -14,7 +14,7 @@ export type AuthorBioVariant = 'home' | 'blog';
     @if (variant === 'home') {
       <div class="space-y-8">
         <div class="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
-          <figure class="overflow-hidden border border-neutral-300 bg-neutral-950 lg:flex lg:h-[44rem] lg:flex-col">
+          <figure class="overflow-hidden border border-neutral-300 bg-neutral-950 lg:flex lg:h-[52rem] lg:flex-col">
             <img
               [src]="profile.imageUrl"
               [alt]="profile.imageAlt"
@@ -29,7 +29,7 @@ export type AuthorBioVariant = 'home' | 'blog';
           <div class="relative">
             <div
               #introBioScroller
-              class="lg:max-h-[44rem] lg:overflow-y-auto lg:pr-4 lg:[scrollbar-gutter:stable]"
+              class="lg:max-h-[52rem] lg:overflow-y-auto lg:pr-4 lg:[scrollbar-gutter:stable]"
               (scroll)="updateIntroBioScrollState(introBioScroller)"
             >
               <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">About</p>
