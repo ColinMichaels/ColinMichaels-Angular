@@ -5,6 +5,7 @@ import {BehaviorSubject, of} from 'rxjs';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.service';
+import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
 import {TypewriterService} from '../game/services/typewriter.service';
 import {MainComponent} from './main.component';
 
@@ -124,9 +125,9 @@ describe('MainComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('#about')?.textContent).toContain('About Colin Michaels');
-    expect(element.querySelector('#about')?.textContent).toContain('applications developer, FPV drone pilot');
-    expect(element.querySelector('#about img')?.getAttribute('src')).toBe('/assets/social/colin-michaels-og.jpg');
+    expect(element.querySelector('#about')?.textContent).toContain('About Me');
+    expect(element.querySelector('#about')?.textContent).toContain('application developer, creative problem solver');
+    expect(element.querySelector('#about img')?.getAttribute('src')).toBe(COLIN_AUTHOR_PROFILE.imageUrl);
   });
 
   it('shows health recovery and medical information blog sections', () => {

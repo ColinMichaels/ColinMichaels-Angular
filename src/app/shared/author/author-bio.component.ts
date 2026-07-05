@@ -27,19 +27,30 @@ export type AuthorBioVariant = 'home' | 'blog';
 
         <div>
           <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">About</p>
-          <h2 class="mt-4 text-3xl font-semibold text-neutral-950 sm:text-4xl">About Colin Michaels</h2>
-          <div class="mt-5 space-y-5 text-base leading-8 text-neutral-700">
-            <p class="text-lg font-medium leading-8 text-neutral-950">{{ profile.homeIntro }}</p>
-            @for (paragraph of profile.homeParagraphs; track paragraph) {
-              <p>{{ paragraph }}</p>
+          <div class="mt-4 space-y-8 text-base leading-8 text-neutral-700">
+            @for (section of profile.homeBioSections; track section.heading; let first = $first) {
+              <section class="space-y-4">
+                @if (first) {
+                  <h2 class="text-3xl font-semibold text-neutral-950 sm:text-4xl">{{ section.heading }}</h2>
+                } @else {
+                  <h3 class="text-2xl font-semibold text-neutral-950">{{ section.heading }}</h3>
+                }
+                @for (paragraph of section.paragraphs; track paragraph; let firstParagraph = $first) {
+                  <p [class]="first && firstParagraph ? 'text-lg font-medium leading-8 text-neutral-950' : ''">
+                    {{ paragraph }}
+                  </p>
+                }
+                @if (section.bullets.length > 0) {
+                  <ul class="grid gap-2 text-sm leading-6 text-neutral-700 sm:grid-cols-2">
+                    @for (bullet of section.bullets; track bullet) {
+                      <li class="border-l-2 border-cyan-500 pl-3">{{ bullet }}</li>
+                    }
+                  </ul>
+                }
+              </section>
             }
             <div class="border border-neutral-200 bg-white p-4">
-              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500">Writing focus</p>
-              <ul class="mt-3 grid gap-2 text-sm leading-6 text-neutral-700 sm:grid-cols-2">
-                @for (topic of profile.expertiseTopics; track topic) {
-                  <li class="border-l-2 border-cyan-500 pl-3">{{ topic }}</li>
-                }
-              </ul>
+              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500">Connect</p>
               <div class="mt-4 flex flex-wrap gap-3">
                 @for (externalProfile of profile.externalProfiles; track externalProfile.href) {
                   <a

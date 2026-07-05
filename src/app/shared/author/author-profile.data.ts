@@ -1,3 +1,9 @@
+export interface AuthorBioSection {
+  heading: string;
+  paragraphs: readonly string[];
+  bullets: readonly string[];
+}
+
 export interface AuthorProfile {
   name: string;
   title: string;
@@ -6,9 +12,7 @@ export interface AuthorProfile {
   imageAlt: string;
   profileFragment: string;
   shortBio: string;
-  homeIntro: string;
-  homeParagraphs: readonly string[];
-  expertiseTopics: readonly string[];
+  homeBioSections: readonly AuthorBioSection[];
   externalProfiles: readonly {
     label: string;
     href: string;
@@ -18,27 +22,72 @@ export interface AuthorProfile {
 
 export const COLIN_AUTHOR_PROFILE: AuthorProfile = {
   name: 'Colin Michaels',
-  title: 'Applications developer, FPV drone pilot, and creative technologist',
+  title: 'Application developer, creative problem solver, FPV drone pilot, and photographer',
   location: 'Florida',
   imageUrl: 'https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fmedia-library%2Flibrary%2F1781710307542-26de032d-9418-4c44-8953-d5f4efdadeec.webp?alt=media&token=03c80fbe-8339-48cb-a150-0dbcf9cadff6',
   imageAlt: 'Colin Michaels site preview image',
   profileFragment: 'about',
-  shortBio: 'Colin Michaels is an applications developer, FPV drone pilot, and creative technologist based in Florida. He writes from hands-on work with Angular, Firebase, CMS workflows, media systems, AI-assisted tools, FPV projects, and patient-perspective recovery after open-heart surgery.',
-  homeIntro: 'Hi, I\'m Colin Michaels - an applications developer, FPV drone pilot, creative technologist, and recovering overthinker based in Florida.',
-  homeParagraphs: [
-    'This site started as a place to collect my projects, ideas, videos, experiments, and personal updates. Over time, it has become something more honest: a record of what I\'m building, what I\'m learning, and what I\'m trying to rebuild in myself.',
-    'Professionally, I work in application development, mostly around front-end systems, dashboards, internal tools, media workflows, automation, and user-facing web applications. I enjoy turning scattered ideas into working systems, whether that means building a CMS feature, experimenting with AI-assisted content creation, organizing media libraries, or designing tools that make creative work easier.',
-    'Creatively, I fly FPV drones, shoot video and photography, make thumbnails and graphics, and experiment with storytelling across different formats. I like projects that combine code, visuals, motion, music, and a little bit of personality.',
-    'A major part of this blog also follows my recovery after open-heart surgery and valve replacement. I write about that experience as a patient, not as a medical expert. My goal is to be honest about the fear, frustration, humor, progress, setbacks, and small wins that come with recovery.',
-    'ColinMichaels.com is my project journal, recovery notebook, creative archive, and testing ground. Some posts are technical. Some are personal. Some are funny. Some are written because I wish I had found something like them when I needed it.',
-    'Thanks for reading.',
-  ],
-  expertiseTopics: [
-    'Angular and Firebase application architecture',
-    'CMS publishing workflows and SEO implementation',
-    'AI-assisted creative and technical workflows',
-    'FPV, media production, and project demos',
-    'Open-heart surgery recovery from a patient perspective',
+  shortBio: 'Colin Michaels is an application developer, creative problem solver, FPV drone pilot, photographer, and builder of software, AI workflows, websites, drones, videos, and new ideas.',
+  homeBioSections: [
+    {
+      heading: 'About Me',
+      paragraphs: [
+        'Hi, I’m Colin Michaels—an application developer, creative problem solver, FPV drone pilot, photographer, and someone who’s always building something.',
+        'Whether it’s software, AI workflows, websites, drones, videos, or entirely new ideas, I enjoy figuring out how things work—and then making them better. I believe the best projects are the ones that solve real problems while teaching you something along the way.',
+        'ColinMichaels.com started as a simple portfolio, but over time it became something much more personal. Today it’s a place where I share the projects I’m building, the lessons I’m learning, experiments that succeed (and plenty that don’t), and the occasional life challenge that ends up teaching me something unexpected.',
+      ],
+      bullets: [],
+    },
+    {
+      heading: 'What I Do',
+      paragraphs: [
+        'Professionally, I design and build modern web applications, internal business platforms, content management systems, and AI-powered tools. My primary focus is application development using technologies like Angular, TypeScript, Firebase, Node.js, and modern cloud services, but I genuinely enjoy learning new technologies and finding better ways to solve complex problems.',
+        'I like taking messy ideas, complicated workflows, or repetitive tasks and turning them into software that’s clean, intuitive, and enjoyable to use. Whether it’s improving user experience, automating a business process, or experimenting with the latest AI tools, I’m always looking for ways to make technology work smarter.',
+      ],
+      bullets: [],
+    },
+    {
+      heading: 'Beyond the Keyboard',
+      paragraphs: [
+        'When I’m not writing code, you’ll usually find me flying FPV drones, capturing photos and videos, exploring creative AI projects, working on electronics, or dreaming up another project that probably didn’t need to exist—but sounded like fun.',
+        'Creativity has always been a huge part of who I am. I enjoy blending technology with photography, filmmaking, design, music, and storytelling to create projects that are both useful and entertaining.',
+      ],
+      bullets: [],
+    },
+    {
+      heading: 'A Journey I Didn’t Expect',
+      paragraphs: [
+        'In 2026, my life changed unexpectedly when I underwent open-heart surgery after developing infective endocarditis. Recovery became its own project—one measured in small victories instead of feature releases.',
+        'That experience reminded me that progress isn’t always measured by how fast you move. Sometimes it’s measured by simply refusing to stop moving forward.',
+        'I’ve chosen to share parts of that journey here, not because I’m a medical expert, but because I know someone else will eventually be searching for the same answers, encouragement, or reassurance that I was looking for during recovery. If my experiences help even one person feel a little less alone, then they’re worth sharing.',
+      ],
+      bullets: [],
+    },
+    {
+      heading: 'What You’ll Find Here',
+      paragraphs: [
+        'This website is a collection of the things I’m passionate about:',
+      ],
+      bullets: [
+        'Software development and modern web technologies',
+        'Artificial Intelligence and practical AI workflows',
+        'Angular, Firebase, CMS development, and automation',
+        'Technology reviews and project breakdowns',
+        'FPV drones, photography, and filmmaking',
+        'Creative experiments and side projects',
+        'Personal growth, recovery, and lessons learned',
+        'Behind-the-scenes looks at what I’m currently building',
+      ],
+    },
+    {
+      heading: 'Thanks for Stopping By',
+      paragraphs: [
+        'Whether you found this site looking for a programming solution, an AI tutorial, a drone video, recovery advice, or simply stumbled across it by accident, I’m glad you’re here.',
+        'I don’t claim to have all the answers. I’m just someone who enjoys building things, solving problems, and sharing what I learn along the way.',
+        'If that sounds like something you’d enjoy following, welcome—you’ve found the right place.',
+      ],
+      bullets: [],
+    },
   ],
   externalProfiles: [
     {
