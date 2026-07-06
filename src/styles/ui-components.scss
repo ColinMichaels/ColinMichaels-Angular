@@ -141,7 +141,7 @@
 
   /* ─── Public Site UI ────────────────────────────────────────────────────── */
   .site-section {
-    @apply mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8;
+    @apply mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
   }
 
   .site-section-inner {
@@ -149,12 +149,12 @@
   }
 
   .site-section-band {
-    @apply border-y border-slate-200 bg-slate-100 py-12
+    @apply border-y border-slate-200 bg-slate-100 py-8
     dark:border-white/10 dark:bg-neutral-900/80;
   }
 
   .site-section-band-dark {
-    @apply border-y border-slate-200 bg-slate-100 py-14
+    @apply border-y border-slate-200 bg-slate-100 py-8
     dark:border-white/10 dark:bg-neutral-950;
   }
 
@@ -197,14 +197,14 @@
   }
 
   .site-section-header {
-    @apply flex flex-col gap-4 border-b border-t-[5px] border-slate-200 pb-6 pt-6
+    @apply flex flex-col gap-4 border-b border-slate-200 pb-6 pt-6
     dark:border-white/10
     sm:flex-row sm:items-end sm:justify-between;
     border-top-color: var(--site-accent) !important;
   }
 
   .site-section-rule {
-    @apply border-t-[5px] border-cyan-600 pt-6 dark:border-cyan-300;
+    @apply border-cyan-600 pt-6 dark:border-cyan-300;
     border-top-color: var(--site-accent) !important;
   }
 

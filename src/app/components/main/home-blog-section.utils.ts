@@ -1,6 +1,10 @@
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {getBlogTaxonomyTerms} from '../../features/blog/utils/blog-category-url.util';
 
+export function postImage(post: Pick<BlogPostSummary, 'coverImage' | 'thumbnailImage'>): string {
+  return post.thumbnailImage?.trim() || post.coverImage;
+}
+
 export function normalizeSearchValue(value: string): string {
   return value
     .toLowerCase()

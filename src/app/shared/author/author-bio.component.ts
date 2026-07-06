@@ -98,8 +98,8 @@ export type AuthorBioVariant = 'home' | 'blog';
 
         @if (signoffSection; as section) {
           <section class="max-w-4xl border-l-2 border-cyan-600 pl-5">
-            <h3 class="text-2xl font-semibold text-neutral-950">{{ section.heading }}</h3>
-            <div class="mt-4 space-y-4 text-base leading-8 text-neutral-700">
+            <h3 class="text-3xl font-semibold text-neutral-950">{{ section.heading }}</h3>
+            <div class="mt-4 space-y-4 text-xl leading-8 text-neutral-700">
               @for (paragraph of section.paragraphs; track paragraph) {
                 <p>{{ paragraph }}</p>
               }

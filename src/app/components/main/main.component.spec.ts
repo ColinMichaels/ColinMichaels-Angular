@@ -2,7 +2,7 @@ import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing'
 import {RouterTestingModule} from '@angular/router/testing';
 import {BehaviorSubject, of} from 'rxjs';
 
-import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
+import {BlogPost, BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {RecommendedLink} from '../../features/recommended-links/models/recommended-link.model';
 import {
@@ -13,7 +13,7 @@ import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
 import {TypewriterService} from '../game/services/typewriter.service';
 import {MainComponent} from './main.component';
 
-const MOCK_POSTS: readonly BlogPostSummary[] = [
+const MOCK_FULL_POSTS: readonly BlogPost[] = [
   {
     id: 'post-architecture-boundaries',
     slug: 'architecture-boundaries',
@@ -26,6 +26,23 @@ const MOCK_POSTS: readonly BlogPostSummary[] = [
     },
     categories: ['Architecture'],
     tags: ['Angular', 'Refactor', 'Core OS'],
+    status: 'published',
+    seo: {
+      title: 'Architecture Boundaries for the Site and OS',
+      description: 'A short implementation note on separating architecture boundaries.',
+      openGraphImage: '/assets/images/backgrounds/day.webp',
+    },
+    contentFormat: 'editorjs',
+    blocks: [
+      {
+        id: 'architecture-intro',
+        type: 'paragraph',
+        data: {
+          text: 'A short implementation note on separating architecture boundaries.',
+        },
+      },
+    ],
+    createdAt: '2026-05-13T19:30:00.000Z',
     publishedAt: '2026-05-13T19:30:00.000Z',
     updatedAt: '2026-05-13T19:30:00.000Z',
   },
@@ -40,6 +57,23 @@ const MOCK_POSTS: readonly BlogPostSummary[] = [
     },
     categories: ['Health and Recovery'],
     tags: ['Open Heart Surgery', 'Weekly Updates'],
+    status: 'published',
+    seo: {
+      title: 'Open heart surgery weekly update',
+      description: 'A personal recovery note after recent open heart surgery.',
+      openGraphImage: '/assets/images/backgrounds/night.webp',
+    },
+    contentFormat: 'editorjs',
+    blocks: [
+      {
+        id: 'weekly-update-intro',
+        type: 'paragraph',
+        data: {
+          text: 'A personal recovery note after recent open heart surgery.',
+        },
+      },
+    ],
+    createdAt: '2026-06-01T12:00:00.000Z',
     publishedAt: '2026-06-01T12:00:00.000Z',
     updatedAt: '2026-06-01T12:00:00.000Z',
   },
@@ -54,10 +88,28 @@ const MOCK_POSTS: readonly BlogPostSummary[] = [
     },
     categories: ['Medical Information'],
     tags: ['Cardiology', 'Medications'],
+    status: 'published',
+    seo: {
+      title: 'Open heart surgery medical information',
+      description: 'Procedure notes, medications, and cardiology context from the surgery.',
+      openGraphImage: '/assets/images/backgrounds/day.webp',
+    },
+    contentFormat: 'editorjs',
+    blocks: [
+      {
+        id: 'medical-notes-intro',
+        type: 'paragraph',
+        data: {
+          text: 'Procedure notes, medications, and cardiology context from the surgery.',
+        },
+      },
+    ],
+    createdAt: '2026-06-02T12:00:00.000Z',
     publishedAt: '2026-06-02T12:00:00.000Z',
     updatedAt: '2026-06-02T12:00:00.000Z',
   },
 ];
+const MOCK_POSTS: readonly BlogPostSummary[] = MOCK_FULL_POSTS;
 const MOCK_RECOMMENDED_LINKS: readonly RecommendedLink[] = [
   {
     id: 'recommended-link-futuretools',
@@ -85,13 +137,19 @@ async function renderDeferredHomepageContent(fixture: ComponentFixture<MainCompo
 
 describe('MainComponent', () => {
   let fixture: ComponentFixture<MainComponent>;
+  let blogRepositoryService: Pick<
+    BlogRepositoryService,
+    'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'
+  >;
 
   beforeEach(async () => {
-    const blogRepositoryService = {
+    blogRepositoryService = {
       getPublishedPosts$: jasmine.createSpy('getPublishedPosts$').and.returnValue(of(MOCK_POSTS)),
+      getPublishedFullPosts$: jasmine.createSpy('getPublishedFullPosts$').and.returnValue(of(MOCK_FULL_POSTS)),
+      getPublishedFullPosts: jasmine.createSpy('getPublishedFullPosts').and.returnValue(MOCK_FULL_POSTS),
       loading$: of(false),
       error$: of(null),
-    } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'loading$' | 'error$'>;
+    } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'>;
     const youtubeFeedService = {
       getLatestVideos$: jasmine.createSpy('getLatestVideos$').and.returnValue(of({
         fetchedAt: '2026-06-14T00:00:00.000Z',
@@ -136,6 +194,7 @@ describe('MainComponent', () => {
 
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#about')).not.toBeNull();
+    expect(element.querySelector('#home-article-hero')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
     expect(element.querySelector('#topic-guides')).not.toBeNull();
     expect(element.querySelector('#tech-tips')).not.toBeNull();
@@ -161,8 +220,23 @@ describe('MainComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.textContent).toContain('Latest writing');
+    expect(element.textContent).toContain('A Life of Curiosity.');
+    expect(element.textContent).toContain('A Journey of Growth.');
+    expect(element.textContent).toContain('More writing');
     expect(element.textContent).toContain('Architecture Boundaries for the Site and OS');
+
+    const moreWritingSection = element.querySelector('#blog');
+    expect(moreWritingSection?.textContent).toContain('Open heart surgery weekly update');
+    expect(moreWritingSection?.textContent).toContain('Open heart surgery medical information');
+    expect(moreWritingSection?.textContent).not.toContain('Architecture Boundaries for the Site and OS');
+  });
+
+  it('shares one published post feed across homepage blog sections', async () => {
+    await renderDeferredHomepageContent(fixture);
+
+    expect(blogRepositoryService.getPublishedFullPosts$).toHaveBeenCalledTimes(1);
+    expect(blogRepositoryService.getPublishedFullPosts).toHaveBeenCalledTimes(1);
+    expect(blogRepositoryService.getPublishedPosts$).not.toHaveBeenCalled();
   });
 
   it('renders the homepage author bio section', () => {

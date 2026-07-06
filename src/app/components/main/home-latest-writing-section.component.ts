@@ -1,14 +1,14 @@
 import {DatePipe, NgStyle} from '@angular/common';
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
-import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
-import {postMatchesHubTerms} from './home-blog-section.utils';
+import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
+import {postImage as getPostImage, postMatchesHubTerms} from './home-blog-section.utils';
 
 @Component({
   selector: 'app-home-latest-writing-section',
@@ -23,7 +23,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
     <section id="blog" class="site-section home-latest-section">
       <div class="site-section-header">
         <div>
-          <h2 class="mt-3 heading-section">Latest writing</h2>
+          <h2 class="mt-3 heading-section">{{ heading }}</h2>
         </div>
         <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
           View all posts
@@ -36,7 +36,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
       } @else {
-        @defer (when !blogIsLoading()) {
+        @defer (when blogIsReady()) {
           <div class="site-card-grid">
             @for (post of publishedPosts(); track post.id; let first = $first) {
               <article
@@ -191,29 +191,33 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
   `],
 })
 export class HomeLatestWritingSectionComponent {
-  private readonly blogRepository = inject(BlogRepositoryService);
+  @Input() heading = 'Latest writing';
+  @Input() startIndex = 0;
+  @Input() maxPosts = 3;
+  @Input() featuredFirst = true;
+
+  private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
-  protected readonly allPublishedPosts = toSignal(
-    this.blogRepository.getPublishedPosts$(),
-    {initialValue: []}
-  );
+  protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
   );
   protected readonly publishedPosts = computed(() => {
-    const posts = this.allPublishedPosts();
+    const posts = this.allPublishedPosts()
+      .slice(Math.max(0, this.startIndex));
     const featuredPost = posts.find(post => post.featured);
+    const maxPosts = Math.max(0, this.maxPosts);
 
-    if (!featuredPost) {
-      return posts.slice(0, 3);
+    if (!this.featuredFirst || !featuredPost) {
+      return posts.slice(0, maxPosts);
     }
 
     return [
       featuredPost,
       ...posts.filter(post => post.id !== featuredPost.id),
-    ].slice(0, 3);
+    ].slice(0, maxPosts);
   });
   protected readonly topicByPostId = computed(() => {
     const topics = this.topicHubs();
@@ -225,12 +229,12 @@ export class HomeLatestWritingSectionComponent {
       ])
     );
   });
-  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly blogIsReady = this.blogPostFeed.isReady;
+  protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
 
   protected postImage(post: BlogPostSummary): string {
-    return post.thumbnailImage?.trim() || post.coverImage;
+    return getPostImage(post);
   }
 
   protected postTopic(post: BlogPostSummary): TopicHub | null {

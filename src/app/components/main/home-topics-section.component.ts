@@ -2,9 +2,9 @@ import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/cor
 import {toSignal} from '@angular/core/rxjs-interop';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {TopicKnowledgeMapComponent} from '../../features/topics/components/topic-knowledge-map/topic-knowledge-map.component';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
+import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postMatchesHubTerms} from './home-blog-section.utils';
 
 @Component({
@@ -22,13 +22,10 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
   `,
 })
 export class HomeTopicsSectionComponent {
-  private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
-  protected readonly allPublishedPosts = toSignal(
-    this.blogRepository.getPublishedPosts$(),
-    {initialValue: []}
-  );
+  protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}

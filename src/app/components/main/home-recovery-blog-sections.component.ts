@@ -8,9 +8,9 @@ import {
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
 import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
-import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
+import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postMatchesHubTerms, postMatchesTerms} from './home-blog-section.utils';
 
 const WEEKLY_UPDATES_TERMS = [
@@ -60,7 +60,7 @@ const MEDICAL_INFORMATION_TERMS = [
             <p class="mt-2 text-sm">{{ error }}</p>
           </div>
         } @else {
-          @defer (when !blogIsLoading()) {
+          @defer (when blogIsReady()) {
             <div class="site-divided-list">
               @for (post of healthRecoveryPosts(); track post.id) {
                 <app-blog-post-card
@@ -112,7 +112,7 @@ const MEDICAL_INFORMATION_TERMS = [
           <p class="mt-2 text-sm">{{ error }}</p>
         </div>
       } @else {
-        @defer (when !blogIsLoading()) {
+        @defer (when blogIsReady()) {
           <div class="site-divided-list">
             @for (post of medicalInfoPosts(); track post.id) {
               <app-blog-post-card
@@ -141,13 +141,10 @@ const MEDICAL_INFORMATION_TERMS = [
   `,
 })
 export class HomeRecoveryBlogSectionsComponent {
-  private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
-  protected readonly allPublishedPosts = toSignal(
-    this.blogRepository.getPublishedPosts$(),
-    {initialValue: []}
-  );
+  protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
@@ -168,8 +165,8 @@ export class HomeRecoveryBlogSectionsComponent {
       ])
     );
   });
-  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly blogIsReady = this.blogPostFeed.isReady;
+  protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
 
   protected postTopic(post: BlogPostSummary): TopicHub | null {

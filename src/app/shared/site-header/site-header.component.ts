@@ -5,6 +5,7 @@ import {PATH_NAMES} from '../../app-route-paths';
 import {SiteSearchDrawerComponent} from '../../features/search/components/site-search-drawer.component';
 import {SiteAuthControlsComponent} from './site-auth-controls.component';
 import {SiteThemeService} from '../theme/site-theme.service';
+import {SiteLogoComponent} from './site-logo.component';
 
 interface SiteNavItem {
   label: string;
@@ -19,23 +20,22 @@ interface SiteNavItem {
     RouterLinkActive,
     SiteSearchDrawerComponent,
     SiteAuthControlsComponent,
+    SiteLogoComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <header
       class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100">
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <a
           routerLink="/"
           class="group min-w-0"
           aria-label="Go to homepage"
           (click)="closeMenu()"
         >
-          <h1
-            class="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 transition-colors group-hover:text-cyan-700 dark:text-zinc-500 dark:group-hover:text-cyan-300">
-            Colin Michaels
+          <h1 class="block w-56 sm:w-72 lg:w-80">
+            <app-site-logo/>
           </h1>
-
         </a>
 
         <nav class="hidden items-center gap-1 md:flex" aria-label="Primary navigation">

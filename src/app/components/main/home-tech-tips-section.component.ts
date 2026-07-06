@@ -1,12 +1,11 @@
 import {DatePipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
-import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {createBlogCategorySlug} from '../../features/blog/utils/blog-category-url.util';
+import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postHasTaxonomyTerm} from './home-blog-section.utils';
 
 const TECH_TIPS_CATEGORY = 'Tech Tips';
@@ -59,8 +58,8 @@ const TECH_TIPS_QUICK_LINKS = [
             <p class="mt-2 text-sm">{{ error }}</p>
           </div>
         } @else {
-          @defer (when !blogIsLoading()) {
-            <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-stretch">
+          @defer (when blogIsReady()) {
+            <div class="mt-4 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-stretch">
               <article class="site-card overflow-hidden bg-zinc-950 text-zinc-50 dark:bg-black">
                 <a
                   [routerLink]="['/', pathNames.BLOG, 'category', techTipsCategorySlug]"
@@ -95,15 +94,6 @@ const TECH_TIPS_QUICK_LINKS = [
               </article>
 
               <aside class="site-card site-card-body flex flex-col gap-6">
-                <div>
-                  <p class="site-meta">About the series</p>
-                  <p class="mt-3 text-body">
-                    This will collect clear how-to posts, setup notes, and field-tested ideas for working with modern
-                    technology. The first subcategory is Artificial Intelligence, focused on practical ways to use AI
-                    in day-to-day projects.
-                  </p>
-                </div>
-
                 <nav aria-label="Tech Tips subcategories" class="grid gap-3">
                   @for (link of techTipsQuickLinks(); track link.category) {
                     <a
@@ -244,12 +234,9 @@ const TECH_TIPS_QUICK_LINKS = [
   `],
 })
 export class HomeTechTipsSectionComponent {
-  private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly blogPostFeed = inject(HomeBlogPostFeedService);
 
-  protected readonly allPublishedPosts = toSignal(
-    this.blogRepository.getPublishedPosts$(),
-    {initialValue: []}
-  );
+  protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
   protected readonly techTipsPosts = computed(() => (
     this.allPublishedPosts().filter(post => postHasTaxonomyTerm(post, [TECH_TIPS_CATEGORY]))
   ));
@@ -270,8 +257,8 @@ export class HomeTechTipsSectionComponent {
 
     return featuredPost ? this.postImage(featuredPost) : TECH_TIPS_SERIES_IMAGE;
   });
-  protected readonly blogIsLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly blogLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
+  protected readonly blogIsReady = this.blogPostFeed.isReady;
+  protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
   protected readonly techTipsCategorySlug = createBlogCategorySlug(TECH_TIPS_CATEGORY);
 

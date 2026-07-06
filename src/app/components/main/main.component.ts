@@ -1,5 +1,5 @@
-import {NgClass, NgOptimizedImage} from '@angular/common';
-import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
+import {NgClass} from '@angular/common';
+import {Component, ChangeDetectionStrategy, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
@@ -9,6 +9,10 @@ import {PATH_NAMES} from '../../app-route-paths';
 import {
   BlogPostCardSkeletonComponent
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
+import {
+  HOME_ARTICLE_HERO_POST_LIMIT,
+  HomeArticleHeroComponent
+} from './home-article-hero.component';
 import {HomeLatestWritingSectionComponent} from './home-latest-writing-section.component';
 import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
 import {HomeTechTipsSectionComponent} from './home-tech-tips-section.component';
@@ -16,7 +20,6 @@ import {HomeTopicsSectionComponent} from './home-topics-section.component';
 import {
   YouTubeLatestVideosComponent
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
-import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {AuthorBioComponent} from '../../shared/author/author-bio.component';
 import {SocialsComponent} from './socials/socials.component';
 import {
@@ -38,12 +41,12 @@ interface HomeHighlight {
     AuthorBioComponent,
     BlogPostCardSkeletonComponent,
     FaIconComponent,
+    HomeArticleHeroComponent,
     HomeLatestWritingSectionComponent,
     HomeRecoveryBlogSectionsComponent,
     HomeTechTipsSectionComponent,
     HomeTopicsSectionComponent,
     NgClass,
-    NgOptimizedImage,
     RouterLink,
     SocialsComponent,
     YouTubeLatestVideosComponent,
@@ -54,14 +57,7 @@ interface HomeHighlight {
   styleUrl: `./home-page.scss`
 })
 export class MainComponent {
-  protected readonly theme = inject(SiteThemeService);
   private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);
-  protected readonly heroBackgroundImage = computed(() => (
-    this.theme.isDark() ? '/assets/images/backgrounds/night.webp' : '/assets/images/backgrounds/day.webp'
-  ));
-  protected readonly heroBackgroundAlt = computed(() => (
-    this.theme.isDark() ? 'Night aerial landscape background' : 'Day aerial landscape background'
-  ));
 
   protected readonly recommendedSites = toSignal(
     this.recommendedLinkRepository.getFeaturedRecommendedLinks$(),
@@ -88,5 +84,6 @@ export class MainComponent {
   ];
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly heroPostCount = HOME_ARTICLE_HERO_POST_LIMIT;
   protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
 }
