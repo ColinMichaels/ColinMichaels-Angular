@@ -68,7 +68,7 @@
   --site-accent-soft: rgb(var(--topic-ai-rgb) / 0.12);
 }
 
-.topic-theme-recovery {
+.topic-theme-hospital {
   --site-accent: var(--topic-recovery);
   --site-accent-strong: var(--topic-recovery-ink);
   --site-accent-rgb: var(--topic-recovery-rgb);
@@ -82,7 +82,7 @@
   --site-accent-soft: rgb(var(--topic-architecture-rgb) / 0.12);
 }
 
-.topic-theme-labs {
+.topic-theme-labs, .topic-theme-recovery {
   --site-accent: var(--topic-labs);
   --site-accent-strong: var(--topic-labs-ink);
   --site-accent-rgb: var(--topic-labs-rgb);

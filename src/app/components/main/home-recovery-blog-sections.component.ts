@@ -12,6 +12,7 @@ import {TopicHubRepositoryService} from '../../features/topics/services/topic-hu
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postMatchesHubTerms, postMatchesTerms} from './home-blog-section.utils';
+import {JsonPipe} from '@angular/common';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -31,6 +32,7 @@ const MEDICAL_INFORMATION_TERMS = [
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
     RouterLink,
+    JsonPipe,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -88,7 +90,9 @@ const MEDICAL_INFORMATION_TERMS = [
       </div>
     </section>
 
-    <section id="medical-information" class="site-section site-section-theme-soft topic-theme-recovery home-medical-section">
+    <section id="medical-information"
+             class="site-section-band site-section-theme-soft topic-theme-hospital home-medical-section">
+      <div class="site-section-inner">
       <div class="site-section-header">
         <div>
           <p class="eyebrow eyebrow-topic">Things I learned in the Hospital</p>
@@ -137,6 +141,7 @@ const MEDICAL_INFORMATION_TERMS = [
           </div>
         }
       }
+      </div>
     </section>
   `,
 })

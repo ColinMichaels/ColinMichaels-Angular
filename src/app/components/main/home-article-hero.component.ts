@@ -14,7 +14,7 @@ import {postImage, postMatchesHubTerms} from './home-blog-section.utils';
 const HERO_BACKGROUND_IMAGE = '/assets/images/backgrounds/colinmichaels-hero-background.webp';
 export const HOME_ARTICLE_HERO_POST_LIMIT = 1;
 const HERO_POST_LIMIT = HOME_ARTICLE_HERO_POST_LIMIT;
-const HERO_POST_EXCERPT_MAX_LENGTH = 118;
+const HERO_POST_EXCERPT_MAX_LENGTH = 318;
 const DEFAULT_TOPIC_ACCENT = '#22d3ee';
 const DEFAULT_TOPIC_ACCENT_STRONG = '#67e8f9';
 const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
