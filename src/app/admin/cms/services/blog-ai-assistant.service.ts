@@ -307,13 +307,13 @@ export class BlogAiAssistantService {
       {
         id: 'thumbnail-1',
         style: 'Editorial technical illustration',
-        prompt: `Create a clean editorial thumbnail for a blog post about ${topicPhrase}. Use abstract interface panels, subtle code textures, and a professional ${categoryPhrase} mood. Avoid text in the image.`,
+        prompt: `Create a clean 16:9 editorial thumbnail for a blog post about ${topicPhrase}. Use abstract interface panels, subtle code textures, and a professional ${categoryPhrase} mood. Avoid text in the image.`,
         altText: `Abstract technical illustration representing ${topicPhrase}.`,
       },
       {
         id: 'thumbnail-2',
         style: 'Minimal product UI composition',
-        prompt: `Generate a modern product-style hero image for ${topicPhrase}. Show layered browser cards and metadata chips inspired by ${tagPhrase}. Keep the composition minimal and high contrast. Avoid logos and readable text.`,
+        prompt: `Generate a modern 16:9 product-style hero image for ${topicPhrase}. Show layered browser cards and metadata chips inspired by ${tagPhrase}. Keep the composition minimal and high contrast. Avoid logos and readable text.`,
         altText: `Layered UI cards suggesting ${summary.toLowerCase()}`,
       },
     ];

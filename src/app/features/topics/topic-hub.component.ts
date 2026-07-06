@@ -46,11 +46,32 @@ function normalizeSearchValue(value: string): string {
               <h1>{{ hub().title }}</h1>
               <p>{{ hub().summary }}</p>
               <div class="topic-hub-actions">
-                <a href="#topic-start-here" class="topic-hub-action-primary">
-                  Start here <span aria-hidden="true">-&gt;</span>
+                <a
+                  [attr.href]="topicSectionHref('topic-start-here')"
+                  class="topic-hub-action-primary"
+                  (click)="handleTopicSectionClick($event, 'topic-start-here')"
+                >
+                  Start here
+                  <span class="topic-hub-link-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M12 5v14"></path>
+                      <path d="M7 14l5 5 5-5"></path>
+                    </svg>
+                  </span>
                 </a>
-                <a href="#topic-latest" class="topic-hub-action-secondary">
-                  Latest articles <span aria-hidden="true">-&gt;</span>
+                <a
+                  [attr.href]="topicSectionHref('topic-latest')"
+                  class="topic-hub-action-secondary"
+                  (click)="handleTopicSectionClick($event, 'topic-latest')"
+                >
+                  Latest articles
+                  <span class="topic-hub-link-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M6 6h12"></path>
+                      <path d="M6 12h12"></path>
+                      <path d="M6 18h8"></path>
+                    </svg>
+                  </span>
                 </a>
               </div>
 
@@ -60,9 +81,8 @@ function normalizeSearchValue(value: string): string {
               </section>
             </div>
 
-            <aside class="topic-hub-illustration" aria-label="Future hero illustration placeholder">
-              <!-- Future Hero Illustration -->
-              <div class="topic-hub-frame-label">16:9 frame / future hero illustration</div>
+            <aside class="topic-hub-illustration" [attr.aria-label]="hub().theme.shortLabel + ' topic map'">
+              <div class="topic-hub-frame-label">{{ hub().theme.shortLabel }} field guide</div>
               <svg viewBox="0 0 720 405" aria-hidden="true" focusable="false">
                 <path class="topic-hub-frame-path" d="M86 126h182v92H86z"></path>
                 <path class="topic-hub-frame-path" d="M452 80h154v70H452z"></path>
@@ -104,18 +124,51 @@ function normalizeSearchValue(value: string): string {
             <span>{{ hub().featuredProject.label }}</span>
             <h2 id="topic-featured-heading">{{ hub().featuredProject.title }}</h2>
             <p>{{ hub().featuredProject.description }}</p>
-            <a [href]="hub().featuredProject.href">
-              {{ hub().featuredProject.ctaLabel }} <span aria-hidden="true">-&gt;</span>
+            <a
+              [attr.href]="hub().featuredProject.href"
+              class="topic-hub-featured-cta"
+              (click)="handleInternalHrefClick($event, hub().featuredProject.href)"
+            >
+              {{ hub().featuredProject.ctaLabel }}
+              <span class="topic-hub-link-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 17L17 7"></path>
+                  <path d="M9 7h8v8"></path>
+                </svg>
+              </span>
             </a>
           </div>
-          <div class="topic-hub-featured-map" aria-hidden="true">
-            <div class="topic-hub-featured-tree">
-              <span>{{ hub().slug }}/</span>
-              <span>README.md</span>
-              <span>checklist.md</span>
-              <span>resources/</span>
-              <span>learning-path.md</span>
-            </div>
+          <div class="topic-hub-featured-map">
+            <nav class="topic-hub-featured-tree" aria-label="Topic guide shortcuts">
+              <a
+                [attr.href]="topicSectionHref('topic-start-here')"
+                (click)="handleTopicSectionClick($event, 'topic-start-here')"
+              >
+                <span>01</span>
+                <strong>Start checklist</strong>
+              </a>
+              <a
+                [attr.href]="topicBlogHref()"
+                (click)="handleInternalHrefClick($event, topicBlogHref())"
+              >
+                <span>02</span>
+                <strong>Filtered posts</strong>
+              </a>
+              <a
+                [attr.href]="topicSectionHref('topic-learning')"
+                (click)="handleTopicSectionClick($event, 'topic-learning')"
+              >
+                <span>03</span>
+                <strong>Learning path</strong>
+              </a>
+              <a
+                [attr.href]="topicSectionHref('topic-reference')"
+                (click)="handleTopicSectionClick($event, 'topic-reference')"
+              >
+                <span>04</span>
+                <strong>Reference links</strong>
+              </a>
+            </nav>
             <div class="topic-hub-featured-icon">
               <ng-container [ngTemplateOutlet]="topicGlyph" [ngTemplateOutletContext]="{$implicit: hub()}"></ng-container>
             </div>
@@ -126,9 +179,22 @@ function normalizeSearchValue(value: string): string {
           <div class="topic-hub-section-heading topic-hub-section-heading-row">
             <div>
               <span>Latest articles</span>
-              <h2 id="topic-latest-heading">Posts in this topic</h2>
+              <h2 id="topic-latest-heading">{{ hub().theme.shortLabel }} Posts</h2>
             </div>
-            <a [routerLink]="['/', pathNames.BLOG]">View all articles <span aria-hidden="true">-&gt;</span></a>
+            <a
+              [routerLink]="['/', pathNames.BLOG]"
+              [queryParams]="{topic: hub().slug}"
+              class="topic-hub-action-secondary"
+            >
+              View all articles
+              <span class="topic-hub-link-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6 6h12"></path>
+                  <path d="M6 12h12"></path>
+                  <path d="M6 18h8"></path>
+                </svg>
+              </span>
+            </a>
           </div>
 
           @if (loadError(); as error) {
@@ -146,14 +212,21 @@ function normalizeSearchValue(value: string): string {
             <div class="topic-hub-article-list">
               @for (post of topicPosts(); track post.id) {
                 <a [routerLink]="['/', pathNames.BLOG, post.slug]" class="topic-hub-article-row">
-                  <span class="topic-hub-article-icon" aria-hidden="true"></span>
-                  <span class="topic-hub-article-title">{{ post.title }}</span>
-                  <span class="topic-hub-article-excerpt">{{ post.excerpt }}</span>
-                  <span class="topic-hub-article-meta">
-                    {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
-                    <span aria-hidden="true">/</span>
-                    {{ primaryPostCategory(post) }}
-                    <span aria-hidden="true">-&gt;</span>
+                  <span class="topic-hub-article-media" aria-hidden="true">
+                    <img
+                      [src]="postImage(post)"
+                      alt=""
+                      loading="lazy"
+                    >
+                  </span>
+                  <span class="topic-hub-article-body">
+                    <span class="topic-hub-article-title">{{ post.title }}</span>
+                    <span class="topic-hub-article-excerpt">{{ post.excerpt }}</span>
+                    <span class="topic-hub-article-meta">
+                      {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
+                      <span aria-hidden="true">/</span>
+                      {{ primaryPostCategory(post) }}
+                    </span>
                   </span>
                 </a>
               } @empty {
@@ -166,7 +239,7 @@ function normalizeSearchValue(value: string): string {
           }
         </section>
 
-        <section class="topic-hub-section" aria-labelledby="topic-learning-heading">
+        <section id="topic-learning" class="topic-hub-section" aria-labelledby="topic-learning-heading">
           <div class="topic-hub-section-heading">
             <span>Learning path</span>
             <h2 id="topic-learning-heading">A practical order for the topic</h2>
@@ -201,13 +274,17 @@ function normalizeSearchValue(value: string): string {
                   <span class="topic-hub-related-title">{{ relatedHub.theme.shortLabel }}</span>
                   <span class="topic-hub-related-copy">{{ relatedHub.description }}</span>
                 </span>
-                <span class="topic-hub-related-arrow" aria-hidden="true">-&gt;</span>
+                <span class="topic-hub-related-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </span>
               </a>
             }
           </div>
         </section>
 
-        <aside class="topic-hub-reference" aria-labelledby="topic-reference-heading">
+        <aside id="topic-reference" class="topic-hub-reference" aria-labelledby="topic-reference-heading">
           <div>
             <span>Quick reference</span>
             <h2 id="topic-reference-heading">Checklist</h2>
@@ -219,9 +296,19 @@ function normalizeSearchValue(value: string): string {
           </ul>
           <div class="topic-hub-resource-grid">
             @for (resource of hub().resources; track resource.href) {
-              <a [href]="resource.href">
-                <strong>{{ resource.label }}</strong>
-                <span>{{ resource.description }}</span>
+              <a
+                [attr.href]="resource.href"
+                (click)="handleInternalHrefClick($event, resource.href)"
+              >
+                <span class="topic-hub-resource-copy">
+                  <strong>{{ resource.label }}</strong>
+                  <span class="topic-hub-resource-description">{{ resource.description }}</span>
+                </span>
+                <span class="topic-hub-related-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </span>
               </a>
             }
           </div>
@@ -354,7 +441,7 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-actions a,
-    .topic-hub-featured a,
+    .topic-hub-featured-cta,
     .topic-hub-section-heading-row a {
       display: inline-flex;
       align-items: center;
@@ -375,20 +462,39 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-action-secondary,
-    .topic-hub-featured a,
+    .topic-hub-featured-cta,
     .topic-hub-section-heading-row a {
       background: rgba(2, 6, 23, 0.38);
     }
 
     .topic-hub-actions a:hover,
     .topic-hub-actions a:focus-visible,
-    .topic-hub-featured a:hover,
-    .topic-hub-featured a:focus-visible,
+    .topic-hub-featured-cta:hover,
+    .topic-hub-featured-cta:focus-visible,
     .topic-hub-section-heading-row a:hover,
     .topic-hub-section-heading-row a:focus-visible {
       border-color: var(--topic-accent-strong);
       background: rgb(var(--topic-accent-rgb) / 0.16);
       color: #f8fafc !important;
+    }
+
+    .topic-hub-link-icon {
+      display: inline-grid;
+      width: 1.05rem;
+      height: 1.05rem;
+      flex: 0 0 auto;
+      place-items: center;
+    }
+
+    .topic-hub-link-icon svg,
+    .topic-hub-related-arrow svg {
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.15;
     }
 
     .topic-hub-intro {
@@ -502,6 +608,10 @@ function normalizeSearchValue(value: string): string {
       padding-block: 2.4rem;
     }
 
+    .topic-hub-section[id] {
+      scroll-margin-top: 5.5rem;
+    }
+
     .topic-hub-section-heading {
       display: grid;
       gap: 0.65rem;
@@ -509,14 +619,11 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-section-heading-row {
-      max-width: none;
-    }
-
-    .topic-hub-section-heading-row {
       display: flex;
       align-items: end;
       justify-content: space-between;
       gap: 1rem;
+      max-width: none;
     }
 
     .topic-hub-step-grid,
@@ -588,7 +695,7 @@ function normalizeSearchValue(value: string): string {
       max-width: 36rem;
     }
 
-    .topic-hub-featured a {
+    .topic-hub-featured-cta {
       width: fit-content;
       margin-top: 1.2rem;
     }
@@ -609,18 +716,14 @@ function normalizeSearchValue(value: string): string {
 
     .topic-hub-featured-tree {
       display: grid;
-      gap: 0.35rem;
+      gap: 0.45rem;
       color: rgba(226, 232, 240, 0.72);
       font-family: var(--font-accent);
-      font-size: 0.85rem;
     }
 
-    .topic-hub-featured-tree span:not(:first-child) {
-      padding-left: 1rem;
-    }
-
-    .topic-hub-featured-tree span:first-child {
-      color: var(--topic-accent-strong);
+    .topic-hub-featured-tree a {
+      color: inherit;
+      text-decoration: none;
     }
 
     .topic-hub-featured-icon {
@@ -648,9 +751,9 @@ function normalizeSearchValue(value: string): string {
 
     .topic-hub-article-row {
       display: grid;
-      grid-template-columns: auto minmax(10rem, 1fr) minmax(0, 1.4fr) auto;
-      gap: 1rem;
-      align-items: center;
+      grid-template-columns: clamp(10rem, 18vw, 13rem) minmax(0, 1fr);
+      gap: 1.1rem;
+      align-items: start;
       border-bottom: 1px solid rgba(148, 163, 184, 0.16);
       color: inherit;
       padding-block: 1rem;
@@ -663,24 +766,44 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-article-row:focus-visible,
+    .topic-hub-featured-tree a:focus-visible,
     .topic-hub-related-card:focus-visible,
     .topic-hub-resource-grid a:focus-visible {
       outline: 2px solid var(--topic-accent-strong);
       outline-offset: 0.2rem;
     }
 
-    .topic-hub-article-icon {
-      width: 1rem;
-      height: 1.2rem;
-      border: 1px solid var(--topic-accent);
-      border-radius: 0.12rem;
-      box-shadow: inset 0.25rem 0 0 rgb(var(--topic-accent-rgb) / 0.16);
+    .topic-hub-article-media {
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid rgb(var(--topic-accent-rgb) / 0.32);
+      background: linear-gradient(135deg, rgb(var(--topic-accent-rgb) / 0.12), rgba(2, 6, 23, 0.68));
+    }
+
+    .topic-hub-article-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.82;
+      transition: transform 220ms ease;
+    }
+
+    .topic-hub-article-row:hover .topic-hub-article-media img {
+      transform: scale(1.035);
+    }
+
+    .topic-hub-article-body {
+      display: grid;
+      gap: 0.45rem;
+      min-width: 0;
     }
 
     .topic-hub-article-title {
       color: #f8fafc;
       font-family: var(--font-subheading);
+      font-size: 1.08rem;
       font-weight: 600;
+      line-height: 1.3;
       transition: color 180ms ease;
     }
 
@@ -692,11 +815,11 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-article-meta {
-      white-space: nowrap;
+      font-family: var(--font-accent);
     }
 
     .topic-hub-article-skeleton {
-      height: 4.2rem;
+      height: 8rem;
       border-bottom: 1px solid rgba(148, 163, 184, 0.14);
       background: linear-gradient(90deg, rgba(148, 163, 184, 0.05), rgb(var(--topic-accent-rgb) / 0.12), rgba(148, 163, 184, 0.05));
       background-size: 220% 100%;
@@ -778,9 +901,11 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-related-arrow {
+      display: grid;
+      width: 1.3rem;
+      height: 1.3rem;
+      place-items: center;
       color: var(--topic-accent);
-      font-family: var(--font-accent);
-      font-weight: 700;
     }
 
     .topic-hub-reference {
@@ -809,23 +934,26 @@ function normalizeSearchValue(value: string): string {
     }
 
     .topic-hub-resource-grid a {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.8rem;
+      align-items: center;
       border: 1px solid rgba(148, 163, 184, 0.2);
       color: inherit;
       padding: 0.9rem;
       text-decoration: none;
     }
 
-    .topic-hub-resource-grid strong,
-    .topic-hub-resource-grid span {
+    .topic-hub-resource-grid a:hover,
+    .topic-hub-resource-grid a:focus-visible {
+      border-color: var(--topic-accent);
+    }
+
+    .topic-hub-resource-description {
       display: block;
     }
 
-    .topic-hub-resource-grid strong {
-      color: #f8fafc;
-      font-family: var(--font-subheading);
-    }
-
-    .topic-hub-resource-grid span {
+    .topic-hub-resource-description {
       margin-top: 0.3rem;
       color: rgba(226, 232, 240, 0.62);
       font-size: 0.9rem;
@@ -890,8 +1018,7 @@ function normalizeSearchValue(value: string): string {
     :host-context(.light) .topic-hub-step-grid h3,
     :host-context(.light) .topic-hub-learning-path h3,
     :host-context(.light) .topic-hub-state-panel h3,
-    :host-context(.light) .topic-hub-article-title,
-    :host-context(.light) .topic-hub-resource-grid strong {
+    :host-context(.light) .topic-hub-article-title {
       color: #0f172a;
     }
 
@@ -905,14 +1032,14 @@ function normalizeSearchValue(value: string): string {
     :host-context(.light) .topic-hub-article-meta,
     :host-context(.light) .topic-hub-related-copy,
     :host-context(.light) .topic-hub-reference li,
-    :host-context(.light) .topic-hub-resource-grid span,
+    :host-context(.light) .topic-hub-resource-description,
     :host-context(.light) .topic-hub-disclaimer,
     :host-context(.light) .topic-hub-state-panel p {
       color: rgba(51, 65, 85, 0.78);
     }
 
     :host-context(.light) .topic-hub-actions a,
-    :host-context(.light) .topic-hub-featured a,
+    :host-context(.light) .topic-hub-featured-cta,
     :host-context(.light) .topic-hub-section-heading-row a {
       color: #0f172a;
     }
@@ -922,15 +1049,15 @@ function normalizeSearchValue(value: string): string {
     }
 
     :host-context(.light) .topic-hub-action-secondary,
-    :host-context(.light) .topic-hub-featured a,
+    :host-context(.light) .topic-hub-featured-cta,
     :host-context(.light) .topic-hub-section-heading-row a {
       background: rgba(255, 255, 255, 0.72);
     }
 
     :host-context(.light) .topic-hub-actions a:hover,
     :host-context(.light) .topic-hub-actions a:focus-visible,
-    :host-context(.light) .topic-hub-featured a:hover,
-    :host-context(.light) .topic-hub-featured a:focus-visible,
+    :host-context(.light) .topic-hub-featured-cta:hover,
+    :host-context(.light) .topic-hub-featured-cta:focus-visible,
     :host-context(.light) .topic-hub-section-heading-row a:hover,
     :host-context(.light) .topic-hub-section-heading-row a:focus-visible {
       background: rgb(var(--topic-accent-rgb) / 0.14);
@@ -974,6 +1101,11 @@ function normalizeSearchValue(value: string): string {
       border-bottom-color: rgba(15, 23, 42, 0.1);
     }
 
+    :host-context(.light) .topic-hub-article-media {
+      border-color: rgb(var(--topic-accent-rgb) / 0.28);
+      background: linear-gradient(135deg, rgb(var(--topic-accent-rgb) / 0.1), rgba(255, 255, 255, 0.78));
+    }
+
     :host-context(.light) .topic-hub-article-skeleton {
       border-bottom-color: rgba(15, 23, 42, 0.08);
       background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgb(var(--topic-accent-rgb) / 0.12), rgba(255, 255, 255, 0.3));
@@ -1015,12 +1147,7 @@ function normalizeSearchValue(value: string): string {
       }
 
       .topic-hub-article-row {
-        grid-template-columns: auto minmax(0, 1fr);
-      }
-
-      .topic-hub-article-excerpt,
-      .topic-hub-article-meta {
-        grid-column: 2;
+        grid-template-columns: minmax(6.75rem, 8.25rem) minmax(0, 1fr);
       }
     }
 
@@ -1031,8 +1158,11 @@ function normalizeSearchValue(value: string): string {
       }
 
       .topic-hub-actions a,
+      .topic-hub-featured-cta,
       .topic-hub-related-card,
-      .topic-hub-article-title {
+      .topic-hub-resource-grid a,
+      .topic-hub-article-title,
+      .topic-hub-article-media img {
         transition: none;
       }
     }
@@ -1111,6 +1241,43 @@ export class TopicHubComponent {
     return post.categories[0] ?? post.subcategories?.[0] ?? 'Article';
   }
 
+  protected postImage(post: BlogPostSummary): string {
+    return post.thumbnailImage?.trim() || post.coverImage;
+  }
+
+  protected topicSectionHref(fragment: string): string {
+    return `/${this.pathNames.TOPICS}/${this.hub().slug}#${fragment}`;
+  }
+
+  protected topicBlogHref(): string {
+    return `/${this.pathNames.BLOG}?topic=${this.hub().slug}`;
+  }
+
+  protected handleTopicSectionClick(event: MouseEvent, fragment: string): void {
+    if (!this.isPrimaryNavigationClick(event)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    void this.router.navigate(
+      ['/', this.pathNames.TOPICS, this.hub().slug],
+      {fragment}
+    ).then(() => this.scrollToTopicSection(fragment));
+  }
+
+  protected handleInternalHrefClick(event: MouseEvent, href: string): void {
+    const routerHref = this.toInternalRouterHref(href);
+
+    if (!this.isPrimaryNavigationClick(event) || !routerHref) {
+      return;
+    }
+
+    event.preventDefault();
+
+    void this.router.navigateByUrl(routerHref).then(() => this.scrollToFragmentFromHref(routerHref));
+  }
+
   private postMatchesHub(post: BlogPostSummary): boolean {
     const searchableText = normalizeSearchValue([
       post.title,
@@ -1127,6 +1294,71 @@ export class TopicHubComponent {
       return normalizedTerm.includes(' ')
         ? searchableText.includes(normalizedTerm)
         : searchableTokens.includes(normalizedTerm);
+    });
+  }
+
+  private isPrimaryNavigationClick(event: MouseEvent): boolean {
+    return event.button === 0
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.shiftKey
+      && !event.altKey;
+  }
+
+  private scrollToFragmentFromHref(href: string): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const fragment = new URL(href, window.location.origin).hash.slice(1);
+
+    if (fragment) {
+      this.scrollToTopicSection(fragment);
+    }
+  }
+
+  private toInternalRouterHref(href: string): string | null {
+    if (href.startsWith('/')) {
+      return href;
+    }
+
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    let url: URL;
+
+    try {
+      url = new URL(href, window.location.origin);
+    } catch {
+      return null;
+    }
+
+    const hostname = url.hostname.replace(/^www\./, '');
+
+    if (url.origin === window.location.origin || hostname === 'colinmichaels.com') {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    return null;
+  }
+
+  private scrollToTopicSection(fragment: string): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const target = document.getElementById(fragment);
+
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      });
     });
   }
 }

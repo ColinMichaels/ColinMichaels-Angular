@@ -152,6 +152,12 @@ function getErrorMessage(error: unknown): string {
               Topics
             </a>
             <a
+              routerLink="/admin/cms/recommended-links"
+              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+            >
+              Recommended Links
+            </a>
+            <a
               routerLink="/admin/cms/media-library"
               class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
             >
@@ -325,7 +331,7 @@ function getErrorMessage(error: unknown): string {
                 </td>
                 <td class="px-4 py-4">
                   <span
-                    class="grid h-16 w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
+                    class="grid aspect-[16/9] w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
                     <img
                       [src]="row.post.thumbnailImage || row.post.coverImage"
                       [alt]="row.post.title + ' thumbnail'"

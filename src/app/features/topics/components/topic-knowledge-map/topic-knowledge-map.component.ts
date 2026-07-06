@@ -1,11 +1,25 @@
 import {NgStyle, NgTemplateOutlet} from '@angular/common';
-import {ChangeDetectionStrategy, Component, Input, signal} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  Input,
+  NgZone,
+  inject,
+  signal,
+} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {TopicHub} from '../../topic-hubs.data';
 
 export interface TopicKnowledgeMapItem extends TopicHub {
   count: number;
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 @Component({
@@ -48,6 +62,7 @@ export interface TopicKnowledgeMapItem extends TopicHub {
               class="topic-map-node"
               [class.topic-map-node-dimmed]="activeSlug() && activeSlug() !== topic.slug"
               [ngStyle]="topicStyle(topic)"
+              [attr.data-topic-depth]="topic.theme.mapPlacement.depth"
               [attr.aria-label]="topicAriaLabel(topic)"
               (mouseenter)="setActive(topic.slug)"
               (mouseleave)="clearActive()"
@@ -134,13 +149,28 @@ export interface TopicKnowledgeMapItem extends TopicHub {
     }
 
     .topic-map-section {
+      --topic-bg-main-x: 50%;
+      --topic-bg-main-y: 46%;
+      --topic-bg-left-x: 12%;
+      --topic-bg-left-y: 36%;
+      --topic-bg-right-x: 76%;
+      --topic-bg-right-y: 62%;
+      --topic-grid-x: 0px;
+      --topic-grid-y: 0px;
+      --topic-orbit-x: 0px;
+      --topic-orbit-y: 0px;
+      --topic-ghost-x: 0px;
+      --topic-ghost-y: 0px;
+      --topic-field-tilt-x: 0deg;
+      --topic-field-tilt-y: 0deg;
+      --topic-field-y: 0px;
       position: relative;
       overflow: hidden;
       border-block: 1px solid rgba(148, 163, 184, 0.18);
       background:
-        radial-gradient(circle at 50% 46%, rgba(14, 165, 233, 0.12), transparent 32rem),
-        radial-gradient(circle at 12% 36%, rgba(45, 212, 191, 0.09), transparent 22rem),
-        radial-gradient(circle at 76% 62%, rgba(96, 165, 250, 0.11), transparent 24rem),
+        radial-gradient(circle at var(--topic-bg-main-x) var(--topic-bg-main-y), rgba(14, 165, 233, 0.12), transparent 32rem),
+        radial-gradient(circle at var(--topic-bg-left-x) var(--topic-bg-left-y), rgba(45, 212, 191, 0.09), transparent 22rem),
+        radial-gradient(circle at var(--topic-bg-right-x) var(--topic-bg-right-y), rgba(96, 165, 250, 0.11), transparent 24rem),
         linear-gradient(180deg, #061017 0%, #07131c 48%, #05090f 100%);
       color: #e5edf4;
       padding-block: 4rem 3.25rem;
@@ -159,6 +189,9 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
       mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
       opacity: 0.88;
+      transform: translate3d(var(--topic-grid-x), var(--topic-grid-y), 0);
+      transition: transform 220ms ease-out;
+      will-change: transform;
     }
 
     .topic-map-section::after {
@@ -168,7 +201,7 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       pointer-events: none;
       background:
         linear-gradient(120deg, transparent 0 44%, rgba(255, 255, 255, 0.032) 45%, transparent 46%),
-        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(0, 0, 0, 0.5) 100%);
+        radial-gradient(circle at var(--topic-bg-main-x) var(--topic-bg-main-y), transparent 0 48%, rgba(0, 0, 0, 0.5) 100%);
       opacity: 0.7;
     }
 
@@ -209,6 +242,12 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       margin-top: 1.25rem;
       perspective: 900px;
       transform-style: preserve-3d;
+      transform:
+        translate3d(0, var(--topic-field-y), 0)
+        rotateX(var(--topic-field-tilt-y))
+        rotateY(var(--topic-field-tilt-x));
+      transition: transform 220ms ease-out;
+      will-change: transform;
     }
 
     .topic-map-orbits {
@@ -216,6 +255,9 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       inset: 0;
       width: 100%;
       height: 100%;
+      transform: translate3d(var(--topic-orbit-x), var(--topic-orbit-y), -64px);
+      transition: transform 220ms ease-out;
+      will-change: transform;
     }
 
     .topic-map-orbit {
@@ -252,7 +294,9 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       border: 1px solid rgba(148, 163, 184, 0.16);
       border-radius: 999px;
       opacity: 0.35;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) translate3d(var(--topic-ghost-x), var(--topic-ghost-y), -84px);
+      transition: transform 240ms ease-out, opacity 180ms ease;
+      will-change: transform;
     }
 
     .topic-map-ghost::before,
@@ -301,6 +345,10 @@ export interface TopicKnowledgeMapItem extends TopicHub {
     .topic-map-node {
       --topic-hover-y: 0px;
       --topic-hover-scale: 1;
+      --topic-node-pan-x: 0px;
+      --topic-node-pan-y: 0px;
+      --topic-icon-pan-x: 0px;
+      --topic-icon-pan-y: 0px;
       position: absolute;
       left: var(--topic-x);
       top: var(--topic-y);
@@ -311,7 +359,7 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       text-decoration: none;
       transform:
         translate(-50%, -50%)
-        translate3d(var(--topic-pan-x), var(--topic-pan-y), var(--topic-z-depth))
+        translate3d(var(--topic-node-pan-x), var(--topic-node-pan-y), var(--topic-z-depth))
         translateY(var(--topic-hover-y))
         scale(var(--topic-scale))
         scale(var(--topic-hover-scale));
@@ -389,6 +437,9 @@ export interface TopicKnowledgeMapItem extends TopicHub {
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-width: 2.25;
+      transform: translate3d(var(--topic-icon-pan-x), var(--topic-icon-pan-y), 0);
+      transition: transform 180ms ease-out;
+      will-change: transform;
     }
 
     .topic-map-node-copy {
@@ -499,9 +550,9 @@ export interface TopicKnowledgeMapItem extends TopicHub {
     :host-context(.light) .topic-map-section {
       border-block-color: rgba(15, 23, 42, 0.12);
       background:
-        radial-gradient(circle at 49% 46%, rgba(14, 165, 233, 0.13), transparent 31rem),
-        radial-gradient(circle at 12% 36%, rgba(20, 184, 166, 0.1), transparent 22rem),
-        radial-gradient(circle at 76% 62%, rgba(96, 165, 250, 0.12), transparent 24rem),
+        radial-gradient(circle at var(--topic-bg-main-x) var(--topic-bg-main-y), rgba(14, 165, 233, 0.13), transparent 31rem),
+        radial-gradient(circle at var(--topic-bg-left-x) var(--topic-bg-left-y), rgba(20, 184, 166, 0.1), transparent 22rem),
+        radial-gradient(circle at var(--topic-bg-right-x) var(--topic-bg-right-y), rgba(96, 165, 250, 0.12), transparent 24rem),
         linear-gradient(180deg, #f8fafc 0%, #eef7fb 50%, #f8fafc 100%);
       color: #0f172a;
     }
@@ -617,7 +668,11 @@ export interface TopicKnowledgeMapItem extends TopicHub {
         animation: none;
       }
 
-      .topic-map-node {
+      .topic-map-field,
+      .topic-map-orbits,
+      .topic-map-ghost,
+      .topic-map-node,
+      .topic-map-orb-core svg {
         transition: none;
       }
     }
@@ -646,11 +701,65 @@ export interface TopicKnowledgeMapItem extends TopicHub {
     }
   `],
 })
-export class TopicKnowledgeMapComponent {
+export class TopicKnowledgeMapComponent implements AfterViewInit {
   @Input({required: true}) topics: readonly TopicKnowledgeMapItem[] = [];
   @Input() topicsPath = 'topics';
 
+  private readonly hostElement = (inject(ElementRef) as ElementRef<HTMLElement>).nativeElement;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly ngZone = inject(NgZone);
   protected readonly activeSlug = signal<string | null>(null);
+  private sectionElement: HTMLElement | null = null;
+  private fieldElement: HTMLElement | null = null;
+  private topicNodeElements: readonly HTMLElement[] = [];
+  private pointerX = 0;
+  private pointerY = 0;
+  private scrollOffset = 0;
+  private pointerInside = false;
+  private animationFrame = 0;
+
+  ngAfterViewInit(): void {
+    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    this.sectionElement = this.hostElement.querySelector<HTMLElement>('.topic-map-section');
+    this.fieldElement = this.hostElement.querySelector<HTMLElement>('.topic-map-field');
+    this.topicNodeElements = Array.from(this.hostElement.querySelectorAll<HTMLElement>('.topic-map-node'));
+
+    if (!this.sectionElement || !this.fieldElement) {
+      return;
+    }
+
+    this.ngZone.runOutsideAngular(() => {
+      const section = this.sectionElement;
+
+      if (!section) {
+        return;
+      }
+
+      const handlePointerMove = (event: PointerEvent) => this.updatePointerPosition(event);
+      const handlePointerLeave = () => this.resetPointerPosition();
+      const handleViewportChange = () => this.updateScrollPosition();
+
+      section.addEventListener('pointermove', handlePointerMove, {passive: true});
+      section.addEventListener('pointerleave', handlePointerLeave);
+      window.addEventListener('scroll', handleViewportChange, {passive: true});
+      window.addEventListener('resize', handleViewportChange);
+      this.updateScrollPosition();
+
+      this.destroyRef.onDestroy(() => {
+        section.removeEventListener('pointermove', handlePointerMove);
+        section.removeEventListener('pointerleave', handlePointerLeave);
+        window.removeEventListener('scroll', handleViewportChange);
+        window.removeEventListener('resize', handleViewportChange);
+
+        if (this.animationFrame) {
+          window.cancelAnimationFrame(this.animationFrame);
+        }
+      });
+    });
+  }
 
   protected setActive(slug: string): void {
     this.activeSlug.set(slug);
@@ -680,6 +789,96 @@ export class TopicKnowledgeMapComponent {
       '--topic-z': String(10 + depth * 10),
       '--topic-z-depth': `${depth * 16}px`,
       '--topic-opacity': opacity.toFixed(2),
+      '--topic-node-pan-x': '0px',
+      '--topic-node-pan-y': '0px',
+      '--topic-icon-pan-x': '0px',
+      '--topic-icon-pan-y': '0px',
     };
+  }
+
+  private updatePointerPosition(event: PointerEvent): void {
+    if (!this.sectionElement) {
+      return;
+    }
+
+    const rect = this.sectionElement.getBoundingClientRect();
+
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+
+    this.pointerInside = true;
+    this.pointerX = clamp(((event.clientX - rect.left) / rect.width) * 2 - 1, -1, 1);
+    this.pointerY = clamp(((event.clientY - rect.top) / rect.height) * 2 - 1, -1, 1);
+    this.scheduleParallaxUpdate();
+  }
+
+  private resetPointerPosition(): void {
+    this.pointerInside = false;
+    this.pointerX = 0;
+    this.pointerY = 0;
+    this.scheduleParallaxUpdate();
+  }
+
+  private updateScrollPosition(): void {
+    if (!this.sectionElement || typeof window === 'undefined') {
+      return;
+    }
+
+    const rect = this.sectionElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+    const sectionCenter = rect.top + rect.height / 2;
+    const viewportCenter = viewportHeight / 2;
+
+    this.scrollOffset = clamp((viewportCenter - sectionCenter) / viewportHeight, -1, 1);
+    this.scheduleParallaxUpdate();
+  }
+
+  private scheduleParallaxUpdate(): void {
+    if (this.animationFrame || typeof window === 'undefined') {
+      return;
+    }
+
+    this.animationFrame = window.requestAnimationFrame(() => {
+      this.animationFrame = 0;
+      this.applyParallaxStyles();
+    });
+  }
+
+  private applyParallaxStyles(): void {
+    if (!this.sectionElement) {
+      return;
+    }
+
+    const pointerStrength = this.pointerInside ? 1 : 0;
+    const pointerX = this.pointerX * pointerStrength;
+    const pointerY = this.pointerY * pointerStrength;
+    const scrollOffset = this.scrollOffset;
+
+    this.sectionElement.style.setProperty('--topic-bg-main-x', '50%');
+    this.sectionElement.style.setProperty('--topic-bg-main-y', `${46 + scrollOffset * 4}%`);
+    this.sectionElement.style.setProperty('--topic-bg-left-x', '12%');
+    this.sectionElement.style.setProperty('--topic-bg-left-y', `${36 - scrollOffset * 3}%`);
+    this.sectionElement.style.setProperty('--topic-bg-right-x', '76%');
+    this.sectionElement.style.setProperty('--topic-bg-right-y', `${62 + scrollOffset * 3}%`);
+    this.sectionElement.style.setProperty('--topic-grid-x', '0px');
+    this.sectionElement.style.setProperty('--topic-grid-y', `${scrollOffset * -18}px`);
+    this.sectionElement.style.setProperty('--topic-orbit-x', `${pointerX * 22}px`);
+    this.sectionElement.style.setProperty('--topic-orbit-y', `${pointerY * 14}px`);
+    this.sectionElement.style.setProperty('--topic-ghost-x', `${pointerX * -28}px`);
+    this.sectionElement.style.setProperty('--topic-ghost-y', `${pointerY * -18}px`);
+    this.sectionElement.style.setProperty('--topic-field-tilt-x', `${pointerX * 2.4}deg`);
+    this.sectionElement.style.setProperty('--topic-field-tilt-y', `${pointerY * -1.8}deg`);
+    this.sectionElement.style.setProperty('--topic-field-y', '0px');
+    this.topicNodeElements = Array.from(this.hostElement.querySelectorAll<HTMLElement>('.topic-map-node'));
+
+    for (const node of this.topicNodeElements) {
+      const depth = Math.max(1, Number(node.dataset['topicDepth']) || 1);
+
+      node.style.setProperty('--topic-node-pan-x', `${pointerX * (8 + depth * 5)}px`);
+      node.style.setProperty('--topic-node-pan-y', `${pointerY * (6 + depth * 4)}px`);
+      node.style.setProperty('--topic-icon-pan-x', `${pointerX * (1.6 + depth * 0.8)}px`);
+      node.style.setProperty('--topic-icon-pan-y', `${pointerY * (1.4 + depth * 0.7)}px`);
+    }
   }
 }
