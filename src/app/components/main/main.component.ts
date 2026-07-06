@@ -1,15 +1,30 @@
-import {NgClass, NgOptimizedImage} from '@angular/common';
-import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
+import {NgClass} from '@angular/common';
+import {Component, ChangeDetectionStrategy, inject} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
+import {FaIconComponent} from '@fortawesome/angular-fontawesome';
+import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {HomeBlogSectionsComponent} from './home-blog-sections.component';
+import {
+  BlogPostCardSkeletonComponent
+} from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
+import {
+  HOME_ARTICLE_HERO_POST_LIMIT,
+  HomeArticleHeroComponent
+} from './home-article-hero.component';
+import {HomeLatestWritingSectionComponent} from './home-latest-writing-section.component';
+import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
+import {HomeTechTipsSectionComponent} from './home-tech-tips-section.component';
+import {HomeTopicsSectionComponent} from './home-topics-section.component';
 import {
   YouTubeLatestVideosComponent
 } from '../../features/youtube/components/latest-videos/youtube-latest-videos.component';
-import {SiteThemeService} from '../../shared/theme/site-theme.service';
 import {AuthorBioComponent} from '../../shared/author/author-bio.component';
 import {SocialsComponent} from './socials/socials.component';
+import {
+  RecommendedLinkRepositoryService
+} from '../../features/recommended-links/services/recommended-link-repository.service';
 
 interface HomeHighlight {
   eyebrow: string;
@@ -20,19 +35,18 @@ interface HomeHighlight {
   accentClass: string;
 }
 
-interface HomeCapability {
-  title: string;
-  description: string;
-  meta: string;
-}
-
 @Component({
   selector: 'app-main',
   imports: [
     AuthorBioComponent,
-    HomeBlogSectionsComponent,
+    BlogPostCardSkeletonComponent,
+    FaIconComponent,
+    HomeArticleHeroComponent,
+    HomeLatestWritingSectionComponent,
+    HomeRecoveryBlogSectionsComponent,
+    HomeTechTipsSectionComponent,
+    HomeTopicsSectionComponent,
     NgClass,
-    NgOptimizedImage,
     RouterLink,
     SocialsComponent,
     YouTubeLatestVideosComponent,
@@ -43,31 +57,12 @@ interface HomeCapability {
   styleUrl: `./home-page.scss`
 })
 export class MainComponent {
-  protected readonly theme = inject(SiteThemeService);
-  protected readonly heroBackgroundImage = computed(() => (
-    this.theme.isDark() ? '/assets/images/backgrounds/night.webp' : '/assets/images/backgrounds/day.webp'
-  ));
-  protected readonly heroBackgroundAlt = computed(() => (
-    this.theme.isDark() ? 'Night aerial landscape background' : 'Day aerial landscape background'
-  ));
+  private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);
 
-  protected readonly capabilities: readonly HomeCapability[] = [
-    {
-      title: 'Public Website',
-      description: 'Portfolio, publishing, media, and project context organized for quick scanning.',
-      meta: 'Home / Blog / Work',
-    },
-    {
-      title: 'Core OS Framework',
-      description: 'Reusable desktop, window, dock, terminal, tooltip, and command systems.',
-      meta: 'Protected OS routes',
-    },
-    {
-      title: 'Labs',
-      description: 'Experimental interaction and visual systems kept separate from production pages.',
-      meta: 'Route-backed experiments',
-    },
-  ];
+  protected readonly recommendedSites = toSignal(
+    this.recommendedLinkRepository.getFeaturedRecommendedLinks$(),
+    {initialValue: this.recommendedLinkRepository.getFeaturedRecommendedLinks()}
+  );
 
   protected readonly labItems: readonly HomeHighlight[] = [
     {
@@ -89,4 +84,6 @@ export class MainComponent {
   ];
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly heroPostCount = HOME_ARTICLE_HERO_POST_LIMIT;
+  protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
 }

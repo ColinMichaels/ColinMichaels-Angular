@@ -21,6 +21,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/topic-manager/topic-manager.component').then(m => m.CmsTopicManagerComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./pages/recommended-links/recommended-links-manager.component').then(m => m.CmsRecommendedLinksManagerComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/new`,
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/post-editor/post-editor.component').then(m => m.CmsPostEditorComponent),

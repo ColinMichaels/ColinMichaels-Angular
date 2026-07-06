@@ -81,6 +81,29 @@ export interface TopicHub {
 
 export const DEFAULT_TOPIC_TIMESTAMP = '2026-07-04T00:00:00.000Z';
 
+export const TOPIC_THEME_COLORS = {
+  ai: {
+    accent: '#22d3ee',
+    accentStrong: '#67e8f9',
+    accentRgb: '34 211 238',
+  },
+  recovery: {
+    accent: '#2dd4bf',
+    accentStrong: '#5eead4',
+    accentRgb: '45 212 191',
+  },
+  architecture: {
+    accent: '#60a5fa',
+    accentStrong: '#93c5fd',
+    accentRgb: '96 165 250',
+  },
+  labs: {
+    accent: '#a78bfa',
+    accentStrong: '#c4b5fd',
+    accentRgb: '167 139 250',
+  },
+} as const;
+
 export const TOPIC_HUBS: readonly TopicHub[] = [
   {
     id: 'topic-ai-setup',
@@ -94,9 +117,7 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     terms: ['ai', 'chatgpt', 'claude', 'copilot', 'gemini', 'prompting', 'ai tools', 'ai workflow', 'productivity'],
     theme: {
       shortLabel: 'AI',
-      accent: '#22d3ee',
-      accentStrong: '#67e8f9',
-      accentRgb: '34 211 238',
+      ...TOPIC_THEME_COLORS.ai,
       mapPlacement: {
         xPercent: 47,
         yPercent: 22,
@@ -200,9 +221,7 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     terms: ['recovery', 'health', 'medical', 'heart surgery', 'open heart surgery', 'cardiac', 'insurance', 'planning'],
     theme: {
       shortLabel: 'Recovery',
-      accent: '#2dd4bf',
-      accentStrong: '#5eead4',
-      accentRgb: '45 212 191',
+      ...TOPIC_THEME_COLORS.recovery,
       mapPlacement: {
         xPercent: 21,
         yPercent: 48,
@@ -306,9 +325,7 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     terms: ['angular', 'firebase', 'architecture', 'cms', 'editor.js', 'typescript', 'web development'],
     theme: {
       shortLabel: 'Architecture',
-      accent: '#60a5fa',
-      accentStrong: '#93c5fd',
-      accentRgb: '96 165 250',
+      ...TOPIC_THEME_COLORS.architecture,
       mapPlacement: {
         xPercent: 72,
         yPercent: 55,
@@ -412,9 +429,7 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     terms: ['labs', 'projects', 'game development', 'browser game', 'creative coding', 'music tools', 'web app'],
     theme: {
       shortLabel: 'Labs',
-      accent: '#a78bfa',
-      accentStrong: '#c4b5fd',
-      accentRgb: '167 139 250',
+      ...TOPIC_THEME_COLORS.labs,
       mapPlacement: {
         xPercent: 50,
         yPercent: 78,

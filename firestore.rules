@@ -46,6 +46,10 @@ service cloud.firestore {
       return resource.data.status == 'published';
     }
 
+    function isPublishedRecommendedLink() {
+      return resource.data.status == 'published';
+    }
+
     function isActiveDraftPreview() {
       return resource.data.post.status == 'draft'
         && resource.data.expiresAtTimestamp is timestamp
@@ -69,6 +73,11 @@ service cloud.firestore {
 
     match /topics/{topicId} {
       allow get, list: if canManageCmsContent() || isPublishedTopic();
+      allow create, update, delete: if canManageCmsContent();
+    }
+
+    match /recommendedLinks/{linkId} {
+      allow get, list: if canManageCmsContent() || isPublishedRecommendedLink();
       allow create, update, delete: if canManageCmsContent();
     }
 

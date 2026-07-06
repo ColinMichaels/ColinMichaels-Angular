@@ -7,7 +7,7 @@ import {Component, ChangeDetectionStrategy} from '@angular/core';
     <article class="blog-post-row"
              aria-hidden="true">
       <div class="blog-media-frame overflow-hidden rounded bg-zinc-100 dark:bg-zinc-900">
-        <div class="site-skeleton-block aspect-[4/3] h-full w-full"></div>
+        <div class="site-skeleton-block aspect-[16/9] h-full w-full"></div>
       </div>
       <div class="flex min-w-0 flex-col gap-3">
         <div class="site-skeleton-block h-3 w-28"></div>

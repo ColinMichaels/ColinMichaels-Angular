@@ -238,7 +238,7 @@ function normalizeHealthTerm(value: string): string {
                           class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
                         >
                           <span
-                            class="blog-post-image-frame relative block aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-zinc-900">
+                            class="blog-post-image-frame relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-zinc-900">
                             <img
                               [src]="suggestedPostImage(suggestedPost)"
                               [alt]="suggestedPost.title + ' thumbnail image'"

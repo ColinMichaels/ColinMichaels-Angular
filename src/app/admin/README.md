@@ -94,7 +94,7 @@ Optional function params:
 - `OPENAI_TEXT_MODEL`, default `gpt-5.5`
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
 
-Generated thumbnails are written to Firebase Storage under `cms/blog-thumbnails/{slug}/` and the returned download URL is applied to the post Cover Image field.
+Generated 16:9 thumbnails are written to Firebase Storage under `cms/blog-thumbnails/{slug}/` and the returned download URL is applied to the post Cover Image field.
 
 Manual blog media uploads use the reusable `BlogMediaUploaderComponent` and `BlogMediaUploadService`. Uploaded cover, Open Graph, and Editor.js image assets are written to Firebase Storage under `cms/blog-media/{slug}/{assetRole}/`. The uploader previews stored images in a lightbox and optimizes JPEG, PNG, and WebP files client-side before upload when the optimized result is smaller. Open Graph uploads force JPEG output for social crawler compatibility. Storage rules keep reads public for published blog rendering and restrict writes to admin-capable Firebase Auth custom claims.
 
@@ -116,6 +116,23 @@ Migration notes:
 - Existing topic names and slugs remain unchanged for SEO. The shipped static topics are now the bootstrap/fallback set and can be seeded into Firestore from the manager.
 - Public pages continue to show the default topics when Firestore has not been seeded yet. Once `/topics` contains managed documents, published documents control public topic ordering and visibility.
 - Firestore rules allow public `get/list` only for published topics and restrict create, update, and delete to CMS content roles.
+
+## Recommended Links Manager
+
+The recommended links manager is available at `/admin/cms/recommended-links` and is restricted to CMS content roles. It manages the homepage links section below the author bio.
+
+Component inventory:
+
+- `CmsRecommendedLinksManagerComponent` provides link list/search, create, edit, delete, refresh, and default seeding controls.
+- `RecommendedLinkRepositoryService` owns default links, admin/public projections, normalization, stats, default seeding, and featured-slot conflict resolution.
+- `RecommendedLinkStorageService` mirrors the blog/topic storage pattern with auth-aware Firestore listeners: CMS users read all `/recommendedLinks`, public users read only published links.
+- `recommended-link-validation.util.ts` validates Firestore link documents before they enter public rendering.
+
+Migration notes:
+
+- The hardcoded homepage links are now the bootstrap/fallback set and can be seeded into Firestore from the manager.
+- Public rendering uses published links assigned to featured slots 1, 2, and 3. Saving a link into an occupied slot clears that slot from the previous link, keeping the homepage capped at three featured recommendations.
+- Firestore rules allow public `get/list` only for published recommended links and restrict create, update, and delete to CMS content roles.
 
 Admin authorization is enforced through Firebase Auth custom claims. The UI, callable functions, Realtime Database rules, Firestore rules, and Storage rules treat these claims as admin-capable:
 
