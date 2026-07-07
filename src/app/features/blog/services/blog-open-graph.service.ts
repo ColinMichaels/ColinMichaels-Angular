@@ -12,6 +12,7 @@ import {
 } from '../../../shared/seo/seo.metadata';
 import {SeoService} from '../../../shared/seo/seo.service';
 import {BlogPost} from '../models/blog-post.model';
+import {resolveBlogPostImage} from '../utils/blog-image-url.util';
 
 export interface BlogShareMetadata {
   title: string;
@@ -107,8 +108,7 @@ export class BlogOpenGraphService {
     const image = this.seo.toOpenGraphCompatibleImage(
       post.seo.openGraphImage
       || post.og?.image
-      || post.thumbnailImage
-      || post.coverImage
+      || resolveBlogPostImage(post)
       || this.findFirstImageBlockUrl(post)
       || HOMEPAGE_OG_IMAGE
     );

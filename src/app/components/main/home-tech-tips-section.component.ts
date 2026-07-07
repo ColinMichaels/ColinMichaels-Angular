@@ -5,6 +5,7 @@ import {RouterLink} from '@angular/router';
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {createBlogCategorySlug} from '../../features/blog/utils/blog-category-url.util';
+import {resolveBlogPostImage} from '../../features/blog/utils/blog-image-url.util';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postHasTaxonomyTerm} from './home-blog-section.utils';
 
@@ -263,6 +264,6 @@ export class HomeTechTipsSectionComponent {
   protected readonly techTipsCategorySlug = createBlogCategorySlug(TECH_TIPS_CATEGORY);
 
   private postImage(post: BlogPostSummary): string {
-    return post.thumbnailImage?.trim() || post.coverImage;
+    return resolveBlogPostImage(post);
   }
 }

@@ -15,7 +15,6 @@ import {
 } from './home-article-hero.component';
 import {HomeLatestWritingSectionComponent} from './home-latest-writing-section.component';
 import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
-import {HomeTechTipsSectionComponent} from './home-tech-tips-section.component';
 import {HomeTopicsSectionComponent} from './home-topics-section.component';
 import {
   YouTubeLatestVideosComponent
@@ -44,7 +43,6 @@ interface HomeHighlight {
     HomeArticleHeroComponent,
     HomeLatestWritingSectionComponent,
     HomeRecoveryBlogSectionsComponent,
-    HomeTechTipsSectionComponent,
     HomeTopicsSectionComponent,
     NgClass,
     RouterLink,
@@ -54,7 +52,6 @@ interface HomeHighlight {
   templateUrl: './main.component.html',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrl: `./home-page.scss`
 })
 export class MainComponent {
   private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);

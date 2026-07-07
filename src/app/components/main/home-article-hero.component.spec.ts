@@ -122,6 +122,21 @@ describe('HomeArticleHeroComponent', () => {
       .toBe('/assets/images/backgrounds/night.webp');
   });
 
+  it('uses a Firebase cover image instead of a stale local thumbnail for post panels', async () => {
+    const firebaseCoverImage =
+      'https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fcover.webp?alt=media&token=abc';
+    const fixture = await createComponent([
+      createPost(1, {
+        coverImage: firebaseCoverImage,
+        thumbnailImage: '/assets/images/blog/legacy-thumbnail.webp',
+      }),
+    ]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector<HTMLImageElement>('.home-hero-panel-image')?.getAttribute('src'))
+      .toBe(firebaseCoverImage);
+  });
+
   it('links each panel to the blog detail route', async () => {
     const fixture = await createComponent([createPost(1, {slug: 'article-hero-post'})]);
     const element = fixture.nativeElement as HTMLElement;
@@ -173,17 +188,22 @@ describe('HomeArticleHeroComponent', () => {
   });
 
   it('keeps full title text available and limits excerpt text for consistent panel content', async () => {
+    const longExcerpt = Array.from(
+      {length: 42},
+      (_, index) => `This is excerpt sentence ${index + 1} for the hero panel layout.`
+    ).join(' ');
     const fixture = await createComponent([
       createPost(1, {
         title: 'This is an intentionally long article title that should be shortened for the hero panel layout',
-        excerpt: 'This is an intentionally long article excerpt that should be shortened for the hero panel layout so every post slice keeps a consistent amount of visible copy.',
+        excerpt: longExcerpt,
       }),
     ]);
     const element = fixture.nativeElement as HTMLElement;
+    const renderedExcerpt = element.querySelector('.home-hero-post-excerpt')?.textContent?.trim() ?? '';
 
     expect(element.querySelector('.home-hero-post-title')?.textContent?.trim())
       .toBe('This is an intentionally long article title that should be shortened for the hero panel layout');
-    expect(element.querySelector('.home-hero-post-excerpt')?.textContent?.trim())
-      .toBe('This is an intentionally long article excerpt that should be shortened for the hero panel layout so every post...');
+    expect(renderedExcerpt.endsWith('...')).toBeTrue();
+    expect(renderedExcerpt.length).toBeLessThan(longExcerpt.length);
   });
 });

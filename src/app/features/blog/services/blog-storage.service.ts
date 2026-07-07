@@ -9,7 +9,6 @@ import {
   Firestore,
   getDoc,
   getDocs,
-  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -20,8 +19,11 @@ import {
 import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
+import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
+import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {BlogPost} from '../models/blog-post.model';
+import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
@@ -34,26 +36,6 @@ function isPreviewDocument(value: unknown): value is { post: BlogPost; expiresAt
   return isRecord(value)
     && isBlogPost(value['post'])
     && typeof value['expiresAtMillis'] === 'number';
-}
-
-function removeUndefinedFields(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(item => removeUndefinedFields(item));
-  }
-
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  const cleanedValue: Record<string, unknown> = {};
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry !== undefined) {
-      cleanedValue[key] = removeUndefinedFields(entry);
-    }
-  }
-
-  return cleanedValue;
 }
 
 function getUniqueValues(values: readonly string[]): readonly string[] {
@@ -70,7 +52,13 @@ export class BlogStorageService {
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(Boolean(this.firestore));
   private readonly errorSubject = new BehaviorSubject<string | null>(this.firestore ? null : 'Firebase Firestore is not initialized.');
-  private firestoreUnsubscribe: (() => void) | undefined;
+  private readonly remoteSync = new FirestoreCollectionSync<BlogPost>(
+    this.postsSubject,
+    this.loadingSubject,
+    this.errorSubject,
+    value => this.fromFirestorePost(value),
+    error => this.describeSnapshotError(error)
+  );
 
   readonly posts$ = this.postsSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
@@ -80,7 +68,7 @@ export class BlogStorageService {
     const authUnsubscribe = this.startAuthAwareFirestoreSync();
     this.destroyRef.onDestroy(() => {
       authUnsubscribe?.();
-      this.firestoreUnsubscribe?.();
+      this.remoteSync.stop();
     });
   }
 
@@ -144,9 +132,7 @@ export class BlogStorageService {
 
   async loadPublishedPostsFromFirestore(): Promise<readonly BlogPost[]> {
     const firestore = this.requireFirestore();
-    const snapshot = await getDocs(
-      query(collection(firestore, BLOG_POSTS_COLLECTION), where('status', '==', 'published'))
-    );
+    const snapshot = await getDocs(this.createPublishedPostsQuery(firestore));
 
     return this.toBlogPosts(snapshot.docs.map(postSnapshot => postSnapshot.data()));
   }
@@ -157,7 +143,7 @@ export class BlogStorageService {
     }
 
     if (!this.auth) {
-      this.listenToPublishedFirestorePosts();
+      void this.loadPublishedFirestorePosts();
       return undefined;
     }
 
@@ -168,7 +154,7 @@ export class BlogStorageService {
 
   private async updateFirestoreListener(user: User | null): Promise<void> {
     if (!user) {
-      this.listenToPublishedFirestorePosts();
+      await this.loadPublishedFirestorePosts();
       return;
     }
 
@@ -184,7 +170,7 @@ export class BlogStorageService {
       // Fall back to the public published query if claims cannot be resolved.
     }
 
-    this.listenToPublishedFirestorePosts();
+    await this.loadPublishedFirestorePosts();
   }
 
   private listenToAllFirestorePosts(): void {
@@ -194,54 +180,29 @@ export class BlogStorageService {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
+    this.remoteSync.listen(
       collection(firestore, BLOG_POSTS_COLLECTION),
-      snapshot => {
-        const remotePosts = snapshot.docs
-          .map(postSnapshot => this.fromFirestorePost(postSnapshot.data()))
-          .filter((post): post is BlogPost => post !== null);
-
-        this.postsSubject.next(remotePosts);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[BlogStorageService] Admin posts snapshot error:', error);
-        this.postsSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+      '[BlogStorageService] Admin posts snapshot error:'
     );
   }
 
-  private listenToPublishedFirestorePosts(): void {
+  private async loadPublishedFirestorePosts(): Promise<void> {
     const firestore = this.firestore;
 
     if (!firestore) {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
-      query(collection(firestore, BLOG_POSTS_COLLECTION), where('status', '==', 'published')),
-      snapshot => {
-        const remotePublishedPosts = snapshot.docs
-          .map(postSnapshot => this.fromFirestorePost(postSnapshot.data()))
-          .filter((post): post is BlogPost => post !== null);
+    await this.remoteSync.load(
+      this.createPublishedPostsQuery(firestore),
+      '[BlogStorageService] Published posts load error:'
+    );
+  }
 
-        this.postsSubject.next(remotePublishedPosts);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[BlogStorageService] Published posts snapshot error:', error);
-        this.postsSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+  private createPublishedPostsQuery(firestore: Firestore) {
+    return query(
+      collection(firestore, BLOG_POSTS_COLLECTION),
+      where('status', '==', 'published')
     );
   }
 
@@ -346,8 +307,12 @@ export class BlogStorageService {
   }
 
   private toFirestorePost(post: BlogPost): Record<string, unknown> {
+    const imageFields = normalizeBlogImageFields(post);
+
     return {
       ...post,
+      coverImage: imageFields.coverImage,
+      thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
       preview: post.preview ?? deleteField(),
       syncedAt: serverTimestamp(),
       storageVersion: 1,
@@ -366,7 +331,7 @@ export class BlogStorageService {
       expiresAt: post.preview.expiresAt,
       expiresAtTimestamp: Timestamp.fromDate(new Date(post.preview.expiresAt)),
       expiresAtMillis: new Date(post.preview.expiresAt).getTime(),
-      post: removeUndefinedFields(post),
+      post: removeUndefinedFirestoreFields(post),
       storageVersion: 1,
     };
   }

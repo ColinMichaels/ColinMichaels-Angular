@@ -7,7 +7,6 @@ import {
   doc,
   Firestore,
   getDocs,
-  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -17,34 +16,16 @@ import {
 import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
+import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
+import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {RecommendedLink} from '../models/recommended-link.model';
-import {isRecommendedLink, isRecord} from '../utils/recommended-link-validation.util';
+import {isRecommendedLink} from '../utils/recommended-link-validation.util';
 
 export const RECOMMENDED_LINKS_COLLECTION = 'recommendedLinks';
 const FIRESTORE_BATCH_LIMIT = 450;
 
 type FirestoreWriteBatch = ReturnType<typeof writeBatch>;
-
-function removeUndefinedFields(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(item => removeUndefinedFields(item));
-  }
-
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  const cleanedValue: Record<string, unknown> = {};
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry !== undefined) {
-      cleanedValue[key] = removeUndefinedFields(entry);
-    }
-  }
-
-  return cleanedValue;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -56,7 +37,13 @@ export class RecommendedLinkStorageService {
   private readonly linksSubject = new BehaviorSubject<readonly RecommendedLink[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(Boolean(this.firestore));
   private readonly errorSubject = new BehaviorSubject<string | null>(this.firestore ? null : 'Firebase Firestore is not initialized.');
-  private firestoreUnsubscribe: (() => void) | undefined;
+  private readonly remoteSync = new FirestoreCollectionSync<RecommendedLink>(
+    this.linksSubject,
+    this.loadingSubject,
+    this.errorSubject,
+    value => this.fromFirestoreRecommendedLink(value),
+    error => this.describeSnapshotError(error)
+  );
 
   readonly links$ = this.linksSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
@@ -66,7 +53,7 @@ export class RecommendedLinkStorageService {
     const authUnsubscribe = this.startAuthAwareFirestoreSync();
     this.destroyRef.onDestroy(() => {
       authUnsubscribe?.();
-      this.firestoreUnsubscribe?.();
+      this.remoteSync.stop();
     });
   }
 
@@ -102,9 +89,7 @@ export class RecommendedLinkStorageService {
 
   async loadPublishedRecommendedLinksFromFirestore(): Promise<readonly RecommendedLink[]> {
     const firestore = this.requireFirestore();
-    const snapshot = await getDocs(
-      query(collection(firestore, RECOMMENDED_LINKS_COLLECTION), where('status', '==', 'published'))
-    );
+    const snapshot = await getDocs(this.createPublishedRecommendedLinksQuery(firestore));
 
     return this.toRecommendedLinks(snapshot.docs.map(linkSnapshot => linkSnapshot.data()));
   }
@@ -115,7 +100,7 @@ export class RecommendedLinkStorageService {
     }
 
     if (!this.auth) {
-      this.listenToPublishedFirestoreRecommendedLinks();
+      void this.loadPublishedFirestoreRecommendedLinks();
       return undefined;
     }
 
@@ -126,7 +111,7 @@ export class RecommendedLinkStorageService {
 
   private async updateFirestoreListener(user: User | null): Promise<void> {
     if (!user) {
-      this.listenToPublishedFirestoreRecommendedLinks();
+      await this.loadPublishedFirestoreRecommendedLinks();
       return;
     }
 
@@ -142,7 +127,7 @@ export class RecommendedLinkStorageService {
       // Fall back to the public published query if claims cannot be resolved.
     }
 
-    this.listenToPublishedFirestoreRecommendedLinks();
+    await this.loadPublishedFirestoreRecommendedLinks();
   }
 
   private listenToAllFirestoreRecommendedLinks(): void {
@@ -152,54 +137,29 @@ export class RecommendedLinkStorageService {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
+    this.remoteSync.listen(
       collection(firestore, RECOMMENDED_LINKS_COLLECTION),
-      snapshot => {
-        const remoteLinks = snapshot.docs
-          .map(linkSnapshot => this.fromFirestoreRecommendedLink(linkSnapshot.data()))
-          .filter((link): link is RecommendedLink => link !== null);
-
-        this.linksSubject.next(remoteLinks);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[RecommendedLinkStorageService] Admin recommended links snapshot error:', error);
-        this.linksSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+      '[RecommendedLinkStorageService] Admin recommended links snapshot error:'
     );
   }
 
-  private listenToPublishedFirestoreRecommendedLinks(): void {
+  private async loadPublishedFirestoreRecommendedLinks(): Promise<void> {
     const firestore = this.firestore;
 
     if (!firestore) {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
-      query(collection(firestore, RECOMMENDED_LINKS_COLLECTION), where('status', '==', 'published')),
-      snapshot => {
-        const remotePublishedLinks = snapshot.docs
-          .map(linkSnapshot => this.fromFirestoreRecommendedLink(linkSnapshot.data()))
-          .filter((link): link is RecommendedLink => link !== null);
+    await this.remoteSync.load(
+      this.createPublishedRecommendedLinksQuery(firestore),
+      '[RecommendedLinkStorageService] Published recommended links load error:'
+    );
+  }
 
-        this.linksSubject.next(remotePublishedLinks);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[RecommendedLinkStorageService] Published recommended links snapshot error:', error);
-        this.linksSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+  private createPublishedRecommendedLinksQuery(firestore: Firestore) {
+    return query(
+      collection(firestore, RECOMMENDED_LINKS_COLLECTION),
+      where('status', '==', 'published')
     );
   }
 
@@ -256,7 +216,7 @@ export class RecommendedLinkStorageService {
 
   private toFirestoreRecommendedLink(link: RecommendedLink): Record<string, unknown> {
     return {
-      ...(removeUndefinedFields(link) as Record<string, unknown>),
+      ...(removeUndefinedFirestoreFields(link) as Record<string, unknown>),
       syncedAt: serverTimestamp(),
       storageVersion: 1,
     };

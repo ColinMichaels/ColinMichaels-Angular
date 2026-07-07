@@ -5,6 +5,7 @@ import {RouterLink} from '@angular/router';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostSummary} from '../../models/blog-post.model';
 import {createBlogCategorySlug} from '../../utils/blog-category-url.util';
+import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {BlogTagListComponent} from '../tag-list/tag-list.component';
 
 @Component({
@@ -129,7 +130,7 @@ export class BlogPostCardComponent {
   }
 
   protected postImage(post: BlogPostSummary): string {
-    return post.thumbnailImage?.trim() || post.coverImage;
+    return resolveBlogPostImage(post);
   }
 
   protected get topicStyle(): Record<string, string> | null {
