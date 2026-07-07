@@ -3,6 +3,7 @@ import {Routes} from '@angular/router';
 import {AuthGuard} from '../guards/auth.guard';
 import {redirectGuard} from '../guards/redirect.guard';
 import {PATH_NAMES} from '../app-route-paths';
+import {LOGIN_SEO_METADATA} from '../shared/seo/seo.metadata';
 
 export const osRoutes: Routes = [
   {
@@ -21,7 +22,7 @@ export const osRoutes: Routes = [
   },
   {
     path: PATH_NAMES.OS_LOGIN,
-    data: {animation: 'LoginWindow'},
+    data: {animation: 'LoginWindow', seo: LOGIN_SEO_METADATA},
     loadComponent: () => import('../components/game/system/login-screen/login-screen.component').then(m => m.LoginScreenComponent),
   },
   {

@@ -149,10 +149,11 @@ Known admin-console roles are defined in `src/app/shared/user-account/user-accou
 - `contentEditor`
 - `mediaManager`
 - `viewer`
+- `trustedCommenter`
 
 The `/admin` overview accepts these roles and conditionally displays available tools. CMS routes are limited to content-capable roles. Media routes are limited to media-capable roles. User management remains limited to `admin`.
 
-Signed-in users can inspect their current Firebase Auth profile, provider IDs, and role claims at `/profile`.
+Signed-in users can inspect their current Firebase Auth profile, provider IDs, assigned roles, and point activity at `/profile`. Every bootstrapped `/users/{uid}` document receives the non-privileged `user` role for profile/status display; admin and CMS permissions still require Firebase custom claims.
 
 ## User Management
 
@@ -169,6 +170,19 @@ Component inventory:
 
 - `UserManagementPageComponent` lists Firebase Auth users, filters loaded rows, pages through Auth results, and edits role claims.
 - `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables.
+
+## Comment Moderation And Engagement
+
+The comment moderation console is available at `/admin/comments` for CMS-capable roles.
+
+- New reader comments are submitted through the `submitPostComment` callable.
+- Comment writes are server-only: direct Firestore creates are denied so clients cannot bypass callable validation.
+- Localhost moderation requires Functions and Firestore to point at the same backend. The local Angular config connects to the local Firestore emulator at `127.0.0.1:8080` and Functions emulator at `127.0.0.1:5001`; use `npm run serve:emulators` when testing comments fully locally. Full emulator mode uses isolated local data, so seed/import posts before expecting the local blog list to match production content.
+- The admin route shell displays a Firebase environment badge throughout `/admin/**` so operators can see whether the current build is using emulator data, live Firebase, or a mixed setup. Use `npm start` for emulator-backed local testing and `npm run start:live` for deliberate localhost testing against live Firebase.
+- Comment bodies are plain text in v1. The callable rejects URLs, bare domains, email addresses, Markdown links, HTML, encoded tags, localhost/IP links, and script/data/mail schemes. Link support should be added later as a trusted-user feature with explicit moderation rules.
+- First-time commenters are held as `pending`; approved commenters become trusted and future comments publish immediately.
+- Users with `trustedCommenter`, `admin`, `cmsAdmin`, or `contentEditor` publish comments immediately.
+- Comment approval awards points through the server-side point ledger. Reads and shares are also recorded by callable functions and de-duplicated per user/post/provider.
 
 Migration notes:
 

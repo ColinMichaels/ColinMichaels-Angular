@@ -34,6 +34,11 @@ import {
   createPreviewImageAlt,
   createSiteTitle,
 } from './seo-site';
+import {
+  COMMENT_BODY_MAX_LENGTH,
+  COMMENT_BODY_UNSAFE_CONTENT_MESSAGE,
+  validatePlainTextCommentBody,
+} from './comment-safety';
 
 initializeApp();
 
@@ -50,9 +55,17 @@ const USER_MANAGEMENT_MAX_PAGE_SIZE = 100;
 const MAX_USER_MANAGEMENT_ROLES = 32;
 const FIRESTORE_WRITE_BATCH_LIMIT = 450;
 const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+const BASE_USER_ROLE = 'user';
 const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
+const TRUSTED_COMMENT_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'] as const;
 const BLOG_POSTS_COLLECTION = 'posts';
+const USERS_COLLECTION = 'users';
+const POST_COMMENTS_COLLECTION = 'postComments';
+const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
+const POST_READ_POINTS = 5;
+const POST_SHARE_POINTS = 10;
+const COMMENT_APPROVED_POINTS = 15;
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
@@ -476,6 +489,54 @@ interface AdminManagedUser {
   customClaims: Record<string, unknown>;
 }
 
+type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
+type BlogCommentStatus = 'pending' | 'approved' | 'hidden' | 'deleted';
+type PointEventType = 'post_read' | 'post_share' | 'comment_approved';
+type CommentModerationAction = 'approve' | 'hide' | 'restore' | 'delete';
+
+interface UserAccountPoints {
+  total: number;
+  postReads: number;
+  shares: number;
+  approvedComments: number;
+}
+
+interface UserAccountDocument {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  providerIds: readonly string[];
+  emailVerified: boolean;
+  roles: readonly string[];
+  commentTrustStatus: UserCommentTrustStatus;
+  points: UserAccountPoints;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+}
+
+interface BlogCommentDocument {
+  id: string;
+  postId: string;
+  postSlug: string;
+  authorUid: string;
+  authorDisplayName: string | null;
+  authorPhotoURL: string | null;
+  body: string;
+  status: BlogCommentStatus;
+  createdAt: string;
+  updatedAt: string;
+  moderatedAt?: string | null;
+  moderatedBy?: string | null;
+}
+
+interface PointAwardResult {
+  awarded: boolean;
+  points: number;
+  total: number;
+}
+
 interface AdminUsersResponse {
   users: readonly AdminManagedUser[];
   nextPageToken: string | null;
@@ -829,6 +890,213 @@ export const updateAdminUserRoles = onCall(
   }
 );
 
+export const bootstrapUserProfile = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to bootstrap a user profile.');
+    const profile = parseBootstrapUserProfileRequest(request.data);
+    const account = await upsertUserAccount(auth, profile);
+
+    return account;
+  }
+);
+
+export const submitPostComment = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to comment.');
+    const data = parseSubmitPostCommentRequest(request.data);
+    const firestore = getFirestore();
+    await requirePublishedPostTarget(data.postId, data.postSlug);
+    const account = await ensureUserAccountForAuth(auth);
+
+    if (account.commentTrustStatus === 'blocked') {
+      throw new HttpsError('permission-denied', 'This account cannot submit comments.');
+    }
+
+    const isTrusted = account.commentTrustStatus === 'trusted' || hasAnyRoleClaim(auth.token, TRUSTED_COMMENT_ROLES);
+    const status: BlogCommentStatus = isTrusted ? 'approved' : 'pending';
+    const now = new Date().toISOString();
+    const commentRef = firestore.collection(POST_COMMENTS_COLLECTION).doc();
+    const comment: BlogCommentDocument = {
+      id: commentRef.id,
+      postId: data.postId,
+      postSlug: data.postSlug,
+      authorUid: auth.uid,
+      authorDisplayName: account.displayName,
+      authorPhotoURL: account.photoURL,
+      body: data.body,
+      status,
+      createdAt: now,
+      updatedAt: now,
+      moderatedAt: status === 'approved' ? now : null,
+      moderatedBy: status === 'approved' ? auth.uid : null,
+    };
+
+    await commentRef.set({
+      ...comment,
+      createdAtTimestamp: FieldValue.serverTimestamp(),
+      updatedAtTimestamp: FieldValue.serverTimestamp(),
+    });
+
+    if (status === 'approved') {
+      await awardPointEvent({
+        uid: auth.uid,
+        eventId: createPointEventId('comment_approved', comment.id),
+        type: 'comment_approved',
+        points: COMMENT_APPROVED_POINTS,
+        counterField: 'approvedComments',
+        postId: comment.postId,
+        postSlug: comment.postSlug,
+        commentId: comment.id,
+      });
+    }
+
+    return {
+      comment,
+      trusted: isTrusted,
+    };
+  }
+);
+
+export const moderatePostComment = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireCmsAccess(request.auth);
+    const {commentId, action} = parseModeratePostCommentRequest(request.data);
+    const firestore = getFirestore();
+    const commentRef = firestore.collection(POST_COMMENTS_COLLECTION).doc(commentId);
+    const snapshot = await commentRef.get();
+
+    if (!snapshot.exists) {
+      throw new HttpsError('not-found', 'Comment not found.');
+    }
+
+    const currentComment = {id: snapshot.id, ...snapshot.data()} as BlogCommentDocument;
+    const now = new Date().toISOString();
+    const nextStatus = getNextCommentStatus(action);
+
+    const nextComment: BlogCommentDocument = {
+      ...currentComment,
+      status: nextStatus,
+      updatedAt: now,
+      moderatedAt: now,
+      moderatedBy: actorUid,
+    };
+
+    await commentRef.set({
+      status: nextStatus,
+      updatedAt: now,
+      moderatedAt: now,
+      moderatedBy: actorUid,
+      updatedAtTimestamp: FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    let trustedAuthor = false;
+    let awardedPoints = false;
+
+    if (nextStatus === 'approved') {
+      const userRef = firestore.collection(USERS_COLLECTION).doc(currentComment.authorUid);
+      await userRef.set({
+        commentTrustStatus: 'trusted',
+        updatedAt: now,
+      }, {merge: true});
+      trustedAuthor = true;
+
+      const award = await awardPointEvent({
+        uid: currentComment.authorUid,
+        eventId: createPointEventId('comment_approved', currentComment.id),
+        type: 'comment_approved',
+        points: COMMENT_APPROVED_POINTS,
+        counterField: 'approvedComments',
+        postId: currentComment.postId,
+        postSlug: currentComment.postSlug,
+        commentId: currentComment.id,
+      });
+      awardedPoints = award.awarded;
+    }
+
+    return {
+      comment: nextComment,
+      trustedAuthor,
+      awardedPoints,
+    };
+  }
+);
+
+export const recordPostRead = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to record post reads.');
+    const data = parsePostEngagementRequest(request.data);
+
+    await requirePublishedPostTarget(data.postId, data.postSlug);
+    await ensureUserAccountForAuth(auth);
+
+    return await awardPointEvent({
+      uid: auth.uid,
+      eventId: createPointEventId('post_read', auth.uid, data.postId),
+      type: 'post_read',
+      points: POST_READ_POINTS,
+      counterField: 'postReads',
+      postId: data.postId,
+      postSlug: data.postSlug,
+    });
+  }
+);
+
+export const recordPostShare = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to record post shares.');
+    const data = parsePostShareRequest(request.data);
+
+    await requirePublishedPostTarget(data.postId, data.postSlug);
+    await ensureUserAccountForAuth(auth);
+
+    return await awardPointEvent({
+      uid: auth.uid,
+      eventId: createPointEventId('post_share', auth.uid, data.postId, data.provider),
+      type: 'post_share',
+      points: POST_SHARE_POINTS,
+      counterField: 'shares',
+      postId: data.postId,
+      postSlug: data.postSlug,
+      provider: data.provider,
+    });
+  }
+);
+
 function parseYoutubeMaxResults(value: unknown): number {
   const maxResults = isRecord(value) ? value['maxResults'] : value;
   const parsedMaxResults = typeof maxResults === 'string' ? Number(maxResults) : maxResults;
@@ -983,6 +1251,16 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
       description: 'Protected admin user role and permission management.',
       path: '/admin/users',
       imageAlt: createPreviewImageAlt('admin user management'),
+      robots: 'noindex,nofollow',
+    });
+  }
+
+  if (normalizedPath === '/admin/comments') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Comment Moderation'),
+      description: 'Protected admin blog comment moderation.',
+      path: '/admin/comments',
+      imageAlt: createPreviewImageAlt('admin comment moderation'),
       robots: 'noindex,nofollow',
     });
   }
@@ -2562,6 +2840,14 @@ function requireUserManagementAdmin(auth: AdminCallableAuth | undefined): string
   return auth.uid;
 }
 
+function requireSignedIn(auth: AdminCallableAuth | undefined, message: string): AdminCallableAuth {
+  if (!auth?.uid) {
+    throw new HttpsError('unauthenticated', message);
+  }
+
+  return auth;
+}
+
 function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
   const roles = claims['roles'];
 
@@ -2570,6 +2856,287 @@ function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
 
 function hasAnyRoleClaim(claims: Record<string, unknown>, roles: readonly string[]): boolean {
   return roles.some(role => hasRoleClaim(claims, role));
+}
+
+function parseBootstrapUserProfileRequest(value: unknown): {
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  providerIds: readonly string[];
+  emailVerified: boolean;
+} {
+  const record = isRecord(value) ? value : {};
+  const providerIds = Array.isArray(record['providerIds'])
+    ? record['providerIds'].map(providerId => getTrimmedString(providerId)).filter(Boolean)
+    : [];
+
+  return {
+    email: getTrimmedString(record['email']) || null,
+    displayName: getTrimmedString(record['displayName']) || null,
+    photoURL: getTrimmedString(record['photoURL']) || null,
+    providerIds,
+    emailVerified: record['emailVerified'] === true,
+  };
+}
+
+function parseSubmitPostCommentRequest(value: unknown): { postId: string; postSlug: string; body: string } {
+  const record = requireRecord(value, 'Comment submission must be an object.');
+  const postId = getTrimmedString(record['postId']);
+  const postSlug = getTrimmedString(record['postSlug']);
+  const bodyValidation = validatePlainTextCommentBody(record['body']);
+  const body = bodyValidation.body;
+
+  if (!postId || !postSlug) {
+    throw new HttpsError('invalid-argument', 'Post id and slug are required.');
+  }
+
+  if (bodyValidation.reason === 'empty') {
+    throw new HttpsError('invalid-argument', 'Comment body is required.');
+  }
+
+  if (bodyValidation.reason === 'too_long') {
+    throw new HttpsError('invalid-argument', `Comments can be at most ${COMMENT_BODY_MAX_LENGTH} characters.`);
+  }
+
+  if (bodyValidation.reason === 'unsafe_content') {
+    throw new HttpsError('invalid-argument', COMMENT_BODY_UNSAFE_CONTENT_MESSAGE);
+  }
+
+  return {postId, postSlug, body};
+}
+
+function parseModeratePostCommentRequest(value: unknown): { commentId: string; action: CommentModerationAction } {
+  const record = requireRecord(value, 'Comment moderation must be an object.');
+  const commentId = getTrimmedString(record['commentId']);
+  const action = getTrimmedString(record['action']) as CommentModerationAction;
+
+  if (!commentId) {
+    throw new HttpsError('invalid-argument', 'Comment id is required.');
+  }
+
+  if (!['approve', 'hide', 'restore', 'delete'].includes(action)) {
+    throw new HttpsError('invalid-argument', 'Unsupported moderation action.');
+  }
+
+  return {commentId, action};
+}
+
+function parsePostEngagementRequest(value: unknown): { postId: string; postSlug: string } {
+  const record = requireRecord(value, 'Post engagement must be an object.');
+  const postId = getTrimmedString(record['postId']);
+  const postSlug = getTrimmedString(record['postSlug']);
+
+  if (!postId || !postSlug) {
+    throw new HttpsError('invalid-argument', 'Post id and slug are required.');
+  }
+
+  return {postId, postSlug};
+}
+
+function parsePostShareRequest(value: unknown): { postId: string; postSlug: string; provider: string } {
+  const engagement = parsePostEngagementRequest(value);
+  const record = requireRecord(value, 'Post share must be an object.');
+  const provider = getTrimmedString(record['provider']);
+
+  if (!['x', 'linkedin', 'facebook', 'email', 'copy'].includes(provider)) {
+    throw new HttpsError('invalid-argument', 'Unsupported share provider.');
+  }
+
+  return {...engagement, provider};
+}
+
+async function requirePublishedPostTarget(postId: string, postSlug: string): Promise<void> {
+  const snapshot = await getFirestore().collection(BLOG_POSTS_COLLECTION).doc(postId).get();
+  const data = snapshot.data() ?? {};
+  const storedSlug = getTrimmedString(data['slug']);
+  const status = getTrimmedString(data['status']);
+
+  if (!snapshot.exists || storedSlug !== postSlug || status !== 'published') {
+    throw new HttpsError('failed-precondition', 'Engagement is only available for published posts.');
+  }
+}
+
+async function ensureUserAccountForAuth(auth: AdminCallableAuth): Promise<UserAccountDocument> {
+  const firestore = getFirestore();
+  const userRef = firestore.collection(USERS_COLLECTION).doc(auth.uid);
+  const snapshot = await userRef.get();
+
+  if (snapshot.exists) {
+    return toUserAccountDocument(auth.uid, snapshot.data() ?? {}, auth.token);
+  }
+
+  const authUser = await getAuth().getUser(auth.uid);
+
+  return await upsertUserAccount(auth, {
+    email: authUser.email ?? null,
+    displayName: authUser.displayName ?? null,
+    photoURL: authUser.photoURL ?? null,
+    providerIds: authUser.providerData.map(provider => provider.providerId),
+    emailVerified: authUser.emailVerified,
+  });
+}
+
+async function upsertUserAccount(
+  auth: AdminCallableAuth,
+  profile: {
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    providerIds: readonly string[];
+    emailVerified: boolean;
+  }
+): Promise<UserAccountDocument> {
+  const firestore = getFirestore();
+  const userRef = firestore.collection(USERS_COLLECTION).doc(auth.uid);
+  const snapshot = await userRef.get();
+  const existing = snapshot.data() ?? {};
+  const now = new Date().toISOString();
+  const existingTrustStatus = getCommentTrustStatus(existing['commentTrustStatus']);
+  const roles = getUserAccountRoles(auth.token);
+  const hasTrustedRole = hasAnyRoleClaim(auth.token, TRUSTED_COMMENT_ROLES);
+  const commentTrustStatus: UserCommentTrustStatus = existingTrustStatus === 'blocked'
+    ? 'blocked'
+    : hasTrustedRole || existingTrustStatus === 'trusted'
+      ? 'trusted'
+      : 'new';
+  const account: UserAccountDocument = {
+    uid: auth.uid,
+    email: profile.email,
+    displayName: profile.displayName,
+    photoURL: profile.photoURL,
+    providerIds: profile.providerIds,
+    emailVerified: profile.emailVerified,
+    roles,
+    commentTrustStatus,
+    points: getUserAccountPoints(existing['points']),
+    createdAt: getTrimmedString(existing['createdAt']) || now,
+    updatedAt: now,
+    lastSeenAt: now,
+  };
+
+  await userRef.set(account, {merge: true});
+
+  return account;
+}
+
+async function awardPointEvent(options: {
+  uid: string;
+  eventId: string;
+  type: PointEventType;
+  points: number;
+  counterField: keyof Omit<UserAccountPoints, 'total'>;
+  postId?: string;
+  postSlug?: string;
+  provider?: string;
+  commentId?: string;
+}): Promise<PointAwardResult> {
+  const firestore = getFirestore();
+  const userRef = firestore.collection(USERS_COLLECTION).doc(options.uid);
+  const eventRef = firestore.collection(USER_POINT_EVENTS_COLLECTION).doc(options.eventId);
+  const now = new Date().toISOString();
+
+  return await firestore.runTransaction(async transaction => {
+    const [userSnapshot, eventSnapshot] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(eventRef),
+    ]);
+    const points = getUserAccountPoints(userSnapshot.data()?.['points']);
+
+    if (eventSnapshot.exists) {
+      return {
+        awarded: false,
+        points: 0,
+        total: points.total,
+      };
+    }
+
+    const eventData = removeUndefinedValues({
+      id: options.eventId,
+      uid: options.uid,
+      type: options.type,
+      points: options.points,
+      postId: options.postId,
+      postSlug: options.postSlug,
+      provider: options.provider,
+      commentId: options.commentId,
+      createdAt: now,
+      createdAtTimestamp: FieldValue.serverTimestamp(),
+    });
+
+    transaction.set(eventRef, eventData);
+    transaction.set(userRef, {
+      uid: options.uid,
+      points: {
+        total: FieldValue.increment(options.points),
+        [options.counterField]: FieldValue.increment(options.points),
+      },
+      updatedAt: now,
+    }, {merge: true});
+
+    return {
+      awarded: true,
+      points: options.points,
+      total: points.total + options.points,
+    };
+  });
+}
+
+function createPointEventId(...parts: readonly string[]): string {
+  return parts.map(part => part.replace(/[^A-Za-z0-9_-]+/g, '-')).join('_');
+}
+
+function getNextCommentStatus(action: CommentModerationAction): BlogCommentStatus {
+  switch (action) {
+    case 'approve':
+    case 'restore':
+      return 'approved';
+    case 'delete':
+      return 'deleted';
+    case 'hide':
+      return 'hidden';
+  }
+}
+
+function getCommentTrustStatus(value: unknown): UserCommentTrustStatus {
+  return value === 'trusted' || value === 'blocked' ? value : 'new';
+}
+
+function getUserAccountPoints(value: unknown): UserAccountPoints {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    total: getNumberValue(record['total']),
+    postReads: getNumberValue(record['postReads']),
+    shares: getNumberValue(record['shares']),
+    approvedComments: getNumberValue(record['approvedComments']),
+  };
+}
+
+function getNumberValue(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function toUserAccountDocument(uid: string, value: Record<string, unknown>, claims: Record<string, unknown>): UserAccountDocument {
+  const now = new Date().toISOString();
+
+  return {
+    uid,
+    email: getTrimmedString(value['email']) || null,
+    displayName: getTrimmedString(value['displayName']) || null,
+    photoURL: getTrimmedString(value['photoURL']) || null,
+    providerIds: Array.isArray(value['providerIds']) ? value['providerIds'].map(provider => getTrimmedString(provider)).filter(Boolean) : [],
+    emailVerified: value['emailVerified'] === true,
+    roles: getUserAccountRoles(claims),
+    commentTrustStatus: getCommentTrustStatus(value['commentTrustStatus']),
+    points: getUserAccountPoints(value['points']),
+    createdAt: getTrimmedString(value['createdAt']) || now,
+    updatedAt: getTrimmedString(value['updatedAt']) || now,
+    lastSeenAt: getTrimmedString(value['lastSeenAt']) || now,
+  };
+}
+
+function removeUndefinedValues(value: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value).filter(([, entryValue]) => typeof entryValue !== 'undefined'));
 }
 
 function parseListUsersRequest(value: unknown): { pageSize: number; pageToken: string | null } {
@@ -2671,6 +3238,10 @@ function getClaimRoles(claims: Record<string, unknown>): string[] {
   }
 
   return [...roleNames].sort((a, b) => a.localeCompare(b));
+}
+
+function getUserAccountRoles(claims: Record<string, unknown>): string[] {
+  return [BASE_USER_ROLE, ...getClaimRoles(claims).filter(role => role !== BASE_USER_ROLE)];
 }
 
 function parseAssistantContext(value: unknown): BlogAssistantContext {

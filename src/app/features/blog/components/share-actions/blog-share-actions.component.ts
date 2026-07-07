@@ -1,8 +1,9 @@
 import {DOCUMENT, isPlatformBrowser} from '@angular/common';
-import {Component, Input, OnDestroy, inject, ChangeDetectionStrategy, PLATFORM_ID} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, Output, inject, ChangeDetectionStrategy, PLATFORM_ID} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faFacebook, faLinkedin, faXTwitter} from '@fortawesome/free-brands-svg-icons';
 import {faEnvelope, faLink} from '@fortawesome/free-solid-svg-icons';
+import {BlogShareProvider} from '../../services/blog-engagement.service';
 
 type BlogShareVariant = 'compact' | 'panel';
 
@@ -26,6 +27,7 @@ type BlogShareVariant = 'compact' | 'panel';
           [class]="iconClass"
           [attr.aria-label]="'Share ' + plainTitle + ' on X'"
           title="Share on X"
+          (click)="trackShare('x')"
         >
           <fa-icon [icon]="faXTwitter"></fa-icon>
         </a>
@@ -36,6 +38,7 @@ type BlogShareVariant = 'compact' | 'panel';
           [class]="iconClass"
           [attr.aria-label]="'Share ' + plainTitle + ' on LinkedIn'"
           title="Share on LinkedIn"
+          (click)="trackShare('linkedin')"
         >
           <fa-icon [icon]="faLinkedin"></fa-icon>
         </a>
@@ -46,6 +49,7 @@ type BlogShareVariant = 'compact' | 'panel';
           [class]="iconClass"
           [attr.aria-label]="'Share ' + plainTitle + ' on Facebook'"
           title="Share on Facebook"
+          (click)="trackShare('facebook')"
         >
           <fa-icon [icon]="faFacebook"></fa-icon>
         </a>
@@ -56,6 +60,7 @@ type BlogShareVariant = 'compact' | 'panel';
           [class]="iconClass"
           [attr.aria-label]="'Share ' + plainTitle + ' by email'"
           title="Share by email"
+          (click)="trackShare('email')"
         >
           <fa-icon [icon]="faEnvelope"></fa-icon>
         </a>
@@ -78,6 +83,7 @@ export class BlogShareActionsComponent implements OnDestroy {
   @Input() excerpt = '';
   @Input() url = '';
   @Input() variant: BlogShareVariant = 'compact';
+  @Output() shared = new EventEmitter<BlogShareProvider>();
 
   protected copied = false;
   protected readonly faEnvelope = faEnvelope;
@@ -136,6 +142,7 @@ export class BlogShareActionsComponent implements OnDestroy {
     void navigator.clipboard.writeText(this.shareUrl)
       .then(() => {
         this.copied = true;
+        this.trackShare('copy');
         this.copyResetHandle = setTimeout(() => {
           this.copied = false;
         }, 1600);
@@ -143,6 +150,10 @@ export class BlogShareActionsComponent implements OnDestroy {
       .catch(() => {
         this.copied = false;
       });
+  }
+
+  protected trackShare(provider: BlogShareProvider): void {
+    this.shared.emit(provider);
   }
 
   private get encodedShareUrl(): string {

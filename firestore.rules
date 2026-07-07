@@ -38,6 +38,23 @@ service cloud.firestore {
       return hasRole('admin');
     }
 
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasZeroPoints(points) {
+      return points is map
+        && points.keys().hasOnly(['total', 'postReads', 'shares', 'approvedComments'])
+        && points.total == 0
+        && points.postReads == 0
+        && points.shares == 0
+        && points.approvedComments == 0;
+    }
+
+    function isApprovedComment() {
+      return resource.data.status == 'approved';
+    }
+
     function isPublishedPost() {
       return resource.data.status == 'published';
     }
@@ -107,9 +124,48 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, update: if canManageUserAccounts() || (isSignedIn() && request.auth.uid == userId);
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if canManageUserAccounts() || isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'photoURL',
+          'providerIds',
+          'emailVerified',
+          'roles',
+          'commentTrustStatus',
+          'points',
+          'createdAt',
+          'updatedAt',
+          'lastSeenAt'
+        ])
+        && request.resource.data.uid == userId
+        && request.resource.data.roles is list
+        && request.resource.data.roles.size() == 0
+        && request.resource.data.commentTrustStatus == 'new'
+        && hasZeroPoints(request.resource.data.points);
+      allow update: if canManageUserAccounts()
+        || (
+          isOwner(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName',
+            'photoURL',
+            'lastSeenAt',
+            'updatedAt'
+          ])
+        );
       allow delete: if canManageUserAccounts();
+    }
+
+    match /postComments/{commentId} {
+      allow read: if isApprovedComment() || canManageCmsContent() || canManageUserAccounts();
+      allow create, update, delete: if false;
+    }
+
+    match /userPointEvents/{eventId} {
+      allow read: if canManageUserAccounts() || (isSignedIn() && request.auth.uid == resource.data.uid);
+      allow write: if false;
     }
 
     match /logs/{logId} {

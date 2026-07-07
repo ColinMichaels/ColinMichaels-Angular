@@ -27,4 +27,16 @@ describe('BlogShareActionsComponent', () => {
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
     }
   });
+
+  it('emits a share provider when a share link is clicked', () => {
+    const component = fixture.componentInstance;
+    const sharedProviders: string[] = [];
+    component.shared.subscribe(provider => sharedProviders.push(provider));
+    const element = fixture.nativeElement as HTMLElement;
+    const facebookLink = element.querySelector<HTMLAnchorElement>('a[title="Share on Facebook"]');
+
+    facebookLink?.click();
+
+    expect(sharedProviders).toEqual(['facebook']);
+  });
 });

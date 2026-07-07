@@ -4,7 +4,45 @@ export interface UserRoleDefinition {
   description: string;
 }
 
-export type UserRole = 'admin' | 'cmsAdmin' | 'contentEditor' | 'mediaManager' | 'viewer';
+export type UserRole = 'user' | 'admin' | 'cmsAdmin' | 'contentEditor' | 'mediaManager' | 'viewer' | 'trustedCommenter';
+
+export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
+
+export type UserPointEventType = 'post_read' | 'post_share' | 'comment_approved';
+
+export interface UserAccountPoints {
+  total: number;
+  postReads: number;
+  shares: number;
+  approvedComments: number;
+}
+
+export interface UserAccountDocument {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  providerIds: readonly string[];
+  emailVerified: boolean;
+  roles: readonly string[];
+  commentTrustStatus: UserCommentTrustStatus;
+  points: UserAccountPoints;
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string;
+}
+
+export interface UserPointEvent {
+  id: string;
+  uid: string;
+  type: UserPointEventType;
+  points: number;
+  postId?: string;
+  postSlug?: string;
+  provider?: string;
+  commentId?: string;
+  createdAt: string;
+}
 
 export interface UserAccountProfile {
   uid: string;
@@ -18,7 +56,14 @@ export interface UserAccountProfile {
   claims: Record<string, unknown>;
 }
 
+export const BASE_USER_ROLE: UserRole = 'user';
+
 export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
+  {
+    id: BASE_USER_ROLE,
+    label: 'User',
+    description: 'Can sign in, manage their profile, comment with moderation, and earn reader points.',
+  },
   {
     id: 'admin',
     label: 'Admin',
@@ -44,12 +89,18 @@ export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
     label: 'Viewer',
     description: 'Can enter the admin dashboard with read-oriented access only.',
   },
+  {
+    id: 'trustedCommenter',
+    label: 'Trusted Commenter',
+    description: 'Can publish blog comments without first-time moderation.',
+  },
 ] as const;
 
 export const ADMIN_CONSOLE_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager', 'viewer'];
 export const CMS_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor'];
 export const MEDIA_LIBRARY_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'mediaManager'];
 export const USER_MANAGEMENT_ACCESS_ROLES: readonly UserRole[] = ['admin'];
+export const TRUSTED_COMMENT_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'];
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

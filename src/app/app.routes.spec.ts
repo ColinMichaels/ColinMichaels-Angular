@@ -41,6 +41,7 @@ describe('routes', () => {
     expect(routePaths(adminRoute?.children ?? [])).toEqual([
       PATH_NAMES.ADMIN_ACCESS_DENIED,
       PATH_NAMES.ADMIN_USERS,
+      PATH_NAMES.ADMIN_COMMENTS,
       '',
     ]);
 

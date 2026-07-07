@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test:comment-safety": "npm run build && node --test test/comment-safety.test.cjs",
     "serve": "npm run build && cd .. && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",

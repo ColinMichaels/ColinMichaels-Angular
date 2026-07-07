@@ -3,6 +3,7 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
   faArrowRight,
+  faComments,
   faImages,
   faLink,
   faNewspaper,
@@ -39,6 +40,7 @@ const userManagementRoute = `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`;
 const mediaLibraryRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`;
 const topicsRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_TOPICS}`;
 const recommendedLinksRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`;
+const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
 
 @Component({
   selector: 'app-admin-overview',
@@ -271,6 +273,15 @@ export class AdminOverviewComponent {
       actionLabel: 'Curate links',
       icon: faLink,
       iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-200',
+    },
+    {
+      eyebrow: 'Community',
+      title: 'Comments',
+      description: 'Review first-time reader comments, approve trusted voices, and moderate published discussion.',
+      route: commentsRoute,
+      actionLabel: 'Moderate comments',
+      icon: faComments,
+      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-lime-400/50 bg-lime-400/10 text-lime-200',
     },
   ];
   protected readonly mediaWorkflow: AdminWorkflowLink = {

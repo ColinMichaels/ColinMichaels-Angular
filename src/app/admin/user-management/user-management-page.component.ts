@@ -4,7 +4,7 @@ import {RouterLink} from '@angular/router';
 import {AdminManagedUser} from './models/user-management.models';
 import {UserManagementService} from './services/user-management.service';
 
-const suggestedRoles = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager', 'viewer'] as const;
+const suggestedRoles = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager', 'viewer', 'trustedCommenter'] as const;
 const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 
 function getErrorMessage(error: unknown): string {

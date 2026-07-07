@@ -137,17 +137,27 @@
             </div>
           </form>
 
-          <!-- Google Sign In -->
-          <div class="my-4 text-center">
+          <!-- Provider Sign In -->
+          <div class="my-4 w-full min-w-56 text-center">
             <span class="block mb-2 text-sm text-gray-500">OR</span>
-            <button
-              type="button"
-              (click)="loginWithGoogle()"
-              [disabled]="loading"
-              class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
-              <fa-icon [icon]="faGoogle" class="text-xl"></fa-icon>
-              {{ googleLoading ? 'Opening Google...' : (isLoginMode ? 'Sign in with Google' : 'Sign up with Google') }}
-            </button>
+            <div class="grid gap-3">
+              <button
+                type="button"
+                (click)="loginWithGoogle()"
+                [disabled]="loading"
+                class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+                <fa-icon [icon]="faGoogle" class="text-xl"></fa-icon>
+                {{ googleLoading ? 'Opening Google...' : (isLoginMode ? 'Sign in with Google' : 'Sign up with Google') }}
+              </button>
+              <button
+                type="button"
+                (click)="loginWithFacebook()"
+                [disabled]="loading"
+                class="w-full text-sm text-gray-500 hover:text-white flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+                <fa-icon [icon]="faFacebook" class="text-xl text-[#1877f2]"></fa-icon>
+                {{ facebookLoading ? 'Opening Facebook...' : (isLoginMode ? 'Sign in with Facebook' : 'Sign up with Facebook') }}
+              </button>
+            </div>
           </div>
 
           <!-- Toggle Login/Register -->

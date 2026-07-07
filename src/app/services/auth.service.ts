@@ -2,6 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {
   Auth,
   createUserWithEmailAndPassword,
+  FacebookAuthProvider,
   getIdTokenResult,
   getRedirectResult,
   GoogleAuthProvider,
@@ -28,6 +29,7 @@ import {
   USER_MANAGEMENT_ACCESS_ROLES,
   UserAccountProfile,
 } from '../shared/user-account/user-account.model';
+import {UserAccountService} from '../shared/user-account/user-account.service';
 import {writeAuthDebug} from '../shared/debug/auth-debug';
 
 export interface AdminAuthorization {
@@ -74,7 +76,8 @@ export class AuthService {
 
   constructor(
     private router: Router,
-    private readonly logger: LogService
+    private readonly logger: LogService,
+    private readonly userAccountService: UserAccountService
   ) {
     const auth = this.auth;
     if (!auth) {
@@ -91,6 +94,9 @@ export class AuthService {
             signedIn: !!currentUser,
             user: currentUser ? this.createUserDebugSummary(currentUser) : null,
           });
+          if (currentUser) {
+            void this.bootstrapUserProfile(currentUser);
+          }
           observer.next(currentUser);
         },
         error => {
@@ -189,6 +195,45 @@ export class AuthService {
     );
   }
 
+  // Facebook Sign In
+  loginWithFacebook(): Observable<UserCredential> {
+    const auth = this.auth;
+    if (!auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
+
+    this.debugAuth('facebook popup sign-in start');
+
+    return this.fromAuthOperation(() => signInWithPopup(auth, this.createFacebookProvider())).pipe(
+      tap(result => this.debugAuth('facebook popup sign-in success', {
+        user: this.createUserDebugSummary(result.user),
+      })),
+      catchError(error => {
+        this.debugAuth('facebook popup sign-in failed', this.createErrorDebugSummary(error));
+        this.logger.error('Facebook popup login failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  loginWithFacebookRedirect(): Observable<void> {
+    const auth = this.auth;
+    if (!auth) {
+      return throwError(() => new Error('Firebase Auth is not initialized'));
+    }
+
+    this.debugAuth('facebook redirect sign-in start');
+
+    return this.fromAuthOperation(() => signInWithRedirect(auth, this.createFacebookProvider())).pipe(
+      tap(() => this.debugAuth('facebook redirect sign-in dispatched')),
+      catchError(error => {
+        this.debugAuth('facebook redirect sign-in failed', this.createErrorDebugSummary(error));
+        this.logger.error('Facebook redirect login failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   // Add a method to handle redirect results
   handleRedirectResult(): Observable<UserCredential | null> {
     const auth = this.auth;
@@ -200,17 +245,18 @@ export class AuthService {
       .pipe(
         tap(result => {
           if (result) {
-            this.logger.info('Signed in with Google!', result.user);
-            this.debugAuth('google redirect result received', {
+            this.logger.info('Signed in with redirect provider!', result.user);
+            this.debugAuth('provider redirect result received', {
+              providerId: result.providerId,
               user: this.createUserDebugSummary(result.user),
             });
           } else {
-            this.debugAuth('google redirect result empty');
+            this.debugAuth('provider redirect result empty');
           }
         }),
         catchError(error => {
-          this.debugAuth('google redirect result failed', this.createErrorDebugSummary(error));
-          this.logger.error('Google login failed:', error);
+          this.debugAuth('provider redirect result failed', this.createErrorDebugSummary(error));
+          this.logger.error('Provider redirect login failed:', error);
           return of(null);
         })
       );
@@ -427,6 +473,14 @@ export class AuthService {
     return provider;
   }
 
+  private createFacebookProvider(): FacebookAuthProvider {
+    const provider = new FacebookAuthProvider();
+
+    provider.addScope('email');
+
+    return provider;
+  }
+
   private fromAuthOperation<T>(operation: () => Promise<T>): Observable<T> {
     return defer(() => from(operation()));
   }
@@ -487,5 +541,20 @@ export class AuthService {
 
   private debugAuth(event: string, details?: unknown): void {
     writeAuthDebug('AuthDebug', event, details);
+  }
+
+  private async bootstrapUserProfile(user: User): Promise<void> {
+    try {
+      const account = await this.userAccountService.bootstrapUserProfile(user);
+      this.debugAuth('user profile bootstrap success', {
+        uid: account.uid,
+        roles: account.roles,
+        commentTrustStatus: account.commentTrustStatus,
+        pointsTotal: account.points.total,
+      });
+    } catch (error) {
+      this.debugAuth('user profile bootstrap failed', this.createErrorDebugSummary(error));
+      this.logger.warn('User profile bootstrap failed:', error);
+    }
   }
 }
