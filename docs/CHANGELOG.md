@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-07-07
+
+- Raised the public site mobile menu above fixed reader controls while it is open and restored pointer handling so mobile account actions receive taps reliably.
+
 ## 2026-07-04
 
 - Replaced the homepage topic guide card grid with a reusable CSS/SVG `TopicKnowledgeMapComponent` that uses a blueprint-style map, themed topic nodes, responsive mobile rail layout, and dynamic published-post counts.
