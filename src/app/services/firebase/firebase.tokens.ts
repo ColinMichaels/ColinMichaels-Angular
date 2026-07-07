@@ -2,7 +2,7 @@ import {InjectionToken, Provider} from '@angular/core';
 import {FirebaseApp, FirebaseOptions, getApp, getApps, initializeApp} from 'firebase/app';
 import {Auth, getAuth} from 'firebase/auth';
 import {Database, getDatabase} from 'firebase/database';
-import {Firestore, getFirestore} from 'firebase/firestore';
+import {Firestore, connectFirestoreEmulator, getFirestore} from 'firebase/firestore';
 import {Functions, connectFunctionsEmulator, getFunctions} from 'firebase/functions';
 import {FirebaseStorage, getStorage} from 'firebase/storage';
 
@@ -15,6 +15,10 @@ export const FIREBASE_STORAGE = new InjectionToken<FirebaseStorage>('Firebase st
 
 export interface FirebaseServiceEmulatorConfig {
   functions?: {
+    host: string;
+    port: number;
+  };
+  firestore?: {
     host: string;
     port: number;
   };
@@ -38,7 +42,15 @@ export function provideFirebaseServices(options: FirebaseOptions, emulators?: Fi
     },
     {
       provide: FIREBASE_FIRESTORE,
-      useFactory: (app: FirebaseApp) => getFirestore(app),
+      useFactory: (app: FirebaseApp) => {
+        const firestore = getFirestore(app);
+
+        if (emulators?.firestore) {
+          connectFirestoreEmulator(firestore, emulators.firestore.host, emulators.firestore.port);
+        }
+
+        return firestore;
+      },
       deps: [FIREBASE_APP],
     },
     {

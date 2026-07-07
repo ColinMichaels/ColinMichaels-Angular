@@ -35,7 +35,9 @@ import {AuthService} from '../../../services/auth.service';
           </p>
 
           <div class="flex flex-wrap gap-3">
-            <a routerLink="/login"
+            <a
+               routerLink="/login"
+               [queryParams]="{redirectUrl: '/admin'}"
                class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
               Sign In Again
             </a>

@@ -26,7 +26,7 @@ import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
 import {type User, type UserCredential} from 'firebase/auth';
 import {AuthService} from '../../../../services/auth.service';
-import {faGoogle} from '@fortawesome/free-brands-svg-icons';
+import {faFacebook, faGoogle} from '@fortawesome/free-brands-svg-icons';
 import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
 
 @Component({
@@ -63,6 +63,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   isLoginMode = true; // Toggle between login and register views
   loading = false;
   googleLoading = false;
+  facebookLoading = false;
   error = '';
 
   form: FormGroup;
@@ -111,14 +112,8 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.debugLogin('initialized', {
       redirectUrl: this.redirectUrl,
       isLocalHost: this.isLocalHost,
-      bypassLogin: this.shouldBypassLoginForLocalDevelopment(),
+      bypassLogin: false,
     });
-
-    if (this.shouldBypassLoginForLocalDevelopment()) {
-      this.debugLogin('local development bypass active', {redirectUrl: this.redirectUrl});
-      this.navigateToDestination();
-      return;
-    }
 
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
@@ -139,9 +134,11 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           user: result ? this.createUserDebugSummary(result.user) : null,
         });
         if (result) {
+          const providerLabel = this.getProviderLabel(result.providerId);
           this.loading = true;
-          this.googleLoading = true;
-          this.finishFirebaseLogin(result.user, 'Google redirect');
+          this.googleLoading = providerLabel === 'Google';
+          this.facebookLoading = providerLabel === 'Facebook';
+          this.finishFirebaseLogin(result.user, `${providerLabel} redirect`);
         }
       });
 
@@ -176,7 +173,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   private getDestinationUrl(): string {
-    return this.redirectUrl ?? (this.isLocalHost ? `/${PATH_NAMES.OS_MAIN}/cli` : `/${PATH_NAMES.OS_MAIN}`);
+    return this.redirectUrl ?? '/';
   }
 
   private navigateToDestination(destination = this.getDestinationUrl()) {
@@ -200,16 +197,6 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   }
 
-  private shouldBypassLoginForLocalDevelopment(): boolean {
-    return this.isLocalHost && !this.isAdminRedirect(this.redirectUrl);
-  }
-
-  private isAdminRedirect(redirectUrl: string | null): boolean {
-    const adminRoot = `/${PATH_NAMES.ADMIN}`;
-
-    return redirectUrl === adminRoot || redirectUrl?.startsWith(`${adminRoot}/`) === true;
-  }
-
   private getSafeRedirectUrl(value: unknown): string | null {
     if (typeof value !== 'string') {
       return null;
@@ -217,11 +204,25 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
     const redirectUrl = value.trim();
 
-    if (!redirectUrl || !redirectUrl.startsWith('/') || redirectUrl.startsWith('//') || redirectUrl.includes('://')) {
+    if (
+      !redirectUrl
+      || !redirectUrl.startsWith('/')
+      || redirectUrl.startsWith('//')
+      || redirectUrl.includes('://')
+      || this.isAuthUtilityRedirect(redirectUrl)
+    ) {
       return null;
     }
 
     return redirectUrl;
+  }
+
+  private isAuthUtilityRedirect(redirectUrl: string): boolean {
+    const path = redirectUrl.split('?')[0].split('#')[0];
+    const loginPath = `/${PATH_NAMES.OS_LOGIN}`;
+    const logoutPath = `/${PATH_NAMES.LOGOUT}`;
+
+    return path === loginPath || path.startsWith(`${loginPath}/`) || path === logoutPath;
   }
 
   private getErrorCode(error: unknown): string {
@@ -248,15 +249,15 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       case 'auth/user-disabled':
         return 'This account has been disabled';
       case 'auth/operation-not-allowed':
-        return 'Operation not allowed';
+        return 'This sign-in provider is not enabled for this Firebase project';
       case 'auth/account-exists-with-different-credential':
         return 'An account already exists with the same email address';
       case 'auth/popup-blocked':
-        return 'The Google sign-in popup was blocked. Please allow popups or try again.';
+        return 'The sign-in popup was blocked. Please allow popups or try again.';
       case 'auth/popup-closed-by-user':
         return 'Authentication popup was closed before completing the process';
       case 'auth/unauthorized-domain':
-        return 'This domain is not authorized for Firebase Google sign-in.';
+        return 'This domain is not authorized for Firebase sign-in.';
       case 'auth/network-request-failed':
         return 'Network error while contacting Firebase Authentication';
       default:
@@ -378,10 +379,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           const errorCode = this.getErrorCode(error);
           this.debugLogin('google popup login failed', {
             error: this.createErrorDebugSummary(error),
-            willFallbackToRedirect: this.shouldFallbackToGoogleRedirect(errorCode),
+            willFallbackToRedirect: this.shouldFallbackToRedirect(errorCode),
           });
 
-          if (this.shouldFallbackToGoogleRedirect(errorCode)) {
+          if (this.shouldFallbackToRedirect(errorCode)) {
             this.error = 'Popup blocked. Redirecting to Google sign-in...';
             this.startGoogleRedirectSignIn();
             return;
@@ -395,7 +396,42 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       });
   }
 
-  private shouldFallbackToGoogleRedirect(errorCode: string): boolean {
+  loginWithFacebook() {
+    this.loading = true;
+    this.facebookLoading = true;
+    this.error = '';
+    this.debugLogin('facebook popup login submitted');
+
+    this.authService.loginWithFacebook()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result: UserCredential) => {
+          this.debugLogin('facebook popup login succeeded', {user: this.createUserDebugSummary(result.user)});
+          this.logger.info('User logged in with Facebook:', result.user.email);
+          this.finishFirebaseLogin(result.user, 'Facebook');
+        },
+        error: (error) => {
+          const errorCode = this.getErrorCode(error);
+          this.debugLogin('facebook popup login failed', {
+            error: this.createErrorDebugSummary(error),
+            willFallbackToRedirect: this.shouldFallbackToRedirect(errorCode),
+          });
+
+          if (this.shouldFallbackToRedirect(errorCode)) {
+            this.error = 'Popup blocked. Redirecting to Facebook sign-in...';
+            this.startFacebookRedirectSignIn();
+            return;
+          }
+
+          this.loading = false;
+          this.facebookLoading = false;
+          this.error = this.getErrorMessage(errorCode);
+          this.logger.error('Facebook login error:', error);
+        }
+      });
+  }
+
+  private shouldFallbackToRedirect(errorCode: string): boolean {
     return errorCode === 'auth/popup-blocked'
       || errorCode === 'auth/operation-not-supported-in-this-environment';
   }
@@ -423,6 +459,29 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       });
   }
 
+  private startFacebookRedirectSignIn(): void {
+    this.debugLogin('facebook redirect login submitted');
+    this.authService.loginWithFacebookRedirect()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.debugLogin('facebook redirect login dispatched');
+          this.loading = false;
+          this.facebookLoading = false;
+        },
+        error: (error) => {
+          this.loading = false;
+          this.facebookLoading = false;
+          this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.debugLogin('facebook redirect login failed', {
+            error: this.createErrorDebugSummary(error),
+            displayedMessage: this.error,
+          });
+          this.logger.error('Facebook redirect login error:', error);
+        }
+      });
+  }
+
   private finishFirebaseLogin(user: User, method: string): void {
     if (this.completingLogin) {
       this.debugLogin('finish login skipped because completion is already in progress', {
@@ -444,6 +503,18 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.navigateToDestination(destination);
     this.loading = false;
     this.googleLoading = false;
+    this.facebookLoading = false;
+  }
+
+  private getProviderLabel(providerId: string | null): string {
+    switch (providerId) {
+      case 'facebook.com':
+        return 'Facebook';
+      case 'google.com':
+        return 'Google';
+      default:
+        return 'provider';
+    }
   }
 
   private syncOsUserForDestination(user: User, method: string, destination: string): void {
@@ -562,4 +633,5 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   protected readonly faChevronRight = faChevronRight;
   protected readonly faMoon = faMoon;
   protected readonly faGoogle = faGoogle;
+  protected readonly faFacebook = faFacebook;
 }

@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --configuration local",
+    "start:live": "ng serve --configuration live-local",
     "generate:env": "node scripts/generate-environment.mjs",
     "prepare:functions-seo": "node scripts/prepare-functions-seo.mjs",
     "build": "ng build",

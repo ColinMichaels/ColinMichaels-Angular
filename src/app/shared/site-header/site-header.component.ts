@@ -83,7 +83,7 @@ interface SiteNavItem {
           </button>
 
           <a
-            [routerLink]="['/', pathNames.OS_LOGIN]"
+            [routerLink]="['/', pathNames.OS_MAIN]"
             class="hidden h-10 shrink-0 items-center justify-center rounded-full border border-emerald-600/70 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-400/70 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950 sm:inline-flex"
           >
             OS
@@ -142,7 +142,7 @@ interface SiteNavItem {
               Search
             </button>
             <a
-              [routerLink]="['/', pathNames.OS_LOGIN]"
+              [routerLink]="['/', pathNames.OS_MAIN]"
               class="rounded-lg border border-emerald-600/70 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-400/70 dark:bg-transparent dark:text-emerald-200 dark:hover:bg-emerald-300 dark:hover:text-neutral-950"
               (click)="closeMenu()"
             >

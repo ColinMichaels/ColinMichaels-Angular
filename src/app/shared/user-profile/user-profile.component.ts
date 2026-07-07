@@ -1,19 +1,28 @@
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
-import {tap} from 'rxjs';
+import {of, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {AuthService} from '../../services/auth.service';
 import {
   ADMIN_CONSOLE_ROLES,
+  BASE_USER_ROLE,
   UserAccountProfile,
+  UserPointEvent,
   USER_ROLE_DEFINITIONS,
 } from '../user-account/user-account.model';
+import {UserAccountService} from '../user-account/user-account.service';
 import {writeAuthDebug} from '../debug/auth-debug';
 
 function getDisplayName(profile: UserAccountProfile): string {
-  return profile.displayName || profile.email || profile.uid;
+  return profile.displayName || profile.email || 'User';
+}
+
+interface AssignedRoleView {
+  id: string;
+  label: string;
+  description: string;
 }
 
 @Component({
@@ -42,11 +51,11 @@ function getDisplayName(profile: UserAccountProfile): string {
             <div class="min-w-0 space-y-2">
               <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Profile</p>
               <h1 class="break-words text-4xl font-semibold text-zinc-50">{{ displayName() }}</h1>
-              <p class="break-all text-zinc-400">{{ account.email || account.uid }}</p>
+              <p class="break-all text-zinc-400">{{ account.email || 'Signed in account' }}</p>
             </div>
           </header>
 
-          <section class="grid gap-4 md:grid-cols-3">
+          <section class="grid gap-4 md:grid-cols-4">
             <div class="border border-zinc-800 bg-zinc-900 p-4">
               <p class="text-sm text-zinc-500">Account</p>
               <p class="mt-2 text-lg font-semibold">{{ account.emailVerified ? 'Verified' : 'Unverified' }}</p>
@@ -57,7 +66,11 @@ function getDisplayName(profile: UserAccountProfile): string {
             </div>
             <div class="border border-zinc-800 bg-zinc-900 p-4">
               <p class="text-sm text-zinc-500">Roles</p>
-              <p class="mt-2 text-lg font-semibold">{{ account.roles.length || 0 }}</p>
+              <p class="mt-2 text-lg font-semibold">{{ assignedRoleViews().length }}</p>
+            </div>
+            <div class="border border-zinc-800 bg-zinc-900 p-4">
+              <p class="text-sm text-zinc-500">Points</p>
+              <p class="mt-2 text-lg font-semibold">{{ accountDocument()?.points?.total ?? 0 }}</p>
             </div>
           </section>
 
@@ -65,10 +78,6 @@ function getDisplayName(profile: UserAccountProfile): string {
             <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">
               <h2 class="text-xl font-semibold text-zinc-50">Account Information</h2>
               <dl class="grid gap-4 text-sm">
-                <div>
-                  <dt class="text-zinc-500">UID</dt>
-                  <dd class="mt-1 break-all text-zinc-200">{{ account.uid }}</dd>
-                </div>
                 <div>
                   <dt class="text-zinc-500">Email</dt>
                   <dd class="mt-1 break-all text-zinc-200">{{ account.email || 'No email on account' }}</dd>
@@ -87,6 +96,10 @@ function getDisplayName(profile: UserAccountProfile): string {
                     }
                   </dd>
                 </div>
+                <div>
+                  <dt class="text-zinc-500">Comment Trust</dt>
+                  <dd class="mt-1 text-zinc-200">{{ trustStatusLabel() }}</dd>
+                </div>
               </dl>
             </section>
 
@@ -100,43 +113,62 @@ function getDisplayName(profile: UserAccountProfile): string {
                 }
               </div>
 
-              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-zinc-800 text-left text-sm">
-                  <thead class="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                    <tr>
-                      <th scope="col" class="py-3 pr-4 font-medium">Role</th>
-                      <th scope="col" class="py-3 pr-4 font-medium">Status</th>
-                      <th scope="col" class="py-3 font-medium">Capability</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-zinc-800">
-                    @for (role of roleDefinitions; track role.id) {
-                      <tr>
-                        <td class="py-3 pr-4 font-medium text-zinc-100">{{ role.label }}</td>
-                        <td class="py-3 pr-4">
-                          @if (hasRole(role.id)) {
-                            <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Assigned</span>
-                          } @else {
-                            <span class="text-zinc-600">Not assigned</span>
-                          }
-                        </td>
-                        <td class="py-3 text-zinc-400">{{ role.description }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+              <div class="grid gap-3">
+                @for (role of assignedRoleViews(); track role.id) {
+                  <article class="border border-zinc-800 bg-zinc-950 p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <h3 class="font-semibold text-zinc-100">{{ role.label }}</h3>
+                      <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Assigned</span>
+                    </div>
+                    <p class="mt-2 text-sm leading-6 text-zinc-400">{{ role.description }}</p>
+                  </article>
+                } @empty {
+                  <p class="border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-500">No roles assigned yet.</p>
+                }
               </div>
+            </section>
+          </section>
 
-              @if (customRoles().length > 0) {
-                <div class="border-t border-zinc-800 pt-4">
-                  <p class="text-sm font-medium text-zinc-300">Additional role claims</p>
-                  <div class="mt-3 flex flex-wrap gap-2">
-                    @for (role of customRoles(); track role) {
-                      <span class="border border-zinc-700 px-2 py-1 text-xs text-zinc-200">{{ role }}</span>
-                    }
+          <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">
+              <h2 class="text-xl font-semibold text-zinc-50">Points Summary</h2>
+              <dl class="grid gap-4 text-sm">
+                <div>
+                  <dt class="text-zinc-500">Total</dt>
+                  <dd class="mt-1 text-3xl font-semibold text-cyan-100">{{ accountDocument()?.points?.total ?? 0 }}</dd>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                  <div>
+                    <dt class="text-zinc-500">Reads</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.postReads ?? 0 }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-zinc-500">Shares</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.shares ?? 0 }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-zinc-500">Approved Comments</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.approvedComments ?? 0 }}</dd>
                   </div>
                 </div>
-              }
+              </dl>
+            </section>
+
+            <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">
+              <h2 class="text-xl font-semibold text-zinc-50">Recent Activity</h2>
+              <div class="grid gap-3">
+                @for (event of pointEvents(); track event.id) {
+                  <article class="grid gap-1 border border-zinc-800 bg-zinc-950 p-3 text-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <p class="font-medium text-zinc-100">{{ pointEventLabel(event) }}</p>
+                      <span class="text-cyan-100">+{{ event.points }}</span>
+                    </div>
+                    <p class="text-xs text-zinc-500">{{ event.createdAt }}</p>
+                  </article>
+                } @empty {
+                  <p class="text-sm text-zinc-500">No point activity yet.</p>
+                }
+              </div>
             </section>
           </section>
         } @else {
@@ -144,7 +176,11 @@ function getDisplayName(profile: UserAccountProfile): string {
             <p class="text-sm uppercase tracking-[0.3em] text-amber-200">Signed Out</p>
             <h1 class="text-3xl font-semibold text-zinc-50">No active user session</h1>
             <p class="text-zinc-300">Sign in to view profile and role information.</p>
-            <a routerLink="/login" class="inline-flex border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
+            <a
+              [routerLink]="['/', pathNames.OS_LOGIN]"
+              [queryParams]="{redirectUrl: '/' + pathNames.PROFILE}"
+              class="inline-flex border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+            >
               Login
             </a>
           </section>
@@ -155,9 +191,9 @@ function getDisplayName(profile: UserAccountProfile): string {
 })
 export class UserProfileComponent {
   private readonly authService = inject(AuthService);
+  private readonly userAccountService = inject(UserAccountService);
 
   protected readonly pathNames = PATH_NAMES;
-  protected readonly roleDefinitions = USER_ROLE_DEFINITIONS;
   protected readonly profile = toSignal(
     this.authService.getCurrentUserProfile(true).pipe(
       tap(profile => this.debugProfile('profile resolved', {
@@ -181,13 +217,79 @@ export class UserProfileComponent {
     const roles = this.profile()?.roles ?? [];
     return ADMIN_CONSOLE_ROLES.some(role => roles.includes(role));
   });
-  protected readonly customRoles = computed(() => {
-    const knownRoles = new Set<string>(this.roleDefinitions.map(role => role.id));
-    return (this.profile()?.roles ?? []).filter(role => !knownRoles.has(role));
+  protected readonly accountDocument = toSignal(
+    this.authService.user$.pipe(
+      switchMap(user => user ? this.userAccountService.listenToUserAccount(user.uid) : of(null))
+    ),
+    {initialValue: null}
+  );
+  protected readonly pointEvents = toSignal(
+    this.authService.user$.pipe(
+      switchMap(user => user ? this.userAccountService.listenToPointEvents(user.uid) : of([]))
+    ),
+    {initialValue: []}
+  );
+  protected readonly trustStatusLabel = computed(() => {
+    const status = this.accountDocument()?.commentTrustStatus ?? 'new';
+
+    switch (status) {
+      case 'trusted':
+        return 'Trusted commenter';
+      case 'blocked':
+        return 'Commenting blocked';
+      default:
+        return 'First comment requires review';
+    }
   });
 
-  protected hasRole(role: string): boolean {
-    return this.profile()?.roles.includes(role) === true;
+  protected readonly assignedRoleIds = computed(() => {
+    const roles = new Set<string>([BASE_USER_ROLE]);
+    const accountRoles = this.accountDocument()?.roles ?? [];
+    const profileRoles = this.profile()?.roles ?? [];
+
+    for (const role of [...accountRoles, ...profileRoles]) {
+      if (role) {
+        roles.add(role);
+      }
+    }
+
+    return [...roles].sort((a, b) => {
+      if (a === BASE_USER_ROLE) {
+        return -1;
+      }
+
+      if (b === BASE_USER_ROLE) {
+        return 1;
+      }
+
+      return a.localeCompare(b);
+    });
+  });
+  protected readonly assignedRoleViews = computed<AssignedRoleView[]>(() => {
+    const roleDefinitions = new Map<string, AssignedRoleView>(USER_ROLE_DEFINITIONS.map(role => [role.id, role]));
+
+    return this.assignedRoleIds().map(role => {
+      const definition = roleDefinitions.get(role);
+
+      return {
+        id: role,
+        label: definition?.label ?? this.formatCustomRole(role),
+        description: definition?.description ?? 'Custom account role assigned by an administrator.',
+      };
+    });
+  });
+
+  protected pointEventLabel(event: UserPointEvent): string {
+    switch (event.type) {
+      case 'post_read':
+        return `Read ${event.postSlug ? `/blog/${event.postSlug}` : 'a post'}`;
+      case 'post_share':
+        return `Shared ${event.postSlug ? `/blog/${event.postSlug}` : 'a post'}${event.provider ? ` via ${event.provider}` : ''}`;
+      case 'comment_approved':
+        return `Approved comment${event.postSlug ? ` on /blog/${event.postSlug}` : ''}`;
+      default:
+        return 'Point activity';
+    }
   }
 
   private createProfileDebugSummary(profile: UserAccountProfile): Record<string, unknown> {
@@ -206,5 +308,13 @@ export class UserProfileComponent {
 
   private debugProfile(event: string, details?: unknown): void {
     writeAuthDebug('ProfileDebug', event, details);
+  }
+
+  private formatCustomRole(role: string): string {
+    return role
+      .replace(/[_-]+/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .trim()
+      .replace(/\b\w/g, character => character.toUpperCase()) || role;
   }
 }
