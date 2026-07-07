@@ -1,13 +1,14 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
-import {of, switchMap, tap} from 'rxjs';
+import {firstValueFrom, of, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {AuthService} from '../../services/auth.service';
+import {AuthService, getAuthProviderLabel} from '../../services/auth.service';
 import {
   ADMIN_CONSOLE_ROLES,
   BASE_USER_ROLE,
+  isRecord,
   UserAccountProfile,
   UserPointEvent,
   USER_ROLE_DEFINITIONS,
@@ -23,6 +24,11 @@ interface AssignedRoleView {
   id: string;
   label: string;
   description: string;
+}
+
+interface LinkedProviderView {
+  id: string;
+  label: string;
 }
 
 @Component({
@@ -62,7 +68,7 @@ interface AssignedRoleView {
             </div>
             <div class="border border-zinc-800 bg-zinc-900 p-4">
               <p class="text-sm text-zinc-500">Providers</p>
-              <p class="mt-2 text-lg font-semibold">{{ account.providerIds.length || 0 }}</p>
+              <p class="mt-2 text-lg font-semibold">{{ linkedProviderIds().length || 0 }}</p>
             </div>
             <div class="border border-zinc-800 bg-zinc-900 p-4">
               <p class="text-sm text-zinc-500">Roles</p>
@@ -73,6 +79,16 @@ interface AssignedRoleView {
               <p class="mt-2 text-lg font-semibold">{{ accountDocument()?.points?.total ?? 0 }}</p>
             </div>
           </section>
+
+          @if (linkStatusMessage()) {
+            <p
+              class="border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-100">{{ linkStatusMessage() }}</p>
+          }
+
+          @if (linkErrorMessage()) {
+            <p
+              class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100">{{ linkErrorMessage() }}</p>
+          }
 
           <section class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">
@@ -89,10 +105,27 @@ interface AssignedRoleView {
                 <div>
                   <dt class="text-zinc-500">Sign-in Providers</dt>
                   <dd class="mt-2 flex flex-wrap gap-2">
-                    @for (provider of account.providerIds; track provider) {
-                      <span class="border border-zinc-700 px-2 py-1 text-xs text-zinc-200">{{ provider }}</span>
+                    @for (provider of linkedProviderViews(); track provider.id) {
+                      <span class="border border-zinc-700 px-2 py-1 text-xs text-zinc-200">{{ provider.label }}</span>
                     } @empty {
                       <span class="text-zinc-500">No provider data</span>
+                    }
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-zinc-500">Provider Actions</dt>
+                  <dd class="mt-2">
+                    @if (hasLinkedProvider('facebook.com')) {
+                      <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Facebook connected</span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="border border-cyan-400 px-3 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                        [disabled]="isLinkingFacebook()"
+                        (click)="connectFacebook()"
+                      >
+                        {{ isLinkingFacebook() ? 'Connecting Facebook...' : 'Connect Facebook' }}
+                      </button>
                     }
                   </dd>
                 </div>
@@ -194,6 +227,10 @@ export class UserProfileComponent {
   private readonly userAccountService = inject(UserAccountService);
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly isLinkingFacebook = signal(false);
+  protected readonly linkStatusMessage = signal<string | null>(null);
+  protected readonly linkErrorMessage = signal<string | null>(null);
+  private readonly linkedProviderIdsOverride = signal<readonly string[] | null>(null);
   protected readonly profile = toSignal(
     this.authService.getCurrentUserProfile(true).pipe(
       tap(profile => this.debugProfile('profile resolved', {
@@ -241,6 +278,28 @@ export class UserProfileComponent {
         return 'First comment requires review';
     }
   });
+  protected readonly linkedProviderIds = computed(() => {
+    const providers = new Set<string>();
+    const profileProviderIds = this.profile()?.providerIds ?? [];
+    const accountProviderIds = this.accountDocument()?.providerIds ?? [];
+    const overrideProviderIds = this.linkedProviderIdsOverride();
+
+    for (const providerId of [...profileProviderIds, ...accountProviderIds, ...(overrideProviderIds ?? [])]) {
+      if (providerId) {
+        providers.add(providerId);
+      }
+    }
+
+    return [...providers].sort((left, right) => {
+      const orderDifference = this.getProviderSortOrder(left) - this.getProviderSortOrder(right);
+
+      return orderDifference || getAuthProviderLabel(left).localeCompare(getAuthProviderLabel(right));
+    });
+  });
+  protected readonly linkedProviderViews = computed<LinkedProviderView[]>(() => this.linkedProviderIds().map(providerId => ({
+    id: providerId,
+    label: getAuthProviderLabel(providerId),
+  })));
 
   protected readonly assignedRoleIds = computed(() => {
     const roles = new Set<string>([BASE_USER_ROLE]);
@@ -292,6 +351,37 @@ export class UserProfileComponent {
     }
   }
 
+  protected hasLinkedProvider(providerId: string): boolean {
+    return this.linkedProviderIds().includes(providerId);
+  }
+
+  protected async connectFacebook(): Promise<void> {
+    if (this.isLinkingFacebook()) {
+      return;
+    }
+
+    this.isLinkingFacebook.set(true);
+    this.linkStatusMessage.set(null);
+    this.linkErrorMessage.set(null);
+
+    try {
+      const result = await firstValueFrom(this.authService.linkFacebookProvider());
+      this.linkedProviderIdsOverride.set(result.user.providerData.map(provider => provider.providerId));
+      this.linkStatusMessage.set('Facebook is now connected to this profile.');
+      this.debugProfile('facebook provider linked', {
+        providerIds: result.user.providerData.map(provider => provider.providerId),
+      });
+    } catch (error) {
+      this.linkErrorMessage.set(this.getAccountLinkErrorMessage(error));
+      this.debugProfile('facebook provider link failed', {
+        error: this.createErrorDebugSummary(error),
+        displayedMessage: this.linkErrorMessage(),
+      });
+    } finally {
+      this.isLinkingFacebook.set(false);
+    }
+  }
+
   private createProfileDebugSummary(profile: UserAccountProfile): Record<string, unknown> {
     return {
       uid: profile.uid,
@@ -308,6 +398,56 @@ export class UserProfileComponent {
 
   private debugProfile(event: string, details?: unknown): void {
     writeAuthDebug('ProfileDebug', event, details);
+  }
+
+  private getAccountLinkErrorMessage(error: unknown): string {
+    switch (this.getErrorCode(error)) {
+      case 'auth/provider-already-linked':
+        return 'Facebook is already connected to this profile.';
+      case 'auth/credential-already-in-use':
+        return 'That Facebook login is already connected to another account.';
+      case 'auth/account-exists-with-different-credential':
+        return 'That Facebook login belongs to another account. Sign in with that account first.';
+      case 'auth/popup-blocked':
+        return 'The Facebook connection popup was blocked. Allow popups, then try again.';
+      case 'auth/popup-closed-by-user':
+        return 'Facebook connection was canceled before it finished.';
+      case 'auth/unauthorized-domain':
+        return 'This domain is not authorized for Firebase sign-in.';
+      default:
+        return 'Unable to connect Facebook right now.';
+    }
+  }
+
+  private getErrorCode(error: unknown): string {
+    return isRecord(error) && typeof error['code'] === 'string' ? error['code'] : '';
+  }
+
+  private createErrorDebugSummary(error: unknown): Record<string, unknown> {
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        code: this.getErrorCode(error),
+      };
+    }
+
+    return {
+      message: String(error),
+    };
+  }
+
+  private getProviderSortOrder(providerId: string): number {
+    switch (providerId) {
+      case 'password':
+        return 0;
+      case 'google.com':
+        return 1;
+      case 'facebook.com':
+        return 2;
+      default:
+        return 10;
+    }
   }
 
   private formatCustomRole(role: string): string {

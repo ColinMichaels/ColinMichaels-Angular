@@ -84,6 +84,11 @@ function getErrorMessage(error: unknown): string {
                     <p class="mt-1 text-xs text-zinc-500">
                       {{ comment.createdAt | date: 'MMM d, y, h:mm a' }} on /blog/{{ comment.postSlug }}
                     </p>
+                    @if (comment.parentCommentId) {
+                      <p class="mt-1 text-xs text-cyan-300">
+                        Reply to {{ comment.parentAuthorDisplayName || comment.parentCommentId }}
+                      </p>
+                    }
                   </div>
                   <span class="justify-self-start border border-zinc-700 px-2 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300 md:justify-self-end">
                     {{ comment.status }}
