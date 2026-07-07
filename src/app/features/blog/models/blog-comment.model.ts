@@ -10,6 +10,10 @@ export interface BlogComment {
   id: string;
   postId: string;
   postSlug: string;
+  parentCommentId?: string | null;
+  parentAuthorDisplayName?: string | null;
+  threadRootId?: string | null;
+  threadDepth?: number | null;
   authorUid: string;
   authorDisplayName: string | null;
   authorPhotoURL: string | null;
@@ -24,4 +28,9 @@ export interface BlogComment {
 export interface SubmitBlogCommentResult {
   comment: BlogComment;
   trusted: boolean;
+}
+
+export interface BlogCommentListResult {
+  comments: readonly BlogComment[];
+  hasMore: boolean;
 }

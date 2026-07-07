@@ -66,6 +66,7 @@ const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
 const POST_READ_POINTS = 5;
 const POST_SHARE_POINTS = 10;
 const COMMENT_APPROVED_POINTS = 15;
+const MAX_COMMENT_THREAD_DEPTH = 12;
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
@@ -520,6 +521,10 @@ interface BlogCommentDocument {
   id: string;
   postId: string;
   postSlug: string;
+  parentCommentId?: string | null;
+  parentAuthorDisplayName?: string | null;
+  threadRootId: string;
+  threadDepth: number;
   authorUid: string;
   authorDisplayName: string | null;
   authorPhotoURL: string | null;
@@ -920,6 +925,9 @@ export const submitPostComment = onCall(
     const data = parseSubmitPostCommentRequest(request.data);
     const firestore = getFirestore();
     await requirePublishedPostTarget(data.postId, data.postSlug);
+    const parentComment = data.parentCommentId
+      ? await requireApprovedCommentReplyTarget(data.parentCommentId, data.postId, data.postSlug)
+      : null;
     const account = await ensureUserAccountForAuth(auth);
 
     if (account.commentTrustStatus === 'blocked') {
@@ -930,10 +938,15 @@ export const submitPostComment = onCall(
     const status: BlogCommentStatus = isTrusted ? 'approved' : 'pending';
     const now = new Date().toISOString();
     const commentRef = firestore.collection(POST_COMMENTS_COLLECTION).doc();
+    const parentThreadDepth = parentComment ? getCommentThreadDepth(parentComment) : -1;
     const comment: BlogCommentDocument = {
       id: commentRef.id,
       postId: data.postId,
       postSlug: data.postSlug,
+      parentCommentId: parentComment?.id ?? null,
+      parentAuthorDisplayName: parentComment?.authorDisplayName ?? null,
+      threadRootId: parentComment ? (parentComment.threadRootId || parentComment.id) : commentRef.id,
+      threadDepth: parentComment ? Math.min(parentThreadDepth + 1, MAX_COMMENT_THREAD_DEPTH) : 0,
       authorUid: auth.uid,
       authorDisplayName: account.displayName,
       authorPhotoURL: account.photoURL,
@@ -2879,10 +2892,16 @@ function parseBootstrapUserProfileRequest(value: unknown): {
   };
 }
 
-function parseSubmitPostCommentRequest(value: unknown): { postId: string; postSlug: string; body: string } {
+function parseSubmitPostCommentRequest(value: unknown): {
+  postId: string;
+  postSlug: string;
+  body: string;
+  parentCommentId: string | null;
+} {
   const record = requireRecord(value, 'Comment submission must be an object.');
   const postId = getTrimmedString(record['postId']);
   const postSlug = getTrimmedString(record['postSlug']);
+  const parentCommentId = getTrimmedString(record['parentCommentId']) || null;
   const bodyValidation = validatePlainTextCommentBody(record['body']);
   const body = bodyValidation.body;
 
@@ -2902,7 +2921,7 @@ function parseSubmitPostCommentRequest(value: unknown): { postId: string; postSl
     throw new HttpsError('invalid-argument', COMMENT_BODY_UNSAFE_CONTENT_MESSAGE);
   }
 
-  return {postId, postSlug, body};
+  return {postId, postSlug, body, parentCommentId};
 }
 
 function parseModeratePostCommentRequest(value: unknown): { commentId: string; action: CommentModerationAction } {
@@ -2954,6 +2973,36 @@ async function requirePublishedPostTarget(postId: string, postSlug: string): Pro
   if (!snapshot.exists || storedSlug !== postSlug || status !== 'published') {
     throw new HttpsError('failed-precondition', 'Engagement is only available for published posts.');
   }
+}
+
+async function requireApprovedCommentReplyTarget(
+  parentCommentId: string,
+  postId: string,
+  postSlug: string
+): Promise<BlogCommentDocument> {
+  const snapshot = await getFirestore().collection(POST_COMMENTS_COLLECTION).doc(parentCommentId).get();
+
+  if (!snapshot.exists) {
+    throw new HttpsError('not-found', 'Parent comment not found.');
+  }
+
+  const parentComment = {id: snapshot.id, ...snapshot.data()} as BlogCommentDocument;
+
+  if (parentComment.postId !== postId || parentComment.postSlug !== postSlug) {
+    throw new HttpsError('failed-precondition', 'Replies must target a comment on the same post.');
+  }
+
+  if (parentComment.status !== 'approved') {
+    throw new HttpsError('failed-precondition', 'Replies can only target approved comments.');
+  }
+
+  return parentComment;
+}
+
+function getCommentThreadDepth(comment: BlogCommentDocument): number {
+  return typeof comment.threadDepth === 'number' && Number.isFinite(comment.threadDepth)
+    ? Math.max(0, comment.threadDepth)
+    : 0;
 }
 
 async function ensureUserAccountForAuth(auth: AdminCallableAuth): Promise<UserAccountDocument> {
