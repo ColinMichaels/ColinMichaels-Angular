@@ -25,7 +25,8 @@ interface SiteNavItem {
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <header
-      class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100">
+      class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100"
+      [class.site-header-mobile-menu-open]="isMenuOpen()">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <a
           routerLink="/"
@@ -118,7 +119,7 @@ interface SiteNavItem {
 
       @if (isMenuOpen()) {
         <nav id="site-mobile-menu"
-             class="border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-neutral-950/95 md:hidden"
+             class="relative z-[91] pointer-events-auto border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-zinc-800 dark:bg-neutral-950/95 md:hidden"
              aria-label="Mobile navigation">
           <div class="grid gap-2">
             @for (item of navItems; track item.label) {
@@ -156,6 +157,11 @@ interface SiteNavItem {
       }
       <app-site-search-drawer [isOpen]="isSearchOpen()" (closeSearch)="closeSearch()"/>
     </header>
+  `,
+  styles: `
+    .site-header-mobile-menu-open {
+      z-index: 90;
+    }
   `,
 })
 export class SiteHeaderComponent {
