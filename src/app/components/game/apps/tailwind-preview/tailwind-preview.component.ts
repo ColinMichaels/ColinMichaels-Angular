@@ -1,7 +1,7 @@
 // tailwind-preview.component.ts
 import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {TailwindClassGeneratorService, TailwindVariant} from '../../services/tailwind-class-generator.service';
-import {NgClass, NgForOf} from '@angular/common';
+import {NgForOf, NgStyle} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Clipboard} from '@angular/cdk/clipboard';
 import {faCopy} from '@fortawesome/free-solid-svg-icons';
@@ -10,20 +10,20 @@ import {NotificationService} from '../../services/notification.service';
 @Component({
   selector: 'app-tailwind-preview',
   imports: [
-    NgClass,
     FormsModule,
-    NgForOf
+    NgForOf,
+    NgStyle
   ],
   template: `
     <div class="p-8 space-y-4 bg-gray-200 dark:bg-gray-900 h-full overflow-y-auto">
       <div class="grid grid-cols-2 gap-x-2 transition-all duration-500">
-        <div [class]="bgColorClass + ' relative p-4 rounded w-full text-sm text-center border border-white/30 '+ textColorClass"
-        [ngClass]="[selectedVariant ? textClass + ' ' + bgClass : '']">
+        <div class="relative p-4 rounded w-full text-sm text-center border border-white/30"
+             [ngStyle]="colorPreviewStyle(textColorClass, bgColorClass)">
           {{ bgColorClass }}
           <button class="copy-button" (click)="copy(bgColorClass)">Copy</button>
         </div>
-        <div [class]="' relative p-4 rounded w-full text-sm text-center bg-zinc-800  border border-white/30 '+ textColorClass"
-             [ngClass]="[selectedVariant ? textClass + ' ' + bgClass : '']">
+        <div class="relative p-4 rounded w-full text-sm text-center border border-white/30"
+             [ngStyle]="colorPreviewStyle(textColorClass, 'bg-zinc-800')">
           {{ textColorClass }}
           <button class="copy-button" (click)="copy(textColorClass)">Copy</button>
         </div>
@@ -57,20 +57,22 @@ import {NotificationService} from '../../services/notification.service';
 
       <div class="grid grid-cols-2 text-sm gap-x-2 text-center">
         <section class="text-xs space-y-2">
-          <label>Random Text & Background</label>
-          <div [ngClass]="[textClass, bgClass, 'relative p-4 rounded transition-all duration-500 w-full text-sm text-center border border-white/30']">
-            <div (click)="refreshTextAndBg()" class="bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
+          <p>Random Text & Background</p>
+          <div class="relative p-4 rounded transition-all duration-500 w-full text-sm text-center border border-white/30"
+               [ngStyle]="colorPreviewStyle(textClass, bgClass)">
+            <button type="button" (click)="refreshTextAndBg()" class="block w-full bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
               <pre class="text-xs">{{ textClass + ' ' + bgClass }}</pre>
-            </div>
+            </button>
             <button class="copy-button" (click)="copy(textClass + ' ' + bgClass)">Copy</button>
           </div>
         </section>
         <section class="text-xs space-y-2">
-          <label class="mb-1">Random Gradient Background</label>
-          <div [ngClass]="[gradientClass, 'relative p-4 rounded text-white transition-all duration-500 w-full text-sm text-center border border-white/30']">
-            <div (click)="refreshGradient()" class=" bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
+          <p class="mb-1">Random Gradient Background</p>
+          <div class="relative p-4 rounded text-white transition-all duration-500 w-full text-sm text-center border border-white/30"
+               [ngStyle]="gradientPreviewStyle(gradientClass)">
+            <button type="button" (click)="refreshGradient()" class="block w-full bg-zinc-800/90 text-white/90 p-4 rounded text-wrap truncate">
               <pre class="text-xs">{{ gradientClass }}</pre>
-            </div>
+            </button>
             <button class="copy-button" (click)="copy(gradientClass)">Copy</button>
           </div>
         </section>
@@ -101,6 +103,59 @@ import {NotificationService} from '../../services/notification.service';
   }`
 })
 export class TailwindPreviewComponent {
+  private readonly colorHueByName: Record<string, number> = {
+    red: 0,
+    orange: 24,
+    amber: 38,
+    yellow: 48,
+    lime: 84,
+    green: 142,
+    emerald: 154,
+    teal: 173,
+    cyan: 190,
+    sky: 202,
+    blue: 217,
+    indigo: 239,
+    violet: 258,
+    purple: 271,
+    fuchsia: 292,
+    pink: 330,
+    rose: 347,
+    slate: 215,
+    gray: 220,
+    zinc: 240,
+    neutral: 0,
+    stone: 25,
+  };
+  private readonly neutralColorSaturation: Record<string, number> = {
+    slate: 16,
+    gray: 9,
+    zinc: 6,
+    neutral: 0,
+    stone: 10,
+  };
+  private readonly colorLightnessBySaturation: Record<string, number> = {
+    50: 97,
+    100: 93,
+    200: 85,
+    300: 75,
+    400: 65,
+    500: 55,
+    600: 45,
+    700: 36,
+    800: 27,
+    900: 18,
+  };
+  private readonly gradientDirectionByClass: Record<string, string> = {
+    r: 'to right',
+    l: 'to left',
+    t: 'to top',
+    b: 'to bottom',
+    tr: 'to top right',
+    tl: 'to top left',
+    br: 'to bottom right',
+    bl: 'to bottom left',
+  };
   textClass = '';
   bgClass = '';
   gradientClass = '';
@@ -118,6 +173,53 @@ export class TailwindPreviewComponent {
     this.refreshAll();
   }
 
+  protected colorPreviewStyle(textClass: string, bgClass: string): Record<string, string> {
+    return {
+      color: this.resolveTailwindColor(textClass) ?? '#f4f4f5',
+      'background-color': this.resolveTailwindColor(bgClass) ?? '#27272a',
+    };
+  }
+
+  protected gradientPreviewStyle(classList: string): Record<string, string> {
+    const classes = classList.split(' ');
+    const directionClass = classes
+      .map(className => this.removeVariantPrefix(className))
+      .find(className => className.startsWith('bg-gradient-to-'));
+    const direction = directionClass?.replace('bg-gradient-to-', '') ?? 'r';
+    const colorStops = ['from', 'via', 'to']
+      .map(prefix => classes.find(className => this.removeVariantPrefix(className).startsWith(`${prefix}-`)))
+      .map(className => this.resolveTailwindColor(className ?? ''))
+      .filter((color): color is string => Boolean(color));
+    const stops = colorStops.length >= 2 ? colorStops : ['#22d3ee', '#2563eb'];
+
+    return {
+      'background-image': `linear-gradient(${this.gradientDirectionByClass[direction] ?? 'to right'}, ${stops.join(', ')})`,
+    };
+  }
+
+  private resolveTailwindColor(className: string): string | null {
+    const normalizedClass = this.removeVariantPrefix(className);
+    const match = /^(?:bg|text|from|via|to)-([a-z]+)-(\d+)$/.exec(normalizedClass);
+
+    if (!match) {
+      return null;
+    }
+
+    const [, colorName, saturation] = match;
+    const hue = this.colorHueByName[colorName];
+    const lightness = this.colorLightnessBySaturation[saturation];
+
+    if (hue === undefined || lightness === undefined) {
+      return null;
+    }
+
+    return `hsl(${hue} ${this.neutralColorSaturation[colorName] ?? 72}% ${lightness}%)`;
+  }
+
+  private removeVariantPrefix(className: string): string {
+    return className.split(':').pop() ?? className;
+  }
+
   get colors() {
       return this.tw.colors;
   }
@@ -128,11 +230,13 @@ export class TailwindPreviewComponent {
 
   refreshTextAndBg(): void {
     const { text, bg } = this.tw.generateRandomTextAndBg(this.selectedVariant);
+    const textClass = this.removeVariantPrefix(text);
+    const bgClass = this.removeVariantPrefix(bg);
 
-    const textColor = text.split('-')[1];
-    const bgColor = bg.split('-')[1];
-    const textSaturation = text.split('-')[2];
-    const bgSaturation = bg.split('-')[2];
+    const textColor = textClass.split('-')[1];
+    const bgColor = bgClass.split('-')[1];
+    const textSaturation = textClass.split('-')[2];
+    const bgSaturation = bgClass.split('-')[2];
 
     this.selectedTextColor = textColor;
     this.selectedTextSaturation = textSaturation;
@@ -159,15 +263,11 @@ export class TailwindPreviewComponent {
     this.refreshGradient();
   }
 
-  copy(text: string) {
-    const type = text.split('-')[0];
-    const sat = text.split('-')[2];
-    const inverseSat = Number(sat) > 500 ? 400 : 800;
-    const classList = type === 'bg' ?  `${text} text-zinc-${inverseSat}`: `${text} bg-zinc-${inverseSat}`;
+  copy(text: string): void {
     this.notify.show({
       title: 'Copied',
       message: `<span class='p-2 bg-zinc-800 truncate'>${text}</span>`,
-      classList: classList,
+      classList: 'bg-zinc-800 text-white',
       media: {
         id: '',
         title: 'Copied',
@@ -180,7 +280,7 @@ export class TailwindPreviewComponent {
           }
         }
       }
-    })
+    });
     this.clipboard.copy(text);
   }
 }

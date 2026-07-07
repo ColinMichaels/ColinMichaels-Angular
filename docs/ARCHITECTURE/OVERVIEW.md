@@ -8,6 +8,7 @@ The app uses Angular standalone components with route-driven screens and service
 - `app.routes.ts` composes route groups from `features/public`, `labs`, `admin`, and `core-os`.
 - `AppComponent` owns the shared site shell header for public/blog/labs/admin routes and intentionally excludes OS desktop/login/boot/sleep/redirect routes.
 - Public routes use clean path URLs. Firebase Hosting rewrites app routes through `renderSeoHtml` so crawlers receive canonical, Open Graph, Twitter Card, and JSON-LD metadata in the initial HTML.
+- The public startup shell includes a static inline preloader that masks the first unstyled paint until Angular, fonts, and one above-the-fold marked image are ready or capped by failsafes.
 - Desktop screen coordinates window lifecycle and system UI.
 - Services hold long-lived state (apps, user, settings, storage, CLI, sound, files, notifications).
 - Dynamic component loading is used for in-window apps.
@@ -30,7 +31,7 @@ Current route group files are boundary markers only. They preserve existing URL 
   shared route metadata lives under `shared/seo`; repeated site identity copy is centralized in `shared/seo/site-identity.ts` for Angular and mirrored in `functions/src/seo-site.ts` for the isolated Functions build. Dynamic blog post metadata is injected both client-side and server-side through the Firebase `renderSeoHtml` Function. Unknown routes return `404` instead of homepage fallback metadata. Sitemap taxonomy output is thresholded to keep low-value category/tag pages out of the XML, while those routes remain accessible with `noindex,follow`; sitemap entries now rely on canonical URLs and `lastmod` instead of low-value `changefreq`/`priority` tags. Homepage, blog, labs, article, and topic pages include visible fallback HTML in the initial shell for crawlers and no-JS readers, and `/llms.txt` provides AI-search citation guidance. Blog feed endpoints are served by Firebase Functions at `/feed.xml` and `/feed.json`, with discovery links emitted in both Angular and server-rendered
   metadata.
 - Shared site shell:
-  global header/menu and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
+  global header/menu, public startup preloader coordination, and persistent light/dark theme state live under `shared`, with CSS token overrides scoped to normal site routes so OS framework screens keep their own visual system.
 - Admin media library:
   protected media organizer UI for Firebase-backed uploads and metadata, with feature-scoped browsing, filtering, batch rename, resize requests, preview, and virtual folder/tag workflows.
 - Labs:

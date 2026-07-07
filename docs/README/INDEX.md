@@ -16,6 +16,7 @@ This folder is the entry point for project documentation.
 - [Core Services](../ARCHITECTURE/SERVICES.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)
+- [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
 
 ## Planning
 
