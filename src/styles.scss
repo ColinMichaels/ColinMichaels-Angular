@@ -208,3 +208,252 @@ app-site-header :is(h1, a, button),
   outline: 2px solid #005fcc; /* Adjust style as needed */
   border-radius: 4px; /* Optional: rounding for better visuals */
 }
+
+:root {
+  --reader-block-gap: 1.5rem;
+  --reader-font-scale: 1;
+  --reader-letter-spacing: 0;
+  --reader-line-height: 1.65;
+  --reader-paragraph-gap: 1rem;
+  --reader-word-spacing: normal;
+}
+
+.reader-font-100 {
+  --reader-font-scale: 1;
+}
+
+.reader-font-112 {
+  --reader-font-scale: 1.12;
+}
+
+.reader-font-125 {
+  --reader-font-scale: 1.25;
+}
+
+.reader-font-150 {
+  --reader-font-scale: 1.5;
+}
+
+.reader-font-175 {
+  --reader-font-scale: 1.75;
+}
+
+.reader-font-200 {
+  --reader-font-scale: 2;
+}
+
+.reader-spacing-normal {
+  --reader-block-gap: 1.5rem;
+  --reader-letter-spacing: 0;
+  --reader-line-height: 1.65;
+  --reader-paragraph-gap: 1rem;
+  --reader-word-spacing: normal;
+}
+
+.reader-spacing-comfortable {
+  --reader-block-gap: 1.85rem;
+  --reader-letter-spacing: .006em;
+  --reader-line-height: 1.78;
+  --reader-paragraph-gap: 1.4rem;
+  --reader-word-spacing: .045em;
+}
+
+.reader-spacing-open {
+  --reader-block-gap: 2.2rem;
+  --reader-letter-spacing: .012em;
+  --reader-line-height: 1.92;
+  --reader-paragraph-gap: 1.8rem;
+  --reader-word-spacing: .075em;
+}
+
+.reader-contrast-high.dark {
+  --site-bg: #000000;
+  --site-panel: #050505;
+  --site-panel-soft: rgba(0, 0, 0, .9);
+  --site-section: #0a0a0a;
+  --site-border: rgba(255, 255, 255, .45);
+  --site-accent: #facc15;
+  --site-accent-strong: #fde68a;
+  --site-accent-rgb: 250 204 21;
+  --site-accent-soft: rgb(var(--site-accent-rgb) / .18);
+  --site-heading: #ffffff;
+  --site-text: #f8fafc;
+  --site-muted: #e2e8f0;
+  --site-subtle: #cbd5e1;
+}
+
+.reader-contrast-high.light {
+  --site-bg: #ffffff;
+  --site-panel: #ffffff;
+  --site-panel-soft: rgba(255, 255, 255, .96);
+  --site-section: #f8fafc;
+  --site-border: rgba(0, 0, 0, .5);
+  --site-accent: #075985;
+  --site-accent-strong: #0c4a6e;
+  --site-accent-rgb: 7 89 133;
+  --site-accent-soft: rgb(var(--site-accent-rgb) / .13);
+  --site-heading: #000000;
+  --site-text: #020617;
+  --site-muted: #1e293b;
+  --site-subtle: #334155;
+}
+
+.public-reader-scope {
+  text-size-adjust: 100%;
+}
+
+.public-reader-scope :is(
+  .text-body,
+  .site-section-copy,
+  .blog-page-description,
+  .blog-results-summary,
+  .blog-state-panel,
+  .home-hero-summary,
+  .home-hero-post-excerpt,
+  .topic-hub-page p,
+  .topic-hub-article-excerpt,
+  .topic-hub-related-copy,
+  .blog-content,
+  .blog-content p,
+  .blog-content li,
+  .blog-content blockquote,
+  .blog-content cite,
+  .blog-custom-html,
+  .blog-custom-html :where(p, li, blockquote),
+  app-author-bio p
+) {
+  font-size: calc(1rem * var(--reader-font-scale)) !important;
+  letter-spacing: var(--reader-letter-spacing) !important;
+  line-height: var(--reader-line-height) !important;
+  word-spacing: var(--reader-word-spacing) !important;
+}
+
+.public-reader-scope :is(.blog-content, .blog-custom-html) > :not([hidden]) ~ :not([hidden]) {
+  margin-top: var(--reader-block-gap) !important;
+}
+
+.public-reader-scope :is(.blog-content p, .blog-custom-html p, .topic-hub-page p, app-author-bio p) + :is(p, ul, ol, blockquote) {
+  margin-top: var(--reader-paragraph-gap) !important;
+}
+
+.public-reader-scope :is(
+  .blog-page-title,
+  .heading-display,
+  .home-hero-title
+) {
+  font-size: clamp(2.25rem, calc(2.9rem * var(--reader-font-scale)), 5.25rem) !important;
+  line-height: 1.08 !important;
+}
+
+.public-reader-scope :is(.heading-section, .topic-hub-page h1) {
+  font-size: clamp(1.9rem, calc(2.35rem * var(--reader-font-scale)), 4.25rem) !important;
+  line-height: 1.14 !important;
+}
+
+.public-reader-scope :is(
+  .heading-subsection,
+  .blog-state-title,
+  .topic-hub-page h2,
+  .blog-content h2
+) {
+  font-size: clamp(1.35rem, calc(1.6rem * var(--reader-font-scale)), 3rem) !important;
+  line-height: 1.22 !important;
+}
+
+.public-reader-scope :is(
+  .heading-card,
+  .home-hero-post-title,
+  .topic-hub-page h3,
+  .blog-content h3
+) {
+  font-size: clamp(1.12rem, calc(1.25rem * var(--reader-font-scale)), 2.35rem) !important;
+  line-height: 1.28 !important;
+}
+
+.public-reader-scope :is(
+  .blog-post-meta-row,
+  .site-meta-row,
+  .site-meta,
+  .eyebrow,
+  .eyebrow-sm,
+  .blog-category-badge,
+  .blog-tag-chip,
+  .home-hero-meta,
+  .home-hero-posts-label
+) {
+  font-size: clamp(.78rem, calc(.86rem * var(--reader-font-scale)), 1.15rem) !important;
+  line-height: 1.45 !important;
+}
+
+.public-reader-scope :is(
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .blog-action-primary,
+  .blog-action-icon,
+  .blog-chip,
+  .blog-chip-active,
+  .home-hero-action,
+  .home-hero-panel,
+  .site-resource-link,
+  .topic-hub-action-primary,
+  .topic-hub-action-secondary,
+  .topic-hub-featured-cta,
+  .topic-hub-article-row
+) {
+  min-height: 44px !important;
+}
+
+.public-reader-scope :is(p, li, h1, h2, h3, h4, .heading-display, .heading-section, .heading-subsection, .heading-card) {
+  overflow-wrap: anywhere;
+}
+
+.public-reader-scope :is(img, video, iframe, svg) {
+  max-width: 100%;
+}
+
+.reader-contrast-high .public-reader-scope :is(.blog-page, .topic-hub-page, .site-section, .site-section-band, .site-section-band-dark) {
+  background-color: var(--site-bg) !important;
+  color: var(--site-text) !important;
+}
+
+.reader-contrast-high .public-reader-scope :is(.site-card, .site-card-dark, .site-card-interactive, .site-skeleton-card, .blog-media-frame, .reader-tools-panel) {
+  background-color: var(--site-panel) !important;
+  border-color: var(--site-border) !important;
+}
+
+.reader-contrast-high .public-reader-scope :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  .heading-display,
+  .heading-section,
+  .heading-subsection,
+  .heading-card,
+  .blog-page-title,
+  .blog-state-title
+) {
+  color: var(--site-heading) !important;
+}
+
+.reader-contrast-high .public-reader-scope :is(.text-body, .blog-content, .blog-content p, .blog-content li, .topic-hub-page p) {
+  color: var(--site-text) !important;
+}
+
+.reader-contrast-high .public-reader-scope :is(.text-muted, .site-meta, .site-meta-row, .blog-post-meta-row, .blog-page-description) {
+  color: var(--site-muted) !important;
+}
+
+.reader-contrast-high .public-reader-scope :is(a:not(.reader-tools-toggle), .site-inline-link, .btn-link) {
+  color: var(--site-accent-strong) !important;
+}
+
+.reader-motion-reduce .public-reader-scope *,
+.reader-motion-reduce .public-reader-scope *::before,
+.reader-motion-reduce .public-reader-scope *::after {
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: .001ms !important;
+}
