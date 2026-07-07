@@ -1,5 +1,17 @@
 import {DatePipe} from '@angular/common';
-import {ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges, inject, signal} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {RouterLink} from '@angular/router';
@@ -9,7 +21,7 @@ import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
 import {BlogComment} from '../../models/blog-comment.model';
 import {BlogPost} from '../../models/blog-post.model';
-import {BlogCommentService} from '../../services/blog-comment.service';
+import {BLOG_COMMENT_PAGE_SIZE, BlogCommentService} from '../../services/blog-comment.service';
 import {
   COMMENT_BODY_MAX_LENGTH,
   COMMENT_BODY_UNSAFE_CONTENT_MESSAGE,
@@ -26,6 +38,74 @@ function isPermissionDeniedError(error: unknown): boolean {
     && error !== null
     && 'code' in error
     && String(error.code).includes('permission-denied');
+}
+
+const MAX_THREAD_INDENT_DEPTH = 4;
+
+interface BlogCommentThreadItem {
+  comment: BlogComment;
+  depth: number;
+  parentAuthorDisplayName: string | null;
+  parentLoaded: boolean;
+}
+
+function createCommentThreadItems(comments: readonly BlogComment[]): readonly BlogCommentThreadItem[] {
+  const orderedComments = [...comments].sort((firstComment, secondComment) => {
+    const dateComparison = firstComment.createdAt.localeCompare(secondComment.createdAt);
+
+    return dateComparison || firstComment.id.localeCompare(secondComment.id);
+  });
+  const commentsById = new Map(orderedComments.map(comment => [comment.id, comment]));
+  const childrenByParentId = new Map<string, BlogComment[]>();
+  const rootComments: BlogComment[] = [];
+
+  for (const comment of orderedComments) {
+    const parentCommentId = comment.parentCommentId ?? null;
+
+    if (parentCommentId && commentsById.has(parentCommentId)) {
+      const siblings = childrenByParentId.get(parentCommentId) ?? [];
+      siblings.push(comment);
+      childrenByParentId.set(parentCommentId, siblings);
+    } else {
+      rootComments.push(comment);
+    }
+  }
+
+  const threadItems: BlogCommentThreadItem[] = [];
+  const visitedCommentIds = new Set<string>();
+  const addComment = (comment: BlogComment, depth: number): void => {
+    if (visitedCommentIds.has(comment.id)) {
+      return;
+    }
+
+    visitedCommentIds.add(comment.id);
+    const parentCommentId = comment.parentCommentId ?? null;
+    const parentComment = parentCommentId ? commentsById.get(parentCommentId) : undefined;
+    const parentLoaded = Boolean(parentComment);
+
+    threadItems.push({
+      comment,
+      depth: parentLoaded ? Math.min(depth, MAX_THREAD_INDENT_DEPTH) : 0,
+      parentAuthorDisplayName: parentCommentId
+        ? comment.parentAuthorDisplayName ?? parentComment?.authorDisplayName ?? 'Reader'
+        : null,
+      parentLoaded,
+    });
+
+    for (const childComment of childrenByParentId.get(comment.id) ?? []) {
+      addComment(childComment, depth + 1);
+    }
+  };
+
+  for (const comment of rootComments) {
+    addComment(comment, 0);
+  }
+
+  for (const comment of orderedComments) {
+    addComment(comment, 0);
+  }
+
+  return threadItems;
 }
 
 @Component({
@@ -46,14 +126,27 @@ function isPermissionDeniedError(error: unknown): boolean {
       <div class="mt-6 grid gap-6">
         @if (currentUser()) {
           <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="grid gap-3 border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+            @if (replyingToComment(); as replyTarget) {
+              <div class="flex flex-wrap items-center justify-between gap-3 border border-cyan-500/30 bg-cyan-50 px-3 py-2 text-sm text-cyan-950 dark:bg-cyan-950/30 dark:text-cyan-100">
+                <span>Replying to {{ getCommentAuthorName(replyTarget) }}</span>
+                <button
+                  type="button"
+                  class="font-semibold text-cyan-800 hover:text-cyan-950 dark:text-cyan-100 dark:hover:text-white"
+                  (click)="cancelReply()"
+                >
+                  Cancel
+                </button>
+              </div>
+            }
             <label class="grid gap-2 text-sm font-medium text-slate-700 dark:text-zinc-300">
-              Add a comment
+              {{ replyingToComment() ? 'Add a reply' : 'Add a comment' }}
               <textarea
+                #commentBodyInput
                 formControlName="body"
                 rows="4"
                 [attr.maxlength]="commentMaxLength"
                 class="min-h-32 w-full resize-y rounded-none border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-cyan-300"
-                placeholder="Share a plain-text thought, question, or note about this post."
+                [placeholder]="replyingToComment() ? 'Write a plain-text reply.' : 'Share a plain-text thought, question, or note about this post.'"
               ></textarea>
             </label>
             <p class="text-xs leading-5 text-slate-500 dark:text-zinc-500">
@@ -69,7 +162,7 @@ function isPermissionDeniedError(error: unknown): boolean {
                 [disabled]="commentForm.invalid || isSubmitting()"
                 class="inline-flex border border-cyan-600 px-4 py-2 font-semibold text-cyan-800 hover:bg-cyan-600 hover:text-white disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-zinc-950 dark:disabled:border-zinc-700 dark:disabled:text-zinc-600"
               >
-                {{ isSubmitting() ? 'Submitting...' : 'Post Comment' }}
+                {{ isSubmitting() ? 'Submitting...' : (replyingToComment() ? 'Post Reply' : 'Post Comment') }}
               </button>
             </div>
           </form>
@@ -95,8 +188,20 @@ function isPermissionDeniedError(error: unknown): boolean {
         }
 
         <div class="grid gap-4">
-          @for (comment of comments(); track comment.id) {
-            <article class="border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+          @if (comments().length) {
+            <p class="text-sm text-slate-500 dark:text-zinc-500">
+              Showing the {{ comments().length }} most recent approved {{ comments().length === 1 ? 'comment' : 'comments' }}.
+            </p>
+          }
+
+          @for (item of commentThreadItems(); track item.comment.id) {
+            @let comment = item.comment;
+            <article
+              class="border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
+              [class.border-l-4]="item.depth > 0"
+              [class.border-l-cyan-500]="item.depth > 0"
+              [style.margin-left.rem]="getThreadIndentRem(item.depth)"
+            >
               <header class="flex flex-wrap items-center gap-3 text-sm">
                 @if (comment.authorPhotoURL) {
                   <img [src]="comment.authorPhotoURL" [alt]="(comment.authorDisplayName || 'Reader') + ' avatar'" class="h-9 w-9 rounded-full object-cover" loading="lazy">
@@ -110,12 +215,39 @@ function isPermissionDeniedError(error: unknown): boolean {
                   <p class="text-xs text-slate-500 dark:text-zinc-500">{{ comment.createdAt | date: 'MMM d, y, h:mm a' }}</p>
                 </div>
               </header>
+              @if (item.parentAuthorDisplayName) {
+                <p class="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+                  Replying to {{ item.parentAuthorDisplayName }}{{ item.parentLoaded ? '' : ' (parent not loaded)' }}
+                </p>
+              }
               <p class="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700 dark:text-zinc-300">{{ comment.body }}</p>
+              @if (currentUser()) {
+                <footer class="mt-4">
+                  <button
+                    type="button"
+                    class="text-sm font-semibold text-cyan-800 hover:text-cyan-950 dark:text-cyan-200 dark:hover:text-cyan-100"
+                    [attr.aria-label]="getReplyButtonLabel(comment)"
+                    (click)="startReply(comment)"
+                  >
+                    Reply
+                  </button>
+                </footer>
+              }
             </article>
           } @empty {
             <p class="border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
               No comments yet. Start the conversation.
             </p>
+          }
+
+          @if (hasMoreComments()) {
+            <button
+              type="button"
+              class="justify-self-start border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-600 hover:text-cyan-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-cyan-300 dark:hover:text-cyan-100"
+              (click)="loadMoreComments()"
+            >
+              View more comments
+            </button>
           }
         </div>
       </div>
@@ -124,15 +256,20 @@ function isPermissionDeniedError(error: unknown): boolean {
 })
 export class BlogCommentsComponent implements OnChanges, OnDestroy {
   @Input({required: true}) post!: BlogPost;
+  @ViewChild('commentBodyInput') private readonly commentBodyInput?: ElementRef<HTMLTextAreaElement>;
 
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly commentService = inject(BlogCommentService);
   private commentsSubscription?: Subscription;
   private bodyValueSubscription?: Subscription;
+  private readonly commentsPageSize = signal(BLOG_COMMENT_PAGE_SIZE);
 
   protected readonly currentUser = toSignal(this.authService.user$, {initialValue: null});
   protected readonly comments = signal<readonly BlogComment[]>([]);
+  protected readonly commentThreadItems = computed(() => createCommentThreadItems(this.comments()));
+  protected readonly hasMoreComments = signal(false);
+  protected readonly replyingToComment = signal<BlogComment | null>(null);
   protected readonly isSubmitting = signal(false);
   protected readonly statusMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
@@ -163,6 +300,8 @@ export class BlogCommentsComponent implements OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['post']) {
+      this.commentsPageSize.set(BLOG_COMMENT_PAGE_SIZE);
+      this.replyingToComment.set(null);
       this.listenToComments();
     }
   }
@@ -188,16 +327,19 @@ export class BlogCommentsComponent implements OnChanges, OnDestroy {
     this.errorMessage.set(null);
 
     try {
+      const replyTarget = this.replyingToComment();
       const result = await this.commentService.submitComment({
         postId: this.post.id,
         postSlug: this.post.slug,
         body: normalizedBody,
+        parentCommentId: replyTarget?.id ?? null,
       });
       this.commentForm.reset({body: ''});
       this.commentLength.set(0);
+      this.replyingToComment.set(null);
       this.statusMessage.set(result.comment.status === 'approved'
-        ? 'Your comment is live.'
-        : 'Your comment is waiting for admin review. Once approved, future comments can publish faster.');
+        ? `Your ${replyTarget ? 'reply' : 'comment'} is live.`
+        : `Your ${replyTarget ? 'reply' : 'comment'} is waiting for admin review. Once approved, future comments can publish faster.`);
     } catch (error) {
       this.errorMessage.set(getErrorMessage(error));
     } finally {
@@ -214,26 +356,59 @@ export class BlogCommentsComponent implements OnChanges, OnDestroy {
       .join('') || 'R';
   }
 
+  protected getCommentAuthorName(comment: BlogComment): string {
+    return comment.authorDisplayName || 'Reader';
+  }
+
+  protected getReplyButtonLabel(comment: BlogComment): string {
+    return `Reply to ${this.getCommentAuthorName(comment)}`;
+  }
+
+  protected getThreadIndentRem(depth: number): number {
+    return Math.max(0, Math.min(depth, MAX_THREAD_INDENT_DEPTH)) * 1.25;
+  }
+
+  protected startReply(comment: BlogComment): void {
+    this.replyingToComment.set(comment);
+    this.statusMessage.set(null);
+    this.errorMessage.set(null);
+    queueMicrotask(() => this.commentBodyInput?.nativeElement.focus());
+  }
+
+  protected cancelReply(): void {
+    this.replyingToComment.set(null);
+  }
+
+  protected loadMoreComments(): void {
+    this.commentsPageSize.update(currentPageSize => currentPageSize + BLOG_COMMENT_PAGE_SIZE);
+    this.listenToComments();
+  }
+
   private listenToComments(): void {
     this.commentsSubscription?.unsubscribe();
 
     if (!this.post?.slug) {
       this.comments.set([]);
+      this.hasMoreComments.set(false);
       return;
     }
 
-    this.commentsSubscription = this.commentService.listenToApprovedComments(this.post.slug)
+    this.commentsSubscription = this.commentService.listenToApprovedComments(this.post.slug, this.commentsPageSize())
       .pipe(catchError(error => {
         if (!isPermissionDeniedError(error)) {
           this.errorMessage.set(getErrorMessage(error));
         }
 
         this.comments.set([]);
+        this.hasMoreComments.set(false);
 
         return EMPTY;
       }))
       .subscribe({
-        next: comments => this.comments.set(comments),
+        next: result => {
+          this.comments.set(result.comments);
+          this.hasMoreComments.set(result.hasMore);
+        },
       });
   }
 }

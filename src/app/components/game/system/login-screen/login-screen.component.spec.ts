@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {ActivatedRoute, Router, convertToParamMap} from '@angular/router';
-import {BehaviorSubject, NEVER, Observable, of} from 'rxjs';
+import {BehaviorSubject, NEVER, Observable, of, throwError} from 'rxjs';
 import {RouterTestingModule} from '@angular/router/testing';
 import {User, UserCredential} from 'firebase/auth';
 
@@ -26,6 +26,7 @@ describe('LoginScreenComponent', () => {
     loginWithGoogleRedirect: jasmine.Spy;
     loginWithFacebook: jasmine.Spy;
     loginWithFacebookRedirect: jasmine.Spy;
+    getProviderConflictInfo: jasmine.Spy;
     updateUserProfile: jasmine.Spy;
   };
   let userServiceMock: {
@@ -60,6 +61,7 @@ describe('LoginScreenComponent', () => {
       loginWithGoogleRedirect: jasmine.createSpy('loginWithGoogleRedirect').and.returnValue(of(undefined)),
       loginWithFacebook: jasmine.createSpy('loginWithFacebook').and.returnValue(of(null)),
       loginWithFacebookRedirect: jasmine.createSpy('loginWithFacebookRedirect').and.returnValue(of(undefined)),
+      getProviderConflictInfo: jasmine.createSpy('getProviderConflictInfo').and.returnValue(of(null)),
       updateUserProfile: jasmine.createSpy('updateUserProfile').and.returnValue(of(undefined))
     };
     userServiceMock = {
@@ -152,5 +154,25 @@ describe('LoginScreenComponent', () => {
     component.onLogin();
 
     expect(navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('guides Facebook users to sign in with their original provider before linking', () => {
+    const error = {
+      code: 'auth/account-exists-with-different-credential',
+      customData: {email: firebaseUser.email},
+    };
+    authServiceMock.loginWithFacebook.and.returnValue(throwError(() => error));
+    authServiceMock.getProviderConflictInfo.and.returnValue(of({
+      email: firebaseUser.email,
+      providerLabels: ['Google'],
+      signInMethods: ['google.com'],
+    }));
+
+    component.loginWithFacebook();
+
+    expect(authServiceMock.getProviderConflictInfo).toHaveBeenCalledWith(error);
+    expect(component.loading).toBeFalse();
+    expect(component.facebookLoading).toBeFalse();
+    expect(component.error).toBe('This email already has an account for reader@example.com. Sign in with Google first, then connect Facebook from your profile.');
   });
 });

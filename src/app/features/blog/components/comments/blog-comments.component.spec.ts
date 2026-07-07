@@ -4,8 +4,9 @@ import {User} from 'firebase/auth';
 import {BehaviorSubject, of, throwError} from 'rxjs';
 
 import {AuthService} from '../../../../services/auth.service';
+import {BlogComment} from '../../models/blog-comment.model';
 import {BlogPost} from '../../models/blog-post.model';
-import {BlogCommentService} from '../../services/blog-comment.service';
+import {BLOG_COMMENT_PAGE_SIZE, BlogCommentService} from '../../services/blog-comment.service';
 import {BlogCommentsComponent} from './blog-comments.component';
 
 const mockPost: BlogPost = {
@@ -28,6 +29,25 @@ const mockPost: BlogPost = {
   createdAt: '2026-07-07T00:00:00.000Z',
   updatedAt: '2026-07-07T00:00:00.000Z',
   publishedAt: '2026-07-07T00:00:00.000Z',
+};
+
+const approvedComment: BlogComment = {
+  id: 'comment-parent',
+  postId: mockPost.id,
+  postSlug: mockPost.slug,
+  parentCommentId: null,
+  parentAuthorDisplayName: null,
+  threadRootId: 'comment-parent',
+  threadDepth: 0,
+  authorUid: 'parent-reader',
+  authorDisplayName: 'Parent Reader',
+  authorPhotoURL: null,
+  body: 'Parent comment',
+  status: 'approved',
+  createdAt: '2026-07-07T00:00:00.000Z',
+  updatedAt: '2026-07-07T00:00:00.000Z',
+  moderatedAt: '2026-07-07T00:00:00.000Z',
+  moderatedBy: 'parent-reader',
 };
 
 describe('BlogCommentsComponent', () => {
@@ -62,12 +82,19 @@ describe('BlogCommentsComponent', () => {
   beforeEach(async () => {
     authState$ = new BehaviorSubject<User | null>(null);
     commentService = {
-      listenToApprovedComments: jasmine.createSpy('listenToApprovedComments').and.returnValue(of([])),
+      listenToApprovedComments: jasmine.createSpy('listenToApprovedComments').and.returnValue(of({
+        comments: [],
+        hasMore: false,
+      })),
       submitComment: jasmine.createSpy('submitComment').and.resolveTo({
         comment: {
           id: 'comment-1',
           postId: mockPost.id,
           postSlug: mockPost.slug,
+          parentCommentId: null,
+          parentAuthorDisplayName: null,
+          threadRootId: 'comment-1',
+          threadDepth: 0,
           authorUid: mockUser.uid,
           authorDisplayName: mockUser.displayName,
           authorPhotoURL: null,
@@ -100,7 +127,7 @@ describe('BlogCommentsComponent', () => {
 
     expect(element.textContent).toContain('Sign in to join the discussion');
     expect(element.textContent).toContain('No comments yet');
-    expect(commentService.listenToApprovedComments).toHaveBeenCalledWith('sample-post');
+    expect(commentService.listenToApprovedComments).toHaveBeenCalledWith('sample-post', BLOG_COMMENT_PAGE_SIZE);
   });
 
   it('blocks links and markup before submitting a signed-in comment', async () => {
@@ -133,7 +160,51 @@ describe('BlogCommentsComponent', () => {
       postId: mockPost.id,
       postSlug: mockPost.slug,
       body: 'This is a safe comment.\n\nThanks for sharing.',
+      parentCommentId: null,
     });
+  });
+
+  it('submits replies with the selected parent comment id', async () => {
+    authState$.next(mockUser);
+    commentService.listenToApprovedComments.and.returnValue(of({
+      comments: [approvedComment],
+      hasMore: false,
+    }));
+    fixture = createComponent();
+
+    const replyButton = fixture.nativeElement.querySelector('[aria-label="Reply to Parent Reader"]') as HTMLButtonElement;
+    replyButton.click();
+    fixture.detectChanges();
+
+    setCommentBody('Thanks for the thread.');
+    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(commentService.submitComment).toHaveBeenCalledWith({
+      postId: mockPost.id,
+      postSlug: mockPost.slug,
+      body: 'Thanks for the thread.',
+      parentCommentId: approvedComment.id,
+    });
+  });
+
+  it('loads more comments in ten-comment windows', () => {
+    commentService.listenToApprovedComments.and.returnValues(
+      of({comments: [approvedComment], hasMore: true}),
+      of({comments: [approvedComment], hasMore: false})
+    );
+    fixture = createComponent();
+
+    const viewMoreButton = Array.from(fixture.nativeElement.querySelectorAll('button'))
+      .find(button => (button as HTMLButtonElement).textContent?.includes('View more comments')) as HTMLButtonElement;
+    viewMoreButton.click();
+    fixture.detectChanges();
+
+    expect(commentService.listenToApprovedComments.calls.allArgs()).toEqual([
+      ['sample-post', BLOG_COMMENT_PAGE_SIZE],
+      ['sample-post', BLOG_COMMENT_PAGE_SIZE * 2],
+    ]);
   });
 
   it('shows pending review copy only after a new reader submits a comment', async () => {
