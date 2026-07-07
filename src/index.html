@@ -9,6 +9,336 @@
         content="Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://colinmichaels.com">
+  <style>
+    :root {
+      color-scheme: dark;
+      background: #09090b;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: #09090b;
+      color: #e4e4e7;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .cm-initial-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: clamp(1.5rem, 5vw, 4rem);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(34, 211, 238, 0.11), transparent 26rem),
+        linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+        #09090b;
+      background-size: auto, 34px 34px, 34px 34px, auto;
+      color: #e4e4e7;
+      contain: layout style paint;
+      transition: opacity 260ms ease, visibility 260ms ease;
+    }
+
+    .cm-no-initial-loader .cm-initial-loader,
+    .cm-initial-loader--leaving {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cm-loader-shell {
+      display: grid;
+      grid-template-columns: minmax(11rem, 0.72fr) minmax(18rem, 1.28fr);
+      align-items: center;
+      gap: clamp(2rem, 6vw, 5rem);
+      width: min(100%, 58rem);
+    }
+
+    .cm-loader-brand {
+      display: grid;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .cm-loader-title {
+      margin: 0;
+      color: #fafafa;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: clamp(1.35rem, 3vw, 1.85rem);
+      font-weight: 600;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .cm-loader-mini-rail {
+      display: flex;
+      gap: 0.34rem;
+      align-items: center;
+    }
+
+    .cm-loader-mini-rail span {
+      display: block;
+      width: 0.45rem;
+      height: 0.12rem;
+      border-radius: 999px;
+      background: rgba(161, 161, 170, 0.38);
+    }
+
+    .cm-loader-mini-rail span:first-child {
+      width: 3rem;
+      background: #22d3ee;
+      box-shadow: 0 0 16px rgba(34, 211, 238, 0.38);
+    }
+
+    .cm-loader-stage {
+      display: grid;
+      gap: clamp(1.25rem, 3vw, 2rem);
+      justify-items: center;
+      min-width: 0;
+    }
+
+    .cm-loader-postcards {
+      position: relative;
+      width: min(100%, 25rem);
+      aspect-ratio: 16 / 9;
+    }
+
+    .cm-loader-card,
+    .cm-loader-sweep {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .cm-loader-card {
+      inset: 13% 12%;
+      border: 1px solid rgba(228, 228, 231, 0.34);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+        rgba(24, 24, 27, 0.72);
+      box-shadow: 0 20px 58px rgba(0, 0, 0, 0.28);
+      transform: translateX(-1.6rem) rotate(-6deg);
+    }
+
+    .cm-loader-card-front {
+      transform: translateX(1.2rem) rotate(0deg);
+    }
+
+    .cm-loader-card::before,
+    .cm-loader-card::after {
+      content: "";
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      border-radius: 999px;
+      background: rgba(161, 161, 170, 0.34);
+    }
+
+    .cm-loader-card::before {
+      top: 18%;
+      height: 42%;
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(228, 228, 231, 0.11), rgba(113, 113, 122, 0.15));
+    }
+
+    .cm-loader-card::after {
+      bottom: 19%;
+      height: 0.7rem;
+      box-shadow:
+        0 1rem 0 rgba(161, 161, 170, 0.28),
+        -4rem 0 0 -0.16rem rgba(161, 161, 170, 0.24);
+    }
+
+    .cm-loader-sweep {
+      top: 46%;
+      left: -10%;
+      width: 120%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.28), #22d3ee 52%, rgba(34, 211, 238, 0.22), transparent);
+      box-shadow: 0 0 8px #22d3ee, 0 0 24px rgba(34, 211, 238, 0.72);
+      animation: cm-signal-sweep 1.85s ease-in-out infinite;
+    }
+
+    .cm-loader-sweep::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 11%;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 999px;
+      background: #67e8f9;
+      box-shadow: 0 0 14px #22d3ee;
+      transform: translateY(-50%);
+    }
+
+    .cm-loader-copy {
+      margin: 0;
+      color: #f4f4f5;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: clamp(0.9rem, 1.6vw, 1rem);
+      letter-spacing: 0;
+      text-align: center;
+    }
+
+    .cm-loader-progress {
+      width: min(100%, 28rem);
+      height: 2px;
+      overflow: hidden;
+      background: rgba(113, 113, 122, 0.46);
+    }
+
+    .cm-loader-progress span {
+      display: block;
+      width: 64%;
+      height: 100%;
+      background: #22d3ee;
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.48);
+      animation: cm-progress-pulse 1.85s ease-in-out infinite;
+    }
+
+    .cm-loader-status {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem 1.2rem;
+      margin: 0;
+      color: #a1a1aa;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+    }
+
+    .cm-loader-status span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cm-loader-status span::after {
+      content: "";
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 999px;
+      background: rgba(161, 161, 170, 0.62);
+    }
+
+    .cm-loader-status span:last-child::after {
+      background: #22d3ee;
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.55);
+    }
+
+    @keyframes cm-signal-sweep {
+      0% {
+        transform: translateX(-8%);
+        opacity: 0.55;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(8%);
+        opacity: 0.68;
+      }
+    }
+
+    @keyframes cm-progress-pulse {
+      0%,
+      100% {
+        transform: translateX(-14%);
+      }
+      50% {
+        transform: translateX(36%);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .cm-initial-loader {
+        padding: 1.25rem;
+      }
+
+      .cm-loader-shell {
+        grid-template-columns: 1fr;
+        width: min(100%, 22rem);
+        gap: 2rem;
+        text-align: center;
+      }
+
+      .cm-loader-brand {
+        justify-items: center;
+        order: 0;
+      }
+
+      .cm-loader-stage {
+        order: 1;
+      }
+
+      .cm-loader-postcards {
+        width: min(100%, 16.5rem);
+      }
+
+      .cm-loader-status {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cm-initial-loader,
+      .cm-loader-sweep,
+      .cm-loader-progress span {
+        animation: none;
+        transition: none;
+      }
+    }
+  </style>
+  <script>
+    (function (windowRef, documentRef) {
+      var excludedPaths = ['/admin', '/os', '/login', '/boot', '/sleep', '/external'];
+      var pathname = windowRef.location.pathname;
+      var shouldSkipLoader = excludedPaths.some(function (path) {
+        return pathname === path || pathname.indexOf(path + '/') === 0;
+      });
+      var dismissed = false;
+
+      if (shouldSkipLoader) {
+        documentRef.documentElement.classList.add('cm-no-initial-loader');
+      }
+
+      windowRef.__cmDismissInitialSiteLoader = function (reason) {
+        var loader = documentRef.getElementById('cm-initial-loader');
+
+        if (dismissed || !loader) {
+          return;
+        }
+
+        dismissed = true;
+        loader.setAttribute('data-dismiss-reason', reason || 'ready');
+        loader.classList.add('cm-initial-loader--leaving');
+
+        windowRef.setTimeout(function () {
+          if (loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 320);
+      };
+
+      if (shouldSkipLoader) {
+        windowRef.setTimeout(function () {
+          windowRef.__cmDismissInitialSiteLoader('route-excluded');
+        }, 0);
+      } else {
+        windowRef.setTimeout(function () {
+          windowRef.__cmDismissInitialSiteLoader('failsafe');
+        }, 4500);
+      }
+    })(window, document);
+  </script>
   <!-- Google Tag Manager -->
   <script>(function (w, d, s, l, i) {
     var hostname = w.location.hostname;
@@ -141,13 +471,43 @@
   <meta name="msapplication-config" content="/assets/browserconfig.xml?v=476N2WlRXN">
   <meta name="theme-color" content="#000000">
 </head>
-<body class=" text-white bg-black text-2xl outline-none" id="colin-michaels">
+<body class="bg-black text-white antialiased outline-none" id="colin-michaels">
 <!-- Google Tag Manager (noscript) -->
 <noscript>
   <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-Q6BN"
           height="0" width="0" style="display:none;visibility:hidden"></iframe>
 </noscript>
 <!-- End Google Tag Manager (noscript) -->
+<div id="cm-initial-loader" class="cm-initial-loader" role="status" aria-live="polite" aria-label="Loading latest stories">
+  <div class="cm-loader-shell">
+    <div class="cm-loader-brand">
+      <p class="cm-loader-title">Colin Michaels</p>
+      <div class="cm-loader-mini-rail" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+    <div class="cm-loader-stage">
+      <div class="cm-loader-postcards" aria-hidden="true">
+        <span class="cm-loader-card"></span>
+        <span class="cm-loader-card cm-loader-card-front"></span>
+        <span class="cm-loader-sweep"></span>
+      </div>
+      <p class="cm-loader-copy">Loading latest stories</p>
+      <div class="cm-loader-progress" aria-hidden="true">
+        <span></span>
+      </div>
+      <p class="cm-loader-status" aria-hidden="true">
+        <span>writing</span>
+        <span>media</span>
+        <span>systems</span>
+        <span>ready</span>
+      </p>
+    </div>
+  </div>
+</div>
 <app-root> </app-root>
 </body>
 </html>
