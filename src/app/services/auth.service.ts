@@ -3,9 +3,11 @@ import {
   Auth,
   createUserWithEmailAndPassword,
   FacebookAuthProvider,
+  fetchSignInMethodsForEmail,
   getIdTokenResult,
   getRedirectResult,
   GoogleAuthProvider,
+  linkWithPopup,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -26,6 +28,7 @@ import {PATH_NAMES} from '../app-route-paths';
 import {
   getClaimRoles,
   hasAnyRoleClaim,
+  isRecord,
   USER_MANAGEMENT_ACCESS_ROLES,
   UserAccountProfile,
 } from '../shared/user-account/user-account.model';
@@ -40,6 +43,12 @@ export interface AdminAuthorization {
   isAuthorized: boolean;
   claims: Record<string, unknown>;
   requiredRoles: readonly string[];
+}
+
+export interface AuthProviderConflict {
+  email: string | null;
+  providerLabels: readonly string[];
+  signInMethods: readonly string[];
 }
 
 interface AuthDebugUserSummary {
@@ -64,6 +73,21 @@ function hasAdminClaim(claims: Record<string, unknown>): boolean {
 
 function hasSuperAdminClaim(claims: Record<string, unknown>): boolean {
   return hasAnyRoleClaim(claims, USER_MANAGEMENT_ACCESS_ROLES);
+}
+
+export function getAuthProviderLabel(providerId: string): string {
+  switch (providerId) {
+    case 'facebook.com':
+      return 'Facebook';
+    case 'google.com':
+      return 'Google';
+    case 'password':
+      return 'Email and password';
+    case 'phone':
+      return 'Phone';
+    default:
+      return providerId;
+  }
 }
 
 @Injectable({
@@ -230,6 +254,67 @@ export class AuthService {
         this.debugAuth('facebook redirect sign-in failed', this.createErrorDebugSummary(error));
         this.logger.error('Facebook redirect login failed:', error);
         return throwError(() => error);
+      })
+    );
+  }
+
+  linkFacebookProvider(): Observable<UserCredential> {
+    const auth = this.auth;
+    const currentUser = auth?.currentUser;
+
+    if (!auth || !currentUser) {
+      return throwError(() => new Error('Sign in before connecting Facebook.'));
+    }
+
+    this.debugAuth('facebook account link start', {
+      user: this.createUserDebugSummary(currentUser),
+    });
+
+    return this.fromAuthOperation(() => linkWithPopup(currentUser, this.createFacebookProvider())).pipe(
+      tap(result => {
+        this.debugAuth('facebook account link success', {
+          user: this.createUserDebugSummary(result.user),
+        });
+        void this.bootstrapUserProfile(result.user);
+      }),
+      catchError(error => {
+        this.debugAuth('facebook account link failed', this.createErrorDebugSummary(error));
+        this.logger.error('Facebook account link failed:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getProviderConflictInfo(error: unknown): Observable<AuthProviderConflict | null> {
+    if (this.getFirebaseErrorCode(error) !== 'auth/account-exists-with-different-credential') {
+      return of(null);
+    }
+
+    const email = this.getFirebaseErrorEmail(error);
+    const auth = this.auth;
+
+    if (!email || !auth) {
+      return of({
+        email,
+        providerLabels: [],
+        signInMethods: [],
+      });
+    }
+
+    return this.fromAuthOperation(() => fetchSignInMethodsForEmail(auth, email)).pipe(
+      map(signInMethods => ({
+        email,
+        providerLabels: signInMethods.map(method => getAuthProviderLabel(method)),
+        signInMethods,
+      })),
+      catchError(fetchError => {
+        this.debugAuth('provider conflict lookup failed', this.createErrorDebugSummary(fetchError));
+
+        return of({
+          email,
+          providerLabels: [],
+          signInMethods: [],
+        });
       })
     );
   }
@@ -498,8 +583,8 @@ export class AuthService {
 
   private createClaimDebugSummary(claims: Record<string, unknown>): AuthDebugClaimSummary {
     const rolesClaim = claims['roles'];
-    const nestedRoleKeys = rolesClaim && typeof rolesClaim === 'object'
-      ? Object.keys(rolesClaim as Record<string, unknown>).sort((a, b) => a.localeCompare(b))
+    const nestedRoleKeys = isRecord(rolesClaim)
+      ? Object.keys(rolesClaim).sort((a, b) => a.localeCompare(b))
       : [];
     const roleNames = getClaimRoles(claims);
 
@@ -531,12 +616,26 @@ export class AuthService {
     };
   }
 
-  private getFirebaseErrorCode(error: Error): string | undefined {
-    if ('code' in error && typeof error.code === 'string') {
-      return error.code;
+  private getFirebaseErrorCode(error: unknown): string | undefined {
+    if (isRecord(error) && typeof error['code'] === 'string') {
+      return error['code'];
     }
 
     return undefined;
+  }
+
+  private getFirebaseErrorEmail(error: unknown): string | null {
+    if (!isRecord(error)) {
+      return null;
+    }
+
+    const customData = error['customData'];
+
+    if (isRecord(customData) && typeof customData['email'] === 'string') {
+      return customData['email'];
+    }
+
+    return typeof error['email'] === 'string' ? error['email'] : null;
   }
 
   private debugAuth(event: string, details?: unknown): void {

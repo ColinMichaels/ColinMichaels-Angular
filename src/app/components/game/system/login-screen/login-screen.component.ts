@@ -25,7 +25,7 @@ import {Subject, takeUntil} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
 import {type User, type UserCredential} from 'firebase/auth';
-import {AuthService} from '../../../../services/auth.service';
+import {AuthProviderConflict, AuthService} from '../../../../services/auth.service';
 import {faFacebook, faGoogle} from '@fortawesome/free-brands-svg-icons';
 import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
 
@@ -251,7 +251,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       case 'auth/operation-not-allowed':
         return 'This sign-in provider is not enabled for this Firebase project';
       case 'auth/account-exists-with-different-credential':
-        return 'An account already exists with the same email address';
+        return 'This email already has an account. Sign in with the original provider first, then connect this provider from your profile.';
       case 'auth/popup-blocked':
         return 'The sign-in popup was blocked. Please allow popups or try again.';
       case 'auth/popup-closed-by-user':
@@ -291,7 +291,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.loading = false;
-          this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.setAuthenticationError(error);
           this.debugLogin('email login failed', {
             error: this.createErrorDebugSummary(error),
             displayedMessage: this.error,
@@ -351,7 +351,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.loading = false;
-          this.error = this.getErrorMessage(this.getErrorCode(error));
+          this.setAuthenticationError(error);
           this.debugLogin('registration failed', {
             error: this.createErrorDebugSummary(error),
             displayedMessage: this.error,
@@ -390,7 +390,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
           this.loading = false;
           this.googleLoading = false;
-          this.error = this.getErrorMessage(errorCode);
+          this.setAuthenticationError(error, 'Google');
           this.logger.error('Google login error:', error);
         }
       });
@@ -425,7 +425,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
           this.loading = false;
           this.facebookLoading = false;
-          this.error = this.getErrorMessage(errorCode);
+          this.setAuthenticationError(error, 'Facebook');
           this.logger.error('Facebook login error:', error);
         }
       });
@@ -480,6 +480,37 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
           this.logger.error('Facebook redirect login error:', error);
         }
       });
+  }
+
+  private setAuthenticationError(error: unknown, attemptedProvider?: string): void {
+    const errorCode = this.getErrorCode(error);
+    this.error = this.getErrorMessage(errorCode);
+
+    if (errorCode !== 'auth/account-exists-with-different-credential') {
+      return;
+    }
+
+    this.authService.getProviderConflictInfo(error)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(conflict => {
+        this.error = this.createProviderConflictMessage(conflict, attemptedProvider);
+        this.debugLogin('provider conflict guidance resolved', {
+          attemptedProvider,
+          conflict,
+          displayedMessage: this.error,
+        });
+      });
+  }
+
+  private createProviderConflictMessage(conflict: AuthProviderConflict | null, attemptedProvider?: string): string {
+    const emailLabel = conflict?.email ? ` for ${conflict.email}` : '';
+    const providerLabels = conflict?.providerLabels ?? [];
+    const originalProviderLabel = providerLabels.length > 0
+      ? providerLabels.join(' or ')
+      : 'the original provider';
+    const linkProviderLabel = attemptedProvider ?? 'this provider';
+
+    return `This email already has an account${emailLabel}. Sign in with ${originalProviderLabel} first, then connect ${linkProviderLabel} from your profile.`;
   }
 
   private finishFirebaseLogin(user: User, method: string): void {
