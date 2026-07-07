@@ -120,12 +120,32 @@ export const USER_MANAGEMENT_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
+export const COMMENT_MODERATION_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Comment Moderation'),
+  description: 'Protected admin blog comment moderation.',
+  path: '/admin/comments',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('admin comment moderation'),
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
 export const LOGOUT_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Sign Out'),
   description: `End the current ${SITE_NAME} authenticated session.`,
   path: '/logout',
   image: HOMEPAGE_OG_IMAGE,
   imageAlt: createPreviewImageAlt('sign out page'),
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
+export const LOGIN_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Login'),
+  description: `Sign in to ${SITE_NAME} to manage your profile, comments, and reader points.`,
+  path: '/login',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('login page'),
   type: 'website',
   robots: 'noindex,nofollow',
 };

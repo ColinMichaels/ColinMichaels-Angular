@@ -1,8 +1,8 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
-import {RouterLink} from '@angular/router';
+import {NavigationEnd, Router, RouterLink} from '@angular/router';
 import {User} from 'firebase/auth';
-import {map, tap} from 'rxjs';
+import {filter, map, startWith, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {AdminAuthorization, AuthService} from '../../services/auth.service';
@@ -88,6 +88,22 @@ type AuthControlsVariant = 'desktop' | 'mobile';
               <path d="M19 12H9"></path>
             </svg>
           </a>
+        } @else {
+          <a
+            [routerLink]="['/', pathNames.OS_LOGIN]"
+            [queryParams]="loginQueryParams()"
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
+            aria-label="Sign in"
+            title="Sign in"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21a8 8 0 0 0-16 0"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+              <path d="M16 11h5"></path>
+              <path d="m18.5 8.5 2.5 2.5-2.5 2.5"></path>
+            </svg>
+          </a>
         }
       </span>
     } @else {
@@ -158,6 +174,22 @@ type AuthControlsVariant = 'desktop' | 'mobile';
           </svg>
           <span>Sign Out</span>
         </a>
+      } @else {
+        <a
+          [routerLink]="['/', pathNames.OS_LOGIN]"
+          [queryParams]="loginQueryParams()"
+          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          (click)="navigate.emit()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21a8 8 0 0 0-16 0"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+            <path d="M16 11h5"></path>
+            <path d="m18.5 8.5 2.5 2.5-2.5 2.5"></path>
+          </svg>
+          <span>Sign In</span>
+        </a>
       }
     }
   `,
@@ -167,7 +199,16 @@ export class SiteAuthControlsComponent {
   @Output() readonly navigate = new EventEmitter<void>();
 
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly pathNames = PATH_NAMES;
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map(event => event.urlAfterRedirects),
+      startWith(this.router.url)
+    ),
+    {initialValue: this.router.url}
+  );
   protected readonly canViewAdminLinks = toSignal(
     this.authService.getRoleAuthorization(ADMIN_CONSOLE_ROLES, true).pipe(
       tap(authorization => this.debugHeader('admin navigation authorization resolved', {
@@ -187,6 +228,20 @@ export class SiteAuthControlsComponent {
     {initialValue: null}
   );
   protected readonly isSignedIn = computed(() => !!this.currentUser());
+  protected readonly loginQueryParams = computed(() => ({
+    redirectUrl: this.getLoginRedirectUrl(),
+  }));
+
+  private getLoginRedirectUrl(): string {
+    const currentUrl = this.currentUrl();
+    const path = currentUrl.split('?')[0].split('#')[0] || '/';
+
+    if (path === `/${PATH_NAMES.OS_LOGIN}` || path === `/${PATH_NAMES.LOGOUT}`) {
+      return '/';
+    }
+
+    return currentUrl.startsWith('/') ? currentUrl : '/';
+  }
 
   private createUserDebugSummary(user: User): Record<string, unknown> {
     return {

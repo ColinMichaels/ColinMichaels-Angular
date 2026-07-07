@@ -20,10 +20,12 @@ import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
 import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
+import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPostSummary} from '../../models/blog-post.model';
+import {BlogEngagementService, BlogShareProvider} from '../../services/blog-engagement.service';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
@@ -66,6 +68,7 @@ function normalizeHealthTerm(value: string): string {
     DecimalPipe,
     NgClass,
     BlogBlockRendererComponent,
+    BlogCommentsComponent,
     BlogShareActionsComponent,
     BlogTableOfContentsComponent,
     BlogTagListComponent,
@@ -208,9 +211,14 @@ function normalizeHealthTerm(value: string): string {
                         [path]="createSharePath(currentPost.slug)"
                         [url]="isPreviewRoute() ? '' : share.url"
                         variant="panel"
+                        (shared)="recordShare(currentPost, $event)"
                       ></app-blog-share-actions>
                     }
                   </section>
+                }
+
+                @if (!isPreviewRoute()) {
+                  <app-blog-comments [post]="currentPost"></app-blog-comments>
                 }
 
                 <section class="blog-section-rule mt-10">
@@ -314,7 +322,7 @@ function normalizeHealthTerm(value: string): string {
               <a routerLink="/" class="hover:text-cyan-800 dark:hover:text-cyan-200">Home</a>
               <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Blog</a>
               <a [routerLink]="['/', pathNames.LABS]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Labs</a>
-              <a [routerLink]="['/', pathNames.OS_LOGIN]" class="hover:text-cyan-800 dark:hover:text-cyan-200">OS</a>
+              <a [routerLink]="['/', pathNames.OS_MAIN]" class="hover:text-cyan-800 dark:hover:text-cyan-200">OS</a>
             </div>
           </nav>
 
@@ -356,6 +364,7 @@ export class BlogDetailComponent {
 
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly engagementService = inject(BlogEngagementService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly openGraph = inject(BlogOpenGraphService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -411,6 +420,7 @@ export class BlogDetailComponent {
   protected readonly readingProgress = signal(0);
   protected readonly activeContentSectionId = signal<string | null>(null);
   protected readonly currentYear = new Date().getFullYear();
+  private readonly recordedReadPostIds = new Set<string>();
   protected readonly readingStats = computed(() => {
     const post = this.post();
 
@@ -483,6 +493,9 @@ export class BlogDetailComponent {
         this.readingProgress.set(0);
         this.activeContentSectionId.set(this.tableOfContents()[0]?.id ?? null);
         this.queueReadingStateRefresh();
+        if (!this.isPreviewRoute()) {
+          void this.recordPostRead(post);
+        }
         return;
       }
 
@@ -544,6 +557,37 @@ export class BlogDetailComponent {
 
   protected createSharePath(slug: string): string {
     return this.createCurrentPostPath(slug).replace(/^\//, '');
+  }
+
+  protected recordShare(post: BlogPostSummary, provider: BlogShareProvider): void {
+    if (this.isPreviewRoute()) {
+      return;
+    }
+
+    void this.engagementService.recordPostShare({
+      postId: post.id,
+      postSlug: post.slug,
+      provider,
+    }).catch(() => {
+      // Sharing should never block outbound share actions or copy feedback.
+    });
+  }
+
+  private async recordPostRead(post: BlogPostSummary): Promise<void> {
+    if (this.recordedReadPostIds.has(post.id)) {
+      return;
+    }
+
+    this.recordedReadPostIds.add(post.id);
+
+    try {
+      await this.engagementService.recordPostRead({
+        postId: post.id,
+        postSlug: post.slug,
+      });
+    } catch {
+      // Anonymous readers and transient Function failures should not affect reading.
+    }
   }
 
   private queueReadingStateRefresh(): void {
