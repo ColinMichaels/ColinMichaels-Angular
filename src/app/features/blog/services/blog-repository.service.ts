@@ -6,6 +6,7 @@ import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
 import {DEFAULT_COVER_IMAGE, BLOG_PREVIEW_DURATION_MS, BLOG_PREVIEW_TOKEN_BYTE_LENGTH} from '../blog.constants';
+import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 
 export interface BlogPostPreviewResult {
   post: BlogPost;
@@ -30,13 +31,15 @@ export interface BlogPostBulkActionResult {
 }
 
 function toSummary(post: BlogPost): BlogPostSummary {
+  const imageFields = normalizeBlogImageFields(post);
+
   return {
     id: post.id,
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
-    coverImage: post.coverImage,
-    thumbnailImage: post.thumbnailImage,
+    coverImage: imageFields.coverImage,
+    thumbnailImage: imageFields.thumbnailImage,
     featured: post.featured,
     author: post.author,
     categories: post.categories,
@@ -223,12 +226,15 @@ export class BlogRepositoryService {
     const now = new Date().toISOString();
     const existingPost = this.getPosts().find(savedPost => savedPost.id === post.id);
     const slug = this.createUniqueSlug(post.slug || post.title, post.id);
+    const imageFields = normalizeBlogImageFields(post);
     const publishedAt = post.status === 'published'
       ? post.publishedAt ?? now
       : post.publishedAt;
     const savedPost: BlogPost = {
       ...post,
       slug,
+      coverImage: imageFields.coverImage,
+      thumbnailImage: imageFields.thumbnailImage,
       ...(post.status === 'draft' && isActivePreview(post) ? {preview: post.preview} : {preview: undefined}),
       seo: {
         ...post.seo,
