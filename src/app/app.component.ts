@@ -6,6 +6,8 @@ import {filter, map, startWith} from 'rxjs/operators';
 import {NotificationServerComponent} from './components/game/utils/notifications-server/notifications-server.component';
 import {PATH_NAMES} from './app-route-paths';
 import {fadeToBlackAnimation} from './route-animations';
+import {ReaderPreferencesService} from './shared/reader-preferences/reader-preferences.service';
+import {ReaderToolsComponent} from './shared/reader-preferences/reader-tools.component';
 import {SeoService} from './shared/seo/seo.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
@@ -20,7 +22,7 @@ const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NotificationServerComponent, SiteHeaderComponent],
+  imports: [RouterOutlet, NotificationServerComponent, ReaderToolsComponent, SiteHeaderComponent],
   templateUrl: './app.component.html',
   styles: [],
   standalone: true,
@@ -30,6 +32,7 @@ const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  private readonly readerPreferences = inject(ReaderPreferencesService);
   private readonly seo = inject(SeoService);
   private readonly theme = inject(SiteThemeService);
   private readonly currentUrl = toSignal(
@@ -51,10 +54,22 @@ export class AppComponent {
 
     return SITE_HEADER_EXCLUDED_ROUTES.some(route => currentUrl === route || currentUrl.startsWith(`${route}/`));
   });
+  protected readonly showReaderTools = computed(() => {
+    const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
+    const readerRoutes = [
+      '/',
+      `/${PATH_NAMES.BLOG}`,
+      `/${PATH_NAMES.SEARCH}`,
+      `/${PATH_NAMES.TOPICS}`,
+    ];
+
+    return readerRoutes.some(route => currentUrl === route || (route !== '/' && currentUrl.startsWith(`${route}/`)));
+  });
 
   constructor() {
     this.seo.initializeRouteTracking();
     this.theme.mode();
+    this.readerPreferences.preferences();
   }
 
   prepareRoute(outlet: RouterOutlet): string | null {
