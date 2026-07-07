@@ -13,7 +13,6 @@ import {SectionHeaderComponent} from './resume-section/section-header.component'
     SectionHeaderComponent
   ],
   standalone: true,
-  styleUrl: `../home-page.scss`,
   template: `
     <section class="mx-auto flex flex-col  text-white/90">
 

@@ -7,7 +7,6 @@ import {
   doc,
   Firestore,
   getDocs,
-  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -17,34 +16,16 @@ import {
 import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
+import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
+import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {TopicHub} from '../topic-hubs.data';
-import {isRecord, isTopicHub} from '../utils/topic-hub-validation.util';
+import {isTopicHub} from '../utils/topic-hub-validation.util';
 
 export const TOPIC_HUBS_COLLECTION = 'topics';
 const FIRESTORE_BATCH_LIMIT = 450;
 
 type FirestoreWriteBatch = ReturnType<typeof writeBatch>;
-
-function removeUndefinedFields(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(item => removeUndefinedFields(item));
-  }
-
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  const cleanedValue: Record<string, unknown> = {};
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry !== undefined) {
-      cleanedValue[key] = removeUndefinedFields(entry);
-    }
-  }
-
-  return cleanedValue;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -56,7 +37,13 @@ export class TopicHubStorageService {
   private readonly topicsSubject = new BehaviorSubject<readonly TopicHub[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(Boolean(this.firestore));
   private readonly errorSubject = new BehaviorSubject<string | null>(this.firestore ? null : 'Firebase Firestore is not initialized.');
-  private firestoreUnsubscribe: (() => void) | undefined;
+  private readonly remoteSync = new FirestoreCollectionSync<TopicHub>(
+    this.topicsSubject,
+    this.loadingSubject,
+    this.errorSubject,
+    value => this.fromFirestoreTopicHub(value),
+    error => this.describeSnapshotError(error)
+  );
 
   readonly topics$ = this.topicsSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
@@ -66,7 +53,7 @@ export class TopicHubStorageService {
     const authUnsubscribe = this.startAuthAwareFirestoreSync();
     this.destroyRef.onDestroy(() => {
       authUnsubscribe?.();
-      this.firestoreUnsubscribe?.();
+      this.remoteSync.stop();
     });
   }
 
@@ -102,9 +89,7 @@ export class TopicHubStorageService {
 
   async loadPublishedTopicHubsFromFirestore(): Promise<readonly TopicHub[]> {
     const firestore = this.requireFirestore();
-    const snapshot = await getDocs(
-      query(collection(firestore, TOPIC_HUBS_COLLECTION), where('status', '==', 'published'))
-    );
+    const snapshot = await getDocs(this.createPublishedTopicHubsQuery(firestore));
 
     return this.toTopicHubs(snapshot.docs.map(topicSnapshot => topicSnapshot.data()));
   }
@@ -115,7 +100,7 @@ export class TopicHubStorageService {
     }
 
     if (!this.auth) {
-      this.listenToPublishedFirestoreTopicHubs();
+      void this.loadPublishedFirestoreTopicHubs();
       return undefined;
     }
 
@@ -126,7 +111,7 @@ export class TopicHubStorageService {
 
   private async updateFirestoreListener(user: User | null): Promise<void> {
     if (!user) {
-      this.listenToPublishedFirestoreTopicHubs();
+      await this.loadPublishedFirestoreTopicHubs();
       return;
     }
 
@@ -142,7 +127,7 @@ export class TopicHubStorageService {
       // Fall back to the public published query if claims cannot be resolved.
     }
 
-    this.listenToPublishedFirestoreTopicHubs();
+    await this.loadPublishedFirestoreTopicHubs();
   }
 
   private listenToAllFirestoreTopicHubs(): void {
@@ -152,54 +137,29 @@ export class TopicHubStorageService {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
+    this.remoteSync.listen(
       collection(firestore, TOPIC_HUBS_COLLECTION),
-      snapshot => {
-        const remoteTopicHubs = snapshot.docs
-          .map(topicSnapshot => this.fromFirestoreTopicHub(topicSnapshot.data()))
-          .filter((topicHub): topicHub is TopicHub => topicHub !== null);
-
-        this.topicsSubject.next(remoteTopicHubs);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[TopicHubStorageService] Admin topics snapshot error:', error);
-        this.topicsSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+      '[TopicHubStorageService] Admin topics snapshot error:'
     );
   }
 
-  private listenToPublishedFirestoreTopicHubs(): void {
+  private async loadPublishedFirestoreTopicHubs(): Promise<void> {
     const firestore = this.firestore;
 
     if (!firestore) {
       return;
     }
 
-    this.firestoreUnsubscribe?.();
-    this.loadingSubject.next(true);
-    this.errorSubject.next(null);
-    this.firestoreUnsubscribe = onSnapshot(
-      query(collection(firestore, TOPIC_HUBS_COLLECTION), where('status', '==', 'published')),
-      snapshot => {
-        const remotePublishedTopicHubs = snapshot.docs
-          .map(topicSnapshot => this.fromFirestoreTopicHub(topicSnapshot.data()))
-          .filter((topicHub): topicHub is TopicHub => topicHub !== null);
+    await this.remoteSync.load(
+      this.createPublishedTopicHubsQuery(firestore),
+      '[TopicHubStorageService] Published topics load error:'
+    );
+  }
 
-        this.topicsSubject.next(remotePublishedTopicHubs);
-        this.loadingSubject.next(false);
-      },
-      error => {
-        console.error('[TopicHubStorageService] Published topics snapshot error:', error);
-        this.topicsSubject.next([]);
-        this.loadingSubject.next(false);
-        this.errorSubject.next(this.describeSnapshotError(error));
-      }
+  private createPublishedTopicHubsQuery(firestore: Firestore) {
+    return query(
+      collection(firestore, TOPIC_HUBS_COLLECTION),
+      where('status', '==', 'published')
     );
   }
 
@@ -256,7 +216,7 @@ export class TopicHubStorageService {
 
   private toFirestoreTopicHub(topicHub: TopicHub): Record<string, unknown> {
     return {
-      ...(removeUndefinedFields(topicHub) as Record<string, unknown>),
+      ...(removeUndefinedFirestoreFields(topicHub) as Record<string, unknown>),
       syncedAt: serverTimestamp(),
       storageVersion: 1,
     };

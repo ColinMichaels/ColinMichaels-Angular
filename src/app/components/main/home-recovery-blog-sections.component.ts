@@ -12,7 +12,6 @@ import {TopicHubRepositoryService} from '../../features/topics/services/topic-hu
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postMatchesHubTerms, postMatchesTerms} from './home-blog-section.utils';
-import {JsonPipe} from '@angular/common';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -32,7 +31,6 @@ const MEDICAL_INFORMATION_TERMS = [
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
     RouterLink,
-    JsonPipe,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,

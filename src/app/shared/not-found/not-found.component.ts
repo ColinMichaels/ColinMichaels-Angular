@@ -11,7 +11,6 @@ import {WindowHeaderComponent} from '../../components/game/templates/app-window/
   ],
   templateUrl: './not-found.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrl: '../../components/main/home-page.scss',
 })
 export class NotFoundComponent {
 }

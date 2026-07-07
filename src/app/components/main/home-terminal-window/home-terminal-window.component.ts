@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ChangeDetectionStrategy} from '@angular/core';
+import {AfterViewInit, ChangeDetectionStrategy, Component, ViewEncapsulation} from '@angular/core';
 import {TypewriterService} from '../../game/services/typewriter.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
@@ -12,7 +12,18 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
       <p [innerHTML]="typedText"></p>
     </div>`,
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: ``
+  encapsulation: ViewEncapsulation.None,
+  styles: `
+    app-home-terminal-window .animate-blink {
+      animation: home-terminal-blink 1s linear infinite;
+    }
+
+    @keyframes home-terminal-blink {
+      50% {
+        opacity: 0;
+      }
+    }
+  `
 })
 export class HomeTerminalWindowComponent implements AfterViewInit {
   typedText = '';
