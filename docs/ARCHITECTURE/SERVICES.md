@@ -34,6 +34,19 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   add Firebase App Check enforcement when App Check is configured for the public site.
 
+## `site-preloader.service.ts`
+
+- Responsibility:
+  dismiss the static public-site startup overlay after initial route settling, Angular stability, font readiness, animation-frame paint, and one marked above-the-fold image decode.
+- Dependencies:
+  Angular `ApplicationRef`, `Router`, browser document APIs, and the inline `window.__cmDismissInitialSiteLoader` hook.
+- Called by:
+  `AppComponent` during browser startup.
+- Current risks:
+  the service intentionally waits for only one `[data-site-preload-image]`; routes that mark multiple images still dismiss after the first marker, so route authors should keep the marker scoped to the primary above-the-fold visual.
+- Planned cleanup:
+  keep timing values centralized in the service and add route-level visual regression coverage if startup loader behavior changes again.
+
 ## `sound.service.ts`
 
 - Responsibility:

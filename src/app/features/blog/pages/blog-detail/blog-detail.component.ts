@@ -148,7 +148,12 @@ function normalizeHealthTerm(value: string): string {
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
                   class="blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
+                  data-site-preload-image
+                  decoding="async"
+                  fetchpriority="high"
                   loading="eager"
+                  width="1200"
+                  height="675"
                 >
               </header>
             </div>

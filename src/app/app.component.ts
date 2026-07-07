@@ -9,6 +9,7 @@ import {fadeToBlackAnimation} from './route-animations';
 import {ReaderPreferencesService} from './shared/reader-preferences/reader-preferences.service';
 import {ReaderToolsComponent} from './shared/reader-preferences/reader-tools.component';
 import {SeoService} from './shared/seo/seo.service';
+import {SitePreloaderService} from './shared/site-loader/site-preloader.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
 
@@ -34,6 +35,7 @@ export class AppComponent {
   private readonly router = inject(Router);
   private readonly readerPreferences = inject(ReaderPreferencesService);
   private readonly seo = inject(SeoService);
+  private readonly sitePreloader = inject(SitePreloaderService);
   private readonly theme = inject(SiteThemeService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -67,6 +69,7 @@ export class AppComponent {
   });
 
   constructor() {
+    this.sitePreloader.start();
     this.seo.initializeRouteTracking();
     this.theme.mode();
     this.readerPreferences.preferences();

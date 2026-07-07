@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-07
+
+- Added a lightweight inline public-site Signal Sweep + Postcard preloader that masks first render instability until Angular, route stability, fonts, and one marked above-the-fold image are ready or capped by failsafes.
+- Added a shared `SitePreloaderService` and public image preload markers for the homepage hero and blog detail cover while keeping lower-priority blog media lazy-loaded.
+- Reduced production CSS output by replacing the broad generated Tailwind safelist with an opt-in debugging flag and CSS-variable-based preview styling.
+- Documented the public-site preloader architecture, component inventory, migration notes, validation expectations, and route boundary.
+
 ## 2026-07-04
 
 - Replaced the homepage topic guide card grid with a reusable CSS/SVG `TopicKnowledgeMapComponent` that uses a blueprint-style map, themed topic nodes, responsive mobile rail layout, and dynamic published-post counts.

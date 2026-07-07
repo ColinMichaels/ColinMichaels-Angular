@@ -35,7 +35,11 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
         alt=""
         aria-hidden="true"
         class="home-hero-background-image"
+        data-site-preload-image
+        decoding="async"
         fetchpriority="high"
+        width="1717"
+        height="916"
       >
       <div class="home-hero-background-lines" aria-hidden="true"></div>
 
@@ -98,6 +102,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
                         [src]="postImage(post)"
                         [alt]="post.title + ' thumbnail'"
                         class="home-hero-panel-image"
+                        decoding="async"
                         loading="eager"
                       >
                     </span>
