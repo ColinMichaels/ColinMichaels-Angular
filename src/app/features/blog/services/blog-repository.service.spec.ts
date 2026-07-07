@@ -27,6 +27,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
     ...(overrides.preview ? {preview: overrides.preview} : {}),
+    ...(overrides.thumbnailImage ? {thumbnailImage: overrides.thumbnailImage} : {}),
     createdAt: overrides.createdAt ?? '2026-01-01T12:00:00.000Z',
     updatedAt: overrides.updatedAt ?? '2026-01-01T12:00:00.000Z',
     publishedAt: overrides.publishedAt ?? null,
@@ -251,6 +252,26 @@ describe('BlogRepositoryService', () => {
     }));
 
     expect(savedPost.seo.openGraphImage).toBe('/assets/images/posts/social-share.webp');
+  });
+
+  it('drops a stale local thumbnail when the cover image has a Firebase Storage URL', async () => {
+    const firebaseCoverImage =
+      'https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fcover.webp?alt=media&token=abc';
+    const savedPost = await service.savePost(createPost({
+      id: 'firebase-cover-post',
+      slug: 'firebase-cover-post',
+      coverImage: firebaseCoverImage,
+      thumbnailImage: '/assets/images/blog/legacy-thumbnail.webp',
+      status: 'published',
+      publishedAt: '2026-01-03T12:00:00.000Z',
+    }));
+    const publicSummary = service.getPublishedPosts().find(post => post.id === savedPost.id);
+
+    expect(savedPost.thumbnailImage).toBeUndefined();
+    expect(publicSummary?.coverImage).toBe(firebaseCoverImage);
+    expect(publicSummary?.thumbnailImage).toBeUndefined();
+    expect(storage.getPosts().find(post => post.id === savedPost.id)?.thumbnailImage)
+      .toBeUndefined();
   });
 
   it('keeps the Open Graph image blank when social sharing should fall back to the cover image', async () => {

@@ -9,6 +9,7 @@ import {SeoService} from '../../shared/seo/seo.service';
 import {BlogPostSummary} from '../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../blog/utils/blog-category-url.util';
+import {resolveBlogPostImage} from '../blog/utils/blog-image-url.util';
 import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
 import {createTopicHubSeoMetadata, TopicHub} from './topic-hubs.data';
 
@@ -1242,7 +1243,7 @@ export class TopicHubComponent {
   }
 
   protected postImage(post: BlogPostSummary): string {
-    return post.thumbnailImage?.trim() || post.coverImage;
+    return resolveBlogPostImage(post);
   }
 
   protected topicSectionHref(fragment: string): string {

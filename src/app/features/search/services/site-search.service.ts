@@ -5,6 +5,7 @@ import {PATH_NAMES} from '../../../app-route-paths';
 import {BlogPost} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
+import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
 import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
 import {TopicHub} from '../../topics/topic-hubs.data';
 
@@ -199,7 +200,7 @@ function createBlogSearchItem(post: BlogPost): SiteSearchItem {
     categories: taxonomyTerms,
     tags: post.tags,
     date: post.publishedAt ?? post.updatedAt,
-    image: post.thumbnailImage?.trim() || post.coverImage,
+    image: resolveBlogPostImage(post),
   };
 }
 

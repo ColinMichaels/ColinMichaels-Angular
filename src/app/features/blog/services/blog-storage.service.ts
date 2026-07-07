@@ -23,6 +23,7 @@ import {FirestoreCollectionSync} from '../../../services/firebase/firestore-coll
 import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {BlogPost} from '../models/blog-post.model';
+import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
@@ -306,8 +307,12 @@ export class BlogStorageService {
   }
 
   private toFirestorePost(post: BlogPost): Record<string, unknown> {
+    const imageFields = normalizeBlogImageFields(post);
+
     return {
       ...post,
+      coverImage: imageFields.coverImage,
+      thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
       preview: post.preview ?? deleteField(),
       syncedAt: serverTimestamp(),
       storageVersion: 1,

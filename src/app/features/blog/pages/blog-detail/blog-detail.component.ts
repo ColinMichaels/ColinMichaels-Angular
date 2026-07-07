@@ -27,6 +27,7 @@ import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
+import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {AuthorBioComponent} from '../../../../shared/author/author-bio.component';
 import {COLIN_AUTHOR_PROFILE} from '../../../../shared/author/author-profile.data';
 import {
@@ -530,7 +531,7 @@ export class BlogDetailComponent {
   }
 
   protected suggestedPostImage(post: BlogPostSummary): string {
-    return post.thumbnailImage?.trim() || post.coverImage;
+    return resolveBlogPostImage(post);
   }
 
   protected createCurrentPostPath(slug: string): string {

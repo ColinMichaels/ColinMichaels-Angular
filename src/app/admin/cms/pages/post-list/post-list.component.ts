@@ -4,6 +4,7 @@ import {RouterLink} from '@angular/router';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {resolveBlogPostImage} from '../../../../features/blog/utils/blog-image-url.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {
@@ -333,7 +334,7 @@ function getErrorMessage(error: unknown): string {
                   <span
                     class="grid aspect-[16/9] w-24 place-items-center overflow-hidden rounded border border-zinc-800 bg-zinc-900">
                     <img
-                      [src]="row.post.thumbnailImage || row.post.coverImage"
+                      [src]="postImage(row.post)"
                       [alt]="row.post.title + ' thumbnail'"
                       loading="lazy"
                       class="h-full w-full object-contain"
@@ -518,6 +519,10 @@ export class CmsPostListComponent {
 
   protected previewUrl(post: BlogPost): string {
     return post.preview ? this.blogRepository.createPreviewUrl(post.preview.token) : '';
+  }
+
+  protected postImage(post: BlogPost): string {
+    return resolveBlogPostImage(post);
   }
 
   protected updateSearch(event: Event): void {
