@@ -4,6 +4,7 @@
 
 - Added a protected `/admin/cms/homepage` hero manager with Firestore-backed homepage copy, featured article selection, multi-image hero slide uploads, ordering, focal points, and slideshow timing controls.
 - Updated the public homepage hero to consume CMS-managed slideshow settings with static fallback behavior, automatic decorative rotation, reduced-motion/page-visibility pauses, and selected/featured/latest post fallback selection.
+- Added a per-slide CMS toggle for subtle Ken Burns background motion on homepage hero slides, with reduced-motion suppression on the public page.
 - Removed unused public/blog component duplicates, including the legacy blog search page, old homepage blog wrapper/tech tips section, old disclaimer/subheader components, and the obsolete `components/not-found` compatibility path.
 - Removed local generated/editor cleanup artifacts such as `.DS_Store`, ignored build output, and ignored Firebase debug logs from the workspace cleanup pass.
 - Tightened lazy rendering for the public shell by deferring OS notifications, reader tools, footer socials, below-the-fold homepage sections, the site search drawer, blog table of contents, blog comments, and article author widgets until their route/state/viewport trigger requires them.

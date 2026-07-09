@@ -12,6 +12,7 @@ export interface HomepageHeroSlide {
   height?: number;
   focalPointX: number;
   focalPointY: number;
+  kenBurnsEnabled: boolean;
   sortOrder: number;
   status: HomepageHeroSlideStatus;
   createdAt: string;
@@ -38,4 +39,3 @@ export interface HomepageHeroAdminStats {
   publishedSlides: number;
   draftSlides: number;
 }
-
