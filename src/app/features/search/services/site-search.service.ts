@@ -12,6 +12,13 @@ import {TopicHub} from '../../topics/topic-hubs.data';
 export type SiteSearchContentType = 'blog' | 'page';
 export type SiteSearchSortMode = 'relevance' | 'newest';
 
+export interface SiteSearchTopic {
+  label: string;
+  accent: string;
+  accentStrong: string;
+  accentRgb: string;
+}
+
 export interface SiteSearchItem {
   id: string;
   type: SiteSearchContentType;
@@ -27,6 +34,7 @@ export interface SiteSearchItem {
   tags: readonly string[];
   date: string | null;
   image?: string;
+  topic?: SiteSearchTopic;
 }
 
 export interface SiteSearchFilters {
@@ -112,7 +120,7 @@ export class SiteSearchService {
       this.topicHubRepository.getPublishedTopicHubs$(),
     ]).pipe(
       map(([posts, topicHubs]) => [
-        ...posts.map(post => createBlogSearchItem(post)),
+        ...posts.map(post => createBlogSearchItem(post, topicHubs)),
         ...topicHubs.map(topicHub => createTopicSearchItem(topicHub)),
         ...STATIC_SEARCH_ITEMS,
       ])
@@ -172,12 +180,13 @@ export function normalizeSearchValue(value: string): string {
     .toLowerCase();
 }
 
-function createBlogSearchItem(post: BlogPost): SiteSearchItem {
+function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): SiteSearchItem {
   const bodyText = createBlogPostBodyText(post);
   const taxonomyTerms = getBlogTaxonomyTerms(post);
   const taxonomyText = [...taxonomyTerms, ...post.tags].join(' ');
   const titleText = post.title;
   const excerptText = post.excerpt;
+  const topicHub = findTopicHubForBlogPost(post, taxonomyTerms, topicHubs);
 
   return {
     id: post.id,
@@ -201,6 +210,7 @@ function createBlogSearchItem(post: BlogPost): SiteSearchItem {
     tags: post.tags,
     date: post.publishedAt ?? post.updatedAt,
     image: resolveBlogPostImage(post),
+    ...(topicHub ? {topic: createSearchTopic(topicHub)} : {}),
   };
 }
 
@@ -255,7 +265,52 @@ function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
     categories: ['Topics'],
     tags: topicHub.terms,
     date: topicHub.updatedAt,
+    topic: createSearchTopic(topicHub),
   };
+}
+
+function createSearchTopic(topicHub: TopicHub): SiteSearchTopic {
+  return {
+    label: topicHub.theme.shortLabel,
+    accent: topicHub.theme.accent,
+    accentStrong: topicHub.theme.accentStrong,
+    accentRgb: topicHub.theme.accentRgb,
+  };
+}
+
+function findTopicHubForBlogPost(
+  post: BlogPost,
+  taxonomyTerms: readonly string[],
+  topicHubs: readonly TopicHub[]
+): TopicHub | null {
+  const searchableText = normalizeTopicMatchValue([
+    post.title,
+    post.excerpt,
+    post.slug,
+    ...taxonomyTerms,
+    ...post.tags,
+  ].join(' '));
+  const searchableTokens = new Set(searchableText.split(' ').filter(Boolean));
+
+  return topicHubs.find(topicHub => topicHub.terms.some(term => {
+    const normalizedTerm = normalizeTopicMatchValue(term);
+
+    if (!normalizedTerm) {
+      return false;
+    }
+
+    return normalizedTerm.includes(' ')
+      ? searchableText.includes(normalizedTerm)
+      : searchableTokens.has(normalizedTerm);
+  })) ?? null;
+}
+
+function normalizeTopicMatchValue(value: string): string {
+  return normalizeSearchValue(value)
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function matchesFilters(item: SiteSearchItem, filters: SiteSearchFilters): boolean {

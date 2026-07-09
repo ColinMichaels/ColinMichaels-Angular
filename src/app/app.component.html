@@ -6,6 +6,11 @@
 @if (showSiteHeader()) {
   <app-site-header/>
 }
+@if (showSiteHeader() && searchOverlay.isOpen()) {
+  @defer (when searchOverlay.isOpen()) {
+    <app-site-search-drawer [isOpen]="true" (closeSearch)="closeSearch()"/>
+  }
+}
 <div
   class="min-h-screen bg-zinc-800/70"
   [class.site-theme-scope]="showSiteHeader()"
