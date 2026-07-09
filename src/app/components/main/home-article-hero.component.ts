@@ -53,6 +53,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
             [style.transform-origin]="slideObjectPosition(slide)"
             [style.--home-hero-transition-duration]="heroTransitionDuration()"
             [style.--home-hero-ken-burns-duration]="heroKenBurnsDuration()"
+            [style.--home-hero-ken-burns-delay]="slideKenBurnsDelay(slideIndex)"
             [style.--home-hero-ken-burns-x]="slideKenBurnsOffset(slide, 'x')"
             [style.--home-hero-ken-burns-y]="slideKenBurnsOffset(slide, 'y')"
             [attr.data-site-preload-image]="first ? '' : null"
@@ -211,19 +212,19 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       filter: saturate(0.95) contrast(1.04) brightness(0.82);
       opacity: 0;
       pointer-events: none;
-      transform: scale(1.012) translate3d(0, 0, 0);
-      transition: opacity var(--home-hero-transition-duration, 900ms) ease,
-      transform var(--home-hero-transition-duration, 900ms) ease;
+      transform: scale(1.025) translate3d(0, 0, 0);
+      transition: opacity var(--home-hero-transition-duration, 1200ms) cubic-bezier(0.4, 0, 0.2, 1);
       will-change: opacity, transform;
     }
 
     .home-hero-background-image.is-active {
+      z-index: 1;
       opacity: 1;
-      transform: scale(1.03) translate3d(0, 0, 0);
     }
 
-    .home-hero-background-image.is-active.has-ken-burns {
-      animation: home-hero-ken-burns var(--home-hero-ken-burns-duration, 7400ms) ease-out both;
+    .home-hero-background-image.has-ken-burns {
+      animation: home-hero-ken-burns var(--home-hero-ken-burns-duration, 11000ms) ease-in-out
+      var(--home-hero-ken-burns-delay, 0ms) infinite alternate both;
     }
 
     .home-hero-background-lines {
@@ -586,10 +587,10 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 
     @keyframes home-hero-ken-burns {
       0% {
-        transform: scale(1.018) translate3d(0, 0, 0);
+        transform: scale(1.022) translate3d(0, 0, 0);
       }
       100% {
-        transform: scale(1.06) translate3d(
+        transform: scale(1.055) translate3d(
           var(--home-hero-ken-burns-x, 0.45%),
           var(--home-hero-ken-burns-y, -0.45%),
           0
@@ -725,12 +726,17 @@ export class HomeArticleHeroComponent {
 
     return slides.length > 0 ? slides : getPublishedHomepageHeroSlides(DEFAULT_HOMEPAGE_HERO_SETTINGS);
   });
-  protected readonly heroTransitionMs = computed(() => this.heroSettings().transitionMs);
+  protected readonly heroTransitionMs = computed(() => {
+    const transitionMs = this.heroSettings().transitionMs;
+    const hasKenBurnsSlides = this.heroSlides().some(slide => slide.kenBurnsEnabled);
+
+    return hasKenBurnsSlides ? Math.max(transitionMs, 1400) : transitionMs;
+  });
   protected readonly heroTransitionDuration = computed(() => `${this.heroTransitionMs()}ms`);
   protected readonly heroKenBurnsDuration = computed(() => {
     const settings = this.heroSettings();
 
-    return `${Math.max(7000, settings.intervalMs + settings.transitionMs)}ms`;
+    return `${Math.max(11000, settings.intervalMs + this.heroTransitionMs() + 2500)}ms`;
   });
   protected readonly activeSlideIndex = signal(0);
   private readonly pageVisible = signal(true);
@@ -798,6 +804,10 @@ export class HomeArticleHeroComponent {
 
   protected slideHasKenBurns(slide: HomepageHeroSlide): boolean {
     return slide.kenBurnsEnabled && this.pageVisible() && !this.reducedMotion();
+  }
+
+  protected slideKenBurnsDelay(slideIndex: number): string {
+    return `-${slideIndex * 1300}ms`;
   }
 
   protected slideKenBurnsOffset(slide: HomepageHeroSlide, axis: 'x' | 'y'): string {

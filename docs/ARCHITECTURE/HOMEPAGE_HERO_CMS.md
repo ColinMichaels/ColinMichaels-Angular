@@ -18,8 +18,11 @@ The homepage hero remains part of the public website. The CMS manager is protect
   no published slides, the renderer falls back to the previous static hero image and copy.
 - Published slides are sorted by `sortOrder`, then creation date, then ID.
 - The slideshow uses stacked image elements with opacity transitions. It does not use a third-party carousel package.
-- Slides can individually opt into a subtle Ken Burns-style transform animation. The focal point also drives the
-  transform origin so the motion keeps the intended crop area anchored.
+- Slides can individually opt into a subtle Ken Burns-style transform animation. The animation runs independently from
+  the active slide class so crossfades do not restart transform keyframes, and the focal point drives the transform
+  origin so the motion keeps the intended crop area anchored.
+- When any published slide has Ken Burns motion enabled, the public renderer uses an effective crossfade of at least
+  `1400ms` even if the saved fade setting is lower.
 - Rotation is decorative and automatic. The public homepage does not expose slideshow controls.
 - Rotation and per-slide Ken Burns motion pause for hidden browser tabs and `prefers-reduced-motion: reduce`.
 - Only the first hero slide carries `data-site-preload-image`, preserving the public preloader's one-critical-image

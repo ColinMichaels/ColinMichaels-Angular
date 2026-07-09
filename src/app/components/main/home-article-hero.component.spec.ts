@@ -150,7 +150,10 @@ describe('HomeArticleHeroComponent', () => {
     expect(element.textContent).toContain('Second line');
     expect(element.textContent).toContain('Custom homepage hero summary.');
     expect(element.querySelectorAll('.home-hero-background-image').length).toBe(2);
-    expect(element.querySelector<HTMLElement>('.home-hero-background-image')?.style.objectPosition).toBe('42% 58%');
+    const firstSlide = element.querySelector<HTMLElement>('.home-hero-background-image');
+
+    expect(firstSlide?.style.objectPosition).toBe('42% 58%');
+    expect(firstSlide?.style.getPropertyValue('--home-hero-transition-duration')).toBe('1400ms');
     expect(element.querySelector('.home-hero-background-image.has-ken-burns')).not.toBeNull();
     expect(element.querySelector('.home-hero-slide-controls')).toBeNull();
   });
