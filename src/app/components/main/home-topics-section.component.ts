@@ -13,7 +13,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
     TopicKnowledgeMapComponent,
   ],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-topic-knowledge-map
       [topics]="topicHubCards()"

@@ -2,7 +2,7 @@
   <main class="pb-32 sm:pb-28 lg:pb-24">
     <app-home-article-hero/>
 
-    @defer (on viewport; prefetch on idle) {
+    @defer (on viewport) {
       <app-home-latest-writing-section
         heading="More writing"
         [startIndex]="heroPostCount"
@@ -37,7 +37,7 @@
       </section>
     }
 
-    @defer (on viewport; prefetch on idle) {
+    @defer (on viewport) {
       <app-home-topics-section/>
     } @placeholder {
       <section id="topic-guides" class="site-section-band-dark" aria-labelledby="topic-guides-placeholder-heading">
@@ -60,7 +60,7 @@
       </section>
     }
 
-    @defer (on viewport; prefetch on idle) {
+    @defer (on viewport) {
       <app-home-recovery-blog-sections/>
     } @placeholder {
       <div>
@@ -93,7 +93,7 @@
       </div>
     }
 
-    @defer (on viewport; prefetch on idle) {
+    @defer (on viewport) {
       <app-youtube-latest-videos [maxResults]="3"></app-youtube-latest-videos>
     } @placeholder {
       <section id="youtube" class="site-section-band-dark">
@@ -196,12 +196,30 @@
       </div>
     </section>
 
-    <section id="about" class="bg-zinc-100 py-12 text-neutral-950">
-      <span id="work" class="sr-only" aria-hidden="true"></span>
-      <div class="site-section-inner">
-        <app-author-bio variant="home"></app-author-bio>
-      </div>
-    </section>
+    @defer (on viewport) {
+      <section id="about" class="bg-zinc-100 py-12 text-neutral-950">
+        <span id="work" class="sr-only" aria-hidden="true"></span>
+        <div class="site-section-inner">
+          <app-author-bio variant="home"></app-author-bio>
+        </div>
+      </section>
+    } @placeholder {
+      <section id="about" class="bg-zinc-100 py-12 text-neutral-950" aria-hidden="true">
+        <span id="work" class="sr-only"></span>
+        <div class="site-section-inner">
+          <div class="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div class="site-skeleton-block aspect-[9/16] w-full"></div>
+            <div class="space-y-5">
+              <div class="site-skeleton-block h-4 w-24"></div>
+              <div class="site-skeleton-block h-10 w-3/4"></div>
+              <div class="site-skeleton-block h-4 w-full"></div>
+              <div class="site-skeleton-block h-4 w-5/6"></div>
+              <div class="site-skeleton-block h-4 w-full"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
 
     <section class="site-section">
       <div class="site-section-rule flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -223,6 +241,10 @@
   </main>
 
   <footer class="pointer-events-auto">
-    <app-socials></app-socials>
+    @defer (on viewport) {
+      <app-socials></app-socials>
+    } @placeholder {
+      <div class="h-16" aria-hidden="true"></div>
+    }
   </footer>
 </div>

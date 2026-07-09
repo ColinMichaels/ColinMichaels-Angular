@@ -1,5 +1,5 @@
 @if (showOsNotifications()) {
-  @defer (on idle) {
+  @defer (when showOsNotifications()) {
     <app-notification-server/>
   }
 }
@@ -14,6 +14,8 @@
 >
   <router-outlet #outlet='outlet'></router-outlet>
   @if (showReaderTools()) {
-    <app-reader-tools/>
+    @defer (when showReaderTools()) {
+      <app-reader-tools/>
+    }
   }
 </div>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-09
+
+- Removed unused public/blog component duplicates, including the legacy blog search page, old homepage blog wrapper/tech tips section, old disclaimer/subheader components, and the obsolete `components/not-found` compatibility path.
+- Removed local generated/editor cleanup artifacts such as `.DS_Store`, ignored build output, and ignored Firebase debug logs from the workspace cleanup pass.
+- Tightened lazy rendering for the public shell by deferring OS notifications, reader tools, footer socials, below-the-fold homepage sections, the site search drawer, blog table of contents, blog comments, and article author widgets until their route/state/viewport trigger requires them.
+- Switched signal/input-driven public, blog, search, header, and YouTube display components to `OnPush` change detection while leaving mutable legacy/demo components untouched.
+
 ## 2026-07-07
 
 - Added a lightweight inline public-site Signal Sweep + Postcard preloader that masks first render instability until Angular, route stability, fonts, and one marked above-the-fold image are ready or capped by failsafes.

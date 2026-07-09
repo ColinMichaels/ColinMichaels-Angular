@@ -23,7 +23,7 @@ import {
     BlogPostCardComponent,
     BlogPostCardSkeletonComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
       <section class="mx-auto max-w-5xl">

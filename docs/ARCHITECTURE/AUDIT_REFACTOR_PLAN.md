@@ -6,6 +6,12 @@ Scope: Angular 19 standalone application using TailwindCSS, Firebase, AngularFir
 
 This plan is intentionally phased. It preserves routes, content, Firebase configuration, and existing OS-style systems while moving reusable infrastructure toward `core-os`, shared UI toward `shared`, public website concerns toward `features`, administrative tooling toward `admin`, and experiments toward `labs` or `archive`.
 
+## 2026-07-09 Cleanup Update
+
+- Removed unreferenced public/blog duplicates after route and import graph checks: the old blog search component, old homepage blog wrapper/tech tips section, disclaimer/subheader components, and the obsolete `components/not-found` compatibility export.
+- Preserved remaining app-unreachable candidates that look like OS framework, lab/demo, environment replacement, test helper, or content/archive decisions until they can be explicitly moved to `core-os`, `labs`, `archive`, or removed with migration notes.
+- Tightened lazy rendering in the public shell and blog article path: below-the-fold homepage sections no longer prefetch on idle, the site search drawer renders only when opened, and article comments/author widgets defer to viewport.
+
 ## Executive Summary
 
 The project builds successfully today, but the architecture is carrying two products in one folder tree:
@@ -520,7 +526,7 @@ Exit criteria:
 - [x] Keep route paths unchanged.
   - Progress: added `app.routes.spec.ts` to snapshot the current route paths.
 - [x] Move `NotFoundComponent` to `shared/not-found` or leave a compatibility export.
-  - Progress: wildcard route lazy-loads `shared/not-found`; legacy `components/not-found` exports the shared component.
+  - Progress: wildcard route lazy-loads `shared/not-found`; legacy `components/not-found` was removed after cleanup validation.
 
 Exit criteria:
 

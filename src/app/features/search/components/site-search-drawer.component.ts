@@ -28,7 +28,7 @@ import {
     DatePipe,
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (isOpen) {
       <section

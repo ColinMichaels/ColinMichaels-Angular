@@ -15,7 +15,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './socials.component.html',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `:host {
     position: fixed;
     bottom: 0;

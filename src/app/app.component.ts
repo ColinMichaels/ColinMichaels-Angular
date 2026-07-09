@@ -27,7 +27,7 @@ const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
   templateUrl: './app.component.html',
   styles: [],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [fadeToBlackAnimation]
 
 })

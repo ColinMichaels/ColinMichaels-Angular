@@ -22,7 +22,7 @@ interface SiteNavItem {
     SiteAuthControlsComponent,
     SiteLogoComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header
       class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100"
@@ -149,13 +149,17 @@ interface SiteNavItem {
             >
               Launch OS
             </a>
-            @defer (on idle) {
+            @defer (when isMenuOpen()) {
               <app-site-auth-controls variant="mobile" (navigate)="closeMenu()"/>
             }
           </div>
         </nav>
       }
-      <app-site-search-drawer [isOpen]="isSearchOpen()" (closeSearch)="closeSearch()"/>
+      @if (isSearchOpen()) {
+        @defer (when isSearchOpen()) {
+          <app-site-search-drawer [isOpen]="true" (closeSearch)="closeSearch()"/>
+        }
+      }
     </header>
   `,
   styles: `

@@ -27,7 +27,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
     RouterLink,
   ],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section id="home-article-hero" class="home-article-hero" aria-labelledby="home-article-hero-heading">
       <img
