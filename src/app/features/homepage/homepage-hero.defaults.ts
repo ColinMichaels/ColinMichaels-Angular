@@ -13,6 +13,7 @@ export function createDefaultHomepageHeroSlide(now = '2026-01-01T00:00:00.000Z')
     height: 916,
     focalPointX: 50,
     focalPointY: 50,
+    kenBurnsEnabled: false,
     sortOrder: 10,
     status: 'published',
     createdAt: now,
@@ -41,4 +42,3 @@ export function createDefaultHomepageHeroSettings(now = '2026-01-01T00:00:00.000
 }
 
 export const DEFAULT_HOMEPAGE_HERO_SETTINGS = createDefaultHomepageHeroSettings();
-

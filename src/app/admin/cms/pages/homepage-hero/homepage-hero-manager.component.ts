@@ -291,6 +291,10 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                         <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Focal Y%</span>
                         <input type="number" min="0" max="100" [value]="slide.focalPointY" class="w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300" (input)="updateSlideFocalPoint(slide.id, 'y', $event)">
                       </label>
+                      <label class="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-900 p-3 md:col-span-2">
+                        <span class="text-sm font-medium text-zinc-200">Ken Burns motion</span>
+                        <input type="checkbox" [checked]="slide.kenBurnsEnabled" class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-300" (change)="updateSlideKenBurns(slide.id, $event)">
+                      </label>
                     </div>
                   </article>
                 } @empty {
@@ -518,6 +522,7 @@ export class CmsHomepageHeroManagerComponent {
           height: progress.height,
           sortOrder: this.nextSlideOrder() + uploadedSlides.length * 10,
           status: 'published',
+          kenBurnsEnabled: true,
         }));
       }
 
@@ -554,6 +559,7 @@ export class CmsHomepageHeroManagerComponent {
         altText: 'Homepage hero image',
         sortOrder: this.nextSlideOrder(),
         status: 'published',
+        kenBurnsEnabled: true,
       }),
     ].sort(sortSlides));
     this.manualImageUrl = '';
@@ -583,6 +589,10 @@ export class CmsHomepageHeroManagerComponent {
     const value = Math.min(100, Math.max(0, this.getNumericInputValue(event, 50)));
 
     this.patchSlide(slideId, axis === 'x' ? {focalPointX: value} : {focalPointY: value});
+  }
+
+  protected updateSlideKenBurns(slideId: string, event: Event): void {
+    this.patchSlide(slideId, {kenBurnsEnabled: (event.target as HTMLInputElement | null)?.checked === true});
   }
 
   protected moveSlide(slideId: string, direction: -1 | 1): void {
