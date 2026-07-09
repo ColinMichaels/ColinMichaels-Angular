@@ -1,11 +1,14 @@
 import {DatePipe, NgStyle} from '@angular/common';
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   EventEmitter,
   HostListener,
   Input,
   Output,
+  ViewChild,
   computed,
   inject,
   signal,
@@ -33,20 +36,19 @@ import {
   template: `
     @if (isOpen) {
       <section
-        class="fixed inset-0 z-[100] isolate"
         role="dialog"
         aria-modal="true"
         aria-labelledby="site-search-drawer-title"
       >
         <button
           type="button"
-          class="absolute inset-0 cursor-default bg-slate-950/55 backdrop-blur-sm dark:bg-black/70"
+          class="fixed inset-x-0 bottom-0 top-16 z-40 cursor-default bg-slate-950/45 backdrop-blur-sm dark:bg-black/65"
           aria-label="Close search"
           (click)="requestClose()"
         ></button>
 
         <aside
-          class="absolute right-0 top-0 z-10 flex h-dvh w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl shadow-slate-950/30 dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 dark:shadow-black/50"
+          class="fixed left-3 right-3 top-[4.25rem] z-[110] flex max-h-[calc(100dvh-5rem)] w-auto translate-x-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-950 shadow-2xl shadow-slate-950/30 dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 dark:shadow-black/50 sm:absolute sm:left-1/2 sm:right-auto sm:top-[calc(100%+0.5rem)] sm:w-[min(36rem,calc(100vw-3rem))] sm:-translate-x-1/2"
         >
           <header class="border-b border-slate-200 p-5 dark:border-zinc-800">
             <div class="flex items-start justify-between gap-4">
@@ -276,9 +278,10 @@ import {
     }
   `],
 })
-export class SiteSearchDrawerComponent {
+export class SiteSearchDrawerComponent implements AfterViewInit {
   @Input() isOpen = false;
   @Output() closeSearch = new EventEmitter<void>();
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
 
   private readonly router = inject(Router);
   private readonly search = inject(SiteSearchService);
@@ -305,6 +308,10 @@ export class SiteSearchDrawerComponent {
   protected readonly resultLabel = computed(() => (
     this.normalizedQuery() ? 'Quick results' : 'Recent posts and pages'
   ));
+
+  ngAfterViewInit(): void {
+    this.searchInput?.nativeElement.focus();
+  }
 
   @HostListener('document:keydown.escape')
   protected handleEscapeKey(): void {

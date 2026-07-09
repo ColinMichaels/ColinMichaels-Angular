@@ -12,20 +12,36 @@ import {SeoService} from './shared/seo/seo.service';
 import {SitePreloaderService} from './shared/site-loader/site-preloader.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
-import {SiteSearchDrawerComponent} from './features/search/components/site-search-drawer.component';
-import {SiteSearchOverlayService} from './features/search/services/site-search-overlay.service';
 
-const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
+const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
   `/${PATH_NAMES.OS_LOGIN}`,
   `/${PATH_NAMES.OS_BOOT}`,
   `/${PATH_NAMES.OS_SLEEP}`,
   `/${PATH_NAMES.OS_EXTERNAL}`,
 ];
+const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
+  `/${PATH_NAMES.ADMIN}`,
+  ...OS_ROUTES,
+];
+
+function routeMatchesPrefix(url: string, route: string): boolean {
+  return url === route || url.startsWith(`${route}/`);
+}
+
+export function shouldShowSiteHeader(url: string): boolean {
+  const currentUrl = url.split('?')[0].split('#')[0];
+  return !SITE_HEADER_EXCLUDED_ROUTES.some(route => routeMatchesPrefix(currentUrl, route));
+}
+
+export function shouldShowOsNotifications(url: string): boolean {
+  const currentUrl = url.split('?')[0].split('#')[0];
+  return OS_ROUTES.some(route => routeMatchesPrefix(currentUrl, route));
+}
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NotificationServerComponent, ReaderToolsComponent, SiteHeaderComponent, SiteSearchDrawerComponent],
+  imports: [RouterOutlet, NotificationServerComponent, ReaderToolsComponent, SiteHeaderComponent],
   templateUrl: './app.component.html',
   styles: [],
   standalone: true,
@@ -39,7 +55,6 @@ export class AppComponent {
   private readonly seo = inject(SeoService);
   private readonly sitePreloader = inject(SitePreloaderService);
   private readonly theme = inject(SiteThemeService);
-  protected readonly searchOverlay = inject(SiteSearchOverlayService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -50,14 +65,10 @@ export class AppComponent {
   );
 
   protected readonly showSiteHeader = computed(() => {
-    const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
-
-    return !SITE_HEADER_EXCLUDED_ROUTES.some(route => currentUrl === route || currentUrl.startsWith(`${route}/`));
+    return shouldShowSiteHeader(this.currentUrl());
   });
   protected readonly showOsNotifications = computed(() => {
-    const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
-
-    return SITE_HEADER_EXCLUDED_ROUTES.some(route => currentUrl === route || currentUrl.startsWith(`${route}/`));
+    return shouldShowOsNotifications(this.currentUrl());
   });
   protected readonly showReaderTools = computed(() => {
     const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
@@ -80,10 +91,6 @@ export class AppComponent {
 
   prepareRoute(outlet: RouterOutlet): string | null {
     return outlet?.activatedRouteData['animation'] ?? null;
-  }
-
-  protected closeSearch(): void {
-    this.searchOverlay.close();
   }
 
 }

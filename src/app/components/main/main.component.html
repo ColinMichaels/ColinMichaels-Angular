@@ -165,37 +165,6 @@
         </div>
       </section>
     }
-
-
-    <section id="labs" class="site-section-band site-section-theme-soft topic-theme-labs">
-      <div class="site-section-inner">
-        <div class="site-section-rule grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <div>
-            <p class="eyebrow eyebrow-topic">Labs</p>
-            <h2 class="mt-3 heading-section">Experimental systems stay visible.</h2>
-            <p class="mt-5 text-base leading-8 text-body">
-              Labs collect visual and interaction prototypes without mixing them into production page logic.
-            </p>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            @for (lab of labItems; track lab.title) {
-              <article class="site-card-dark site-card-body">
-                <p class="site-meta">{{ lab.eyebrow }}</p>
-                <h3 class="mt-4 heading-subsection">{{ lab.title }}</h3>
-                <p class="mt-3 text-body">{{ lab.description }}</p>
-                <a [routerLink]="lab.route"
-                   class="mt-6 inline-flex border px-3 py-2 text-sm font-medium transition hover:bg-white hover:text-neutral-950"
-                   [ngClass]="lab.accentClass">
-                  {{ lab.action }}
-                </a>
-              </article>
-            }
-          </div>
-        </div>
-      </div>
-    </section>
-
     @defer (on viewport) {
       <section id="about" class="bg-zinc-100 py-12 text-neutral-950">
         <span id="work" class="sr-only" aria-hidden="true"></span>

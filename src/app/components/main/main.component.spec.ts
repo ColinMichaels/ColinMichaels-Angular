@@ -206,7 +206,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('#topic-guides')).not.toBeNull();
     expect(element.querySelector('#health-recovery')).not.toBeNull();
     expect(element.querySelector('#medical-information')).not.toBeNull();
-    expect(element.querySelector('#labs')).not.toBeNull();
+    expect(element.querySelector('#labs')).toBeNull();
     expect(element.querySelector('#os')).toBeNull();
     expect(element.textContent?.match(/Report a Bug/g)?.length).toBe(1);
   });
@@ -245,8 +245,8 @@ describe('MainComponent', () => {
     expect(blogRepositoryService.getPublishedPosts$).not.toHaveBeenCalled();
   });
 
-  it('renders the homepage author bio section', () => {
-    fixture.detectChanges();
+  it('renders the homepage author bio section', async () => {
+    await renderDeferredHomepageContent(fixture);
 
     const element = fixture.nativeElement as HTMLElement;
 

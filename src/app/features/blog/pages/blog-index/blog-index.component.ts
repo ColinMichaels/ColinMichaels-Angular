@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/cor
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCode, faMagnifyingGlass, faRss} from '@fortawesome/free-solid-svg-icons';
+import {faCode, faRss} from '@fortawesome/free-solid-svg-icons';
 import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
@@ -66,13 +66,6 @@ function postMatchesTopicHub(post: BlogPostSummary, topic: TopicHub): boolean {
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <a
-                [routerLink]="['/', pathNames.SEARCH]"
-                class="blog-action-primary"
-              >
-                <fa-icon [icon]="faMagnifyingGlass"></fa-icon>
-                Search
-              </a>
               <a
                 href="/feed.xml"
                 class="blog-action-icon"
@@ -146,7 +139,6 @@ export class BlogIndexComponent {
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly faCode = faCode;
-  protected readonly faMagnifyingGlass = faMagnifyingGlass;
   protected readonly faRss = faRss;
   private readonly allPosts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});

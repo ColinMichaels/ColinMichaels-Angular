@@ -14,13 +14,6 @@ import {AuthService} from '../../../services/auth.service';
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-3xl space-y-8">
-        <nav class="flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/" class="hover:text-zinc-100">Home</a>
-          <div class="flex items-center gap-3">
-            <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-          </div>
-        </nav>
-
         <section class="space-y-5 border border-amber-500/40 bg-amber-950/20 p-6">
           <p class="text-sm uppercase tracking-[0.3em] text-amber-200">Admin Access Required</p>
           <h1 class="text-3xl font-semibold text-zinc-50">This account is signed in but not authorized for admin

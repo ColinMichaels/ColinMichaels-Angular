@@ -1,7 +1,20 @@
 import {BlogPost, BlogPostStatus} from '../models/blog-post.model';
+import {
+  BLOG_SOCIAL_CHANNELS,
+  BlogSocialAnnouncementStatus,
+} from '../models/blog-social-promotion.model';
 
 export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const blogPostStatusSet = new Set<string>(BLOG_POST_STATUSES);
+const blogSocialChannelSet = new Set<string>(BLOG_SOCIAL_CHANNELS);
+const blogSocialAnnouncementStatusSet = new Set<BlogSocialAnnouncementStatus>([
+  'draft',
+  'scheduled',
+  'queued',
+  'posted',
+  'failed',
+  'cancelled',
+]);
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -58,6 +71,33 @@ function isBlogPostPreview(value: unknown): boolean {
   );
 }
 
+function isBlogSocialAnnouncement(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return typeof value['id'] === 'string'
+    && typeof value['channel'] === 'string'
+    && blogSocialChannelSet.has(value['channel'])
+    && typeof value['message'] === 'string'
+    && typeof value['scheduledAt'] === 'string'
+    && typeof value['status'] === 'string'
+    && blogSocialAnnouncementStatusSet.has(value['status'] as BlogSocialAnnouncementStatus)
+    && typeof value['createdAt'] === 'string'
+    && typeof value['updatedAt'] === 'string'
+    && (value['postedAt'] === undefined || typeof value['postedAt'] === 'string')
+    && (value['linkUrl'] === undefined || typeof value['linkUrl'] === 'string')
+    && (value['failureReason'] === undefined || typeof value['failureReason'] === 'string');
+}
+
+function isBlogSocialPromotion(value: unknown): boolean {
+  return value === undefined || (
+    isRecord(value)
+    && Array.isArray(value['announcements'])
+    && value['announcements'].every(isBlogSocialAnnouncement)
+  );
+}
+
 export function isBlogPost(value: unknown): value is BlogPost {
   if (!isRecord(value)) {
     return false;
@@ -79,6 +119,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && isBlogOpenGraphMetadata(value['og'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
+    && isBlogSocialPromotion(value['socialPromotion'])
     && isBlogPostPreview(value['preview'])
     && typeof value['createdAt'] === 'string'
     && typeof value['updatedAt'] === 'string'

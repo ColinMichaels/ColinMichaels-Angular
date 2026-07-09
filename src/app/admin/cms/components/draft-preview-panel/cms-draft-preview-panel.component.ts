@@ -1,31 +1,26 @@
-import {Component, Input, Output, EventEmitter, ChangeDetectionStrategy, inject, signal} from '@angular/core';
+import {Component, Input, Output, EventEmitter, ChangeDetectionStrategy, inject} from '@angular/core';
 
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {AdminControlModuleComponent} from '../../../shared/admin-control-module.component';
 
 @Component({
   selector: 'app-cms-draft-preview-panel',
+  imports: [AdminControlModuleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="space-y-3 border-t border-zinc-800 pt-4">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-semibold text-zinc-50">Draft Preview</h2>
-          <p class="mt-1 text-sm text-zinc-400">Temporary public link for reviewing unpublished draft content.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          @if (hasActivePreview) {
-            <span class="border border-amber-500/60 px-2 py-1 text-[0.65rem] uppercase tracking-[0.18em] text-amber-200">
-              Active
-            </span>
-          }
-          <button type="button" (click)="isOpen.set(!isOpen())" class="text-zinc-500 hover:text-zinc-300 transition-colors">
-            <span class="block transition-transform duration-200" [class.rotate-180]="isOpen()">▾</span>
-          </button>
-        </div>
-      </div>
+    <app-admin-control-module
+      title="Draft Preview"
+      [summary]="previewSummary"
+      description="Create a temporary public link for reviewing unpublished draft content."
+    >
+      @if (hasActivePreview) {
+        <span adminControlModuleStatus class="border border-amber-500/60 px-2 py-1 text-[0.6rem] uppercase tracking-[0.16em] text-amber-200">
+          Active
+        </span>
+      }
 
-      @if (isOpen()) {
+      <div class="space-y-3">
       @if (status === 'draft') {
         @if (previewUrl) {
           <a
@@ -86,8 +81,8 @@ import {BlogRepositoryService} from '../../../../features/blog/services/blog-rep
       @if (error) {
         <p class="border border-red-500/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">{{ error }}</p>
       }
-      }
-    </section>
+      </div>
+    </app-admin-control-module>
   `,
 })
 export class CmsDraftPreviewPanelComponent {
@@ -101,7 +96,6 @@ export class CmsDraftPreviewPanelComponent {
 
   private readonly blogRepository = inject(BlogRepositoryService);
 
-  protected readonly isOpen = signal(true);
   protected isInProgress = false;
   protected message = '';
   protected error = '';
@@ -131,6 +125,14 @@ export class CmsDraftPreviewPanelComponent {
 
     const expiresAt = new Date(preview.expiresAt);
     return Number.isNaN(expiresAt.getTime()) ? 'not set' : expiresAt.toLocaleString();
+  }
+
+  get previewSummary(): string {
+    if (this.status !== 'draft') {
+      return 'Available while the post is a draft';
+    }
+
+    return this.hasActivePreview ? `Active until ${this.previewExpiresAtLabel}` : 'No active preview link';
   }
 
   public clearMessages(): void {

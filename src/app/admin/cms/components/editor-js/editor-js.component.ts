@@ -157,17 +157,14 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <section class="space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
-        <div>
-          <p class="text-xs uppercase tracking-[0.25em] text-cyan-300">Editor.js</p>
-          <h2 class="mt-1 text-2xl font-semibold text-zinc-50">{{ title }}</h2>
-        </div>
+    <section class="space-y-2">
+      <div class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+        <h2 class="text-sm font-semibold text-zinc-100">{{ title }}</h2>
 
         <div class="flex gap-2">
           <button
             type="button"
-            class="border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
+            class="h-9 border border-zinc-700 px-3 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
             [disabled]="isLoading() || isSaving()"
             (click)="openImageInsertPanel()"
           >
@@ -175,7 +172,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
           </button>
           <button
             type="button"
-            class="border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
+            class="h-9 border border-zinc-700 px-3 text-xs text-zinc-200 hover:bg-zinc-800"
             [disabled]="isLoading() || isSaving()"
             (click)="reset()"
           >
@@ -184,7 +181,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
           @if (showSaveAction) {
             <button
               type="button"
-              class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+              class="h-9 border border-cyan-400 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
               [disabled]="isLoading() || isSaving()"
               (click)="save()"
             >

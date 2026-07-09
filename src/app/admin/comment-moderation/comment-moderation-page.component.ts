@@ -1,6 +1,5 @@
 import {DatePipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, OnDestroy, inject, signal} from '@angular/core';
-import {RouterLink} from '@angular/router';
 import {Subscription} from 'rxjs';
 
 import {BlogComment, BlogCommentStatus} from '../../features/blog/models/blog-comment.model';
@@ -19,17 +18,11 @@ function getErrorMessage(error: unknown): string {
   selector: 'app-comment-moderation-page',
   imports: [
     DatePipe,
-    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-6xl space-y-8">
-        <nav class="flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/admin" class="hover:text-zinc-100">Admin</a>
-          <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-        </nav>
-
         <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
           <div class="space-y-3">
             <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>

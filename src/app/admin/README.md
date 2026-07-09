@@ -4,6 +4,22 @@ Administrative tools belong here.
 
 This boundary is reserved for authenticated content management, dashboards, and future CMS routes. Admin-only dependencies should be lazy-loaded from this area.
 
+## Shared Admin Shell
+
+All protected admin pages render inside `AdminShellComponent` instead of rebuilding global navigation per feature.
+
+Component inventory:
+
+- `AdminShellComponent` provides the fixed desktop sidebar, responsive navigation drawer, 64px utility header, environment/account footer, and persistent CMS `New Post` action. Desktop users can collapse the sidebar to a 72px icon rail; labels remain available through hover/focus tooltips and the preference persists locally.
+- `admin-navigation.config.ts` defines grouped destinations, icons, exact/prefix matching, page titles, and role visibility for Overview, Publishing, Site Content, Assets, and Administration.
+- `AdminEnvironmentBadgeComponent` supports the compact shell-footer treatment while preserving the detailed badge for feature surfaces that need it.
+- `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
+- `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
+
+The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
+
+The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
+
 ## CMS AI Assistant
 
 The blog editor includes a CMS-local writing assistant for metadata drafting:
@@ -133,6 +149,23 @@ Migration notes:
 - The hardcoded homepage links are now the bootstrap/fallback set and can be seeded into Firestore from the manager.
 - Public rendering uses published links assigned to featured slots 1, 2, and 3. Saving a link into an occupied slot clears that slot from the previous link, keeping the homepage capped at three featured recommendations.
 - Firestore rules allow public `get/list` only for published recommended links and restrict create, update, and delete to CMS content roles.
+
+## Publishing Calendar And Social Plans
+
+The publishing Calendar is available at `/admin/cms/calendar` for CMS content roles. It renders scheduled and published posts on a Monday-first month grid and keeps social announcements attached to their source post.
+
+Component inventory:
+
+- `PublishingCalendarComponent` provides month navigation, scheduled/published/social filters, day agendas, post lookup, inline post rescheduling, an upcoming queue, and social announcement create/edit/cancel controls.
+- `BlogSocialPromotion` stores provider-specific messages and delivery times without changing the public blog post rendering contract.
+- `publishScheduledPosts` queues due announcements in the protected `socialOutbox` collection after their source article is published.
+
+Migration notes:
+
+- Existing posts require no backfill because `socialPromotion` is optional.
+- Editors can attach multiple later announcements to a post that is already published.
+- This release creates durable outbox work but does not call social-provider APIs. Provider OAuth, Secret Manager credentials, media preparation, retries, and delivery workers are the next integration phase.
+- See `docs/ARCHITECTURE/PUBLISHING_CALENDAR.md` for the connector matrix and delivery design.
 
 Admin authorization is enforced through Firebase Auth custom claims. The UI, callable functions, Realtime Database rules, Firestore rules, and Storage rules treat these claims as admin-capable:
 
