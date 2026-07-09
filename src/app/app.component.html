@@ -1,10 +1,15 @@
 @if (showOsNotifications()) {
-  @defer (on idle) {
+  @defer (when showOsNotifications()) {
     <app-notification-server/>
   }
 }
 @if (showSiteHeader()) {
   <app-site-header/>
+}
+@if (showSiteHeader() && searchOverlay.isOpen()) {
+  @defer (when searchOverlay.isOpen()) {
+    <app-site-search-drawer [isOpen]="true" (closeSearch)="closeSearch()"/>
+  }
 }
 <div
   class="min-h-screen bg-zinc-800/70"
@@ -14,6 +19,8 @@
 >
   <router-outlet #outlet='outlet'></router-outlet>
   @if (showReaderTools()) {
-    <app-reader-tools/>
+    @defer (when showReaderTools()) {
+      <app-reader-tools/>
+    }
   }
 </div>

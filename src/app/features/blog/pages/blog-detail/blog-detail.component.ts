@@ -159,13 +159,15 @@ function normalizeHealthTerm(value: string): string {
             </div>
 
             @if (hasTableOfContents()) {
-              <aside class="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-stretch">
-                <app-blog-table-of-contents
-                  [items]="tableOfContents()"
-                  [postPath]="createCurrentPostPath(currentPost.slug)"
-                  [activeHeadingId]="activeContentSectionId()"
-                ></app-blog-table-of-contents>
-              </aside>
+              @defer (when hasTableOfContents()) {
+                <aside class="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-stretch">
+                  <app-blog-table-of-contents
+                    [items]="tableOfContents()"
+                    [postPath]="createCurrentPostPath(currentPost.slug)"
+                    [activeHeadingId]="activeContentSectionId()"
+                  ></app-blog-table-of-contents>
+                </aside>
+              }
             }
 
             <div class="min-w-0 xl:col-start-1">
@@ -223,12 +225,32 @@ function normalizeHealthTerm(value: string): string {
                 }
 
                 @if (!isPreviewRoute()) {
-                  <app-blog-comments [post]="currentPost"></app-blog-comments>
+                  @defer (on viewport) {
+                    <app-blog-comments [post]="currentPost"></app-blog-comments>
+                  } @placeholder {
+                    <section aria-labelledby="blog-comments-placeholder-heading" class="blog-section-rule mt-10">
+                      <div class="grid gap-2">
+                        <p class="eyebrow-sm eyebrow-cyan">Discussion</p>
+                        <h2 id="blog-comments-placeholder-heading"
+                            class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Comments</h2>
+                      </div>
+                      <div class="mt-6 grid gap-4" aria-hidden="true">
+                        <div class="site-skeleton-card h-28"></div>
+                        <div class="site-skeleton-card h-24"></div>
+                      </div>
+                    </section>
+                  }
                 }
 
-                <section class="blog-section-rule mt-10">
-                  <app-author-bio></app-author-bio>
-                </section>
+                @defer (on viewport) {
+                  <section class="blog-section-rule mt-10">
+                    <app-author-bio></app-author-bio>
+                  </section>
+                } @placeholder {
+                  <section class="blog-section-rule mt-10" aria-hidden="true">
+                    <div class="site-skeleton-card h-40"></div>
+                  </section>
+                }
 
                 @if (suggestedPosts().length > 0) {
                   <section aria-labelledby="suggested-posts-heading" class="blog-section-rule mt-10">

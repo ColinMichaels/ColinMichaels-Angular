@@ -1,9 +1,12 @@
+import {signal} from '@angular/core';
 import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPost, BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
+import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
+import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {RecommendedLink} from '../../features/recommended-links/models/recommended-link.model';
 import {
   RecommendedLinkRepositoryService
@@ -164,6 +167,9 @@ describe('MainComponent', () => {
       getFeaturedRecommendedLinks$: jasmine.createSpy('getFeaturedRecommendedLinks$').and.returnValue(of(MOCK_RECOMMENDED_LINKS)),
       getFeaturedRecommendedLinks: jasmine.createSpy('getFeaturedRecommendedLinks').and.returnValue(MOCK_RECOMMENDED_LINKS),
     } satisfies Pick<RecommendedLinkRepositoryService, 'getFeaturedRecommendedLinks$' | 'getFeaturedRecommendedLinks'>;
+    const homepageHeroRepositoryService = {
+      settings: signal(DEFAULT_HOMEPAGE_HERO_SETTINGS),
+    } satisfies Pick<HomepageHeroRepositoryService, 'settings'>;
     const typewriterService = jasmine.createSpyObj<Pick<TypewriterService, 'enableSound' | 'setVolume' | 'clear' | 'enqueueLine'>>(
       'TypewriterService',
       ['enableSound', 'setVolume', 'clear', 'enqueueLine'],
@@ -178,6 +184,7 @@ describe('MainComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepositoryService},
+        {provide: HomepageHeroRepositoryService, useValue: homepageHeroRepositoryService},
         {provide: RecommendedLinkRepositoryService, useValue: recommendedLinkRepositoryService},
         {provide: TypewriterService, useValue: typewriterService},
         {provide: YouTubeFeedService, useValue: youtubeFeedService},

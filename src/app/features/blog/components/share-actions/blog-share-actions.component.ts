@@ -1,5 +1,15 @@
 import {DOCUMENT, isPlatformBrowser} from '@angular/common';
-import {Component, EventEmitter, Input, OnDestroy, Output, inject, ChangeDetectionStrategy, PLATFORM_ID} from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  inject,
+  ChangeDetectionStrategy,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faFacebook, faLinkedin, faXTwitter} from '@fortawesome/free-brands-svg-icons';
 import {faEnvelope, faLink} from '@fortawesome/free-solid-svg-icons';
@@ -12,7 +22,7 @@ type BlogShareVariant = 'compact' | 'panel';
   imports: [
     FontAwesomeModule,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div [class]="containerClass" role="group" aria-label="Share this post">
       @if (variant === 'panel') {
@@ -67,8 +77,8 @@ type BlogShareVariant = 'compact' | 'panel';
         <button
           type="button"
           [class]="iconClass"
-          [attr.aria-label]="copied ? 'Copied post link' : 'Copy post link'"
-          [title]="copied ? 'Copied link' : 'Copy link'"
+          [attr.aria-label]="copied() ? 'Copied post link' : 'Copy post link'"
+          [title]="copied() ? 'Copied link' : 'Copy link'"
           (click)="copyShareUrl()"
         >
           <fa-icon [icon]="faLink"></fa-icon>
@@ -85,7 +95,7 @@ export class BlogShareActionsComponent implements OnDestroy {
   @Input() variant: BlogShareVariant = 'compact';
   @Output() shared = new EventEmitter<BlogShareProvider>();
 
-  protected copied = false;
+  protected readonly copied = signal(false);
   protected readonly faEnvelope = faEnvelope;
   protected readonly faFacebook = faFacebook;
   protected readonly faLink = faLink;
@@ -141,14 +151,14 @@ export class BlogShareActionsComponent implements OnDestroy {
 
     void navigator.clipboard.writeText(this.shareUrl)
       .then(() => {
-        this.copied = true;
+        this.copied.set(true);
         this.trackShare('copy');
         this.copyResetHandle = setTimeout(() => {
-          this.copied = false;
+          this.copied.set(false);
         }, 1600);
       })
       .catch(() => {
-        this.copied = false;
+        this.copied.set(false);
       });
   }
 

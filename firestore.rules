@@ -67,6 +67,14 @@ service cloud.firestore {
       return resource.data.status == 'published';
     }
 
+    function isPublishedHomepageSettings() {
+      return resource.data.status == 'published';
+    }
+
+    function isMissingHomepageSettings(settingId) {
+      return !exists(/databases/$(database)/documents/homepageSettings/$(settingId));
+    }
+
     function isActiveDraftPreview() {
       return resource.data.post.status == 'draft'
         && resource.data.expiresAtTimestamp is timestamp
@@ -95,6 +103,16 @@ service cloud.firestore {
 
     match /recommendedLinks/{linkId} {
       allow get, list: if canManageCmsContent() || isPublishedRecommendedLink();
+      allow create, update, delete: if canManageCmsContent();
+    }
+
+    match /homepageSettings/{settingId} {
+      allow get: if canManageCmsContent()
+        || (
+          settingId == 'home'
+          && (isMissingHomepageSettings(settingId) || isPublishedHomepageSettings())
+        );
+      allow list: if canManageCmsContent();
       allow create, update, delete: if canManageCmsContent();
     }
 
