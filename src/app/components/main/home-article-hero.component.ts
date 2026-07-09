@@ -1,17 +1,20 @@
-import {DatePipe, NgStyle} from '@angular/common';
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {DatePipe, DOCUMENT, isPlatformBrowser, NgOptimizedImage, NgStyle} from '@angular/common';
+import {ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPost} from '../../features/blog/models/blog-post.model';
 import {createBlogReadingStats} from '../../features/blog/utils/blog-reading.util';
+import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
+import {HomepageHeroSettings, HomepageHeroSlide} from '../../features/homepage/models/homepage-hero.model';
+import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
+import {getPublishedHomepageHeroSlides} from '../../features/homepage/utils/homepage-hero-validation.util';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postImage, postMatchesHubTerms} from './home-blog-section.utils';
 
-const HERO_BACKGROUND_IMAGE = '/assets/images/backgrounds/colinmichaels-hero-background.webp';
 export const HOME_ARTICLE_HERO_POST_LIMIT = 1;
 const HERO_POST_LIMIT = HOME_ARTICLE_HERO_POST_LIMIT;
 const HERO_POST_EXCERPT_MAX_LENGTH = 318;
@@ -23,35 +26,45 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
   selector: 'app-home-article-hero',
   imports: [
     DatePipe,
+    NgOptimizedImage,
     NgStyle,
     RouterLink,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section id="home-article-hero" class="home-article-hero" aria-labelledby="home-article-hero-heading">
-      <img
-        [src]="heroBackgroundImage"
-        alt=""
-        aria-hidden="true"
-        class="home-hero-background-image"
-        data-site-preload-image
-        decoding="async"
-        fetchpriority="high"
-        width="1717"
-        height="916"
-      >
+    <section
+      id="home-article-hero"
+      class="home-article-hero"
+      aria-labelledby="home-article-hero-heading"
+    >
+      <div class="home-hero-slideshow" aria-hidden="true">
+        @for (slide of heroSlides(); track slide.id; let slideIndex = $index; let first = $first) {
+          <img
+            [ngSrc]="slide.imageUrl"
+            fill
+            sizes="100vw"
+            [priority]="first"
+            alt=""
+            class="home-hero-background-image"
+            [class.is-active]="slideIndex === activeSlideIndex()"
+            [style.object-position]="slideObjectPosition(slide)"
+            [style.transition-duration.ms]="heroTransitionMs()"
+            [attr.data-site-preload-image]="first ? '' : null"
+          >
+        }
+      </div>
       <div class="home-hero-background-lines" aria-hidden="true"></div>
 
       <div class="home-hero-shell">
         <div class="home-hero-copy">
           <h1 id="home-article-hero-heading" class="home-hero-title">
-            <span>A Life of Curiosity.</span>
-            <span>A Journey of Growth.</span>
+            @for (line of heroHeadlineLines(); track line) {
+              <span>{{ line }}</span>
+            }
           </h1>
           <p class="home-hero-summary">
-            Exploring the worlds of AI, technology, outdoor adventure, and personal development. Real experiences.
-            Honest insights. Practical tools.
+            {{ heroSettings().summary }}
           </p>
           <div class="home-hero-actions">
             <a href="#blog" class="home-hero-action home-hero-action-primary">
@@ -174,6 +187,14 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       color: #f8fafc;
     }
 
+    .home-hero-slideshow {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
     .home-hero-background-image {
       position: absolute;
       inset: 0;
@@ -183,8 +204,15 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       object-fit: cover;
       object-position: center;
       filter: saturate(0.95) contrast(1.04) brightness(0.82);
-      opacity: 1;
+      opacity: 0;
       pointer-events: none;
+      transform: scale(1.012);
+      transition: opacity 900ms ease, transform 6500ms ease;
+    }
+
+    .home-hero-background-image.is-active {
+      opacity: 1;
+      transform: scale(1.035);
     }
 
     .home-hero-background-lines {
@@ -637,6 +665,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 
     @media (prefers-reduced-motion: reduce) {
       .home-hero-action,
+      .home-hero-background-image,
       .home-hero-panel,
       .home-hero-panel-image,
       .home-hero-read-more,
@@ -644,23 +673,64 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
         animation: none;
         transition: none;
       }
+
+      .home-hero-background-image {
+        transform: none;
+      }
     }
   `],
 })
 export class HomeArticleHeroComponent {
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
+  private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
   private readonly topicHubRepository = inject(TopicHubRepositoryService);
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
-  protected readonly heroPosts = computed(() => this.allPublishedPosts().slice(0, HERO_POST_LIMIT));
+  protected readonly heroSettings = computed(() => {
+    const settings = this.homepageHeroRepository.settings();
+
+    return settings.status === 'published' ? settings : DEFAULT_HOMEPAGE_HERO_SETTINGS;
+  });
+  protected readonly heroHeadlineLines = computed(() => this.heroSettings().headlineLines);
+  protected readonly heroSlides = computed(() => {
+    const slides = getPublishedHomepageHeroSlides(this.heroSettings());
+
+    return slides.length > 0 ? slides : getPublishedHomepageHeroSlides(DEFAULT_HOMEPAGE_HERO_SETTINGS);
+  });
+  protected readonly heroTransitionMs = computed(() => this.heroSettings().transitionMs);
+  protected readonly activeSlideIndex = signal(0);
+  private readonly pageVisible = signal(true);
+  private readonly reducedMotion = signal(false);
+  private readonly shouldRotateSlides = computed(() => {
+    const settings = this.heroSettings();
+
+    return settings.slideshowEnabled
+      && this.heroSlides().length > 1
+      && this.pageVisible()
+      && !this.reducedMotion();
+  });
+  protected readonly heroPosts = computed(() => {
+    const post = selectHeroPost(this.allPublishedPosts(), this.heroSettings());
+
+    return post ? [post].slice(0, HERO_POST_LIMIT) : [];
+  });
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
   );
-  protected readonly heroBackgroundImage = HERO_BACKGROUND_IMAGE;
   protected readonly blogIsLoading = this.blogPostFeed.isLoading;
   protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
+
+  constructor() {
+    this.initializeMotionState();
+    this.keepActiveSlideInBounds();
+    this.startSlideRotation();
+  }
 
   protected postImage(post: BlogPost): string {
     return postImage(post);
@@ -692,9 +762,86 @@ export class HomeArticleHeroComponent {
     return createBlogReadingStats(post).readingMinutes;
   }
 
+  protected slideObjectPosition(slide: HomepageHeroSlide): string {
+    return `${slide.focalPointX}% ${slide.focalPointY}%`;
+  }
+
   private postTopic(post: BlogPost): TopicHub | null {
     return this.topicHubs().find(topicHub => postMatchesHubTerms(post, topicHub.terms)) ?? null;
   }
+
+  private initializeMotionState(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateReducedMotion = () => this.reducedMotion.set(mediaQuery.matches);
+    const updatePageVisibility = () => this.pageVisible.set(this.document.visibilityState !== 'hidden');
+
+    updateReducedMotion();
+    updatePageVisibility();
+
+    mediaQuery.addEventListener('change', updateReducedMotion);
+    this.document.addEventListener('visibilitychange', updatePageVisibility);
+    this.destroyRef.onDestroy(() => {
+      mediaQuery.removeEventListener('change', updateReducedMotion);
+      this.document.removeEventListener('visibilitychange', updatePageVisibility);
+    });
+  }
+
+  private keepActiveSlideInBounds(): void {
+    effect(() => {
+      const slideCount = this.heroSlides().length;
+      const activeIndex = this.activeSlideIndex();
+
+      if (slideCount === 0 || activeIndex >= slideCount) {
+        this.activeSlideIndex.set(0);
+      }
+    });
+  }
+
+  private startSlideRotation(): void {
+    effect(onCleanup => {
+      if (!this.isBrowser || !this.shouldRotateSlides()) {
+        return;
+      }
+
+      const intervalId = window.setInterval(() => this.goToNextSlide(), this.heroSettings().intervalMs);
+
+      onCleanup(() => window.clearInterval(intervalId));
+    });
+  }
+
+  private goToNextSlide(): void {
+    const slideCount = this.heroSlides().length;
+
+    if (slideCount <= 1) {
+      return;
+    }
+
+    this.activeSlideIndex.update(index => (index + 1) % slideCount);
+  }
+}
+
+function selectHeroPost(posts: readonly BlogPost[], settings: HomepageHeroSettings): BlogPost | null {
+  if (settings.featuredPostMode === 'selected' && settings.featuredPostId) {
+    const selectedPost = posts.find(post => post.id === settings.featuredPostId);
+
+    if (selectedPost) {
+      return selectedPost;
+    }
+  }
+
+  if (settings.featuredPostMode === 'featured' || settings.featuredPostMode === 'selected') {
+    const featuredPost = posts.find(post => post.featured);
+
+    if (featuredPost) {
+      return featuredPost;
+    }
+  }
+
+  return posts[0] ?? null;
 }
 
 function truncateText(value: string, maximumLength: number): string {

@@ -63,3 +63,4 @@ src/environments/.env.*
 /functions/seo-index.html
 .seo-cache/
 /colinmichaels-com-audit-20260703-150233/
+/hero_images/

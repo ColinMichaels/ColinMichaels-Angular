@@ -110,6 +110,16 @@ export const MEDIA_LIBRARY_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
+export const HOMEPAGE_CMS_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('CMS Homepage Hero'),
+  description: 'Protected CMS controls for homepage hero copy, slides, and featured article selection.',
+  path: '/admin/cms/homepage',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('CMS homepage hero'),
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
 export const USER_MANAGEMENT_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('User Management'),
   description: 'Protected admin user role and permission management.',

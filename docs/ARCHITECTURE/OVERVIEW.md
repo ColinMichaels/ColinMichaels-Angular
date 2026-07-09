@@ -26,6 +26,8 @@ Current route group files are boundary markers only. They preserve existing URL 
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
   public published post views, scheduled publishing through a Firebase Cloud Scheduler Function, tokenized draft previews, category/tag archives, topic hubs, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data including custom typography, stats, chart, and sanitized HTML blocks, Firestore-backed CMS storage for create/edit workflows.
+- Homepage CMS:
+  protected `/admin/cms/homepage` controls for the public hero headline, summary, background slideshow, timing, and featured article selection through the Firestore `homepageSettings/home` document, with static fallback behavior preserved for anonymous visitors and missing config.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:
