@@ -27,6 +27,7 @@ describe('homepage hero validation utilities', () => {
           imageUrl: '/two.webp',
           focalPointX: 120,
           focalPointY: -20,
+          kenBurnsEnabled: true,
           sortOrder: 20,
           status: 'published',
           createdAt: '2026-07-02T00:00:00.000Z',
@@ -51,6 +52,8 @@ describe('homepage hero validation utilities', () => {
     expect(settings.intervalMs).toBe(3500);
     expect(settings.transitionMs).toBe(2500);
     expect(settings.slides.map(slide => slide.id)).toEqual(['slide-1', 'slide-2']);
+    expect(settings.slides[0].kenBurnsEnabled).toBeFalse();
+    expect(settings.slides[1].kenBurnsEnabled).toBeTrue();
     expect(settings.slides[1].focalPointX).toBe(100);
     expect(settings.slides[1].focalPointY).toBe(0);
     expect(getPublishedHomepageHeroSlides(settings).map(slide => slide.id)).toEqual(['slide-2']);
@@ -76,4 +79,3 @@ describe('homepage hero validation utilities', () => {
     expect(settings.slides.map(slide => slide.id)).toEqual(['valid-slide']);
   });
 });
-

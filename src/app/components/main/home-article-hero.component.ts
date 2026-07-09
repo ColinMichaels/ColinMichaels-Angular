@@ -48,8 +48,14 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
             alt=""
             class="home-hero-background-image"
             [class.is-active]="slideIndex === activeSlideIndex()"
+            [class.has-ken-burns]="slideHasKenBurns(slide)"
             [style.object-position]="slideObjectPosition(slide)"
-            [style.transition-duration.ms]="heroTransitionMs()"
+            [style.transform-origin]="slideObjectPosition(slide)"
+            [style.--home-hero-transition-duration]="heroTransitionDuration()"
+            [style.--home-hero-ken-burns-duration]="heroKenBurnsDuration()"
+            [style.--home-hero-ken-burns-delay]="slideKenBurnsDelay(slideIndex)"
+            [style.--home-hero-ken-burns-x]="slideKenBurnsOffset(slide, 'x')"
+            [style.--home-hero-ken-burns-y]="slideKenBurnsOffset(slide, 'y')"
             [attr.data-site-preload-image]="first ? '' : null"
           >
         }
@@ -206,13 +212,19 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       filter: saturate(0.95) contrast(1.04) brightness(0.82);
       opacity: 0;
       pointer-events: none;
-      transform: scale(1.012);
-      transition: opacity 900ms ease, transform 6500ms ease;
+      transform: scale(1.025) translate3d(0, 0, 0);
+      transition: opacity var(--home-hero-transition-duration, 1200ms) cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: opacity, transform;
     }
 
     .home-hero-background-image.is-active {
+      z-index: 1;
       opacity: 1;
-      transform: scale(1.035);
+    }
+
+    .home-hero-background-image.has-ken-burns {
+      animation: home-hero-ken-burns var(--home-hero-ken-burns-duration, 11000ms) ease-in-out
+      var(--home-hero-ken-burns-delay, 0ms) infinite alternate both;
     }
 
     .home-hero-background-lines {
@@ -573,6 +585,19 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       }
     }
 
+    @keyframes home-hero-ken-burns {
+      0% {
+        transform: scale(1.022) translate3d(0, 0, 0);
+      }
+      100% {
+        transform: scale(1.055) translate3d(
+          var(--home-hero-ken-burns-x, 0.45%),
+          var(--home-hero-ken-burns-y, -0.45%),
+          0
+        );
+      }
+    }
+
     @media (max-width: 1180px) {
       .home-hero-shell {
         grid-template-columns: minmax(0, 0.9fr) minmax(30rem, 1.25fr);
@@ -701,7 +726,18 @@ export class HomeArticleHeroComponent {
 
     return slides.length > 0 ? slides : getPublishedHomepageHeroSlides(DEFAULT_HOMEPAGE_HERO_SETTINGS);
   });
-  protected readonly heroTransitionMs = computed(() => this.heroSettings().transitionMs);
+  protected readonly heroTransitionMs = computed(() => {
+    const transitionMs = this.heroSettings().transitionMs;
+    const hasKenBurnsSlides = this.heroSlides().some(slide => slide.kenBurnsEnabled);
+
+    return hasKenBurnsSlides ? Math.max(transitionMs, 1400) : transitionMs;
+  });
+  protected readonly heroTransitionDuration = computed(() => `${this.heroTransitionMs()}ms`);
+  protected readonly heroKenBurnsDuration = computed(() => {
+    const settings = this.heroSettings();
+
+    return `${Math.max(11000, settings.intervalMs + this.heroTransitionMs() + 2500)}ms`;
+  });
   protected readonly activeSlideIndex = signal(0);
   private readonly pageVisible = signal(true);
   private readonly reducedMotion = signal(false);
@@ -764,6 +800,29 @@ export class HomeArticleHeroComponent {
 
   protected slideObjectPosition(slide: HomepageHeroSlide): string {
     return `${slide.focalPointX}% ${slide.focalPointY}%`;
+  }
+
+  protected slideHasKenBurns(slide: HomepageHeroSlide): boolean {
+    return slide.kenBurnsEnabled && this.pageVisible() && !this.reducedMotion();
+  }
+
+  protected slideKenBurnsDelay(slideIndex: number): string {
+    return `-${slideIndex * 1300}ms`;
+  }
+
+  protected slideKenBurnsOffset(slide: HomepageHeroSlide, axis: 'x' | 'y'): string {
+    const focalPoint = axis === 'x' ? slide.focalPointX : slide.focalPointY;
+    const centeredOffset = axis === 'x' ? 0.45 : -0.45;
+
+    if (focalPoint < 45) {
+      return axis === 'x' ? '0.65%' : '0.45%';
+    }
+
+    if (focalPoint > 55) {
+      return axis === 'x' ? '-0.65%' : '-0.55%';
+    }
+
+    return `${centeredOffset}%`;
   }
 
   private postTopic(post: BlogPost): TopicHub | null {

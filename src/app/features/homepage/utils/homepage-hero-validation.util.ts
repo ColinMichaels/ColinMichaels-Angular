@@ -103,6 +103,7 @@ export function createHomepageHeroSlide(overrides: Partial<HomepageHeroSlide>): 
     height: getPositiveInteger(overrides.height),
     focalPointX: clampNumber(overrides.focalPointX, 0, 100, 50),
     focalPointY: clampNumber(overrides.focalPointY, 0, 100, 50),
+    kenBurnsEnabled: overrides.kenBurnsEnabled === true,
     sortOrder: Number.isFinite(overrides.sortOrder) ? Number(overrides.sortOrder) : 10,
     status: isHomepageHeroSlideStatus(overrides.status) ? overrides.status : 'published',
     createdAt: overrides.createdAt || now,
@@ -154,6 +155,7 @@ function normalizeSlide(value: unknown): HomepageHeroSlide | null {
     height: getPositiveInteger(value['height']),
     focalPointX: clampNumber(value['focalPointX'], 0, 100, 50),
     focalPointY: clampNumber(value['focalPointY'], 0, 100, 50),
+    kenBurnsEnabled: getBoolean(value['kenBurnsEnabled'], false),
     sortOrder: getNumber(value['sortOrder'], 10),
     status: isHomepageHeroSlideStatus(value['status']) ? value['status'] : 'published',
     createdAt: getString(value['createdAt'], new Date().toISOString()),
@@ -216,4 +218,3 @@ function createHeroSlideId(): string {
 
   return `homepage-hero-slide-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
-
