@@ -4,6 +4,7 @@ import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
   faArrowRight,
   faComments,
+  faHouse,
   faImages,
   faLink,
   faNewspaper,
@@ -38,6 +39,7 @@ const adminRoute = `/${PATH_NAMES.ADMIN}`;
 const cmsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_CMS}`;
 const userManagementRoute = `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`;
 const mediaLibraryRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`;
+const homepageHeroRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_HOMEPAGE}`;
 const topicsRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_TOPICS}`;
 const recommendedLinksRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`;
 const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
@@ -57,6 +59,7 @@ const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
             <a routerLink="/" class="hover:text-zinc-100">Home</a>
             <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
             @if (canManageCms()) {
+              <a [routerLink]="homepageHeroRoute" class="text-cyan-200 hover:text-cyan-100">Hero</a>
               <a [routerLink]="recommendedLinksRoute" class="text-cyan-200 hover:text-cyan-100">Links</a>
             }
           </div>
@@ -79,14 +82,14 @@ const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
 
           <aside class="border border-cyan-400/30 bg-cyan-400/10 p-4">
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">Homepage Curation</p>
-            <h2 class="mt-3 text-xl font-semibold text-zinc-50">Feature exactly three recommended links.</h2>
+            <h2 class="mt-3 text-xl font-semibold text-zinc-50">Tune the first viewport and featured modules.</h2>
             <p class="mt-3 text-sm leading-6 text-zinc-300">
-              Use the Links manager to rotate the cards that appear below the author bio.
+              Use the Hero manager for the slideshow and article panel, then rotate recommended links below the author bio.
             </p>
             @if (canManageCms()) {
-              <a [routerLink]="recommendedLinksRoute"
+              <a [routerLink]="homepageHeroRoute"
                  class="mt-5 inline-flex items-center gap-2 border border-cyan-300 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300 hover:text-zinc-950">
-                Open Links
+                Open Hero
                 <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
               </a>
             }
@@ -234,6 +237,7 @@ export class AdminOverviewComponent {
   private readonly authService = inject(AuthService);
 
   protected readonly cmsRoute = cmsRoute;
+  protected readonly homepageHeroRoute = homepageHeroRoute;
   protected readonly recommendedLinksRoute = recommendedLinksRoute;
   protected readonly userManagementRoute = userManagementRoute;
   protected readonly faArrowRight = faArrowRight;
@@ -264,6 +268,15 @@ export class AdminOverviewComponent {
       actionLabel: 'Edit topics',
       icon: faTags,
       iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-amber-400/50 bg-amber-400/10 text-amber-200',
+    },
+    {
+      eyebrow: 'Homepage',
+      title: 'Hero',
+      description: 'Manage the first viewport copy, background slideshow, and featured article overlay.',
+      route: homepageHeroRoute,
+      actionLabel: 'Edit hero',
+      icon: faHouse,
+      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-teal-400/50 bg-teal-400/10 text-teal-200',
     },
     {
       eyebrow: 'Homepage',

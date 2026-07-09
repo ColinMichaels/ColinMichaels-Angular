@@ -7,7 +7,7 @@ import {createBlogTagSlug} from '../../utils/blog-category-url.util';
 @Component({
   selector: 'app-blog-tag-list',
   imports: [RouterLink],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-wrap gap-2">
       @for (tag of tags; track tag) {

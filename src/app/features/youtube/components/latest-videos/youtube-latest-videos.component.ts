@@ -10,7 +10,7 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
   imports: [
     DatePipe,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section id="youtube" class="site-section-band-dark">
       <div class="site-section-inner">

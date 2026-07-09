@@ -28,7 +28,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
     NgTemplateOutlet,
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
       <section class="mx-auto max-w-6xl">

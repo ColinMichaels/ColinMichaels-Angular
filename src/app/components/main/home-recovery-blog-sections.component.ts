@@ -33,7 +33,7 @@ const MEDICAL_INFORMATION_TERMS = [
     RouterLink,
   ],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section id="health-recovery" class="site-section-band site-section-theme-soft topic-theme-recovery">
       <div class="site-section-inner">

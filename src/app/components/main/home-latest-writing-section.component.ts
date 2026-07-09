@@ -18,7 +18,7 @@ import {postImage as getPostImage, postMatchesHubTerms} from './home-blog-sectio
     RouterLink,
   ],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section id="blog" class="site-section home-latest-section">
       <div class="site-section-header">

@@ -16,7 +16,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
   imports: [
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
       display: contents;

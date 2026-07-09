@@ -51,7 +51,7 @@ interface HomeHighlight {
   ],
   templateUrl: './main.component.html',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainComponent {
   private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);

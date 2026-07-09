@@ -4,6 +4,9 @@ import {RouterTestingModule} from '@angular/router/testing';
 import {of} from 'rxjs';
 
 import {BlogPost} from '../../features/blog/models/blog-post.model';
+import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
+import {HomepageHeroSettings} from '../../features/homepage/models/homepage-hero.model';
+import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import {getPublishedTopicHubs, TopicHub} from '../../features/topics/topic-hubs.data';
 import {HomeArticleHeroComponent} from './home-article-hero.component';
@@ -64,8 +67,17 @@ function configureTopicHubRepository(topicHubs: readonly TopicHub[]) {
   } satisfies Pick<TopicHubRepositoryService, 'getPublishedTopicHubs$' | 'getPublishedTopicHubs'>;
 }
 
+function configureHomepageHeroRepository(settings: HomepageHeroSettings = DEFAULT_HOMEPAGE_HERO_SETTINGS) {
+  return {
+    settings: signal(settings),
+  } satisfies Pick<HomepageHeroRepositoryService, 'settings'>;
+}
+
 describe('HomeArticleHeroComponent', () => {
-  async function createComponent(posts: readonly BlogPost[]): Promise<ComponentFixture<HomeArticleHeroComponent>> {
+  async function createComponent(
+    posts: readonly BlogPost[],
+    heroSettings: HomepageHeroSettings = DEFAULT_HOMEPAGE_HERO_SETTINGS
+  ): Promise<ComponentFixture<HomeArticleHeroComponent>> {
     const topicHubs = getPublishedTopicHubs();
 
     TestBed.resetTestingModule();
@@ -76,6 +88,7 @@ describe('HomeArticleHeroComponent', () => {
       ],
       providers: [
         {provide: HomeBlogPostFeedService, useValue: configureBlogPostFeed(posts)},
+        {provide: HomepageHeroRepositoryService, useValue: configureHomepageHeroRepository(heroSettings)},
         {provide: TopicHubRepositoryService, useValue: configureTopicHubRepository(topicHubs)},
       ],
     }).compileComponents();
@@ -107,6 +120,52 @@ describe('HomeArticleHeroComponent', () => {
 
     expect(element.querySelector<HTMLImageElement>('.home-hero-background-image')?.getAttribute('src'))
       .toBe(HERO_BACKGROUND_IMAGE);
+  });
+
+  it('renders CMS-managed hero copy and background slides', async () => {
+    const fixture = await createComponent([createPost(1)], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      headlineLines: ['Custom hero', 'Second line'],
+      summary: 'Custom homepage hero summary.',
+      slides: [
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-one',
+          imageUrl: '/assets/images/backgrounds/day.webp',
+          focalPointX: 42,
+          focalPointY: 58,
+        },
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-two',
+          imageUrl: '/assets/images/backgrounds/night.webp',
+          sortOrder: 20,
+        },
+      ],
+    });
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Custom hero');
+    expect(element.textContent).toContain('Second line');
+    expect(element.textContent).toContain('Custom homepage hero summary.');
+    expect(element.querySelectorAll('.home-hero-background-image').length).toBe(2);
+    expect(element.querySelector<HTMLElement>('.home-hero-background-image')?.style.objectPosition).toBe('42% 58%');
+    expect(element.querySelector('.home-hero-slide-controls')).toBeNull();
+  });
+
+  it('uses the selected CMS featured post when it is available', async () => {
+    const fixture = await createComponent([
+      createPost(1),
+      createPost(2),
+    ], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      featuredPostMode: 'selected',
+      featuredPostId: 'post-2',
+    });
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Post 2 title');
+    expect(element.textContent).not.toContain('Post 1 title');
   });
 
   it('uses the thumbnail before the cover image for post panels', async () => {

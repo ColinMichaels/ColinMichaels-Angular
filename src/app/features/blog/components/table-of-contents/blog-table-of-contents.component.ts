@@ -6,7 +6,7 @@ import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
 @Component({
   selector: 'app-blog-table-of-contents',
   imports: [NgClass],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block mb-10 xl:sticky xl:top-6 xl:mb-0 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto',
   },

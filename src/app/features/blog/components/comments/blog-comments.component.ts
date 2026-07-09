@@ -115,7 +115,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
     ReactiveFormsModule,
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section aria-labelledby="blog-comments-heading" class="blog-section-rule mt-10">
       <div class="grid gap-2">

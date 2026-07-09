@@ -39,6 +39,8 @@ The organizer is a UI and feature layer over existing Firebase services:
 ## Migration Notes
 
 - Existing CMS uploads continue to work unchanged under `cms/blog-media/{slug}/{assetRole}/`.
+- Homepage hero uploads use the same path with slug `homepage` and asset role `homepage-hero`; the media library should
+  treat those as reusable CMS media, not as physical files owned by the homepage settings document.
 - The organizer introduces `media-library/*` storage paths only for files uploaded from the organizer UI.
 - If an existing project uses different Firestore collection names for media metadata, update the constants in `MediaLibraryService` instead of changing components.
 - If existing resize callable names differ, update `MediaProcessingService` to call those names.
