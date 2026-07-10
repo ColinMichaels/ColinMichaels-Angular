@@ -1,5 +1,7 @@
+import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
+import {SiteThemeService} from '../theme/site-theme.service';
 import {ReaderToolsComponent} from './reader-tools.component';
 
 const READER_STORAGE_KEY = 'colinmichaels-reader-preferences-v1';
@@ -8,6 +10,8 @@ describe('ReaderToolsComponent', () => {
   const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<ReaderToolsComponent>;
   let nativeElement: HTMLElement;
+  let isDark: ReturnType<typeof signal<boolean>>;
+  let toggleMode: jasmine.Spy;
 
   beforeEach(async () => {
     window.localStorage.removeItem(READER_STORAGE_KEY);
@@ -21,9 +25,15 @@ describe('ReaderToolsComponent', () => {
       removeListener: jasmine.createSpy('removeListener'),
       dispatchEvent: jasmine.createSpy('dispatchEvent'),
     });
+    isDark = signal(true);
+    toggleMode = jasmine.createSpy('toggleMode').and.callFake(() => isDark.update(value => !value));
 
     await TestBed.configureTestingModule({
       imports: [ReaderToolsComponent],
+      providers: [{
+        provide: SiteThemeService,
+        useValue: {isDark: isDark.asReadonly(), toggleMode},
+      }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReaderToolsComponent);
@@ -78,6 +88,23 @@ describe('ReaderToolsComponent', () => {
     fixture.detectChanges();
 
     expect(nativeElement.querySelector('.reader-tools-panel')).toBeNull();
+  });
+
+  it('moves the persisted light and dark theme action into reading assistance', () => {
+    nativeElement.querySelector<HTMLButtonElement>('.reader-tools-toggle')?.click();
+    fixture.detectChanges();
+
+    const themeButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Switch to light mode"]');
+
+    expect(themeButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(themeButton?.getAttribute('data-reader-tooltip')).toBe('Switch the site to light mode.');
+
+    themeButton?.click();
+    fixture.detectChanges();
+
+    expect(toggleMode).toHaveBeenCalledTimes(1);
+    expect(nativeElement.querySelector('button[aria-label="Switch to dark mode"]')).not.toBeNull();
+    expect(nativeElement.querySelector('#reader-tools-help')?.textContent).toContain('dark mode');
   });
 
   it('keeps the panel open when the user clicks inside the control surface', () => {

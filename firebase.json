@@ -103,7 +103,7 @@
         ]
       },
       {
-        "source": "/@(ngsw-worker.js|worker-basic.min.js|safety-worker.js|ngsw.json|assets/site.webmanifest)",
+        "source": "/@(pwa-worker.js|ngsw-worker.js|worker-basic.min.js|safety-worker.js|ngsw.json|assets/site.webmanifest)",
         "headers": [
           {
             "key": "Cache-Control",

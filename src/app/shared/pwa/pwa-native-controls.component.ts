@@ -1,7 +1,8 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input, computed, inject} from '@angular/core';
 
 import {PwaInstallService} from './pwa-install.service';
 import {PwaNativeControlsService} from './pwa-native-controls.service';
+import {PwaPushService} from './pwa-push.service';
 import {PwaStorageService} from './pwa-storage.service';
 
 @Component({
@@ -9,8 +10,9 @@ import {PwaStorageService} from './pwa-storage.service';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (visible()) {
-      <section class="border-t border-slate-200 px-1 pt-2 dark:border-zinc-800"
+    @if (visible() || surface === 'profile') {
+      <section class="border-slate-200 px-1 pt-2 dark:border-zinc-800"
+               [class.border-t]="surface === 'menu'"
                aria-labelledby="pwa-app-controls-title">
         <div class="flex items-center justify-between gap-2 px-2 pb-1.5">
           <h2 id="pwa-app-controls-title"
@@ -25,6 +27,12 @@ import {PwaStorageService} from './pwa-storage.service';
             </span>
           }
         </div>
+
+        @if (!visible()) {
+          <p class="rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-xs leading-5 text-zinc-400">
+            This browser does not expose additional app or device controls.
+          </p>
+        }
 
         <div class="grid grid-cols-2 gap-1">
           @if (nativeControls.shareSupported()) {
@@ -90,6 +98,23 @@ import {PwaStorageService} from './pwa-storage.service';
               <span>{{ storage.persisted() ? 'Storage protected' : (storage.busy() ? 'Checking…' : 'Protect storage') }}</span>
             </button>
           }
+
+          @if (push.available()) {
+            <button
+              type="button"
+              class="pwa-native-control"
+              [attr.aria-pressed]="push.subscribed()"
+              [disabled]="push.busy()"
+              (click)="toggleNotifications()"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-[1.125rem] w-[1.125rem]" fill="none"
+                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M10 21h4"></path>
+              </svg>
+              <span>{{ notificationLabel() }}</span>
+            </button>
+          }
         </div>
 
         @if (storageSummary()) {
@@ -109,6 +134,13 @@ import {PwaStorageService} from './pwa-storage.service';
           <p class="px-2 pb-1 pt-1 text-[0.7rem] leading-4 text-slate-600 dark:text-zinc-400" role="status"
              aria-live="polite">
             {{ storage.statusMessage() }}
+          </p>
+        }
+
+        @if (push.statusMessage()) {
+          <p class="px-2 pb-1 pt-1 text-[0.7rem] leading-4 text-slate-600 dark:text-zinc-400" role="status"
+             aria-live="polite">
+            {{ push.statusMessage() }}
           </p>
         }
       </section>
@@ -166,12 +198,33 @@ import {PwaStorageService} from './pwa-storage.service';
   `,
 })
 export class PwaNativeControlsComponent {
+  @Input() surface: 'menu' | 'profile' = 'menu';
   protected readonly install = inject(PwaInstallService);
   protected readonly nativeControls = inject(PwaNativeControlsService);
+  protected readonly push = inject(PwaPushService);
   protected readonly storage = inject(PwaStorageService);
   protected readonly visible = computed(() => (
-    this.install.isStandalone() || this.nativeControls.available() || this.storage.available()
+    this.install.isStandalone() || this.nativeControls.available() || this.storage.available() || this.push.available()
   ));
+  protected readonly notificationLabel = computed(() => {
+    if (this.push.busy()) {
+      return 'Updating alerts…';
+    }
+
+    if (this.push.subscribed()) {
+      return 'New-post alerts on';
+    }
+
+    if (!this.push.signedIn()) {
+      return 'Sign in for alerts';
+    }
+
+    if (this.push.permission() === 'denied') {
+      return 'Alerts blocked';
+    }
+
+    return 'Enable new-post alerts';
+  });
   protected readonly storageSummary = computed(() => {
     const usage = this.storage.usage();
     const quota = this.storage.quota();
@@ -197,6 +250,10 @@ export class PwaNativeControlsComponent {
 
   protected protectStorage(): void {
     void this.storage.requestPersistence();
+  }
+
+  protected toggleNotifications(): void {
+    void this.push.toggleSubscription();
   }
 
   private formatBytes(bytes: number): string {

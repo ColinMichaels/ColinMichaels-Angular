@@ -5,6 +5,7 @@ const readEnv = (name) => (process.env[name] ?? '').trim();
 
 const appTitle = readEnv('APP_TITLE');
 const apiUrl = readEnv('APP_API_URL') || readEnv('API_URL');
+const webPushPublicKey = readEnv('WEB_PUSH_PUBLIC_KEY');
 const firebaseApiKey = readEnv('FIREBASE_API_KEY');
 const firebaseAuthDomain = readEnv('FIREBASE_AUTH_DOMAIN');
 const firebaseDatabaseUrl = readEnv('FIREBASE_DATABASE_URL');
@@ -36,6 +37,7 @@ const environmentConfig = {
   production: true,
   title: appTitle,
   apiUrl,
+  webPushPublicKey,
   firebaseConfig: {
     apiKey: firebaseApiKey,
     authDomain: firebaseAuthDomain,

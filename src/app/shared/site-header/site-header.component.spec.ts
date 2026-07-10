@@ -6,14 +6,12 @@ import {of} from 'rxjs';
 import {SiteSearchOverlayService} from '../../features/search/services/site-search-overlay.service';
 import {SiteSearchService} from '../../features/search/services/site-search.service';
 import {AuthService} from '../../services/auth.service';
-import {SiteThemeService} from '../theme/site-theme.service';
 import {SiteHeaderComponent} from './site-header.component';
 
 describe('SiteHeaderComponent', () => {
   let fixture: ComponentFixture<SiteHeaderComponent>;
   let nativeElement: HTMLElement;
   let openSearch: jasmine.Spy;
-  let toggleTheme: jasmine.Spy;
 
   beforeEach(async () => {
     const authService = {
@@ -30,11 +28,6 @@ describe('SiteHeaderComponent', () => {
     };
     const searchOpen = signal(false);
     openSearch = jasmine.createSpy('openSearch').and.callFake(() => searchOpen.set(true));
-    toggleTheme = jasmine.createSpy('toggleMode');
-    const themeService = {
-      isDark: signal(true),
-      toggleMode: toggleTheme,
-    };
     const searchOverlayService = {
       isOpen: searchOpen.asReadonly(),
       open: openSearch,
@@ -52,7 +45,6 @@ describe('SiteHeaderComponent', () => {
         {provide: AuthService, useValue: authService},
         {provide: SiteSearchOverlayService, useValue: searchOverlayService},
         {provide: SiteSearchService, useValue: siteSearchService},
-        {provide: SiteThemeService, useValue: themeService},
       ],
     }).compileComponents();
 
@@ -104,24 +96,26 @@ describe('SiteHeaderComponent', () => {
     expect(searchInput?.value).toBe('voice AI');
   });
 
-  it('moves theme and account utilities into the responsive site menu', () => {
+  it('keeps the responsive site menu focused on navigation, install, and account entry points', async () => {
     const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
 
     menuButton?.click();
     fixture.detectChanges();
-
-    const utilityMenu = nativeElement.querySelector<HTMLElement>('#site-utility-menu');
-    const themeButton = Array.from(utilityMenu?.querySelectorAll('button') ?? [])
-      .find(button => button.textContent?.includes('Switch to light mode'));
-
-    expect(utilityMenu?.textContent).toContain('All Posts');
-    expect(utilityMenu?.textContent).toContain('Open OS');
-    expect(themeButton).toBeDefined();
-
-    themeButton?.click();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
     fixture.detectChanges();
 
-    expect(toggleTheme).toHaveBeenCalledTimes(1);
-    expect(nativeElement.querySelector('#site-utility-menu')).toBeNull();
+    const utilityMenu = nativeElement.querySelector<HTMLElement>('#site-utility-menu');
+    const menuText = utilityMenu?.textContent ?? '';
+
+    expect(menuText).toContain('All Posts');
+    expect(menuText).toContain('Open OS');
+    expect(menuText).toContain('Install app');
+    expect(menuText).toContain('Sign In');
+    expect(menuText).not.toContain('Switch to light mode');
+    expect(menuText).not.toContain('Switch to dark mode');
+    expect(menuText).not.toContain('App controls');
+    expect(menuText).not.toContain('Your reading');
+    expect(menuText).not.toContain('Saved offline');
   });
 });
