@@ -44,7 +44,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
             [ngSrc]="slide.imageUrl"
             fill
             sizes="100vw"
-            [priority]="first"
+            priority
             alt=""
             class="home-hero-background-image"
             [class.is-active]="slideIndex === activeSlideIndex()"

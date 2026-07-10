@@ -127,6 +127,8 @@ describe('BlogBlockRendererComponent', () => {
 
     expect(heading?.id).toBe('anchor-heading');
     expect(link?.getAttribute('href')).toBe('/blog/test-post#anchor-heading');
+    expect(heading?.classList).toContain('sticky');
+    expect(heading?.hasAttribute('data-sticky-section-heading')).toBeTrue();
   });
 
   it('opens rich text links in a new tab by default', () => {
@@ -301,6 +303,7 @@ describe('BlogBlockRendererComponent', () => {
           html: `
             <section>
               <a href="https://example.com/window-sticker">Window sticker</a>
+              <img src="/assets/images/backgrounds/day.webp" alt="Factory detail">
               <script>window.bad = true;</script>
               <table><tr><th>0-60 mph</th><td>4.2 sec</td></tr></table>
             </section>
@@ -313,6 +316,7 @@ describe('BlogBlockRendererComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const customHtml = element.querySelector<HTMLElement>('.blog-custom-html');
     const link = customHtml?.querySelector<HTMLAnchorElement>('a');
+    const image = customHtml?.querySelector<HTMLImageElement>('img');
 
     expect(element.textContent).toContain('Spec Table');
     expect(customHtml?.textContent).toContain('0-60 mph');
@@ -320,6 +324,9 @@ describe('BlogBlockRendererComponent', () => {
     expect(link?.getAttribute('href')).toBe('https://example.com/window-sticker');
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.classList).toContain('blog-inline-link');
+    expect(image?.getAttribute('loading')).toBe('lazy');
+    expect(image?.getAttribute('decoding')).toBe('async');
+    expect(image?.classList).toContain('blog-image-reveal');
   });
 
   it('opens post body images in a lightbox with a download action', () => {
@@ -347,6 +354,7 @@ describe('BlogBlockRendererComponent', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('figure')?.classList).toContain('blog-image-reveal');
     element.querySelector<HTMLButtonElement>('figure button')?.click();
     fixture.detectChanges();
 

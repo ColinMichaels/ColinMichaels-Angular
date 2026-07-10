@@ -22,10 +22,11 @@ import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.mod
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
+import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPostSummary} from '../../models/blog-post.model';
-import {BlogEngagementService, BlogShareProvider} from '../../services/blog-engagement.service';
+import {BlogEngagementService, BlogShareEvent} from '../../services/blog-engagement.service';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
@@ -70,6 +71,7 @@ function normalizeHealthTerm(value: string): string {
     BlogBlockRendererComponent,
     BlogCommentsComponent,
     BlogShareActionsComponent,
+    BlogStickyPostToolbarComponent,
     BlogTableOfContentsComponent,
     BlogTagListComponent,
     AuthorBioComponent,
@@ -90,8 +92,12 @@ function normalizeHealthTerm(value: string): string {
             class="mx-auto grid max-w-4xl gap-10 xl:items-start"
             [ngClass]="hasTableOfContents() ? 'xl:max-w-7xl xl:grid-cols-[minmax(0,1fr)_20rem]' : 'xl:max-w-5xl'"
           >
-            <div class="min-w-0 xl:col-start-1">
-              <header class="blog-section-rule blog-page-header space-y-6">
+            <div class="min-w-0 xl:col-start-1 xl:row-start-1">
+              <header
+                id="blog-post-top"
+                class="blog-section-rule blog-page-header scroll-mt-20 space-y-6 focus:outline-none"
+                tabindex="-1"
+              >
                 <h1
                   class="text-4xl font-semibold leading-tight text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
                 <div class="blog-post-meta-row">
@@ -158,9 +164,24 @@ function normalizeHealthTerm(value: string): string {
               </header>
             </div>
 
+            @if (shareMetadata(); as share) {
+              <app-blog-sticky-post-toolbar
+                class="xl:col-start-1 xl:row-start-2"
+                [title]="currentPost.title"
+                [imageUrl]="currentPost.coverImage"
+                [excerpt]="share.description"
+                [sharePath]="createSharePath(currentPost.slug)"
+                [shareTitle]="share.title"
+                [shareUrl]="isPreviewRoute() ? '' : share.url"
+                [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
+                [showComments]="!isPreviewRoute()"
+                (shared)="recordShare(currentPost, $event)"
+              ></app-blog-sticky-post-toolbar>
+            }
+
             @if (hasTableOfContents()) {
               @defer (when hasTableOfContents()) {
-                <aside class="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-stretch">
+                <aside class="min-w-0 xl:col-start-2 xl:row-span-3 xl:row-start-1 xl:self-stretch">
                   <app-blog-table-of-contents
                     [items]="tableOfContents()"
                     [postPath]="createCurrentPostPath(currentPost.slug)"
@@ -170,7 +191,7 @@ function normalizeHealthTerm(value: string): string {
               }
             }
 
-            <div class="min-w-0 xl:col-start-1">
+            <div class="min-w-0 xl:col-start-1 xl:row-start-3">
               <app-blog-block-renderer
                 [blocks]="currentPost.blocks"
                 [fallbackAlt]="currentPost.title"
@@ -217,6 +238,7 @@ function normalizeHealthTerm(value: string): string {
                         [excerpt]="share.description"
                         [path]="createSharePath(currentPost.slug)"
                         [url]="isPreviewRoute() ? '' : share.url"
+                        [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
                         variant="panel"
                         (shared)="recordShare(currentPost, $event)"
                       ></app-blog-share-actions>
@@ -225,21 +247,23 @@ function normalizeHealthTerm(value: string): string {
                 }
 
                 @if (!isPreviewRoute()) {
-                  @defer (on viewport) {
-                    <app-blog-comments [post]="currentPost"></app-blog-comments>
-                  } @placeholder {
-                    <section aria-labelledby="blog-comments-placeholder-heading" class="blog-section-rule mt-10">
-                      <div class="grid gap-2">
-                        <p class="eyebrow-sm eyebrow-cyan">Discussion</p>
-                        <h2 id="blog-comments-placeholder-heading"
-                            class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Comments</h2>
-                      </div>
-                      <div class="mt-6 grid gap-4" aria-hidden="true">
-                        <div class="site-skeleton-card h-28"></div>
-                        <div class="site-skeleton-card h-24"></div>
-                      </div>
-                    </section>
-                  }
+                  <div id="blog-comments" class="scroll-mt-44 focus:outline-none" tabindex="-1">
+                    @defer (on viewport) {
+                      <app-blog-comments [post]="currentPost"></app-blog-comments>
+                    } @placeholder {
+                      <section aria-labelledby="blog-comments-placeholder-heading" class="blog-section-rule mt-10">
+                        <div class="grid gap-2">
+                          <p class="eyebrow-sm eyebrow-cyan">Discussion</p>
+                          <h2 id="blog-comments-placeholder-heading"
+                              class="text-2xl font-semibold text-slate-950 dark:text-zinc-50">Comments</h2>
+                        </div>
+                        <div class="mt-6 grid gap-4" aria-hidden="true">
+                          <div class="site-skeleton-card h-28"></div>
+                          <div class="site-skeleton-card h-24"></div>
+                        </div>
+                      </section>
+                    }
+                  </div>
                 }
 
                 @defer (on viewport) {
@@ -274,7 +298,7 @@ function normalizeHealthTerm(value: string): string {
                           class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
                         >
                           <span
-                            class="blog-post-image-frame relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-zinc-900">
+                            class="blog-image-reveal blog-post-image-frame relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-zinc-900">
                             <img
                               [src]="suggestedPostImage(suggestedPost)"
                               [alt]="suggestedPost.title + ' thumbnail image'"
@@ -441,6 +465,7 @@ export class BlogDetailComponent {
     ),
     {initialValue: false}
   );
+  protected readonly isSignedIn = toSignal(this.authService.isAuthenticated(), {initialValue: false});
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
   protected readonly activeContentSectionId = signal<string | null>(null);
@@ -584,7 +609,7 @@ export class BlogDetailComponent {
     return this.createCurrentPostPath(slug).replace(/^\//, '');
   }
 
-  protected recordShare(post: BlogPostSummary, provider: BlogShareProvider): void {
+  protected recordShare(post: BlogPostSummary, event: BlogShareEvent): void {
     if (this.isPreviewRoute()) {
       return;
     }
@@ -592,7 +617,8 @@ export class BlogDetailComponent {
     void this.engagementService.recordPostShare({
       postId: post.id,
       postSlug: post.slug,
-      provider,
+      provider: event.provider,
+      ...(event.shareId ? {shareId: event.shareId} : {}),
     }).catch(() => {
       // Sharing should never block outbound share actions or copy feedback.
     });

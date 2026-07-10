@@ -101,6 +101,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /shareLinks/{shareId} {
+      allow read, write: if false;
+    }
+
+    match /shareLandingEvents/{landingId} {
+      allow read, write: if false;
+    }
+
     match /topics/{topicId} {
       allow get, list: if canManageCmsContent() || isPublishedTopic();
       allow create, update, delete: if canManageCmsContent();

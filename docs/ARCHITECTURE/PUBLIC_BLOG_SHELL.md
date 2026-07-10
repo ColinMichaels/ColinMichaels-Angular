@@ -40,6 +40,12 @@ Re-enabling Labs should restore the route component and selected discovery links
 
 Reader Tools remains available on public reading routes. Its current-status readout uses a prominent fixed-height treatment, and the panel reserves stable width and help-text height so hover/focus descriptions cannot shift controls under the pointer.
 
+## Sticky Post Toolbar
+
+`BlogStickyPostToolbarComponent` sits immediately after the full blog-detail header in the article grid. It scrolls into place naturally and then remains pinned beneath `SiteHeaderComponent` with the current cover thumbnail, truncated title, a single Share control that fans provider actions leftward on hover/focus or tap, and a comments shortcut. The share fan preserves keyboard dismissal and reduced-motion behavior while keeping the reading rail compact. The comments shortcut targets a stable wrapper around the deferred comments block so anchor navigation triggers loading without losing the scroll destination. System and Reader Tools reduced-motion preferences switch the comments jump from smooth to immediate scrolling.
+
+Once the post header leaves the viewport, the reading rail exposes a scroll-to-top action using one `IntersectionObserver` rather than a continuous scroll listener. Level-two content headings use native sticky positioning below the public header and reading rail, so the current section label remains available until the next section replaces it. Heading anchor offsets account for both persistent rails on desktop and mobile.
+
 ## Validation
 
 Relevant regression coverage includes:

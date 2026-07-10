@@ -47,6 +47,7 @@ describe('AdminShellComponent', () => {
     expect(element.textContent).toContain('COLIN MICHAELS');
     expect(element.textContent).toContain('Publishing');
     expect(element.textContent).toContain('Posts');
+    expect(element.textContent).toContain('Bulk Editor');
     expect(element.textContent).toContain('Calendar');
     expect(element.textContent).toContain('Site Content');
     expect(element.textContent).toContain('Media Library');
@@ -66,6 +67,7 @@ describe('AdminShellComponent', () => {
 
     expect(element.querySelector('button[aria-label="Expand admin navigation"]')).not.toBeNull();
     expect(element.querySelector('a[title="Posts"]')).not.toBeNull();
+    expect(element.querySelector('a[title="Bulk Editor"]')).not.toBeNull();
     expect(element.querySelector('a[title="Calendar"]')).not.toBeNull();
     expect(element.querySelector('[role="tooltip"]')?.textContent).toContain('Overview');
     expect(shell?.style.getPropertyValue('--admin-sidebar-width')).toBe('4.5rem');

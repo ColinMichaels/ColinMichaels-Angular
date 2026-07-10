@@ -11,6 +11,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/post-list/post-list.component').then(m => m.CmsPostListComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_CONTENT_OPERATIONS}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./pages/content-operations/content-operations-page.component').then(m => m.ContentOperationsPageComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_CALENDAR}`,
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/publishing-calendar/publishing-calendar.component').then(m => m.PublishingCalendarComponent),

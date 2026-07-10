@@ -163,6 +163,19 @@ Major changes require updates to:
 - migration notes
 - changelog
 
+All commits and pull requests MUST follow:
+
+- `/docs/README/CHANGE_DOCUMENTATION_STANDARD.md`
+- `/.github/pull_request_template.md`
+
+Required publishing behavior:
+
+- Use concise, imperative commit subjects that describe the outcome.
+- Keep behavior, architecture documentation, migration notes, and changelog updates in the same commit.
+- PR descriptions must document what changed, why, user/developer impact, validation, known baselines, deployment/rollback requirements, and deferred follow-up work.
+- Quantify pre-existing validation failures; never present a failing repository-wide command as passing.
+- Feature PRs normally target `dev` as drafts, allow maintainer edits, and are assigned to `ColinMichaels` so the Firebase dev preview workflow can run.
+
 ---
 
 ## Agent Coordination

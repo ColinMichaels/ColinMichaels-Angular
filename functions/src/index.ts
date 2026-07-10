@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 
 import {getAuth, UserRecord} from 'firebase-admin/auth';
 import {initializeApp} from 'firebase-admin/app';
-import {FieldValue, getFirestore} from 'firebase-admin/firestore';
+import {FieldValue, getFirestore, Timestamp} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
@@ -64,6 +64,14 @@ const SOCIAL_OUTBOX_COLLECTION = 'socialOutbox';
 const USERS_COLLECTION = 'users';
 const POST_COMMENTS_COLLECTION = 'postComments';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
+const SHARE_LINKS_COLLECTION = 'shareLinks';
+const SHARE_LANDING_EVENTS_COLLECTION = 'shareLandingEvents';
+const HOMEPAGE_SETTINGS_COLLECTION = 'homepageSettings';
+const HOMEPAGE_SETTINGS_ID = 'home';
+const SHARE_ID_PATTERN = /^[A-Za-z0-9_-]{20,80}$/;
+const SHARE_LINK_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+const MAX_SHARE_LANDINGS_PER_LINK = 10000;
+const HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION = 'home-social-v1';
 const POST_READ_POINTS = 5;
 const POST_SHARE_POINTS = 10;
 const COMMENT_APPROVED_POINTS = 15;
@@ -388,6 +396,8 @@ interface SeoMetadata {
 }
 
 interface SeoBlogPostDocument {
+  id: string;
+  featured: boolean;
   slug: string;
   title: string;
   excerpt: string;
@@ -412,6 +422,14 @@ interface SeoBlogPostDocument {
   publishedAt: string | null;
   imageAlt: string;
   blocks: readonly BlogContentBlock[];
+}
+
+type HomepageFeaturedPostMode = 'latest' | 'featured' | 'selected';
+
+interface HomepageSocialSettings {
+  status: 'draft' | 'published';
+  featuredPostMode: HomepageFeaturedPostMode;
+  featuredPostId: string | null;
 }
 
 interface SitemapUrl {
@@ -633,7 +651,7 @@ interface AdminManagedUser {
 
 type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 type BlogCommentStatus = 'pending' | 'approved' | 'hidden' | 'deleted';
-type PointEventType = 'post_read' | 'post_share' | 'comment_approved';
+type PointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved';
 type CommentModerationAction = 'approve' | 'hide' | 'restore' | 'delete';
 
 interface UserAccountPoints {
@@ -779,7 +797,7 @@ export const renderSeoHtml = onRequest(
         .send(request.method === 'HEAD' ? '' : html);
     } catch (error) {
       logger.error('Unable to render SEO HTML shell.', {error});
-      const fallbackMetadata = createHomeSeoMetadata();
+      const fallbackMetadata = createStaticHomeSeoMetadata();
       const html = injectSeoMetadata(readSeoIndexTemplate(), fallbackMetadata);
 
       response
@@ -1237,6 +1255,14 @@ export const recordPostShare = onCall(
 
     await requirePublishedPostTarget(data.postId, data.postSlug);
     await ensureUserAccountForAuth(auth);
+    await registerTrackedShare({
+      shareId: data.shareId,
+      ownerUid: auth.uid,
+      provider: data.provider,
+      targetType: 'post',
+      targetId: data.postId,
+      targetPath: `/blog/${data.postSlug}`,
+    });
 
     return await awardPointEvent({
       uid: auth.uid,
@@ -1247,6 +1273,100 @@ export const recordPostShare = onCall(
       postId: data.postId,
       postSlug: data.postSlug,
       provider: data.provider,
+      shareId: data.shareId,
+    });
+  }
+);
+
+export const recordSiteShare = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to record site shares.');
+    const data = parseSiteShareRequest(request.data);
+
+    await ensureUserAccountForAuth(auth);
+    await registerTrackedShare({
+      shareId: data.shareId,
+      ownerUid: auth.uid,
+      provider: data.provider,
+      targetType: 'site',
+      targetId: HOMEPAGE_SETTINGS_ID,
+      targetPath: '/',
+    });
+
+    return await awardPointEvent({
+      uid: auth.uid,
+      eventId: createPointEventId('site_share', auth.uid, data.provider),
+      type: 'site_share',
+      points: POST_SHARE_POINTS,
+      counterField: 'shares',
+      provider: data.provider,
+      shareId: data.shareId,
+      targetPath: '/',
+    });
+  }
+);
+
+export const recordShareLanding = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const data = parseShareLandingRequest(request.data);
+    const firestore = getFirestore();
+    const shareRef = firestore.collection(SHARE_LINKS_COLLECTION).doc(data.shareId);
+    const landingRef = firestore.collection(SHARE_LANDING_EVENTS_COLLECTION).doc(
+      createPointEventId(data.shareId, data.visitId)
+    );
+    const now = new Date();
+
+    return await firestore.runTransaction(async transaction => {
+      const [shareSnapshot, landingSnapshot] = await Promise.all([
+        transaction.get(shareRef),
+        transaction.get(landingRef),
+      ]);
+      const share = shareSnapshot.data() ?? {};
+      const expiresAtMillis = getNumberValue(share['expiresAtMillis']);
+      const landingCount = getNumberValue(share['landingCount']);
+
+      if (
+        !shareSnapshot.exists
+        || expiresAtMillis <= now.getTime()
+        || landingSnapshot.exists
+        || landingCount >= MAX_SHARE_LANDINGS_PER_LINK
+      ) {
+        return {recorded: false};
+      }
+
+      transaction.set(landingRef, {
+        id: landingRef.id,
+        shareId: data.shareId,
+        visitId: data.visitId,
+        targetType: getTrimmedString(share['targetType']),
+        targetId: getTrimmedString(share['targetId']),
+        createdAt: now.toISOString(),
+        createdAtTimestamp: FieldValue.serverTimestamp(),
+        expiresAt: getTrimmedString(share['expiresAt']),
+        expiresAtMillis,
+        expiresAtTimestamp: Timestamp.fromMillis(expiresAtMillis),
+      });
+      transaction.update(shareRef, {
+        landingCount: FieldValue.increment(1),
+        lastLandedAt: now.toISOString(),
+        lastLandedAtTimestamp: FieldValue.serverTimestamp(),
+      });
+
+      return {recorded: true};
     });
   }
 );
@@ -1314,7 +1434,7 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
   const normalizedPath = normalizeSeoPath(path);
 
   if (normalizedPath === '/') {
-    return createHomeSeoMetadata();
+    return await createHomeSeoMetadata();
   }
 
   if (normalizedPath === '/blog') {
@@ -1608,7 +1728,7 @@ async function fetchPublishedFeedBlogPosts(): Promise<readonly SeoBlogPostDocume
     .get();
 
   return snapshot.docs
-    .map(document => toSeoBlogPostDocument(document.data()))
+    .map(document => toSeoBlogPostDocument(document.data(), document.id))
     .filter((post): post is SeoBlogPostDocument => post !== null)
     .sort((left, right) => {
       const rightDate = getLatestIsoDate([right.updatedAt, right.publishedAt].filter(isNonEmptyString)) ?? '';
@@ -1779,7 +1899,37 @@ function uniqueSitemapUrls(urls: readonly SitemapUrl[]): readonly SitemapUrl[] {
   return uniqueUrls;
 }
 
-function createHomeSeoMetadata(): SeoMetadata {
+async function createHomeSeoMetadata(): Promise<SeoMetadata> {
+  const [settings, posts] = await Promise.all([
+    fetchHomepageSocialSettings(),
+    fetchPublishedFeedBlogPosts(),
+  ]);
+  const post = selectHomepageSocialPost(posts, settings);
+
+  if (!post) {
+    return createStaticHomeSeoMetadata();
+  }
+
+  const sourceImage = post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE;
+  const compatibleImage = toOpenGraphCompatibleImage(sourceImage);
+  const versionSeed = [
+    HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION,
+    post.id,
+    post.updatedAt,
+    compatibleImage,
+  ].join(':');
+
+  return {
+    ...createStaticHomeSeoMetadata(),
+    image: appendSocialImageVersion(compatibleImage, versionSeed),
+    imageAlt: post.ogImageAlt || post.imageAlt || `${post.title} featured on ${SITE_NAME}`,
+    imageWidth: post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH,
+    imageHeight: post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT,
+    cacheControl: 'public, max-age=300, s-maxage=300',
+  };
+}
+
+function createStaticHomeSeoMetadata(): SeoMetadata {
   return {
     title: HOMEPAGE_TITLE,
     description: HOMEPAGE_DESCRIPTION,
@@ -1789,8 +1939,56 @@ function createHomeSeoMetadata(): SeoMetadata {
     type: 'website',
     structuredData: createHomeJsonLd(),
     fallbackHtml: renderHomeFallbackHtml(),
-    cacheControl: 'public, max-age=600, s-maxage=3600',
+    cacheControl: 'public, max-age=300, s-maxage=300',
   };
+}
+
+async function fetchHomepageSocialSettings(): Promise<HomepageSocialSettings> {
+  const snapshot = await getFirestore()
+    .collection(HOMEPAGE_SETTINGS_COLLECTION)
+    .doc(HOMEPAGE_SETTINGS_ID)
+    .get();
+  const value = snapshot.data() ?? {};
+  const rawMode = getTrimmedString(value['featuredPostMode']);
+  const featuredPostMode: HomepageFeaturedPostMode = ['latest', 'featured', 'selected'].includes(rawMode)
+    ? rawMode as HomepageFeaturedPostMode
+    : 'latest';
+
+  return {
+    status: getTrimmedString(value['status']) === 'draft' ? 'draft' : 'published',
+    featuredPostMode,
+    featuredPostId: getTrimmedString(value['featuredPostId']) || null,
+  };
+}
+
+function selectHomepageSocialPost(
+  posts: readonly SeoBlogPostDocument[],
+  settings: HomepageSocialSettings
+): SeoBlogPostDocument | null {
+  const newestPosts = [...posts].sort((left, right) => (
+    (right.publishedAt ?? right.updatedAt).localeCompare(left.publishedAt ?? left.updatedAt)
+    || right.updatedAt.localeCompare(left.updatedAt)
+  ));
+
+  if (settings.status !== 'published' || newestPosts.length === 0) {
+    return newestPosts[0] ?? null;
+  }
+
+  if (settings.featuredPostMode === 'selected' && settings.featuredPostId) {
+    const selectedPost = newestPosts.find(post => post.id === settings.featuredPostId);
+    if (selectedPost) {
+      return selectedPost;
+    }
+  }
+
+  if (settings.featuredPostMode === 'selected' || settings.featuredPostMode === 'featured') {
+    const featuredPost = newestPosts.find(post => post.featured);
+    if (featuredPost) {
+      return featuredPost;
+    }
+  }
+
+  return newestPosts[0] ?? null;
 }
 
 function createLabsSeoMetadata(): SeoMetadata {
@@ -2039,7 +2237,7 @@ async function fetchPublishedSeoBlogPost(slug: string): Promise<SeoBlogPostDocum
     return null;
   }
 
-  return toSeoBlogPostDocument(document.data());
+  return toSeoBlogPostDocument(document.data(), document.id);
 }
 
 async function fetchPreviewSeoBlogPost(previewToken: string): Promise<SeoBlogPostDocument | null> {
@@ -2066,7 +2264,7 @@ async function fetchPreviewSeoBlogPost(previewToken: string): Promise<SeoBlogPos
   return toSeoBlogPostDocument(post);
 }
 
-function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
+function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocument | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -2084,6 +2282,8 @@ function toSeoBlogPostDocument(value: unknown): SeoBlogPostDocument | null {
   }
 
   return {
+    id: getTrimmedString(value['id']) || fallbackId || slug,
+    featured: value['featured'] === true,
     slug,
     title,
     excerpt: getTrimmedString(value['excerpt']),
@@ -2260,6 +2460,31 @@ function createAbsoluteUrl(value: string): string {
   } catch {
     return trimmedValue;
   }
+}
+
+function appendSocialImageVersion(imageUrl: string, versionSeed: string): string {
+  const trimmedImageUrl = imageUrl.trim();
+  if (!trimmedImageUrl) {
+    return trimmedImageUrl;
+  }
+
+  const fragmentIndex = trimmedImageUrl.indexOf('#');
+  const base = fragmentIndex >= 0 ? trimmedImageUrl.slice(0, fragmentIndex) : trimmedImageUrl;
+  const fragment = fragmentIndex >= 0 ? trimmedImageUrl.slice(fragmentIndex) : '';
+  const separator = base.includes('?') ? '&' : '?';
+
+  return `${base}${separator}ogv=${createStableSocialVersion(versionSeed)}${fragment}`;
+}
+
+function createStableSocialVersion(value: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(36).padStart(7, '0');
 }
 
 function toOpenGraphCompatibleImage(value: string): string {
@@ -3093,16 +3318,56 @@ function parsePostEngagementRequest(value: unknown): { postId: string; postSlug:
   return {postId, postSlug};
 }
 
-function parsePostShareRequest(value: unknown): { postId: string; postSlug: string; provider: string } {
+function parsePostShareRequest(value: unknown): { postId: string; postSlug: string; provider: string; shareId?: string } {
   const engagement = parsePostEngagementRequest(value);
   const record = requireRecord(value, 'Post share must be an object.');
-  const provider = getTrimmedString(record['provider']);
+  const provider = parseShareProvider(record['provider']);
+  const shareId = parseOptionalShareId(record['shareId']);
+
+  return {...engagement, provider, ...(shareId ? {shareId} : {})};
+}
+
+function parseSiteShareRequest(value: unknown): { provider: string; shareId?: string } {
+  const record = requireRecord(value, 'Site share must be an object.');
+  const provider = parseShareProvider(record['provider']);
+  const shareId = parseOptionalShareId(record['shareId']);
+
+  return {provider, ...(shareId ? {shareId} : {})};
+}
+
+function parseShareLandingRequest(value: unknown): { shareId: string; visitId: string } {
+  const record = requireRecord(value, 'Share landing must be an object.');
+  const shareId = getTrimmedString(record['shareId']);
+  const visitId = getTrimmedString(record['visitId']);
+
+  if (!SHARE_ID_PATTERN.test(shareId) || !SHARE_ID_PATTERN.test(visitId)) {
+    throw new HttpsError('invalid-argument', 'Share and visit ids must be opaque identifiers.');
+  }
+
+  return {shareId, visitId};
+}
+
+function parseShareProvider(value: unknown): string {
+  const provider = getTrimmedString(value);
 
   if (!['x', 'linkedin', 'facebook', 'email', 'copy'].includes(provider)) {
     throw new HttpsError('invalid-argument', 'Unsupported share provider.');
   }
 
-  return {...engagement, provider};
+  return provider;
+}
+
+function parseOptionalShareId(value: unknown): string | undefined {
+  const shareId = getTrimmedString(value);
+  if (!shareId) {
+    return undefined;
+  }
+
+  if (!SHARE_ID_PATTERN.test(shareId)) {
+    throw new HttpsError('invalid-argument', 'Share id must be an opaque identifier.');
+  }
+
+  return shareId;
 }
 
 async function requirePublishedPostTarget(postId: string, postSlug: string): Promise<void> {
@@ -3209,6 +3474,65 @@ async function upsertUserAccount(
   return account;
 }
 
+async function registerTrackedShare(options: {
+  shareId?: string;
+  ownerUid: string;
+  provider: string;
+  targetType: 'site' | 'post';
+  targetId: string;
+  targetPath: string;
+}): Promise<void> {
+  if (!options.shareId) {
+    return;
+  }
+
+  const firestore = getFirestore();
+  const shareRef = firestore.collection(SHARE_LINKS_COLLECTION).doc(options.shareId);
+  const now = new Date();
+  const expiresAtMillis = now.getTime() + SHARE_LINK_TTL_MS;
+  const expectedIdentity = [
+    options.ownerUid,
+    options.provider,
+    options.targetType,
+    options.targetId,
+    options.targetPath,
+  ].join(':');
+
+  await firestore.runTransaction(async transaction => {
+    const snapshot = await transaction.get(shareRef);
+    if (snapshot.exists) {
+      const existing = snapshot.data() ?? {};
+      const existingIdentity = [
+        getTrimmedString(existing['ownerUid']),
+        getTrimmedString(existing['provider']),
+        getTrimmedString(existing['targetType']),
+        getTrimmedString(existing['targetId']),
+        getTrimmedString(existing['targetPath']),
+      ].join(':');
+
+      if (existingIdentity !== expectedIdentity) {
+        throw new HttpsError('already-exists', 'Share id is already registered to another share.');
+      }
+      return;
+    }
+
+    transaction.set(shareRef, {
+      id: options.shareId,
+      ownerUid: options.ownerUid,
+      provider: options.provider,
+      targetType: options.targetType,
+      targetId: options.targetId,
+      targetPath: options.targetPath,
+      landingCount: 0,
+      createdAt: now.toISOString(),
+      createdAtTimestamp: FieldValue.serverTimestamp(),
+      expiresAt: new Date(expiresAtMillis).toISOString(),
+      expiresAtMillis,
+      expiresAtTimestamp: Timestamp.fromMillis(expiresAtMillis),
+    });
+  });
+}
+
 async function awardPointEvent(options: {
   uid: string;
   eventId: string;
@@ -3218,6 +3542,8 @@ async function awardPointEvent(options: {
   postId?: string;
   postSlug?: string;
   provider?: string;
+  shareId?: string;
+  targetPath?: string;
   commentId?: string;
 }): Promise<PointAwardResult> {
   const firestore = getFirestore();
@@ -3248,6 +3574,8 @@ async function awardPointEvent(options: {
       postId: options.postId,
       postSlug: options.postSlug,
       provider: options.provider,
+      shareId: options.shareId,
+      targetPath: options.targetPath,
       commentId: options.commentId,
       createdAt: now,
       createdAtTimestamp: FieldValue.serverTimestamp(),

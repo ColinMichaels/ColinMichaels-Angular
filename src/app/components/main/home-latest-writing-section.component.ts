@@ -46,7 +46,7 @@ import {postImage as getPostImage, postMatchesHubTerms} from './home-blog-sectio
                 [ngStyle]="postTopicStyle(post)"
               >
                 <a [routerLink]="['/', pathNames.BLOG, post.slug]"
-                   class="site-media-link blog-post-image-frame group aspect-[16/9]">
+                   class="blog-image-reveal site-media-link blog-post-image-frame group aspect-[16/9]">
                   <img [src]="postImage(post)" [alt]="post.title + ' cover image'"
                        class="blog-post-image-fill"
                        loading="lazy">
