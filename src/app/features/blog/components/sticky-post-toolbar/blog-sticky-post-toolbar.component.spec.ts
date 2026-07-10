@@ -45,6 +45,50 @@ describe('BlogStickyPostToolbarComponent', () => {
     expect(fixture.nativeElement.querySelector('[aria-label="Jump to comments"]')).toBeNull();
   });
 
+  it('saves and removes a public post from the offline-reading control', () => {
+    fixture.componentRef.setInput('showOfflineControl', true);
+    fixture.detectChanges();
+    const toggled = spyOn(fixture.componentInstance.offlineToggled, 'emit');
+    const element = fixture.nativeElement as HTMLElement;
+    const saveButton = element.querySelector<HTMLButtonElement>('[aria-label="Save post for offline reading"]');
+
+    expect(saveButton?.getAttribute('aria-pressed')).toBe('false');
+    saveButton?.click();
+    expect(toggled).toHaveBeenCalledTimes(1);
+
+    fixture.componentRef.setInput('offlineSaved', true);
+    fixture.detectChanges();
+    const removeButton = element.querySelector<HTMLButtonElement>('[aria-label="Remove offline copy"]');
+
+    expect(removeButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(removeButton?.querySelector('svg')?.getAttribute('fill')).toBe('none');
+
+    fixture.componentRef.setInput('offlineUpdateAvailable', true);
+    fixture.detectChanges();
+    expect(element.querySelector('[aria-label="Update offline copy"]')).not.toBeNull();
+  });
+
+  it('keeps favorites and read later separate from offline downloads', () => {
+    fixture.componentRef.setInput('showLibraryControls', true);
+    fixture.detectChanges();
+    const favoriteToggled = spyOn(fixture.componentInstance.favoriteToggled, 'emit');
+    const readLaterToggled = spyOn(fixture.componentInstance.readLaterToggled, 'emit');
+    const element = fixture.nativeElement as HTMLElement;
+
+    element.querySelector<HTMLButtonElement>('[aria-label="Add to favorites"]')?.click();
+    element.querySelector<HTMLButtonElement>('[aria-label="Add to read later"]')?.click();
+
+    expect(favoriteToggled).toHaveBeenCalledTimes(1);
+    expect(readLaterToggled).toHaveBeenCalledTimes(1);
+
+    fixture.componentRef.setInput('favorite', true);
+    fixture.componentRef.setInput('readLater', true);
+    fixture.detectChanges();
+
+    expect(element.querySelector('[aria-label="Remove from favorites"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(element.querySelector('[aria-label="Remove from read later"]')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('keeps the visible article title separate from social share metadata', () => {
     fixture.componentRef.setInput('shareTitle', 'Optimized social title');
     fixture.detectChanges();

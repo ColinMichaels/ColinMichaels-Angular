@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {AppComponent, shouldShowOsNotifications, shouldShowSiteHeader} from './app.component';
+import {PwaPushService} from './shared/pwa/pwa-push.service';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -8,6 +9,7 @@ describe('AppComponent', () => {
       imports: [AppComponent],
       providers: [
         provideRouter([]),
+        {provide: PwaPushService, useValue: {start: jasmine.createSpy('start')}},
       ],
     }).compileComponents();
   });

@@ -5,10 +5,8 @@ import {PATH_NAMES} from '../../app-route-paths';
 import {SiteSearchDrawerComponent} from '../../features/search/components/site-search-drawer.component';
 import {SiteSearchOverlayService} from '../../features/search/services/site-search-overlay.service';
 import {SiteAuthControlsComponent} from './site-auth-controls.component';
-import {SiteThemeService} from '../theme/site-theme.service';
 import {SiteLogoComponent} from './site-logo.component';
 import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
-import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
 
 @Component({
   selector: 'app-site-header',
@@ -19,7 +17,6 @@ import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
     SiteLogoComponent,
     SiteSearchDrawerComponent,
     PwaInstallControlComponent,
-    PwaNativeControlsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -153,27 +150,7 @@ import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
             </svg>
             <span>Open OS</span>
           </a>
-          <button
-            type="button"
-            class="inline-flex h-11 items-center gap-3 rounded-lg border border-transparent px-3 text-left text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 dark:text-zinc-200 dark:hover:border-cyan-300/60 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
-            (click)="toggleThemeFromMenu()"
-          >
-            @if (theme.isDark()) {
-              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2.8v2.4M12 18.8v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path>
-              </svg>
-              <span>Switch to light mode</span>
-            } @else {
-              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M20.2 14.5A7.7 7.7 0 0 1 9.5 3.8 8.7 8.7 0 1 0 20.2 14.5Z"></path>
-              </svg>
-              <span>Switch to dark mode</span>
-            }
-          </button>
-
           <app-pwa-install-control/>
-          <app-pwa-native-controls/>
 
           @defer (when isMenuOpen()) {
             <app-site-auth-controls variant="mobile" (navigate)="closeMenu()"/>
@@ -198,7 +175,6 @@ import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
 })
 export class SiteHeaderComponent {
   private readonly host = inject(ElementRef<HTMLElement>);
-  protected readonly theme = inject(SiteThemeService);
   protected readonly searchOverlay = inject(SiteSearchOverlayService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
@@ -229,11 +205,6 @@ export class SiteHeaderComponent {
 
   protected closeMenu(): void {
     this.isMenuOpen.set(false);
-  }
-
-  protected toggleThemeFromMenu(): void {
-    this.theme.toggleMode();
-    this.closeMenu();
   }
 
   @HostListener('document:click', ['$event'])

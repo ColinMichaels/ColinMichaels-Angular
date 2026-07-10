@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
         scrollPositionRestoration: 'top'
       })
     ),
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('pwa-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
       updateViaCache: 'none',
