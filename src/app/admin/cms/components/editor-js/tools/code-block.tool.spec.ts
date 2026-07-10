@@ -17,6 +17,7 @@ describe('CmsCodeBlockTool', () => {
     });
     const element = tool.render();
 
+    expect(CmsCodeBlockTool.toolbox.title).toBe('Code');
     expect(element.textContent).toContain('Code block');
     expect(element.querySelector<HTMLInputElement>('[data-code-language]')?.value).toBe('typescript');
     expect(element.querySelector<HTMLTextAreaElement>('[data-code-text]')?.value).toBe('const answer = 42;');

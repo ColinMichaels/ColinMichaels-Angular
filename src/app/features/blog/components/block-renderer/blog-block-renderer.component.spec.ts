@@ -354,6 +354,28 @@ describe('BlogBlockRendererComponent', () => {
     expect(image?.classList).toContain('blog-image-reveal');
   });
 
+  it('parses and sanitizes Markdown blocks', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'markdown-1',
+        type: 'markdown',
+        data: {
+          markdown: '# Setup\n\nUse **typed blocks**.\n\n[Unsafe](javascript:alert(1))\n\n<script>window.bad = true;</script>',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const markdown = element.querySelector<HTMLElement>('.blog-markdown');
+
+    expect(markdown?.querySelector('h2')?.textContent).toBe('Setup');
+    expect(markdown?.querySelector('h1')).toBeNull();
+    expect(markdown?.querySelector('strong')?.textContent).toBe('typed blocks');
+    expect(markdown?.querySelector('a')?.hasAttribute('href')).toBeFalse();
+    expect(markdown?.querySelector('script')).toBeNull();
+  });
+
   it('opens post body images in a lightbox with a download action', () => {
     fixture.componentRef.setInput('fallbackAlt', 'Fallback post title');
     fixture.componentRef.setInput('blocks', [

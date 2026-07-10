@@ -42,6 +42,7 @@ export type BlogBlockType =
   | 'list'
   | 'quote'
   | 'code'
+  | 'markdown'
   | 'delimiter'
   | 'typography'
   | 'stats'
@@ -109,6 +110,7 @@ export interface BlogBlockData {
   ordered?: boolean;
   language?: string;
   code?: string;
+  markdown?: string;
   stretched?: boolean;
   withBorder?: boolean;
   withBackground?: boolean;

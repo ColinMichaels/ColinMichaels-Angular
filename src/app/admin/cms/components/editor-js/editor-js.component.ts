@@ -26,6 +26,7 @@ import {ChartBlockTool} from './tools/chart-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
 import {CmsImageBlockTool} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
+import {CmsMarkdownBlockTool} from './tools/markdown-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
 
@@ -37,6 +38,7 @@ interface EditorToolModules {
   Embed: ToolConstructable;
   YoutubeEmbed: ToolConstructable;
   CmsCodeBlock: ToolConstructable;
+  CmsMarkdownBlock: ToolConstructable;
   CmsImageBlock: ToolConstructable;
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
@@ -133,6 +135,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     Embed: getToolConstructable(embedModule, 'Embed'),
     YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
     CmsCodeBlock: CmsCodeBlockTool as unknown as ToolConstructable,
+    CmsMarkdownBlock: CmsMarkdownBlockTool as unknown as ToolConstructable,
     CmsImageBlock: CmsImageBlockTool as unknown as ToolConstructable,
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
@@ -922,6 +925,9 @@ export class EditorJsComponent implements AfterViewInit {
           },
           code: {
             class: tools.CmsCodeBlock,
+          },
+          markdown: {
+            class: tools.CmsMarkdownBlock,
           },
           delimiter: tools.Delimiter,
           embed: {
