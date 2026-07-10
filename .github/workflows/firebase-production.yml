@@ -69,6 +69,8 @@ jobs:
       FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
       FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
       FIREBASE_MEASUREMENT_ID: ${{ vars.FIREBASE_MEASUREMENT_ID || secrets.FIREBASE_MEASUREMENT_ID }}
+      WEB_PUSH_PUBLIC_KEY: ${{ vars.WEB_PUSH_PUBLIC_KEY || secrets.WEB_PUSH_PUBLIC_KEY }}
+      WEB_PUSH_SUBJECT: ${{ vars.WEB_PUSH_SUBJECT || secrets.WEB_PUSH_SUBJECT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -136,6 +138,34 @@ jobs:
       - name: Build Firebase Functions
         if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
         run: npm --prefix functions run build
+
+      - name: Generate Firebase Functions deploy params
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        run: |
+          missing=()
+          required=(
+            WEB_PUSH_PUBLIC_KEY
+            WEB_PUSH_SUBJECT
+          )
+
+          for name in "${required[@]}"; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required Firebase Functions deploy params:"
+            printf -- '- %s\n' "${missing[@]}"
+            echo "Add them as GitHub production environment Variables or Secrets."
+            exit 1
+          fi
+
+          dotenv_path="functions/.env.${FIREBASE_PROJECT_ID}"
+          {
+            printf 'WEB_PUSH_PUBLIC_KEY=%s\n' "$WEB_PUSH_PUBLIC_KEY"
+            printf 'WEB_PUSH_SUBJECT=%s\n' "$WEB_PUSH_SUBJECT"
+          } >> "$dotenv_path"
 
       - name: Set up Node.js for rules-only deploy
         if: ${{ needs.plan_deploy.outputs.deploy_site_build != 'true' }}
