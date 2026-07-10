@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 
 import {BlogBlockData, BlogBlockType} from '../../../features/blog/models/blog-post.model';
+import {createBlogMarkdownPlainText} from '../../../features/blog/utils/blog-markdown.util';
 import {
   BlogAssistantContext,
   BlogAssistantResult,
@@ -148,6 +149,8 @@ export class BlogAiAssistantService {
         return [data.caption, data.alt, data.provider].filter(Boolean).join(' ');
       case 'code':
         return [data.language, data.code].filter(Boolean).join(' ');
+      case 'markdown':
+        return createBlogMarkdownPlainText(data.markdown);
       case 'stats':
         return [
           data.title,

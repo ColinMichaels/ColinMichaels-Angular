@@ -20,6 +20,7 @@ import {
   faMagnifyingGlassPlus,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import {marked} from 'marked';
 
 import {
   BLOG_IMAGE_LAYOUTS,
@@ -297,6 +298,11 @@ interface RenderableBlogImage {
                 <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ row.block.data.title }}</h3>
               }
               <section class="blog-custom-html" [innerHTML]="row.blockHtml"></section>
+            }
+          }
+          @case ('markdown') {
+            @if (row.block.data.markdown) {
+              <section class="blog-custom-html blog-markdown" [innerHTML]="row.blockHtml"></section>
             }
           }
           @case ('list') {
@@ -621,14 +627,14 @@ interface RenderableBlogImage {
       color: #334155;
     }
 
-    :host ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
+    :host ::ng-deep .blog-custom-html :where(h2, h3, h4, h5, h6) {
       color: #fafafa;
       font-weight: 700;
       line-height: 1.25;
       margin: 1.5rem 0 .75rem;
     }
 
-    :host-context(.light) ::ng-deep .blog-custom-html :where(h2, h3, h4, h5) {
+    :host-context(.light) ::ng-deep .blog-custom-html :where(h2, h3, h4, h5, h6) {
       color: #0f172a;
     }
 
@@ -781,7 +787,12 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         textHtml: this.createInlineHtml(block.data.text),
         captionHtml,
         attributionHtml: this.createInlineHtml(block.data.attribution),
-        blockHtml: this.createBlockHtml(block.data.html),
+        blockHtml: this.createBlockHtml(
+          block.type === 'markdown'
+            ? marked.parse(block.data.markdown ?? '', {async: false})
+            : block.data.html,
+          block.type === 'markdown',
+        ),
         itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
         stats: this.createStats(block.data.stats),
         chart: this.createChart(block),
@@ -969,7 +980,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
   }
 
-  private createBlockHtml(value: string | undefined): SafeHtml {
+  private createBlockHtml(value: string | undefined, normalizeMarkdownHeadings = false): SafeHtml {
     const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
 
     if (!sanitizedHtml) {
@@ -979,6 +990,15 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     const template = document.createElement('template');
     template.innerHTML = sanitizedHtml;
     template.content.querySelectorAll('script, style').forEach(element => element.remove());
+
+    if (normalizeMarkdownHeadings) {
+      template.content.querySelectorAll('h1').forEach(heading => {
+        const replacement = document.createElement('h2');
+        replacement.innerHTML = heading.innerHTML;
+        heading.replaceWith(replacement);
+      });
+    }
+
     template.content.querySelectorAll('img').forEach(image => {
       image.setAttribute('loading', image.getAttribute('loading') ?? 'lazy');
       image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
@@ -1085,6 +1105,13 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       const href = anchor.getAttribute('href')?.trim() ?? '';
 
       anchor.classList.add('blog-inline-link');
+
+      if (!href || href.toLowerCase().startsWith('unsafe:')) {
+        anchor.removeAttribute('href');
+        anchor.removeAttribute('target');
+        anchor.removeAttribute('rel');
+        return;
+      }
 
       if (this.shouldOpenInNewTab(href)) {
         anchor.setAttribute('target', '_blank');

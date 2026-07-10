@@ -6,6 +6,7 @@ import {BlogPost} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
+import {createBlogMarkdownPlainText} from '../../blog/utils/blog-markdown.util';
 import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
 import {TopicHub} from '../../topics/topic-hubs.data';
 
@@ -209,6 +210,7 @@ function createBlogPostBodyText(post: BlogPost): string {
       block.data.attribution,
       block.data.code,
       block.data.html,
+      block.type === 'markdown' ? createBlogMarkdownPlainText(block.data.markdown) : block.data.markdown,
       ...(block.data.items ?? []),
       ...(block.data.stats ?? []).flatMap(stat => [stat.label, stat.value, stat.caption]),
       ...(block.data.chartPoints ?? []).flatMap(point => [point.label, point.note]),

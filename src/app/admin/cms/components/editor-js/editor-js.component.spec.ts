@@ -63,4 +63,24 @@ describe('EditorJsComponent', () => {
     expect(element.textContent).not.toContain('Unable to load YouTube Embed Editor.js tool.');
     expect(element.querySelector('iframe')?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
   });
+
+  it('initializes saved Markdown blocks with the custom source editor', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'markdown-block',
+        type: 'markdown',
+        data: {markdown: '## Existing Markdown\n\nPreserve **this source**.'},
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+
+    const textarea = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLTextAreaElement>('[data-markdown-text]');
+
+    expect(textarea).not.toBeNull();
+    expect(textarea?.value).toContain('## Existing Markdown');
+    expect(textarea?.value).toContain('**this source**');
+  });
 });

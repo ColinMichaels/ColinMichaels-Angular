@@ -58,4 +58,26 @@ describe('BlogAiAssistantService', () => {
     expect(result.suggestions[0].categories.filter(category => category === 'CMS').length).toBe(1);
     expect(result.suggestions[0].tags.filter(tag => tag === 'Drafts').length).toBe(1);
   });
+
+  it('uses readable Markdown content for metadata without leaking formatting syntax', () => {
+    const result = service.createSuggestions({
+      title: 'Untitled Post',
+      excerpt: '',
+      seoTitle: '',
+      seoDescription: '',
+      categories: [],
+      tags: [],
+      blocks: [{
+        id: 'markdown-1',
+        type: 'markdown',
+        data: {markdown: '## Angular Markdown\n\nBuild **Firebase content** with typed blocks.'},
+      }],
+    });
+
+    expect(result.suggestions[0].categories).toContain('Angular');
+    expect(result.suggestions[0].categories).toContain('Firebase');
+    expect(result.suggestions[0].seoDescription).toContain('Angular Markdown');
+    expect(result.suggestions[0].seoDescription).not.toContain('##');
+    expect(result.suggestions[0].seoDescription).not.toContain('**');
+  });
 });
