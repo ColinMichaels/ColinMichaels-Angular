@@ -23,7 +23,10 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
       [class.blog-post-row-topic]="topicLabel"
       [ngStyle]="topicStyle"
     >
-      <a [routerLink]="['/blog', post.slug]" class="blog-media-frame blog-post-image-frame group aspect-[16/9]">
+      <a
+        [routerLink]="['/blog', post.slug]"
+        class="blog-image-reveal blog-media-frame blog-post-image-frame group aspect-[16/9]"
+      >
         <img
           [src]="postImage(post)"
           [alt]="post.title + ' cover image'"

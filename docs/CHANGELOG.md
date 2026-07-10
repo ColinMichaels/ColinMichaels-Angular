@@ -1,6 +1,9 @@
 # Changelog
 
 - Replaced the partial Angular animation-runtime route fade with compositor-driven Router View Transitions for all navigations, using a subtle CSS fade/vertical settle, graceful browser fallback, and system/Reader Tools reduced-motion suppression.
+- Added native scroll-driven fade/rise reveals to lazy and deferred post media, including post lists, homepage writing cards, article body figures, sanitized custom HTML images, and suggested posts, with a longer ease-in-out reveal window, visible fallback behavior, and no per-image observer code.
+- Added a compact sticky post toolbar that naturally pins the current cover thumbnail and title beneath the public header, keeps providers behind a single hover/focus/tap Share fan while reading, and smoothly jumps to the stable deferred-comments anchor.
+- Added an observer-triggered scroll-to-top action to the sticky post rail and native sticky level-two article headings that temporarily remain below the reading controls until the next section takes over.
 
 - Prioritized all CMS-managed rotating homepage hero backgrounds so whichever slide becomes the Largest Contentful Paint image is fetched early without Angular performance diagnostics.
 - Replaced the deprecated `@angular/animations` route fade with Router-native view transitions scoped to page content, including reduced-motion handling, and removed the obsolete package dependency.

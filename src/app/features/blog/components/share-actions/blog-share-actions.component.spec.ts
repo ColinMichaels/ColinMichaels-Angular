@@ -61,4 +61,35 @@ describe('BlogShareActionsComponent', () => {
     expect(linkedInShareId).toMatch(/^[A-Za-z0-9_-]{20,80}$/);
     expect(linkedInShareId).not.toBe(facebookShareId);
   });
+
+  it('fans toolbar share providers out from one trigger', () => {
+    fixture.componentRef.setInput('variant', 'toolbar');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const trigger = element.querySelector<HTMLButtonElement>('[data-share-trigger]');
+    const providerActions = Array.from(element.querySelectorAll<HTMLElement>('[data-share-provider]'));
+
+    expect(trigger?.getAttribute('aria-expanded')).toBe('false');
+    expect(providerActions.length).toBe(5);
+    expect(providerActions.every(action => action.getAttribute('tabindex') === '-1')).toBeTrue();
+
+    trigger?.click();
+    fixture.detectChanges();
+
+    expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+    expect(providerActions.every(action => action.getAttribute('tabindex') === null)).toBeTrue();
+    expect(element.querySelector('.share-fan__actions')?.classList).toContain('share-fan__actions--open');
+  });
+
+  it('opens the toolbar share fan on hover', () => {
+    fixture.componentRef.setInput('variant', 'toolbar');
+    fixture.detectChanges();
+
+    const shareGroup = fixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+    shareGroup.dispatchEvent(new PointerEvent('pointerenter', {pointerType: 'mouse'}));
+    fixture.detectChanges();
+
+    expect(shareGroup.querySelector('[data-share-trigger]')?.getAttribute('aria-expanded')).toBe('true');
+  });
 });
