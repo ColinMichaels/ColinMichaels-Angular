@@ -18,6 +18,7 @@ This folder is the entry point for project documentation.
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
+- [Mobile PWA Foundation](../ARCHITECTURE/MOBILE_PWA.md)
 - [Homepage Hero CMS](../ARCHITECTURE/HOMEPAGE_HERO_CMS.md)
 
 ## Planning

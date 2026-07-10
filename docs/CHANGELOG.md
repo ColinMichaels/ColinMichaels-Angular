@@ -1,5 +1,9 @@
 # Changelog
 
+- Added progressive OS-native PWA controls for sharing the current page, entering fullscreen, keeping the screen awake while reading, and protecting offline origin storage, with real quota reporting, installed-app state, capability fallbacks, and a mobile-scrollable utility menu.
+- Restored article-body-only reading progress inside the sticky post rail, aligned the desktop contents sidebar below the site header, kept its active section highlight visible through long posts, fixed backward TOC navigation, and limited the smaller pinned section-title treatment to one active heading at a time.
+- Compressed the mobile blog sticky stack into a 56px public header, single-row 52px post rail, and smaller section title, with shared safe-area-aware offsets that remove gaps and overlap between all three layers.
+- Added the first mobile PWA foundation with a linked install manifest, production Angular service worker, conservative app-shell/public-image caching, install guidance, offline status, safe update reloads, iOS safe-area layout support, protected-route cache exclusions, and Firebase worker cache headers.
 - Replaced the partial Angular animation-runtime route fade with compositor-driven Router View Transitions for all navigations, using a subtle CSS fade/vertical settle, graceful browser fallback, and system/Reader Tools reduced-motion suppression.
 - Added native scroll-driven fade/rise reveals to lazy and deferred post media, including post lists, homepage writing cards, article body figures, sanitized custom HTML images, and suggested posts, with a longer ease-in-out reveal window, visible fallback behavior, and no per-image observer code.
 - Added a compact sticky post toolbar that naturally pins the current cover thumbnail and title beneath the public header, keeps providers behind a single hover/focus/tap Share fan while reading, and smoothly jumps to the stable deferred-comments anchor.

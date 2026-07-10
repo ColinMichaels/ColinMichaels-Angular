@@ -109,6 +109,7 @@ describe('BlogBlockRendererComponent', () => {
 
   it('renders linkable heading anchors', () => {
     fixture.componentRef.setInput('anchorPath', '/blog/test-post');
+    fixture.componentRef.setInput('activeHeadingId', 'anchor-heading');
     fixture.componentRef.setInput('blocks', [
       {
         id: 'heading-1',
@@ -127,8 +128,32 @@ describe('BlogBlockRendererComponent', () => {
 
     expect(heading?.id).toBe('anchor-heading');
     expect(link?.getAttribute('href')).toBe('/blog/test-post#anchor-heading');
-    expect(heading?.classList).toContain('sticky');
+    expect(heading?.classList).toContain('blog-sticky-section-heading');
+    expect(heading?.hasAttribute('data-sticky-active')).toBeTrue();
     expect(heading?.hasAttribute('data-sticky-section-heading')).toBeTrue();
+  });
+
+  it('keeps only the active level-two heading sticky', () => {
+    fixture.componentRef.setInput('activeHeadingId', 'second-heading');
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'heading-1',
+        type: 'header',
+        data: {text: 'First Heading', level: 2},
+      },
+      {
+        id: 'heading-2',
+        type: 'header',
+        data: {text: 'Second Heading', level: 2},
+      },
+    ]);
+    fixture.detectChanges();
+
+    const headings = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h2'));
+
+    expect(headings[0].classList).not.toContain('blog-sticky-section-heading');
+    expect(headings[1].classList).toContain('blog-sticky-section-heading');
+    expect(headings.filter(heading => heading.hasAttribute('data-sticky-active')).length).toBe(1);
   });
 
   it('opens rich text links in a new tab by default', () => {

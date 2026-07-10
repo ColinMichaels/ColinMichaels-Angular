@@ -329,11 +329,11 @@
     sm:px-8 lg:px-12;
   }
 
-  .blog-section-rule {
-    @apply border-t-[5px] border-cyan-600 pt-6
-    dark:border-cyan-300;
-    border-top-color: var(--site-accent) !important;
-  }
+  /*  .blog-section-rule {
+      @apply border-t-[5px] border-cyan-600 pt-6
+      dark:border-cyan-300;
+      border-top-color: var(--site-accent) !important;
+    }*/
 
   .blog-thin-rule {
     @apply dark:border-zinc-800;

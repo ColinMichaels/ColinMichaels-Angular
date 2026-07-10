@@ -7,6 +7,8 @@ import {SiteSearchOverlayService} from '../../features/search/services/site-sear
 import {SiteAuthControlsComponent} from './site-auth-controls.component';
 import {SiteThemeService} from '../theme/site-theme.service';
 import {SiteLogoComponent} from './site-logo.component';
+import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
+import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
 
 @Component({
   selector: 'app-site-header',
@@ -16,6 +18,8 @@ import {SiteLogoComponent} from './site-logo.component';
     SiteAuthControlsComponent,
     SiteLogoComponent,
     SiteSearchDrawerComponent,
+    PwaInstallControlComponent,
+    PwaNativeControlsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -23,7 +27,8 @@ import {SiteLogoComponent} from './site-logo.component';
       class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 text-slate-950 shadow-sm shadow-slate-950/5 backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-neutral-950/95 dark:text-zinc-100"
       [class.site-header-overlay-open]="searchOverlay.isOpen() || isMenuOpen()"
     >
-      <div class="mx-auto grid min-h-16 max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8">
+      <div
+        class="site-header-row mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8">
         <a
           routerLink="/"
           class="group w-24 min-w-0 min-[400px]:w-28 sm:w-48 lg:w-56"
@@ -121,7 +126,7 @@ import {SiteLogoComponent} from './site-logo.component';
       @if (isMenuOpen()) {
         <nav
           id="site-utility-menu"
-          class="absolute right-3 top-full z-[60] mt-2 grid w-[min(20rem,calc(100vw-1.5rem))] gap-1.5 border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-950/20 dark:border-zinc-700 dark:bg-neutral-950 dark:shadow-black/50 sm:right-6 lg:right-8"
+          class="absolute right-3 top-full z-[60] mt-2 grid max-h-[calc(100dvh-var(--site-header-sticky-height)-env(safe-area-inset-top)-1rem)] w-[min(20rem,calc(100vw-1.5rem))] gap-1.5 overflow-y-auto overscroll-contain border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-950/20 dark:border-zinc-700 dark:bg-neutral-950 dark:shadow-black/50 sm:right-6 lg:right-8"
           aria-label="Account and site menu"
         >
           <a
@@ -167,6 +172,9 @@ import {SiteLogoComponent} from './site-logo.component';
             }
           </button>
 
+          <app-pwa-install-control/>
+          <app-pwa-native-controls/>
+
           @defer (when isMenuOpen()) {
             <app-site-auth-controls variant="mobile" (navigate)="closeMenu()"/>
           }
@@ -175,6 +183,14 @@ import {SiteLogoComponent} from './site-logo.component';
     </header>
   `,
   styles: `
+    header {
+      padding-top: env(safe-area-inset-top);
+    }
+
+    .site-header-row {
+      height: var(--site-header-sticky-height);
+    }
+
     .site-header-overlay-open {
       z-index: 90;
     }
