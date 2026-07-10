@@ -5,13 +5,13 @@ import {filter, map, startWith} from 'rxjs/operators';
 
 import {NotificationServerComponent} from './components/game/utils/notifications-server/notifications-server.component';
 import {PATH_NAMES} from './app-route-paths';
-import {fadeToBlackAnimation} from './route-animations';
 import {ReaderPreferencesService} from './shared/reader-preferences/reader-preferences.service';
 import {ReaderToolsComponent} from './shared/reader-preferences/reader-tools.component';
 import {SeoService} from './shared/seo/seo.service';
 import {SitePreloaderService} from './shared/site-loader/site-preloader.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
+import {ShareAttributionService} from './features/blog/services/share-attribution.service';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -46,14 +46,13 @@ export function shouldShowOsNotifications(url: string): boolean {
   styles: [],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [fadeToBlackAnimation]
-
 })
 export class AppComponent {
   private readonly router = inject(Router);
   private readonly readerPreferences = inject(ReaderPreferencesService);
   private readonly seo = inject(SeoService);
   private readonly sitePreloader = inject(SitePreloaderService);
+  private readonly shareAttribution = inject(ShareAttributionService);
   private readonly theme = inject(SiteThemeService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -84,13 +83,10 @@ export class AppComponent {
 
   constructor() {
     this.sitePreloader.start();
+    this.shareAttribution.start();
     this.seo.initializeRouteTracking();
     this.theme.mode();
     this.readerPreferences.preferences();
-  }
-
-  prepareRoute(outlet: RouterOutlet): string | null {
-    return outlet?.activatedRouteData['animation'] ?? null;
   }
 
 }

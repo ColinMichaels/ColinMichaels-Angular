@@ -1,4 +1,4 @@
-import {Component, ChangeDetectionStrategy, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, effect, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
@@ -23,11 +23,19 @@ import {SocialsComponent} from './socials/socials.component';
 import {
   RecommendedLinkRepositoryService
 } from '../../features/recommended-links/services/recommended-link-repository.service';
+import {AuthService} from '../../services/auth.service';
+import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
+import {BlogShareEvent, BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
+import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
+import {HomepageSocialPreviewService} from '../../features/homepage/services/homepage-social-preview.service';
+import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../../shared/seo/seo.metadata';
+import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 
 @Component({
   selector: 'app-main',
   imports: [
     AuthorBioComponent,
+    BlogShareActionsComponent,
     BlogPostCardSkeletonComponent,
     FaIconComponent,
     HomeArticleHeroComponent,
@@ -43,7 +51,14 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainComponent {
+  private readonly authService = inject(AuthService);
+  private readonly engagement = inject(BlogEngagementService);
+  private readonly blogPostFeed = inject(HomeBlogPostFeedService);
+  private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
+  private readonly homepageSocialPreview = inject(HomepageSocialPreviewService);
   private readonly recommendedLinkRepository = inject(RecommendedLinkRepositoryService);
+
+  protected readonly isSignedIn = toSignal(this.authService.isAuthenticated(), {initialValue: false});
 
   protected readonly recommendedSites = toSignal(
     this.recommendedLinkRepository.getFeaturedRecommendedLinks$(),
@@ -53,4 +68,25 @@ export class MainComponent {
   protected readonly pathNames = PATH_NAMES;
   protected readonly heroPostCount = HOME_ARTICLE_HERO_POST_LIMIT;
   protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
+  protected readonly homepageDescription = HOMEPAGE_DESCRIPTION;
+  protected readonly homepageTitle = HOMEPAGE_TITLE;
+  protected readonly siteUrl = SITE_URL;
+
+  constructor() {
+    effect(() => {
+      this.homepageSocialPreview.apply(
+        this.homepageHeroRepository.settings(),
+        this.blogPostFeed.publishedPosts()
+      );
+    });
+  }
+
+  protected recordSiteShare(event: BlogShareEvent): void {
+    void this.engagement.recordSiteShare({
+      provider: event.provider,
+      ...(event.shareId ? {shareId: event.shareId} : {}),
+    }).catch(() => {
+      // Sharing must remain available to anonymous readers and during transient Function failures.
+    });
+  }
 }

@@ -13,7 +13,8 @@ import {
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faFacebook, faLinkedin, faXTwitter} from '@fortawesome/free-brands-svg-icons';
 import {faEnvelope, faLink} from '@fortawesome/free-solid-svg-icons';
-import {BlogShareProvider} from '../../services/blog-engagement.service';
+import {BlogShareEvent, BlogShareProvider} from '../../services/blog-engagement.service';
+import {createOpaqueShareId} from '../../services/share-attribution.service';
 
 type BlogShareVariant = 'compact' | 'panel';
 
@@ -24,9 +25,9 @@ type BlogShareVariant = 'compact' | 'panel';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div [class]="containerClass" role="group" aria-label="Share this post">
+    <div [class]="containerClass" role="group" [attr.aria-label]="groupLabel">
       @if (variant === 'panel') {
-        <span class="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">Share</span>
+        <span class="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">{{ label }}</span>
       }
 
       <div class="flex items-center gap-2">
@@ -77,7 +78,7 @@ type BlogShareVariant = 'compact' | 'panel';
         <button
           type="button"
           [class]="iconClass"
-          [attr.aria-label]="copied() ? 'Copied post link' : 'Copy post link'"
+          [attr.aria-label]="copied() ? 'Copied ' + linkLabel + ' link' : 'Copy ' + linkLabel + ' link'"
           [title]="copied() ? 'Copied link' : 'Copy link'"
           (click)="copyShareUrl()"
         >
@@ -93,7 +94,11 @@ export class BlogShareActionsComponent implements OnDestroy {
   @Input() excerpt = '';
   @Input() url = '';
   @Input() variant: BlogShareVariant = 'compact';
-  @Output() shared = new EventEmitter<BlogShareProvider>();
+  @Input() label = 'Share';
+  @Input() groupLabel = 'Share this post';
+  @Input() linkLabel = 'post';
+  @Input() trackingEnabled = false;
+  @Output() shared = new EventEmitter<BlogShareEvent>();
 
   protected readonly copied = signal(false);
   protected readonly faEnvelope = faEnvelope;
@@ -104,6 +109,7 @@ export class BlogShareActionsComponent implements OnDestroy {
 
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly shareIds = new Map<BlogShareProvider, string>();
   private copyResetHandle: ReturnType<typeof setTimeout> | undefined;
 
   ngOnDestroy(): void {
@@ -125,21 +131,21 @@ export class BlogShareActionsComponent implements OnDestroy {
   }
 
   protected get xShareUrl(): string {
-    return `https://twitter.com/intent/tweet?url=${this.encodedShareUrl}&text=${this.encodedTitle}`;
+    return `https://twitter.com/intent/tweet?url=${this.encodedShareUrl('x')}&text=${this.encodedTitle}`;
   }
 
   protected get linkedInShareUrl(): string {
-    return `https://www.linkedin.com/sharing/share-offsite/?url=${this.encodedShareUrl}`;
+    return `https://www.linkedin.com/sharing/share-offsite/?url=${this.encodedShareUrl('linkedin')}`;
   }
 
   protected get facebookShareUrl(): string {
-    return `https://www.facebook.com/sharer/sharer.php?u=${this.encodedShareUrl}`;
+    return `https://www.facebook.com/sharer/sharer.php?u=${this.encodedShareUrl('facebook')}`;
   }
 
   protected get emailShareUrl(): string {
     const body = this.plainExcerpt
-      ? `${this.plainExcerpt}\n\n${this.shareUrl}`
-      : this.shareUrl;
+      ? `${this.plainExcerpt}\n\n${this.createShareUrl('email')}`
+      : this.createShareUrl('email');
 
     return `mailto:?subject=${this.encodedTitle}&body=${encodeURIComponent(body)}`;
   }
@@ -149,7 +155,7 @@ export class BlogShareActionsComponent implements OnDestroy {
       return;
     }
 
-    void navigator.clipboard.writeText(this.shareUrl)
+    void navigator.clipboard.writeText(this.createShareUrl('copy'))
       .then(() => {
         this.copied.set(true);
         this.trackShare('copy');
@@ -163,11 +169,15 @@ export class BlogShareActionsComponent implements OnDestroy {
   }
 
   protected trackShare(provider: BlogShareProvider): void {
-    this.shared.emit(provider);
+    this.shared.emit({
+      provider,
+      shareId: this.trackingEnabled ? this.getShareId(provider) : null,
+      shareUrl: this.createShareUrl(provider),
+    });
   }
 
-  private get encodedShareUrl(): string {
-    return encodeURIComponent(this.shareUrl);
+  private encodedShareUrl(provider: BlogShareProvider): string {
+    return encodeURIComponent(this.createShareUrl(provider));
   }
 
   private get encodedTitle(): string {
@@ -194,6 +204,26 @@ export class BlogShareActionsComponent implements OnDestroy {
     return normalizedPath
       ? `${this.document.location.origin}/${normalizedPath}`
       : this.document.location.origin;
+  }
+
+  private createShareUrl(provider: BlogShareProvider): string {
+    if (!this.trackingEnabled) {
+      return this.shareUrl;
+    }
+
+    const separator = this.shareUrl.includes('?') ? '&' : '?';
+    return `${this.shareUrl}${separator}share=${encodeURIComponent(this.getShareId(provider))}`;
+  }
+
+  private getShareId(provider: BlogShareProvider): string {
+    const existing = this.shareIds.get(provider);
+    if (existing) {
+      return existing;
+    }
+
+    const shareId = createOpaqueShareId();
+    this.shareIds.set(provider, shareId);
+    return shareId;
   }
 
   private toPlainText(value: string): string {

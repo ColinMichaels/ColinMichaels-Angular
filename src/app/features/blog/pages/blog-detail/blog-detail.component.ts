@@ -25,7 +25,7 @@ import {BlogShareActionsComponent} from '../../components/share-actions/blog-sha
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPostSummary} from '../../models/blog-post.model';
-import {BlogEngagementService, BlogShareProvider} from '../../services/blog-engagement.service';
+import {BlogEngagementService, BlogShareEvent} from '../../services/blog-engagement.service';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
@@ -217,6 +217,7 @@ function normalizeHealthTerm(value: string): string {
                         [excerpt]="share.description"
                         [path]="createSharePath(currentPost.slug)"
                         [url]="isPreviewRoute() ? '' : share.url"
+                        [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
                         variant="panel"
                         (shared)="recordShare(currentPost, $event)"
                       ></app-blog-share-actions>
@@ -441,6 +442,7 @@ export class BlogDetailComponent {
     ),
     {initialValue: false}
   );
+  protected readonly isSignedIn = toSignal(this.authService.isAuthenticated(), {initialValue: false});
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
   protected readonly activeContentSectionId = signal<string | null>(null);
@@ -584,7 +586,7 @@ export class BlogDetailComponent {
     return this.createCurrentPostPath(slug).replace(/^\//, '');
   }
 
-  protected recordShare(post: BlogPostSummary, provider: BlogShareProvider): void {
+  protected recordShare(post: BlogPostSummary, event: BlogShareEvent): void {
     if (this.isPreviewRoute()) {
       return;
     }
@@ -592,7 +594,8 @@ export class BlogDetailComponent {
     void this.engagementService.recordPostShare({
       postId: post.id,
       postSlug: post.slug,
-      provider,
+      provider: event.provider,
+      ...(event.shareId ? {shareId: event.shareId} : {}),
     }).catch(() => {
       // Sharing should never block outbound share actions or copy feedback.
     });

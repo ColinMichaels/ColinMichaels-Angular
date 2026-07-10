@@ -1,5 +1,15 @@
 # Changelog
 
+- Replaced the partial Angular animation-runtime route fade with compositor-driven Router View Transitions for all navigations, using a subtle CSS fade/vertical settle, graceful browser fallback, and system/Reader Tools reduced-motion suppression.
+
+- Prioritized all CMS-managed rotating homepage hero backgrounds so whichever slide becomes the Largest Contentful Paint image is fetched early without Angular performance diagnostics.
+- Replaced the deprecated `@angular/animations` route fade with Router-native view transitions scoped to page content, including reduced-motion handling, and removed the obsolete package dependency.
+- Updated homepage Open Graph rendering to use the CMS-selected post, newest featured post, newest published post, or branded fallback image, with matching client/server selection and deterministic image cache versioning.
+- Added signed-in tracked sharing for the homepage and blog posts using provider-specific opaque IDs, while preserving clean canonical and `og:url` values.
+- Added server-only share-link and idempotent landing telemetry records, a new homepage share-points event, explicit Firestore rule denial for direct tracking access, and a strict boundary that prevents landing or crawler traffic from awarding points.
+- Added a protected dry-run Bulk Post Editor at `/admin/cms/content-operations` with compact post auditing, filtering, selection, responsive candidate review, and a permanently locked apply/publish rail.
+- Added read-only optimization-manifest import with stable-slug matching, unmatched-row reporting, redirect-required blocking, and candidate updates limited to SEO title, meta description, categories, and tags.
+- Added opaque CMS post artifact descriptors with SHA-256 hashes, allowlisted diffs, guard projections, protected-field validation, focused regression tests, and architecture/migration documentation for the future revision and apply service.
 - Added a repository-wide commit and pull request standard based on PR #194, including a reusable GitHub PR template, preview-build parameters, validation disclosure rules, deployment/rollback sections, and persistent agent instructions.
 - Simplified live site search to use the header pill as its only editable field; the anchored results panel now streams from that query without rendering a duplicate search form.
 - Protected `/os` and `/os/:app` with a capability-based device guard; mobile, touch-only, and undersized viewports now receive a dedicated desktop-requirements page before OS assets or authentication flows load.

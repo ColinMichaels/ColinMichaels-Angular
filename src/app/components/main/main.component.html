@@ -197,14 +197,28 @@
             This is a constant improving and changing project. Stay Tuned!
           </p>
         </div>
-        <a
-          class="btn-ghost w-fit"
-          href="https://forms.gle/kfsZYFRzJcQYfruw9"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Report a Bug
-        </a>
+        <div class="flex flex-wrap items-center gap-3">
+          <app-blog-share-actions
+            [title]="homepageTitle"
+            [excerpt]="homepageDescription"
+            [path]="''"
+            [url]="siteUrl"
+            [trackingEnabled]="isSignedIn()"
+            label="Share site"
+            groupLabel="Share ColinMichaels.com"
+            linkLabel="site"
+            variant="panel"
+            (shared)="recordSiteShare($event)"
+          ></app-blog-share-actions>
+          <a
+            class="btn-ghost w-fit"
+            href="https://forms.gle/kfsZYFRzJcQYfruw9"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Report a Bug
+          </a>
+        </div>
       </div>
     </section>
   </main>

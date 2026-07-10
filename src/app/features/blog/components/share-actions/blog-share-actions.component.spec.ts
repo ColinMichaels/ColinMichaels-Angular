@@ -1,5 +1,6 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
+import {BlogShareEvent} from '../../services/blog-engagement.service';
 import {BlogShareActionsComponent} from './blog-share-actions.component';
 
 describe('BlogShareActionsComponent', () => {
@@ -30,13 +31,34 @@ describe('BlogShareActionsComponent', () => {
 
   it('emits a share provider when a share link is clicked', () => {
     const component = fixture.componentInstance;
-    const sharedProviders: string[] = [];
-    component.shared.subscribe(provider => sharedProviders.push(provider));
+    const shareEvents: BlogShareEvent[] = [];
+    component.shared.subscribe(event => shareEvents.push(event));
     const element = fixture.nativeElement as HTMLElement;
     const facebookLink = element.querySelector<HTMLAnchorElement>('a[title="Share on Facebook"]');
 
     facebookLink?.click();
 
-    expect(sharedProviders).toEqual(['facebook']);
+    expect(shareEvents).toEqual([{
+      provider: 'facebook',
+      shareId: null,
+      shareUrl: `${document.location.origin}/blog/shareable-post`,
+    }]);
+  });
+
+  it('adds one opaque attribution id per provider when tracking is enabled', () => {
+    fixture.componentRef.setInput('trackingEnabled', true);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const facebookLink = element.querySelector<HTMLAnchorElement>('a[title="Share on Facebook"]');
+    const linkedInLink = element.querySelector<HTMLAnchorElement>('a[title="Share on LinkedIn"]');
+    const decodedFacebookUrl = decodeURIComponent(new URL(facebookLink?.href ?? '').searchParams.get('u') ?? '');
+    const decodedLinkedInUrl = decodeURIComponent(new URL(linkedInLink?.href ?? '').searchParams.get('url') ?? '');
+    const facebookShareId = new URL(decodedFacebookUrl).searchParams.get('share');
+    const linkedInShareId = new URL(decodedLinkedInUrl).searchParams.get('share');
+
+    expect(facebookShareId).toMatch(/^[A-Za-z0-9_-]{20,80}$/);
+    expect(linkedInShareId).toMatch(/^[A-Za-z0-9_-]{20,80}$/);
+    expect(linkedInShareId).not.toBe(facebookShareId);
   });
 });

@@ -22,6 +22,8 @@ Risks:
   split `ApplicationManagerService` and simplify `SettingsService`.
 - Blog/CMS foundation:
   connect the Editor.js draft save flow to Firebase and add media upload rules.
+- Content operations:
+  move the dry-run Bulk Post Editor behind an authenticated server API with immutable artifacts, durable revisions, capability authorization, optimistic concurrency, approval/audit records, and idempotent apply/rollback jobs before enabling canonical writes.
 - Blog AI authoring:
   refine the Firebase Functions metadata prompt, add admin-only quotas, and persist suggestion history.
 - Social delivery:
@@ -49,6 +51,8 @@ Risks:
   richer app ecosystem, saved desktop sessions, advanced window tiling/layout presets.
 - AI media generation:
   add a richer CMS media library for browsing, replacing, and deleting generated thumbnails.
+- Offline content operations:
+  add resumable local operation queues only after the online artifact, revision, and apply contract is stable.
 
 Dependencies:
 

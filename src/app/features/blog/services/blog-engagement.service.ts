@@ -5,6 +5,12 @@ import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
 
 export type BlogShareProvider = 'x' | 'linkedin' | 'facebook' | 'email' | 'copy';
 
+export interface BlogShareEvent {
+  provider: BlogShareProvider;
+  shareId: string | null;
+  shareUrl: string;
+}
+
 interface PostEngagementRequest {
   postId: string;
   postSlug: string;
@@ -12,6 +18,21 @@ interface PostEngagementRequest {
 
 interface PostShareRequest extends PostEngagementRequest {
   provider: BlogShareProvider;
+  shareId?: string;
+}
+
+interface SiteShareRequest {
+  provider: BlogShareProvider;
+  shareId?: string;
+}
+
+interface ShareLandingRequest {
+  shareId: string;
+  visitId: string;
+}
+
+export interface ShareLandingResult {
+  recorded: boolean;
 }
 
 export interface PointAwardResult {
@@ -40,6 +61,26 @@ export class BlogEngagementService {
     const callable = httpsCallable<PostShareRequest, PointAwardResult>(
       this.getFunctions(),
       'recordPostShare'
+    );
+    const result = await callable(request);
+
+    return result.data;
+  }
+
+  async recordSiteShare(request: SiteShareRequest): Promise<PointAwardResult> {
+    const callable = httpsCallable<SiteShareRequest, PointAwardResult>(
+      this.getFunctions(),
+      'recordSiteShare'
+    );
+    const result = await callable(request);
+
+    return result.data;
+  }
+
+  async recordShareLanding(request: ShareLandingRequest): Promise<ShareLandingResult> {
+    const callable = httpsCallable<ShareLandingRequest, ShareLandingResult>(
+      this.getFunctions(),
+      'recordShareLanding'
     );
     const result = await callable(request);
 

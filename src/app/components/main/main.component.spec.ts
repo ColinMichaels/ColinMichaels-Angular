@@ -1,9 +1,11 @@
 import {signal} from '@angular/core';
 import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
+import {Meta} from '@angular/platform-browser';
 import {RouterTestingModule} from '@angular/router/testing';
 import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPost, BlogPostSummary} from '../../features/blog/models/blog-post.model';
+import {BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
@@ -15,6 +17,7 @@ import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.s
 import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
 import {TypewriterService} from '../game/services/typewriter.service';
 import {MainComponent} from './main.component';
+import {AuthService} from '../../services/auth.service';
 
 const MOCK_FULL_POSTS: readonly BlogPost[] = [
   {
@@ -170,6 +173,12 @@ describe('MainComponent', () => {
     const homepageHeroRepositoryService = {
       settings: signal(DEFAULT_HOMEPAGE_HERO_SETTINGS),
     } satisfies Pick<HomepageHeroRepositoryService, 'settings'>;
+    const authService = {
+      isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(of(false)),
+    } satisfies Pick<AuthService, 'isAuthenticated'>;
+    const blogEngagementService = {
+      recordSiteShare: jasmine.createSpy('recordSiteShare').and.resolveTo({awarded: false, points: 0, total: 0}),
+    } satisfies Pick<BlogEngagementService, 'recordSiteShare'>;
     const typewriterService = jasmine.createSpyObj<Pick<TypewriterService, 'enableSound' | 'setVolume' | 'clear' | 'enqueueLine'>>(
       'TypewriterService',
       ['enableSound', 'setVolume', 'clear', 'enqueueLine'],
@@ -184,6 +193,8 @@ describe('MainComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepositoryService},
+        {provide: AuthService, useValue: authService},
+        {provide: BlogEngagementService, useValue: blogEngagementService},
         {provide: HomepageHeroRepositoryService, useValue: homepageHeroRepositoryService},
         {provide: RecommendedLinkRepositoryService, useValue: recommendedLinkRepositoryService},
         {provide: TypewriterService, useValue: typewriterService},
@@ -209,6 +220,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('#labs')).toBeNull();
     expect(element.querySelector('#os')).toBeNull();
     expect(element.textContent?.match(/Report a Bug/g)?.length).toBe(1);
+    expect(element.querySelector('[aria-label="Share ColinMichaels.com"]')).not.toBeNull();
   });
 
   it('renders CMS-managed recommended links on the homepage', () => {
@@ -219,6 +231,13 @@ describe('MainComponent', () => {
     expect(element.querySelector('#links')?.textContent).toContain('Recommended Sites');
     expect(element.querySelector('#links')?.textContent).toContain('FutureTools.io');
     expect(element.querySelector<HTMLAnchorElement>('#links a')?.href).toBe('https://futuretools.io/');
+  });
+
+  it('applies a versioned homepage social image from the selected post feed', () => {
+    fixture.detectChanges();
+
+    const image = TestBed.inject(Meta).getTag("property='og:image'")?.content ?? '';
+    expect(image).toContain('/assets/images/backgrounds/day.jpg?ogv=');
   });
 
   it('embeds published blog content on the homepage', async () => {
