@@ -23,6 +23,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'list',
   'quote',
   'code',
+  'markdown',
   'delimiter',
   'typography',
   'stats',
@@ -463,6 +464,10 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
       return {
         code: getString(data, 'code') ?? '',
         language: getString(data, 'language') ?? '',
+      };
+    case 'markdown':
+      return {
+        markdown: getString(data, 'markdown') ?? getString(data, 'text') ?? getString(data, 'content') ?? '',
       };
     case 'delimiter':
       return {};

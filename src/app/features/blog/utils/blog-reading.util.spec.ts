@@ -65,6 +65,22 @@ describe('blog reading utilities', () => {
     });
   });
 
+  it('counts readable Markdown content without formatting syntax', () => {
+    const post = createPost({
+      excerpt: '',
+      blocks: [{
+        id: 'markdown',
+        type: 'markdown',
+        data: {markdown: '## Setup\n\nUse **typed blocks** and run `npm install`.'},
+      }],
+    });
+
+    expect(createBlogReadingStats(post)).toEqual({
+      readingMinutes: 1,
+      wordCount: 8,
+    });
+  });
+
   it('only treats updates at least one day after publish as meaningful', () => {
     expect(hasMeaningfulPostUpdate(createPost())).toBeTrue();
     expect(hasMeaningfulPostUpdate(createPost({

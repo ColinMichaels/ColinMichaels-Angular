@@ -255,6 +255,38 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('preserves Markdown source across editor conversions', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'markdown-1',
+          type: 'markdown',
+          data: {
+            markdown: '## Setup\n\nRun `npm install`.',
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'markdown-1',
+        type: 'markdown',
+        data: {
+          markdown: '## Setup\n\nRun `npm install`.',
+        },
+      },
+    ]);
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'markdown-1',
+      type: 'markdown',
+      data: {
+        markdown: '## Setup\n\nRun `npm install`.',
+      },
+    });
+  });
+
   it('round trips custom blog blocks back into Editor.js documents', () => {
     const document = createEditorDocument(createPost({
       blocks: [

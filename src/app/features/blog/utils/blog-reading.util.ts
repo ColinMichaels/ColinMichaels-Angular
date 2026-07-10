@@ -1,4 +1,5 @@
 import {BlogContentBlock, BlogPost} from '../models/blog-post.model';
+import {createBlogMarkdownPlainText} from './blog-markdown.util';
 
 const WORDS_PER_MINUTE = 225;
 
@@ -49,6 +50,7 @@ export function createBlogReadingStats(post: BlogPost): BlogReadingStats {
       block.data.attribution,
       block.data.title,
       block.data.html,
+      block.type === 'markdown' ? createBlogMarkdownPlainText(block.data.markdown) : block.data.markdown,
       ...(block.data.items ?? []),
       ...(block.data.stats ?? []).flatMap(item => [item.label, item.value, item.caption]),
       ...(block.data.chartPoints ?? []).flatMap(point => [point.label, String(point.value), point.note]),
