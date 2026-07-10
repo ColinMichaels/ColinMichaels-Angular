@@ -12,6 +12,7 @@ import {SitePreloaderService} from './shared/site-loader/site-preloader.service'
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
 import {ShareAttributionService} from './features/blog/services/share-attribution.service';
+import {PwaStatusComponent} from './shared/pwa/pwa-status.component';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -41,7 +42,7 @@ export function shouldShowOsNotifications(url: string): boolean {
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NotificationServerComponent, ReaderToolsComponent, SiteHeaderComponent],
+  imports: [RouterOutlet, NotificationServerComponent, PwaStatusComponent, ReaderToolsComponent, SiteHeaderComponent],
   templateUrl: './app.component.html',
   styles: [],
   standalone: true,

@@ -14,18 +14,25 @@ describe('BlogStickyPostToolbarComponent', () => {
     fixture.componentRef.setInput('title', 'Sticky post title');
     fixture.componentRef.setInput('imageUrl', '/assets/images/backgrounds/day.webp');
     fixture.componentRef.setInput('sharePath', 'blog/sticky-post');
+    fixture.componentRef.setInput('readingProgress', 42);
     fixture.detectChanges();
   });
 
   it('keeps the post title, cover, share fan, and comments shortcut together', () => {
     const element = fixture.nativeElement as HTMLElement;
     const toolbarImage = element.querySelector<HTMLImageElement>('nav > div > img');
+    const toolbarRow = element.querySelector<HTMLElement>('nav > div');
     const commentsLink = element.querySelector<HTMLAnchorElement>('a[aria-label="Jump to comments"]');
     const shareGroup = element.querySelector<HTMLElement>('[role="group"]');
+    const readingProgress = element.querySelector<HTMLElement>('[data-reading-progress]');
 
     expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Post reading shortcuts');
     expect(element.textContent).toContain('Sticky post title');
     expect(toolbarImage?.getAttribute('src')).toBe('/assets/images/backgrounds/day.webp');
+    expect(toolbarRow?.classList).toContain('grid-cols-[2.5rem_minmax(0,1fr)_auto]');
+    expect(element.textContent).toContain('42% read');
+    expect(readingProgress?.getAttribute('aria-valuenow')).toBe('42');
+    expect(readingProgress?.firstElementChild?.getAttribute('style')).toContain('width: 42%');
     expect(shareGroup?.querySelector('[data-share-trigger]')).not.toBeNull();
     expect(shareGroup?.querySelectorAll('[data-share-provider]').length).toBe(5);
     expect(commentsLink?.getAttribute('href')).toBe('#blog-comments');

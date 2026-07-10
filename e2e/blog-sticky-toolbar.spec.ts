@@ -24,11 +24,16 @@ test.describe('blog sticky toolbar', () => {
     await expect(page.getByRole('status', {name: 'Loading latest stories'})).toBeHidden();
 
     const toolbar = page.locator('app-blog-sticky-post-toolbar');
+    const siteHeader = page.locator('app-site-header > header');
     const articleTitle = page.locator('article h1').first();
+    const readingProgress = toolbar.getByRole('progressbar', {name: 'Article reading progress'});
+    const readingContent = page.locator('[data-reading-content]');
 
     await expect(toolbar).toBeVisible();
     await expect(toolbar.locator('p')).toHaveText(await articleTitle.innerText());
     await expect(toolbar.locator('img')).toBeVisible();
+    await expect(readingContent).toBeVisible();
+    await expect(readingProgress).toHaveAttribute('aria-valuenow', '0');
     const shareTrigger = toolbar.locator('[data-share-trigger]');
     const shareProviders = toolbar.locator('[data-share-provider]');
 
@@ -62,12 +67,21 @@ test.describe('blog sticky toolbar', () => {
       window.scrollTo(0, top + 320);
     });
 
-    await expect.poll(async () => Math.round((await toolbar.boundingBox())?.y ?? -1)).toBe(72);
+    await expect.poll(async () => {
+      const siteHeaderBox = await siteHeader.boundingBox();
+      const toolbarBox = await toolbar.boundingBox();
+
+      return Math.abs(Math.round(
+        (toolbarBox?.y ?? -1) - ((siteHeaderBox?.y ?? 0) + (siteHeaderBox?.height ?? 0))
+      ));
+    }).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Number(await readingProgress.getAttribute('aria-valuenow')))
+      .toBeGreaterThan(0);
 
     const sectionHeadings = page.locator('[data-sticky-section-heading]');
     const sectionHeadingCount = await sectionHeadings.count();
     const firstSectionHeading = sectionHeadings.nth(0);
-    const expectedSectionHeadingTop = (page.viewportSize()?.width ?? 1280) < 640 ? 172 : 140;
+    const expectedSectionHeadingTop = (page.viewportSize()?.width ?? 1280) < 640 ? 108 : 124;
 
     expect(sectionHeadingCount).toBeGreaterThan(1);
     await firstSectionHeading.evaluate(element => {
@@ -76,17 +90,58 @@ test.describe('blog sticky toolbar', () => {
     });
     await expect.poll(async () => Math.round((await firstSectionHeading.boundingBox())?.y ?? -1))
       .toBe(expectedSectionHeadingTop);
+    await expect.poll(async () => {
+      const toolbarBox = await toolbar.boundingBox();
+      const sectionHeadingBox = await firstSectionHeading.boundingBox();
+
+      return Math.round((sectionHeadingBox?.y ?? -1) - ((toolbarBox?.y ?? 0) + (toolbarBox?.height ?? 0)));
+    }).toBe(0);
 
     const secondSectionHeading = sectionHeadings.nth(1);
+    const secondHeadingId = (await secondSectionHeading.getAttribute('id')) ?? '';
     await secondSectionHeading.evaluate(element => {
       const top = element.getBoundingClientRect().top + window.scrollY;
       window.scrollTo(0, top + 220);
     });
+    await expect(secondSectionHeading).toHaveAttribute('data-sticky-active', '');
+    await expect(page.locator('[data-sticky-active]')).toHaveCount(1);
     const visibleStickyHeading = await page.evaluate(y => (
       document.elementFromPoint(200, y)?.closest('[data-sticky-section-heading]')?.textContent?.trim()
     ), expectedSectionHeadingTop + 20);
 
     expect(visibleStickyHeading).toBe((await secondSectionHeading.textContent())?.trim());
+
+    const tableOfContents = page.locator('app-blog-table-of-contents');
+    const activeContentsLink = tableOfContents.locator('[aria-current="location"]');
+
+    await expect(activeContentsLink).toHaveAttribute('href', new RegExp(`#${secondHeadingId}$`));
+
+    if ((page.viewportSize()?.width ?? 0) >= 1280) {
+      const siteHeaderBox = await siteHeader.boundingBox();
+      const tableOfContentsBox = await tableOfContents.boundingBox();
+      const activeContentsLinkBox = await activeContentsLink.boundingBox();
+
+      expect(tableOfContentsBox).not.toBeNull();
+      expect(activeContentsLinkBox).not.toBeNull();
+      expect((tableOfContentsBox?.y ?? 0)).toBeGreaterThan(siteHeaderBox?.height ?? 0);
+      expect((activeContentsLinkBox?.y ?? 0)).toBeGreaterThanOrEqual(tableOfContentsBox?.y ?? 0);
+      expect((activeContentsLinkBox?.y ?? 0) + (activeContentsLinkBox?.height ?? 0))
+        .toBeLessThanOrEqual((tableOfContentsBox?.y ?? 0) + (tableOfContentsBox?.height ?? 0));
+    }
+
+    const firstHeadingId = (await firstSectionHeading.getAttribute('id')) ?? '';
+    const firstContentsLink = tableOfContents.locator(`[href$="#${firstHeadingId}"]`);
+    const scrollTopBeforeBackwardJump = await page.evaluate(() => window.scrollY);
+
+    expect(firstHeadingId).toBeTruthy();
+    await firstContentsLink.click();
+    await expect(page).toHaveURL(new RegExp(`#${firstHeadingId}$`));
+    await expect.poll(async () => page.evaluate(() => window.scrollY))
+      .toBeLessThan(scrollTopBeforeBackwardJump);
+    await expect.poll(async () => Math.round((await firstSectionHeading.boundingBox())?.y ?? -1))
+      .toBe(expectedSectionHeadingTop);
+    await expect(tableOfContents.locator(`[href$="#${firstHeadingId}"]`))
+      .toHaveAttribute('aria-current', 'location');
 
     const commentsShortcut = toolbar.getByRole('link', {name: 'Jump to comments'});
     const hasHorizontalOverflow = await page.evaluate(() => (
@@ -115,6 +170,7 @@ test.describe('blog sticky toolbar', () => {
     await expect(commentsTarget).toBeFocused();
     await expect(commentsTarget).toBeInViewport();
     await expect(page.getByRole('heading', {name: 'Comments'})).toBeVisible();
+    await expect(readingProgress).toHaveAttribute('aria-valuenow', '100');
 
     const scrollTopButton = toolbar.getByRole('button', {name: 'Scroll to top of post'});
     const postTop = page.locator('#blog-post-top');
