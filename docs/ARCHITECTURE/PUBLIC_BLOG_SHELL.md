@@ -9,18 +9,17 @@ The public shell treats the blog as the primary content destination while keepin
 `SiteHeaderComponent` renders three responsive regions:
 
 - the Colin Michaels logo, which always routes to `/`
-- a rounded `Search` launcher that opens the existing live-results search drawer
+- a rounded `Search` field that opens and filters the existing live-results drawer
 - compact utilities: an optional post-list shortcut and one site/account menu
 
 The utility menu owns links to All Posts and OS, the light/dark theme action, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
 
 ## Search Flow
 
-The header field is a search launcher rather than a second search implementation. `SiteSearchDrawerComponent` is mounted inside that positioned header control so the result panel opens directly beneath it and matches its width and center from the `sm` breakpoint upward. On narrower screens it remains directly below the header but clamps to 12px viewport gutters to prevent overflow. Activating it opens the panel, which:
+The header field is the single search input for the live-results experience. `SiteSearchDrawerComponent` is mounted inside that positioned header control so the result panel opens directly beneath it and matches its width and center from the `sm` breakpoint upward. On narrower screens it remains directly below the header but clamps to 12px viewport gutters to prevent overflow. Activating or typing in the header field opens the panel, which:
 
-- focuses its real search input when mounted
 - streams recent content before a query is entered
-- filters quick results as the query changes
+- filters quick results directly from the header query without rendering a duplicate field
 - links to the full `/search` page with the current query
 - preserves Escape, backdrop, and close-button dismissal
 
@@ -45,7 +44,7 @@ Reader Tools remains available on public reading routes. Its current-status read
 
 Relevant regression coverage includes:
 
-- `site-header.component.spec.ts` for logo/search/menu ownership
+- `site-header.component.spec.ts` for logo/search/menu ownership and the single-input search contract
 - `app.routes.spec.ts` for the temporary Labs redirect
 - `reader-tools.component.spec.ts` for stable panel dimensions
 - browser checks for live result filtering, menu theme changes, desktop/mobile layout, and the `/labs` redirect

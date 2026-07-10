@@ -35,9 +35,10 @@ import {SiteLogoComponent} from './site-logo.component';
           </h1>
         </a>
 
-        <div
+        <form
           class="relative mx-auto w-full min-w-0 max-w-xl"
           role="search"
+          (submit)="handleSearchSubmit($event)"
         >
           <label for="site-header-search" class="sr-only">Search posts</label>
           <svg
@@ -53,23 +54,31 @@ import {SiteLogoComponent} from './site-logo.component';
             <path d="m16 16 4 4"></path>
           </svg>
           <input
+            #headerSearchInput
             id="site-header-search"
             type="search"
-            readonly
             placeholder="Search"
-            class="h-10 w-full cursor-pointer rounded-full border border-slate-300 bg-slate-50/90 pl-9 pr-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-500 hover:border-cyan-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/25 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-cyan-400 dark:focus:border-cyan-300 dark:focus:bg-zinc-900 dark:focus:ring-cyan-300/20"
+            autocomplete="off"
+            [value]="searchQuery()"
+            class="h-10 w-full rounded-full border border-slate-300 bg-slate-50/90 pl-9 pr-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-500 hover:border-cyan-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/25 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-cyan-400 dark:focus:border-cyan-300 dark:focus:bg-zinc-900 dark:focus:ring-cyan-300/20"
             aria-haspopup="dialog"
+            aria-controls="site-search-results-panel"
             [attr.aria-expanded]="searchOverlay.isOpen()"
+            (focus)="openSearch()"
             (click)="openSearch()"
-            (keydown.enter)="openSearch()"
+            (input)="updateSearchQuery(headerSearchInput.value)"
           >
 
           @if (searchOverlay.isOpen()) {
             @defer (when searchOverlay.isOpen()) {
-              <app-site-search-drawer [isOpen]="true" (closeSearch)="closeSearch()"/>
+              <app-site-search-drawer
+                [isOpen]="true"
+                [query]="searchQuery()"
+                (closeSearch)="closeSearch()"
+              />
             }
           }
-        </div>
+        </form>
 
         <nav class="flex h-10 shrink-0 items-center justify-end gap-1.5" aria-label="Site utilities">
           <a
@@ -177,6 +186,7 @@ export class SiteHeaderComponent {
   protected readonly searchOverlay = inject(SiteSearchOverlayService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
+  protected readonly searchQuery = signal('');
 
   protected openSearch(): void {
     this.closeMenu();
@@ -185,6 +195,16 @@ export class SiteHeaderComponent {
 
   protected closeSearch(): void {
     this.searchOverlay.close();
+  }
+
+  protected updateSearchQuery(value: string): void {
+    this.searchQuery.set(value);
+    this.openSearch();
+  }
+
+  protected handleSearchSubmit(event: SubmitEvent): void {
+    event.preventDefault();
+    this.openSearch();
   }
 
   protected toggleMenu(): void {

@@ -1,5 +1,6 @@
 # Changelog
 
+- Simplified live site search to use the header pill as its only editable field; the anchored results panel now streams from that query without rendering a duplicate search form.
 - Protected `/os` and `/os/:app` with a capability-based device guard; mobile, touch-only, and undersized viewports now receive a dedicated desktop-requirements page before OS assets or authentication flows load.
 
 ## 2026-07-09

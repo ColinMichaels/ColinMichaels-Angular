@@ -1,9 +1,10 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {signal} from '@angular/core';
 import {of} from 'rxjs';
 
 import {SiteSearchOverlayService} from '../../features/search/services/site-search-overlay.service';
+import {SiteSearchService} from '../../features/search/services/site-search.service';
 import {AuthService} from '../../services/auth.service';
 import {SiteThemeService} from '../theme/site-theme.service';
 import {SiteHeaderComponent} from './site-header.component';
@@ -39,12 +40,18 @@ describe('SiteHeaderComponent', () => {
       open: openSearch,
       close: jasmine.createSpy('closeSearch').and.callFake(() => searchOpen.set(false)),
     };
+    const siteSearchService = {
+      getSearchItems$: jasmine.createSpy('getSearchItems$').and.returnValue(of([])),
+      loading$: of(false),
+      error$: of(null),
+    };
 
     await TestBed.configureTestingModule({
       imports: [SiteHeaderComponent, RouterTestingModule],
       providers: [
         {provide: AuthService, useValue: authService},
         {provide: SiteSearchOverlayService, useValue: searchOverlayService},
+        {provide: SiteSearchService, useValue: siteSearchService},
         {provide: SiteThemeService, useValue: themeService},
       ],
     }).compileComponents();
@@ -61,6 +68,7 @@ describe('SiteHeaderComponent', () => {
     const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
 
     expect(searchInput).not.toBeNull();
+    expect(searchInput?.readOnly).toBeFalse();
     expect(postsLink?.getAttribute('href')).toBe('/blog');
     expect(logoLink?.getAttribute('href')).toBe('/');
     expect(menuButton).not.toBeNull();
@@ -76,6 +84,24 @@ describe('SiteHeaderComponent', () => {
     searchInput?.click();
 
     expect(openSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the header field as the only search input in the open results panel', async () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+
+    searchInput?.focus();
+    if (searchInput) {
+      searchInput.value = 'voice AI';
+      searchInput.dispatchEvent(new Event('input'));
+    }
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
+    fixture.detectChanges();
+
+    expect(nativeElement.querySelector('#site-search-results-panel')).not.toBeNull();
+    expect(nativeElement.querySelectorAll('input[type="search"]')).toHaveSize(1);
+    expect(searchInput?.value).toBe('voice AI');
   });
 
   it('moves theme and account utilities into the responsive site menu', () => {
