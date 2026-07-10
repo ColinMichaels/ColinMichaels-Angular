@@ -8,10 +8,10 @@ import {
   Output,
   computed,
   inject,
-  signal,
+  input,
 } from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
-import {Router, RouterLink} from '@angular/router';
+import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
 import {
@@ -33,20 +33,19 @@ import {
   template: `
     @if (isOpen) {
       <section
-        class="fixed inset-0 z-[100] isolate"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="site-search-drawer-title"
       >
         <button
           type="button"
-          class="absolute inset-0 cursor-default bg-slate-950/55 backdrop-blur-sm dark:bg-black/70"
+          class="fixed inset-x-0 bottom-0 top-16 z-40 cursor-default bg-slate-950/45 backdrop-blur-sm dark:bg-black/65"
           aria-label="Close search"
           (click)="requestClose()"
         ></button>
 
         <aside
-          class="absolute right-0 top-0 z-10 flex h-dvh w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl shadow-slate-950/30 dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 dark:shadow-black/50"
+          id="site-search-results-panel"
+          role="dialog"
+          aria-labelledby="site-search-drawer-title"
+          class="fixed left-3 right-3 top-[4.25rem] z-[110] flex max-h-[calc(100dvh-5rem)] w-auto translate-x-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-950 shadow-2xl shadow-slate-950/30 dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 dark:shadow-black/50 sm:absolute sm:left-1/2 sm:right-auto sm:top-[calc(100%+0.5rem)] sm:w-[min(36rem,calc(100vw-3rem))] sm:-translate-x-1/2"
         >
           <header class="border-b border-slate-200 p-5 dark:border-zinc-800">
             <div class="flex items-start justify-between gap-4">
@@ -66,21 +65,6 @@ import {
               </button>
             </div>
 
-            <form class="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]" (submit)="openFullSearch(searchInput.value)">
-              <label for="site-search-drawer-query" class="sr-only">Search query</label>
-              <input
-                #searchInput
-                id="site-search-drawer-query"
-                type="search"
-                [value]="query()"
-                (input)="updateQuery(searchInput.value)"
-                placeholder="Search blog posts, tags, and pages"
-                class="site-input min-h-12 text-base"
-              >
-              <button type="submit" class="blog-action-primary min-h-12 justify-center px-4">
-                Search
-              </button>
-            </form>
           </header>
 
           <div class="min-h-0 flex-1 overflow-y-auto p-5">
@@ -279,12 +263,11 @@ import {
 export class SiteSearchDrawerComponent {
   @Input() isOpen = false;
   @Output() closeSearch = new EventEmitter<void>();
+  readonly query = input('');
 
-  private readonly router = inject(Router);
   private readonly search = inject(SiteSearchService);
 
   protected readonly pathNames = PATH_NAMES;
-  protected readonly query = signal('');
   protected readonly items = toSignal(this.search.getSearchItems$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.search.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.search.error$, {initialValue: null});
@@ -313,25 +296,10 @@ export class SiteSearchDrawerComponent {
     }
   }
 
-  protected updateQuery(value: string): void {
-    this.query.set(value);
-  }
-
   protected advancedSearchQueryParams(): { q?: string } {
     const query = this.query().trim();
 
     return query ? {q: query} : {};
-  }
-
-  protected openFullSearch(value: string): false {
-    const query = value.trim();
-    this.query.set(query);
-    this.requestClose();
-    void this.router.navigate(['/', PATH_NAMES.SEARCH], {
-      queryParams: query ? {q: query} : {},
-    });
-
-    return false;
   }
 
   protected requestClose(): void {

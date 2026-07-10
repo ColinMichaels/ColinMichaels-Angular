@@ -5,6 +5,7 @@
 - Re-enable trustworthy quality gates (lint, real test execution, stable build environment).
 - Fix high-risk correctness and security bugs identified in audit.
 - Add targeted tests around CLI parsing/auth, app manager lifecycle, and storage rehydration.
+- Connect the publishing Calendar outbox to the first supported provider, starting with Notify/FCM or LinkedIn after credentials and account approvals are available.
 
 Dependencies:
 
@@ -23,6 +24,8 @@ Risks:
   connect the Editor.js draft save flow to Firebase and add media upload rules.
 - Blog AI authoring:
   refine the Firebase Functions metadata prompt, add admin-only quotas, and persist suggestion history.
+- Social delivery:
+  add isolated provider adapters, OAuth connection health, idempotent retries, manual retry/cancel controls, and delivery receipts without coupling article publication to provider uptime.
 - Strong typing pass:
   remove high-impact `any` usage in service contracts and dynamic payloads.
 - Performance cleanup:

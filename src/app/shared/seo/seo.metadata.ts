@@ -160,6 +160,16 @@ export const LOGIN_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
+export const OS_DEVICE_REQUIRED_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Desktop Required'),
+  description: `The interactive ${SITE_NAME} OS is available on desktop-capable screens with mouse or trackpad controls.`,
+  path: '/os-device-required',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('desktop workspace requirements'),
+  type: 'website',
+  robots: 'noindex,follow',
+};
+
 export const PROFILE_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Profile'),
   description: 'Signed-in user account profile, roles, and permissions.',

@@ -1,7 +1,22 @@
 # Changelog
 
+- Simplified live site search to use the header pill as its only editable field; the anchored results panel now streams from that query without rendering a duplicate search form.
+- Protected `/os` and `/os/:app` with a capability-based device guard; mobile, touch-only, and undersized viewports now receive a dedicated desktop-requirements page before OS assets or authentication flows load.
+
 ## 2026-07-09
 
+- Added a protected `/admin/cms/calendar` publishing Calendar with month navigation, scheduled/published/social filters, day agendas, post lookup, inline rescheduling, and an upcoming queue.
+- Added post-linked social announcement planning for Notify, YouTube, Facebook, Instagram, and LinkedIn with provider-specific messages and delivery times, including follow-up sharing for posts that are already live.
+- Extended scheduled publishing with a protected, deterministic Firestore `socialOutbox` queue so due announcements become durable backend work only after their source article is published; external provider connectors remain intentionally separate.
+- Documented social connector readiness, security boundaries, migration notes, component inventory, and the next provider-integration phase.
+- Added a staged admin-console reorganization plan covering shared navigation, page-flow simplification, responsive behavior, safe bloat removal, and incremental migration without changing existing URLs.
+- Implemented the first admin-console reorganization slice with a role-aware five-group sidebar, 64px utility header, responsive navigation drawer, persistent New Post action, and compact environment/account footer.
+- Added a persistent desktop sidebar toggle that switches between the 224px labeled navigation and a 72px icon rail with accessible hover/focus tooltips, compact footer controls, and unchanged full-label mobile navigation.
+- Tightened the post editor into compact control modules with live collapsed summaries, preserved form state, validation-driven section expansion, a denser Editor.js toolbar, and a reduced mobile save bar with contextual View/Delete actions.
+- Enlarged the Reader Tools status readout and stabilized the panel dimensions so longer hover/focus help messages no longer move the control surface or redirect pointer actions.
+- Simplified the public site into a blog-first utility experience with a compact homepage logo, rounded live-results search launcher, post-list shortcut, and one responsive account/site menu for theme, OS, and role-aware actions; removed the duplicate Blog search action and redirected `/labs` to `/blog` while its implementation remains preserved.
+- Removed the public site header and repeated page-local global navigation from protected admin surfaces while preserving all existing routes and guards.
+- Replaced the Overview workflow-card catalog with a repository-backed publishing dashboard for status counts, the next scheduled post, recent drafts, recently published work, and compact management links.
 - Added a protected `/admin/cms/homepage` hero manager with Firestore-backed homepage copy, featured article selection, multi-image hero slide uploads, ordering, focal points, and slideshow timing controls.
 - Updated the public homepage hero to consume CMS-managed slideshow settings with static fallback behavior, automatic decorative rotation, reduced-motion/page-visibility pauses, and selected/featured/latest post fallback selection.
 - Added a per-slide CMS toggle for subtle Ken Burns background motion on homepage hero slides, with reduced-motion suppression on the public page.

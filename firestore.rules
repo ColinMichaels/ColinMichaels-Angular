@@ -96,6 +96,11 @@ service cloud.firestore {
       allow read, write: if canManageCmsContent();
     }
 
+    match /socialOutbox/{deliveryId} {
+      allow read: if canManageCmsContent();
+      allow write: if false;
+    }
+
     match /topics/{topicId} {
       allow get, list: if canManageCmsContent() || isPublishedTopic();
       allow create, update, delete: if canManageCmsContent();

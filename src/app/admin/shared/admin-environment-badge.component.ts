@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
 import {environment} from '../../../environments/environment';
 import {FirebaseServiceEmulatorConfig} from '../../services/firebase/firebase.tokens';
@@ -49,7 +49,13 @@ export function createFirebaseEnvironmentBadge(
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <aside
-      class="border px-3 py-2 text-xs"
+      class="border text-xs"
+      [class.grid]="iconOnly()"
+      [class.h-9]="iconOnly()"
+      [class.w-9]="iconOnly()"
+      [class.place-items-center]="iconOnly()"
+      [class.px-3]="!iconOnly()"
+      [class.py-2]="!iconOnly()"
       [class.border-emerald-400]="badge.mode === 'live'"
       [class.bg-emerald-950]="badge.mode === 'live'"
       [class.text-emerald-100]="badge.mode === 'live'"
@@ -59,16 +65,33 @@ export function createFirebaseEnvironmentBadge(
       [class.border-amber-400]="badge.mode === 'mixed'"
       [class.bg-amber-950]="badge.mode === 'mixed'"
       [class.text-amber-100]="badge.mode === 'mixed'"
-      aria-label="Firebase environment"
+      [attr.aria-label]="iconOnly() ? 'Firebase environment: ' + badge.label : 'Firebase environment'"
+      [attr.title]="badge.detail"
     >
-      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span class="font-semibold uppercase tracking-[0.18em]">{{ badge.label }}</span>
-        <span class="text-[0.7rem] opacity-80">{{ badge.description }}</span>
-      </div>
-      <p class="mt-1 font-mono text-[0.68rem] opacity-75">{{ badge.detail }}</p>
+      @if (iconOnly()) {
+        <span
+          class="h-2 w-2"
+          [class.bg-emerald-300]="badge.mode === 'live'"
+          [class.bg-cyan-300]="badge.mode === 'emulator'"
+          [class.bg-amber-300]="badge.mode === 'mixed'"
+          aria-hidden="true"
+        ></span>
+      } @else {
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="font-semibold uppercase tracking-[0.18em]">{{ badge.label }}</span>
+          @if (!compact()) {
+            <span class="text-[0.7rem] opacity-80">{{ badge.description }}</span>
+          }
+        </div>
+        @if (!compact()) {
+          <p class="mt-1 font-mono text-[0.68rem] opacity-75">{{ badge.detail }}</p>
+        }
+      }
     </aside>
   `,
 })
 export class AdminEnvironmentBadgeComponent {
+  readonly compact = input(false);
+  readonly iconOnly = input(false);
   protected readonly badge = createFirebaseEnvironmentBadge(environment.firebaseEmulators);
 }

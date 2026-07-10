@@ -2,7 +2,6 @@ import {CommonModule} from '@angular/common';
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostListener, inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {RouterLink} from '@angular/router';
 import {BehaviorSubject, Observable, combineLatest, of} from 'rxjs';
 import {
   catchError,
@@ -118,7 +117,6 @@ const allowedSortModes: readonly MediaSortMode[] = [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    RouterLink,
     BatchRenameDialogComponent,
     MediaFilterPanelComponent,
     MediaGridComponent,
@@ -135,22 +133,12 @@ const allowedSortModes: readonly MediaSortMode[] = [
     @if (vm$ | async; as vm) {
       <main class="cms-media-library min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
         <section class="mx-auto max-w-7xl space-y-8">
-          <nav class="flex items-center justify-between text-sm text-zinc-400">
-            <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
-            <div class="flex items-center gap-3">
-              <a routerLink="/admin" class="hover:text-zinc-100">Admin</a>
-            </div>
-          </nav>
-
           <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
             <div class="space-y-3">
               <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
               <h1 class="text-4xl font-semibold text-zinc-50">Media Library</h1>
               <p class="max-w-2xl text-zinc-400">Browse, organize, rename, resize, tag, and preview Firebase-backed CMS media assets.</p>
             </div>
-            <a routerLink="/admin/cms/new" class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800">
-              New Post
-            </a>
           </header>
 
           <section class="overflow-hidden border border-zinc-800 bg-zinc-950/80 shadow-2xl">

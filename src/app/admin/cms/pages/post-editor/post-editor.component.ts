@@ -15,6 +15,7 @@ import {
   isStringArray
 } from '../../../../features/blog/utils/blog-validation.util';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
+import {AdminControlModuleComponent} from '../../../shared/admin-control-module.component';
 import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
 import {BlogMediaUploaderComponent} from '../../components/media-uploader/blog-media-uploader.component';
 import {CmsAssistantPanelComponent} from '../../components/assistant-panel/cms-assistant-panel.component';
@@ -326,26 +327,20 @@ function getErrorMessage(error: unknown): string {
     CmsDraftPreviewPanelComponent,
     CmsSeoChecklistComponent,
     CmsToastContainerComponent,
+    AdminControlModuleComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 pb-36 pt-10 text-zinc-100 sm:px-8 lg:px-12">
-      <section class="mx-auto max-w-6xl space-y-6">
-        <nav class="flex items-center justify-between text-sm text-zinc-400">
-          <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
-          <div class="flex items-center gap-3">
-            <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-          </div>
-        </nav>
-
+    <main class="min-h-screen bg-zinc-950 px-5 pb-20 pt-6 text-zinc-100 sm:px-8 sm:pb-28 lg:px-10">
+      <section class="mx-auto max-w-7xl space-y-4">
         @if (currentPost; as post) {
-          <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-            <div class="space-y-3">
-              <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">{{ isNewPost ? 'New Post' : 'CMS Editor' }}</p>
-              <h1 class="text-4xl font-semibold text-zinc-50">{{ editorTitle }}</h1>
-              <p class="max-w-2xl text-zinc-400">{{ editorExcerpt || 'Create metadata, write blocks, then save the post into Firestore-backed CMS storage.' }}</p>
+          <header class="grid gap-3 border-b border-zinc-800 pb-5 md:grid-cols-[1fr_auto] md:items-end">
+            <div class="space-y-1.5">
+              <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">{{ isNewPost ? 'New Post' : 'CMS Editor' }}</p>
+              <h1 class="text-3xl font-semibold tracking-tight text-zinc-50">{{ editorTitle }}</h1>
+              <p class="line-clamp-2 max-w-3xl text-sm leading-5 text-zinc-500">{{ editorExcerpt || 'Set the essentials, write the article, then finish publishing metadata when it is ready.' }}</p>
             </div>
-            <div class="flex flex-wrap gap-3 md:justify-end">
+            <div class="flex flex-wrap gap-2 md:justify-end">
               <input
                 #postJsonImportInput
                 type="file"
@@ -355,230 +350,173 @@ function getErrorMessage(error: unknown): string {
               >
               <button
                 type="button"
-                class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
                 (click)="postJsonImportInput.click()"
               >
                 Import JSON
               </button>
               <button
                 type="button"
-                class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
                 (click)="exportPostJson()"
               >
                 Export JSON
               </button>
-              @if (post.status === 'published') {
-                <a
-                  [routerLink]="['/blog', post.slug]"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-                >
-                  View Post
-                </a>
-              } @else if (hasActiveDraftPreview) {
-                <a
-                  [href]="draftPreviewUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex justify-center border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-200 hover:bg-amber-950/30"
-                >
-                  View Preview
-                </a>
-              }
             </div>
           </header>
 
-          <section class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <section class="space-y-6">
-              <form [formGroup]="postForm" class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 md:grid-cols-2">
-                <label class="space-y-2 md:col-span-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Title</span>
-                  <input
-                    type="text"
-                    formControlName="title"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                    (input)="syncSlugFromTitle()"
-                  >
-                </label>
+          <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <section class="space-y-3">
+              <form [formGroup]="postForm" class="space-y-2">
+                <app-admin-control-module
+                  title="Post Details"
+                  [summary]="editorTitle"
+                  description="The title and excerpt readers see across the site."
+                  [expanded]="postDetailsOpen()"
+                  (expandedChange)="postDetailsOpen.set($event)"
+                >
+                  <div class="grid gap-3 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] md:items-start">
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Title</span>
+                      <input
+                        type="text"
+                        formControlName="title"
+                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                        (input)="syncSlugFromTitle()"
+                      >
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Excerpt</span>
+                      <textarea
+                        formControlName="excerpt"
+                        rows="2"
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                  </div>
+                </app-admin-control-module>
 
-                <label class="space-y-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Slug</span>
-                  <input
-                    type="text"
-                    formControlName="slug"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                    (blur)="normalizeSlug()"
-                  >
-                </label>
+                <app-admin-control-module
+                  title="Publishing"
+                  [summary]="postForm.controls.status.value + ' · ' + postedOnPreview"
+                  description="Set the URL, schedule, taxonomy, and homepage priority. These values usually change once per post."
+                  [expanded]="publishingSettingsOpen()"
+                  (expandedChange)="publishingSettingsOpen.set($event)"
+                >
+                  <div class="grid gap-3 md:grid-cols-2">
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Slug</span>
+                      <input
+                        type="text"
+                        formControlName="slug"
+                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                        (blur)="normalizeSlug()"
+                      >
+                    </label>
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="flex items-center justify-between gap-3">
+                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Publish Date</span>
+                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="setPublishedAtNow()">Use current time</button>
+                      </span>
+                      <input
+                        type="datetime-local"
+                        formControlName="publishedAt"
+                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      >
+                      <span class="block text-xs leading-5 text-zinc-600">Scheduled posts require a future time.</span>
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Categories</span>
+                      <input type="text" formControlName="categories" placeholder="CMS, Angular" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Tags</span>
+                      <input type="text" formControlName="tags" placeholder="Editor.js, Drafts" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                    </label>
+                    <label class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 md:col-span-2">
+                      <span>
+                        <span class="block text-xs font-medium text-zinc-300">Featured post</span>
+                        <span class="mt-0.5 block text-xs text-zinc-600">Prioritize this post on the homepage.</span>
+                      </span>
+                      <input type="checkbox" formControlName="featured" class="border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300">
+                    </label>
+                  </div>
+                </app-admin-control-module>
 
-                <label class="space-y-2 md:col-span-2">
-                  <span class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Publish Date</span>
-                    <button
-                      type="button"
-                      class="text-xs font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
-                      (click)="setPublishedAtNow()"
-                    >
-                      Use current time
-                    </button>
-                  </span>
-                  <input
-                    type="datetime-local"
-                    formControlName="publishedAt"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                  <p class="text-xs leading-5 text-zinc-500">
-                    Required for scheduled posts and must be in the future. Published posts use this value for public
-                    ordering and article metadata; blank published posts fall back to first publish time.
-                  </p>
-                </label>
+                <app-admin-control-module
+                  title="Cover Image"
+                  [summary]="mediaModuleSummary"
+                  description="Choose the primary 16:9 image used by cards and the article hero."
+                  [expanded]="mediaSettingsOpen()"
+                  (expandedChange)="mediaSettingsOpen.set($event)"
+                >
+                  <app-blog-media-uploader
+                    formControlName="coverImage"
+                    label="Cover Image"
+                    buttonLabel="Choose Cover"
+                    previewAlt="Cover image preview"
+                    assetRole="cover"
+                    [postSlug]="mediaUploadSlug"
+                    [required]="true"
+                    (mediaUploaded)="onCoverImageUploaded($event)"
+                  ></app-blog-media-uploader>
+                </app-admin-control-module>
 
-                <label class="space-y-2 md:col-span-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Excerpt</span>
-                  <textarea
-                    formControlName="excerpt"
-                    rows="3"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  ></textarea>
-                </label>
-
-                <app-blog-media-uploader
-                  class="md:col-span-2"
-                  formControlName="coverImage"
-                  label="Cover Image"
-                  description="Upload the 16:9 post image used by cards, search results, suggested posts, and the detail hero. Social sharing falls back to this image unless a separate Open Graph image is selected."
-                  buttonLabel="Choose Cover"
-                  previewAlt="Cover image preview"
-                  assetRole="cover"
-                  [postSlug]="mediaUploadSlug"
-                  [required]="true"
-                  (mediaUploaded)="onCoverImageUploaded($event)"
-                ></app-blog-media-uploader>
-
-                <label class="space-y-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Categories</span>
-                  <input
-                    type="text"
-                    formControlName="categories"
-                    placeholder="CMS, Angular"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                </label>
-
-                <label class="space-y-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Tags</span>
-                  <input
-                    type="text"
-                    formControlName="tags"
-                    placeholder="Editor.js, Drafts"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                </label>
-
-                <label class="flex items-start gap-3 border border-zinc-800 bg-zinc-950/70 p-3 md:col-span-2">
-                  <input
-                    type="checkbox"
-                    formControlName="featured"
-                    class="mt-1 border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300"
-                  >
-                  <span>
-                    <span class="block text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Featured post</span>
-                    <span class="mt-1 block text-sm leading-6 text-zinc-500">
-                      Prioritize this published post in the homepage writing section.
-                    </span>
-                  </span>
-                </label>
-
-                <label class="space-y-2 md:col-span-2">
-                  <span class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">SEO Title</span>
-                    <span
-                      class="text-xs tabular-nums transition-colors"
-                      [class.text-zinc-500]="postForm.controls.seoTitle.value.length < 50"
-                      [class.text-amber-400]="postForm.controls.seoTitle.value.length >= 50 && postForm.controls.seoTitle.value.length <= 60"
-                      [class.text-red-400]="postForm.controls.seoTitle.value.length > 60"
-                    >{{ postForm.controls.seoTitle.value.length }} / 60</span>
-                  </span>
-                  <input
-                    type="text"
-                    formControlName="seoTitle"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                </label>
-
-                <label class="space-y-2 md:col-span-2">
-                  <span class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">SEO Description</span>
-                    <span
-                      class="text-xs tabular-nums transition-colors"
-                      [class.text-zinc-500]="postForm.controls.seoDescription.value.length < 140"
-                      [class.text-amber-400]="postForm.controls.seoDescription.value.length >= 140 && postForm.controls.seoDescription.value.length <= 160"
-                      [class.text-red-400]="postForm.controls.seoDescription.value.length > 160"
-                    >{{ postForm.controls.seoDescription.value.length }} / 160</span>
-                  </span>
-                  <textarea
-                    formControlName="seoDescription"
-                    rows="2"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  ></textarea>
-                </label>
-
-                <label class="space-y-2 md:col-span-2">
-                  <span class="flex items-center justify-between gap-3">
-                    <span class="text-xs font-medium uppercase tracking-[0.15em] text-zinc-400">Canonical URL</span>
-                    <button
-                      type="button"
-                      class="text-xs font-medium text-cyan-300 hover:text-cyan-100 transition-colors"
-                      (click)="useGeneratedCanonicalUrl()"
-                    >
-                      Use generated
-                    </button>
-                  </span>
-                  <input
-                    type="url"
-                    formControlName="canonical"
-                    [placeholder]="generatedCanonicalUrl"
-                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  >
-                  <p class="text-xs leading-5 text-zinc-500">
-                    {{ canonicalUrlMode }} Generated from the current slug:
-                    <span class="break-all text-zinc-400">{{ generatedCanonicalUrl }}</span>
-                  </p>
-                </label>
-
-                <app-blog-media-uploader
-                  class="md:col-span-2"
-                  formControlName="openGraphImage"
-                  label="Open Graph / Social Share Image"
-                  description="Optional. Choose a separate JPEG image for Facebook, Twitter/X, and other link previews. Leave blank to fall back to the cover image."
-                  buttonLabel="Choose OG Image"
-                  placeholder="Optional custom social image URL"
-                  previewAlt="Open Graph image preview"
-                  assetRole="open-graph"
-                  optimizationOutputType="image/jpeg"
-                  [forceOptimizationOutputType]="true"
-                  [postSlug]="mediaUploadSlug"
-                  (mediaUploaded)="onOpenGraphImageUploaded($event)"
-                ></app-blog-media-uploader>
-
-                <div
-                  class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-4 py-3 md:col-span-2">
-                  <p class="text-sm text-zinc-400">{{ openGraphImageMode }}</p>
-                  @if (postForm.controls.openGraphImage.value.trim()) {
-                    <button
-                      type="button"
-                      class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
-                      (click)="clearOpenGraphImage()"
-                    >
-                      Clear Custom OG Image
-                    </button>
-                  }
-                </div>
+                <app-admin-control-module
+                  title="Search & Sharing"
+                  [summary]="seoModuleSummary"
+                  description="Review search metadata, canonical URL, and the optional social-share image during the final publishing pass."
+                  [expanded]="seoSettingsOpen()"
+                  (expandedChange)="seoSettingsOpen.set($event)"
+                >
+                  <div class="grid gap-3">
+                    <label class="space-y-1.5">
+                      <span class="flex items-center justify-between gap-3">
+                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">SEO Title</span>
+                        <span class="text-xs tabular-nums text-zinc-500">{{ postForm.controls.seoTitle.value.length }} / 60</span>
+                      </span>
+                      <input type="text" formControlName="seoTitle" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="flex items-center justify-between gap-3">
+                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">SEO Description</span>
+                        <span class="text-xs tabular-nums text-zinc-500">{{ postForm.controls.seoDescription.value.length }} / 160</span>
+                      </span>
+                      <textarea formControlName="seoDescription" rows="2" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"></textarea>
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="flex items-center justify-between gap-3">
+                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Canonical URL</span>
+                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="useGeneratedCanonicalUrl()">Use generated</button>
+                      </span>
+                      <input type="url" formControlName="canonical" [placeholder]="generatedCanonicalUrl" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                      <span class="block break-all text-xs leading-5 text-zinc-600">{{ canonicalUrlMode }}</span>
+                    </label>
+                    <app-blog-media-uploader
+                      formControlName="openGraphImage"
+                      label="Open Graph / Social Share Image"
+                      description="Optional JPEG override. Leave blank to use the cover image."
+                      buttonLabel="Choose OG Image"
+                      placeholder="Optional custom social image URL"
+                      previewAlt="Open Graph image preview"
+                      assetRole="open-graph"
+                      optimizationOutputType="image/jpeg"
+                      [forceOptimizationOutputType]="true"
+                      [postSlug]="mediaUploadSlug"
+                      (mediaUploaded)="onOpenGraphImageUploaded($event)"
+                    ></app-blog-media-uploader>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
+                      <p class="text-xs text-zinc-500">{{ openGraphImageMode }}</p>
+                      @if (postForm.controls.openGraphImage.value.trim()) {
+                        <button type="button" class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800" (click)="clearOpenGraphImage()">Clear custom image</button>
+                      }
+                    </div>
+                  </div>
+                </app-admin-control-module>
               </form>
 
               <app-editor-js
-                [title]="editorTitle"
+                title="Article Content"
                 [saveLabel]="'Save Post'"
                 [showSaveAction]="false"
                 [initialData]="initialData"
@@ -587,10 +525,12 @@ function getErrorMessage(error: unknown): string {
               ></app-editor-js>
             </section>
 
-            <aside class="space-y-4 border-t border-zinc-800 pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-              <section class="space-y-3">
-                <h2 class="text-lg font-semibold text-zinc-50">Post State</h2>
-                <dl class="space-y-3 text-sm">
+            <aside class="space-y-2 border-t border-zinc-800 pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+              <app-admin-control-module
+                title="Post State"
+                [summary]="postForm.controls.status.value + ' · ' + postedOnPreview"
+              >
+                <dl class="space-y-2 text-xs">
                   <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500">Status</dt>
                     <dd
@@ -605,20 +545,8 @@ function getErrorMessage(error: unknown): string {
                     <dt class="text-zinc-500">Publish date</dt>
                     <dd class="text-right text-zinc-200">{{ postedOnPreview }}</dd>
                   </div>
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Format</dt>
-                    <dd class="text-zinc-200">{{ post.contentFormat }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Storage</dt>
-                    <dd class="text-zinc-200">Firestore-backed</dd>
-                  </div>
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Social image</dt>
-                    <dd class="text-right text-zinc-200">{{ openGraphImageMode }}</dd>
-                  </div>
                 </dl>
-              </section>
+              </app-admin-control-module>
 
               <app-cms-draft-preview-panel
                 #draftPreviewPanel
@@ -651,18 +579,9 @@ function getErrorMessage(error: unknown): string {
                 (generateThumbnail)="generateAndStoreThumbnail($event)"
               ></app-cms-assistant-panel>
 
-              @if (lastSaved; as saved) {
-                <section class="space-y-3 border-t border-zinc-800 pt-4">
-                  <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-lg font-semibold text-zinc-50">Last Saved</h2>
-                    <button type="button" (click)="isLastSavedOpen.set(!isLastSavedOpen())"
-                            class="text-zinc-500 hover:text-zinc-300 transition-colors"
-                            [attr.aria-label]="isLastSavedOpen() ? 'Collapse last saved JSON' : 'Expand last saved JSON'">
-                      <span class="block transition-transform duration-200"
-                            [class.rotate-180]="isLastSavedOpen()">▾</span>
-                    </button>
-                  </div>
-                  @if (isLastSavedOpen()) {
+              <app-admin-control-module title="Last Saved" [summary]="lastSavedSummary">
+                @if (lastSaved; as saved) {
+                  <div class="space-y-3">
                     <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
                     <div class="flex flex-wrap gap-2">
                       <button
@@ -682,27 +601,27 @@ function getErrorMessage(error: unknown): string {
                     </div>
                     <pre
                       class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ lastSavedBackupJson }}</pre>
-                  }
-                </section>
-              } @else {
-                <section class="border-t border-zinc-800 pt-4 text-sm text-zinc-500">
-                  Saved post JSON will appear here after the first save.
-                </section>
-              }
+                  </div>
+                } @else {
+                  <p class="text-sm text-zinc-500">
+                    Saved post JSON will appear here after the first save.
+                  </p>
+                }
+              </app-admin-control-module>
             </aside>
           </section>
 
           <section
-            class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-3 shadow-2xl shadow-black/40 backdrop-blur sm:px-8 lg:px-12"
+            class="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-2 shadow-2xl shadow-black/40 backdrop-blur transition-[left] duration-200 sm:px-8 lg:left-[var(--admin-sidebar-width)] lg:px-12"
             aria-label="Post actions"
           >
-            <div class="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label class="flex flex-col gap-1 sm:min-w-52">
-                  <span class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Status</span>
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-2">
+              <div class="flex min-w-0 items-center gap-3">
+                <label class="shrink-0 sm:min-w-44">
+                  <span class="sr-only">Status</span>
                   <select
                     [formControl]="postForm.controls.status"
-                    class="border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm font-medium text-zinc-100 outline-none focus:border-cyan-300"
+                    class="h-9 w-28 border border-zinc-700 bg-zinc-950 px-3 text-sm font-medium text-zinc-100 outline-none focus:border-cyan-300 sm:w-full"
                   >
                     @for (status of statuses; track status) {
                       <option [value]="status">{{ status }}</option>
@@ -710,23 +629,62 @@ function getErrorMessage(error: unknown): string {
                   </select>
                 </label>
 
-                <div class="text-sm text-zinc-400">
+                <div class="hidden min-w-0 text-sm text-zinc-400 md:block">
                   <p class="font-medium text-zinc-200">{{ editorTitle }}</p>
-                  <p class="break-all text-xs text-zinc-500">/{{ postForm.controls.slug.value }}</p>
+                  <p class="truncate text-xs text-zinc-500">/{{ postForm.controls.slug.value }}</p>
                 </div>
               </div>
 
-              <div class="flex items-center gap-4">
+              <div class="flex min-w-0 items-center gap-2">
                 @if (postForm.dirty) {
-                  <span class="text-xs text-amber-300/80">● Unsaved changes</span>
+                  <span class="hidden text-xs text-amber-300/80 lg:inline">● Unsaved changes</span>
                 }
-                <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
+                <div class="flex items-center justify-end gap-2">
+                  @if (!isNewPost || post.status === 'published' || hasActiveDraftPreview) {
+                    <details class="group relative sm:hidden">
+                      <summary class="flex h-9 cursor-pointer list-none items-center border border-zinc-700 px-3 text-xs font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:border-cyan-400 focus-visible:outline-none">
+                        More
+                      </summary>
+                      <div class="absolute bottom-full right-0 mb-2 grid min-w-40 gap-1 border border-zinc-700 bg-zinc-950 p-1.5 shadow-2xl shadow-black/60">
+                        @if (post.status === 'published') {
+                          <a
+                            [routerLink]="['/blog', post.slug]"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex h-9 items-center px-3 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
+                          >
+                            View Post
+                          </a>
+                        } @else if (hasActiveDraftPreview) {
+                          <a
+                            [href]="draftPreviewUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex h-9 items-center px-3 text-xs font-medium text-amber-200 hover:bg-amber-950/30"
+                          >
+                            View Preview
+                          </a>
+                        }
+                        @if (!isNewPost) {
+                          <button
+                            type="button"
+                            class="h-9 px-3 text-left text-xs font-medium text-red-200 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:text-zinc-600"
+                            [disabled]="isDeleteInProgress || isSaveInProgress"
+                            (click)="deleteCurrentPost()"
+                          >
+                            {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
+                          </button>
+                        }
+                      </div>
+                    </details>
+                  }
+
                   @if (post.status === 'published') {
                     <a
                       [routerLink]="['/blog', post.slug]"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="col-span-2 inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 sm:col-span-1"
+                      class="hidden h-9 items-center justify-center border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 sm:inline-flex"
                     >
                       View Post
                     </a>
@@ -735,14 +693,14 @@ function getErrorMessage(error: unknown): string {
                       [href]="draftPreviewUrl"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="col-span-2 inline-flex justify-center border border-amber-500/60 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-950/30 sm:col-span-1"
+                      class="hidden h-9 items-center justify-center border border-amber-500/60 px-3 text-sm font-medium text-amber-200 transition hover:bg-amber-950/30 sm:inline-flex"
                     >
                       View Preview
                     </a>
                   } @else {
                     <button
                       type="button"
-                      class="col-span-2 border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-600 sm:col-span-1"
+                      class="hidden h-9 border border-zinc-800 px-3 text-sm font-medium text-zinc-600 sm:inline-block"
                       disabled
                     >
                       View Post
@@ -751,7 +709,7 @@ function getErrorMessage(error: unknown): string {
 
                   <button
                     type="button"
-                    class="border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                    class="hidden h-9 border border-red-500/60 px-3 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent sm:inline-block"
                     [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
                     (click)="deleteCurrentPost()"
                   >
@@ -760,7 +718,7 @@ function getErrorMessage(error: unknown): string {
 
                   <button
                     type="button"
-                    class="border border-cyan-400 bg-cyan-400 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
+                    class="h-9 border border-cyan-400 bg-cyan-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
                     [disabled]="isSaveInProgress || isDeleteInProgress"
                     (click)="savePost()"
                   >
@@ -810,8 +768,11 @@ export class CmsPostEditorComponent {
   protected currentPost = this.resolvePost();
   protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
+  protected readonly postDetailsOpen = signal(true);
+  protected readonly publishingSettingsOpen = signal(false);
+  protected readonly mediaSettingsOpen = signal(false);
+  protected readonly seoSettingsOpen = signal(false);
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  protected readonly isLastSavedOpen = signal(false);
   protected lastSaved: EditorSavedDocument | null = null;
   protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
@@ -933,6 +894,20 @@ export class CmsPostEditorComponent {
     }
 
     return 'Using custom Open Graph image.';
+  }
+
+  protected get mediaModuleSummary(): string {
+    return this.postForm.controls.coverImage.value.trim() ? 'Cover image ready' : 'Cover image required';
+  }
+
+  protected get seoModuleSummary(): string {
+    const titleLength = this.postForm.controls.seoTitle.value.length;
+    const descriptionLength = this.postForm.controls.seoDescription.value.length;
+    return `${titleLength}/60 title · ${descriptionLength}/160 description · ${this.openGraphImageMode}`;
+  }
+
+  protected get lastSavedSummary(): string {
+    return this.lastSaved ? `${this.lastSaved.blockCount} blocks · ${this.lastSaved.savedAt}` : 'Available after the first save';
   }
 
   protected syncSlugFromTitle(): void {
@@ -1235,6 +1210,15 @@ export class CmsPostEditorComponent {
     }
 
     if (this.postForm.invalid) {
+      if (this.postForm.controls.title.invalid || this.postForm.controls.excerpt.invalid) {
+        this.postDetailsOpen.set(true);
+      }
+      if (this.postForm.controls.slug.invalid) {
+        this.publishingSettingsOpen.set(true);
+      }
+      if (this.postForm.controls.coverImage.invalid) {
+        this.mediaSettingsOpen.set(true);
+      }
       this.toast.error('Title, slug, excerpt, and cover image are required before saving.');
       return false;
     }
@@ -1243,6 +1227,7 @@ export class CmsPostEditorComponent {
     const scheduledPublishDateError = this.getScheduledPublishDateError(formValue.status, formValue.publishedAt);
 
     if (scheduledPublishDateError) {
+      this.publishingSettingsOpen.set(true);
       this.toast.error(scheduledPublishDateError);
       return false;
     }

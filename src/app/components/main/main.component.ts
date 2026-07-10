@@ -1,4 +1,3 @@
-import {NgClass} from '@angular/common';
 import {Component, ChangeDetectionStrategy, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -25,15 +24,6 @@ import {
   RecommendedLinkRepositoryService
 } from '../../features/recommended-links/services/recommended-link-repository.service';
 
-interface HomeHighlight {
-  eyebrow: string;
-  title: string;
-  description: string;
-  route: string;
-  action: string;
-  accentClass: string;
-}
-
 @Component({
   selector: 'app-main',
   imports: [
@@ -44,7 +34,6 @@ interface HomeHighlight {
     HomeLatestWritingSectionComponent,
     HomeRecoveryBlogSectionsComponent,
     HomeTopicsSectionComponent,
-    NgClass,
     RouterLink,
     SocialsComponent,
     YouTubeLatestVideosComponent,
@@ -60,25 +49,6 @@ export class MainComponent {
     this.recommendedLinkRepository.getFeaturedRecommendedLinks$(),
     {initialValue: this.recommendedLinkRepository.getFeaturedRecommendedLinks()}
   );
-
-  protected readonly labItems: readonly HomeHighlight[] = [
-    {
-      eyebrow: 'Visual Lab',
-      title: 'Full Screen Backgrounds',
-      description: 'Image, video, overlay, and parallax background experiments for immersive interfaces.',
-      route: `/${PATH_NAMES.FS_BACKGROUND}`,
-      action: 'View background lab',
-      accentClass: 'border-sky-400/70 text-sky-200',
-    },
-    {
-      eyebrow: 'Project Demos',
-      title: 'Homepage Experiments',
-      description: 'SpaceX, weather, patch builder, task, tooltip, and Tailwind demos now belong with labs.',
-      route: `/${PATH_NAMES.LABS}`,
-      action: 'Browse labs',
-      accentClass: 'border-amber-400/70 text-amber-200',
-    },
-  ];
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly heroPostCount = HOME_ARTICLE_HERO_POST_LIMIT;

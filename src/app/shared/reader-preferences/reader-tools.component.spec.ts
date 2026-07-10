@@ -91,4 +91,22 @@ describe('ReaderToolsComponent', () => {
 
     expect(nativeElement.querySelector('.reader-tools-panel')).not.toBeNull();
   });
+
+  it('keeps the panel dimensions stable when control help text changes', () => {
+    nativeElement.querySelector<HTMLButtonElement>('.reader-tools-toggle')?.click();
+    fixture.detectChanges();
+
+    const panel = nativeElement.querySelector<HTMLElement>('.reader-tools-panel');
+    const contrastButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Toggle high contrast"]');
+    const before = panel?.getBoundingClientRect();
+
+    contrastButton?.dispatchEvent(new MouseEvent('mouseenter'));
+    fixture.detectChanges();
+
+    const after = panel?.getBoundingClientRect();
+
+    expect(nativeElement.querySelector('#reader-tools-help')?.textContent?.trim()).toContain('stronger foreground');
+    expect(after?.width).toBeCloseTo(before?.width ?? 0, 1);
+    expect(after?.height).toBeCloseTo(before?.height ?? 0, 1);
+  });
 });
