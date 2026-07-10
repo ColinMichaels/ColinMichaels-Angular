@@ -5,9 +5,10 @@
 }
 @if (showSiteHeader()) {
   <app-site-header/>
+  <app-pwa-status/>
 }
 <div
-  class="app-route-frame min-h-screen bg-zinc-800/70"
+  class="app-route-frame min-h-[100dvh] bg-zinc-800/70"
   [class.site-theme-scope]="showSiteHeader()"
   [class.public-reader-scope]="showReaderTools()"
 >

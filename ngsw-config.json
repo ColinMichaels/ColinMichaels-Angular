@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "navigationRequestStrategy": "freshness",
+  "assetGroups": [
+    {
+      "name": "app-shell",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/index.html",
+          "/*.css",
+          "/*.js",
+          "/assets/fonts/**/*.woff2",
+          "/assets/icons/apple-touch-icon.png",
+          "/assets/icons/android-chrome-192x192.png",
+          "/assets/icons/android-chrome-512x512.png",
+          "/assets/icons/favicon-16x16.png",
+          "/assets/icons/favicon-32x32.png",
+          "/assets/icons/safari-pinned-tab.svg"
+        ]
+      }
+    },
+    {
+      "name": "public-images-and-documents",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/**/*.avif",
+          "/assets/**/*.gif",
+          "/assets/**/*.ico",
+          "/assets/**/*.jpeg",
+          "/assets/**/*.jpg",
+          "/assets/**/*.json",
+          "/assets/**/*.md",
+          "/assets/**/*.png",
+          "/assets/**/*.svg",
+          "/assets/**/*.webp"
+        ]
+      }
+    }
+  ],
+  "navigationUrls": [
+    "/**",
+    "!/**/*.*",
+    "!/**/*__*",
+    "!/**/*__*/**",
+    "!/admin",
+    "!/admin/**",
+    "!/blog/preview/**",
+    "!/profile",
+    "!/logout",
+    "!/login",
+    "!/boot",
+    "!/sleep",
+    "!/external/**",
+    "!/os",
+    "!/os/**"
+  ]
+}

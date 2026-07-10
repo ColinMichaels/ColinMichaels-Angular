@@ -20,32 +20,41 @@ import {BlogShareActionsComponent} from '../share-actions/blog-share-actions.com
   imports: [BlogShareActionsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'sticky top-[4.5rem] z-40 block min-w-0 max-w-full self-start',
+    class: 'sticky z-40 -mx-2 block min-w-0 w-[calc(100%+1rem)] max-w-none self-start sm:mx-0 sm:w-auto sm:max-w-full',
   },
   template: `
     <nav
       aria-label="Post reading shortcuts"
-      class="rounded border border-slate-200/90 bg-white/95 shadow-lg shadow-slate-950/10 backdrop-blur-xl dark:border-zinc-700/90 dark:bg-neutral-950/95 dark:shadow-black/30"
+      class="relative h-full rounded-none border border-slate-200/90 bg-white/95 shadow-lg shadow-slate-950/10 backdrop-blur-xl dark:border-zinc-700/90 dark:bg-neutral-950/95 dark:shadow-black/30 sm:rounded"
     >
-      <div class="grid min-w-0 grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-2 gap-y-2 px-2 py-2 sm:flex sm:gap-3 sm:px-3">
+      <div
+        class="grid h-full min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-2 px-2 sm:grid-cols-[4rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3">
         <img
           [src]="imageUrl"
           alt=""
           aria-hidden="true"
-          class="h-10 w-14 shrink-0 rounded border border-slate-200 bg-slate-100 object-cover dark:border-zinc-700 dark:bg-zinc-900 sm:h-11 sm:w-16"
+          class="h-8 w-10 shrink-0 rounded border border-slate-200 bg-slate-100 object-cover dark:border-zinc-700 dark:bg-zinc-900 sm:h-11 sm:w-16"
           decoding="async"
           width="64"
           height="44"
         >
 
-        <p
-          class="min-w-0 flex-1 truncate text-xs font-semibold leading-5 text-slate-950 dark:text-zinc-100 sm:text-sm"
-          [title]="title"
-        >
-          {{ title }}
-        </p>
+        <div class="min-w-0">
+          <p
+            class="truncate text-xs font-semibold leading-5 text-slate-950 dark:text-zinc-100 sm:text-sm"
+            [title]="title"
+          >
+            {{ title }}
+          </p>
+          <span
+            class="block text-[0.625rem] font-semibold uppercase leading-3 tracking-[0.14em] text-cyan-700 dark:text-cyan-300"
+            aria-hidden="true"
+          >
+            {{ readingProgress }}% read
+          </span>
+        </div>
 
-        <div class="col-span-2 flex min-w-0 shrink-0 items-center justify-end gap-1 sm:col-span-1">
+        <div class="flex min-w-0 shrink-0 items-center justify-end gap-1">
           <app-blog-share-actions
             [title]="shareTitle || title"
             [excerpt]="excerpt"
@@ -112,7 +121,28 @@ import {BlogShareActionsComponent} from '../share-actions/blog-share-actions.com
           }
         </div>
       </div>
+
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-slate-200/80 dark:bg-zinc-800"
+        role="progressbar"
+        aria-label="Article reading progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuenow]="readingProgress"
+        data-reading-progress
+      >
+        <div
+          class="h-full bg-cyan-600 transition-[width] duration-150 motion-reduce:transition-none dark:bg-cyan-300"
+          [style.width.%]="readingProgress"
+        ></div>
+      </div>
     </nav>
+  `,
+  styles: `
+    :host {
+      height: var(--blog-sticky-toolbar-height);
+      top: calc(var(--site-header-sticky-height) + env(safe-area-inset-top));
+    }
   `,
 })
 export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy {
@@ -124,6 +154,7 @@ export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy 
   @Input() shareUrl = '';
   @Input() trackingEnabled = false;
   @Input() showComments = true;
+  @Input() readingProgress = 0;
   @Input() commentsTargetId = 'blog-comments';
   @Input() scrollTopTargetId = 'blog-post-top';
   @Output() shared = new EventEmitter<BlogShareEvent>();
@@ -158,7 +189,7 @@ export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy 
         this.showScrollTop.set(!entry.isIntersecting);
       }
     }, {
-      rootMargin: '-72px 0px 0px',
+      rootMargin: '-64px 0px 0px',
       threshold: 0,
     });
     this.scrollTopObserver.observe(target);

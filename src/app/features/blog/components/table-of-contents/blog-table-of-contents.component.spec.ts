@@ -41,13 +41,27 @@ describe('BlogTableOfContentsComponent', () => {
     ]);
     expect(links[0].getAttribute('aria-current')).toBeNull();
     expect(links[1].getAttribute('aria-current')).toBe('location');
-    expect(links[1].classList).toContain('border-cyan-300');
+    expect(links[1].classList).toContain('border-cyan-600');
+    expect(links[1].classList).toContain('dark:border-cyan-300');
   });
 
-  it('smooth-scrolls to headings when a TOC link is clicked', () => {
+  it('scrolls to the natural heading position when a sticky heading link is clicked', () => {
     const heading = document.createElement('h2');
     heading.id = 'smooth-heading';
-    heading.scrollIntoView = jasmine.createSpy('scrollIntoView');
+    heading.style.position = 'sticky';
+    spyOn(heading, 'getBoundingClientRect').and.callFake(() => ({
+      bottom: 520,
+      height: 40,
+      left: 0,
+      right: 320,
+      top: heading.style.position === 'static' ? 480 : 108,
+      width: 320,
+      x: 0,
+      y: heading.style.position === 'static' ? 480 : 108,
+      toJSON: () => ({}),
+    }));
+    const scrollTo = spyOn(window, 'scrollTo');
+    const headingSelected = spyOn(fixture.componentInstance.headingSelected, 'emit');
     document.body.appendChild(heading);
 
     fixture.componentRef.setInput('items', [
@@ -60,14 +74,26 @@ describe('BlogTableOfContentsComponent', () => {
     ]);
     fixture.detectChanges();
 
+    let scrollFrame: FrameRequestCallback | undefined;
+    spyOn(window, 'requestAnimationFrame').and.callFake(callback => {
+      scrollFrame = callback;
+      return 1;
+    });
+
     const element = fixture.nativeElement as HTMLElement;
     const link = element.querySelector<HTMLAnchorElement>('a');
     const clickEvent = new MouseEvent('click', {bubbles: true, cancelable: true});
 
     link?.dispatchEvent(clickEvent);
+    scrollFrame?.(0);
+    scrollFrame?.(16);
 
     expect(clickEvent.defaultPrevented).toBeTrue();
-    expect(heading.scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'smooth', block: 'start'});
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo.calls.mostRecent().args[0] as unknown as ScrollToOptions)
+      .toEqual({top: 480, behavior: 'smooth'});
+    expect(headingSelected).toHaveBeenCalledOnceWith('smooth-heading');
+    expect(heading.style.position).toBe('sticky');
 
     document.body.removeChild(heading);
   });

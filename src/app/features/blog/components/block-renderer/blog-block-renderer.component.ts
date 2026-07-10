@@ -94,7 +94,7 @@ interface RenderableBlogImage {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="group scroll-mt-48 pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50 sm:scroll-mt-40"
+                class="blog-anchored-subheading group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
@@ -110,7 +110,9 @@ interface RenderableBlogImage {
             } @else {
               <h2
                 [id]="row.headingId"
-                class="group sticky top-[10.75rem] z-30 -mx-2 isolate scroll-mt-48 border-b border-slate-200 bg-white px-2 pb-2 pt-4 text-2xl font-semibold text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:top-[8.75rem] sm:scroll-mt-40"
+                class="blog-section-heading group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
+                [class.blog-sticky-section-heading]="row.headingId === activeHeadingId"
+                [attr.data-sticky-active]="row.headingId === activeHeadingId ? '' : null"
                 data-sticky-section-heading
               >
                 <a
@@ -487,6 +489,26 @@ interface RenderableBlogImage {
     }
   `,
   styles: [`
+    .blog-anchored-subheading,
+    .blog-section-heading {
+      scroll-margin-top: calc(var(--blog-sticky-stack-height) + env(safe-area-inset-top));
+    }
+
+    .blog-section-heading.blog-sticky-section-heading {
+      font-size: clamp(.95rem, calc(1rem * var(--reader-font-scale)), 1.35rem) !important;
+      line-height: 1.3 !important;
+      padding-bottom: .375rem;
+      padding-top: .375rem;
+      position: sticky;
+      top: calc(var(--blog-sticky-stack-height) + env(safe-area-inset-top));
+    }
+
+    @media (min-width: 640px) {
+      .blog-section-heading.blog-sticky-section-heading {
+        font-size: clamp(1rem, calc(1.125rem * var(--reader-font-scale)), 1.5rem) !important;
+      }
+    }
+
     :host ::ng-deep .blog-inline-link {
       border-bottom: 1px solid rgba(34, 211, 238, 0.65);
       color: #67e8f9;
@@ -703,6 +725,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   @Input() blocks: readonly BlogContentBlock[] = [];
   @Input() fallbackAlt = 'Blog content';
   @Input() anchorPath = '';
+  @Input() activeHeadingId: string | null = null;
 
   protected renderedBlocks: readonly RenderableBlogBlock[] = [];
   protected imageGallery: readonly RenderableBlogImage[] = [];

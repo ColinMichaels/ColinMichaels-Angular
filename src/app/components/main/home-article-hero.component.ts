@@ -617,7 +617,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 
       .home-hero-shell {
         display: block;
-        padding-block: 4rem 3rem;
+        padding-block: 1rem 2rem;
       }
 
       .home-hero-copy {

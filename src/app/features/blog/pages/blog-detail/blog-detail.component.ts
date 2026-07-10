@@ -80,13 +80,7 @@ function normalizeHealthTerm(value: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      @if (post()) {
-        <div class="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-transparent">
-          <div class="h-full bg-cyan-300 transition-[width] duration-150" [style.width.%]="readingProgress()"></div>
-        </div>
-      }
-
-      <article #articleElement class="mx-auto max-w-7xl">
+      <article class="mx-auto max-w-7xl">
         @if (post(); as currentPost) {
           <div
             class="mx-auto grid max-w-4xl gap-10 xl:items-start"
@@ -175,6 +169,7 @@ function normalizeHealthTerm(value: string): string {
                 [shareUrl]="isPreviewRoute() ? '' : share.url"
                 [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
                 [showComments]="!isPreviewRoute()"
+                [readingProgress]="readingProgress()"
                 (shared)="recordShare(currentPost, $event)"
               ></app-blog-sticky-post-toolbar>
             }
@@ -186,17 +181,21 @@ function normalizeHealthTerm(value: string): string {
                     [items]="tableOfContents()"
                     [postPath]="createCurrentPostPath(currentPost.slug)"
                     [activeHeadingId]="activeContentSectionId()"
+                    (headingSelected)="activeContentSectionId.set($event)"
                   ></app-blog-table-of-contents>
                 </aside>
               }
             }
 
             <div class="min-w-0 xl:col-start-1 xl:row-start-3">
-              <app-blog-block-renderer
-                [blocks]="currentPost.blocks"
-                [fallbackAlt]="currentPost.title"
-                [anchorPath]="createCurrentPostPath(currentPost.slug)"
-              ></app-blog-block-renderer>
+              <div #readingContent data-reading-content>
+                <app-blog-block-renderer
+                  [blocks]="currentPost.blocks"
+                  [fallbackAlt]="currentPost.title"
+                  [anchorPath]="createCurrentPostPath(currentPost.slug)"
+                  [activeHeadingId]="activeContentSectionId()"
+                ></app-blog-block-renderer>
+              </div>
 
               <footer class="blog-section-rule mt-14">
                 @if (previousPost() || nextPost()) {
@@ -409,7 +408,7 @@ function normalizeHealthTerm(value: string): string {
   `,
 })
 export class BlogDetailComponent {
-  @ViewChild('articleElement') private articleElement?: ElementRef<HTMLElement>;
+  @ViewChild('readingContent') private readingContentElement?: ElementRef<HTMLElement>;
 
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
@@ -565,17 +564,19 @@ export class BlogDetailComponent {
       return;
     }
 
-    const article = this.articleElement?.nativeElement;
+    const readingContent = this.readingContentElement?.nativeElement;
 
-    if (!article) {
+    if (!readingContent) {
       this.readingProgress.set(0);
       return;
     }
 
-    const rect = article.getBoundingClientRect();
+    const rect = readingContent.getBoundingClientRect();
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    const readableDistance = Math.max(1, rect.height - viewportHeight);
-    const readDistance = Math.min(readableDistance, Math.max(0, -rect.top));
+    const stickyStackHeight = this.getStickyReadingStackHeight();
+    const readableViewportHeight = Math.max(1, viewportHeight - stickyStackHeight);
+    const readableDistance = Math.max(1, rect.height - readableViewportHeight);
+    const readDistance = Math.min(readableDistance, Math.max(0, stickyStackHeight - rect.top));
 
     this.readingProgress.set(Math.round((readDistance / readableDistance) * 100));
     this.updateActiveContentSection();
@@ -657,7 +658,9 @@ export class BlogDetailComponent {
       return;
     }
 
-    const scrollOffset = 128;
+    const activeStickyHeading = document.querySelector<HTMLElement>('[data-sticky-active]');
+    const activeStickyHeadingHeight = activeStickyHeading?.getBoundingClientRect().height ?? 0;
+    const scrollOffset = this.getStickyReadingStackHeight() + activeStickyHeadingHeight + 2;
     let activeHeadingId = contents[0].id;
 
     for (const item of contents) {
@@ -675,6 +678,18 @@ export class BlogDetailComponent {
     }
 
     this.activeContentSectionId.set(activeHeadingId);
+  }
+
+  private getStickyReadingStackHeight(): number {
+    const toolbar = document.querySelector<HTMLElement>('app-blog-sticky-post-toolbar');
+
+    if (!toolbar) {
+      return 0;
+    }
+
+    const toolbarTop = Number.parseFloat(window.getComputedStyle(toolbar).top) || 0;
+
+    return toolbarTop + toolbar.getBoundingClientRect().height;
   }
 
   private describePreviewError(error: unknown): string {

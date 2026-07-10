@@ -85,7 +85,7 @@
         ]
       },
       {
-        "source": "**/*.@(js|mjs|css)",
+        "source": "/@(main|polyfills|styles|chunk|scripts)-*.@(js|mjs|css)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -99,6 +99,15 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=604800, stale-while-revalidate=86400"
+          }
+        ]
+      },
+      {
+        "source": "/@(ngsw-worker.js|worker-basic.min.js|safety-worker.js|ngsw.json|assets/site.webmanifest)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
           }
         ]
       }
