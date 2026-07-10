@@ -1,9 +1,16 @@
+import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {User, UserCredential} from 'firebase/auth';
 import {Observable, of} from 'rxjs';
 
 import {AuthService} from '../../services/auth.service';
+import {BlogArticleLibraryService} from '../../features/blog/services/blog-article-library.service';
+import {OfflineBlogPostService} from '../../features/blog/services/offline-blog-post.service';
+import {PwaInstallService} from '../pwa/pwa-install.service';
+import {PwaNativeControlsService} from '../pwa/pwa-native-controls.service';
+import {PwaPushService} from '../pwa/pwa-push.service';
+import {PwaStorageService} from '../pwa/pwa-storage.service';
 import {BASE_USER_ROLE, UserAccountDocument, UserAccountProfile} from '../user-account/user-account.model';
 import {UserAccountService} from '../user-account/user-account.service';
 import {UserProfileComponent} from './user-profile.component';
@@ -88,6 +95,68 @@ describe('UserProfileComponent', () => {
             listenToPointEvents: jasmine.createSpy('listenToPointEvents').and.returnValue(of([])),
           },
         },
+        {
+          provide: BlogArticleLibraryService,
+          useValue: {
+            records: signal([]),
+            completed: signal([]),
+            inProgress: signal([]),
+            setFavorite: jasmine.createSpy('setFavorite'),
+            setReadLater: jasmine.createSpy('setReadLater'),
+          },
+        },
+        {
+          provide: OfflineBlogPostService,
+          useValue: {
+            records: signal([]),
+            remove: jasmine.createSpy('remove'),
+            clearAll: jasmine.createSpy('clearAll'),
+          },
+        },
+        {
+          provide: PwaInstallService,
+          useValue: {isStandalone: signal(false)},
+        },
+        {
+          provide: PwaNativeControlsService,
+          useValue: {
+            shareSupported: signal(true),
+            fullscreenSupported: signal(true),
+            wakeLockSupported: signal(false),
+            fullscreen: signal(false),
+            keepAwakeRequested: signal(false),
+            error: signal(null),
+            available: signal(true),
+            shareCurrentPage: jasmine.createSpy('shareCurrentPage'),
+            toggleFullscreen: jasmine.createSpy('toggleFullscreen'),
+            toggleWakeLock: jasmine.createSpy('toggleWakeLock'),
+          },
+        },
+        {
+          provide: PwaPushService,
+          useValue: {
+            available: signal(false),
+            signedIn: signal(true),
+            subscribed: signal(false),
+            permission: signal('default'),
+            busy: signal(false),
+            statusMessage: signal(null),
+            toggleSubscription: jasmine.createSpy('toggleSubscription'),
+          },
+        },
+        {
+          provide: PwaStorageService,
+          useValue: {
+            available: signal(false),
+            persistenceSupported: signal(false),
+            persisted: signal(false),
+            busy: signal(false),
+            usage: signal(null),
+            quota: signal(null),
+            statusMessage: signal(null),
+            requestPersistence: jasmine.createSpy('requestPersistence'),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -122,5 +191,17 @@ describe('UserProfileComponent', () => {
     expect(authServiceMock.linkFacebookProvider).toHaveBeenCalled();
     expect(textContent).toContain('Facebook is now connected to this profile.');
     expect(textContent).toContain('Facebook connected');
+  });
+
+  it('owns personal reading lists and supported app settings on the profile page', () => {
+    const textContent = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(textContent).toContain('Reading library');
+    expect(textContent).toContain('Your reading');
+    expect(textContent).toContain('Saved offline');
+    expect(textContent).toContain('App & device');
+    expect(textContent).toContain('App controls');
+    expect(textContent).toContain('Share page');
+    expect(textContent).toContain('Full screen');
   });
 });

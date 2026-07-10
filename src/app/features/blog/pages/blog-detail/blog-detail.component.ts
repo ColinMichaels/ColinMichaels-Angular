@@ -6,6 +6,7 @@ import {
   inject,
   signal,
   ChangeDetectionStrategy,
+  DestroyRef,
   ElementRef,
   HostListener,
   PLATFORM_ID,
@@ -19,16 +20,19 @@ import {catchError, finalize, map, of, switchMap} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
 import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
+import {PwaNetworkService} from '../../../../shared/pwa/pwa-network.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
-import {BlogPostSummary} from '../../models/blog-post.model';
+import {BlogPost, BlogPostSummary} from '../../models/blog-post.model';
 import {BlogEngagementService, BlogShareEvent} from '../../services/blog-engagement.service';
+import {BlogArticleLibraryService} from '../../services/blog-article-library.service';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
+import {OfflineBlogPostService, selectReadableBlogPost} from '../../services/offline-blog-post.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {AuthorBioComponent} from '../../../../shared/author/author-bio.component';
@@ -129,6 +133,15 @@ function normalizeHealthTerm(value: string): string {
                     Draft preview. This temporary link is rendering unpublished CMS content.
                   </div>
                 }
+                @if (isOfflineCopy()) {
+                  <div
+                    class="border border-cyan-300 bg-cyan-50 px-4 py-3 text-sm leading-6 text-cyan-950 dark:border-cyan-300/35 dark:bg-cyan-300/10 dark:text-cyan-100"
+                    role="status"
+                  >
+                    You are reading a saved offline copy from {{ offlineRecord()?.savedAt | date: 'MMM d, y, h:mm a' }}.
+                    Comments, embeds, and remotely hosted media may need a connection.
+                  </div>
+                }
                 @if (showHealthDisclaimer()) {
                   <div
                     class="border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-950 dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-rose-100">
@@ -168,9 +181,20 @@ function normalizeHealthTerm(value: string): string {
                 [shareTitle]="share.title"
                 [shareUrl]="isPreviewRoute() ? '' : share.url"
                 [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
-                [showComments]="!isPreviewRoute()"
-                [readingProgress]="readingProgress()"
+                [showComments]="!isPreviewRoute() && !isOfflineCopy()"
+                [showLibraryControls]="!isPreviewRoute() && articleLibrary.supported()"
+                [favorite]="articleLibraryRecord()?.favorite ?? false"
+                [readLater]="articleLibraryRecord()?.readLater ?? false"
+                [libraryBusy]="libraryActionBusy()"
+                [showOfflineControl]="!isPreviewRoute() && offlinePosts.supported()"
+                [offlineSaved]="isArticleSaved()"
+                [offlineBusy]="offlineActionBusy()"
+                [offlineUpdateAvailable]="offlineUpdateAvailable()"
+                [readingProgress]="displayReadingProgress()"
                 (shared)="recordShare(currentPost, $event)"
+                (favoriteToggled)="toggleFavorite(currentPost)"
+                (readLaterToggled)="toggleReadLater(currentPost)"
+                (offlineToggled)="toggleOfflineArticle(currentPost)"
               ></app-blog-sticky-post-toolbar>
             }
 
@@ -245,7 +269,7 @@ function normalizeHealthTerm(value: string): string {
                   </section>
                 }
 
-                @if (!isPreviewRoute()) {
+                @if (!isPreviewRoute() && !isOfflineCopy()) {
                   <div id="blog-comments" class="scroll-mt-44 focus:outline-none" tabindex="-1">
                     @defer (on viewport) {
                       <app-blog-comments [post]="currentPost"></app-blog-comments>
@@ -404,6 +428,16 @@ function normalizeHealthTerm(value: string): string {
           <p>Built with Angular and Firebase.</p>
         </div>
       </footer>
+
+      @if (readerActionMessage()) {
+        <div
+          class="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[120] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-cyan-300 bg-white px-4 py-3 text-center text-sm font-medium text-slate-800 shadow-2xl shadow-slate-950/20 dark:border-cyan-300/40 dark:bg-neutral-950 dark:text-zinc-100"
+          role="status"
+          aria-live="polite"
+        >
+          {{ readerActionMessage() }}
+        </div>
+      }
     </main>
   `,
 })
@@ -414,8 +448,15 @@ export class BlogDetailComponent {
   private readonly authService = inject(AuthService);
   private readonly engagementService = inject(BlogEngagementService);
   private readonly blogRepository = inject(BlogRepositoryService);
+  protected readonly articleLibrary = inject(BlogArticleLibraryService);
+  protected readonly offlinePosts = inject(OfflineBlogPostService);
   private readonly openGraph = inject(BlogOpenGraphService);
+  private readonly network = inject(PwaNetworkService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
+  private actionFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
+  private progressPersistenceTimer: ReturnType<typeof setTimeout> | undefined;
+  private pendingProgress: {post: BlogPostSummary; progressPercent: number} | undefined;
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly authorProfile = COLIN_AUTHOR_PROFILE;
@@ -430,7 +471,7 @@ export class BlogDetailComponent {
   protected readonly isPreviewRoute = computed(() => this.previewToken().length > 0);
   protected readonly previewLoading = signal(false);
   protected readonly previewLoadError = signal<string | null>(null);
-  protected readonly post = toSignal(
+  protected readonly remotePost = toSignal(
     this.route.paramMap.pipe(
       switchMap(params => {
         const previewToken = params.get('previewToken') ?? '';
@@ -456,8 +497,58 @@ export class BlogDetailComponent {
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   private readonly repositoryLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   private readonly repositoryLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
-  protected readonly isLoading = computed(() => this.isPreviewRoute() ? this.previewLoading() : this.repositoryLoading());
-  protected readonly loadError = computed(() => this.isPreviewRoute() ? this.previewLoadError() : this.repositoryLoadError());
+  protected readonly offlineRecord = computed(() => (
+    this.isPreviewRoute()
+      ? undefined
+      : this.offlinePosts.records().find(record => record.post.slug === this.slug())
+  ));
+  protected readonly post = computed(() => {
+    return selectReadableBlogPost(
+      this.remotePost(),
+      this.offlineRecord(),
+      this.network.offline(),
+      this.repositoryLoadError()
+    );
+  });
+  protected readonly isOfflineCopy = computed(() => (
+    Boolean(this.post()) && !this.remotePost() && Boolean(this.offlineRecord())
+  ));
+  protected readonly isArticleSaved = computed(() => this.offlinePosts.hasSavedSlug(this.slug()));
+  protected readonly articleLibraryRecord = computed(() => (
+    this.isPreviewRoute() ? undefined : this.articleLibrary.getRecord(this.slug())
+  ));
+  protected readonly offlineUpdateAvailable = computed(() => {
+    const remotePost = this.remotePost();
+    const offlineRecord = this.offlineRecord();
+    return Boolean(
+      remotePost
+      && offlineRecord
+      && remotePost.updatedAt !== offlineRecord.sourceUpdatedAt
+    );
+  });
+  protected readonly offlineActionBusy = signal(false);
+  protected readonly libraryActionBusy = signal(false);
+  protected readonly readerActionMessage = signal<string | null>(null);
+  protected readonly isLoading = computed(() => {
+    if (this.isPreviewRoute()) {
+      return this.previewLoading();
+    }
+
+    return this.network.offline() && this.offlinePosts.ready()
+      ? false
+      : this.repositoryLoading();
+  });
+  protected readonly loadError = computed(() => {
+    if (this.isPreviewRoute()) {
+      return this.previewLoadError();
+    }
+
+    if (this.network.offline() && this.offlinePosts.ready() && !this.offlineRecord()) {
+      return 'This post is not saved for offline reading. Reconnect, open the post, and use Save offline first.';
+    }
+
+    return this.repositoryLoadError();
+  });
   protected readonly canEditPost = toSignal(
     this.authService.getRoleAuthorization(CMS_ACCESS_ROLES, true).pipe(
       map(authorization => authorization.isAuthorized)
@@ -467,6 +558,10 @@ export class BlogDetailComponent {
   protected readonly isSignedIn = toSignal(this.authService.isAuthenticated(), {initialValue: false});
   protected readonly shareMetadata = signal<BlogShareMetadata | null>(null);
   protected readonly readingProgress = signal(0);
+  protected readonly displayReadingProgress = computed(() => Math.max(
+    this.readingProgress(),
+    this.articleLibraryRecord()?.progressPercent ?? 0
+  ));
   protected readonly activeContentSectionId = signal<string | null>(null);
   protected readonly currentYear = new Date().getFullYear();
   private readonly recordedReadPostIds = new Set<string>();
@@ -534,6 +629,23 @@ export class BlogDetailComponent {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.actionFeedbackTimer) {
+        clearTimeout(this.actionFeedbackTimer);
+      }
+
+      if (this.progressPersistenceTimer) {
+        clearTimeout(this.progressPersistenceTimer);
+      }
+
+      if (this.pendingProgress) {
+        void this.articleLibrary.updateProgress(
+          this.pendingProgress.post,
+          this.pendingProgress.progressPercent
+        );
+      }
+    });
+
     effect(() => {
       const post = this.post();
 
@@ -542,7 +654,7 @@ export class BlogDetailComponent {
         this.readingProgress.set(0);
         this.activeContentSectionId.set(this.tableOfContents()[0]?.id ?? null);
         this.queueReadingStateRefresh();
-        if (!this.isPreviewRoute()) {
+        if (!this.isPreviewRoute() && !this.isOfflineCopy()) {
           void this.recordPostRead(post);
         }
         return;
@@ -551,10 +663,85 @@ export class BlogDetailComponent {
       this.shareMetadata.set(null);
       this.activeContentSectionId.set(null);
 
-      if (!this.isLoading() && !this.loadError()) {
+      if (!this.isLoading() && !this.loadError() && this.offlinePosts.ready()) {
         this.openGraph.applyMissingBlogPost(this.slug() || 'preview');
       }
     });
+  }
+
+  protected async toggleOfflineArticle(post: BlogPost): Promise<void> {
+    if (this.offlineActionBusy() || this.isPreviewRoute()) {
+      return;
+    }
+
+    this.offlineActionBusy.set(true);
+
+    try {
+      if (this.offlineUpdateAvailable()) {
+        await this.offlinePosts.save(post);
+        this.showReaderFeedback('Offline copy updated with the latest article text.');
+      } else if (this.offlinePosts.hasSavedSlug(post.slug)) {
+        await this.offlinePosts.remove(post.slug);
+        this.showReaderFeedback('Offline copy removed from this device.');
+      } else {
+        await this.offlinePosts.save(post);
+        this.showReaderFeedback('Post downloaded for offline reading. Local article images were prepared when available.');
+      }
+    } catch (error) {
+      this.showReaderFeedback(error instanceof Error
+        ? error.message
+        : 'The offline copy could not be updated.');
+    } finally {
+      this.offlineActionBusy.set(false);
+    }
+  }
+
+  protected async toggleFavorite(post: BlogPostSummary): Promise<void> {
+    if (this.libraryActionBusy() || this.isPreviewRoute()) {
+      return;
+    }
+
+    this.libraryActionBusy.set(true);
+
+    try {
+      const favorite = !(this.articleLibraryRecord()?.favorite ?? false);
+      await this.articleLibrary.setFavorite(post, favorite);
+      this.showReaderFeedback(favorite ? 'Added to favorites.' : 'Removed from favorites.');
+    } catch {
+      this.showReaderFeedback('Favorites could not be updated on this device.');
+    } finally {
+      this.libraryActionBusy.set(false);
+    }
+  }
+
+  protected async toggleReadLater(post: BlogPostSummary): Promise<void> {
+    if (this.libraryActionBusy() || this.isPreviewRoute()) {
+      return;
+    }
+
+    this.libraryActionBusy.set(true);
+
+    try {
+      const readLater = !(this.articleLibraryRecord()?.readLater ?? false);
+      await this.articleLibrary.setReadLater(post, readLater);
+      this.showReaderFeedback(readLater ? 'Saved to read later.' : 'Removed from read later.');
+    } catch {
+      this.showReaderFeedback('Read later could not be updated on this device.');
+    } finally {
+      this.libraryActionBusy.set(false);
+    }
+  }
+
+  private showReaderFeedback(message: string): void {
+    if (this.actionFeedbackTimer) {
+      clearTimeout(this.actionFeedbackTimer);
+    }
+
+    this.readerActionMessage.set(message);
+    this.actionFeedbackTimer = setTimeout(() => {
+      this.readerActionMessage.set(null);
+      this.actionFeedbackTimer = undefined;
+    }, 4500);
   }
 
   @HostListener('window:scroll')
@@ -578,8 +765,46 @@ export class BlogDetailComponent {
     const readableDistance = Math.max(1, rect.height - readableViewportHeight);
     const readDistance = Math.min(readableDistance, Math.max(0, stickyStackHeight - rect.top));
 
-    this.readingProgress.set(Math.round((readDistance / readableDistance) * 100));
+    const progressPercent = Math.round((readDistance / readableDistance) * 100);
+    this.readingProgress.set(progressPercent);
+    this.scheduleProgressPersistence(progressPercent);
     this.updateActiveContentSection();
+  }
+
+  private scheduleProgressPersistence(progressPercent: number): void {
+    const post = this.post();
+
+    if (!post || this.isPreviewRoute() || progressPercent <= 0) {
+      return;
+    }
+
+    if (progressPercent <= (this.articleLibraryRecord()?.progressPercent ?? 0)) {
+      return;
+    }
+
+    this.pendingProgress = {post, progressPercent};
+
+    if (this.progressPersistenceTimer) {
+      clearTimeout(this.progressPersistenceTimer);
+    }
+
+    if (progressPercent >= 95) {
+      this.progressPersistenceTimer = undefined;
+      const pending = this.pendingProgress;
+      this.pendingProgress = undefined;
+      void this.articleLibrary.updateProgress(pending.post, pending.progressPercent);
+      return;
+    }
+
+    this.progressPersistenceTimer = setTimeout(() => {
+      const pending = this.pendingProgress;
+      this.pendingProgress = undefined;
+      this.progressPersistenceTimer = undefined;
+
+      if (pending) {
+        void this.articleLibrary.updateProgress(pending.post, pending.progressPercent);
+      }
+    }, 650);
   }
 
   private getSharedTaxonomyCount(post: BlogPostSummary, currentPost: BlogPostSummary): number {

@@ -13,6 +13,7 @@ import {SiteHeaderComponent} from './shared/site-header/site-header.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
 import {ShareAttributionService} from './features/blog/services/share-attribution.service';
 import {PwaStatusComponent} from './shared/pwa/pwa-status.component';
+import {PwaPushService} from './shared/pwa/pwa-push.service';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -54,6 +55,7 @@ export class AppComponent {
   private readonly seo = inject(SeoService);
   private readonly sitePreloader = inject(SitePreloaderService);
   private readonly shareAttribution = inject(ShareAttributionService);
+  private readonly pushNotifications = inject(PwaPushService);
   private readonly theme = inject(SiteThemeService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -85,6 +87,7 @@ export class AppComponent {
   constructor() {
     this.sitePreloader.start();
     this.shareAttribution.start();
+    this.pushNotifications.start();
     this.seo.initializeRouteTracking();
     this.theme.mode();
     this.readerPreferences.preferences();

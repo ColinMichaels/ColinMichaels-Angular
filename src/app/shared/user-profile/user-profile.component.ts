@@ -4,7 +4,10 @@ import {RouterLink} from '@angular/router';
 import {firstValueFrom, of, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
+import {ArticleLibraryControlComponent} from '../../features/blog/components/article-library-control/article-library-control.component';
+import {OfflineArticlesControlComponent} from '../../features/blog/components/offline-articles-control/offline-articles-control.component';
 import {AuthService, getAuthProviderLabel} from '../../services/auth.service';
+import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
 import {
   ADMIN_CONSOLE_ROLES,
   BASE_USER_ROLE,
@@ -35,10 +38,13 @@ interface LinkedProviderView {
   selector: 'app-user-profile',
   imports: [
     RouterLink,
+    ArticleLibraryControlComponent,
+    OfflineArticlesControlComponent,
+    PwaNativeControlsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
+    <main class="dark min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-5xl space-y-8">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/" class="hover:text-zinc-100">Home</a>
@@ -89,6 +95,29 @@ interface LinkedProviderView {
             <p
               class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100">{{ linkErrorMessage() }}</p>
           }
+
+          <section class="grid gap-6 lg:grid-cols-2" aria-label="Personal reading and app settings">
+            <section class="space-y-5 border border-zinc-800 bg-zinc-900 p-5" aria-label="Reading library settings">
+              <header class="space-y-2">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300">Reading library</p>
+                <p class="text-sm leading-6 text-zinc-400">
+                  Manage this device's favorites, read-later list, reading progress, and offline articles.
+                </p>
+              </header>
+              <app-article-library-control surface="profile"/>
+              <app-offline-articles-control surface="profile"/>
+            </section>
+
+            <section class="space-y-5 border border-zinc-800 bg-zinc-900 p-5" aria-label="App and device settings">
+              <header class="space-y-2">
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300">App & device</p>
+                <p class="text-sm leading-6 text-zinc-400">
+                  Control supported mobile features, notifications, fullscreen reading, and offline storage protection.
+                </p>
+              </header>
+              <app-pwa-native-controls surface="profile"/>
+            </section>
+          </section>
 
           <section class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">

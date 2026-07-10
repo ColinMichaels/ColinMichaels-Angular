@@ -8,8 +8,10 @@ import {FieldValue, getFirestore, Timestamp} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
+import {onDocumentWritten} from 'firebase-functions/v2/firestore';
 import {HttpsError, onCall, onRequest} from 'firebase-functions/v2/https';
 import {onSchedule} from 'firebase-functions/v2/scheduler';
+import webPush = require('web-push');
 
 import {
   BACKGROUND_LAB_DESCRIPTION,
@@ -39,6 +41,15 @@ import {
   COMMENT_BODY_UNSAFE_CONTENT_MESSAGE,
   validatePlainTextCommentBody,
 } from './comment-safety';
+import {
+  createPublishedPostPushPayload,
+  createPushSubscriptionId,
+  getPushDeliveryStatusCode,
+  isNewlyPublishedPost,
+  parsePushEndpoint,
+  parseStoredPushSubscription,
+  toWebPushSubscription,
+} from './push-notifications';
 
 initializeApp();
 
@@ -66,6 +77,7 @@ const POST_COMMENTS_COLLECTION = 'postComments';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
 const SHARE_LINKS_COLLECTION = 'shareLinks';
 const SHARE_LANDING_EVENTS_COLLECTION = 'shareLandingEvents';
+const PUSH_SUBSCRIPTIONS_COLLECTION = 'pushSubscriptions';
 const HOMEPAGE_SETTINGS_COLLECTION = 'homepageSettings';
 const HOMEPAGE_SETTINGS_ID = 'home';
 const SHARE_ID_PATTERN = /^[A-Za-z0-9_-]{20,80}$/;
@@ -76,6 +88,8 @@ const POST_READ_POINTS = 5;
 const POST_SHARE_POINTS = 10;
 const COMMENT_APPROVED_POINTS = 15;
 const MAX_COMMENT_THREAD_DEPTH = 12;
+const MAX_PUSH_SUBSCRIPTIONS_PER_DELIVERY = 5000;
+const PUSH_DELIVERY_CONCURRENCY = 100;
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
@@ -163,6 +177,9 @@ const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
 const openAiImageModel = defineString('OPENAI_IMAGE_MODEL', {default: 'gpt-image-2'});
 const youtubeChannelId = defineString('YOUTUBE_CHANNEL_ID', {default: ''});
+const webPushPublicKey = defineString('WEB_PUSH_PUBLIC_KEY', {default: ''});
+const webPushSubject = defineString('WEB_PUSH_SUBJECT', {default: 'mailto:hello@colinmichaels.com'});
+const webPushPrivateKey = defineSecret('WEB_PUSH_PRIVATE_KEY');
 const SITE_CALLABLE_CORS_ORIGINS = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
@@ -366,6 +383,108 @@ export const publishScheduledPosts = onSchedule(
     const queuedSocialAnnouncementCount = await queueDueSocialAnnouncements(now);
     logger.info('Processed due social announcements.', {
       queuedCount: queuedSocialAnnouncementCount,
+    });
+  }
+);
+
+export const notifyPublishedPost = onDocumentWritten(
+  {
+    document: `${BLOG_POSTS_COLLECTION}/{postId}`,
+    region: FUNCTION_REGION,
+    timeoutSeconds: 300,
+    memory: '512MiB',
+    secrets: [webPushPrivateKey],
+  },
+  async event => {
+    const before = event.data?.before.exists ? event.data.before.data() : undefined;
+    const after = event.data?.after.exists ? event.data.after.data() : undefined;
+
+    if (!isNewlyPublishedPost(before, after) || !after) {
+      return;
+    }
+
+    const publicKey = webPushPublicKey.value().trim();
+    const privateKey = webPushPrivateKey.value().trim();
+    const subject = webPushSubject.value().trim();
+    const postId = event.params.postId;
+    const slug = getTrimmedString(after['slug']);
+    const title = getTrimmedString(after['title']);
+    const excerpt = getTrimmedString(after['excerpt']);
+    const publishedAt = getTrimmedString(after['publishedAt']) || null;
+
+    if (!publicKey || !privateKey || !subject) {
+      logger.warn('Skipped new-post push delivery because VAPID configuration is incomplete.', {postId});
+      return;
+    }
+
+    if (!slug || !title) {
+      logger.warn('Skipped new-post push delivery because public post metadata is incomplete.', {postId});
+      return;
+    }
+
+    const firestore = getFirestore();
+    const subscriptionsSnapshot = await firestore
+      .collection(PUSH_SUBSCRIPTIONS_COLLECTION)
+      .limit(MAX_PUSH_SUBSCRIPTIONS_PER_DELIVERY)
+      .get();
+
+    if (subscriptionsSnapshot.empty) {
+      logger.info('No push subscribers are registered for the newly published post.', {postId, slug});
+      return;
+    }
+
+    webPush.setVapidDetails(subject, publicKey, privateKey);
+    const payload = createPublishedPostPushPayload({id: postId, slug, title, excerpt, publishedAt});
+    let deliveredCount = 0;
+    let removedCount = 0;
+    let failedCount = 0;
+
+    // Bound each parallel batch so a large subscriber list cannot exhaust one function instance.
+    for (let index = 0; index < subscriptionsSnapshot.docs.length; index += PUSH_DELIVERY_CONCURRENCY) {
+      const chunk = subscriptionsSnapshot.docs.slice(index, index + PUSH_DELIVERY_CONCURRENCY);
+
+      await Promise.all(chunk.map(async subscriptionSnapshot => {
+        const subscription = parseStoredPushSubscription(subscriptionSnapshot.get('subscription'));
+
+        if (!subscription) {
+          await subscriptionSnapshot.ref.delete();
+          removedCount += 1;
+          return;
+        }
+
+        try {
+          await webPush.sendNotification(toWebPushSubscription(subscription), payload, {
+            TTL: 24 * 60 * 60,
+            urgency: 'normal',
+          });
+          deliveredCount += 1;
+        } catch (error) {
+          const statusCode = getPushDeliveryStatusCode(error);
+
+          if (statusCode === 404 || statusCode === 410) {
+            await subscriptionSnapshot.ref.delete();
+            removedCount += 1;
+            return;
+          }
+
+          failedCount += 1;
+          logger.warn('Push delivery failed for one subscription.', {
+            postId,
+            subscriptionId: subscriptionSnapshot.id,
+            statusCode,
+          });
+        }
+      }));
+    }
+
+    logger.info('Processed new-post push delivery.', {
+      postId,
+      slug,
+      subscriberCount: subscriptionsSnapshot.size,
+      deliveredCount,
+      removedCount,
+      failedCount,
+      truncated: subscriptionsSnapshot.size === MAX_PUSH_SUBSCRIPTIONS_PER_DELIVERY,
     });
   }
 );
@@ -1068,6 +1187,82 @@ export const bootstrapUserProfile = onCall(
     const account = await upsertUserAccount(auth, profile);
 
     return account;
+  }
+);
+
+export const registerPushSubscription = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to enable push notifications.');
+    const data = requireRecord(request.data, 'Push registration must be an object.');
+    const subscription = parseStoredPushSubscription(data['subscription']);
+    const locale = getTrimmedString(data['locale']).slice(0, 35) || DEFAULT_LOCALE;
+
+    if (!subscription) {
+      throw new HttpsError('invalid-argument', 'The push subscription is incomplete or invalid.');
+    }
+
+    const firestore = getFirestore();
+    const subscriptionRef = firestore
+      .collection(PUSH_SUBSCRIPTIONS_COLLECTION)
+      .doc(createPushSubscriptionId(subscription.endpoint));
+    const now = new Date().toISOString();
+
+    await firestore.runTransaction(async transaction => {
+      const existingSnapshot = await transaction.get(subscriptionRef);
+      const existingCreatedAt = getTrimmedString(existingSnapshot.data()?.['createdAt']);
+
+      transaction.set(subscriptionRef, {
+        uid: auth.uid,
+        subscription,
+        locale,
+        createdAt: existingCreatedAt || now,
+        updatedAt: now,
+      }, {merge: false});
+    });
+
+    return {registered: true, updatedAt: now};
+  }
+);
+
+export const unregisterPushSubscription = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to disable push notifications.');
+    const data = requireRecord(request.data, 'Push removal must be an object.');
+    const endpoint = parsePushEndpoint(data['endpoint']);
+
+    if (!endpoint) {
+      throw new HttpsError('invalid-argument', 'A valid push endpoint is required.');
+    }
+
+    const subscriptionRef = getFirestore()
+      .collection(PUSH_SUBSCRIPTIONS_COLLECTION)
+      .doc(createPushSubscriptionId(endpoint));
+    const snapshot = await subscriptionRef.get();
+
+    if (!snapshot.exists) {
+      return {removed: false};
+    }
+
+    if (snapshot.get('uid') !== auth.uid) {
+      throw new HttpsError('permission-denied', 'This push subscription belongs to another account.');
+    }
+
+    await subscriptionRef.delete();
+    return {removed: true};
   }
 );
 

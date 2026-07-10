@@ -68,6 +68,66 @@ import {BlogShareActionsComponent} from '../share-actions/blog-share-actions.com
             (shared)="shared.emit($event)"
           ></app-blog-share-actions>
 
+          @if (showLibraryControls) {
+            <span class="ml-1 flex items-center gap-1 border-l border-slate-200 pl-1 dark:border-zinc-700" aria-label="Personal article lists">
+              <button
+                type="button"
+                class="article-library-toggle inline-flex h-7 w-7 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-rose-500 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 focus:ring-offset-white disabled:cursor-wait disabled:opacity-70 dark:border-white/10 dark:bg-transparent dark:text-zinc-400 dark:hover:border-rose-300 dark:hover:bg-transparent dark:hover:text-rose-200 dark:focus:ring-cyan-300 dark:focus:ring-offset-zinc-900"
+                [attr.aria-label]="favorite ? 'Remove from favorites' : 'Add to favorites'"
+                [attr.aria-pressed]="favorite"
+                [attr.title]="favorite ? 'Favorited' : 'Favorite'"
+                [disabled]="libraryBusy"
+                (click)="favoriteToggled.emit()"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" [attr.fill]="favorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"></path>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="article-library-toggle inline-flex h-7 w-7 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 focus:ring-offset-white disabled:cursor-wait disabled:opacity-70 dark:border-white/10 dark:bg-transparent dark:text-zinc-400 dark:hover:border-amber-300 dark:hover:bg-transparent dark:hover:text-amber-200 dark:focus:ring-cyan-300 dark:focus:ring-offset-zinc-900"
+                [attr.aria-label]="readLater ? 'Remove from read later' : 'Add to read later'"
+                [attr.aria-pressed]="readLater"
+                [attr.title]="readLater ? 'Saved for later' : 'Read later'"
+                [disabled]="libraryBusy"
+                (click)="readLaterToggled.emit()"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" [attr.fill]="readLater ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6.5 4.5A1.5 1.5 0 0 1 8 3h8a1.5 1.5 0 0 1 1.5 1.5V21L12 17.5 6.5 21V4.5Z"></path>
+                </svg>
+              </button>
+            </span>
+          }
+
+          @if (showOfflineControl) {
+            <span class="ml-1 border-l border-slate-200 pl-1 dark:border-zinc-700">
+              <button
+                type="button"
+                class="offline-toggle inline-flex h-7 w-7 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1 focus:ring-offset-white disabled:cursor-wait disabled:opacity-70 dark:border-white/10 dark:bg-transparent dark:text-zinc-400 dark:hover:border-cyan-300 dark:hover:bg-transparent dark:hover:text-cyan-200 dark:focus:ring-cyan-300 dark:focus:ring-offset-zinc-900"
+                [attr.aria-label]="offlineUpdateAvailable ? 'Update offline copy' : (offlineSaved ? 'Remove offline copy' : 'Save post for offline reading')"
+                [attr.aria-pressed]="offlineSaved"
+                [attr.title]="offlineUpdateAvailable ? 'Update saved copy' : (offlineSaved ? 'Saved offline' : 'Save offline')"
+                [disabled]="offlineBusy"
+                (click)="offlineToggled.emit()"
+              >
+                @if (offlineBusy) {
+                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M20 12a8 8 0 1 1-5.5-7.6"></path>
+                  </svg>
+                } @else if (offlineUpdateAvailable) {
+                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 7v5h-5M4 17v-5h5"></path>
+                    <path d="M18.2 9A7 7 0 0 0 6.7 6.2L4 9M5.8 15A7 7 0 0 0 17.3 17.8L20 15"></path>
+                  </svg>
+                } @else {
+                  <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3v11m0 0 5-5m-5 5L7 9M5 19h14"></path>
+                  </svg>
+                }
+              </button>
+            </span>
+          }
+
           @if (showComments) {
             <span class="ml-1 border-l border-slate-200 pl-1 dark:border-zinc-700">
               <a
@@ -143,6 +203,30 @@ import {BlogShareActionsComponent} from '../share-actions/blog-share-actions.com
       height: var(--blog-sticky-toolbar-height);
       top: calc(var(--site-header-sticky-height) + env(safe-area-inset-top));
     }
+
+    .offline-toggle[aria-pressed='true'] {
+      background: rgb(207 250 254);
+      border-color: rgb(8 145 178);
+      color: rgb(21 94 117);
+    }
+
+    :host-context(.dark) .offline-toggle[aria-pressed='true'] {
+      background: rgb(24 24 27);
+      border-color: rgb(103 232 249 / 0.7);
+      color: rgb(165 243 252);
+    }
+
+    .article-library-toggle[aria-pressed='true'] {
+      background: rgb(236 254 255);
+      border-color: rgb(8 145 178);
+      color: rgb(21 94 117);
+    }
+
+    :host-context(.dark) .article-library-toggle[aria-pressed='true'] {
+      background: rgb(24 24 27);
+      border-color: rgb(103 232 249 / 0.7);
+      color: rgb(165 243 252);
+    }
   `,
 })
 export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy {
@@ -154,10 +238,21 @@ export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy 
   @Input() shareUrl = '';
   @Input() trackingEnabled = false;
   @Input() showComments = true;
+  @Input() showLibraryControls = false;
+  @Input() favorite = false;
+  @Input() readLater = false;
+  @Input() libraryBusy = false;
+  @Input() showOfflineControl = false;
+  @Input() offlineSaved = false;
+  @Input() offlineBusy = false;
+  @Input() offlineUpdateAvailable = false;
   @Input() readingProgress = 0;
   @Input() commentsTargetId = 'blog-comments';
   @Input() scrollTopTargetId = 'blog-post-top';
   @Output() shared = new EventEmitter<BlogShareEvent>();
+  @Output() favoriteToggled = new EventEmitter<void>();
+  @Output() readLaterToggled = new EventEmitter<void>();
+  @Output() offlineToggled = new EventEmitter<void>();
 
   protected readonly showScrollTop = signal(false);
 

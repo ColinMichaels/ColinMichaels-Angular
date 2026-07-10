@@ -4,6 +4,7 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {PwaInstallService} from './pwa-install.service';
 import {PwaNativeControlsComponent} from './pwa-native-controls.component';
 import {PwaNativeControlsService} from './pwa-native-controls.service';
+import {PwaPushService} from './pwa-push.service';
 import {PwaStorageService} from './pwa-storage.service';
 
 describe('PwaNativeControlsComponent', () => {
@@ -13,6 +14,7 @@ describe('PwaNativeControlsComponent', () => {
   let toggleFullscreen: jasmine.Spy;
   let toggleWakeLock: jasmine.Spy;
   let requestPersistence: jasmine.Spy;
+  let toggleSubscription: jasmine.Spy;
   let nativeError: WritableSignal<string | null>;
   let storageStatusMessage: WritableSignal<string | null>;
 
@@ -21,6 +23,7 @@ describe('PwaNativeControlsComponent', () => {
     toggleFullscreen = jasmine.createSpy('toggleFullscreen').and.resolveTo(true);
     toggleWakeLock = jasmine.createSpy('toggleWakeLock').and.resolveTo(true);
     requestPersistence = jasmine.createSpy('requestPersistence').and.resolveTo(true);
+    toggleSubscription = jasmine.createSpy('toggleSubscription').and.resolveTo(true);
     nativeError = signal(null);
     storageStatusMessage = signal(null);
 
@@ -44,6 +47,18 @@ describe('PwaNativeControlsComponent', () => {
             shareCurrentPage,
             toggleFullscreen,
             toggleWakeLock,
+          },
+        },
+        {
+          provide: PwaPushService,
+          useValue: {
+            available: signal(true),
+            signedIn: signal(true),
+            subscribed: signal(false),
+            permission: signal('default'),
+            busy: signal(false),
+            statusMessage: signal(null),
+            toggleSubscription,
           },
         },
         {
@@ -73,6 +88,7 @@ describe('PwaNativeControlsComponent', () => {
     expect(nativeElement.textContent).toContain('Full screen');
     expect(nativeElement.textContent).toContain('Keep awake');
     expect(nativeElement.textContent).toContain('Protect storage');
+    expect(nativeElement.textContent).toContain('Enable new-post alerts');
     expect(nativeElement.textContent).toContain('12 MB of 1 GB used');
   });
 
@@ -81,11 +97,13 @@ describe('PwaNativeControlsComponent', () => {
     clickButton('Full screen');
     clickButton('Keep awake');
     clickButton('Protect storage');
+    clickButton('Enable new-post alerts');
 
     expect(shareCurrentPage).toHaveBeenCalledTimes(1);
     expect(toggleFullscreen).toHaveBeenCalledTimes(1);
     expect(toggleWakeLock).toHaveBeenCalledTimes(1);
     expect(requestPersistence).toHaveBeenCalledTimes(1);
+    expect(toggleSubscription).toHaveBeenCalledTimes(1);
   });
 
   it('shows storage feedback even when another native control has an error', () => {

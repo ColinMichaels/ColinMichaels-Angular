@@ -5,14 +5,17 @@ import {
   faBan,
   faCircleHalfStroke,
   faMinus,
+  faMoon,
   faPlus,
   faRotateLeft,
+  faSun,
   faTextHeight,
   faUniversalAccess,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {ReaderPreferencesService} from './reader-preferences.service';
+import {SiteThemeService} from '../theme/site-theme.service';
 
 @Component({
   selector: 'app-reader-tools',
@@ -83,6 +86,21 @@ import {ReaderPreferencesService} from './reader-preferences.service';
           </div>
 
           <div class="reader-tools-grid" aria-label="Reading display controls">
+            <button
+              type="button"
+              class="reader-tools-icon-button"
+              [class.reader-tools-active]="theme.isDark()"
+              [attr.aria-pressed]="theme.isDark()"
+              [attr.aria-label]="theme.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+              aria-describedby="reader-tools-help"
+              [attr.data-reader-tooltip]="themeTooltip()"
+              [title]="themeTooltip()"
+              (focus)="describe(themeTooltip())"
+              (mouseenter)="describe(themeTooltip())"
+              (click)="theme.toggleMode(); describe(themeTooltip())"
+            >
+              <fa-icon [icon]="theme.isDark() ? faSun : faMoon"></fa-icon>
+            </button>
             <button
               type="button"
               class="reader-tools-icon-button"
@@ -203,7 +221,7 @@ import {ReaderPreferencesService} from './reader-preferences.service';
     }
 
     .reader-tools-grid {
-      grid-template-columns: repeat(4, 3rem);
+      grid-template-columns: repeat(5, 3rem);
     }
 
     .reader-tools-status {
@@ -373,7 +391,7 @@ import {ReaderPreferencesService} from './reader-preferences.service';
       }
 
       .reader-tools-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
 
       .reader-tools-toggle::after,
@@ -402,14 +420,17 @@ export class ReaderToolsComponent {
   protected readonly increaseTooltip = 'Make page text larger.';
   protected readonly resetTooltip = 'Reset text size, spacing, contrast, and motion settings.';
   protected readonly reader = inject(ReaderPreferencesService);
+  protected readonly theme = inject(SiteThemeService);
   protected readonly isOpen = signal(false);
   protected readonly activeHelpText = signal('Assistance Tools.');
   protected readonly faAlignLeft = faAlignLeft;
   protected readonly faBan = faBan;
   protected readonly faCircleHalfStroke = faCircleHalfStroke;
   protected readonly faMinus = faMinus;
+  protected readonly faMoon = faMoon;
   protected readonly faPlus = faPlus;
   protected readonly faRotateLeft = faRotateLeft;
+  protected readonly faSun = faSun;
   protected readonly faTextHeight = faTextHeight;
   protected readonly faUniversalAccess = faUniversalAccess;
   protected readonly faXmark = faXmark;
@@ -428,6 +449,12 @@ export class ReaderToolsComponent {
 
   protected spacingTooltip(): string {
     return `Adjust line and paragraph spacing. Current setting: ${this.reader.spacingLabel()}.`;
+  }
+
+  protected themeTooltip(): string {
+    return this.theme.isDark()
+      ? 'Switch the site to light mode.'
+      : 'Switch the site to dark mode.';
   }
 
   protected contrastTooltip(): string {
