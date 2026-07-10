@@ -346,9 +346,7 @@ function normalizeHealthTerm(value: string): string {
           <nav aria-label="Footer navigation">
             <h2 class="text-sm font-semibold text-slate-950 dark:text-zinc-100">Explore</h2>
             <div class="mt-3 grid gap-2">
-              <a routerLink="/" class="hover:text-cyan-800 dark:hover:text-cyan-200">Home</a>
-              <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Blog</a>
-              <a [routerLink]="['/', pathNames.LABS]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Labs</a>
+              <a [routerLink]="['/', pathNames.BLOG]" class="hover:text-cyan-800 dark:hover:text-cyan-200">All Posts</a>
               <a [routerLink]="['/', pathNames.OS_MAIN]" class="hover:text-cyan-800 dark:hover:text-cyan-200">OS</a>
             </div>
           </nav>

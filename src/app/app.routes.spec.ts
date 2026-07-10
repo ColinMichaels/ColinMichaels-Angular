@@ -26,6 +26,7 @@ describe('routes', () => {
       PATH_NAMES.LOGOUT,
       PATH_NAMES.OS_MAIN,
       `${PATH_NAMES.OS_MAIN}/:app`,
+      PATH_NAMES.OS_DEVICE_REQUIRED,
       PATH_NAMES.OS_LOGIN,
       PATH_NAMES.OS_SLEEP,
       PATH_NAMES.OS_BOOT,
@@ -49,7 +50,9 @@ describe('routes', () => {
       '',
       PATH_NAMES.ADMIN_MEDIA_LIBRARY,
       PATH_NAMES.ADMIN_CMS,
+      `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_CALENDAR}`,
       `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
+      `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_HOMEPAGE}`,
       `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_TOPICS}`,
       `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`,
       `${PATH_NAMES.ADMIN_CMS}/new`,
@@ -59,6 +62,21 @@ describe('routes', () => {
 
   it('keeps the wildcard route last', () => {
     expect(routes.at(-1)?.path).toBe('**');
+  });
+
+  it('temporarily redirects the Labs route to the blog without deleting Labs code', () => {
+    const labsRoute = routes.find(route => route.path === PATH_NAMES.LABS);
+
+    expect(labsRoute?.redirectTo).toBe(PATH_NAMES.BLOG);
+    expect(labsRoute?.pathMatch).toBe('prefix');
+  });
+
+  it('protects both interactive OS routes before their desktop component loads', () => {
+    const osRoutes = routes.filter(route => route.path === PATH_NAMES.OS_MAIN || route.path === `${PATH_NAMES.OS_MAIN}/:app`);
+
+    expect(osRoutes).toHaveSize(2);
+    expect(osRoutes.every(route => route.canActivate?.length === 2)).toBeTrue();
+    expect(routes.find(route => route.path === PATH_NAMES.OS_DEVICE_REQUIRED)?.canActivate).toBeUndefined();
   });
 
   it('keeps the home route from catching profile and admin paths', () => {

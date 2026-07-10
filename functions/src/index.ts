@@ -60,6 +60,7 @@ const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
 const TRUSTED_COMMENT_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'] as const;
 const BLOG_POSTS_COLLECTION = 'posts';
+const SOCIAL_OUTBOX_COLLECTION = 'socialOutbox';
 const USERS_COLLECTION = 'users';
 const POST_COMMENTS_COLLECTION = 'postComments';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
@@ -167,6 +168,142 @@ const SITE_CALLABLE_CORS_ORIGINS = [
 
 let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
 
+type SocialDeliveryChannel = 'notify' | 'youtube' | 'facebook' | 'instagram' | 'linkedin';
+
+interface SocialAnnouncementDocument {
+  id: string;
+  channel: SocialDeliveryChannel;
+  message: string;
+  scheduledAt: string;
+  status: 'scheduled';
+  createdAt: string;
+  updatedAt: string;
+  linkUrl?: string;
+}
+
+const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
+  'notify',
+  'youtube',
+  'facebook',
+  'instagram',
+  'linkedin',
+]);
+
+function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly SocialAnnouncementDocument[] {
+  if (!isRecord(value) || !Array.isArray(value['announcements'])) {
+    return [];
+  }
+
+  return value['announcements'].filter((announcement): announcement is SocialAnnouncementDocument => {
+    if (!isRecord(announcement)) {
+      return false;
+    }
+
+    const scheduledAt = typeof announcement['scheduledAt'] === 'string' ? announcement['scheduledAt'] : '';
+    const scheduledTime = new Date(scheduledAt).getTime();
+    const channel = announcement['channel'];
+
+    return typeof announcement['id'] === 'string'
+      && typeof channel === 'string'
+      && SOCIAL_DELIVERY_CHANNELS.has(channel as SocialDeliveryChannel)
+      && typeof announcement['message'] === 'string'
+      && announcement['message'].trim().length > 0
+      && announcement['status'] === 'scheduled'
+      && Number.isFinite(scheduledTime)
+      && scheduledTime <= now.getTime()
+      && typeof announcement['createdAt'] === 'string'
+      && typeof announcement['updatedAt'] === 'string'
+      && (announcement['linkUrl'] === undefined || typeof announcement['linkUrl'] === 'string');
+  });
+}
+
+async function queueDueSocialAnnouncements(now: Date): Promise<number> {
+  const firestore = getFirestore();
+  const nowIso = now.toISOString();
+  const publishedPostsSnapshot = await firestore
+    .collection(BLOG_POSTS_COLLECTION)
+    .where('status', '==', 'published')
+    .get();
+  let queuedCount = 0;
+
+  for (const postSnapshot of publishedPostsSnapshot.docs) {
+    if (getScheduledSocialAnnouncements(postSnapshot.get('socialPromotion'), now).length === 0) {
+      continue;
+    }
+
+    const queuedForPost = await firestore.runTransaction(async transaction => {
+      const currentSnapshot = await transaction.get(postSnapshot.ref);
+      const currentPost = currentSnapshot.data();
+
+      if (!currentPost || currentPost['status'] !== 'published') {
+        return 0;
+      }
+
+      const socialPromotion = currentPost['socialPromotion'];
+      const dueAnnouncements = getScheduledSocialAnnouncements(socialPromotion, now);
+
+      if (dueAnnouncements.length === 0 || !isRecord(socialPromotion) || !Array.isArray(socialPromotion['announcements'])) {
+        return 0;
+      }
+
+      if (dueAnnouncements.length >= FIRESTORE_WRITE_BATCH_LIMIT) {
+        logger.error('Too many social announcements are due on one post.', {
+          postId: currentSnapshot.id,
+          dueCount: dueAnnouncements.length,
+        });
+        return 0;
+      }
+
+      const dueAnnouncementIds = new Set(dueAnnouncements.map(announcement => announcement.id));
+      const slug = typeof currentPost['slug'] === 'string' ? currentPost['slug'] : '';
+      const postTitle = typeof currentPost['title'] === 'string' ? currentPost['title'] : 'Untitled Post';
+      const defaultLinkUrl = slug ? `${SITE_URL}/blog/${slug}` : SITE_URL;
+      const announcements = socialPromotion['announcements'].map(announcement => {
+        if (!isRecord(announcement) || typeof announcement['id'] !== 'string' || !dueAnnouncementIds.has(announcement['id'])) {
+          return announcement;
+        }
+
+        return {
+          ...announcement,
+          status: 'queued',
+          updatedAt: nowIso,
+        };
+      });
+
+      for (const announcement of dueAnnouncements) {
+        const deliveryId = `${currentSnapshot.id}__${announcement.id}`;
+        const deliveryRef = firestore.collection(SOCIAL_OUTBOX_COLLECTION).doc(deliveryId);
+
+        transaction.set(deliveryRef, {
+          id: deliveryId,
+          postId: currentSnapshot.id,
+          postSlug: slug,
+          postTitle,
+          announcementId: announcement.id,
+          channel: announcement.channel,
+          message: announcement.message.trim(),
+          linkUrl: announcement.linkUrl?.trim() || defaultLinkUrl,
+          scheduledAt: announcement.scheduledAt,
+          status: 'pending',
+          attemptCount: 0,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        }, {merge: false});
+      }
+
+      transaction.update(postSnapshot.ref, {
+        socialPromotion: {announcements},
+        updatedAt: nowIso,
+        syncedAt: FieldValue.serverTimestamp(),
+      });
+      return dueAnnouncements.length;
+    });
+    queuedCount += queuedForPost;
+  }
+
+  return queuedCount;
+}
+
 export const publishScheduledPosts = onSchedule(
   {
     region: FUNCTION_REGION,
@@ -196,27 +333,31 @@ export const publishScheduledPosts = onSchedule(
       logger.info('No scheduled posts are ready to publish.', {
         scheduledCount: scheduledPostsSnapshot.size,
       });
-      return;
-    }
+    } else {
+      for (let index = 0; index < duePosts.length; index += FIRESTORE_WRITE_BATCH_LIMIT) {
+        const batch = firestore.batch();
+        const chunk = duePosts.slice(index, index + FIRESTORE_WRITE_BATCH_LIMIT);
 
-    for (let index = 0; index < duePosts.length; index += FIRESTORE_WRITE_BATCH_LIMIT) {
-      const batch = firestore.batch();
-      const chunk = duePosts.slice(index, index + FIRESTORE_WRITE_BATCH_LIMIT);
+        for (const postSnapshot of chunk) {
+          batch.update(postSnapshot.ref, {
+            status: 'published',
+            updatedAt: nowIso,
+            syncedAt: FieldValue.serverTimestamp(),
+          });
+        }
 
-      for (const postSnapshot of chunk) {
-        batch.update(postSnapshot.ref, {
-          status: 'published',
-          updatedAt: nowIso,
-          syncedAt: FieldValue.serverTimestamp(),
-        });
+        await batch.commit();
       }
 
-      await batch.commit();
+      logger.info('Published scheduled blog posts.', {
+        publishedCount: duePosts.length,
+        postIds: duePosts.map(postSnapshot => postSnapshot.id),
+      });
     }
 
-    logger.info('Published scheduled blog posts.', {
-      publishedCount: duePosts.length,
-      postIds: duePosts.map(postSnapshot => postSnapshot.id),
+    const queuedSocialAnnouncementCount = await queueDueSocialAnnouncements(now);
+    logger.info('Processed due social announcements.', {
+      queuedCount: queuedSocialAnnouncementCount,
     });
   }
 );

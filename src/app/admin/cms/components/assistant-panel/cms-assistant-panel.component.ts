@@ -1,5 +1,6 @@
-import {Component, Input, Output, EventEmitter, ChangeDetectionStrategy, signal} from '@angular/core';
+import {Component, Input, Output, EventEmitter, ChangeDetectionStrategy} from '@angular/core';
 
+import {AdminControlModuleComponent} from '../../../shared/admin-control-module.component';
 import {
   BlogAssistantResult,
   BlogMetadataSuggestion,
@@ -9,28 +10,19 @@ import {
 
 @Component({
   selector: 'app-cms-assistant-panel',
+  imports: [AdminControlModuleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="space-y-3 border-t border-zinc-800 pt-4">
-      <div class="space-y-2">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-zinc-50">AI Writing Assistant</h2>
-          <div class="flex items-center gap-2">
-            <span class="border border-amber-500/50 px-2 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-amber-200">
-              {{ sourceLabel }}
-            </span>
-            <button type="button" (click)="isOpen.set(!isOpen())"
-                    class="text-zinc-500 hover:text-zinc-300 transition-colors">
-              <span class="block transition-transform duration-200" [class.rotate-180]="isOpen()">▾</span>
-            </button>
-          </div>
-        </div>
-        <p class="text-sm text-zinc-400">
-          Suggests titles, descriptions, categories, tags, and thumbnail prompts from the current draft.
-        </p>
-      </div>
+    <app-admin-control-module
+      title="AI Writing Assistant"
+      [summary]="assistantSummary"
+      description="Suggests titles, descriptions, categories, tags, and thumbnail prompts from the current draft."
+    >
+      <span adminControlModuleStatus class="border border-amber-500/50 px-2 py-1 text-[0.6rem] uppercase tracking-[0.16em] text-amber-200">
+        {{ sourceLabel }}
+      </span>
 
-      @if (isOpen()) {
+      <div class="space-y-3">
       <button
         type="button"
         class="w-full border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
@@ -136,13 +128,11 @@ import {
           </section>
         </div>
       }
-      }
-    </section>
+      </div>
+    </app-admin-control-module>
   `,
 })
 export class CmsAssistantPanelComponent {
-  protected readonly isOpen = signal(false);
-
   @Input({required: true}) result!: BlogAssistantResult | null;
   @Input({required: true}) isLoading!: boolean;
   @Input({required: true}) message!: string;
@@ -158,4 +148,13 @@ export class CmsAssistantPanelComponent {
   @Output() applyDescription = new EventEmitter<BlogMetadataSuggestion>();
   @Output() applyTaxonomy = new EventEmitter<BlogMetadataSuggestion>();
   @Output() generateThumbnail = new EventEmitter<BlogThumbnailSuggestion>();
+
+  protected get assistantSummary(): string {
+    if (this.isLoading) {
+      return 'Generating suggestions';
+    }
+
+    const suggestionCount = this.result?.suggestions.length ?? 0;
+    return suggestionCount > 0 ? `${suggestionCount} suggestions ready` : 'Optional metadata and thumbnail help';
+  }
 }

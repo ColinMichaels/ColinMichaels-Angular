@@ -1,7 +1,6 @@
 import {ChangeDetectionStrategy, Component, effect, inject, untracked} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
-import {RouterLink} from '@angular/router';
 
 import {
   TOPIC_HUB_ICONS,
@@ -30,21 +29,12 @@ function getErrorMessage(error: unknown): string {
   selector: 'app-cms-topic-manager',
   imports: [
     ReactiveFormsModule,
-    RouterLink,
     CmsToastContainerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
-        <nav class="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-400">
-          <div class="flex items-center gap-4">
-            <a routerLink="/admin" class="hover:text-zinc-100">Admin</a>
-            <a routerLink="/admin/cms" class="hover:text-zinc-100">Posts</a>
-          </div>
-          <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-        </nav>
-
         <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
           <div class="space-y-3">
             <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>

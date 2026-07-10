@@ -3,19 +3,46 @@ import {RouterTestingModule} from '@angular/router/testing';
 import {of} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
-import {BlogAdminStats} from '../../../features/blog/models/blog-post.model';
+import {BlogPost} from '../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../features/blog/services/blog-repository.service';
 import {AdminAuthorization, AuthService} from '../../../services/auth.service';
 import {AdminOverviewComponent} from './admin-overview.component';
 
 const adminLinksRoute = `/${PATH_NAMES.ADMIN}/${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`;
-const mockStats: BlogAdminStats = {
-  total: 12,
-  published: 7,
-  drafts: 3,
-  scheduled: 1,
-  archived: 1,
-};
+
+function createPost(
+  id: string,
+  status: BlogPost['status'],
+  updatedAt: string,
+  publishedAt: string | null = null
+): BlogPost {
+  return {
+    id,
+    slug: id,
+    title: id.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' '),
+    excerpt: `Working notes for ${id}.`,
+    coverImage: '/assets/images/backgrounds/night.webp',
+    author: {name: 'Colin Michaels'},
+    categories: ['CMS'],
+    tags: ['Admin'],
+    status,
+    seo: {title: id, description: id, openGraphImage: ''},
+    contentFormat: 'editorjs',
+    blocks: [],
+    createdAt: '2026-06-01T12:00:00.000Z',
+    updatedAt,
+    publishedAt,
+  };
+}
+
+const mockPosts: readonly BlogPost[] = [
+  createPost('next-article', 'scheduled', '2026-07-08T12:00:00.000Z', '2026-07-23T15:00:00.000Z'),
+  createPost('active-draft', 'draft', '2026-07-09T12:00:00.000Z'),
+  createPost('older-draft', 'draft', '2026-07-08T12:00:00.000Z'),
+  createPost('published-one', 'published', '2026-07-07T12:00:00.000Z', '2026-07-07T12:00:00.000Z'),
+  createPost('published-two', 'published', '2026-07-06T12:00:00.000Z', '2026-07-06T12:00:00.000Z'),
+  createPost('archived-one', 'archived', '2026-07-01T12:00:00.000Z'),
+];
 
 function createAuthorization(requiredRoles: readonly string[]): AdminAuthorization {
   return {
@@ -31,13 +58,12 @@ function createAuthorization(requiredRoles: readonly string[]): AdminAuthorizati
 
 describe('AdminOverviewComponent', () => {
   let fixture: ComponentFixture<AdminOverviewComponent>;
-  let authService: jasmine.SpyObj<Pick<AuthService, 'getRoleAuthorization'>>;
 
   beforeEach(async () => {
     const blogRepository = {
-      getAdminStats: jasmine.createSpy('getAdminStats').and.returnValue(mockStats),
-    } satisfies Pick<BlogRepositoryService, 'getAdminStats'>;
-    authService = jasmine.createSpyObj('AuthService', ['getRoleAuthorization']);
+      getAdminPosts$: jasmine.createSpy('getAdminPosts$').and.returnValue(of(mockPosts)),
+    } satisfies Pick<BlogRepositoryService, 'getAdminPosts$'>;
+    const authService = jasmine.createSpyObj<Pick<AuthService, 'getRoleAuthorization'>>('AuthService', ['getRoleAuthorization']);
     authService.getRoleAuthorization.and.callFake((requiredRoles: readonly string[]) => of(createAuthorization(requiredRoles)));
 
     await TestBed.configureTestingModule({
@@ -55,27 +81,29 @@ describe('AdminOverviewComponent', () => {
     fixture.detectChanges();
   });
 
-  it('surfaces the Links manager from the admin landing page', () => {
+  it('renders an operations-first publishing overview from repository posts', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Publishing Console');
+    expect(element.textContent).toContain('Publishing schedule');
+    expect(element.textContent).toContain('Next Article');
+    expect(element.textContent).toContain('Drafts in progress');
+    expect(element.textContent).toContain('Active Draft');
+    expect(element.textContent).toContain('Recently published');
+    expect(element.textContent).toContain('Published One');
+    expect(element.textContent).toContain('6');
+  });
+
+  it('keeps site managers in one compact role-aware list', () => {
     const element = fixture.nativeElement as HTMLElement;
     const links = Array.from(element.querySelectorAll<HTMLAnchorElement>(`a[href="${adminLinksRoute}"]`));
 
-    expect(element.textContent).toContain('Publishing Console');
-    expect(element.textContent).toContain('Homepage Curation');
-    expect(element.textContent).toContain('Feature exactly three recommended links.');
-    expect(element.textContent).toContain('Links');
-    expect(element.textContent).toContain('Curate links');
-    expect(links.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('renders publishing stats and workflow cards for authorized admins', () => {
-    const element = fixture.nativeElement as HTMLElement;
-
-    expect(element.textContent).toContain('Total Posts');
-    expect(element.textContent).toContain('12');
-    expect(element.textContent).toContain('CMS');
-    expect(element.textContent).toContain('New Post');
+    expect(element.textContent).toContain('Manage site');
+    expect(element.textContent).toContain('Homepage');
     expect(element.textContent).toContain('Topics');
+    expect(element.textContent).toContain('Recommended Links');
     expect(element.textContent).toContain('Media Library');
-    expect(element.textContent).toContain('User Management');
+    expect(element.textContent).toContain('Users');
+    expect(links.length).toBe(1);
   });
 });

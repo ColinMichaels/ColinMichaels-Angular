@@ -1,3 +1,5 @@
+import {BlogSocialPromotion} from './blog-social-promotion.model';
+
 export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type BlogContentFormat = 'editorjs';
@@ -143,6 +145,7 @@ export interface BlogPost {
   og?: BlogOpenGraphMetadata;
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
+  socialPromotion?: BlogSocialPromotion;
   preview?: BlogPostPreview;
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,6 @@
-import {Component, inject, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
+import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
   faArrowRight,
@@ -7,42 +8,47 @@ import {
   faHouse,
   faImages,
   faLink,
-  faNewspaper,
-  faPenToSquare,
   faTags,
   faUserGear,
 } from '@fortawesome/free-solid-svg-icons';
 import {RouterLink} from '@angular/router';
-import {map, tap} from 'rxjs';
+import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {BlogPost} from '../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../features/blog/services/blog-repository.service';
-import {AdminAuthorization, AuthService} from '../../../services/auth.service';
+import {AuthService} from '../../../services/auth.service';
 import {
   CMS_ACCESS_ROLES,
   MEDIA_LIBRARY_ACCESS_ROLES,
   USER_MANAGEMENT_ACCESS_ROLES,
 } from '../../../shared/user-account/user-account.model';
-import {writeAuthDebug} from '../../../shared/debug/auth-debug';
 
-interface AdminWorkflowLink {
-  eyebrow: string;
-  title: string;
+type DashboardLinkAccess = 'cms' | 'media' | 'users';
+
+interface DashboardLink {
+  access: DashboardLinkAccess;
   description: string;
+  icon: IconDefinition;
+  label: string;
   route: string;
-  actionLabel: string;
-  icon: typeof faArrowRight;
-  iconClass: string;
 }
 
 const adminRoute = `/${PATH_NAMES.ADMIN}`;
 const cmsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_CMS}`;
-const userManagementRoute = `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`;
-const mediaLibraryRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`;
-const homepageHeroRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_HOMEPAGE}`;
-const topicsRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_TOPICS}`;
-const recommendedLinksRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`;
-const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
+const calendarRoute = `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_CALENDAR}`;
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
 
 @Component({
   selector: 'app-admin-overview',
@@ -50,184 +56,154 @@ const commentsRoute = `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`;
     FaIconComponent,
     RouterLink,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
-      <section class="mx-auto max-w-7xl space-y-9">
-        <nav class="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-400">
-          <div class="flex items-center gap-4">
-            <a routerLink="/" class="hover:text-zinc-100">Home</a>
-            <a routerLink="/blog" class="hover:text-zinc-100">Blog</a>
-            @if (canManageCms()) {
-              <a [routerLink]="homepageHeroRoute" class="text-cyan-200 hover:text-cyan-100">Hero</a>
-              <a [routerLink]="recommendedLinksRoute" class="text-cyan-200 hover:text-cyan-100">Links</a>
-            }
-          </div>
-          <div class="flex items-center gap-3">
-            @if (canManageUsers()) {
-              <a [routerLink]="userManagementRoute" class="text-cyan-200 hover:text-cyan-100">User Management</a>
-            }
-          </div>
-        </nav>
-
-        <header class="grid gap-6 border-b border-zinc-800 pb-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>
-            <h1 class="text-4xl font-semibold text-zinc-50 sm:text-5xl">Publishing Console</h1>
-            <p class="max-w-3xl text-base leading-8 text-zinc-400">
-              Manage the public site surfaces from one protected workspace: posts, topics, homepage links, media, and
-              access controls.
+    <main class="min-h-[calc(100vh-4rem)] bg-zinc-950 px-5 py-8 text-zinc-100 sm:px-8 lg:px-10 xl:px-12">
+      <section class="mx-auto max-w-7xl space-y-8">
+        <header class="border-b border-zinc-800 pb-7">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">Publishing Console</h1>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+              Keep the next release moving, return to active drafts, and manage the surfaces behind the public site.
             </p>
           </div>
-
-          <aside class="border border-cyan-400/30 bg-cyan-400/10 p-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">Homepage Curation</p>
-            <h2 class="mt-3 text-xl font-semibold text-zinc-50">Tune the first viewport and featured modules.</h2>
-            <p class="mt-3 text-sm leading-6 text-zinc-300">
-              Use the Hero manager for the slideshow and article panel, then rotate recommended links below the author bio.
-            </p>
-            @if (canManageCms()) {
-              <a [routerLink]="homepageHeroRoute"
-                 class="mt-5 inline-flex items-center gap-2 border border-cyan-300 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-300 hover:text-zinc-950">
-                Open Hero
-                <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
-              </a>
-            }
-          </aside>
         </header>
 
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Publishing statistics">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Posts</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats.total }}</p>
+        <section class="grid border-y border-zinc-800 sm:grid-cols-2 xl:grid-cols-4" aria-label="Publishing status">
+          <div class="border-b border-zinc-800 px-4 py-4 sm:border-r xl:border-b-0">
+            <p class="text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">All posts</p>
+            <p class="mt-2 text-2xl font-semibold text-zinc-100">{{ stats().total }}</p>
           </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats.published }}</p>
+          <div class="border-b border-zinc-800 px-4 py-4 xl:border-b-0 xl:border-r">
+            <p class="text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">Published</p>
+            <p class="mt-2 text-2xl font-semibold text-emerald-300">{{ stats().published }}</p>
           </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Drafts</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats.drafts }}</p>
+          <div class="border-b border-zinc-800 px-4 py-4 sm:border-b-0 sm:border-r">
+            <p class="text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">Drafts</p>
+            <p class="mt-2 text-2xl font-semibold text-amber-300">{{ stats().drafts }}</p>
           </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Scheduled</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats.scheduled }}</p>
+          <div class="px-4 py-4">
+            <p class="text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">Scheduled</p>
+            <p class="mt-2 text-2xl font-semibold text-cyan-300">{{ stats().scheduled }}</p>
           </div>
         </section>
 
-        <section class="grid gap-8 border-t border-zinc-800 pt-7 lg:grid-cols-[minmax(0,1fr)_360px]">
-          @if (canManageCms()) {
-            <section class="space-y-4">
-              <div class="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Content</p>
-                  <h2 class="mt-2 text-2xl font-semibold text-zinc-50">Publishing Workflows</h2>
+        <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_350px]">
+          <div class="space-y-8">
+            @if (canManageCms()) {
+              <section aria-labelledby="next-scheduled-heading">
+                <div class="flex items-end justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Up next</p>
+                    <h2 id="next-scheduled-heading" class="mt-2 text-xl font-semibold text-zinc-50">Publishing schedule</h2>
+                  </div>
+                  <a [routerLink]="calendarRoute" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200">View calendar</a>
                 </div>
-                <a [routerLink]="cmsRoute"
-                   class="inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 hover:text-cyan-100">
-                  Open post table
-                  <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
-                </a>
-              </div>
 
-              <div class="grid gap-4 md:grid-cols-2">
-                @for (workflow of cmsWorkflows; track workflow.route) {
-                  <a
-                    [routerLink]="workflow.route"
-                    class="group grid min-h-48 content-between border border-zinc-800 bg-zinc-900/70 p-5 transition hover:border-cyan-400 hover:bg-zinc-900"
-                  >
-                    <div>
-                      <span [class]="workflow.iconClass">
-                        <fa-icon [icon]="workflow.icon" aria-hidden="true"></fa-icon>
-                      </span>
-                      <p
-                        class="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">{{ workflow.eyebrow }}</p>
-                      <h3 class="mt-2 text-2xl font-semibold text-zinc-50">{{ workflow.title }}</h3>
-                      <p class="mt-3 text-sm leading-6 text-zinc-400">{{ workflow.description }}</p>
+                @if (nextScheduledPost(); as post) {
+                  <article class="mt-4 grid gap-5 border border-cyan-400/35 bg-cyan-400/5 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-3 text-xs">
+                        <span class="border border-cyan-500/50 px-2 py-1 font-semibold uppercase tracking-wide text-cyan-300">Scheduled</span>
+                        <span class="text-zinc-500">{{ formatDateTime(post.publishedAt) }}</span>
+                        @if (isOverdue(post)) {
+                          <span class="text-amber-300">Awaiting publisher</span>
+                        }
+                      </div>
+                      <h3 class="mt-3 truncate text-2xl font-semibold text-zinc-50">{{ post.title }}</h3>
+                      <p class="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-zinc-400">{{ post.excerpt }}</p>
                     </div>
-                    <span
-                      class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 group-hover:text-cyan-100">
-                      {{ workflow.actionLabel }}
+                    <a
+                      [routerLink]="[cmsRoute, post.slug, 'edit']"
+                      class="inline-flex h-10 items-center justify-center gap-2 border border-cyan-400 px-3 text-sm font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                    >
+                      Edit schedule
                       <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
+                    </a>
+                  </article>
+                } @else {
+                  <div class="mt-4 border border-dashed border-zinc-800 px-5 py-8">
+                    <p class="text-sm font-medium text-zinc-300">Nothing is scheduled.</p>
+                    <p class="mt-2 text-sm text-zinc-500">Choose a future publish time on a draft when the next article is ready.</p>
+                  </div>
+                }
+              </section>
+
+              <section aria-labelledby="drafts-heading">
+                <div class="flex items-end justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Continue working</p>
+                    <h2 id="drafts-heading" class="mt-2 text-xl font-semibold text-zinc-50">Drafts in progress</h2>
+                  </div>
+                  <a [routerLink]="cmsRoute" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200">All posts</a>
+                </div>
+
+                <div class="mt-4 divide-y divide-zinc-800 border-y border-zinc-800">
+                  @for (post of recentDrafts(); track post.id) {
+                    <a
+                      [routerLink]="[cmsRoute, post.slug, 'edit']"
+                      class="group grid gap-3 px-1 py-4 hover:bg-zinc-900/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-3"
+                    >
+                      <span class="min-w-0">
+                        <span class="block truncate text-sm font-semibold text-zinc-200 group-hover:text-cyan-200">{{ post.title }}</span>
+                        <span class="mt-1 block truncate text-xs text-zinc-500">{{ post.excerpt || 'No excerpt yet.' }}</span>
+                      </span>
+                      <span class="flex items-center gap-3 text-xs text-zinc-500">
+                        Updated {{ formatDate(post.updatedAt) }}
+                        <fa-icon [icon]="faArrowRight" class="text-zinc-700 group-hover:text-cyan-300" aria-hidden="true"></fa-icon>
+                      </span>
+                    </a>
+                  } @empty {
+                    <div class="px-3 py-8 text-sm text-zinc-500">No drafts are in progress.</div>
+                  }
+                </div>
+              </section>
+            } @else {
+              <section class="border border-zinc-800 p-6">
+                <h2 class="text-xl font-semibold text-zinc-50">Publishing access is restricted</h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-400">Your current role can use the tools shown in the sidebar.</p>
+              </section>
+            }
+          </div>
+
+          <aside class="space-y-8">
+            @if (canManageCms()) {
+              <section aria-labelledby="recent-heading">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Live site</p>
+                <h2 id="recent-heading" class="mt-2 text-xl font-semibold text-zinc-50">Recently published</h2>
+                <div class="mt-4 divide-y divide-zinc-800 border-y border-zinc-800">
+                  @for (post of recentlyPublished(); track post.id) {
+                    <a [routerLink]="['/blog', post.slug]" class="group block py-3" target="_blank" rel="noopener noreferrer">
+                      <span class="block line-clamp-2 text-sm font-medium leading-5 text-zinc-300 group-hover:text-cyan-200">{{ post.title }}</span>
+                      <span class="mt-1 block text-xs text-zinc-600">{{ formatDate(post.publishedAt) }}</span>
+                    </a>
+                  } @empty {
+                    <p class="py-6 text-sm text-zinc-500">No published posts are available yet.</p>
+                  }
+                </div>
+              </section>
+            }
+
+            <section aria-labelledby="manage-site-heading">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Workspace</p>
+              <h2 id="manage-site-heading" class="mt-2 text-xl font-semibold text-zinc-50">Manage site</h2>
+              <div class="mt-4 divide-y divide-zinc-800 border-y border-zinc-800">
+                @for (link of visibleDashboardLinks(); track link.route) {
+                  <a [routerLink]="link.route" class="group flex items-center gap-3 py-3">
+                    <span class="grid h-8 w-8 shrink-0 place-items-center border border-zinc-800 text-zinc-500 group-hover:border-cyan-500/60 group-hover:text-cyan-200">
+                      <fa-icon [icon]="link.icon" aria-hidden="true"></fa-icon>
                     </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold text-zinc-300 group-hover:text-cyan-200">{{ link.label }}</span>
+                      <span class="mt-0.5 block truncate text-xs text-zinc-600">{{ link.description }}</span>
+                    </span>
+                    <fa-icon [icon]="faArrowRight" class="text-xs text-zinc-700 group-hover:text-cyan-300" aria-hidden="true"></fa-icon>
                   </a>
                 }
               </div>
             </section>
-          } @else {
-            <section class="border border-zinc-800 bg-zinc-900/60 p-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Content</p>
-              <h2 class="mt-3 text-2xl font-semibold text-zinc-50">Publishing tools are restricted.</h2>
-              <p class="mt-3 text-sm leading-6 text-zinc-400">CMS controls appear here for users with content editor
-                access.</p>
-            </section>
-          }
-
-          <section class="space-y-4">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">Operations</p>
-              <h2 class="mt-2 text-2xl font-semibold text-zinc-50">Library And Access</h2>
-            </div>
-
-            <div class="grid gap-4">
-              @if (canManageMedia()) {
-                <a
-                  [routerLink]="mediaWorkflow.route"
-                  class="group border border-zinc-800 bg-zinc-900/70 p-5 transition hover:border-emerald-400 hover:bg-zinc-900"
-                >
-                  <span [class]="mediaWorkflow.iconClass">
-                    <fa-icon [icon]="mediaWorkflow.icon" aria-hidden="true"></fa-icon>
-                  </span>
-                  <p
-                    class="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">{{ mediaWorkflow.eyebrow }}</p>
-                  <h3 class="mt-2 text-xl font-semibold text-zinc-50">{{ mediaWorkflow.title }}</h3>
-                  <p class="mt-3 text-sm leading-6 text-zinc-400">{{ mediaWorkflow.description }}</p>
-                  <span
-                    class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-emerald-200 group-hover:text-emerald-100">
-                    {{ mediaWorkflow.actionLabel }}
-                    <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
-                  </span>
-                </a>
-              } @else {
-                <article class="border border-zinc-800 bg-zinc-900/40 p-5 text-zinc-500" aria-disabled="true">
-                  <span [class]="mediaWorkflow.iconClass">
-                    <fa-icon [icon]="mediaWorkflow.icon" aria-hidden="true"></fa-icon>
-                  </span>
-                  <h3 class="mt-5 text-xl font-semibold text-zinc-400">Media Library</h3>
-                  <p class="mt-3 text-sm leading-6">Requires media manager access.</p>
-                </article>
-              }
-
-              @if (canManageUsers()) {
-                <a
-                  [routerLink]="userWorkflow.route"
-                  class="group border border-zinc-800 bg-zinc-900/70 p-5 transition hover:border-violet-400 hover:bg-zinc-900"
-                >
-                  <span [class]="userWorkflow.iconClass">
-                    <fa-icon [icon]="userWorkflow.icon" aria-hidden="true"></fa-icon>
-                  </span>
-                  <p
-                    class="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">{{ userWorkflow.eyebrow }}</p>
-                  <h3 class="mt-2 text-xl font-semibold text-zinc-50">{{ userWorkflow.title }}</h3>
-                  <p class="mt-3 text-sm leading-6 text-zinc-400">{{ userWorkflow.description }}</p>
-                  <span
-                    class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-200 group-hover:text-violet-100">
-                    {{ userWorkflow.actionLabel }}
-                    <fa-icon [icon]="faArrowRight" aria-hidden="true"></fa-icon>
-                  </span>
-                </a>
-              } @else {
-                <article class="border border-zinc-800 bg-zinc-900/40 p-5 text-zinc-500" aria-disabled="true">
-                  <span [class]="userWorkflow.iconClass">
-                    <fa-icon [icon]="userWorkflow.icon" aria-hidden="true"></fa-icon>
-                  </span>
-                  <h3 class="mt-5 text-xl font-semibold text-zinc-400">User Management</h3>
-                  <p class="mt-3 text-sm leading-6">Requires the admin custom claim.</p>
-                </article>
-              }
-            </div>
-          </section>
-        </section>
+          </aside>
+        </div>
       </section>
     </main>
   `,
@@ -237,129 +213,105 @@ export class AdminOverviewComponent {
   private readonly authService = inject(AuthService);
 
   protected readonly cmsRoute = cmsRoute;
-  protected readonly homepageHeroRoute = homepageHeroRoute;
-  protected readonly recommendedLinksRoute = recommendedLinksRoute;
-  protected readonly userManagementRoute = userManagementRoute;
+  protected readonly calendarRoute = calendarRoute;
   protected readonly faArrowRight = faArrowRight;
-  protected readonly cmsWorkflows: readonly AdminWorkflowLink[] = [
-    {
-      eyebrow: 'Posts',
-      title: 'CMS',
-      description: 'Review published posts, drafts, scheduled entries, and archive status in the main content table.',
-      route: cmsRoute,
-      actionLabel: 'Manage posts',
-      icon: faNewspaper,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-cyan-400/50 bg-cyan-400/10 text-cyan-200',
-    },
-    {
-      eyebrow: 'Drafting',
-      title: 'New Post',
-      description: 'Start a new Editor.js blog draft with metadata, categories, tags, media, and SEO controls.',
-      route: `${cmsRoute}/new`,
-      actionLabel: 'Create draft',
-      icon: faPenToSquare,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-sky-400/50 bg-sky-400/10 text-sky-200',
-    },
-    {
-      eyebrow: 'Navigation',
-      title: 'Topics',
-      description: 'Manage topic hubs that organize public blog sections and search entry points.',
-      route: topicsRoute,
-      actionLabel: 'Edit topics',
-      icon: faTags,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-amber-400/50 bg-amber-400/10 text-amber-200',
-    },
-    {
-      eyebrow: 'Homepage',
-      title: 'Hero',
-      description: 'Manage the first viewport copy, background slideshow, and featured article overlay.',
-      route: homepageHeroRoute,
-      actionLabel: 'Edit hero',
-      icon: faHouse,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-teal-400/50 bg-teal-400/10 text-teal-200',
-    },
-    {
-      eyebrow: 'Homepage',
-      title: 'Links',
-      description: 'Maintain the recommended-site pool and rotate which three links are featured under the author bio.',
-      route: recommendedLinksRoute,
-      actionLabel: 'Curate links',
-      icon: faLink,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-200',
-    },
-    {
-      eyebrow: 'Community',
-      title: 'Comments',
-      description: 'Review first-time reader comments, approve trusted voices, and moderate published discussion.',
-      route: commentsRoute,
-      actionLabel: 'Moderate comments',
-      icon: faComments,
-      iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-lime-400/50 bg-lime-400/10 text-lime-200',
-    },
-  ];
-  protected readonly mediaWorkflow: AdminWorkflowLink = {
-    eyebrow: 'Assets',
-    title: 'Media Library',
-    description: 'Upload, organize, inspect, and reuse images and supporting content assets.',
-    route: mediaLibraryRoute,
-    actionLabel: 'Open library',
-    icon: faImages,
-    iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-emerald-400/50 bg-emerald-400/10 text-emerald-200',
-  };
-  protected readonly userWorkflow: AdminWorkflowLink = {
-    eyebrow: 'Security',
-    title: 'User Management',
-    description: 'Review authorized users and adjust admin, CMS, editor, media, and viewer roles.',
-    route: userManagementRoute,
-    actionLabel: 'Manage users',
-    icon: faUserGear,
-    iconClass: 'inline-flex h-10 w-10 items-center justify-center border border-violet-400/50 bg-violet-400/10 text-violet-200',
-  };
-  protected readonly stats = this.blogRepository.getAdminStats();
+  protected readonly posts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
+  protected readonly stats = computed(() => {
+    const posts = this.posts();
+    return {
+      total: posts.length,
+      published: posts.filter(post => post.status === 'published').length,
+      drafts: posts.filter(post => post.status === 'draft').length,
+      scheduled: posts.filter(post => post.status === 'scheduled').length,
+    };
+  });
+  protected readonly nextScheduledPost = computed(() => this.posts()
+    .filter(post => post.status === 'scheduled' && Boolean(post.publishedAt))
+    .sort((left, right) => (left.publishedAt ?? '').localeCompare(right.publishedAt ?? ''))[0]);
+  protected readonly recentDrafts = computed(() => this.posts()
+    .filter(post => post.status === 'draft')
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, 4));
+  protected readonly recentlyPublished = computed(() => this.posts()
+    .filter(post => post.status === 'published')
+    .sort((left, right) => (right.publishedAt ?? right.updatedAt).localeCompare(left.publishedAt ?? left.updatedAt))
+    .slice(0, 5));
   protected readonly canManageCms = toSignal(
-    this.authService.getRoleAuthorization(CMS_ACCESS_ROLES, true).pipe(
-      tap(authorization => this.debugAdmin('CMS button authorization resolved', {
-        shouldShowCmsButtons: authorization.isAuthorized,
-        authorization: this.createAuthorizationDebugSummary(authorization),
-      })),
-      map(authorization => authorization.isAuthorized)
-    ),
+    this.authService.getRoleAuthorization(CMS_ACCESS_ROLES).pipe(map(authorization => authorization.isAuthorized)),
     {initialValue: false}
   );
   protected readonly canManageMedia = toSignal(
-    this.authService.getRoleAuthorization(MEDIA_LIBRARY_ACCESS_ROLES, true).pipe(
-      tap(authorization => this.debugAdmin('media button authorization resolved', {
-        shouldShowMediaButton: authorization.isAuthorized,
-        authorization: this.createAuthorizationDebugSummary(authorization),
-      })),
-      map(authorization => authorization.isAuthorized)
-    ),
+    this.authService.getRoleAuthorization(MEDIA_LIBRARY_ACCESS_ROLES).pipe(map(authorization => authorization.isAuthorized)),
     {initialValue: false}
   );
   protected readonly canManageUsers = toSignal(
-    this.authService.getRoleAuthorization(USER_MANAGEMENT_ACCESS_ROLES, true).pipe(
-      tap(authorization => this.debugAdmin('user management button authorization resolved', {
-        shouldShowUserManagementButton: authorization.isAuthorized,
-        authorization: this.createAuthorizationDebugSummary(authorization),
-      })),
-      map(authorization => authorization.isAuthorized)
-    ),
+    this.authService.getRoleAuthorization(USER_MANAGEMENT_ACCESS_ROLES).pipe(map(authorization => authorization.isAuthorized)),
     {initialValue: false}
   );
+  private readonly dashboardLinks: readonly DashboardLink[] = [
+    {
+      access: 'cms',
+      description: 'Hero copy, slides, and featured article',
+      icon: faHouse,
+      label: 'Homepage',
+      route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_HOMEPAGE}`,
+    },
+    {
+      access: 'cms',
+      description: 'Topic hubs and discovery paths',
+      icon: faTags,
+      label: 'Topics',
+      route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_TOPICS}`,
+    },
+    {
+      access: 'cms',
+      description: 'Homepage recommendation rotation',
+      icon: faLink,
+      label: 'Recommended Links',
+      route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_RECOMMENDED_LINKS}`,
+    },
+    {
+      access: 'cms',
+      description: 'Reader discussion and approvals',
+      icon: faComments,
+      label: 'Comments',
+      route: `${adminRoute}/${PATH_NAMES.ADMIN_COMMENTS}`,
+    },
+    {
+      access: 'media',
+      description: 'Images and supporting content assets',
+      icon: faImages,
+      label: 'Media Library',
+      route: `${cmsRoute}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
+    },
+    {
+      access: 'users',
+      description: 'Accounts and role permissions',
+      icon: faUserGear,
+      label: 'Users',
+      route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`,
+    },
+  ];
+  protected readonly visibleDashboardLinks = computed(() => this.dashboardLinks.filter(link => {
+    switch (link.access) {
+      case 'cms':
+        return this.canManageCms();
+      case 'media':
+        return this.canManageMedia();
+      case 'users':
+        return this.canManageUsers();
+    }
+  }));
 
-  private createAuthorizationDebugSummary(authorization: AdminAuthorization): Record<string, unknown> {
-    return {
-      uid: authorization.uid,
-      email: authorization.email,
-      isAuthenticated: authorization.isAuthenticated,
-      isAdmin: authorization.isAdmin,
-      isAuthorized: authorization.isAuthorized,
-      requiredRoles: authorization.requiredRoles,
-      claimKeys: Object.keys(authorization.claims).sort((a, b) => a.localeCompare(b)),
-    };
+  protected formatDate(value: string | null): string {
+    return value ? dateFormatter.format(new Date(value)) : 'Not set';
   }
 
-  private debugAdmin(event: string, details?: unknown): void {
-    writeAuthDebug('AdminDebug', event, details);
+  protected formatDateTime(value: string | null): string {
+    return value ? dateTimeFormatter.format(new Date(value)) : 'No publish time';
+  }
+
+  protected isOverdue(post: BlogPost): boolean {
+    return Boolean(post.publishedAt) && new Date(post.publishedAt as string).getTime() <= Date.now();
   }
 }

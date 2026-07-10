@@ -11,6 +11,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/post-list/post-list.component').then(m => m.CmsPostListComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_CALENDAR}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./pages/publishing-calendar/publishing-calendar.component').then(m => m.PublishingCalendarComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_MEDIA_LIBRARY}`,
     data: {roles: MEDIA_LIBRARY_ACCESS_ROLES, seo: MEDIA_LIBRARY_SEO_METADATA},
     loadComponent: () => import('../media-library/media-library-page.component').then(m => m.MediaLibraryPageComponent),

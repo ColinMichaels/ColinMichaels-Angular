@@ -3,22 +3,28 @@ import {Routes} from '@angular/router';
 import {AuthGuard} from '../guards/auth.guard';
 import {redirectGuard} from '../guards/redirect.guard';
 import {PATH_NAMES} from '../app-route-paths';
-import {LOGIN_SEO_METADATA} from '../shared/seo/seo.metadata';
+import {osDeviceGuard} from './guards/os-device.guard';
+import {LOGIN_SEO_METADATA, OS_DEVICE_REQUIRED_SEO_METADATA} from '../shared/seo/seo.metadata';
 
 export const osRoutes: Routes = [
   {
     path: PATH_NAMES.OS_MAIN,
     pathMatch: 'full',
-    canActivate: [AuthGuard],
+    canActivate: [osDeviceGuard, AuthGuard],
     data: {animation: 'DesktopWindow'},
     loadComponent: () => import('../components/game/desktop/desktop.component').then(m => m.DesktopComponent),
   },
   {
     path: `${PATH_NAMES.OS_MAIN}/:app`,
     pathMatch: 'full',
-    canActivate: [AuthGuard],
+    canActivate: [osDeviceGuard, AuthGuard],
     data: {animation: 'DesktopWindow'},
     loadComponent: () => import('../components/game/desktop/desktop.component').then(m => m.DesktopComponent),
+  },
+  {
+    path: PATH_NAMES.OS_DEVICE_REQUIRED,
+    data: {seo: OS_DEVICE_REQUIRED_SEO_METADATA},
+    loadComponent: () => import('./pages/os-device-required/os-device-required.component').then(m => m.OsDeviceRequiredComponent),
   },
   {
     path: PATH_NAMES.OS_LOGIN,

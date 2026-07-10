@@ -79,20 +79,6 @@ const RAW_STATIC_SEARCH_ITEMS: readonly Omit<SiteSearchItem, 'searchText'>[] = [
     tags: ['angular', 'firebase', 'cms', 'frontend'],
     date: null,
   },
-  {
-    id: 'page-labs',
-    type: 'page' as const,
-    title: 'Labs',
-    excerpt: 'Interactive demos, frontend experiments, OS-style UI systems, and public project notes.',
-    path: `/${PATH_NAMES.LABS}`,
-    titleText: 'labs projects experiments',
-    excerptText: 'interactive demos frontend experiments reusable os style interface systems public project notes',
-    taxonomyText: 'labs projects experiments',
-    bodyText: '',
-    categories: ['Projects'],
-    tags: ['labs', 'experiments', 'os', 'frontend'],
-    date: null,
-  },
 ];
 
 const STATIC_SEARCH_ITEMS: readonly SiteSearchItem[] = RAW_STATIC_SEARCH_ITEMS.map(item => ({
