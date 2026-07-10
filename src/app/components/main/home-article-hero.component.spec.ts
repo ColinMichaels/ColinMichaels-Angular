@@ -158,6 +158,30 @@ describe('HomeArticleHeroComponent', () => {
     expect(element.querySelector('.home-hero-slide-controls')).toBeNull();
   });
 
+  it('prioritizes every rotating hero background that can become the LCP image', async () => {
+    const fixture = await createComponent([createPost(1)], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      slides: [
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-one',
+          imageUrl: '/assets/images/backgrounds/day.webp',
+        },
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-two',
+          imageUrl: '/assets/images/backgrounds/night.webp',
+          sortOrder: 20,
+        },
+      ],
+    });
+    const element = fixture.nativeElement as HTMLElement;
+    const images = Array.from(element.querySelectorAll<HTMLImageElement>('.home-hero-background-image'));
+
+    expect(images.length).toBe(2);
+    expect(images.every(image => image.getAttribute('fetchpriority') === 'high')).toBeTrue();
+  });
+
   it('uses the selected CMS featured post when it is available', async () => {
     const fixture = await createComponent([
       createPost(1),

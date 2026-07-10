@@ -7,12 +7,11 @@
   <app-site-header/>
 }
 <div
-  class="min-h-screen bg-zinc-800/70"
+  class="app-route-frame min-h-screen bg-zinc-800/70"
   [class.site-theme-scope]="showSiteHeader()"
   [class.public-reader-scope]="showReaderTools()"
-  [@routeAnimations]="prepareRoute(outlet)"
 >
-  <router-outlet #outlet='outlet'></router-outlet>
+  <router-outlet></router-outlet>
   @if (showReaderTools()) {
     @defer (when showReaderTools()) {
       <app-reader-tools/>

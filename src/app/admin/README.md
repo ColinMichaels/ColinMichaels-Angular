@@ -20,6 +20,29 @@ The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. E
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 
+## Content Operations Bulk Editor
+
+The Bulk Post Editor is available at `/admin/cms/content-operations` for CMS content roles. It is the first dry-run slice of the future content-operations service and does not write to canonical posts.
+
+Component inventory:
+
+- `ContentOperationsPageComponent` provides a dense audit table, filters, selection, local manifest import, safe candidate editing, validation, and responsive desktop/mobile review layouts.
+- `content-operations.models.ts` defines capability, artifact descriptor, diff, guard, validation, and CMS-local working-item contracts.
+- `cms-post-artifact.adapter.ts` owns opaque current-post JSON serialization, SHA-256 descriptor generation, allowlisted diffs, and protected-field validation.
+- `post-optimization-manifest.adapter.ts` validates the existing optimization manifest and converts matched rows into metadata/taxonomy candidates without changing canonical fields.
+- `content-operations-audit.ts` reuses the existing CMS SEO checklist for compact per-post issue filtering.
+
+Safety and migration notes:
+
+- Only SEO title, meta description, categories, and tags can change in a candidate.
+- Post ID, slug, display title, body, status, dates, canonical URL, and media stay protected.
+- Redirect-required recommendations are blocked.
+- The imported manifest is read-only migration input, not the future API contract.
+- Apply and publish stay locked until authenticated revisions, approval, concurrency, audit, and idempotent apply boundaries exist server-side.
+- AI providers may propose candidate artifacts in a later phase but may not write posts directly.
+
+See `docs/ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md` for the full data flow and deferred service design.
+
 ## CMS AI Assistant
 
 The blog editor includes a CMS-local writing assistant for metadata drafting:
@@ -218,6 +241,7 @@ The comment moderation console is available at `/admin/comments` for CMS-capable
 - First-time commenters are held as `pending`; approved commenters become trusted and future comments publish immediately.
 - Users with `trustedCommenter`, `admin`, `cmsAdmin`, or `contentEditor` publish comments immediately.
 - Comment approval awards points through the server-side point ledger. Reads and shares are also recorded by callable functions and de-duplicated per user/post/provider.
+- Signed-in homepage and post shares can register opaque provider-specific attribution IDs. Landing telemetry is stored separately and never awards points, preventing social preview crawlers from becoming a reward signal.
 
 Migration notes:
 

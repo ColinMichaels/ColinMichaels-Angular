@@ -344,6 +344,8 @@ export class UserProfileComponent {
         return `Read ${event.postSlug ? `/blog/${event.postSlug}` : 'a post'}`;
       case 'post_share':
         return `Shared ${event.postSlug ? `/blog/${event.postSlug}` : 'a post'}${event.provider ? ` via ${event.provider}` : ''}`;
+      case 'site_share':
+        return `Shared ColinMichaels.com${event.provider ? ` via ${event.provider}` : ''}`;
       case 'comment_approved':
         return `Approved comment${event.postSlug ? ` on /blog/${event.postSlug}` : ''}`;
       default:

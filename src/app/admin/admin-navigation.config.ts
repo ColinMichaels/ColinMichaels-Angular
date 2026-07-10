@@ -6,6 +6,7 @@ import {
   faHouse,
   faImages,
   faLink,
+  faListCheck,
   faNewspaper,
   faTags,
   faUserGear,
@@ -53,6 +54,13 @@ export const ADMIN_NAVIGATION_GROUPS: readonly AdminNavigationGroup[] = [
         icon: faNewspaper,
         label: 'Posts',
         route: cmsRoute,
+      },
+      {
+        access: 'cms',
+        exact: false,
+        icon: faListCheck,
+        label: 'Bulk Editor',
+        route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_CONTENT_OPERATIONS}`,
       },
       {
         access: 'cms',

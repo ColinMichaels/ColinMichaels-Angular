@@ -8,7 +8,7 @@ export type UserRole = 'user' | 'admin' | 'cmsAdmin' | 'contentEditor' | 'mediaM
 
 export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 
-export type UserPointEventType = 'post_read' | 'post_share' | 'comment_approved';
+export type UserPointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved';
 
 export interface UserAccountPoints {
   total: number;
@@ -40,6 +40,8 @@ export interface UserPointEvent {
   postId?: string;
   postSlug?: string;
   provider?: string;
+  shareId?: string;
+  targetPath?: string;
   commentId?: string;
   createdAt: string;
 }

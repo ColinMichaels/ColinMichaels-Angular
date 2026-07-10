@@ -94,7 +94,7 @@ interface RenderableBlogImage {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="group scroll-mt-24 pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
+                class="group scroll-mt-48 pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50 sm:scroll-mt-40"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
@@ -110,7 +110,8 @@ interface RenderableBlogImage {
             } @else {
               <h2
                 [id]="row.headingId"
-                class="group scroll-mt-24 pt-4 text-2xl font-semibold text-slate-950 dark:text-zinc-50"
+                class="group sticky top-[10.75rem] z-30 -mx-2 isolate scroll-mt-48 border-b border-slate-200 bg-white px-2 pb-2 pt-4 text-2xl font-semibold text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:top-[8.75rem] sm:scroll-mt-40"
+                data-sticky-section-heading
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
@@ -842,13 +843,13 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
 
     switch (layout) {
       case 'inlineStart':
-        return `space-y-2 sm:float-left sm:clear-left sm:mb-4 sm:mr-6 sm:mt-1 sm:w-72${frameClass}`;
+        return `blog-image-reveal space-y-2 sm:float-left sm:clear-left sm:mb-4 sm:mr-6 sm:mt-1 sm:w-72${frameClass}`;
       case 'inlineEnd':
-        return `space-y-2 sm:float-right sm:clear-right sm:mb-4 sm:ml-6 sm:mt-1 sm:w-72${frameClass}`;
+        return `blog-image-reveal space-y-2 sm:float-right sm:clear-right sm:mb-4 sm:ml-6 sm:mt-1 sm:w-72${frameClass}`;
       case 'contained':
-        return `clear-both space-y-2${frameClass}`;
+        return `blog-image-reveal clear-both space-y-2${frameClass}`;
       case 'fullWidth':
-        return `clear-both space-y-2${frameClass}`;
+        return `blog-image-reveal clear-both space-y-2${frameClass}`;
     }
   }
 
@@ -958,6 +959,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     template.content.querySelectorAll('img').forEach(image => {
       image.setAttribute('loading', image.getAttribute('loading') ?? 'lazy');
       image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
+      image.classList.add('blog-image-reveal');
     });
     this.enhanceAnchors(template);
 
