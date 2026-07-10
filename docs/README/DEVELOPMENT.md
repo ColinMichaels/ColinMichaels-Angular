@@ -44,10 +44,14 @@ npm run test -- --watch=false --browsers=ChromeHeadless
 npm run lint
 ```
 
+## Commits and Pull Requests
+
+Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATION_STANDARD.md). New pull requests automatically start from `.github/pull_request_template.md`; feature PRs normally target `dev` as drafts so the Firebase preview workflow can run.
+
 ## Current Quality Gate Status (Audit Baseline)
 
 - `npm ci`: not re-run in this pass (existing `node_modules` reused)
-- `npm run lint`: runs and reports real legacy issues (`353` current errors)
+- `npm run lint`: runs and reports the current legacy baseline (`262` errors as of the PR #194 validation pass)
 - Focused changed-spec runs with `npx ng test --watch=false --browsers=ChromeHeadless --include=...`: passing (`13/13`)
 - `npm run build`: passing when Angular can fetch configured Google Fonts for production font inlining
 
@@ -60,7 +64,7 @@ Current build observations:
 
 1. Use Node `22` (or any version matching `package.json#engines`).
 2. Run `nvm use` (project now includes `.nvmrc`).
-3. Continue reducing lint backlog from current baseline.
+3. Continue reducing the documented lint backlog from the current baseline.
 
 ## Troubleshooting
 
