@@ -10,8 +10,8 @@ describe('topic hub validation', () => {
     expect(isTopicHub(legacyTopic)).toBeTrue();
   });
 
-  it('accepts the new image and page-copy fields', () => {
-    expect(isTopicHub(TOPIC_HUBS[0])).toBeTrue();
+  it('accepts every code-defined topic and its presentation fields', () => {
+    expect(TOPIC_HUBS.every(topic => isTopicHub(topic))).toBeTrue();
   });
 
   it('rejects malformed optional presentation data', () => {

@@ -175,6 +175,38 @@ const TOPIC_HUBS = [
       'Promote only durable work while keeping unfinished or risky ideas clearly labeled.',
     ],
   },
+  {
+    slug: 'gadgets-toys',
+    title: createSiteTitle('Gadgets & Toys'),
+    heading: 'Gadgets & Toys',
+    description: 'Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.',
+    image: '/assets/images/topics/gadgets-toys.webp',
+    imageAlt: 'A curated amber-lit workbench with a handheld game device, desk robot, toy drone, puzzle, and pocket gadget.',
+    terms: [
+      'gadget',
+      'gadgets',
+      'toy',
+      'toys',
+      'tech gear',
+      'cool tech',
+      'consumer tech',
+      'product review',
+      'product reviews',
+      'electronics',
+      'smart home',
+      'wearables',
+      'gaming hardware',
+    ],
+    assetTitle: 'Gadget Review Field Notes',
+    assetIntro: 'A simple way to separate what I own, what I want to try, and what merely caught my eye while keeping each recommendation useful and honest.',
+    assetItems: [
+      'State whether I own it, borrowed it, tried it briefly, want it, or simply found it interesting online.',
+      'Explain the problem it solves, the playful idea behind it, or the design detail that makes it stand out.',
+      'Share setup, build quality, daily use, limitations, and surprises when hands-on experience is available.',
+      'Treat prices, stock, crowdfunding promises, and release dates as time-sensitive details.',
+      'Disclose gifts, review units, sponsorships, and affiliate links while separating enthusiasm from the verdict.',
+    ],
+  },
 ] as const;
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');

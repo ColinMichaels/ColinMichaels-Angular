@@ -83,7 +83,7 @@ Use standalone Angular patterns where possible.
 
 Implementation notes:
 
-- First pass uses a CSS/SVG 2.5D floating field for the current four topic hubs.
+- First pass uses a CSS/SVG 2.5D floating field for the current five topic hubs.
 - Topic data should remain theme-driven so future map modes can reuse labels, accent colors, icons, counts, placement, and routes.
 - Placement data should include x/y position, depth, scale, and float delay.
 
@@ -255,7 +255,7 @@ Lazy load decorative assets.
 
 # Future Expansion: Orbital Topic Map
 
-If the site grows beyond the current four topic hubs, the static cross layout may become cluttered.
+If the site grows beyond the current five topic hubs, the static floating-field layout may become cluttered.
 
 Future exploration:
 

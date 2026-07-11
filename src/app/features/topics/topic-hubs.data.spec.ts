@@ -1,6 +1,8 @@
 import {
   createTopicHubSeoMetadata,
   findTopicHubBySlug,
+  getMissingDefaultTopicHubs,
+  mergeMissingDefaultTopicHubs,
   resolveTopicHubHeroImage,
   resolveTopicHubPageCopy,
   TOPIC_HUBS,
@@ -34,6 +36,30 @@ describe('topic hub presentation data', () => {
 
     expect(metadata.image).toBe(topic.heroImage!.src);
     expect(metadata.imageAlt).toBe(topic.heroImage!.alt);
+  });
+
+  it('defines Gadgets & Toys as a published default topic with dedicated presentation data', () => {
+    const topic = TOPIC_HUBS.find(defaultTopic => defaultTopic.id === 'topic-gadgets-toys');
+
+    expect(topic?.slug).toBe('gadgets-toys');
+    expect(topic?.title).toBe('Gadgets & Toys');
+    expect(topic?.status).toBe('published');
+    expect(topic?.theme.icon).toBe('gamepad');
+    expect(topic?.heroImage?.src).toBe('/assets/images/topics/gadgets-toys.webp');
+    expect(topic?.pageCopy?.featuredHeading).toBe('Gadgets worth a closer look');
+    expect(createTopicHubSeoMetadata(topic!).path).toBe('/topics/gadgets-toys');
+  });
+
+  it('merges code defaults missing from an existing Firestore topic set without replacing matches', () => {
+    const gadgetsTopic = TOPIC_HUBS.find(topic => topic.id === 'topic-gadgets-toys')!;
+    const existingTopics = TOPIC_HUBS.filter(topic => topic.id !== gadgetsTopic.id);
+    const renamedGadgetsTopic: TopicHub = {...gadgetsTopic, slug: 'my-gadget-shelf'};
+
+    expect(getMissingDefaultTopicHubs(existingTopics)).toEqual([gadgetsTopic]);
+    expect(mergeMissingDefaultTopicHubs(existingTopics)).toContain(gadgetsTopic);
+    expect(getMissingDefaultTopicHubs([...existingTopics, renamedGadgetsTopic])).toEqual([]);
+    expect(mergeMissingDefaultTopicHubs([...existingTopics, renamedGadgetsTopic]))
+      .toContain(renamedGadgetsTopic);
   });
 
   it('resolves a renamed CMS topic from its stable default ID', () => {

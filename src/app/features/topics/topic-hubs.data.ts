@@ -23,9 +23,9 @@ export interface TopicHubAsset {
   items: readonly TopicHubAssetItem[];
 }
 
-export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask';
+export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask' | 'gamepad';
 
-export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask'];
+export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask', 'gamepad'];
 
 export interface TopicHubMapPlacement {
   xPercent: number;
@@ -120,6 +120,11 @@ export const TOPIC_THEME_COLORS = {
     accent: '#a78bfa',
     accentStrong: '#c4b5fd',
     accentRgb: '167 139 250',
+  },
+  gadgets: {
+    accent: '#f59e0b',
+    accentStrong: '#fbbf24',
+    accentRgb: '245 158 11',
   },
 } as const;
 
@@ -592,6 +597,137 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     createdAt: DEFAULT_TOPIC_TIMESTAMP,
     updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
+  {
+    id: 'topic-gadgets-toys',
+    slug: 'gadgets-toys',
+    eyebrow: 'Tech Finds',
+    title: 'Gadgets & Toys',
+    description: 'Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.',
+    summary: 'A running shelf of tech I already own, things I want to try, and clever gadgets I find around the internet—with honest notes about what makes each one worth a closer look.',
+    status: 'published',
+    displayOrder: 50,
+    terms: [
+      'gadget',
+      'gadgets',
+      'toy',
+      'toys',
+      'tech gear',
+      'cool tech',
+      'consumer tech',
+      'product review',
+      'product reviews',
+      'electronics',
+      'smart home',
+      'wearables',
+      'gaming hardware',
+    ],
+    theme: {
+      shortLabel: 'Gadgets',
+      ...TOPIC_THEME_COLORS.gadgets,
+      mapPlacement: {
+        xPercent: 83,
+        yPercent: 28,
+        depth: 3,
+        scale: 0.98,
+        floatDelayMs: -1800,
+      },
+      icon: 'gamepad',
+      heroMotifs: ['Handheld tech', 'Desk robot', 'Toy drone', 'Finds shelf'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/gadgets-toys.webp',
+      alt: 'A curated amber-lit workbench with a handheld game device, desk robot, toy drone, puzzle, and pocket gadget.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Gadgets worth a closer look',
+      featuredDescription: 'Hands-on reviews, wish-list finds, and clever tech that is useful, playful, or simply too interesting not to share.',
+      archiveHeading: 'More gadgets and toys',
+      archiveDescription: 'Browse the rest of the product notes, discoveries, comparisons, and things I am considering.',
+    },
+    asset: {
+      title: 'Gadget Review Field Notes',
+      intro: 'A simple way to separate what I own, what I want to try, and what merely caught my eye—while keeping each recommendation useful and honest.',
+      items: [
+        {
+          label: 'State my relationship to the item',
+          description: 'Mark whether I own it, borrowed it, tried it briefly, want it, or simply found it interesting online.',
+        },
+        {
+          label: 'Explain what makes it interesting',
+          description: 'Focus on the real problem it solves, the playful idea behind it, or the design detail that makes it stand out.',
+        },
+        {
+          label: 'Share hands-on details when available',
+          description: 'Note setup, build quality, daily use, limitations, and the small surprises that product pages usually leave out.',
+        },
+        {
+          label: 'Keep price and availability in context',
+          description: 'Treat prices, stock, crowdfunding promises, and release dates as time-sensitive details that readers should recheck.',
+        },
+        {
+          label: 'Make recommendations transparent',
+          description: 'Clearly disclose gifts, review units, sponsorships, or affiliate links and separate enthusiasm from a final verdict.',
+        },
+      ],
+    },
+    featuredProject: {
+      label: 'Start here',
+      title: 'Gadget Review Field Notes',
+      description: 'The simple owned, wanted, and found framework behind reviews and gadget discoveries on this site.',
+      href: `/${PATH_NAMES.TOPICS}/gadgets-toys#topic-start-here`,
+      ctaLabel: 'Open field notes',
+    },
+    learningPath: [
+      {
+        label: '01',
+        title: 'Spot the idea',
+        description: 'Start with the useful, strange, playful, or unusually thoughtful detail that made the item worth noticing.',
+      },
+      {
+        label: '02',
+        title: 'Label the context',
+        description: 'Say whether it is owned, borrowed, tested, wanted, or simply an interesting online find.',
+      },
+      {
+        label: '03',
+        title: 'Look past the pitch',
+        description: 'Compare the promise with price, setup, compatibility, availability, and the likely day-to-day experience.',
+      },
+      {
+        label: '04',
+        title: 'Use it when possible',
+        description: 'Capture the tactile details, limitations, and surprises that only show up outside a product listing.',
+      },
+      {
+        label: '05',
+        title: 'Share the verdict',
+        description: 'Explain who might enjoy it, who should skip it, and whether the idea is better than the object itself.',
+      },
+    ],
+    checklist: [
+      'Label each item as owned, tested, wanted, or found online.',
+      'Explain why it is interesting before listing specifications.',
+      'Treat price, availability, and crowdfunding claims as time-sensitive.',
+      'Disclose gifts, review units, sponsorships, and affiliate relationships.',
+    ],
+    resources: [
+      {
+        label: 'Gadget Posts',
+        description: 'Browse reviews and interesting technology finds.',
+        href: `/${PATH_NAMES.BLOG}/category/gadgets`,
+      },
+      {
+        label: 'Product Reviews',
+        description: 'Read hands-on notes and product verdicts.',
+        href: `/${PATH_NAMES.BLOG}/tag/product-reviews`,
+      },
+    ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
+  },
 ];
 
 export function getTopicHub(slug: string): TopicHub | undefined {
@@ -625,6 +761,33 @@ export function sortTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] 
       || left.title.localeCompare(right.title)
       || left.slug.localeCompare(right.slug)
   ));
+}
+
+/**
+ * Treat code-defined topics as bootstrap fallbacks: a persisted stable ID or
+ * canonical slug always wins so CMS renames and archived topics stay authoritative.
+ */
+export function getMissingDefaultTopicHubs(
+  topics: readonly TopicHub[],
+  defaults: readonly TopicHub[] = TOPIC_HUBS
+): readonly TopicHub[] {
+  const existingIds = new Set(topics.map(topicHub => topicHub.id));
+  const existingSlugs = new Set(topics.map(topicHub => topicHub.slug));
+
+  return defaults.filter(defaultTopicHub => (
+    !existingIds.has(defaultTopicHub.id)
+      && !existingSlugs.has(defaultTopicHub.slug)
+  ));
+}
+
+export function mergeMissingDefaultTopicHubs(
+  topics: readonly TopicHub[],
+  defaults: readonly TopicHub[] = TOPIC_HUBS
+): readonly TopicHub[] {
+  return sortTopicHubs([
+    ...topics,
+    ...getMissingDefaultTopicHubs(topics, defaults),
+  ]);
 }
 
 const DEFAULT_TOPIC_PAGE_COPY: TopicHubPageCopy = {

@@ -75,6 +75,7 @@ Default artwork is stored in `src/assets/images/topics/`:
 - `recovery-planning.webp`
 - `angular-firebase-architecture.webp`
 - `labs-projects.webp`
+- `gadgets-toys.webp`
 
 The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions remain data, while UI labels stay code-native.
 
@@ -82,11 +83,13 @@ The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions rem
 
 The presentation fields are intentionally optional. Existing Firestore topic documents remain valid and are not rejected by `isTopicHub`.
 
-For the four bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. Stable-ID matching protects renamed CMS slugs. Unknown topics receive generic post-section copy and no forced image.
+For the five bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. Stable-ID matching protects renamed CMS slugs. Unknown topics receive generic post-section copy and no forced image.
+
+When Firestore already contains some bootstrap topics, the repository merges only code defaults whose stable ID and slug are both absent. This lets a newly shipped topic appear immediately without replacing CMS-authored copies of existing topics. A matching archived document remains authoritative and keeps that topic out of public results. The Topic Manager's **Seed Missing Defaults** action refreshes the Firestore collection first and writes only the absent documents, so it can persist a new code default without resetting customized topics or renamed slugs.
 
 The same stable-ID resolver keeps an old bootstrap slug valid after a CMS rename and replaces it with the topic's current canonical slug once published topic data has loaded. This preserves inbound links instead of turning a content rename into a 404.
 
-The Topic Manager exposes the image path, alt text, dimensions, focal position, and topic-specific post-section language. Opening a legacy bootstrap topic populates the form from its fallback presentation data; saving the topic persists those fields to Firestore. Administrators can also use **Seed Defaults** to update the bootstrap documents.
+The Topic Manager exposes the image path, alt text, dimensions, focal position, and topic-specific post-section language. Opening a legacy bootstrap topic populates the form from its fallback presentation data; saving the topic persists those fields to Firestore. Administrators can also use **Seed Missing Defaults** to persist only bootstrap documents that do not already exist.
 
 No existing checklist, learning-path, featured-project, or resource data is deleted. The redesign changes hierarchy and presentation only.
 

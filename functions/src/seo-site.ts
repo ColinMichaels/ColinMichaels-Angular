@@ -7,7 +7,7 @@ export const PERSON_PROFILE_DESCRIPTION = 'Florida applications developer, FPV d
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = `${PERSON_NAME} | Projects, Writing, Media & Recovery Updates`;
 export const HOMEPAGE_DESCRIPTION = `${PERSON_NAME} shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.`;
-export const HOMEPAGE_ANSWER_SUMMARY = `${PERSON_NAME} is a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. ${SITE_NAME} is his personal portfolio, blog, media archive, recovery notebook, and project lab. The site collects Angular and Firebase architecture notes, AI workflow guides, public demos, media experiments, and patient-perspective recovery writing in one crawlable home base. Start with the blog for essays and implementation notes, visit topic hubs for AI setup, recovery planning, Angular/Firebase architecture, and labs projects, or open Labs to explore interactive browser experiments and reusable OS-style UI systems. Public content stays separate from admin, Core OS, and experimental code paths.`;
+export const HOMEPAGE_ANSWER_SUMMARY = `${PERSON_NAME} is a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. ${SITE_NAME} is his personal portfolio, blog, media archive, recovery notebook, and project lab. The site collects Angular and Firebase architecture notes, AI workflow guides, gadget and toy discoveries, public demos, media experiments, and patient-perspective recovery writing in one crawlable home base. Start with the blog for essays and implementation notes, visit topic hubs for AI setup, recovery planning, Angular/Firebase architecture, labs projects, and Gadgets & Toys, or open Labs to explore interactive browser experiments and reusable OS-style UI systems. Public content stays separate from admin, Core OS, and experimental code paths.`;
 export const BLOG_FEED_DESCRIPTION = 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.';
 export const LABS_DESCRIPTION = `Interactive demos, frontend experiments, reusable OS-style interface systems, and public project notes from ${PERSON_NAME}.`;
 export const BACKGROUND_LAB_DESCRIPTION = 'A visual lab for image, video, overlay, and parallax background experiments.';
@@ -34,6 +34,7 @@ export const PERSON_KNOWS_ABOUT = [
   'Angular and Firebase application architecture',
   'CMS publishing workflows and SEO implementation',
   'AI-assisted creative and technical workflows',
+  'Consumer gadgets, playful technology, and hands-on product reviews',
   'FPV media production and project demos',
   'Interactive browser labs and reusable OS-style UI systems',
   'Open-heart surgery recovery from a patient perspective',

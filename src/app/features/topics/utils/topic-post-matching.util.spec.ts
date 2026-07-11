@@ -1,4 +1,5 @@
 import type {BlogPostSummary} from '../../blog/models/blog-post.model';
+import {TOPIC_HUBS} from '../topic-hubs.data';
 import {postMatchesTopicHub} from './topic-post-matching.util';
 
 function createPost(overrides: Partial<BlogPostSummary> = {}): BlogPostSummary {
@@ -44,5 +45,26 @@ describe('topic post matching', () => {
 
     expect(postMatchesTopicHub(post, {terms: ['fire']})).toBeFalse();
     expect(postMatchesTopicHub(post, {terms: ['']})).toBeFalse();
+  });
+
+  it('matches gadget discoveries and reviews without claiming generic technology posts', () => {
+    const gadgetsTopic = TOPIC_HUBS.find(topic => topic.slug === 'gadgets-toys')!;
+    const gadgetReview = createPost({
+      slug: 'tiny-desk-robot-review',
+      title: 'A Tiny Desk Robot I Actually Want',
+      excerpt: 'A playful gadget found online with a few clever design choices.',
+      categories: ['Gadgets & Toys'],
+      tags: ['Product Review'],
+    });
+    const genericTechnologyPost = createPost({
+      slug: 'technology-workflow-notes',
+      title: 'Technology workflow notes',
+      excerpt: 'A software architecture article.',
+      categories: ['Technology'],
+      tags: ['Angular'],
+    });
+
+    expect(postMatchesTopicHub(gadgetReview, gadgetsTopic)).toBeTrue();
+    expect(postMatchesTopicHub(genericTechnologyPost, gadgetsTopic)).toBeFalse();
   });
 });

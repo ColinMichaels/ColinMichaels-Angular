@@ -140,6 +140,13 @@ function clamp(value: number, minimum: number, maximum: number): number {
             <path d="M20 28h8"></path>
           </svg>
         }
+        @case ('gamepad') {
+          <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+            <path d="M15 16h18c5 0 9 4 9 9v8c0 4-4.5 6-7.2 3.2L29.5 31h-11l-5.3 5.2C10.5 39 6 37 6 33v-8c0-5 4-9 9-9z"></path>
+            <path d="M14 24h8M18 20v8"></path>
+            <path d="M32 22h.01M36 26h.01"></path>
+          </svg>
+        }
       }
     </ng-template>
   `,

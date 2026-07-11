@@ -1,5 +1,6 @@
 # Changelog
 
+- Added a published Gadgets & Toys topic for owned products, wish-list items, hands-on reviews, and interesting online finds, including amber workbench artwork, focused taxonomy, a distinct knowledge-map icon, crawler metadata, and migration-safe missing-default seeding.
 - Rebuilt topic hubs as image-led editorial entry points that promote featured and recent writing before the preserved topic guide, with topic-specific section language and image-backed related navigation.
 - Added four brand-matched, text-free topic hero images for AI setup, recovery planning, Angular/Firebase architecture, and Labs/project writing, including client and Firebase Functions social metadata.
 - Added a reusable blog post listing with `list`, `grid`, `fan`, and `compact` layouts, then adopted it across topic hubs, blog/category/tag archives, homepage writing, and recovery sections.

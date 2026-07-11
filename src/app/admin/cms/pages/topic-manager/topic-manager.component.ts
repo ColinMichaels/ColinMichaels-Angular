@@ -67,7 +67,7 @@ function getErrorMessage(error: unknown): string {
               [disabled]="seedInProgress"
               (click)="seedDefaultTopics()"
             >
-              {{ seedInProgress ? 'Seeding...' : 'Seed Defaults' }}
+              {{ seedInProgress ? 'Seeding...' : 'Seed Missing Defaults' }}
             </button>
           </div>
         </header>
@@ -655,7 +655,7 @@ export class CmsTopicManagerComponent {
   }
 
   protected async seedDefaultTopics(): Promise<void> {
-    const confirmed = window.confirm('Seed the current default topics into Firestore? Existing matching topic IDs will be updated.');
+    const confirmed = window.confirm('Seed code-defined topics that are missing from Firestore? Existing topics will not be changed.');
 
     if (!confirmed) {
       return;
@@ -666,7 +666,9 @@ export class CmsTopicManagerComponent {
     try {
       const topicCount = await this.topicHubRepository.seedDefaultTopicHubs();
       await this.topicHubRepository.loadTopicHubsFromFirestore();
-      this.toast.success(`Seeded ${topicCount} default topic${topicCount === 1 ? '' : 's'} into Firestore.`);
+      this.toast.success(topicCount === 0
+        ? 'All default topics already exist in Firestore.'
+        : `Seeded ${topicCount} missing default topic${topicCount === 1 ? '' : 's'} into Firestore.`);
     } catch (error) {
       this.toast.error(`Unable to seed topics: ${getErrorMessage(error)}`);
     } finally {
