@@ -2,9 +2,11 @@ import {Injectable, inject} from '@angular/core';
 import {map, Observable} from 'rxjs';
 
 import {
+  findTopicHubBySlug,
+  getMissingDefaultTopicHubs,
   getPublishedTopicHubs,
+  mergeMissingDefaultTopicHubs,
   sortTopicHubs,
-  TOPIC_HUBS,
   TopicHub,
 } from '../topic-hubs.data';
 import {TopicHubStorageService} from './topic-hub-storage.service';
@@ -79,7 +81,6 @@ function clampNumber(value: number, minimum: number, maximum: number, fallback: 
 })
 export class TopicHubRepositoryService {
   private readonly storage = inject(TopicHubStorageService);
-  private readonly fallbackTopicHubs = getPublishedTopicHubs(TOPIC_HUBS);
 
   readonly loading$ = this.storage.loading$;
   readonly error$ = this.storage.error$;
@@ -92,7 +93,7 @@ export class TopicHubRepositoryService {
 
   getPublishedTopicHubBySlug$(slug: string): Observable<TopicHub | undefined> {
     return this.getPublishedTopicHubs$().pipe(
-      map(topics => topics.find(topicHub => topicHub.slug === slug))
+      map(topics => findTopicHubBySlug(slug, topics))
     );
   }
 
@@ -113,7 +114,7 @@ export class TopicHubRepositoryService {
   }
 
   getPublishedTopicHubBySlug(slug: string): TopicHub | undefined {
-    return this.getPublishedTopicHubs().find(topicHub => topicHub.slug === slug);
+    return findTopicHubBySlug(slug, this.getPublishedTopicHubs());
   }
 
   getAdminTopicHubs(): readonly TopicHub[] {
@@ -203,6 +204,23 @@ export class TopicHubRepositoryService {
         },
         heroMotifs: this.normalizeStringList(topicHub.theme.heroMotifs),
       },
+      heroImage: topicHub.heroImage?.src.trim()
+        ? {
+            src: topicHub.heroImage.src.trim(),
+            alt: topicHub.heroImage.alt.trim() || `${topicHub.title.trim() || 'Topic'} illustration`,
+            width: Math.round(clampNumber(topicHub.heroImage.width, 1, 3840, 1600)),
+            height: Math.round(clampNumber(topicHub.heroImage.height, 1, 2160, 900)),
+            objectPosition: topicHub.heroImage.objectPosition?.trim() || 'center',
+          }
+        : undefined,
+      pageCopy: topicHub.pageCopy && Object.values(topicHub.pageCopy).some(value => value.trim())
+        ? {
+            featuredHeading: topicHub.pageCopy.featuredHeading.trim() || 'Featured reading',
+            featuredDescription: topicHub.pageCopy.featuredDescription.trim(),
+            archiveHeading: topicHub.pageCopy.archiveHeading.trim() || 'More from this topic',
+            archiveDescription: topicHub.pageCopy.archiveDescription.trim(),
+          }
+        : undefined,
       asset: {
         ...topicHub.asset,
         title: topicHub.asset.title.trim() || 'Start Here',
@@ -259,8 +277,14 @@ export class TopicHubRepositoryService {
     return this.storage.backupTopicHubsToFirestore(topics);
   }
 
-  seedDefaultTopicHubs(): Promise<number> {
-    return this.storage.backupTopicHubsToFirestore(TOPIC_HUBS);
+  async seedDefaultTopicHubs(): Promise<number> {
+    // Read Firestore immediately before diffing so a stale client stream cannot
+    // cause customized bootstrap topics to be written over during migration.
+    const persistedTopicHubs = await this.storage.loadTopicHubsFromFirestore();
+
+    return this.storage.backupTopicHubsToFirestore(
+      getMissingDefaultTopicHubs(persistedTopicHubs)
+    );
   }
 
   loadTopicHubsFromFirestore(): Promise<readonly TopicHub[]> {
@@ -285,7 +309,7 @@ export class TopicHubRepositoryService {
   createUniqueSlug(value: string, currentTopicHubId?: string): string {
     const baseSlug = createTopicSlug(value);
     const existingSlugs = new Set(
-      this.storage.getTopics()
+      this.getAdminTopicHubs()
         .filter(topicHub => topicHub.id !== currentTopicHubId)
         .map(topicHub => topicHub.slug)
     );
@@ -306,23 +330,21 @@ export class TopicHubRepositoryService {
   }
 
   private createPublishedTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] {
-    if (topics.length === 0) {
-      return this.fallbackTopicHubs;
-    }
-
-    return getPublishedTopicHubs(topics);
+    return getPublishedTopicHubs(mergeMissingDefaultTopicHubs(topics));
   }
 
   private createAdminTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] {
-    return sortTopicHubs(topics);
+    return sortTopicHubs(mergeMissingDefaultTopicHubs(topics));
   }
 
   private createAdminStats(topics: readonly TopicHub[]): TopicHubAdminStats {
+    const adminTopics = this.createAdminTopicHubs(topics);
+
     return {
-      total: topics.length,
-      published: topics.filter(topicHub => topicHub.status === 'published').length,
-      drafts: topics.filter(topicHub => topicHub.status === 'draft').length,
-      archived: topics.filter(topicHub => topicHub.status === 'archived').length,
+      total: adminTopics.length,
+      published: adminTopics.filter(topicHub => topicHub.status === 'published').length,
+      drafts: adminTopics.filter(topicHub => topicHub.status === 'draft').length,
+      archived: adminTopics.filter(topicHub => topicHub.status === 'archived').length,
     };
   }
 

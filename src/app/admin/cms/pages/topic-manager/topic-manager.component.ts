@@ -5,6 +5,8 @@ import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {
   TOPIC_HUB_ICONS,
   TOPIC_HUB_STATUSES,
+  resolveTopicHubHeroImage,
+  resolveTopicHubPageCopy,
   TopicHub,
   TopicHubIcon,
   TopicHubStatus,
@@ -65,7 +67,7 @@ function getErrorMessage(error: unknown): string {
               [disabled]="seedInProgress"
               (click)="seedDefaultTopics()"
             >
-              {{ seedInProgress ? 'Seeding...' : 'Seed Defaults' }}
+              {{ seedInProgress ? 'Seeding...' : 'Seed Missing Defaults' }}
             </button>
           </div>
         </header>
@@ -293,6 +295,69 @@ function getErrorMessage(error: unknown): string {
               </label>
             </section>
 
+            <section class="grid gap-6 border-t border-zinc-800 pt-5 xl:grid-cols-2">
+              <div class="space-y-4" formGroupName="heroImage">
+                <div>
+                  <h2 class="text-lg font-semibold text-zinc-50">Topic artwork</h2>
+                  <p class="mt-1 text-sm text-zinc-500">Use a text-free editorial image with a stable crop and meaningful alt text.</p>
+                </div>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Image path or URL</span>
+                  <input
+                    type="text"
+                    formControlName="src"
+                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                    placeholder="/assets/images/topics/topic-name.webp"
+                  >
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Alt text</span>
+                  <textarea
+                    rows="2"
+                    formControlName="alt"
+                    class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                  ></textarea>
+                </label>
+                <div class="grid gap-4 sm:grid-cols-3">
+                  <label class="space-y-2">
+                    <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Width</span>
+                    <input type="number" min="1" formControlName="width" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                  </label>
+                  <label class="space-y-2">
+                    <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Height</span>
+                    <input type="number" min="1" formControlName="height" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                  </label>
+                  <label class="space-y-2">
+                    <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Object position</span>
+                    <input type="text" formControlName="objectPosition" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300" placeholder="center">
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-4" formGroupName="pageCopy">
+                <div>
+                  <h2 class="text-lg font-semibold text-zinc-50">Post section language</h2>
+                  <p class="mt-1 text-sm text-zinc-500">Give each topic page its own useful introduction to the writing.</p>
+                </div>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Featured heading</span>
+                  <input type="text" formControlName="featuredHeading" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Featured description</span>
+                  <textarea rows="2" formControlName="featuredDescription" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"></textarea>
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Archive heading</span>
+                  <input type="text" formControlName="archiveHeading" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Archive description</span>
+                  <textarea rows="2" formControlName="archiveDescription" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"></textarea>
+                </label>
+              </div>
+            </section>
+
             <section class="grid gap-4 border-t border-zinc-800 pt-5 md:grid-cols-2" formGroupName="asset">
               <div class="space-y-4">
                 <h2 class="text-lg font-semibold text-zinc-50">Start Here Asset</h2>
@@ -448,6 +513,19 @@ export class CmsTopicManagerComponent {
         floatDelayMs: [0],
       }),
     }),
+    heroImage: this.formBuilder.nonNullable.group({
+      src: [''],
+      alt: [''],
+      width: [1600],
+      height: [900],
+      objectPosition: ['center'],
+    }),
+    pageCopy: this.formBuilder.nonNullable.group({
+      featuredHeading: [''],
+      featuredDescription: [''],
+      archiveHeading: [''],
+      archiveDescription: [''],
+    }),
     asset: this.formBuilder.nonNullable.group({
       title: [''],
       intro: [''],
@@ -577,7 +655,7 @@ export class CmsTopicManagerComponent {
   }
 
   protected async seedDefaultTopics(): Promise<void> {
-    const confirmed = window.confirm('Seed the current default topics into Firestore? Existing matching topic IDs will be updated.');
+    const confirmed = window.confirm('Seed code-defined topics that are missing from Firestore? Existing topics will not be changed.');
 
     if (!confirmed) {
       return;
@@ -588,7 +666,9 @@ export class CmsTopicManagerComponent {
     try {
       const topicCount = await this.topicHubRepository.seedDefaultTopicHubs();
       await this.topicHubRepository.loadTopicHubsFromFirestore();
-      this.toast.success(`Seeded ${topicCount} default topic${topicCount === 1 ? '' : 's'} into Firestore.`);
+      this.toast.success(topicCount === 0
+        ? 'All default topics already exist in Firestore.'
+        : `Seeded ${topicCount} missing default topic${topicCount === 1 ? '' : 's'} into Firestore.`);
     } catch (error) {
       this.toast.error(`Unable to seed topics: ${getErrorMessage(error)}`);
     } finally {
@@ -601,6 +681,9 @@ export class CmsTopicManagerComponent {
   }
 
   private createTopicFormValue(topic: TopicHub) {
+    const heroImage = resolveTopicHubHeroImage(topic);
+    const pageCopy = resolveTopicHubPageCopy(topic);
+
     return {
       id: topic.id,
       slug: topic.slug,
@@ -624,6 +707,19 @@ export class CmsTopicManagerComponent {
           scale: topic.theme.mapPlacement.scale,
           floatDelayMs: topic.theme.mapPlacement.floatDelayMs,
         },
+      },
+      heroImage: {
+        src: heroImage?.src ?? '',
+        alt: heroImage?.alt ?? '',
+        width: heroImage?.width ?? 1600,
+        height: heroImage?.height ?? 900,
+        objectPosition: heroImage?.objectPosition ?? 'center',
+      },
+      pageCopy: {
+        featuredHeading: pageCopy.featuredHeading,
+        featuredDescription: pageCopy.featuredDescription,
+        archiveHeading: pageCopy.archiveHeading,
+        archiveDescription: pageCopy.archiveDescription,
       },
       asset: {
         title: topic.asset.title,
@@ -655,6 +751,23 @@ export class CmsTopicManagerComponent {
     const status: TopicHubStatus = isTopicHubStatus(raw.status) ? raw.status : 'draft';
     const icon: TopicHubIcon = isTopicHubIcon(raw.theme.icon) ? raw.theme.icon : 'spark';
     const now = new Date().toISOString();
+    const heroImage = raw.heroImage.src.trim()
+      ? {
+          src: raw.heroImage.src,
+          alt: raw.heroImage.alt,
+          width: Number(raw.heroImage.width),
+          height: Number(raw.heroImage.height),
+          objectPosition: raw.heroImage.objectPosition,
+        }
+      : undefined;
+    const pageCopy = Object.values(raw.pageCopy).some(value => value.trim())
+      ? {
+          featuredHeading: raw.pageCopy.featuredHeading,
+          featuredDescription: raw.pageCopy.featuredDescription,
+          archiveHeading: raw.pageCopy.archiveHeading,
+          archiveDescription: raw.pageCopy.archiveDescription,
+        }
+      : undefined;
 
     return {
       id: raw.id || this.topicHubRepository.createNewTopicTemplate().id,
@@ -681,6 +794,8 @@ export class CmsTopicManagerComponent {
           floatDelayMs: Number(raw.theme.mapPlacement.floatDelayMs),
         },
       },
+      heroImage,
+      pageCopy,
       asset: {
         title: raw.asset.title,
         intro: raw.asset.intro,

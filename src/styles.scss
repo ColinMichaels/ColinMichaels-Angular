@@ -94,7 +94,14 @@
   --site-accent-soft: rgb(var(--topic-architecture-rgb) / 0.12);
 }
 
-.topic-theme-labs, .topic-theme-recovery {
+.topic-theme-recovery {
+  --site-accent: var(--topic-recovery);
+  --site-accent-strong: var(--topic-recovery-ink);
+  --site-accent-rgb: var(--topic-recovery-rgb);
+  --site-accent-soft: rgb(var(--topic-recovery-rgb) / 0.12);
+}
+
+.topic-theme-labs {
   --site-accent: var(--topic-labs);
   --site-accent-strong: var(--topic-labs-ink);
   --site-accent-rgb: var(--topic-labs-rgb);
@@ -359,9 +366,18 @@ app-site-header :is(h1, a, button),
   line-height: 1.08 !important;
 }
 
-.public-reader-scope :is(.heading-section, .topic-hub-page h1) {
+.public-reader-scope .heading-section {
   font-size: clamp(1.9rem, calc(2.35rem * var(--reader-font-scale)), 4.25rem) !important;
   line-height: 1.14 !important;
+}
+
+.public-reader-scope .topic-hub-page h1 {
+  font-size: clamp(3rem, calc(4.65rem * var(--reader-font-scale)), 6rem) !important;
+  line-height: 1.02 !important;
+}
+
+.public-reader-scope .topic-hub-hero-copy > p {
+  font-size: calc(1.18rem * var(--reader-font-scale)) !important;
 }
 
 .public-reader-scope :is(
@@ -470,4 +486,11 @@ app-site-header :is(h1, a, button),
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
   transition-duration: .001ms !important;
+}
+
+@media (max-width: 680px) {
+  .public-reader-scope .topic-hub-page h1 {
+    font-size: clamp(2.25rem, calc(2.35rem * var(--reader-font-scale)), 4rem) !important;
+    line-height: 1.08 !important;
+  }
 }

@@ -1,0 +1,108 @@
+import {convertToParamMap, ActivatedRoute} from '@angular/router';
+import {provideRouter} from '@angular/router';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {BehaviorSubject, of} from 'rxjs';
+
+import type {BlogPostSummary} from '../blog/models/blog-post.model';
+import {BlogRepositoryService} from '../blog/services/blog-repository.service';
+import {SeoService} from '../../shared/seo/seo.service';
+import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
+import {TOPIC_HUBS} from './topic-hubs.data';
+import {TopicHubComponent} from './topic-hub.component';
+
+function createPost(index: number): BlogPostSummary {
+  return {
+    id: `post-${index}`,
+    slug: `ai-workflow-${index}`,
+    title: `AI workflow ${index}`,
+    excerpt: `Practical AI project organization note ${index}.`,
+    coverImage: `/assets/post-${index}.webp`,
+    featured: index === 1,
+    author: {
+      name: 'Colin Michaels',
+      title: 'Applications Developer',
+    },
+    categories: ['AI'],
+    tags: ['AI workflow'],
+    publishedAt: `2026-07-0${index}T00:00:00.000Z`,
+    updatedAt: `2026-07-0${index}T00:00:00.000Z`,
+  };
+}
+
+describe('TopicHubComponent', () => {
+  let fixture: ComponentFixture<TopicHubComponent>;
+  const postsSubject = new BehaviorSubject<readonly BlogPostSummary[]>([
+    createPost(1),
+    createPost(2),
+    createPost(3),
+    createPost(4),
+  ]);
+  const seo = jasmine.createSpyObj<SeoService>('SeoService', ['apply']);
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TopicHubComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({slug: 'ai-setup'})),
+            snapshot: {paramMap: convertToParamMap({slug: 'ai-setup'})},
+          },
+        },
+        {
+          provide: BlogRepositoryService,
+          useValue: {
+            getPublishedPosts$: () => postsSubject.asObservable(),
+            loading$: of(false),
+            error$: of(null),
+          },
+        },
+        {
+          provide: TopicHubRepositoryService,
+          useValue: {
+            getPublishedTopicHubs$: () => of(TOPIC_HUBS),
+            getPublishedTopicHubs: () => TOPIC_HUBS,
+            loading$: of(false),
+          },
+        },
+        {provide: SeoService, useValue: seo},
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(TopicHubComponent);
+    fixture.detectChanges();
+  });
+
+  it('leads with topic-specific copy and artwork', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const heroImage = element.querySelector<HTMLImageElement>('.topic-hub-artwork img');
+
+    expect(element.querySelector('h1')?.textContent?.trim()).toBe('AI Setup Guides');
+    expect(heroImage?.getAttribute('src')).toBe('/assets/images/topics/ai-setup.webp');
+    expect(heroImage?.getAttribute('alt')).toContain('modular AI workspace');
+    expect(element.textContent).toContain('AI workflows worth starting with');
+  });
+
+  it('uses fan and list presentations to prioritize posts before the guide', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const listingRegions = [...element.querySelectorAll<HTMLElement>('[data-layout]')];
+    const featuredSection = element.querySelector('#topic-posts');
+    const guideSection = element.querySelector('#topic-guide');
+
+    expect(listingRegions.map(region => region.dataset['layout'])).toEqual(['fan', 'list']);
+    expect(element.querySelectorAll('[data-layout="fan"] [data-post-id]').length).toBe(3);
+    expect(element.querySelectorAll('[data-layout="list"] [data-post-id]').length).toBe(1);
+    expect(Boolean(
+      featuredSection
+      && guideSection
+      && (featuredSection.compareDocumentPosition(guideSection) & Node.DOCUMENT_POSITION_FOLLOWING)
+    )).toBeTrue();
+  });
+
+  it('applies topic-specific SEO metadata', () => {
+    expect(seo.apply).toHaveBeenCalled();
+    expect(seo.apply.calls.mostRecent().args[0].image).toBe('/assets/images/topics/ai-setup.webp');
+  });
+});
