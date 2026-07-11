@@ -1,5 +1,11 @@
 # Changelog
 
+- Replace mouse-to-wake behavior with a two-second auto-hiding studio interface: movement reveals controls, movement
+  over media shows an `S`/`Esc` exit hint, and mouse activity never closes the screen saver.
+
+- Expand the screen saver Ken Burns renderer with four directional pan paths, alternating zoom depth, clean animation
+  restart behavior, and compositor-only motion that remains disabled for reduced-motion users.
+
 - Lazy-load the screen saver renderer, studio controls, preferences, and local-media storage on the first `S` shortcut
   so the feature adds only a lightweight launcher to the initial app shell and remains warm for later toggles.
 

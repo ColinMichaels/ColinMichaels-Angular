@@ -24,7 +24,8 @@ import {
 import {ScreenSaverPreferencesService} from './screen-saver-preferences.service';
 
 const MINIMUM_SCREEN_SAVER_TRANSITION_MS = 1200;
-export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
+const SCREEN_SAVER_MOTION_PATHS = ['drift-east', 'drift-west', 'rise', 'fall'] as const;
+export const SCREEN_SAVER_CONTROLS_IDLE_MS = 2000;
 
 @Component({
   selector: 'app-screen-saver',
@@ -35,6 +36,7 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
     <section
       class="screen-saver"
       [class.is-active]="isActive()"
+      [class.is-ui-visible]="controlsVisible()"
       [attr.aria-hidden]="isActive() ? null : 'true'"
       [attr.inert]="isActive() ? null : ''"
       role="dialog"
@@ -50,7 +52,8 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
               alt=""
               class="screen-saver-image"
               [class.is-active]="slideIndex === activeSlideIndex()"
-              [class.has-ken-burns]="kenBurnsEnabled()"
+              [class.has-ken-burns]="isActive() && kenBurnsEnabled()"
+              [attr.data-motion-path]="motionPath(slideIndex)"
               [style.object-position]="slideObjectPosition(slide)"
               [style.transform-origin]="slideObjectPosition(slide)"
               [style.--screen-saver-transition-duration]="transitionDuration()"
@@ -85,6 +88,18 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
             <path d="M6 6l12 12M18 6 6 18"></path>
           </svg>
         </button>
+      </div>
+
+      <div
+        class="screen-saver-exit-hint"
+        [class.is-visible]="controlsVisible() && showPointerHint()"
+        aria-hidden="true"
+      >
+        <span>Press</span>
+        <kbd>S</kbd>
+        <span>or</span>
+        <kbd>Esc</kbd>
+        <span>to exit</span>
       </div>
 
       <app-screen-saver-controls
@@ -146,13 +161,19 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
     }
 
     .screen-saver-image {
+      --screen-saver-pan-start-x: 0%;
+      --screen-saver-pan-start-y: 0%;
+      --screen-saver-pan-end-x: 0%;
+      --screen-saver-pan-end-y: 0%;
+      --screen-saver-zoom-start: 1.07;
+      --screen-saver-zoom-end: 1.17;
       object-fit: cover;
       opacity: 0;
       transform: scale(1) translate3d(0, 0, 0);
       transition:
         opacity var(--screen-saver-transition-duration, 1200ms) cubic-bezier(0.4, 0, 0.2, 1),
-        transform var(--screen-saver-drift-duration, 8000ms) linear;
-      will-change: opacity, transform;
+        transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: opacity;
     }
 
     .screen-saver-image.is-active {
@@ -160,12 +181,63 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
       opacity: 1;
     }
 
-    .screen-saver-image.has-ken-burns {
-      transform: scale(1.025) translate3d(0, 0, 0);
+    .screen-saver.is-active .screen-saver-image {
+      will-change: opacity, transform;
     }
 
     .screen-saver-image.is-active.has-ken-burns {
-      transform: scale(1.085) translate3d(0, 0, 0);
+      animation: screen-saver-pan-and-zoom var(--screen-saver-drift-duration, 16s)
+        cubic-bezier(0.37, 0, 0.2, 1) both;
+    }
+
+    .screen-saver-image[data-motion-path="drift-east"] {
+      --screen-saver-pan-start-x: -1.2%;
+      --screen-saver-pan-start-y: 0.7%;
+      --screen-saver-pan-end-x: 1.4%;
+      --screen-saver-pan-end-y: -0.8%;
+      --screen-saver-zoom-start: 1.07;
+      --screen-saver-zoom-end: 1.17;
+    }
+
+    .screen-saver-image[data-motion-path="drift-west"] {
+      --screen-saver-pan-start-x: 1.4%;
+      --screen-saver-pan-start-y: -0.5%;
+      --screen-saver-pan-end-x: -1.2%;
+      --screen-saver-pan-end-y: 0.8%;
+      --screen-saver-zoom-start: 1.18;
+      --screen-saver-zoom-end: 1.07;
+    }
+
+    .screen-saver-image[data-motion-path="rise"] {
+      --screen-saver-pan-start-x: 0.5%;
+      --screen-saver-pan-start-y: 1.4%;
+      --screen-saver-pan-end-x: -0.7%;
+      --screen-saver-pan-end-y: -1.3%;
+      --screen-saver-zoom-start: 1.08;
+      --screen-saver-zoom-end: 1.18;
+    }
+
+    .screen-saver-image[data-motion-path="fall"] {
+      --screen-saver-pan-start-x: -0.8%;
+      --screen-saver-pan-start-y: -1.1%;
+      --screen-saver-pan-end-x: 0.9%;
+      --screen-saver-pan-end-y: 1.2%;
+      --screen-saver-zoom-start: 1.17;
+      --screen-saver-zoom-end: 1.08;
+    }
+
+    @keyframes screen-saver-pan-and-zoom {
+      from {
+        transform:
+          scale(var(--screen-saver-zoom-start))
+          translate3d(var(--screen-saver-pan-start-x), var(--screen-saver-pan-start-y), 0);
+      }
+
+      to {
+        transform:
+          scale(var(--screen-saver-zoom-end))
+          translate3d(var(--screen-saver-pan-end-x), var(--screen-saver-pan-end-y), 0);
+      }
     }
 
     .screen-saver-chrome {
@@ -178,6 +250,9 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
       padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
         max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
       pointer-events: none;
+      transition:
+        opacity 260ms ease,
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .screen-saver-toolbar {
@@ -186,6 +261,69 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
       bottom: max(1.5rem, env(safe-area-inset-bottom));
       z-index: 3;
       transform: translateX(-50%);
+      transition:
+        opacity 260ms ease,
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .screen-saver:not(.is-ui-visible) .screen-saver-chrome {
+      opacity: 0;
+      transform: translateY(-0.75rem);
+    }
+
+    .screen-saver:not(.is-ui-visible) .screen-saver-close,
+    .screen-saver:not(.is-ui-visible) .screen-saver-toolbar {
+      pointer-events: none;
+    }
+
+    .screen-saver:not(.is-ui-visible) .screen-saver-toolbar {
+      opacity: 0;
+      transform: translate(-50%, 1rem);
+    }
+
+    .screen-saver-exit-hint {
+      position: absolute;
+      left: 50%;
+      bottom: calc(max(1.5rem, env(safe-area-inset-bottom)) + 7.25rem);
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 0.42rem;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(4, 5, 9, 0.64);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+      color: rgba(255, 255, 255, 0.78);
+      font: 600 0.7rem/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.045em;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 0.5rem);
+      transition:
+        opacity 200ms ease,
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+      white-space: nowrap;
+      backdrop-filter: blur(16px) saturate(1.2);
+      -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    }
+
+    .screen-saver-exit-hint.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .screen-saver-exit-hint kbd {
+      display: grid;
+      min-width: 1.45rem;
+      height: 1.45rem;
+      place-items: center;
+      padding-inline: 0.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 0.42rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.94);
+      font: inherit;
     }
 
     .screen-saver-status,
@@ -271,6 +409,10 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
     }
 
     @media (max-width: 640px) {
+      .screen-saver-exit-hint {
+        bottom: calc(max(1.5rem, env(safe-area-inset-bottom)) + 14.5rem);
+      }
+
       .screen-saver-status > span:not(.screen-saver-status-mark) {
         display: none;
       }
@@ -289,7 +431,10 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
     @media (prefers-reduced-motion: reduce) {
       .screen-saver,
       .screen-saver-image,
-      .screen-saver-close {
+      .screen-saver-close,
+      .screen-saver-chrome,
+      .screen-saver-toolbar,
+      .screen-saver-exit-hint {
         transition: none;
       }
 
@@ -297,6 +442,7 @@ export const SCREEN_SAVER_WAKE_ARM_DELAY_MS = 1500;
       .screen-saver-image.is-active,
       .screen-saver-image.has-ken-burns,
       .screen-saver-image.is-active.has-ken-burns {
+        animation: none;
         transform: none;
       }
     }
@@ -312,9 +458,11 @@ export class ScreenSaverComponent {
   private readonly pageVisible = signal(true);
   private readonly reducedMotion = signal(false);
   private focusBeforeOpen: HTMLElement | null = null;
-  private mouseWakeArmedAt = Number.POSITIVE_INFINITY;
+  private controlsHideTimeoutId: number | null = null;
 
   protected readonly isActive = signal(false);
+  protected readonly controlsVisible = signal(false);
+  protected readonly showPointerHint = signal(false);
   protected readonly hasOpened = signal(false);
   protected readonly activeSlideIndex = signal(0);
   protected readonly localImages = this.localMedia.images;
@@ -381,12 +529,17 @@ export class ScreenSaverComponent {
     this.keepActiveSlideInBounds();
     this.startSlideRotation();
     this.lockPageScrollWhileActive();
+    this.destroyRef.onDestroy(() => this.cancelControlsHide());
   }
 
   @HostListener('document:keydown', ['$event'])
   protected handleKeyboardShortcut(event: KeyboardEvent): void {
     if (event.defaultPrevented || event.repeat || event.metaKey || event.ctrlKey || event.altKey) {
       return;
+    }
+
+    if (event.key === 'Tab' && this.isActive()) {
+      this.revealControls(false);
     }
 
     if (event.key.toLowerCase() === 's' && !this.isTypingTarget(event.target)) {
@@ -403,13 +556,18 @@ export class ScreenSaverComponent {
 
   @HostListener('document:mousemove', ['$event'])
   protected handleMouseMove(event: MouseEvent): void {
-    if (this.isStudioToolbarTarget(event.target)
-      || !this.isActive()
-      || Date.now() < this.mouseWakeArmedAt) {
+    if (!this.isActive()) {
       return;
     }
 
-    this.close();
+    this.revealControls(!this.isScreenSaverControlPointer(event));
+  }
+
+  @HostListener('document:focusin', ['$event'])
+  protected handleFocusIn(event: FocusEvent): void {
+    if (this.isActive() && this.isScreenSaverControlTarget(event.target)) {
+      this.revealControls(false);
+    }
   }
 
   public activate(): void {
@@ -419,17 +577,24 @@ export class ScreenSaverComponent {
   }
 
   protected close(): void {
+    this.cancelControlsHide();
+
     if (!this.isActive()) {
       return;
     }
 
     this.isActive.set(false);
-    this.mouseWakeArmedAt = Number.POSITIVE_INFINITY;
+    this.controlsVisible.set(false);
+    this.showPointerHint.set(false);
     this.restoreFocus();
   }
 
   protected slideObjectPosition(slide: ScreenSaverDisplaySlide): string {
     return `${slide.focalPointX}% ${slide.focalPointY}%`;
+  }
+
+  protected motionPath(slideIndex: number): (typeof SCREEN_SAVER_MOTION_PATHS)[number] {
+    return SCREEN_SAVER_MOTION_PATHS[slideIndex % SCREEN_SAVER_MOTION_PATHS.length];
   }
 
   protected selectModule(moduleId: ScreenSaverModuleId): void {
@@ -476,13 +641,16 @@ export class ScreenSaverComponent {
       return;
     }
 
+    this.cancelControlsHide();
     this.focusBeforeOpen = this.document.activeElement instanceof HTMLElement
       ? this.document.activeElement
       : null;
     this.hasOpened.set(true);
     this.activeSlideIndex.set(0);
-    this.mouseWakeArmedAt = Date.now() + SCREEN_SAVER_WAKE_ARM_DELAY_MS;
+    this.controlsVisible.set(true);
+    this.showPointerHint.set(false);
     this.isActive.set(true);
+    this.scheduleControlsHide();
 
     window.requestAnimationFrame(() => {
       this.document.querySelector<HTMLButtonElement>('.screen-saver-close')?.focus({preventScroll: true});
@@ -569,7 +737,48 @@ export class ScreenSaverComponent {
       || element.isContentEditable;
   }
 
-  private isStudioToolbarTarget(target: EventTarget | null): boolean {
-    return target instanceof Element && Boolean(target.closest('.screen-saver-toolbar'));
+  private isScreenSaverControlTarget(target: EventTarget | null): boolean {
+    return target instanceof Element
+      && Boolean(target.closest('.screen-saver-toolbar, .screen-saver-close'));
+  }
+
+  private isScreenSaverControlPointer(event: MouseEvent): boolean {
+    if (this.isScreenSaverControlTarget(event.target)) {
+      return true;
+    }
+
+    return Array.from(this.document.querySelectorAll<HTMLElement>(
+      '.screen-saver-toolbar, .screen-saver-close'
+    )).some(element => {
+      const rect = element.getBoundingClientRect();
+      return event.clientX >= rect.left
+        && event.clientX <= rect.right
+        && event.clientY >= rect.top
+        && event.clientY <= rect.bottom;
+    });
+  }
+
+  private revealControls(showPointerHint: boolean): void {
+    this.controlsVisible.set(true);
+    this.showPointerHint.set(showPointerHint);
+    this.scheduleControlsHide();
+  }
+
+  private scheduleControlsHide(): void {
+    this.cancelControlsHide();
+    this.controlsHideTimeoutId = window.setTimeout(() => {
+      this.controlsHideTimeoutId = null;
+      this.controlsVisible.set(false);
+      this.showPointerHint.set(false);
+    }, SCREEN_SAVER_CONTROLS_IDLE_MS);
+  }
+
+  private cancelControlsHide(): void {
+    if (this.controlsHideTimeoutId === null) {
+      return;
+    }
+
+    window.clearTimeout(this.controlsHideTimeoutId);
+    this.controlsHideTimeoutId = null;
   }
 }

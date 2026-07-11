@@ -30,18 +30,22 @@ changing or duplicating route components.
   storage, and homepage-media integration are emitted as a lazy chunk and initialized on demand. The mounted viewer
   remains warm after first use, so later toggles do not repeat the import or initialization work.
 - `Escape` and the visible Exit control close an active overlay.
-- Mouse movement closes the active overlay after a 1.5-second arming delay. Movement during that handoff window is
-  ignored so the pointer can be released without immediately waking the screen saver.
+- Mouse movement never closes the active overlay. It reveals the studio interface and restarts a two-second idle
+  timer; the top chrome, toolbar, and pointer hint fade away after two seconds without movement.
+- Movement over the media shows a compact `Press S or Esc to exit` hint. Movement over the toolbar or Exit button
+  suppresses the hint while keeping controls visible and interactive.
 - Opening always starts from the first slide in the selected module. Multiple slides rotate at the locally persisted
-  studio interval with a minimum 1.2-second crossfade and subtle compositor-only image drift.
+  studio interval with a minimum 1.2-second crossfade and compositor-only pan-and-zoom motion.
 - The studio toolbar exposes working Hero and My Images modules. The module list is typed through
   `ScreenSaverModuleId` so future renderers can extend the registry without mixing their state into the app shell.
-- Ken Burns can be disabled or tuned across five speed levels. Slideshow timing can be tuned from 4 to 20 seconds;
-  both settings update the active renderer and persist locally.
+- Ken Burns can be disabled or tuned across five speed levels. Four deterministic motion paths cycle across slides,
+  combining horizontal and vertical pans with alternating zoom-in and zoom-out depth. Motion stops when the viewer is
+  closed, restarts from the beginning on reopen, and remains disabled for reduced-motion users. Slideshow timing can
+  be tuned from 4 to 20 seconds; both settings update the active renderer and persist locally.
 - Add Images accepts multiple browser image files up to 25 MB each and stores up to 40 files locally. Uploaded files
   are never sent to Firebase or another remote service. A successful upload activates the My Images module.
-- Mouse movement within the studio toolbar remains interactive after the wake delay. Movement elsewhere retains the
-  existing screen-saver wake behavior.
+- Keyboard Tab movement also reveals the controls, while `S`, `Escape`, and the visible Exit button remain the only
+  ways to close the screen saver.
 - Images are not added to the DOM until the viewer is first opened, avoiding initial image requests from this feature.
 - Draft settings, empty published slide lists, and unavailable Firestore state fall back to the branded default hero.
 - Rotation pauses in hidden tabs and for `prefers-reduced-motion: reduce`; reduced-motion users receive a static image.
@@ -67,5 +71,5 @@ later iterations.
 - `npm run build`
 - `npm run lint`
 - Focused screen saver component, preference, and IndexedDB media specs
-- Manual checks for module switching, speed controls, local upload, `S`, delayed mouse wake, `Escape`, Exit, timed
-  rotation, focus return, desktop/mobile framing, reduced motion, and console errors
+- Manual checks for module switching, speed controls, local upload, `S`, mouse-driven control reveal and idle hiding,
+  the exit hint, `Escape`, Exit, timed rotation, focus return, desktop/mobile framing, reduced motion, and console errors

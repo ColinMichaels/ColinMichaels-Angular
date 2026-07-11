@@ -7,7 +7,10 @@ import {HomepageHeroRepositoryService} from '../homepage/services/homepage-hero-
 import {ScreenSaverLocalMediaService} from './screen-saver-local-media.service';
 import {ScreenSaverLocalImage, ScreenSaverModuleId} from './screen-saver.model';
 import {ScreenSaverPreferencesService} from './screen-saver-preferences.service';
-import {SCREEN_SAVER_WAKE_ARM_DELAY_MS, ScreenSaverComponent} from './screen-saver.component';
+import {
+  SCREEN_SAVER_CONTROLS_IDLE_MS,
+  ScreenSaverComponent,
+} from './screen-saver.component';
 
 function createSettings(): HomepageHeroSettings {
   return {
@@ -151,36 +154,91 @@ describe('ScreenSaverComponent', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('ignores early mouse movement and wakes after the handoff delay', fakeAsync(() => {
+  it('keeps the viewer active and hides controls after two seconds of mouse inactivity', fakeAsync(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
     fixture.detectChanges();
+    tick(16);
+
+    const element = fixture.nativeElement as HTMLElement;
+    const screenSaver = element.querySelector<HTMLElement>('.screen-saver');
+    const exitHint = element.querySelector<HTMLElement>('.screen-saver-exit-hint');
+    expect(screenSaver?.classList.contains('is-ui-visible')).toBeTrue();
 
     document.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-active')).toBeTrue();
+    expect(screenSaver?.classList.contains('is-active')).toBeTrue();
+    expect(screenSaver?.classList.contains('is-ui-visible')).toBeTrue();
+    expect(exitHint?.classList.contains('is-visible')).toBeTrue();
 
-    tick(SCREEN_SAVER_WAKE_ARM_DELAY_MS - 1);
-    document.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+    tick(SCREEN_SAVER_CONTROLS_IDLE_MS - 1);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-active')).toBeTrue();
+    expect(screenSaver?.classList.contains('is-ui-visible')).toBeTrue();
 
     tick(1);
-    document.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-active')).toBeFalse();
-    expect(document.body.style.overflow).toBe('');
+    expect(screenSaver?.classList.contains('is-active')).toBeTrue();
+    expect(screenSaver?.classList.contains('is-ui-visible')).toBeFalse();
+    expect(exitHint?.classList.contains('is-visible')).toBeFalse();
+    expect(document.body.style.overflow).toBe('hidden');
   }));
 
-  it('keeps the studio open for mouse movement inside the toolbar', fakeAsync(() => {
+  it('suppresses the exit hint while the pointer moves over controls', fakeAsync(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
     fixture.detectChanges();
-    tick(SCREEN_SAVER_WAKE_ARM_DELAY_MS);
+    tick(16);
+
+    document.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+    fixture.detectChanges();
+    const exitHint = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('.screen-saver-exit-hint');
+    expect(exitHint?.classList.contains('is-visible')).toBeTrue();
 
     const toolbar = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.screen-saver-toolbar');
     toolbar?.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
     fixture.detectChanges();
 
+    expect(exitHint?.classList.contains('is-visible')).toBeFalse();
     expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-active')).toBeTrue();
+    tick(SCREEN_SAVER_CONTROLS_IDLE_MS);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-ui-visible')).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.screen-saver')?.classList.contains('is-active')).toBeTrue();
+  }));
+
+  it('recognizes the toolbar position while controls are hidden', fakeAsync(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
+    fixture.detectChanges();
+    tick(16 + SCREEN_SAVER_CONTROLS_IDLE_MS);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const toolbar = element.querySelector<HTMLElement>('.screen-saver-toolbar');
+    if (!toolbar) {
+      throw new Error('Expected the screen saver toolbar to render.');
+    }
+
+    spyOn(toolbar, 'getBoundingClientRect').and.returnValue({
+      bottom: 200,
+      height: 100,
+      left: 100,
+      right: 300,
+      top: 100,
+      width: 200,
+      x: 100,
+      y: 100,
+      toJSON: () => ({}),
+    });
+
+    document.dispatchEvent(new MouseEvent('mousemove', {
+      bubbles: true,
+      clientX: 200,
+      clientY: 150,
+    }));
+    fixture.detectChanges();
+
+    expect(element.querySelector('.screen-saver')?.classList.contains('is-ui-visible')).toBeTrue();
+    expect(element.querySelector('.screen-saver-exit-hint')?.classList.contains('is-visible')).toBeFalse();
   }));
 
   it('applies live Ken Burns and slideshow speed preferences', () => {
@@ -199,6 +257,25 @@ describe('ScreenSaverComponent', () => {
     expect(kenBurnsSpeed()).toBe(5);
     expect(slideshowIntervalSeconds()).toBe(12);
     expect(activeImage?.style.getPropertyValue('--screen-saver-drift-duration')).toBe('10s');
+    expect(activeImage?.classList.contains('has-ken-burns')).toBeTrue();
+    expect(activeImage?.getAttribute('data-motion-path')).toBe('drift-east');
+    expect((fixture.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLElement>('.screen-saver-image')[1]
+      .getAttribute('data-motion-path')).toBe('drift-west');
+  });
+
+  it('stops pan and zoom while the viewer is closed', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
+    fixture.detectChanges();
+
+    const activeImage = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('.screen-saver-image.is-active');
+    expect(activeImage?.classList.contains('has-ken-burns')).toBeTrue();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
+    fixture.detectChanges();
+
+    expect(activeImage?.classList.contains('has-ken-burns')).toBeFalse();
   });
 
   it('switches to My Images after a successful local upload', async () => {

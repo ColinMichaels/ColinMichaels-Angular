@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ComponentRef,
+  DestroyRef,
   ErrorHandler,
   HostListener,
   ViewContainerRef,
@@ -21,9 +22,18 @@ interface ScreenSaverActivator {
 })
 export class ScreenSaverLauncherComponent {
   private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly errorHandler = inject(ErrorHandler);
   private screenSaverRef: ComponentRef<ScreenSaverActivator> | null = null;
   private loadPromise: Promise<ComponentRef<ScreenSaverActivator>> | null = null;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.screenSaverRef?.destroy();
+      this.screenSaverRef = null;
+      this.loadPromise = null;
+    });
+  }
 
   @HostListener('document:keydown', ['$event'])
   protected handleKeyboardShortcut(event: KeyboardEvent): void {
