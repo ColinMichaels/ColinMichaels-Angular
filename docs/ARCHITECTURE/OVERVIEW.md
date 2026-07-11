@@ -33,6 +33,11 @@ Current route group files are boundary markers only. They preserve existing URL 
   protected role-aware shell with a fixed grouped sidebar, mobile drawer, compact utility header, environment/account footer, an operations dashboard sourced from current post data, and a content-operations review surface. The shell replaces page-local global navigation while preserving existing guarded URLs and feature-specific layouts. See `docs/ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md` for the dry-run artifact and safety boundary.
 - Homepage CMS:
   protected `/admin/cms/homepage` controls for the public hero headline, summary, background slideshow, timing, and featured article selection through the Firestore `homepageSettings/home` document, with static fallback behavior preserved for anonymous visitors and missing config.
+- Screen saver overlay:
+  lightweight app-shell launcher mounted outside the route frame and toggled with unmodified `S`. It dynamically loads
+  the full media viewer on first activation, backed by the same published homepage hero slides plus an IndexedDB-backed
+  local image module. Its bottom studio toolbar persists module, Ken Burns, and slideshow tuning without moving media
+  state into route components or Core OS. See `docs/ARCHITECTURE/SCREEN_SAVER.md`.
 - Public media:
   homepage YouTube uploads are loaded through a public Firebase callable Function that keeps the YouTube Data API key server-side and returns only display-safe video metadata.
 - SEO rendering:

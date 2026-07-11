@@ -1,5 +1,5 @@
 import {NgClass, NgTemplateOutlet} from '@angular/common';
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
@@ -13,10 +13,12 @@ import {
   faUser,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import {Title} from '@angular/platform-browser';
 import {NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
 import {filter, map, startWith} from 'rxjs';
 
 import {AuthService} from '../services/auth.service';
+import {createSiteTitle} from '../shared/seo/site-identity';
 import {
   CMS_ACCESS_ROLES,
   MEDIA_LIBRARY_ACCESS_ROLES,
@@ -287,6 +289,7 @@ const ADMIN_NAVIGATION_COLLAPSED_STORAGE_KEY = 'admin.navigation.collapsed';
 export class AdminShellComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly title = inject(Title);
 
   protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
   protected readonly faArrowRightFromBracket = faArrowRightFromBracket;
@@ -308,6 +311,9 @@ export class AdminShellComponent {
     {initialValue: this.router.url}
   );
   protected readonly pageTitle = computed(() => getAdminPageTitle(this.currentUrl()));
+  private readonly updateBrowserTitle = effect(() => {
+    this.title.setTitle(createSiteTitle(this.pageTitle()));
+  });
   protected readonly canManageCms = toSignal(
     this.authService.getRoleAuthorization(CMS_ACCESS_ROLES).pipe(map(authorization => authorization.isAuthorized)),
     {initialValue: false}
