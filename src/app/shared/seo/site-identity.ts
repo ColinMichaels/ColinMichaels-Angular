@@ -36,6 +36,7 @@ export const PERSON_KNOWS_ABOUT = [
   'Angular and Firebase application architecture',
   'CMS publishing workflows and SEO implementation',
   'AI-assisted creative and technical workflows',
+  'Consumer gadgets, playful technology, and hands-on product reviews',
   'FPV media production and project demos',
   'Interactive browser labs and reusable OS-style UI systems',
   'Open-heart surgery recovery from a patient perspective',

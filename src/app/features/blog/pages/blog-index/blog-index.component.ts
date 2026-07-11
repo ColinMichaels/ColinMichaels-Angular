@@ -7,42 +7,11 @@ import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
-import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
-import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
-import type {BlogPostSummary} from '../../models/blog-post.model';
+import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
-import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
-import type {TopicHub} from '../../../topics/topic-hubs.data';
-
-function normalizeSearchValue(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function postMatchesTopicHub(post: BlogPostSummary, topic: TopicHub): boolean {
-  const searchableText = normalizeSearchValue([
-    post.title,
-    post.excerpt,
-    post.slug,
-    ...getBlogTaxonomyTerms(post),
-    ...post.tags,
-  ].join(' '));
-  const searchableTokens = searchableText.split(' ');
-
-  return topic.terms.some(term => {
-    const normalizedTerm = normalizeSearchValue(term);
-
-    return normalizedTerm.includes(' ')
-      ? searchableText.includes(normalizedTerm)
-      : searchableTokens.includes(normalizedTerm);
-  });
-}
+import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.util';
 
 @Component({
   selector: 'app-blog-index',
@@ -50,8 +19,7 @@ function postMatchesTopicHub(post: BlogPostSummary, topic: TopicHub): boolean {
     RouterLink,
     FontAwesomeModule,
     BlogCategoryNavComponent,
-    BlogPostCardComponent,
-    BlogPostCardSkeletonComponent,
+    BlogPostListingComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -88,44 +56,24 @@ function postMatchesTopicHub(post: BlogPostSummary, topic: TopicHub): boolean {
         </header>
 
         <section>
-          @if (loadError(); as error) {
-            <div class="blog-section-rule blog-state-panel">
-              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm">{{ error }}</p>
-            </div>
-          } @else {
-            @defer (when !isLoading()) {
-              @if (activeTopic(); as topic) {
-                <p class="blog-section-rule blog-results-summary">
-                  Showing {{ posts().length }} published post{{ posts().length === 1 ? '' : 's' }}
-                  in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ topic.title }}</span>.
-                  <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link ml-2">Clear topic</a>
-                </p>
-              }
-
-              @for (post of posts(); track post.id) {
-                <app-blog-post-card
-                  [post]="post"
-                  [topicLabel]="activeTopic()?.theme?.shortLabel ?? null"
-                  [topicAccent]="activeTopic()?.theme?.accent ?? null"
-                  [topicAccentStrong]="activeTopic()?.theme?.accentStrong ?? null"
-                  [topicAccentRgb]="activeTopic()?.theme?.accentRgb ?? null"
-                ></app-blog-post-card>
-              } @empty {
-                <p class="blog-section-rule blog-state-panel">
-                  No published posts{{ activeTopic() ? ' in this topic yet.' : ' yet.' }}
-                </p>
-              }
-            } @placeholder (minimum 300ms) {
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            } @loading (after 150ms; minimum 300ms) {
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            }
+          @if (!isLoading() && !loadError() && activeTopic(); as topic) {
+            <p class="blog-section-rule blog-results-summary">
+              Showing {{ posts().length }} published post{{ posts().length === 1 ? '' : 's' }}
+              in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ topic.title }}</span>.
+              <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link ml-2">Clear topic</a>
+            </p>
           }
+
+          <app-blog-post-listing
+            [posts]="posts()"
+            layout="list"
+            [loading]="isLoading()"
+            [error]="loadError()"
+            [appearance]="activeTopicAppearance()"
+            [emptyTitle]="activeTopic() ? 'No published posts in this topic yet' : 'No published posts yet'"
+            emptyMessage="Published writing will appear here as it becomes available."
+            regionLabel="Published blog posts"
+          ></app-blog-post-listing>
         </section>
       </section>
     </main>
@@ -162,6 +110,18 @@ export class BlogIndexComponent {
     }
 
     return this.allPosts().filter(post => postMatchesTopicHub(post, topic));
+  });
+  protected readonly activeTopicAppearance = computed(() => {
+    const topic = this.activeTopic();
+
+    return topic
+      ? {
+          label: topic.theme.shortLabel,
+          accent: topic.theme.accent,
+          accentStrong: topic.theme.accentStrong,
+          accentRgb: topic.theme.accentRgb,
+        }
+      : null;
   });
 
   constructor() {

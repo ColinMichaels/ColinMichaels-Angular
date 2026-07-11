@@ -25,6 +25,15 @@ The header field is the single search input for the live-results experience. `Si
 
 The Blog index no longer renders a duplicate Search action because the global launcher remains visible in the sticky header.
 
+## Reusable Post Presentation
+
+`BlogPostListingComponent` is the shared public post-discovery surface for the Blog index, category and tag archives,
+homepage writing/recovery sections, and topic hubs. Parents keep ownership of repository queries and filtering while
+the component owns post anatomy, links, metadata, media, accessible state panels, and four explicit layout variants:
+`list`, `grid`, `fan`, and `compact`. This preserves familiar interaction and typography without forcing every page
+into the same visual density. Topic hubs use the fan only for the first three promoted posts and return to normal list
+rows for the remaining archive. See `TOPIC_PAGES_AND_POST_LISTING.md` for the component and data migration contract.
+
 ## Labs Pause
 
 Labs code is preserved under `src/app/labs`, but its public entry points are intentionally paused:

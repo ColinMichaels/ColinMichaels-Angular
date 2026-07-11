@@ -4,8 +4,10 @@ import {
   TopicHubAssetItem,
   TopicHubFeaturedProject,
   TopicHubIcon,
+  TopicHubImage,
   TopicHubLearningStep,
   TopicHubMapPlacement,
+  TopicHubPageCopy,
   TopicHubResource,
   TopicHubStatus,
   TopicHubTheme,
@@ -54,6 +56,23 @@ function isTopicHubTheme(value: unknown): value is TopicHubTheme {
     && isTopicHubMapPlacement(value['mapPlacement'])
     && isTopicHubIcon(value['icon'])
     && isStringArray(value['heroMotifs']);
+}
+
+function isTopicHubImage(value: unknown): value is TopicHubImage {
+  return isRecord(value)
+    && typeof value['src'] === 'string'
+    && typeof value['alt'] === 'string'
+    && isFiniteNumber(value['width'])
+    && isFiniteNumber(value['height'])
+    && (value['objectPosition'] === undefined || typeof value['objectPosition'] === 'string');
+}
+
+function isTopicHubPageCopy(value: unknown): value is TopicHubPageCopy {
+  return isRecord(value)
+    && typeof value['featuredHeading'] === 'string'
+    && typeof value['featuredDescription'] === 'string'
+    && typeof value['archiveHeading'] === 'string'
+    && typeof value['archiveDescription'] === 'string';
 }
 
 function isTopicHubAssetItem(value: unknown): value is TopicHubAssetItem {
@@ -108,6 +127,8 @@ export function isTopicHub(value: unknown): value is TopicHub {
     && isFiniteNumber(value['displayOrder'])
     && isStringArray(value['terms'])
     && isTopicHubTheme(value['theme'])
+    && (value['heroImage'] === undefined || isTopicHubImage(value['heroImage']))
+    && (value['pageCopy'] === undefined || isTopicHubPageCopy(value['pageCopy']))
     && isTopicHubAsset(value['asset'])
     && isTopicHubFeaturedProject(value['featuredProject'])
     && Array.isArray(value['learningPath'])

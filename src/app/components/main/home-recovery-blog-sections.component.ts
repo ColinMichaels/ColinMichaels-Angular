@@ -3,15 +3,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {
-  BlogPostCardSkeletonComponent
-} from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
-import {BlogPostCardComponent} from '../../features/blog/components/post-card/post-card.component';
-import {BlogPostSummary} from '../../features/blog/models/blog-post.model';
+import {BlogPostListingComponent} from '../../features/blog/components/post-listing/blog-post-listing.component';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
-import type {TopicHub} from '../../features/topics/topic-hubs.data';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
-import {postMatchesHubTerms, postMatchesTerms} from './home-blog-section.utils';
+import {postMatchesTerms} from './home-blog-section.utils';
 
 const WEEKLY_UPDATES_TERMS = [
   'weekly update',
@@ -28,8 +23,7 @@ const MEDICAL_INFORMATION_TERMS = [
 @Component({
   selector: 'app-home-recovery-blog-sections',
   imports: [
-    BlogPostCardComponent,
-    BlogPostCardSkeletonComponent,
+    BlogPostListingComponent,
     RouterLink,
   ],
   standalone: true,
@@ -54,37 +48,20 @@ const MEDICAL_INFORMATION_TERMS = [
           </a>
         </div>
 
-        @if (blogLoadError(); as error) {
-          <div class="site-error-panel mt-8">
-            <p class="font-medium text-rose-950 dark:text-red-100">Unable to load health and recovery posts.</p>
-            <p class="mt-2 text-sm">{{ error }}</p>
-          </div>
-        } @else {
-          @defer (when blogIsReady()) {
-            <div class="site-divided-list">
-              @for (post of healthRecoveryPosts(); track post.id) {
-                <app-blog-post-card
-                  [post]="post"
-                  [showTags]="false"
-                  [topicLabel]="postTopic(post)?.theme?.shortLabel ?? null"
-                  [topicAccent]="postTopic(post)?.theme?.accent ?? null"
-                  [topicAccentStrong]="postTopic(post)?.theme?.accentStrong ?? null"
-                  [topicAccentRgb]="postTopic(post)?.theme?.accentRgb ?? null"
-                ></app-blog-post-card>
-              } @empty {
-                <p class="site-empty-panel">
-                  No published health and recovery posts yet. Posts tagged or categorized with recovery, weekly updates,
-                  open heart surgery, or cardiac recovery will appear here.
-                </p>
-              }
-            </div>
-          } @placeholder (minimum 300ms) {
-            <div class="site-divided-list">
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            </div>
-          }
-        }
+        <app-blog-post-listing
+          class="mt-8"
+          [posts]="healthRecoveryPosts()"
+          layout="list"
+          [headingLevel]="3"
+          [loading]="!blogIsReady()"
+          [error]="blogLoadError()"
+          errorTitle="Unable to load health and recovery posts"
+          [appearance]="recoveryAppearance()"
+          [showTags]="false"
+          emptyTitle="No published health and recovery posts yet"
+          emptyMessage="Posts about recovery, weekly updates, open-heart surgery, and cardiac recovery will appear here."
+          regionLabel="Weekly recovery updates"
+        ></app-blog-post-listing>
       </div>
     </section>
 
@@ -108,37 +85,19 @@ const MEDICAL_INFORMATION_TERMS = [
         </a>
       </div>
 
-      @if (blogLoadError(); as error) {
-        <div class="site-error-panel mt-8">
-          <p class="font-medium text-rose-950 dark:text-red-100">Unable to load posts.</p>
-          <p class="mt-2 text-sm">{{ error }}</p>
-        </div>
-      } @else {
-        @defer (when blogIsReady()) {
-          <div class="site-divided-list">
-            @for (post of medicalInfoPosts(); track post.id) {
-              <app-blog-post-card
-                [post]="post"
-                [showTags]="false"
-                [topicLabel]="postTopic(post)?.theme?.shortLabel ?? null"
-                [topicAccent]="postTopic(post)?.theme?.accent ?? null"
-                [topicAccentStrong]="postTopic(post)?.theme?.accentStrong ?? null"
-                [topicAccentRgb]="postTopic(post)?.theme?.accentRgb ?? null"
-              ></app-blog-post-card>
-            } @empty {
-              <p class="site-empty-panel">
-                No published medical information posts yet. Posts tagged or categorized with medical information,
-                procedures, medications, cardiology, or related surgery-care terms will appear here.
-              </p>
-            }
-          </div>
-        } @placeholder (minimum 300ms) {
-          <div class="site-divided-list">
-            <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-          </div>
-        }
-      }
+      <app-blog-post-listing
+        class="mt-8"
+        [posts]="medicalInfoPosts()"
+        layout="list"
+        [headingLevel]="3"
+        [loading]="!blogIsReady()"
+        [error]="blogLoadError()"
+        [appearance]="recoveryAppearance()"
+        [showTags]="false"
+        emptyTitle="No published hospital resource posts yet"
+        emptyMessage="Posts about medical information, procedures, medications, cardiology, and surgery care will appear here."
+        regionLabel="Hospital lessons from a patient"
+      ></app-blog-post-listing>
       </div>
     </section>
   `,
@@ -158,21 +117,19 @@ export class HomeRecoveryBlogSectionsComponent {
   protected readonly medicalInfoPosts = computed(() => (
     this.allPublishedPosts().filter(post => postMatchesTerms(post, MEDICAL_INFORMATION_TERMS))
   ));
-  protected readonly topicByPostId = computed(() => {
-    const topics = this.topicHubs();
+  protected readonly recoveryAppearance = computed(() => {
+    const topic = this.topicHubs().find(topicHub => topicHub.slug === 'recovery-planning');
 
-    return new Map(
-      this.allPublishedPosts().map(post => [
-        post.id,
-        topics.find(topic => postMatchesHubTerms(post, topic.terms)) ?? null,
-      ])
-    );
+    return topic
+      ? {
+          label: topic.theme.shortLabel,
+          accent: topic.theme.accent,
+          accentStrong: topic.theme.accentStrong,
+          accentRgb: topic.theme.accentRgb,
+        }
+      : null;
   });
   protected readonly blogIsReady = this.blogPostFeed.isReady;
   protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
-
-  protected postTopic(post: BlogPostSummary): TopicHub | null {
-    return this.topicByPostId().get(post.id) ?? null;
-  }
 }

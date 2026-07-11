@@ -23,9 +23,9 @@ export interface TopicHubAsset {
   items: readonly TopicHubAssetItem[];
 }
 
-export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask';
+export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask' | 'gamepad';
 
-export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask'];
+export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask', 'gamepad'];
 
 export interface TopicHubMapPlacement {
   xPercent: number;
@@ -43,6 +43,21 @@ export interface TopicHubTheme {
   mapPlacement: TopicHubMapPlacement;
   icon: TopicHubIcon;
   heroMotifs: readonly string[];
+}
+
+export interface TopicHubImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  objectPosition?: string;
+}
+
+export interface TopicHubPageCopy {
+  featuredHeading: string;
+  featuredDescription: string;
+  archiveHeading: string;
+  archiveDescription: string;
 }
 
 export interface TopicHubFeaturedProject {
@@ -70,6 +85,10 @@ export interface TopicHub {
   displayOrder: number;
   terms: readonly string[];
   theme: TopicHubTheme;
+  /** Optional until existing Firestore topic documents are migrated. */
+  heroImage?: TopicHubImage;
+  /** Optional until existing Firestore topic documents are migrated. */
+  pageCopy?: TopicHubPageCopy;
   asset: TopicHubAsset;
   featuredProject: TopicHubFeaturedProject;
   learningPath: readonly TopicHubLearningStep[];
@@ -102,6 +121,11 @@ export const TOPIC_THEME_COLORS = {
     accentStrong: '#c4b5fd',
     accentRgb: '167 139 250',
   },
+  gadgets: {
+    accent: '#f59e0b',
+    accentStrong: '#fbbf24',
+    accentRgb: '245 158 11',
+  },
 } as const;
 
 export const TOPIC_HUBS: readonly TopicHub[] = [
@@ -127,6 +151,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       },
       icon: 'spark',
       heroMotifs: ['Workflow map', 'Terminals', 'Prompt nodes', 'Automation arrows'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/ai-setup.webp',
+      alt: 'A modular AI workspace connected by a precise cyan workflow path.',
+      width: 1664,
+      height: 936,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'AI workflows worth starting with',
+      featuredDescription: 'A few practical reads for choosing tools, organizing context, and keeping human judgment in the loop.',
+      archiveHeading: 'More AI setup notes',
+      archiveDescription: 'Browse the rest of the guides, experiments, and working notes in this topic.',
     },
     asset: {
       title: 'AI Setup Checklist',
@@ -232,6 +269,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       icon: 'heart',
       heroMotifs: ['Recovery trail', 'Heartbeat line', 'Care notes', 'Contour map'],
     },
+    heroImage: {
+      src: '/assets/images/topics/recovery-planning.webp',
+      alt: 'A calm recovery-planning journal beside a gentle teal route line.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Recovery stories and planning notes',
+      featuredDescription: 'Patient-perspective writing about preparation, open-heart surgery recovery, and the practical details that are easy to lose track of.',
+      archiveHeading: 'More from recovery',
+      archiveDescription: 'Continue through the personal updates, lessons, and planning resources collected here.',
+    },
     asset: {
       title: 'Recovery And Emergency Planning Checklist',
       intro: 'A patient-perspective organizer for the practical details that become hard to find when appointments, recovery limits, and paperwork all collide.',
@@ -335,6 +385,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       },
       icon: 'cube',
       heroMotifs: ['Blueprint layers', 'Angular routes', 'Firebase nodes', 'SEO fallbacks'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/angular-firebase-architecture.webp',
+      alt: 'Layered blue architecture plans connecting routes, interfaces, and data nodes.',
+      width: 1664,
+      height: 936,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Architecture notes from this build',
+      featuredDescription: 'The clearest write-ups on Angular boundaries, Firebase publishing, CMS structure, and the systems behind this site.',
+      archiveHeading: 'More architecture writing',
+      archiveDescription: 'Read the implementation notes, refactors, and decisions that shaped the current stack.',
     },
     asset: {
       title: 'Angular And Firebase Architecture Note',
@@ -440,6 +503,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       icon: 'flask',
       heroMotifs: ['Workbench', 'Browser windows', 'Prototype markers', 'Demo routes'],
     },
+    heroImage: {
+      src: '/assets/images/topics/labs-projects.webp',
+      alt: 'A violet-lit prototype workbench filled with modular browser experiments.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Experiments from the workbench',
+      featuredDescription: 'Project write-ups and creative coding notes from the browser, UI, music, and game ideas I am actively testing.',
+      archiveHeading: 'More lab notes and demos',
+      archiveDescription: 'Browse the experiments, build logs, and project updates that document the work in progress.',
+    },
     asset: {
       title: 'Labs And Demo Showcase Checklist',
       intro: 'A simple publishing checklist for turning experiments into useful public demos without blurring them into production page logic.',
@@ -521,10 +597,158 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     createdAt: DEFAULT_TOPIC_TIMESTAMP,
     updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
+  {
+    id: 'topic-gadgets-toys',
+    slug: 'gadgets-toys',
+    eyebrow: 'Tech Finds',
+    title: 'Gadgets & Toys',
+    description: 'Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.',
+    summary: 'A running shelf of tech I already own, things I want to try, and clever gadgets I find around the internet—with honest notes about what makes each one worth a closer look.',
+    status: 'published',
+    displayOrder: 50,
+    terms: [
+      'gadget',
+      'gadgets',
+      'toy',
+      'toys',
+      'tech gear',
+      'cool tech',
+      'consumer tech',
+      'product review',
+      'product reviews',
+      'electronics',
+      'smart home',
+      'wearables',
+      'gaming hardware',
+    ],
+    theme: {
+      shortLabel: 'Gadgets',
+      ...TOPIC_THEME_COLORS.gadgets,
+      mapPlacement: {
+        xPercent: 83,
+        yPercent: 28,
+        depth: 3,
+        scale: 0.98,
+        floatDelayMs: -1800,
+      },
+      icon: 'gamepad',
+      heroMotifs: ['Handheld tech', 'Desk robot', 'Toy drone', 'Finds shelf'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/gadgets-toys.webp',
+      alt: 'A curated amber-lit workbench with a handheld game device, desk robot, toy drone, puzzle, and pocket gadget.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Gadgets worth a closer look',
+      featuredDescription: 'Hands-on reviews, wish-list finds, and clever tech that is useful, playful, or simply too interesting not to share.',
+      archiveHeading: 'More gadgets and toys',
+      archiveDescription: 'Browse the rest of the product notes, discoveries, comparisons, and things I am considering.',
+    },
+    asset: {
+      title: 'Gadget Review Field Notes',
+      intro: 'A simple way to separate what I own, what I want to try, and what merely caught my eye—while keeping each recommendation useful and honest.',
+      items: [
+        {
+          label: 'State my relationship to the item',
+          description: 'Mark whether I own it, borrowed it, tried it briefly, want it, or simply found it interesting online.',
+        },
+        {
+          label: 'Explain what makes it interesting',
+          description: 'Focus on the real problem it solves, the playful idea behind it, or the design detail that makes it stand out.',
+        },
+        {
+          label: 'Share hands-on details when available',
+          description: 'Note setup, build quality, daily use, limitations, and the small surprises that product pages usually leave out.',
+        },
+        {
+          label: 'Keep price and availability in context',
+          description: 'Treat prices, stock, crowdfunding promises, and release dates as time-sensitive details that readers should recheck.',
+        },
+        {
+          label: 'Make recommendations transparent',
+          description: 'Clearly disclose gifts, review units, sponsorships, or affiliate links and separate enthusiasm from a final verdict.',
+        },
+      ],
+    },
+    featuredProject: {
+      label: 'Start here',
+      title: 'Gadget Review Field Notes',
+      description: 'The simple owned, wanted, and found framework behind reviews and gadget discoveries on this site.',
+      href: `/${PATH_NAMES.TOPICS}/gadgets-toys#topic-start-here`,
+      ctaLabel: 'Open field notes',
+    },
+    learningPath: [
+      {
+        label: '01',
+        title: 'Spot the idea',
+        description: 'Start with the useful, strange, playful, or unusually thoughtful detail that made the item worth noticing.',
+      },
+      {
+        label: '02',
+        title: 'Label the context',
+        description: 'Say whether it is owned, borrowed, tested, wanted, or simply an interesting online find.',
+      },
+      {
+        label: '03',
+        title: 'Look past the pitch',
+        description: 'Compare the promise with price, setup, compatibility, availability, and the likely day-to-day experience.',
+      },
+      {
+        label: '04',
+        title: 'Use it when possible',
+        description: 'Capture the tactile details, limitations, and surprises that only show up outside a product listing.',
+      },
+      {
+        label: '05',
+        title: 'Share the verdict',
+        description: 'Explain who might enjoy it, who should skip it, and whether the idea is better than the object itself.',
+      },
+    ],
+    checklist: [
+      'Label each item as owned, tested, wanted, or found online.',
+      'Explain why it is interesting before listing specifications.',
+      'Treat price, availability, and crowdfunding claims as time-sensitive.',
+      'Disclose gifts, review units, sponsorships, and affiliate relationships.',
+    ],
+    resources: [
+      {
+        label: 'Gadget Posts',
+        description: 'Browse reviews and interesting technology finds.',
+        href: `/${PATH_NAMES.BLOG}/category/gadgets`,
+      },
+      {
+        label: 'Product Reviews',
+        description: 'Read hands-on notes and product verdicts.',
+        href: `/${PATH_NAMES.BLOG}/tag/product-reviews`,
+      },
+    ],
+    createdAt: DEFAULT_TOPIC_TIMESTAMP,
+    updatedAt: DEFAULT_TOPIC_TIMESTAMP,
+  },
 ];
 
 export function getTopicHub(slug: string): TopicHub | undefined {
-  return getPublishedTopicHubs().find(topicHub => topicHub.slug === slug);
+  return findTopicHubBySlug(slug, getPublishedTopicHubs());
+}
+
+export function findTopicHubBySlug(
+  slug: string,
+  topics: readonly TopicHub[]
+): TopicHub | undefined {
+  const exactTopic = topics.find(topicHub => topicHub.slug === slug);
+
+  if (exactTopic) {
+    return exactTopic;
+  }
+
+  const defaultTopic = TOPIC_HUBS.find(topicHub => topicHub.slug === slug);
+
+  return defaultTopic
+    ? topics.find(topicHub => topicHub.id === defaultTopic.id)
+    : undefined;
 }
 
 export function getPublishedTopicHubs(topics: readonly TopicHub[] = TOPIC_HUBS): readonly TopicHub[] {
@@ -539,13 +763,64 @@ export function sortTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] 
   ));
 }
 
+/**
+ * Treat code-defined topics as bootstrap fallbacks: a persisted stable ID or
+ * canonical slug always wins so CMS renames and archived topics stay authoritative.
+ */
+export function getMissingDefaultTopicHubs(
+  topics: readonly TopicHub[],
+  defaults: readonly TopicHub[] = TOPIC_HUBS
+): readonly TopicHub[] {
+  const existingIds = new Set(topics.map(topicHub => topicHub.id));
+  const existingSlugs = new Set(topics.map(topicHub => topicHub.slug));
+
+  return defaults.filter(defaultTopicHub => (
+    !existingIds.has(defaultTopicHub.id)
+      && !existingSlugs.has(defaultTopicHub.slug)
+  ));
+}
+
+export function mergeMissingDefaultTopicHubs(
+  topics: readonly TopicHub[],
+  defaults: readonly TopicHub[] = TOPIC_HUBS
+): readonly TopicHub[] {
+  return sortTopicHubs([
+    ...topics,
+    ...getMissingDefaultTopicHubs(topics, defaults),
+  ]);
+}
+
+const DEFAULT_TOPIC_PAGE_COPY: TopicHubPageCopy = {
+  featuredHeading: 'Featured reading',
+  featuredDescription: 'A few useful places to begin with this topic.',
+  archiveHeading: 'More from this topic',
+  archiveDescription: 'Browse the rest of the published writing collected here.',
+};
+
+export function resolveTopicHubHeroImage(topicHub: TopicHub): TopicHubImage | undefined {
+  return topicHub.heroImage
+    ?? TOPIC_HUBS.find(defaultTopicHub => (
+      defaultTopicHub.id === topicHub.id || defaultTopicHub.slug === topicHub.slug
+    ))?.heroImage;
+}
+
+export function resolveTopicHubPageCopy(topicHub: TopicHub): TopicHubPageCopy {
+  return topicHub.pageCopy
+    ?? TOPIC_HUBS.find(defaultTopicHub => (
+      defaultTopicHub.id === topicHub.id || defaultTopicHub.slug === topicHub.slug
+    ))?.pageCopy
+    ?? DEFAULT_TOPIC_PAGE_COPY;
+}
+
 export function createTopicHubSeoMetadata(topicHub: TopicHub): SeoMetadata {
+  const heroImage = resolveTopicHubHeroImage(topicHub);
+
   return {
     title: `${topicHub.title} | ${SITE_NAME}`,
     description: topicHub.description,
     path: `/${PATH_NAMES.TOPICS}/${topicHub.slug}`,
-    image: HOMEPAGE_OG_IMAGE,
-    imageAlt: `${topicHub.title} preview card`,
+    image: heroImage?.src ?? HOMEPAGE_OG_IMAGE,
+    imageAlt: heroImage?.alt ?? `${topicHub.title} preview card`,
     type: 'website',
     structuredData: {
       '@context': 'https://schema.org',
