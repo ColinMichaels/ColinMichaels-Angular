@@ -10,7 +10,7 @@ All protected admin pages render inside `AdminShellComponent` instead of rebuild
 
 Component inventory:
 
-- `AdminShellComponent` provides the fixed desktop sidebar, responsive navigation drawer, 64px utility header, environment/account footer, and persistent CMS `New Post` action. Desktop users can collapse the sidebar to a 72px icon rail; labels remain available through hover/focus tooltips and the preference persists locally.
+- `AdminShellComponent` provides the fixed desktop sidebar, responsive navigation drawer, 64px utility header, environment/account footer, and persistent CMS `New Post` action. Desktop users can collapse the sidebar to a 72px icon rail; labels remain available through hover/focus tooltips and the preference persists locally. The shell also owns the browser-tab title while active, using the same URL-derived section label shown in the utility header so navigation cannot retain stale metadata from a previous admin page.
 - `admin-navigation.config.ts` defines grouped destinations, icons, exact/prefix matching, page titles, and role visibility for Overview, Publishing, Site Content, Assets, and Administration.
 - `AdminEnvironmentBadgeComponent` supports the compact shell-footer treatment while preserving the detailed badge for feature surfaces that need it.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
@@ -18,7 +18,7 @@ Component inventory:
 
 The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
 
-The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
+The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 
 ## Content Operations Bulk Editor
 

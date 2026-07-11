@@ -53,6 +53,8 @@ Once the post header leaves the viewport, the reading rail exposes a scroll-to-t
 
 On desktop, `BlogTableOfContentsComponent` sticks below the public header rather than underneath it. The active heading link uses `aria-current="location"`, and the contents scroller recenters that link when article scroll position changes so long outlines continue following the reader without moving the page itself. TOC clicks scroll to each heading's natural document position rather than its current sticky rectangle, which preserves backward navigation after earlier headings have already pinned to the reading stack.
 
+Inline-left and inline-right image figures float only at the `sm` breakpoint and above so nearby paragraphs can wrap around them. Level-two and level-three article headings clear both float directions before starting a new section. This keeps the complete figure and caption in normal visual order and prevents the heading's opaque sticky-ready surface from painting over floated media that extends below the preceding paragraph text. Narrow viewports continue rendering inline media at the full article-column width without floats.
+
 ## Validation
 
 Relevant regression coverage includes:
@@ -65,4 +67,5 @@ Relevant regression coverage includes:
 - `article-library-control.component.spec.ts` for reading-state and list-management controls
 - `offline-articles-control.component.spec.ts` and `blog-sticky-post-toolbar.component.spec.ts` for saved-content management controls
 - `pwa-push.service.spec.ts` and `pwa-native-controls.component.spec.ts` for explicit opt-in, safe notification routing, subscription validation, and menu control states
+- `blog-block-renderer.component.spec.ts` for linkable/sticky headings, inline media layouts, and float clearing before subsequent sections
 - browser checks for live result filtering, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect

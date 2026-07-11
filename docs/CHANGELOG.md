@@ -1,5 +1,11 @@
 # Changelog
 
+- Fixed inline-left and inline-right article media so section headings clear the active float instead of painting over
+  the lower image or caption; verified the corrected caption flow at desktop and mobile widths.
+
+- Kept the post editor's desktop inspector rail pinned beneath the admin header with a bounded internal scroll area,
+  and made browser-tab titles follow the active admin section, including new and edited posts.
+
 - Replace mouse-to-wake behavior with a two-second auto-hiding studio interface: movement reveals controls, movement
   over media shows an `S`/`Esc` exit hint, and mouse activity never closes the screen saver.
 

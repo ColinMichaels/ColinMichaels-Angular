@@ -10,13 +10,13 @@ The reorganized console should make the next action obvious, reduce repeated chr
 
 Phase 1, the first Overview slice, and the first Phase 2 publishing-flow slice are implemented:
 
-- `AdminShellComponent` now owns a 224px desktop sidebar, an optional 72px icon-only collapsed state with hover/focus labels, a 64px utility header, a phone/tablet navigation drawer, the environment indicator, account links, and the persistent `New Post` action. The desktop choice persists without changing the always-labeled mobile drawer.
+- `AdminShellComponent` now owns a 224px desktop sidebar, an optional 72px icon-only collapsed state with hover/focus labels, a 64px utility header, a phone/tablet navigation drawer, the environment indicator, account links, the persistent `New Post` action, and the browser-tab title for the active admin URL. The desktop choice persists without changing the always-labeled mobile drawer.
 - `admin-navigation.config.ts` is the typed, role-aware source of truth for the five navigation groups and page titles.
 - The public site header is excluded from `/admin/**`, leaving one navigation system inside the console.
 - Page-local Admin/Home/Blog navigation was removed from the Overview, Posts, Editor, Calendar, Comments, Users, Media, Homepage, Topics, Recommended Links, and access-denied surfaces.
 - The Overview is now an operations dashboard backed by repository post data: publishing counts, the next scheduled post, recent drafts, recently published work, and compact site-management links.
 - Duplicate Overview quick actions were removed after responsive review; the shell owns `New Post`, while the schedule module provides contextual Calendar access.
-- The Post Editor now presents secondary settings as compact control modules. Post Details remains open, while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details default closed with live summaries and status badges.
+- The Post Editor now presents secondary settings as compact control modules. Post Details remains open, while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details default closed with live summaries and status badges. Its desktop inspector rail remains sticky beneath the shell header and uses a bounded internal scroller so all controls remain reachable above the fixed command area.
 - `AdminControlModuleComponent` keeps collapsed form content mounted, preserving field state and upload progress, and invalid saves automatically reveal the section that needs attention.
 - The Editor.js toolbar and sticky command area use the same denser hierarchy; on phones the sticky bar keeps status and Save visible while View/Delete actions move into a compact contextual menu.
 

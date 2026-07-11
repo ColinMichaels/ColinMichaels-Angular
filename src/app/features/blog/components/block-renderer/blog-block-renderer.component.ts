@@ -95,7 +95,7 @@ interface RenderableBlogImage {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="blog-anchored-subheading group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
+                class="blog-anchored-subheading clear-both group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
@@ -111,7 +111,7 @@ interface RenderableBlogImage {
             } @else {
               <h2
                 [id]="row.headingId"
-                class="blog-section-heading group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
+                class="blog-section-heading clear-both group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
                 [class.blog-sticky-section-heading]="row.headingId === activeHeadingId"
                 [attr.data-sticky-active]="row.headingId === activeHeadingId ? '' : null"
                 data-sticky-section-heading

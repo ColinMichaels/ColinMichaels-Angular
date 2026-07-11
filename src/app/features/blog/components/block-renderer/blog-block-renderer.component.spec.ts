@@ -128,9 +128,25 @@ describe('BlogBlockRendererComponent', () => {
 
     expect(heading?.id).toBe('anchor-heading');
     expect(link?.getAttribute('href')).toBe('/blog/test-post#anchor-heading');
+    expect(heading?.classList).toContain('clear-both');
     expect(heading?.classList).toContain('blog-sticky-section-heading');
     expect(heading?.hasAttribute('data-sticky-active')).toBeTrue();
     expect(heading?.hasAttribute('data-sticky-section-heading')).toBeTrue();
+  });
+
+  it('clears inline image floats before level-three headings', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'heading-3',
+        type: 'header',
+        data: {text: 'Subheading after media', level: 3},
+      },
+    ]);
+    fixture.detectChanges();
+
+    const heading = (fixture.nativeElement as HTMLElement).querySelector('h3');
+
+    expect(heading?.classList).toContain('clear-both');
   });
 
   it('keeps only the active level-two heading sticky', () => {
