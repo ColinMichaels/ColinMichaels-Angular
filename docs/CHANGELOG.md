@@ -1,5 +1,9 @@
 # Changelog
 
+- Lazy-load the screen saver renderer, studio controls, preferences, and local-media storage on the first `S` shortcut
+  so the feature adds only a lightweight launcher to the initial app shell and remains warm for later toggles.
+
+- Added an app-shell screen saver studio with Hero and IndexedDB-backed My Images modules, persistent Ken Burns and slideshow speed controls, local multi-image upload, smooth full-screen crossfades, delayed mouse wake, Escape/Exit controls, typing safeguards, reduced-motion handling, focus return, and scroll locking.
 - Simplified the public account menu by moving favorites, read-later progress, offline downloads, notifications, native-device actions, and storage controls to the protected Profile page, and moved the persisted light/dark toggle into Reader Assistance.
 - Added signed-in Web Push opt-in with validated Firebase subscription storage, publish-transition notifications, safe public deep links, stale-endpoint cleanup, and progressive application badges through a minimal Angular service-worker wrapper.
 - Added a device-local IndexedDB reading library with persistent high-water article progress, automatic read completion at 95%, independent favorites and read-later lists, sticky article controls, and Profile-based reading-state management kept separate from offline downloads.
