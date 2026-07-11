@@ -45,6 +45,21 @@ export interface TopicHubTheme {
   heroMotifs: readonly string[];
 }
 
+export interface TopicHubImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  objectPosition?: string;
+}
+
+export interface TopicHubPageCopy {
+  featuredHeading: string;
+  featuredDescription: string;
+  archiveHeading: string;
+  archiveDescription: string;
+}
+
 export interface TopicHubFeaturedProject {
   label: string;
   title: string;
@@ -70,6 +85,10 @@ export interface TopicHub {
   displayOrder: number;
   terms: readonly string[];
   theme: TopicHubTheme;
+  /** Optional until existing Firestore topic documents are migrated. */
+  heroImage?: TopicHubImage;
+  /** Optional until existing Firestore topic documents are migrated. */
+  pageCopy?: TopicHubPageCopy;
   asset: TopicHubAsset;
   featuredProject: TopicHubFeaturedProject;
   learningPath: readonly TopicHubLearningStep[];
@@ -127,6 +146,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       },
       icon: 'spark',
       heroMotifs: ['Workflow map', 'Terminals', 'Prompt nodes', 'Automation arrows'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/ai-setup.webp',
+      alt: 'A modular AI workspace connected by a precise cyan workflow path.',
+      width: 1664,
+      height: 936,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'AI workflows worth starting with',
+      featuredDescription: 'A few practical reads for choosing tools, organizing context, and keeping human judgment in the loop.',
+      archiveHeading: 'More AI setup notes',
+      archiveDescription: 'Browse the rest of the guides, experiments, and working notes in this topic.',
     },
     asset: {
       title: 'AI Setup Checklist',
@@ -232,6 +264,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       icon: 'heart',
       heroMotifs: ['Recovery trail', 'Heartbeat line', 'Care notes', 'Contour map'],
     },
+    heroImage: {
+      src: '/assets/images/topics/recovery-planning.webp',
+      alt: 'A calm recovery-planning journal beside a gentle teal route line.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Recovery stories and planning notes',
+      featuredDescription: 'Patient-perspective writing about preparation, open-heart surgery recovery, and the practical details that are easy to lose track of.',
+      archiveHeading: 'More from recovery',
+      archiveDescription: 'Continue through the personal updates, lessons, and planning resources collected here.',
+    },
     asset: {
       title: 'Recovery And Emergency Planning Checklist',
       intro: 'A patient-perspective organizer for the practical details that become hard to find when appointments, recovery limits, and paperwork all collide.',
@@ -335,6 +380,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       },
       icon: 'cube',
       heroMotifs: ['Blueprint layers', 'Angular routes', 'Firebase nodes', 'SEO fallbacks'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/angular-firebase-architecture.webp',
+      alt: 'Layered blue architecture plans connecting routes, interfaces, and data nodes.',
+      width: 1664,
+      height: 936,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Architecture notes from this build',
+      featuredDescription: 'The clearest write-ups on Angular boundaries, Firebase publishing, CMS structure, and the systems behind this site.',
+      archiveHeading: 'More architecture writing',
+      archiveDescription: 'Read the implementation notes, refactors, and decisions that shaped the current stack.',
     },
     asset: {
       title: 'Angular And Firebase Architecture Note',
@@ -440,6 +498,19 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       icon: 'flask',
       heroMotifs: ['Workbench', 'Browser windows', 'Prototype markers', 'Demo routes'],
     },
+    heroImage: {
+      src: '/assets/images/topics/labs-projects.webp',
+      alt: 'A violet-lit prototype workbench filled with modular browser experiments.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Experiments from the workbench',
+      featuredDescription: 'Project write-ups and creative coding notes from the browser, UI, music, and game ideas I am actively testing.',
+      archiveHeading: 'More lab notes and demos',
+      archiveDescription: 'Browse the experiments, build logs, and project updates that document the work in progress.',
+    },
     asset: {
       title: 'Labs And Demo Showcase Checklist',
       intro: 'A simple publishing checklist for turning experiments into useful public demos without blurring them into production page logic.',
@@ -524,7 +595,24 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
 ];
 
 export function getTopicHub(slug: string): TopicHub | undefined {
-  return getPublishedTopicHubs().find(topicHub => topicHub.slug === slug);
+  return findTopicHubBySlug(slug, getPublishedTopicHubs());
+}
+
+export function findTopicHubBySlug(
+  slug: string,
+  topics: readonly TopicHub[]
+): TopicHub | undefined {
+  const exactTopic = topics.find(topicHub => topicHub.slug === slug);
+
+  if (exactTopic) {
+    return exactTopic;
+  }
+
+  const defaultTopic = TOPIC_HUBS.find(topicHub => topicHub.slug === slug);
+
+  return defaultTopic
+    ? topics.find(topicHub => topicHub.id === defaultTopic.id)
+    : undefined;
 }
 
 export function getPublishedTopicHubs(topics: readonly TopicHub[] = TOPIC_HUBS): readonly TopicHub[] {
@@ -539,13 +627,37 @@ export function sortTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] 
   ));
 }
 
+const DEFAULT_TOPIC_PAGE_COPY: TopicHubPageCopy = {
+  featuredHeading: 'Featured reading',
+  featuredDescription: 'A few useful places to begin with this topic.',
+  archiveHeading: 'More from this topic',
+  archiveDescription: 'Browse the rest of the published writing collected here.',
+};
+
+export function resolveTopicHubHeroImage(topicHub: TopicHub): TopicHubImage | undefined {
+  return topicHub.heroImage
+    ?? TOPIC_HUBS.find(defaultTopicHub => (
+      defaultTopicHub.id === topicHub.id || defaultTopicHub.slug === topicHub.slug
+    ))?.heroImage;
+}
+
+export function resolveTopicHubPageCopy(topicHub: TopicHub): TopicHubPageCopy {
+  return topicHub.pageCopy
+    ?? TOPIC_HUBS.find(defaultTopicHub => (
+      defaultTopicHub.id === topicHub.id || defaultTopicHub.slug === topicHub.slug
+    ))?.pageCopy
+    ?? DEFAULT_TOPIC_PAGE_COPY;
+}
+
 export function createTopicHubSeoMetadata(topicHub: TopicHub): SeoMetadata {
+  const heroImage = resolveTopicHubHeroImage(topicHub);
+
   return {
     title: `${topicHub.title} | ${SITE_NAME}`,
     description: topicHub.description,
     path: `/${PATH_NAMES.TOPICS}/${topicHub.slug}`,
-    image: HOMEPAGE_OG_IMAGE,
-    imageAlt: `${topicHub.title} preview card`,
+    image: heroImage?.src ?? HOMEPAGE_OG_IMAGE,
+    imageAlt: heroImage?.alt ?? `${topicHub.title} preview card`,
     type: 'website',
     structuredData: {
       '@context': 'https://schema.org',

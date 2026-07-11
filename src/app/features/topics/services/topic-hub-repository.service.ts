@@ -2,6 +2,7 @@ import {Injectable, inject} from '@angular/core';
 import {map, Observable} from 'rxjs';
 
 import {
+  findTopicHubBySlug,
   getPublishedTopicHubs,
   sortTopicHubs,
   TOPIC_HUBS,
@@ -92,7 +93,7 @@ export class TopicHubRepositoryService {
 
   getPublishedTopicHubBySlug$(slug: string): Observable<TopicHub | undefined> {
     return this.getPublishedTopicHubs$().pipe(
-      map(topics => topics.find(topicHub => topicHub.slug === slug))
+      map(topics => findTopicHubBySlug(slug, topics))
     );
   }
 
@@ -113,7 +114,7 @@ export class TopicHubRepositoryService {
   }
 
   getPublishedTopicHubBySlug(slug: string): TopicHub | undefined {
-    return this.getPublishedTopicHubs().find(topicHub => topicHub.slug === slug);
+    return findTopicHubBySlug(slug, this.getPublishedTopicHubs());
   }
 
   getAdminTopicHubs(): readonly TopicHub[] {
@@ -203,6 +204,23 @@ export class TopicHubRepositoryService {
         },
         heroMotifs: this.normalizeStringList(topicHub.theme.heroMotifs),
       },
+      heroImage: topicHub.heroImage?.src.trim()
+        ? {
+            src: topicHub.heroImage.src.trim(),
+            alt: topicHub.heroImage.alt.trim() || `${topicHub.title.trim() || 'Topic'} illustration`,
+            width: Math.round(clampNumber(topicHub.heroImage.width, 1, 3840, 1600)),
+            height: Math.round(clampNumber(topicHub.heroImage.height, 1, 2160, 900)),
+            objectPosition: topicHub.heroImage.objectPosition?.trim() || 'center',
+          }
+        : undefined,
+      pageCopy: topicHub.pageCopy && Object.values(topicHub.pageCopy).some(value => value.trim())
+        ? {
+            featuredHeading: topicHub.pageCopy.featuredHeading.trim() || 'Featured reading',
+            featuredDescription: topicHub.pageCopy.featuredDescription.trim(),
+            archiveHeading: topicHub.pageCopy.archiveHeading.trim() || 'More from this topic',
+            archiveDescription: topicHub.pageCopy.archiveDescription.trim(),
+          }
+        : undefined,
       asset: {
         ...topicHub.asset,
         title: topicHub.asset.title.trim() || 'Start Here',

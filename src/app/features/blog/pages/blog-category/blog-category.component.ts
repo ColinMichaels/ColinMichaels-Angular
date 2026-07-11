@@ -5,8 +5,7 @@ import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
-import {BlogPostCardComponent} from '../../components/post-card/post-card.component';
-import {BlogPostCardSkeletonComponent} from '../../components/post-card/blog-post-card-skeleton.component';
+import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {
@@ -20,8 +19,7 @@ import {
   imports: [
     RouterLink,
     BlogCategoryNavComponent,
-    BlogPostCardComponent,
-    BlogPostCardSkeletonComponent,
+    BlogPostListingComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -33,40 +31,27 @@ import {
         </header>
 
         <section>
-          @if (loadError(); as error) {
-            <div class="blog-section-rule blog-state-panel">
-              <p class="blog-state-title">Unable to load blog posts from Firestore.</p>
-              <p class="mt-2 text-sm">{{ error }}</p>
-            </div>
-          } @else {
-            @defer (when !isLoading()) {
-              <p class="blog-section-rule blog-results-summary">
-                Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
-                in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ categoryTitle() }}</span>.
-              </p>
+          @if (!isLoading() && !loadError()) {
+            <p class="blog-section-rule blog-results-summary">
+              Showing {{ filteredPosts().length }} published post{{ filteredPosts().length === 1 ? '' : 's' }}
+              in <span class="font-medium text-cyan-700 dark:text-cyan-300">{{ categoryTitle() }}</span>.
+            </p>
+          }
 
-              @for (post of filteredPosts(); track post.id) {
-                <app-blog-post-card [post]="post"></app-blog-post-card>
-              } @empty {
-                <div class="blog-section-rule blog-state-panel">
-                  <p class="blog-state-title">No published posts in this category.</p>
-                  <p class="mt-2 text-sm">
-                    This category may not exist yet, or its posts may still be drafts.
-                  </p>
-                  <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link mt-5 inline-block">
-                    View all posts
-                  </a>
-                </div>
-              }
-            } @placeholder (minimum 300ms) {
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            } @loading (after 150ms; minimum 300ms) {
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-              <app-blog-post-card-skeleton></app-blog-post-card-skeleton>
-            }
+          <app-blog-post-listing
+            [posts]="filteredPosts()"
+            layout="grid"
+            [loading]="isLoading()"
+            [error]="loadError()"
+            emptyTitle="No published posts in this category"
+            emptyMessage="This category may not exist yet, or its posts may still be drafts."
+            [regionLabel]="categoryTitle() + ' posts'"
+          ></app-blog-post-listing>
+
+          @if (!isLoading() && !loadError() && filteredPosts().length === 0) {
+            <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link mt-5 inline-block">
+              View all posts
+            </a>
           }
         </section>
       </section>

@@ -224,6 +224,11 @@ function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
   const excerptText = `${topicHub.description} ${topicHub.summary}`;
   const taxonomyText = `topics ${topicHub.terms.join(' ')}`;
   const bodyText = [
+    topicHub.heroImage?.alt,
+    topicHub.pageCopy?.featuredHeading,
+    topicHub.pageCopy?.featuredDescription,
+    topicHub.pageCopy?.archiveHeading,
+    topicHub.pageCopy?.archiveDescription,
     topicHub.asset.title,
     topicHub.asset.intro,
     ...topicHub.asset.items.flatMap(item => [item.label, item.description]),
@@ -232,7 +237,7 @@ function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
     ...topicHub.learningPath.flatMap(step => [step.label, step.title, step.description]),
     ...topicHub.checklist,
     ...topicHub.resources.flatMap(resource => [resource.label, resource.description]),
-  ].join(' ');
+  ].filter((value): value is string => typeof value === 'string').join(' ');
 
   return {
     id: `topic-${topicHub.id}`,
