@@ -525,7 +525,7 @@ function getErrorMessage(error: unknown): string {
               ></app-editor-js>
             </section>
 
-            <aside class="space-y-2 border-t border-zinc-800 pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+            <aside class="space-y-2 border-t border-zinc-800 pt-4 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-10rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:pl-4 xl:pr-1 xl:pt-0">
               <app-admin-control-module
                 title="Post State"
                 [summary]="postForm.controls.status.value + ' · ' + postedOnPreview"
