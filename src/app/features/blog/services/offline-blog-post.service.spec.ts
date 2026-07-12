@@ -15,6 +15,7 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
     title: overrides.title ?? 'Offline Post',
     excerpt: overrides.excerpt ?? 'A post saved for offline reading.',
     coverImage: overrides.coverImage ?? 'https://images.example.com/offline-cover.webp',
+    ...(overrides.backgroundImage !== undefined ? {backgroundImage: overrides.backgroundImage} : {}),
     author: overrides.author ?? {name: 'Colin Michaels'},
     categories: overrides.categories ?? ['PWA'],
     subcategories: overrides.subcategories ?? [],
@@ -55,6 +56,7 @@ describe('OfflineBlogPostService', () => {
 
   it('saves a public article snapshot in Cache Storage and restores it', async () => {
     const post = createPost({
+      backgroundImage: '/assets/images/backgrounds/day.webp',
       socialPromotion: {
         announcements: [],
       },
@@ -68,6 +70,7 @@ describe('OfflineBlogPostService', () => {
     expect(saved.sourceUpdatedAt).toBe(post.updatedAt);
     expect(restored?.post.title).toBe(post.title);
     expect(restored?.post.blocks).toEqual(post.blocks);
+    expect(restored?.post.backgroundImage).toBe('/assets/images/backgrounds/day.webp');
     expect(restored?.post.socialPromotion).toBeUndefined();
   });
 

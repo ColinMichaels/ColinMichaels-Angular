@@ -27,6 +27,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
     ...(overrides.preview ? {preview: overrides.preview} : {}),
+    ...(overrides.backgroundImage !== undefined ? {backgroundImage: overrides.backgroundImage} : {}),
     ...(overrides.thumbnailImage ? {thumbnailImage: overrides.thumbnailImage} : {}),
     createdAt: overrides.createdAt ?? '2026-01-01T12:00:00.000Z',
     updatedAt: overrides.updatedAt ?? '2026-01-01T12:00:00.000Z',
@@ -252,6 +253,27 @@ describe('BlogRepositoryService', () => {
     }));
 
     expect(savedPost.seo.openGraphImage).toBe('/assets/images/posts/social-share.webp');
+  });
+
+  it('trims an optional post background and clears blank background values', async () => {
+    const savedPost = await service.savePost(createPost({
+      id: 'background-post',
+      slug: 'background-post',
+      backgroundImage: '  /assets/images/backgrounds/day.webp  ',
+    }));
+
+    expect(savedPost.backgroundImage).toBe('/assets/images/backgrounds/day.webp');
+    expect(storage.getPosts().find(post => post.id === savedPost.id)?.backgroundImage)
+      .toBe('/assets/images/backgrounds/day.webp');
+
+    const clearedPost = await service.savePost({
+      ...savedPost,
+      backgroundImage: '   ',
+    });
+
+    expect(clearedPost.backgroundImage).toBeUndefined();
+    expect(storage.getPosts().find(post => post.id === savedPost.id)?.backgroundImage)
+      .toBeUndefined();
   });
 
   it('drops a stale local thumbnail when the cover image has a Firebase Storage URL', async () => {

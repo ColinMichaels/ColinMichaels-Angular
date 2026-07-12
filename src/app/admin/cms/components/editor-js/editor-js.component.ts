@@ -5,6 +5,7 @@ import {
   DestroyRef,
   ElementRef,
   EventEmitter,
+  HostListener,
   Inject,
   Input,
   Output,
@@ -24,7 +25,7 @@ import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model'
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {ChartBlockTool} from './tools/chart-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
-import {CmsImageBlockTool} from './tools/cms-image-block.tool';
+import {CmsImageBlockTool, CmsImageLibrarySelection} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
 import {CmsMarkdownBlockTool} from './tools/markdown-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
@@ -57,6 +58,7 @@ export interface EditorImageUploadResult {
 }
 
 type EditorImageInsertTab = 'library' | 'upload';
+type EditorImagePanelMode = 'insert' | 'select';
 type EditorImageLayoutMode = BlogImageLayout;
 
 interface EditorImageLayoutOption {
@@ -227,25 +229,37 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
               <header class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
                 <div>
                   <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Media</p>
-                  <h3 class="text-lg font-semibold text-zinc-50">Insert Image</h3>
+                  <h3 class="text-lg font-semibold text-zinc-50">
+                    {{ imagePanelMode === 'select' ? 'Choose Existing Image' : 'Insert Image' }}
+                  </h3>
                 </div>
 
-                <div class="flex gap-2">
-                  <button
-                    type="button"
-                    [class]="imageInsertTab === 'library' ? activeImageTabClass : inactiveImageTabClass"
-                    (click)="setImageInsertTab('library')"
-                  >
+                @if (imagePanelMode === 'insert') {
+                  <div class="flex gap-2" role="tablist" aria-label="Image source">
+                    <button
+                      type="button"
+                      role="tab"
+                      [attr.aria-selected]="imageInsertTab === 'library'"
+                      [class]="imageInsertTab === 'library' ? activeImageTabClass : inactiveImageTabClass"
+                      (click)="setImageInsertTab('library')"
+                    >
+                      Media Library
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      [attr.aria-selected]="imageInsertTab === 'upload'"
+                      [class]="imageInsertTab === 'upload' ? activeImageTabClass : inactiveImageTabClass"
+                      (click)="setImageInsertTab('upload')"
+                    >
+                      Upload New
+                    </button>
+                  </div>
+                } @else {
+                  <span class="border border-cyan-400/50 bg-cyan-400/10 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-cyan-200">
                     Media Library
-                  </button>
-                  <button
-                    type="button"
-                    [class]="imageInsertTab === 'upload' ? activeImageTabClass : inactiveImageTabClass"
-                    (click)="setImageInsertTab('upload')"
-                  >
-                    Upload New
-                  </button>
-                </div>
+                  </span>
+                }
               </header>
 
               @if (imageInsertTab === 'library') {
@@ -262,11 +276,11 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
                   </label>
 
                   @if (isMediaLibraryLoading()) {
-                    <p class="border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">Loading media library images...</p>
+                    <p class="border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400" role="status">Loading media library images...</p>
                   }
 
                   @if (mediaLibraryError(); as message) {
-                    <p class="border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{{ message }}</p>
+                    <p class="border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200" role="alert">{{ message }}</p>
                   }
 
                   <div class="grid max-h-[54vh] gap-3 overflow-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -329,7 +343,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
                     </button>
 
                     @if (imageInsertMessage(); as message) {
-                      <p class="border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-300">{{ message }}</p>
+                      <p class="border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-300" role="status">{{ message }}</p>
                     }
                   </section>
                 </div>
@@ -339,7 +353,11 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
             <aside class="space-y-5 overflow-auto p-4">
               <div class="space-y-2">
                 <h4 class="text-base font-semibold text-zinc-50">Image options</h4>
-                <p class="text-xs leading-5 text-zinc-500">These options are saved with the Editor.js image block.</p>
+                <p class="text-xs leading-5 text-zinc-500">
+                  {{ imagePanelMode === 'select'
+                    ? 'These options will update the current Editor.js image block.'
+                    : 'These options are saved with the new Editor.js image block.' }}
+                </p>
               </div>
 
               @if (selectedMediaItem; as item) {
@@ -403,7 +421,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
               </fieldset>
 
               @if (imageInsertMessage(); as message) {
-                <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200">{{ message }}</p>
+                <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200" role="status">{{ message }}</p>
               }
 
               <footer class="flex flex-wrap justify-end gap-2 border-t border-zinc-800 pt-4">
@@ -420,7 +438,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
                   [disabled]="!selectedMediaItem"
                   (click)="insertSelectedMediaImage()"
                 >
-                  Insert Selected
+                  {{ imagePanelMode === 'select' ? 'Use Selected Image' : 'Insert Selected' }}
                 </button>
               </footer>
             </aside>
@@ -657,6 +675,7 @@ export class EditorJsComponent implements AfterViewInit {
   protected readonly activeImageTabClass = 'border border-cyan-300 bg-cyan-400 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-950';
   protected readonly inactiveImageTabClass = 'border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-300 hover:border-cyan-300 hover:text-cyan-200';
   protected readonly imageLayoutOptions = imageLayoutOptions;
+  protected imagePanelMode: EditorImagePanelMode = 'insert';
   protected imageInsertTab: EditorImageInsertTab = 'library';
   protected imageLibrarySearch = '';
   protected selectedMediaItemId: string | null = null;
@@ -668,9 +687,11 @@ export class EditorJsComponent implements AfterViewInit {
   private readonly mediaLibrary = inject(MediaLibraryService);
   private editor: EditorJS | null = null;
   private hasLoadedMediaLibrary = false;
+  private pendingImageSelectionResolver: ((selection: CmsImageLibrarySelection | null) => void) | null = null;
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: object) {
     this.destroyRef.onDestroy(() => {
+      this.resolvePendingImageSelection(null);
       this.editor?.destroy();
       this.editor = null;
     });
@@ -678,6 +699,13 @@ export class EditorJsComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     void this.initializeEditor();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected closeImagePanelOnEscape(): void {
+    if (this.isImagePanelOpen()) {
+      this.closeImageInsertPanel();
+    }
   }
 
   protected async save(): Promise<void> {
@@ -753,6 +781,10 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   protected openImageInsertPanel(): void {
+    this.resolvePendingImageSelection(null);
+    this.imagePanelMode = 'insert';
+    this.imageInsertTab = 'library';
+    this.resetImageInsertForm();
     this.imageInsertMessage.set(null);
     this.mediaLibraryError.set(null);
     this.isImagePanelOpen.set(true);
@@ -760,8 +792,11 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   protected closeImageInsertPanel(): void {
+    this.resolvePendingImageSelection(null);
     this.isImagePanelOpen.set(false);
     this.imageInsertMessage.set(null);
+    this.imagePanelMode = 'insert';
+    this.resetImageInsertForm();
   }
 
   protected setImageInsertTab(tab: EditorImageInsertTab): void {
@@ -778,13 +813,19 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   protected selectMediaItem(item: MediaLibraryItem): void {
+    const previousItem = this.selectedMediaItem;
+    const previousAltText = previousItem?.altText ?? previousItem?.displayName ?? '';
+    const previousCaption = previousItem?.description ?? '';
+    const shouldReplaceAltText = !this.imageAltText.trim() || this.imageAltText === previousAltText;
+    const shouldReplaceCaption = !this.imageCaption.trim() || this.imageCaption === previousCaption;
+
     this.selectedMediaItemId = item.id;
 
-    if (!this.imageAltText.trim()) {
+    if (shouldReplaceAltText) {
       this.imageAltText = item.altText ?? item.displayName;
     }
 
-    if (!this.imageCaption.trim()) {
+    if (shouldReplaceCaption) {
       this.imageCaption = item.description ?? '';
     }
 
@@ -812,12 +853,22 @@ export class EditorJsComponent implements AfterViewInit {
       return;
     }
 
-    await this.insertImageBlock({
+    const selection: CmsImageLibrarySelection = {
       url,
       alt: this.imageAltText.trim() || item.altText || item.displayName,
-      width: item.width,
-      height: item.height,
-    });
+      caption: this.imageCaption.trim(),
+      imageLayout: this.imageLayoutMode,
+      ...(item.width ? {width: item.width} : {}),
+      ...(item.height ? {height: item.height} : {}),
+    };
+
+    if (this.imagePanelMode === 'select') {
+      this.resolvePendingImageSelection(selection);
+      this.closeImageInsertPanel();
+      return;
+    }
+
+    await this.insertImageBlock(selection);
   }
 
   protected async uploadAndInsertImage(event: Event): Promise<void> {
@@ -941,6 +992,9 @@ export class EditorJsComponent implements AfterViewInit {
           image: {
             class: tools.CmsImageBlock,
             config: {
+              mediaLibrary: {
+                selectImage: (current: CmsImageLibrarySelection) => this.selectExistingImage(current),
+              },
               uploader: {
                 uploadByFile: async (file: File) => this.uploadImageFile(file),
               },
@@ -960,6 +1014,31 @@ export class EditorJsComponent implements AfterViewInit {
 
   private uploadImageFile(file: File): Promise<EditorImageUploadResult> {
     return this.imageUploader ? this.imageUploader(file) : Promise.resolve(createObjectUrlUploadResult(file));
+  }
+
+  private selectExistingImage(current: CmsImageLibrarySelection): Promise<CmsImageLibrarySelection | null> {
+    this.resolvePendingImageSelection(null);
+    this.imagePanelMode = 'select';
+    this.imageInsertTab = 'library';
+    this.selectedMediaItemId = null;
+    this.imageCaption = current.caption;
+    this.imageAltText = current.alt;
+    this.imageLayoutMode = current.imageLayout;
+    this.imageLibrarySearch = '';
+    this.imageInsertMessage.set(null);
+    this.mediaLibraryError.set(null);
+    this.isImagePanelOpen.set(true);
+    this.ensureMediaLibraryLoaded();
+
+    return new Promise(resolve => {
+      this.pendingImageSelectionResolver = resolve;
+    });
+  }
+
+  private resolvePendingImageSelection(selection: CmsImageLibrarySelection | null): void {
+    const resolver = this.pendingImageSelectionResolver;
+    this.pendingImageSelectionResolver = null;
+    resolver?.(selection);
   }
 
   private ensureMediaLibraryLoaded(): void {
@@ -1037,13 +1116,14 @@ export class EditorJsComponent implements AfterViewInit {
 
   private resetImageInsertForm(): void {
     this.selectedMediaItemId = null;
+    this.imageLibrarySearch = '';
     this.imageCaption = '';
     this.imageAltText = '';
     this.imageLayoutMode = 'fullWidth';
   }
 
   private getMediaSourceUrl(item: MediaLibraryItem): string {
-    return item.previewUrl ?? item.originalUrl ?? item.downloadUrl ?? item.thumbnailUrl ?? '';
+    return item.originalUrl ?? item.downloadUrl ?? item.previewUrl ?? item.thumbnailUrl ?? '';
   }
 
   private getMediaSearchText(item: MediaLibraryItem): string {

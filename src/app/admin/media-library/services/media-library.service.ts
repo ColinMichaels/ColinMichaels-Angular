@@ -534,6 +534,14 @@ export class MediaLibraryService {
       });
     }
 
+    if (post.backgroundImage) {
+      attachments.push({
+        role: 'post-background',
+        url: post.backgroundImage,
+        altText: `${post.title} background image`,
+      });
+    }
+
     if (post.seo.openGraphImage && post.seo.openGraphImage !== post.coverImage) {
       attachments.push({
         role: 'open-graph',

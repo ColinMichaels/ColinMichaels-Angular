@@ -36,6 +36,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       [attr.aria-label]="regionLabel"
       [attr.aria-busy]="loading"
       [attr.data-layout]="layout"
+      [class.post-listing-region--clamped]="excerptLineClamp !== null"
+      [style.--listing-excerpt-lines]="excerptLineClamp"
     >
       @if (error) {
         <div class="post-listing-state post-listing-state--error" role="alert">
@@ -151,12 +153,12 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                     </ul>
                   }
 
-                  @if (layout === 'fan') {
+                  @if (layout === 'fan' || showReadLink) {
                     <a
                       class="post-listing__read-link"
                       [routerLink]="['/', pathNames.BLOG, post.slug]"
                     >
-                      Read article
+                      {{ readLinkLabel }}
                       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                         <path d="M5 12h14"></path>
                         <path d="m14 7 5 5-5 5"></path>
@@ -346,6 +348,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       overflow-wrap: anywhere;
     }
 
+    .post-listing-region--clamped .post-listing__excerpt {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--listing-excerpt-lines);
+    }
+
     .post-listing__tags {
       display: flex;
       flex-wrap: wrap;
@@ -366,6 +375,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
     .post-listing__read-link {
       display: flex;
+      min-height: 44px;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
@@ -752,6 +762,9 @@ export class BlogPostListingComponent {
   @Input() showExcerpt = true;
   @Input() showTags = true;
   @Input() showMeta = true;
+  @Input() showReadLink = false;
+  @Input() readLinkLabel = 'Read article';
+  @Input() excerptLineClamp: number | null = null;
   @Input() loading = false;
   @Input() loadingLabel = 'Loading posts';
   @Input() loadingItemCount = 3;

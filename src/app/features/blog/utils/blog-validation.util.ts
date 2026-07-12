@@ -108,6 +108,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && typeof value['title'] === 'string'
     && typeof value['excerpt'] === 'string'
     && typeof value['coverImage'] === 'string'
+    && (value['backgroundImage'] === undefined || typeof value['backgroundImage'] === 'string')
     && (value['thumbnailImage'] === undefined || typeof value['thumbnailImage'] === 'string')
     && (value['featured'] === undefined || typeof value['featured'] === 'boolean')
     && isBlogAuthor(value['author'])

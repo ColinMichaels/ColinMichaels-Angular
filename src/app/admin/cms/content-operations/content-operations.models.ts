@@ -25,6 +25,7 @@ export interface ContentArtifactDescriptor {
 }
 
 export interface ContentOperationGuardProjection {
+  backgroundImage: string;
   canonical: string;
   coverImage: string;
   createdAt: string;
