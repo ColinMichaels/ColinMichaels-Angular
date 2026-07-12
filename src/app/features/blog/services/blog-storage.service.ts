@@ -314,6 +314,7 @@ export class BlogStorageService {
       coverImage: imageFields.coverImage,
       backgroundImage: post.backgroundImage?.trim() || deleteField(),
       thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
+      catCorner: post.catCorner ?? deleteField(),
       preview: post.preview ?? deleteField(),
       syncedAt: serverTimestamp(),
       storageVersion: 1,

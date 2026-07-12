@@ -2,8 +2,17 @@ import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@ang
 
 import {AdminManagedUser} from './models/user-management.models';
 import {UserManagementService} from './services/user-management.service';
+import {CAT_CORNER_ADDICT_ROLE} from '../../shared/user-account/user-account.model';
 
-const suggestedRoles = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager', 'viewer', 'trustedCommenter'] as const;
+const suggestedRoles = [
+  'admin',
+  'cmsAdmin',
+  'contentEditor',
+  'mediaManager',
+  'viewer',
+  'trustedCommenter',
+  CAT_CORNER_ADDICT_ROLE,
+] as const;
 const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 
 function getErrorMessage(error: unknown): string {

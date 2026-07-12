@@ -4,7 +4,15 @@ export interface UserRoleDefinition {
   description: string;
 }
 
-export type UserRole = 'user' | 'admin' | 'cmsAdmin' | 'contentEditor' | 'mediaManager' | 'viewer' | 'trustedCommenter';
+export type UserRole =
+  | 'user'
+  | 'admin'
+  | 'cmsAdmin'
+  | 'contentEditor'
+  | 'mediaManager'
+  | 'viewer'
+  | 'trustedCommenter'
+  | 'catCornerAddict';
 
 export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 
@@ -59,6 +67,7 @@ export interface UserAccountProfile {
 }
 
 export const BASE_USER_ROLE: UserRole = 'user';
+export const CAT_CORNER_ADDICT_ROLE = 'catCornerAddict' as const;
 
 export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
   {
@@ -96,6 +105,11 @@ export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
     label: 'Trusted Commenter',
     description: 'Can publish blog comments without first-time moderation.',
   },
+  {
+    id: CAT_CORNER_ADDICT_ROLE,
+    label: 'Cat Corner Addict',
+    description: 'Found Gretchen and can enter her members-only Cat Corner.',
+  },
 ] as const;
 
 export const ADMIN_CONSOLE_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager', 'viewer'];
@@ -103,6 +117,7 @@ export const CMS_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'cont
 export const MEDIA_LIBRARY_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'mediaManager'];
 export const USER_MANAGEMENT_ACCESS_ROLES: readonly UserRole[] = ['admin'];
 export const TRUSTED_COMMENT_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'];
+export const CAT_CORNER_ACCESS_ROLES: readonly UserRole[] = [CAT_CORNER_ADDICT_ROLE];
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

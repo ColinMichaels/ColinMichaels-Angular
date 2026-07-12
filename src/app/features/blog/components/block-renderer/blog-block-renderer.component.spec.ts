@@ -1,4 +1,5 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {provideRouter} from '@angular/router';
 
 import {BlogBlockRendererComponent} from './blog-block-renderer.component';
 
@@ -26,6 +27,7 @@ describe('BlogBlockRendererComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BlogBlockRendererComponent],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BlogBlockRendererComponent);
@@ -105,6 +107,20 @@ describe('BlogBlockRendererComponent', () => {
 
     expect(element.querySelector('blockquote')?.textContent).toContain('A strong editorial line.');
     expect(element.querySelector('cite')?.textContent).toContain('Field notes');
+  });
+
+  it('renders Cat Corner unlock blocks through the shared Gretchen component', () => {
+    fixture.componentRef.setInput('blocks', [{
+      id: 'cat-corner-unlock-1',
+      type: 'catCornerUnlock',
+      data: {},
+    }]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('[data-testid="cat-corner-unlock-block"]')).not.toBeNull();
+    expect(element.querySelector('app-cat-corner-easter-egg')).not.toBeNull();
   });
 
   it('renders linkable heading anchors', () => {

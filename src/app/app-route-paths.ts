@@ -11,6 +11,8 @@ export const PATH_NAMES = {
   ADMIN_COMMENTS: 'comments',
   ADMIN_USERS: 'users',
   BLOG: 'blog',
+  CAT_CORNER: 'cat-corner',
+  CAT_CORNER_UNLOCK: 'unlock',
   SEARCH: 'search',
   LABS: 'labs',
   TOPICS: 'topics',

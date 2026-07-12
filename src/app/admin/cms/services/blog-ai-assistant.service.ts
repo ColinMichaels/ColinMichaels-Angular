@@ -167,6 +167,7 @@ export class BlogAiAssistantService {
       case 'html':
         return [data.title, data.html].filter(Boolean).join(' ');
       case 'delimiter':
+      case 'catCornerUnlock':
         return '';
     }
   }

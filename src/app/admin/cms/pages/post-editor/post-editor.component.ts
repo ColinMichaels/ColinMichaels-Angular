@@ -35,6 +35,11 @@ import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
+import {
+  createCmsCatCornerFormValue,
+  normalizeCmsCatCornerSettings,
+  parseCmsCatCornerSettings,
+} from '../../utils/blog-cat-corner-metadata.util';
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
 
@@ -45,6 +50,8 @@ interface PostEditorForm {
   coverImage: FormControl<string>;
   backgroundImage: FormControl<string>;
   featured: FormControl<boolean>;
+  catCornerEnabled: FormControl<boolean>;
+  catCornerDiscoveryPost: FormControl<boolean>;
   status: FormControl<BlogPostStatus>;
   publishedAt: FormControl<string>;
   categories: FormControl<string>;
@@ -228,7 +235,7 @@ function createImportedBlocks(value: Record<string, unknown>, fallback: readonly
 
 function normalizeImportedPostBlocks(blocks: readonly BlogContentBlock[]): readonly BlogContentBlock[] {
   return blocks.map(block => {
-    if (block.type !== 'stats' && block.type !== 'chart') {
+    if (block.type !== 'stats' && block.type !== 'chart' && block.type !== 'catCornerUnlock') {
       return block;
     }
 
@@ -267,6 +274,9 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
   const subcategories = getImportedStringArray(value['subcategories']);
   const tags = getImportedStringArray(value['tags']);
   const featured = typeof value['featured'] === 'boolean' ? value['featured'] : currentPost.featured;
+  const catCorner = Object.prototype.hasOwnProperty.call(value, 'catCorner')
+    ? parseCmsCatCornerSettings(value['catCorner'])
+    : currentPost.catCorner;
   const seoTitle = getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']) || og?.title || importedTitle;
   const seoDescription = getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']) || og?.description || excerpt;
   const openGraphImage = getTrimmedString(seo['openGraphImage']) || og?.image;
@@ -288,6 +298,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
     coverImage,
     ...(hasImportedBackgroundImage ? {backgroundImage} : {}),
     featured,
+    ...(catCorner ? {catCorner} : {}),
     author: createImportedAuthor(value['author'], currentPost.author),
     categories: categories.length > 0 ? categories : currentPost.categories,
     subcategories: subcategories.length > 0 ? subcategories : currentPost.subcategories,
@@ -447,6 +458,41 @@ function getErrorMessage(error: unknown): string {
                       </span>
                       <input type="checkbox" formControlName="featured" class="border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300">
                     </label>
+                    <label class="flex items-center justify-between gap-3 border border-amber-500/30 bg-amber-950/15 px-3 py-3 md:col-span-2">
+                      <span>
+                        <span class="block text-xs font-medium text-amber-100">Cat Corner post</span>
+                        <span class="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          Adds this post to Gretchen's Cat Corner. Non-discovery Cat Corner posts stay out of public blog listings but still work at their direct published URL.
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        formControlName="catCornerEnabled"
+                        class="border-zinc-600 bg-zinc-950 text-amber-500 focus:ring-amber-300"
+                        (change)="onCatCornerEnabledChanged($event)"
+                      >
+                    </label>
+                    <label
+                      class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-3 md:col-span-2"
+                      [class.opacity-50]="!postForm.controls.catCornerEnabled.value"
+                    >
+                      <span>
+                        <span class="block text-xs font-medium text-zinc-300">Discovery post</span>
+                        <span class="mt-0.5 block text-xs leading-5 text-zinc-600">
+                          Keeps this Cat Corner post visible in normal blog feeds so readers can find an embedded Gretchen unlock block.
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        formControlName="catCornerDiscoveryPost"
+                        class="border-zinc-600 bg-zinc-950 text-amber-500 focus:ring-amber-300"
+                      >
+                    </label>
+                    @if (postForm.controls.catCornerEnabled.value && !postForm.controls.catCornerDiscoveryPost.value) {
+                      <p class="border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100 md:col-span-2" role="status">
+                        Hidden listing mode: this post will appear in Cat Corner for members, but not in the public blog, home feed, categories, or search. Anyone with its direct URL can still read it.
+                      </p>
+                    }
                   </div>
                 </app-admin-control-module>
 
@@ -990,6 +1036,21 @@ export class CmsPostEditorComponent {
     this.postForm.controls.publishedAt.markAsDirty();
   }
 
+  protected onCatCornerEnabledChanged(event: Event): void {
+    const enabled = event.target instanceof HTMLInputElement
+      ? event.target.checked
+      : this.postForm.controls.catCornerEnabled.value;
+
+    this.postForm.controls.catCornerEnabled.setValue(enabled, {emitEvent: false});
+
+    if (!enabled) {
+      this.postForm.controls.catCornerDiscoveryPost.setValue(false, {emitEvent: false});
+    }
+
+    this.syncCatCornerDiscoveryControl();
+    this.postForm.markAsDirty();
+  }
+
   protected async importPostJson(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.[0];
@@ -1302,6 +1363,7 @@ export class CmsPostEditorComponent {
         coverImage,
         backgroundImage: formValue.backgroundImage.trim() || undefined,
         featured: formValue.featured,
+        catCorner: normalizeCmsCatCornerSettings(formValue.catCornerEnabled, formValue.catCornerDiscoveryPost),
         status: formValue.status,
         categories: fromCsv(formValue.categories),
         tags: fromCsv(formValue.tags),
@@ -1517,6 +1579,7 @@ export class CmsPostEditorComponent {
       coverImage,
       backgroundImage: formValue.backgroundImage.trim() || undefined,
       featured: formValue.featured,
+      catCorner: normalizeCmsCatCornerSettings(formValue.catCornerEnabled, formValue.catCornerDiscoveryPost),
       status: formValue.status,
       categories: fromCsv(formValue.categories),
       tags: fromCsv(formValue.tags),
@@ -1579,6 +1642,8 @@ export class CmsPostEditorComponent {
   }
 
   private createForm(post: BlogPost): FormGroup<PostEditorForm> {
+    const catCorner = createCmsCatCornerFormValue(post.catCorner);
+
     return new FormGroup<PostEditorForm>({
       title: new FormControl(post.title, {nonNullable: true, validators: [Validators.required]}),
       slug: new FormControl(post.slug, {nonNullable: true, validators: [Validators.required]}),
@@ -1586,6 +1651,11 @@ export class CmsPostEditorComponent {
       coverImage: new FormControl(post.coverImage, {nonNullable: true, validators: [Validators.required]}),
       backgroundImage: new FormControl(post.backgroundImage ?? '', {nonNullable: true}),
       featured: new FormControl(Boolean(post.featured), {nonNullable: true}),
+      catCornerEnabled: new FormControl(catCorner.enabled, {nonNullable: true}),
+      catCornerDiscoveryPost: new FormControl(
+        {value: catCorner.discoveryPost, disabled: !catCorner.enabled},
+        {nonNullable: true}
+      ),
       status: new FormControl(post.status, {nonNullable: true, validators: [Validators.required]}),
       publishedAt: new FormControl(toDateTimeLocalValue(post.publishedAt), {nonNullable: true}),
       categories: new FormControl(toCsv(post.categories), {nonNullable: true}),
@@ -1597,7 +1667,21 @@ export class CmsPostEditorComponent {
     });
   }
 
+  private syncCatCornerDiscoveryControl(): void {
+    const discoveryControl = this.postForm.controls.catCornerDiscoveryPost;
+
+    if (this.postForm.controls.catCornerEnabled.value) {
+      discoveryControl.enable({emitEvent: false});
+      return;
+    }
+
+    discoveryControl.setValue(false, {emitEvent: false});
+    discoveryControl.disable({emitEvent: false});
+  }
+
   private setFormFromPost(post: BlogPost): void {
+    const catCorner = createCmsCatCornerFormValue(post.catCorner);
+
     this.postForm.setValue({
       title: post.title,
       slug: post.slug,
@@ -1605,6 +1689,8 @@ export class CmsPostEditorComponent {
       coverImage: post.coverImage,
       backgroundImage: post.backgroundImage ?? '',
       featured: Boolean(post.featured),
+      catCornerEnabled: catCorner.enabled,
+      catCornerDiscoveryPost: catCorner.discoveryPost,
       status: post.status,
       publishedAt: toDateTimeLocalValue(post.publishedAt),
       categories: toCsv(post.categories),
@@ -1614,6 +1700,7 @@ export class CmsPostEditorComponent {
       canonical: post.seo.canonical ?? this.createCanonicalUrl(post.slug),
       openGraphImage: normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage),
     });
+    this.syncCatCornerDiscoveryControl();
   }
 
   protected createSeoChecklistInput(): SeoChecklistInput {

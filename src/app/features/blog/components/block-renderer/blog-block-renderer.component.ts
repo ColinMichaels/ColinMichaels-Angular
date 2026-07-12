@@ -22,6 +22,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {marked} from 'marked';
 
+import {CatCornerEasterEggComponent} from '../../../cat-corner/components/cat-corner-easter-egg.component';
 import {
   BLOG_IMAGE_LAYOUTS,
   BlogBlockData,
@@ -85,7 +86,7 @@ interface RenderableBlogImage {
 
 @Component({
   selector: 'app-blog-block-renderer',
-  imports: [FaIconComponent],
+  imports: [FaIconComponent, CatCornerEasterEggComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300">
@@ -402,6 +403,11 @@ interface RenderableBlogImage {
           }
           @case ('delimiter') {
             <hr class="border-slate-200 dark:border-zinc-800">
+          }
+          @case ('catCornerUnlock') {
+            <div class="clear-both py-2" data-testid="cat-corner-unlock-block">
+              <app-cat-corner-easter-egg></app-cat-corner-easter-egg>
+            </div>
           }
         }
       }

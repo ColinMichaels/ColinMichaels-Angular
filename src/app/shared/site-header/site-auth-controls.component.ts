@@ -7,7 +7,7 @@ import {filter, map, startWith, tap} from 'rxjs';
 import {PATH_NAMES} from '../../app-route-paths';
 import {AdminAuthorization, AuthService} from '../../services/auth.service';
 import {writeAuthDebug} from '../debug/auth-debug';
-import {ADMIN_CONSOLE_ROLES} from '../user-account/user-account.model';
+import {ADMIN_CONSOLE_ROLES, CAT_CORNER_ACCESS_ROLES} from '../user-account/user-account.model';
 
 type AuthControlsVariant = 'desktop' | 'mobile';
 
@@ -107,6 +107,23 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         }
       </span>
     } @else {
+      @if (canViewCatCorner()) {
+        <a
+          [routerLink]="['/', pathNames.CAT_CORNER]"
+          class="inline-flex h-11 items-center gap-3 rounded-lg border border-transparent px-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 dark:text-zinc-200 dark:hover:border-emerald-400/60 dark:hover:bg-zinc-900 dark:hover:text-emerald-200"
+          (click)="navigate.emit()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 32 32" class="h-5 w-5 shrink-0 fill-current">
+            <ellipse cx="16" cy="21.5" rx="7.6" ry="6.2"></ellipse>
+            <ellipse cx="7.7" cy="13.1" rx="3.1" ry="4.2" transform="rotate(-25 7.7 13.1)"></ellipse>
+            <ellipse cx="14" cy="9" rx="3.1" ry="4.3" transform="rotate(-7 14 9)"></ellipse>
+            <ellipse cx="24.3" cy="13.1" rx="3.1" ry="4.2" transform="rotate(25 24.3 13.1)"></ellipse>
+            <ellipse cx="20" cy="9" rx="3.1" ry="4.3" transform="rotate(7 20 9)"></ellipse>
+          </svg>
+          <span>Cat Corner</span>
+        </a>
+      }
+
       @if (canViewAdminLinks()) {
         <a
           [routerLink]="['/', pathNames.ADMIN]"
@@ -212,6 +229,15 @@ export class SiteAuthControlsComponent {
   protected readonly canViewAdminLinks = toSignal(
     this.authService.getRoleAuthorization(ADMIN_CONSOLE_ROLES, true).pipe(
       tap(authorization => this.debugHeader('admin navigation authorization resolved', {
+        authorization: this.createAuthorizationDebugSummary(authorization),
+      })),
+      map(authorization => authorization.isAuthorized)
+    ),
+    {initialValue: false}
+  );
+  protected readonly canViewCatCorner = toSignal(
+    this.authService.getRoleAuthorization(CAT_CORNER_ACCESS_ROLES).pipe(
+      tap(authorization => this.debugHeader('Cat Corner navigation authorization resolved', {
         authorization: this.createAuthorizationDebugSummary(authorization),
       })),
       map(authorization => authorization.isAuthorized)

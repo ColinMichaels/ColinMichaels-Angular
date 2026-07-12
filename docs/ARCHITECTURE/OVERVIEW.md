@@ -4,7 +4,7 @@
 
 The app uses Angular standalone components with route-driven screens and service-centric state.
 
-- Router controls entry screens (home, blog, admin, login, desktop, boot, sleep). The preserved Labs implementation is temporarily removed from public discovery and `/labs` redirects to `/blog` while that section is redesigned.
+- Router controls entry screens (home, blog, Cat Corner, admin, login, desktop, boot, sleep). The preserved Labs implementation is temporarily removed from public discovery and `/labs` redirects to `/blog` while that section is redesigned.
 - `app.routes.ts` composes route groups from `features/public`, `labs`, `admin`, and `core-os`.
 - `AppComponent` owns the shared site shell header for public/blog routes and intentionally excludes admin and OS desktop/login/boot/sleep/redirect routes. The compact header keeps the homepage logo, live-results search launcher, post-list shortcut, and one responsive site/account menu. Protected admin routes render their own role-aware sidebar and utility header through `AdminShellComponent`.
 - Public shell utilities that are not always visible are deferred behind route, state, or viewport triggers. This includes OS notifications, reader tools, the search drawer, below-the-fold homepage sections, footer socials, and article comments/author widgets.
@@ -29,6 +29,8 @@ Current route group files are boundary markers only. They preserve existing URL 
   command execution, typewriter output, user/level progression.
 - Blog/CMS:
   public published post views, scheduled publishing through a Firebase Cloud Scheduler Function, a protected publishing Calendar with post-linked channel-specific social announcements and a durable delivery outbox, a dry-run Bulk Post Editor for reviewing hashed SEO/taxonomy candidates without canonical writes, tokenized draft previews, category/tag archives, image-led topic hubs, blog search, read-only block rendering and SEO metadata, protected admin post list/editor, typed Editor.js-shaped block data including custom typography, stats, chart, and sanitized HTML blocks, Firestore-backed CMS storage for create/edit workflows. Public post discovery uses one repository-free listing component with list, grid, fan, and compact variants; topic pages place featured/recent writing before the preserved supporting guide. See `docs/ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md`.
+- Cat Corner:
+  a soft-gated `/cat-corner` editorial hub that reuses the public Blog/Editor.js post model while adding optional discovery metadata, a reusable Gretchen unlock block, the non-administrative `catCornerAddict` custom claim, an immediate profile badge, and a role-aware site-menu entry. Non-discovery Cat posts stay directly readable but are omitted from normal public discovery and marked `noindex,nofollow`; see `docs/ARCHITECTURE/CAT_CORNER.md`.
 - Admin console:
   protected role-aware shell with a fixed grouped sidebar, mobile drawer, compact utility header, environment/account footer, an operations dashboard sourced from current post data, and a content-operations review surface. The shell replaces page-local global navigation while preserving existing guarded URLs and feature-specific layouts. See `docs/ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md` for the dry-run artifact and safety boundary.
 - Homepage CMS:

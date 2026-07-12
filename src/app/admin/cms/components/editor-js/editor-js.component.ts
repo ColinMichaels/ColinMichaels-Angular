@@ -24,6 +24,7 @@ import {MediaLibraryService} from '../../../media-library/services/media-library
 import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {ChartBlockTool} from './tools/chart-block.tool';
+import {CatCornerUnlockBlockTool} from './tools/cat-corner-unlock-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
 import {CmsImageBlockTool, CmsImageLibrarySelection} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
@@ -44,6 +45,7 @@ interface EditorToolModules {
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
   ChartBlock: ToolConstructable;
+  CatCornerUnlockBlock: ToolConstructable;
   HtmlBlock: ToolConstructable;
 }
 
@@ -142,6 +144,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
     ChartBlock: ChartBlockTool as unknown as ToolConstructable,
+    CatCornerUnlockBlock: CatCornerUnlockBlockTool as unknown as ToolConstructable,
     HtmlBlock: HtmlBlockTool as unknown as ToolConstructable,
   };
 }
@@ -970,6 +973,9 @@ export class EditorJsComponent implements AfterViewInit {
           },
           chart: {
             class: tools.ChartBlock,
+          },
+          catCornerUnlock: {
+            class: tools.CatCornerUnlockBlock,
           },
           html: {
             class: tools.HtmlBlock,

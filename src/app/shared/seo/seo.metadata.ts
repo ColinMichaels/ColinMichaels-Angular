@@ -82,6 +82,30 @@ export const SITE_SEARCH_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,follow',
 };
 
+export const CAT_CORNER_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Cat Corner'),
+  description: 'Dispatches, photographs, and household intelligence from Gretchen, Cat Corner Editor-in-Chief.',
+  path: '/cat-corner',
+  image: '/assets/images/cat-corner/gretchen-easter-egg.png',
+  imageAlt: 'Gretchen, Cat Corner Editor-in-Chief',
+  imageWidth: 1086,
+  imageHeight: 1448,
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
+export const CAT_CORNER_UNLOCK_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('You found Gretchen'),
+  description: 'Unlock the Cat Corner Addict badge and enter Gretchen\'s secret section.',
+  path: '/cat-corner/unlock',
+  image: '/assets/images/cat-corner/gretchen-easter-egg.png',
+  imageAlt: 'Gretchen welcomes a new Cat Corner Addict',
+  imageWidth: 1086,
+  imageHeight: 1448,
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
 export const PROJECTS_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Projects & Labs'),
   description: LABS_DESCRIPTION,

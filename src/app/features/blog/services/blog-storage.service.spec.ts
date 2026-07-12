@@ -7,7 +7,7 @@ interface BlogStorageSerializer {
   toFirestorePost(post: BlogPost): Record<string, unknown>;
 }
 
-function createPost(backgroundImage?: string): BlogPost {
+function createPost(backgroundImage?: string, catCorner?: BlogPost['catCorner']): BlogPost {
   return {
     id: 'storage-background-post',
     slug: 'storage-background-post',
@@ -15,6 +15,7 @@ function createPost(backgroundImage?: string): BlogPost {
     excerpt: 'A post used to verify Firestore background serialization.',
     coverImage: '/assets/images/backgrounds/night.webp',
     ...(backgroundImage === undefined ? {} : {backgroundImage}),
+    ...(catCorner ? {catCorner} : {}),
     author: {name: 'Colin Michaels'},
     categories: ['CMS'],
     tags: ['Firestore'],
@@ -49,6 +50,18 @@ describe('BlogStorageService background serialization', () => {
     const document = serializer.toFirestorePost(createPost('   '));
     const sentinel = document['backgroundImage'] as { _methodName?: string };
 
+    expect(sentinel._methodName).toBe('deleteField');
+  });
+
+  it('serializes Cat Corner metadata and clears it safely for legacy posts', () => {
+    const catDocument = serializer.toFirestorePost(createPost(undefined, {
+      enabled: true,
+      discoveryPost: false,
+    }));
+    const legacyDocument = serializer.toFirestorePost(createPost());
+    const sentinel = legacyDocument['catCorner'] as {_methodName?: string};
+
+    expect(catDocument['catCorner']).toEqual({enabled: true, discoveryPost: false});
     expect(sentinel._methodName).toBe('deleteField');
   });
 });
