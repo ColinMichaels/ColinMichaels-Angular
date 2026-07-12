@@ -157,7 +157,10 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
             <section class="space-y-5 border border-zinc-800 bg-zinc-900/70 p-5">
               <div>
                 <h2 class="text-xl font-semibold text-zinc-50">Featured Article Overlay</h2>
-                <p class="mt-1 text-sm text-zinc-500">Choose what post appears in the hero article panel.</p>
+                <p class="mt-1 text-sm text-zinc-500">
+                  The newest published post marked featured appears automatically. Older posts can remain featured;
+                  select a specific post only when you need a manual override.
+                </p>
               </div>
 
               <div class="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
@@ -168,7 +171,9 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                     class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
                   >
                     @for (mode of featuredPostModes; track mode) {
-                      <option [value]="mode">{{ mode }}</option>
+                      <option [value]="mode">
+                        {{ mode === 'featured' ? 'Newest featured post' : 'Selected post override' }}
+                      </option>
                     }
                   </select>
                 </label>
@@ -185,6 +190,20 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                     }
                   </select>
                 </label>
+                <label class="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 p-3 md:col-span-2">
+                  <span>
+                    <span class="block text-sm font-medium text-zinc-200">Use featured post background</span>
+                    <span class="mt-1 block text-xs leading-5 text-zinc-500">
+                      When enabled, the resolved post's Full-screen Post Background replaces the slideshow. When
+                      disabled—or when that image is missing or fails—the published homepage slides play normally.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    formControlName="useFeaturedPostBackground"
+                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-300"
+                  >
+                </label>
               </div>
             </section>
 
@@ -192,7 +211,10 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
               <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <div>
                   <h2 class="text-xl font-semibold text-zinc-50">Background Slides</h2>
-                  <p class="mt-1 text-sm text-zinc-500">Upload multiple images, then order and publish the set used by the homepage fade.</p>
+                  <p class="mt-1 text-sm text-zinc-500">
+                    Upload, order, and publish the homepage slideshow. It remains active unless the featured-post
+                    background option above is enabled and the resolved post has a working background image.
+                  </p>
                 </div>
                 <label class="inline-flex cursor-pointer justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
                   <input
@@ -338,7 +360,10 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                 </div>
               </article>
               <p class="text-xs leading-5 text-zinc-500">
-                Published slide count: {{ publishedSlideCount() }}. The public page falls back to the current static hero image if no published slides are available.
+                Published fallback slide count: {{ publishedSlideCount() }}. This preview shows slideshow imagery. On
+                the public homepage, the resolved hero post's optional full-screen background replaces these slides
+                only when Use featured post background is enabled; disabling it, or a failed/missing image, restores
+                the slideshow or static fallback.
               </p>
             </section>
 
@@ -390,8 +415,9 @@ export class CmsHomepageHeroManagerComponent {
     headlineLine2: [''],
     headlineLine3: [''],
     summary: ['', Validators.required],
-    featuredPostMode: ['latest' as HomepageHeroFeaturedPostMode, Validators.required],
+    featuredPostMode: ['featured' as HomepageHeroFeaturedPostMode, Validators.required],
     featuredPostId: [''],
+    useFeaturedPostBackground: [false],
     slideshowEnabled: [true],
     intervalMs: [6500, Validators.required],
     transitionMs: [900, Validators.required],
@@ -628,6 +654,7 @@ export class CmsHomepageHeroManagerComponent {
       summary: settings.summary,
       featuredPostMode: settings.featuredPostMode,
       featuredPostId: settings.featuredPostId ?? '',
+      useFeaturedPostBackground: settings.useFeaturedPostBackground,
       slideshowEnabled: settings.slideshowEnabled,
       intervalMs: settings.intervalMs,
       transitionMs: settings.transitionMs,
@@ -641,7 +668,7 @@ export class CmsHomepageHeroManagerComponent {
     const status: HomepageHeroStatus = isHomepageHeroStatus(raw.status) ? raw.status : 'draft';
     const featuredPostMode: HomepageHeroFeaturedPostMode = isHomepageHeroFeaturedPostMode(raw.featuredPostMode)
       ? raw.featuredPostMode
-      : 'latest';
+      : 'featured';
     const settings: HomepageHeroSettings = {
       id: HOMEPAGE_HERO_SETTINGS_ID,
       status,
@@ -649,6 +676,7 @@ export class CmsHomepageHeroManagerComponent {
       summary: raw.summary,
       featuredPostMode,
       featuredPostId: featuredPostMode === 'selected' && raw.featuredPostId ? raw.featuredPostId : null,
+      useFeaturedPostBackground: raw.useFeaturedPostBackground,
       slideshowEnabled: raw.slideshowEnabled,
       intervalMs: Number(raw.intervalMs),
       transitionMs: Number(raw.transitionMs),

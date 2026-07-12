@@ -18,6 +18,7 @@ describe('homepage hero validation utilities', () => {
       summary: 'Custom summary',
       featuredPostMode: 'selected',
       featuredPostId: 'post-123',
+      useFeaturedPostBackground: true,
       slideshowEnabled: true,
       intervalMs: 50,
       transitionMs: 9000,
@@ -51,12 +52,37 @@ describe('homepage hero validation utilities', () => {
     expect(settings.id).toBe('home');
     expect(settings.intervalMs).toBe(3500);
     expect(settings.transitionMs).toBe(2500);
+    expect(settings.useFeaturedPostBackground).toBeTrue();
     expect(settings.slides.map(slide => slide.id)).toEqual(['slide-1', 'slide-2']);
     expect(settings.slides[0].kenBurnsEnabled).toBeFalse();
     expect(settings.slides[1].kenBurnsEnabled).toBeTrue();
     expect(settings.slides[1].focalPointX).toBe(100);
     expect(settings.slides[1].focalPointY).toBe(0);
     expect(getPublishedHomepageHeroSlides(settings).map(slide => slide.id)).toEqual(['slide-2']);
+  });
+
+  it('migrates the legacy latest mode to newest featured without a data rewrite', () => {
+    const settings = normalizeHomepageHeroSettings({
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      featuredPostMode: 'latest',
+    });
+
+    expect(settings.featuredPostMode).toBe('featured');
+  });
+
+  it('keeps featured post background overrides off for legacy settings', () => {
+    const settings = normalizeHomepageHeroSettings({
+      status: 'published',
+      headlineLines: ['Legacy hero'],
+      summary: 'Legacy summary',
+      featuredPostMode: 'featured',
+      slideshowEnabled: true,
+      intervalMs: 6500,
+      transitionMs: 900,
+      slides: DEFAULT_HOMEPAGE_HERO_SETTINGS.slides,
+    });
+
+    expect(settings.useFeaturedPostBackground).toBeFalse();
   });
 
   it('removes empty image slides when preparing settings for save', () => {

@@ -441,7 +441,9 @@ function getErrorMessage(error: unknown): string {
                     <label class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 md:col-span-2">
                       <span>
                         <span class="block text-xs font-medium text-zinc-300">Featured post</span>
-                        <span class="mt-0.5 block text-xs text-zinc-600">Prioritize this post on the homepage.</span>
+                        <span class="mt-0.5 block text-xs text-zinc-600">
+                          The newest published featured post owns the homepage hero; older featured posts can remain marked.
+                        </span>
                       </span>
                       <input type="checkbox" formControlName="featured" class="border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300">
                     </label>
@@ -470,7 +472,7 @@ function getErrorMessage(error: unknown): string {
                     <app-blog-media-uploader
                       formControlName="backgroundImage"
                       label="Full-screen Post Background"
-                      description="Optional. Displays behind this article only; leave blank for the standard site background. A landscape image at least 1920px wide works best."
+                      description="Optional. Displays behind this article and can replace the homepage slideshow when this post owns the hero and Use featured post background is enabled in Homepage Hero controls. A landscape image at least 1920px wide works best."
                       buttonLabel="Choose Background"
                       placeholder="Optional background image URL"
                       previewAlt="Full-screen post background preview"

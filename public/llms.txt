@@ -1,39 +1,33 @@
 # ColinMichaels.com
 
-ColinMichaels.com is the personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer. It combines a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs. The site publishes software architecture notes, AI workflow guides, interactive demos, media experiments, and patient-perspective recovery writing.
+> The personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer publishing Angular/Firebase architecture notes, practical AI workflow guides, media projects, interactive experiments, gadget writing, and patient-perspective recovery notes.
 
-## Preferred URLs
+This is a curated index for AI tools and readers. It supplements the canonical HTML pages, `robots.txt`, sitemap, and feeds; it does not define crawler permissions or content licensing. When citing an article, prefer its canonical URL, page title, author, and on-page publication or update date. Health and recovery content describes personal experience and is not medical, legal, insurance, or financial advice.
 
-- Homepage: https://colinmichaels.com/
-- Blog: https://colinmichaels.com/blog
-- Labs: https://colinmichaels.com/labs
-- RSS feed: https://colinmichaels.com/feed.xml
-- JSON feed: https://colinmichaels.com/feed.json
-- Sitemap: https://colinmichaels.com/sitemap.xml
+## Primary pages
 
-## Topic Hubs
+- [Homepage](https://colinmichaels.com/): Overview of Colin Michaels, current featured writing, projects, media, and topic guides.
+- [Blog](https://colinmichaels.com/blog): Published articles and recent writing across technology, creative projects, and recovery.
 
-- AI setup guides: https://colinmichaels.com/topics/ai-setup
-- Recovery and medical planning resources: https://colinmichaels.com/topics/recovery-planning
-- Angular and Firebase architecture notes: https://colinmichaels.com/topics/angular-firebase-architecture
-- Labs and project demos: https://colinmichaels.com/topics/labs-projects
+## Topic guides
 
-## Representative Guides And Posts
+- [AI Setup Guides](https://colinmichaels.com/topics/ai-setup): Practical guides for ChatGPT, Claude, Copilot, Gemini, prompting, projects, and AI-assisted workflows.
+- [Recovery and Medical Planning Resources](https://colinmichaels.com/topics/recovery-planning): Personal recovery notes, emergency-planning resources, and lessons from open-heart surgery recovery.
+- [Angular and Firebase Architecture Notes](https://colinmichaels.com/topics/angular-firebase-architecture): Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.
+- [Labs and Project Demos](https://colinmichaels.com/topics/labs-projects): Interactive demos, browser experiments, UI systems, and public project notes.
+- [Gadgets and Toys](https://colinmichaels.com/topics/gadgets-toys): Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.
 
-- How to Set Up ChatGPT for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-chatgpt-for-better-ai-chats
-- How to Set Up Claude for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-claude-for-better-ai-chats
-- How to Set Up Copilot for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-copilot-for-better-ai-chats
-- How to Set Up Gemini for Better AI Chats: https://colinmichaels.com/blog/how-to-set-up-gemini-for-better-ai-chats
-- The Emergency Plan Nobody Thinks They Need: https://colinmichaels.com/blog/emergency-plan-nobody-thinks-they-need
-- Florida Medical Planning Guide: https://colinmichaels.com/blog/florida-medical-planning-guide
+## Feeds and discovery
 
-## Citation Guidance
+- [XML sitemap](https://colinmichaels.com/sitemap.xml): Canonical index of public pages, topic guides, published posts, and qualifying taxonomy archives.
+- [RSS feed](https://colinmichaels.com/feed.xml): Recent published articles in RSS format.
+- [JSON feed](https://colinmichaels.com/feed.json): Recent published articles in JSON Feed format.
 
-When citing this site, prefer the canonical page URL and include the page title plus Colin Michaels as the author when an article page provides author metadata. For broad descriptions of the site, cite the homepage. For focused AI, recovery, architecture, or labs topics, cite the matching topic hub first and then the relevant article.
+## Optional
 
-## Content Notes
-
-- Public site content is separate from admin/CMS routes.
-- Labs and experimental systems are intentionally isolated from production website page logic.
-- Health and recovery posts are personal patient-perspective notes and are not medical, legal, insurance, or financial advice.
-- Technical posts may discuss implementation details from the public Angular/Firebase site and related experiments.
+- [How to Set Up ChatGPT for Better AI Chats](https://colinmichaels.com/blog/how-to-set-up-chatgpt-for-better-ai-chats): A practical guide to model choice, instructions, projects, tools, research, and agent workflows.
+- [How to Set Up Claude for Better AI Chats](https://colinmichaels.com/blog/how-to-set-up-claude-for-better-ai-chats): A practical guide to configuring Claude for more useful conversations and project work.
+- [How to Set Up Copilot for Better AI Chats](https://colinmichaels.com/blog/how-to-set-up-copilot-for-better-ai-chats): A practical guide to configuring Copilot for more useful conversations and workflows.
+- [How to Set Up Gemini for Better AI Chats](https://colinmichaels.com/blog/how-to-set-up-gemini-for-better-ai-chats): A practical guide to configuring Gemini for more useful conversations and workflows.
+- [The Emergency Plan Nobody Thinks They Need](https://colinmichaels.com/blog/emergency-plan-nobody-thinks-they-need): A patient-perspective emergency-planning article.
+- [Florida Medical Planning Guide](https://colinmichaels.com/blog/florida-medical-planning-guide): A patient-perspective guide to organizing medical and recovery planning in Florida.

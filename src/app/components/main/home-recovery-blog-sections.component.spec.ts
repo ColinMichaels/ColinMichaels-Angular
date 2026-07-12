@@ -1,12 +1,17 @@
 import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {By} from '@angular/platform-browser';
 import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 
+import {BlogPostListingComponent} from '../../features/blog/components/post-listing/blog-post-listing.component';
 import {BlogPost} from '../../features/blog/models/blog-post.model';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
+
+const LONG_WEEKLY_UPDATE_TITLE =
+  'Weekly Recovery Update — Week #14: Still Here, Still Healing, Still Tinkering, and Moving Forward';
 
 function createPost(
   id: string,
@@ -40,10 +45,13 @@ describe('HomeRecoveryBlogSectionsComponent', () => {
 
   beforeEach(async () => {
     const posts: readonly BlogPost[] = [
-      createPost('weekly-update-one', {
-        categories: ['Weekly Updates'],
-        tags: ['Recovery'],
-      }),
+      {
+        ...createPost('weekly-update-one', {
+          categories: ['Weekly Updates'],
+          tags: ['Recovery'],
+        }),
+        title: LONG_WEEKLY_UPDATE_TITLE,
+      },
       createPost('weekly-tag-only', {
         categories: ['Health and Recovery'],
         tags: ['Weekly Updates'],
@@ -96,16 +104,37 @@ describe('HomeRecoveryBlogSectionsComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const section = element.querySelector<HTMLElement>('#health-recovery');
     const listing = section?.querySelector<HTMLElement>('[data-layout="fan"]');
+    const weeklyListing = fixture.debugElement
+      .queryAll(By.directive(BlogPostListingComponent))
+      .map(debugElement => debugElement.componentInstance as BlogPostListingComponent)
+      .find(component => component.layout === 'fan');
+    const firstTitleLink = listing?.querySelector<HTMLAnchorElement>(
+      '[data-post-id="weekly-update-one"] .post-listing__title a'
+    );
+    const firstVisibleTitle = firstTitleLink?.querySelector<HTMLSpanElement>('span');
 
     expect(section?.querySelector('.home-updates-board')).not.toBeNull();
+    expect(weeklyListing?.mediaPresentation).toBe('background');
+    expect(weeklyListing?.titleMaxLength).toBe(72);
+    expect(weeklyListing?.titleLineClamp).toBe(3);
+    expect(listing?.getAttribute('data-media-presentation')).toBe('background');
+    expect(listing?.classList.contains('post-listing-region--background-media')).toBeTrue();
+    expect(listing?.classList.contains('post-listing-region--title-clamped')).toBeTrue();
+    expect(listing?.style.getPropertyValue('--listing-title-lines')).toBe('3');
     expect(listing?.querySelectorAll('[data-post-id]').length).toBe(3);
+    expect(listing?.querySelectorAll('.post-listing__media img').length).toBe(3);
     expect(listing?.querySelector('[data-post-id="weekly-update-one"]')).not.toBeNull();
     expect(listing?.querySelector('[data-post-id="weekly-update-two"]')).not.toBeNull();
     expect(listing?.querySelector('[data-post-id="weekly-update-three"]')).not.toBeNull();
     expect(listing?.querySelector('[data-post-id="weekly-update-four"]')).toBeNull();
     expect(listing?.querySelector('[data-post-id="weekly-tag-only"]')).toBeNull();
+    expect(firstVisibleTitle?.textContent?.trim().length).toBeLessThanOrEqual(72);
+    expect(firstVisibleTitle?.textContent?.trim()).toMatch(/(?:\.\.\.|…)$/);
+    expect(firstVisibleTitle?.getAttribute('title')).toBe(LONG_WEEKLY_UPDATE_TITLE);
+    expect(firstTitleLink?.getAttribute('aria-label')).toBe(`Read ${LONG_WEEKLY_UPDATE_TITLE}`);
     expect(listing?.querySelectorAll('.post-listing__read-link').length).toBe(3);
     expect(listing?.textContent).toContain('Read update');
+    expect(listing?.querySelector('a[href="/blog/weekly-update-one"]')).not.toBeNull();
     expect(section?.querySelector('a[href="/blog/category/weekly-updates"]')).not.toBeNull();
   });
 

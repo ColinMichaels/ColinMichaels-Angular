@@ -1,4 +1,4 @@
-import {Component, ChangeDetectionStrategy, effect, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, computed, effect, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
@@ -8,10 +8,7 @@ import {PATH_NAMES} from '../../app-route-paths';
 import {
   BlogPostCardSkeletonComponent
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
-import {
-  HOME_ARTICLE_HERO_POST_LIMIT,
-  HomeArticleHeroComponent
-} from './home-article-hero.component';
+import {HomeArticleHeroComponent} from './home-article-hero.component';
 import {HomeLatestWritingSectionComponent} from './home-latest-writing-section.component';
 import {HomeRecoveryBlogSectionsComponent} from './home-recovery-blog-sections.component';
 import {HomeTopicsSectionComponent} from './home-topics-section.component';
@@ -28,6 +25,8 @@ import {BlogShareActionsComponent} from '../../features/blog/components/share-ac
 import {BlogShareEvent, BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {HomepageSocialPreviewService} from '../../features/homepage/services/homepage-social-preview.service';
+import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
+import {selectHomepageHeroPost} from '../../features/homepage/utils/homepage-post-selection.util';
 import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../../shared/seo/seo.metadata';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 
@@ -66,7 +65,12 @@ export class MainComponent {
   );
 
   protected readonly pathNames = PATH_NAMES;
-  protected readonly heroPostCount = HOME_ARTICLE_HERO_POST_LIMIT;
+  protected readonly heroPostId = computed(() => {
+    const settings = this.homepageHeroRepository.settings();
+    const publicSettings = settings.status === 'published' ? settings : DEFAULT_HOMEPAGE_HERO_SETTINGS;
+
+    return selectHomepageHeroPost(this.blogPostFeed.publishedPosts(), publicSettings)?.id ?? null;
+  });
   protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
   protected readonly homepageDescription = HOMEPAGE_DESCRIPTION;
   protected readonly homepageTitle = HOMEPAGE_TITLE;
