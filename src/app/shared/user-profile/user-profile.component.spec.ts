@@ -11,7 +11,12 @@ import {PwaInstallService} from '../pwa/pwa-install.service';
 import {PwaNativeControlsService} from '../pwa/pwa-native-controls.service';
 import {PwaPushService} from '../pwa/pwa-push.service';
 import {PwaStorageService} from '../pwa/pwa-storage.service';
-import {BASE_USER_ROLE, UserAccountDocument, UserAccountProfile} from '../user-account/user-account.model';
+import {
+  BASE_USER_ROLE,
+  CAT_CORNER_ADDICT_ROLE,
+  UserAccountDocument,
+  UserAccountProfile,
+} from '../user-account/user-account.model';
 import {UserAccountService} from '../user-account/user-account.service';
 import {UserProfileComponent} from './user-profile.component';
 
@@ -203,5 +208,21 @@ describe('UserProfileComponent', () => {
     expect(textContent).toContain('App controls');
     expect(textContent).toContain('Share page');
     expect(textContent).toContain('Full screen');
+  });
+
+  it('renders the Cat Corner Addict role as a profile badge', () => {
+    authServiceMock.getCurrentUserProfile.and.returnValue(of({
+      ...profile,
+      roles: [CAT_CORNER_ADDICT_ROLE],
+      claims: {roles: {[CAT_CORNER_ADDICT_ROLE]: true}},
+    }));
+    fixture.destroy();
+    fixture = TestBed.createComponent(UserProfileComponent);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Cat Corner Addict');
+    expect(element.querySelector('[aria-label="Cat Corner Addict badge"]')).not.toBeNull();
   });
 });

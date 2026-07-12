@@ -19,8 +19,8 @@ import {
   User,
   UserCredential
 } from 'firebase/auth';
-import {defer, from, map, Observable, of, shareReplay, throwError} from 'rxjs';
-import {catchError, switchMap, tap} from 'rxjs/operators';
+import {combineLatest, defer, from, map, Observable, of, shareReplay, Subject, throwError} from 'rxjs';
+import {catchError, startWith, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
 import {FIREBASE_AUTH} from './firebase/firebase.tokens';
@@ -95,6 +95,7 @@ export function getAuthProviderLabel(providerId: string): string {
 })
 export class AuthService {
   private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
+  private readonly claimsRefresh = new Subject<void>();
 
   readonly user$: Observable<User | null>;
 
@@ -411,9 +412,38 @@ export class AuthService {
     return this.getRoleAuthorization(['admin', 'cmsAdmin'], forceRefresh);
   }
 
+  refreshCurrentUserClaims(): Observable<void> {
+    const currentUser = this.auth?.currentUser;
+
+    if (!currentUser) {
+      return throwError(() => new Error('Sign in before refreshing account access.'));
+    }
+
+    this.debugAuth('claim refresh start', {user: this.createUserDebugSummary(currentUser)});
+
+    return this.fromAuthOperation(() => getIdTokenResult(currentUser, true)).pipe(
+      tap(tokenResult => {
+        this.debugAuth('claim refresh success', {
+          user: this.createUserDebugSummary(currentUser),
+          claims: this.createClaimDebugSummary(tokenResult.claims as Record<string, unknown>),
+          issuedAtTime: tokenResult.issuedAtTime,
+        });
+        this.claimsRefresh.next();
+      }),
+      map(() => undefined),
+      catchError(error => {
+        this.debugAuth('claim refresh failed', this.createErrorDebugSummary(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
   getCurrentUserProfile(forceRefresh = false): Observable<UserAccountProfile | null> {
-    return this.user$.pipe(
-      switchMap(currentUser => {
+    return combineLatest([
+      this.user$,
+      this.claimsRefresh.pipe(startWith(undefined)),
+    ]).pipe(
+      switchMap(([currentUser]) => {
         if (!currentUser) {
           this.debugAuth('profile requested without signed-in user', {forceRefresh});
           return of(null);
@@ -472,8 +502,11 @@ export class AuthService {
   }
 
   getRoleAuthorization(requiredRoles: readonly string[], forceRefresh = false): Observable<AdminAuthorization> {
-    return this.user$.pipe(
-      switchMap(currentUser => {
+    return combineLatest([
+      this.user$,
+      this.claimsRefresh.pipe(startWith(undefined)),
+    ]).pipe(
+      switchMap(([currentUser]) => {
         if (!currentUser) {
           this.debugAuth('role authorization without signed-in user', {
             requiredRoles,

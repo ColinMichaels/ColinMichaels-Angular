@@ -26,6 +26,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     },
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
+    ...(overrides.catCorner ? {catCorner: overrides.catCorner} : {}),
     ...(overrides.preview ? {preview: overrides.preview} : {}),
     ...(overrides.backgroundImage !== undefined ? {backgroundImage: overrides.backgroundImage} : {}),
     ...(overrides.thumbnailImage ? {thumbnailImage: overrides.thumbnailImage} : {}),
@@ -153,6 +154,76 @@ describe('BlogRepositoryService', () => {
     expect(posts.length).toBe(1);
     expect(posts[0].slug).toBe('published-post');
     expect(posts[0].blocks).toEqual(publishedPost.blocks);
+  });
+
+  it('shows Cat Corner discovery posts in public feeds and omits non-discovery posts', () => {
+    const discoveryPost = createPost({
+      id: 'cat-discovery',
+      slug: 'cat-discovery',
+      status: 'published',
+      publishedAt: '2026-01-04T12:00:00.000Z',
+      catCorner: {enabled: true, discoveryPost: true},
+    });
+    const hiddenCatPost = createPost({
+      id: 'cat-hidden',
+      slug: 'cat-hidden',
+      status: 'published',
+      publishedAt: '2026-01-03T12:00:00.000Z',
+      catCorner: {enabled: true, discoveryPost: false},
+    });
+    storage.setPosts([publishedPost, discoveryPost, hiddenCatPost]);
+
+    expect(service.getPublishedPosts().map(post => post.slug)).toEqual([
+      'cat-discovery',
+      'published-post',
+    ]);
+    expect(service.getPublishedFullPosts().map(post => post.slug)).toEqual([
+      'cat-discovery',
+      'published-post',
+    ]);
+  });
+
+  it('returns every published Cat Corner post to the member hub newest first', () => {
+    const hiddenCatPost = createPost({
+      id: 'cat-hidden',
+      slug: 'cat-hidden',
+      status: 'published',
+      publishedAt: '2026-01-03T12:00:00.000Z',
+      catCorner: {enabled: true, discoveryPost: false},
+    });
+    const discoveryPost = createPost({
+      id: 'cat-discovery',
+      slug: 'cat-discovery',
+      status: 'published',
+      publishedAt: '2026-01-04T12:00:00.000Z',
+      catCorner: {enabled: true, discoveryPost: true},
+    });
+    const draftCatPost = createPost({
+      id: 'cat-draft',
+      slug: 'cat-draft',
+      status: 'draft',
+      catCorner: {enabled: true, discoveryPost: false},
+    });
+    storage.setPosts([publishedPost, hiddenCatPost, discoveryPost, draftCatPost]);
+
+    expect(service.getPublishedCatCornerPosts().map(post => post.slug)).toEqual([
+      'cat-discovery',
+      'cat-hidden',
+    ]);
+  });
+
+  it('keeps non-discovery Cat Corner posts available by direct published slug', () => {
+    const hiddenCatPost = createPost({
+      id: 'cat-hidden',
+      slug: 'cat-hidden',
+      status: 'published',
+      publishedAt: '2026-01-03T12:00:00.000Z',
+      catCorner: {enabled: true, discoveryPost: false},
+    });
+    storage.setPosts([publishedPost, hiddenCatPost]);
+
+    expect(service.getPublishedPosts().some(post => post.slug === hiddenCatPost.slug)).toBeFalse();
+    expect(service.getPublishedPostBySlug(hiddenCatPost.slug)).toEqual(hiddenCatPost);
   });
 
   it('does not expose draft posts by public slug lookup', () => {

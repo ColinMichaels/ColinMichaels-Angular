@@ -50,6 +50,20 @@ import {
   parseStoredPushSubscription,
   toWebPushSubscription,
 } from './push-notifications';
+import {
+  CAT_CORNER_ADDICT_ROLE,
+  CAT_CORNER_SOCIAL_CANCELLATION_REASON,
+  addCatCornerAccessClaim,
+  cancelQueuedCatCornerSocialAnnouncements,
+  hasCatCornerAccessClaim,
+  isHiddenCatCornerPost,
+  shouldCancelPendingCatCornerSocialDeliveries,
+} from './cat-corner';
+import {
+  canAcquireUserRoleMutationLease,
+  ownsUserRoleMutationLease,
+  replaceManagedUserRoleClaims,
+} from './user-role-mutation';
 
 initializeApp();
 
@@ -73,6 +87,7 @@ const TRUSTED_COMMENT_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCom
 const BLOG_POSTS_COLLECTION = 'posts';
 const SOCIAL_OUTBOX_COLLECTION = 'socialOutbox';
 const USERS_COLLECTION = 'users';
+const USER_ROLE_MUTATION_LOCKS_COLLECTION = 'userRoleMutationLocks';
 const POST_COMMENTS_COLLECTION = 'postComments';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
 const SHARE_LINKS_COLLECTION = 'shareLinks';
@@ -90,6 +105,10 @@ const COMMENT_APPROVED_POINTS = 15;
 const MAX_COMMENT_THREAD_DEPTH = 12;
 const MAX_PUSH_SUBSCRIPTIONS_PER_DELIVERY = 5000;
 const PUSH_DELIVERY_CONCURRENCY = 100;
+const USER_ROLE_MUTATION_LEASE_MS = 60 * 1000;
+const USER_ROLE_MUTATION_MAX_ATTEMPTS = 8;
+const USER_ROLE_MUTATION_RETRY_BASE_MS = 50;
+const USER_ROLE_MUTATION_RETRY_MAX_MS = 400;
 const DEFAULT_OG_IMAGE_WIDTH = 1200;
 const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
@@ -288,6 +307,18 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
   let queuedCount = 0;
 
   for (const postSnapshot of publishedPostsSnapshot.docs) {
+    if (isHiddenCatCornerPost(postSnapshot.data())) {
+      const announcements = postSnapshot.get('socialPromotion')?.['announcements'];
+
+      if (
+        Array.isArray(announcements)
+        && announcements.some(announcement => isRecord(announcement) && announcement['status'] === 'queued')
+      ) {
+        await cancelPendingSocialDeliveriesForHiddenCatCornerPost(postSnapshot.id);
+      }
+      continue;
+    }
+
     if (getScheduledSocialAnnouncements(postSnapshot.get('socialPromotion'), now).length === 0) {
       continue;
     }
@@ -296,7 +327,11 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
       const currentSnapshot = await transaction.get(postSnapshot.ref);
       const currentPost = currentSnapshot.data();
 
-      if (!currentPost || currentPost['status'] !== 'published') {
+      if (
+        !currentPost
+        || currentPost['status'] !== 'published'
+        || isHiddenCatCornerPost(currentPost)
+      ) {
         return 0;
       }
 
@@ -363,6 +398,98 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
   }
 
   return queuedCount;
+}
+
+async function cancelPendingSocialDeliveriesForHiddenCatCornerPost(postId: string): Promise<number> {
+  const firestore = getFirestore();
+  const pendingSnapshot = await firestore
+    .collection(SOCIAL_OUTBOX_COLLECTION)
+    .where('postId', '==', postId)
+    .get();
+  const pendingDeliveries = pendingSnapshot.docs.filter(snapshot => snapshot.get('status') === 'pending');
+  const hiddenPostDeliveries = pendingSnapshot.docs.filter(snapshot => (
+    snapshot.get('status') === 'pending'
+    || (
+      snapshot.get('status') === 'cancelled'
+      && snapshot.get('cancellationReason') === 'cat_corner_post_hidden'
+    )
+  ));
+
+  if (hiddenPostDeliveries.length === 0) {
+    return 0;
+  }
+
+  const updatedAt = new Date().toISOString();
+
+  // `socialOutbox.status` is the delivery boundary in this repository. Marking these
+  // entries cancelled keeps connector workers from treating an old pending record as deliverable.
+  for (let index = 0; index < pendingDeliveries.length; index += FIRESTORE_WRITE_BATCH_LIMIT) {
+    const batch = firestore.batch();
+    const chunk = pendingDeliveries.slice(index, index + FIRESTORE_WRITE_BATCH_LIMIT);
+
+    for (const delivery of chunk) {
+      batch.update(delivery.ref, {
+        status: 'cancelled',
+        cancellationReason: 'cat_corner_post_hidden',
+        failureReason: CAT_CORNER_SOCIAL_CANCELLATION_REASON,
+        cancelledAt: updatedAt,
+        updatedAt,
+      });
+    }
+
+    await batch.commit();
+  }
+
+  // Include earlier cancelled entries so an at-least-once retry can finish reconciling
+  // post announcement state after a partial multi-batch outbox cancellation.
+  const cancelledAnnouncementIds = hiddenPostDeliveries
+    .map(delivery => getTrimmedString(delivery.get('announcementId')))
+    .filter(Boolean);
+  const postRef = firestore.collection(BLOG_POSTS_COLLECTION).doc(postId);
+
+  if (cancelledAnnouncementIds.length > 0) {
+    await firestore.runTransaction(async transaction => {
+      const postSnapshot = await transaction.get(postRef);
+
+      if (!postSnapshot.exists) {
+        return;
+      }
+
+      const socialPromotion = postSnapshot.get('socialPromotion');
+
+      if (!isRecord(socialPromotion) || !Array.isArray(socialPromotion['announcements'])) {
+        return;
+      }
+
+      const announcements = socialPromotion['announcements'];
+      const nextAnnouncements = cancelQueuedCatCornerSocialAnnouncements(
+        announcements,
+        cancelledAnnouncementIds,
+        updatedAt
+      );
+
+      if (nextAnnouncements.every((announcement, index) => announcement === announcements[index])) {
+        return;
+      }
+
+      transaction.update(postRef, {
+        'socialPromotion.announcements': nextAnnouncements,
+        updatedAt,
+        syncedAt: FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  if (pendingDeliveries.length > 0) {
+    logger.info('Cancelled pending social deliveries for a hidden Cat Corner post.', {
+      event: 'cat_corner_hidden_post_social_cancelled',
+      postId,
+      cancelledCount: pendingDeliveries.length,
+      updatedAt,
+    });
+  }
+
+  return pendingDeliveries.length;
 }
 
 export const publishScheduledPosts = onSchedule(
@@ -435,7 +562,19 @@ export const notifyPublishedPost = onDocumentWritten(
     const before = event.data?.before.exists ? event.data.before.data() : undefined;
     const after = event.data?.after.exists ? event.data.after.data() : undefined;
 
+    if (shouldCancelPendingCatCornerSocialDeliveries(before, after)) {
+      await cancelPendingSocialDeliveriesForHiddenCatCornerPost(event.params.postId);
+    }
+
     if (!isNewlyPublishedPost(before, after) || !after) {
+      return;
+    }
+
+    if (isHiddenCatCornerPost(after)) {
+      logger.info('Skipped new-post push delivery for a hidden Cat Corner post.', {
+        event: 'cat_corner_hidden_post_push_skipped',
+        postId: event.params.postId,
+      });
       return;
     }
 
@@ -553,6 +692,7 @@ interface SeoMetadata {
 interface SeoBlogPostDocument {
   id: string;
   featured: boolean;
+  catCornerHidden: boolean;
   slug: string;
   title: string;
   excerpt: string;
@@ -864,6 +1004,12 @@ interface AdminUsersResponse {
 
 interface UpdateAdminUserRolesResponse {
   user: AdminManagedUser;
+  updatedAt: string;
+}
+
+interface CatCornerAccessClaimResponse {
+  role: typeof CAT_CORNER_ADDICT_ROLE;
+  alreadyMember: boolean;
   updatedAt: string;
 }
 
@@ -1189,23 +1335,28 @@ export const updateAdminUserRoles = onCall(
       throw new HttpsError('failed-precondition', 'You cannot remove your own admin role from User Management.');
     }
 
-    const auth = getAuth();
-    const user = await auth.getUser(uid);
-    const nextClaims = createClaimsWithRoles(user.customClaims ?? {}, roles);
+    return await withUserRoleMutationLease(uid, async () => {
+      const auth = getAuth();
+      const user = await auth.getUser(uid);
+      const nextClaims = replaceManagedUserRoleClaims(user.customClaims ?? {}, roles);
 
-    await auth.setCustomUserClaims(uid, nextClaims);
+      await auth.setCustomUserClaims(uid, nextClaims);
 
-    const updatedUser = await auth.getUser(uid);
-    logger.info('Updated managed user roles.', {
-      actorUid,
-      targetUid: uid,
-      roles,
+      const updatedAt = new Date().toISOString();
+      await syncUserAccountRoleProjection(uid, nextClaims, updatedAt);
+      const updatedUser = await auth.getUser(uid);
+      logger.info('Updated managed user roles.', {
+        actorUid,
+        targetUid: uid,
+        roles,
+        updatedAt,
+      });
+
+      return {
+        user: toAdminManagedUser(updatedUser),
+        updatedAt,
+      } satisfies UpdateAdminUserRolesResponse;
     });
-
-    return {
-      user: toAdminManagedUser(updatedUser),
-      updatedAt: new Date().toISOString(),
-    } satisfies UpdateAdminUserRolesResponse;
   }
 );
 
@@ -1220,9 +1371,59 @@ export const bootstrapUserProfile = onCall(
   async request => {
     const auth = requireSignedIn(request.auth, 'You must be signed in to bootstrap a user profile.');
     const profile = parseBootstrapUserProfileRequest(request.data);
-    const account = await upsertUserAccount(auth, profile);
 
-    return account;
+    return await withUserRoleMutationLease(auth.uid, async () => {
+      const authUser = await getAuth().getUser(auth.uid);
+
+      return await upsertUserAccount({
+        uid: auth.uid,
+        token: authUser.customClaims ?? {},
+      }, profile);
+    });
+  }
+);
+
+export const claimCatCornerAccess = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const caller = requireSignedIn(request.auth, 'You must be signed in to join Cat Corner.');
+
+    return await withUserRoleMutationLease(caller.uid, async () => {
+      const auth = getAuth();
+      const user = await auth.getUser(caller.uid);
+      const existingClaims = user.customClaims ?? {};
+      const alreadyMember = hasCatCornerAccessClaim(existingClaims);
+      const nextClaims = addCatCornerAccessClaim(existingClaims);
+
+      if (!alreadyMember) {
+        await auth.setCustomUserClaims(caller.uid, nextClaims);
+      }
+
+      const updatedAt = new Date().toISOString();
+      await syncUserAccountRoleProjection(caller.uid, nextClaims, updatedAt);
+
+      logger.info(alreadyMember ? 'Repeated Cat Corner access claim.' : 'Granted Cat Corner access.', {
+        event: alreadyMember
+          ? 'cat_corner_access_claim_repeated'
+          : 'cat_corner_access_granted',
+        uid: caller.uid,
+        role: CAT_CORNER_ADDICT_ROLE,
+        alreadyMember,
+        updatedAt,
+      });
+
+      return {
+        role: CAT_CORNER_ADDICT_ROLE,
+        alreadyMember,
+        updatedAt,
+      } satisfies CatCornerAccessClaimResponse;
+    });
   }
 );
 
@@ -1682,6 +1883,30 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createSiteSearchSeoMetadata();
   }
 
+  if (normalizedPath === '/cat-corner') {
+    return createNoindexRouteSeoMetadata({
+      title: createSiteTitle('Cat Corner'),
+      description: 'Dispatches, photographs, and household intelligence from Gretchen, Cat Corner Editor-in-Chief.',
+      path: '/cat-corner',
+      image: '/assets/images/cat-corner/gretchen-easter-egg.png',
+      imageAlt: 'Gretchen, Cat Corner Editor-in-Chief',
+      imageWidth: 1086,
+      imageHeight: 1448,
+    });
+  }
+
+  if (normalizedPath === '/cat-corner/unlock') {
+    return createNoindexRouteSeoMetadata({
+      title: createSiteTitle('You found Gretchen'),
+      description: 'Unlock the Cat Corner Addict badge and enter Gretchen\'s secret section.',
+      path: '/cat-corner/unlock',
+      image: '/assets/images/cat-corner/gretchen-easter-egg.png',
+      imageAlt: 'Gretchen welcomes a new Cat Corner Addict',
+      imageWidth: 1086,
+      imageHeight: 1448,
+    });
+  }
+
   if (normalizedPath.startsWith('/blog/category/')) {
     const category = decodeSlugSegment(normalizedPath.slice('/blog/category/'.length));
     const posts = await fetchPublishedSitemapBlogPosts();
@@ -1917,6 +2142,7 @@ async function fetchPublishedSitemapBlogPosts(): Promise<readonly SitemapBlogPos
     .get();
 
   return snapshot.docs
+    .filter(document => !isHiddenCatCornerPost(document.data()))
     .map(document => toSitemapBlogPostDocument(document.data()))
     .filter((post): post is SitemapBlogPostDocument => post !== null)
     .sort((left, right) => {
@@ -1959,6 +2185,7 @@ async function fetchPublishedFeedBlogPosts(): Promise<readonly SeoBlogPostDocume
     .get();
 
   return snapshot.docs
+    .filter(document => !isHiddenCatCornerPost(document.data()))
     .map(document => toSeoBlogPostDocument(document.data(), document.id))
     .filter((post): post is SeoBlogPostDocument => post !== null)
     .sort((left, right) => {
@@ -2320,7 +2547,10 @@ function createNoindexRouteSeoMetadata(options: {
   title: string;
   description: string;
   path: string;
+  image?: string;
   imageAlt: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }): SeoMetadata {
   return createStaticSeoMetadata({
     ...options,
@@ -2332,15 +2562,20 @@ function createStaticSeoMetadata(options: {
   title: string;
   description: string;
   path: string;
+  image?: string;
   imageAlt: string;
+  imageWidth?: number;
+  imageHeight?: number;
   robots?: string;
 }): SeoMetadata {
   return {
     title: options.title,
     description: options.description,
     path: options.path,
-    image: HOMEPAGE_OG_IMAGE,
+    image: options.image ?? HOMEPAGE_OG_IMAGE,
     imageAlt: options.imageAlt,
+    imageWidth: options.imageWidth,
+    imageHeight: options.imageHeight,
     type: 'website',
     robots: options.robots,
   };
@@ -2403,6 +2638,7 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
     imageWidth,
     imageHeight,
     type: 'article',
+    robots: post.catCornerHidden ? 'noindex,nofollow' : undefined,
     article: {
       publishedAt: post.publishedAt ?? post.updatedAt,
       modifiedAt: post.updatedAt,
@@ -2513,6 +2749,7 @@ function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocu
   return {
     id: getTrimmedString(value['id']) || fallbackId || slug,
     featured: value['featured'] === true,
+    catCornerHidden: isHiddenCatCornerPost(value),
     slug,
     title,
     excerpt: getTrimmedString(value['excerpt']),
@@ -3456,6 +3693,81 @@ function requireSignedIn(auth: AdminCallableAuth | undefined, message: string): 
   return auth;
 }
 
+async function withUserRoleMutationLease<T>(uid: string, operation: () => Promise<T>): Promise<T> {
+  const firestore = getFirestore();
+  const leaseRef = firestore.collection(USER_ROLE_MUTATION_LOCKS_COLLECTION).doc(uid);
+  const ownerId = randomUUID();
+  let acquired = false;
+
+  for (let attempt = 0; attempt < USER_ROLE_MUTATION_MAX_ATTEMPTS; attempt += 1) {
+    acquired = await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(leaseRef);
+      const nowMillis = Date.now();
+
+      if (!canAcquireUserRoleMutationLease(snapshot.data(), ownerId, nowMillis)) {
+        return false;
+      }
+
+      transaction.set(leaseRef, {
+        ownerId,
+        acquiredAt: new Date(nowMillis).toISOString(),
+        expiresAtMillis: nowMillis + USER_ROLE_MUTATION_LEASE_MS,
+      }, {merge: false});
+      return true;
+    });
+
+    if (acquired) {
+      break;
+    }
+
+    const retryDelay = Math.min(
+      USER_ROLE_MUTATION_RETRY_BASE_MS * (2 ** attempt),
+      USER_ROLE_MUTATION_RETRY_MAX_MS
+    );
+    await waitFor(retryDelay);
+  }
+
+  if (!acquired) {
+    throw new HttpsError('aborted', 'Another role update is in progress. Please try again.');
+  }
+
+  try {
+    return await operation();
+  } finally {
+    try {
+      await firestore.runTransaction(async transaction => {
+        const snapshot = await transaction.get(leaseRef);
+
+        if (ownsUserRoleMutationLease(snapshot.data(), ownerId)) {
+          transaction.delete(leaseRef);
+        }
+      });
+    } catch (error) {
+      // The bounded lease expires automatically; a failed cleanup must not hide a successful role mutation.
+      logger.warn('Unable to release a user role mutation lease.', {uid, ownerId, error});
+    }
+  }
+}
+
+async function syncUserAccountRoleProjection(
+  uid: string,
+  claims: Record<string, unknown>,
+  updatedAt: string
+): Promise<void> {
+  await getFirestore()
+    .collection(USERS_COLLECTION)
+    .doc(uid)
+    .set({
+      uid,
+      roles: getUserAccountRoles(claims),
+      updatedAt,
+    }, {merge: true});
+}
+
+async function waitFor(milliseconds: number): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
 function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
   const roles = claims['roles'];
 
@@ -3649,14 +3961,27 @@ async function ensureUserAccountForAuth(auth: AdminCallableAuth): Promise<UserAc
     return toUserAccountDocument(auth.uid, snapshot.data() ?? {}, auth.token);
   }
 
-  const authUser = await getAuth().getUser(auth.uid);
+  return await withUserRoleMutationLease(auth.uid, async () => {
+    const [currentSnapshot, authUser] = await Promise.all([
+      userRef.get(),
+      getAuth().getUser(auth.uid),
+    ]);
+    const freshAuth: AdminCallableAuth = {
+      uid: auth.uid,
+      token: authUser.customClaims ?? {},
+    };
 
-  return await upsertUserAccount(auth, {
-    email: authUser.email ?? null,
-    displayName: authUser.displayName ?? null,
-    photoURL: authUser.photoURL ?? null,
-    providerIds: authUser.providerData.map(provider => provider.providerId),
-    emailVerified: authUser.emailVerified,
+    if (currentSnapshot.exists) {
+      return toUserAccountDocument(auth.uid, currentSnapshot.data() ?? {}, freshAuth.token);
+    }
+
+    return await upsertUserAccount(freshAuth, {
+      email: authUser.email ?? null,
+      displayName: authUser.displayName ?? null,
+      photoURL: authUser.photoURL ?? null,
+      providerIds: authUser.providerData.map(provider => provider.providerId),
+      emailVerified: authUser.emailVerified,
+    });
   });
 }
 
@@ -3923,30 +4248,6 @@ function parseUpdateUserRolesRequest(value: unknown): { uid: string; roles: stri
   }
 
   return {uid, roles};
-}
-
-function createClaimsWithRoles(
-  existingClaims: Record<string, unknown>,
-  roles: readonly string[]
-): Record<string, unknown> {
-  const nextClaims: Record<string, unknown> = {...existingClaims};
-  const nextRoles = Object.fromEntries(roles.map(role => [role, true]));
-
-  if (Object.keys(nextRoles).length > 0) {
-    nextClaims['roles'] = nextRoles;
-  } else {
-    delete nextClaims['roles'];
-  }
-
-  for (const mirroredRole of ['admin', 'cmsAdmin']) {
-    if (roles.includes(mirroredRole)) {
-      nextClaims[mirroredRole] = true;
-    } else {
-      delete nextClaims[mirroredRole];
-    }
-  }
-
-  return nextClaims;
 }
 
 function toAdminManagedUser(user: UserRecord): AdminManagedUser {

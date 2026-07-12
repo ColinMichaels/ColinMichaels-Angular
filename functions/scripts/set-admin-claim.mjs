@@ -1,7 +1,20 @@
 import {applicationDefault, initializeApp} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
+import {getFirestore} from 'firebase-admin/firestore';
+import {randomUUID} from 'node:crypto';
 import {existsSync, readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
+
+const BASE_USER_ROLE = 'user';
+const USERS_COLLECTION = 'users';
+// Keep this lease protocol aligned with `functions/src/index.ts`; this script runs
+// without a TypeScript build, so it cannot safely import the ignored `lib` output.
+const USER_ROLE_MUTATION_LOCKS_COLLECTION = 'userRoleMutationLocks';
+const USER_ROLE_MUTATION_LEASE_MS = 60 * 1000;
+const USER_ROLE_MUTATION_MAX_ATTEMPTS = 8;
+const USER_ROLE_MUTATION_RETRY_BASE_MS = 50;
+const USER_ROLE_MUTATION_RETRY_MAX_MS = 400;
+const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 
 function getArg(name) {
   return getArgs(name)[0];
@@ -40,6 +53,89 @@ function isRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function canAcquireUserRoleMutationLease(value, ownerId, nowMillis) {
+  if (!isRecord(value)) {
+    return true;
+  }
+
+  const existingOwnerId = typeof value.ownerId === 'string' ? value.ownerId : '';
+  const expiresAtMillis = typeof value.expiresAtMillis === 'number' ? value.expiresAtMillis : 0;
+
+  return existingOwnerId === ownerId || expiresAtMillis <= nowMillis;
+}
+
+async function acquireUserRoleMutationLease(firestore, uid, ownerId) {
+  const leaseRef = firestore.collection(USER_ROLE_MUTATION_LOCKS_COLLECTION).doc(uid);
+
+  for (let attempt = 0; attempt < USER_ROLE_MUTATION_MAX_ATTEMPTS; attempt += 1) {
+    const acquired = await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(leaseRef);
+      const nowMillis = Date.now();
+
+      if (!canAcquireUserRoleMutationLease(snapshot.data(), ownerId, nowMillis)) {
+        return false;
+      }
+
+      transaction.set(leaseRef, {
+        ownerId,
+        acquiredAt: new Date(nowMillis).toISOString(),
+        expiresAtMillis: nowMillis + USER_ROLE_MUTATION_LEASE_MS,
+      }, {merge: false});
+      return true;
+    });
+
+    if (acquired) {
+      return;
+    }
+
+    const retryDelay = Math.min(
+      USER_ROLE_MUTATION_RETRY_BASE_MS * (2 ** attempt),
+      USER_ROLE_MUTATION_RETRY_MAX_MS
+    );
+    await new Promise(resolveDelay => setTimeout(resolveDelay, retryDelay));
+  }
+
+  throw new Error('Another role update is in progress. Please try again.');
+}
+
+async function releaseUserRoleMutationLease(firestore, uid, ownerId) {
+  const leaseRef = firestore.collection(USER_ROLE_MUTATION_LOCKS_COLLECTION).doc(uid);
+
+  try {
+    await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(leaseRef);
+      const lease = snapshot.data();
+
+      if (isRecord(lease) && lease.ownerId === ownerId) {
+        transaction.delete(leaseRef);
+      }
+    });
+  } catch (error) {
+    // Match the Functions behavior: the bounded lease expires even when cleanup fails.
+    console.warn(`Unable to release the user role mutation lease: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+function getUserAccountRoles(claims) {
+  const roles = new Set([BASE_USER_ROLE]);
+
+  if (isRecord(claims.roles)) {
+    for (const [role, enabled] of Object.entries(claims.roles)) {
+      if (enabled === true && ROLE_NAME_PATTERN.test(role)) {
+        roles.add(role);
+      }
+    }
+  }
+
+  for (const mirroredRole of ['admin', 'cmsAdmin']) {
+    if (claims[mirroredRole] === true) {
+      roles.add(mirroredRole);
+    }
+  }
+
+  return [...roles].sort((left, right) => left.localeCompare(right));
+}
+
 function getRequestedRoles() {
   const roles = getArgs('role')
     .flatMap(value => value.split(','))
@@ -50,7 +146,7 @@ function getRequestedRoles() {
 }
 
 function assertValidRoles(roles) {
-  const invalidRole = roles.find(role => !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(role));
+  const invalidRole = roles.find(role => !ROLE_NAME_PATTERN.test(role));
 
   if (invalidRole) {
     console.error(`Invalid role "${invalidRole}". Use letters, numbers, underscores, or hyphens, starting with a letter.`);
@@ -133,36 +229,54 @@ initializeApp({
 });
 
 const auth = getAuth();
-const user = uid ? await auth.getUser(uid) : await auth.getUserByEmail(email);
-const existingClaims = user.customClaims ?? {};
-const existingRoles = isRecord(existingClaims.roles) ? existingClaims.roles : {};
-const nextRoles = {...existingRoles};
-const nextClaims = {
-  ...existingClaims,
-  roles: nextRoles,
-};
+const firestore = getFirestore();
+const requestedUser = uid ? await auth.getUser(uid) : await auth.getUserByEmail(email);
+const leaseOwnerId = randomUUID();
 
-for (const role of requestedRoles) {
-  if (shouldRevoke) {
-    delete nextRoles[role];
-  } else {
-    nextRoles[role] = true;
-  }
+await acquireUserRoleMutationLease(firestore, requestedUser.uid, leaseOwnerId);
 
-  if (role === 'admin' || role === 'cmsAdmin') {
+try {
+  // Re-read Auth only after acquiring the shared lease so no callable mutation can be overwritten.
+  const user = await auth.getUser(requestedUser.uid);
+  const existingClaims = user.customClaims ?? {};
+  const existingRoles = isRecord(existingClaims.roles) ? existingClaims.roles : {};
+  const nextRoles = {...existingRoles};
+  const nextClaims = {
+    ...existingClaims,
+    roles: nextRoles,
+  };
+
+  for (const role of requestedRoles) {
     if (shouldRevoke) {
-      delete nextClaims[role];
+      delete nextRoles[role];
     } else {
-      nextClaims[role] = true;
+      nextRoles[role] = true;
+    }
+
+    if (role === 'admin' || role === 'cmsAdmin') {
+      if (shouldRevoke) {
+        delete nextClaims[role];
+      } else {
+        nextClaims[role] = true;
+      }
     }
   }
+
+  if (Object.keys(nextRoles).length === 0) {
+    delete nextClaims.roles;
+  }
+
+  await auth.setCustomUserClaims(user.uid, nextClaims);
+
+  const updatedAt = new Date().toISOString();
+  await firestore.collection(USERS_COLLECTION).doc(user.uid).set({
+    uid: user.uid,
+    roles: getUserAccountRoles(nextClaims),
+    updatedAt,
+  }, {merge: true});
+} finally {
+  await releaseUserRoleMutationLease(firestore, requestedUser.uid, leaseOwnerId);
 }
 
-if (Object.keys(nextRoles).length === 0) {
-  delete nextClaims.roles;
-}
-
-await auth.setCustomUserClaims(user.uid, nextClaims);
-
-console.log(`${shouldRevoke ? 'Revoked' : 'Granted'} role(s) ${requestedRoles.join(', ')} for ${user.email ?? user.uid}.`);
+console.log(`${shouldRevoke ? 'Revoked' : 'Granted'} role(s) ${requestedRoles.join(', ')} for ${requestedUser.email ?? requestedUser.uid}.`);
 console.log('The user must refresh their ID token by signing out and signing back in.');

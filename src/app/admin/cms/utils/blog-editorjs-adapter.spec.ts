@@ -287,6 +287,29 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('preserves the reusable Cat Corner unlock block without configurable image data', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'cat-corner-unlock-1',
+        type: 'catCornerUnlock',
+        data: {
+          imageUrl: 'https://example.com/ignored.jpg',
+        },
+      }],
+    });
+
+    expect(blocks).toEqual([{
+      id: 'cat-corner-unlock-1',
+      type: 'catCornerUnlock',
+      data: {},
+    }]);
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'cat-corner-unlock-1',
+      type: 'catCornerUnlock',
+      data: {},
+    });
+  });
+
   it('round trips custom blog blocks back into Editor.js documents', () => {
     const document = createEditorDocument(createPost({
       blocks: [

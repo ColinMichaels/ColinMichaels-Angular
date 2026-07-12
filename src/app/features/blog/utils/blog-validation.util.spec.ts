@@ -42,4 +42,38 @@ describe('blog post validation', () => {
       backgroundImage: 42,
     })).toBeFalse();
   });
+
+  it('keeps legacy posts valid when Cat Corner metadata is absent', () => {
+    expect(isBlogPost(createPost())).toBeTrue();
+  });
+
+  it('accepts normalized Cat Corner metadata', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: {enabled: true, discoveryPost: true},
+    })).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: {enabled: true, discoveryPost: false},
+    })).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: {enabled: false, discoveryPost: false},
+    })).toBeTrue();
+  });
+
+  it('rejects malformed or contradictory Cat Corner metadata', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: {enabled: false, discoveryPost: true},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: {enabled: true},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      catCorner: 'cats',
+    })).toBeFalse();
+  });
 });

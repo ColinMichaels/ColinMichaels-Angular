@@ -1,4 +1,6 @@
 import {
+  CAT_CORNER_SEO_METADATA,
+  CAT_CORNER_UNLOCK_SEO_METADATA,
   TAG_INDEX_MIN_POSTS,
   TAXONOMY_INDEX_MIN_POSTS,
   createBlogCategorySeoMetadata,
@@ -30,5 +32,12 @@ describe('SEO metadata policy', () => {
 
     expect(metadata.path).toBe('/blog/missing-post');
     expect(metadata.robots).toBe('noindex,nofollow');
+  });
+
+  it('keeps both Cat Corner membership routes out of the index', () => {
+    expect(CAT_CORNER_SEO_METADATA.path).toBe('/cat-corner');
+    expect(CAT_CORNER_SEO_METADATA.robots).toBe('noindex,nofollow');
+    expect(CAT_CORNER_UNLOCK_SEO_METADATA.path).toBe('/cat-corner/unlock');
+    expect(CAT_CORNER_UNLOCK_SEO_METADATA.robots).toBe('noindex,nofollow');
   });
 });

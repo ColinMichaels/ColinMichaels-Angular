@@ -28,6 +28,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'typography',
   'stats',
   'chart',
+  'catCornerUnlock',
   'html',
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
@@ -199,6 +200,12 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
           embed: block.data.embedUrl ?? block.data.url ?? '',
           caption: block.data.caption ?? '',
         },
+      };
+    case 'catCornerUnlock':
+      return {
+        id: block.id,
+        type: block.type,
+        data: {},
       };
     default:
       return {
@@ -491,6 +498,8 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         unit: getString(data, 'unit') ?? '',
         chartPoints: extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data'])),
       };
+    case 'catCornerUnlock':
+      return {};
     case 'html':
       return {
         title: getString(data, 'title') ?? '',

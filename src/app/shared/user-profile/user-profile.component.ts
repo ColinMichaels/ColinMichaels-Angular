@@ -11,6 +11,7 @@ import {PwaNativeControlsComponent} from '../pwa/pwa-native-controls.component';
 import {
   ADMIN_CONSOLE_ROLES,
   BASE_USER_ROLE,
+  CAT_CORNER_ADDICT_ROLE,
   isRecord,
   UserAccountProfile,
   UserPointEvent,
@@ -180,7 +181,23 @@ interface LinkedProviderView {
                   <article class="border border-zinc-800 bg-zinc-950 p-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                       <h3 class="font-semibold text-zinc-100">{{ role.label }}</h3>
-                      <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Assigned</span>
+                      @if (role.id === catCornerRole) {
+                        <span
+                          class="inline-flex items-center gap-1.5 border border-emerald-300/40 bg-emerald-950/40 px-2 py-1 text-xs font-semibold text-emerald-100"
+                          aria-label="Cat Corner Addict badge"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 32 32" class="h-4 w-4 fill-current">
+                            <ellipse cx="16" cy="21.5" rx="7.6" ry="6.2"></ellipse>
+                            <ellipse cx="7.7" cy="13.1" rx="3.1" ry="4.2" transform="rotate(-25 7.7 13.1)"></ellipse>
+                            <ellipse cx="14" cy="9" rx="3.1" ry="4.3" transform="rotate(-7 14 9)"></ellipse>
+                            <ellipse cx="24.3" cy="13.1" rx="3.1" ry="4.2" transform="rotate(25 24.3 13.1)"></ellipse>
+                            <ellipse cx="20" cy="9" rx="3.1" ry="4.3" transform="rotate(7 20 9)"></ellipse>
+                          </svg>
+                          Badge
+                        </span>
+                      } @else {
+                        <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Assigned</span>
+                      }
                     </div>
                     <p class="mt-2 text-sm leading-6 text-zinc-400">{{ role.description }}</p>
                   </article>
@@ -256,6 +273,7 @@ export class UserProfileComponent {
   private readonly userAccountService = inject(UserAccountService);
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly catCornerRole = CAT_CORNER_ADDICT_ROLE;
   protected readonly isLinkingFacebook = signal(false);
   protected readonly linkStatusMessage = signal<string | null>(null);
   protected readonly linkErrorMessage = signal<string | null>(null);
