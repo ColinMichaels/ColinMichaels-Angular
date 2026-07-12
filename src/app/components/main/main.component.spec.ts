@@ -63,6 +63,7 @@ const MOCK_FULL_POSTS: readonly BlogPost[] = [
     },
     categories: ['Weekly Updates'],
     tags: ['Open Heart Surgery', 'Recovery'],
+    featured: true,
     status: 'published',
     seo: {
       title: 'Open heart surgery weekly update',
@@ -237,7 +238,7 @@ describe('MainComponent', () => {
     fixture.detectChanges();
 
     const image = TestBed.inject(Meta).getTag("property='og:image'")?.content ?? '';
-    expect(image).toContain('/assets/images/backgrounds/day.jpg?ogv=');
+    expect(image).toContain('/assets/images/backgrounds/night.jpg?ogv=');
   });
 
   it('embeds published blog content on the homepage', async () => {
@@ -248,12 +249,12 @@ describe('MainComponent', () => {
     expect(element.textContent).toContain('A Life of Curiosity.');
     expect(element.textContent).toContain('A Journey of Growth.');
     expect(element.textContent).toContain('More writing');
-    expect(element.textContent).toContain('Architecture Boundaries for the Site and OS');
+    expect(element.querySelector('#home-article-hero')?.textContent).toContain('Open heart surgery weekly update');
 
     const moreWritingSection = element.querySelector('#blog');
-    expect(moreWritingSection?.textContent).toContain('Open heart surgery weekly update');
+    expect(moreWritingSection?.textContent).toContain('Architecture Boundaries for the Site and OS');
     expect(moreWritingSection?.textContent).toContain('Open heart surgery medical information');
-    expect(moreWritingSection?.textContent).not.toContain('Architecture Boundaries for the Site and OS');
+    expect(moreWritingSection?.textContent).not.toContain('Open heart surgery weekly update');
   });
 
   it('shares one published post feed across homepage blog sections', async () => {

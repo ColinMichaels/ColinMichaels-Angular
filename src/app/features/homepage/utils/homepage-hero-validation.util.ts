@@ -13,7 +13,7 @@ import {
 
 export const HOMEPAGE_HERO_STATUSES: readonly HomepageHeroStatus[] = ['draft', 'published'];
 export const HOMEPAGE_HERO_SLIDE_STATUSES: readonly HomepageHeroSlideStatus[] = ['draft', 'published'];
-export const HOMEPAGE_HERO_FEATURED_POST_MODES: readonly HomepageHeroFeaturedPostMode[] = ['latest', 'featured', 'selected'];
+export const HOMEPAGE_HERO_FEATURED_POST_MODES: readonly HomepageHeroFeaturedPostMode[] = ['featured', 'selected'];
 
 const homepageHeroStatusSet = new Set<string>(HOMEPAGE_HERO_STATUSES);
 const homepageHeroSlideStatusSet = new Set<string>(HOMEPAGE_HERO_SLIDE_STATUSES);
@@ -48,9 +48,12 @@ export function normalizeHomepageHeroSettings(value: unknown, fallback: Homepage
   const fallbackCreatedAt = fallback.createdAt || now;
   const fallbackUpdatedAt = fallback.updatedAt || now;
   const status = isHomepageHeroStatus(value['status']) ? value['status'] : fallback.status;
-  const featuredPostMode = isHomepageHeroFeaturedPostMode(value['featuredPostMode'])
-    ? value['featuredPostMode']
-    : fallback.featuredPostMode;
+  // Legacy `latest` settings migrate in memory to the automatic newest-featured policy.
+  const featuredPostMode = value['featuredPostMode'] === 'latest'
+    ? 'featured'
+    : isHomepageHeroFeaturedPostMode(value['featuredPostMode'])
+      ? value['featuredPostMode']
+      : fallback.featuredPostMode;
   const slides = getSlideArray(value['slides']);
 
   return {
@@ -60,6 +63,10 @@ export function normalizeHomepageHeroSettings(value: unknown, fallback: Homepage
     summary: getString(value['summary'], fallback.summary),
     featuredPostMode,
     featuredPostId: getNullableString(value['featuredPostId']),
+    useFeaturedPostBackground: getBoolean(
+      value['useFeaturedPostBackground'],
+      fallback.useFeaturedPostBackground
+    ),
     slideshowEnabled: getBoolean(value['slideshowEnabled'], fallback.slideshowEnabled),
     intervalMs: clampInteger(value['intervalMs'], MIN_INTERVAL_MS, MAX_INTERVAL_MS, fallback.intervalMs),
     transitionMs: clampInteger(value['transitionMs'], MIN_TRANSITION_MS, MAX_TRANSITION_MS, fallback.transitionMs),

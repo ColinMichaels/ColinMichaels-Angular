@@ -51,6 +51,7 @@ export class HomeLatestWritingSectionComponent {
   @Input() startIndex = 0;
   @Input() maxPosts = 3;
   @Input() featuredFirst = true;
+  @Input() excludePostId: string | null = null;
 
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly topicHubRepository = inject(TopicHubRepositoryService);
@@ -62,6 +63,7 @@ export class HomeLatestWritingSectionComponent {
   );
   protected readonly publishedPosts = computed(() => {
     const posts = this.allPublishedPosts()
+      .filter(post => !this.excludePostId || post.id !== this.excludePostId)
       .slice(Math.max(0, this.startIndex));
     const featuredPost = posts.find(post => post.featured);
     const maxPosts = Math.max(0, this.maxPosts);

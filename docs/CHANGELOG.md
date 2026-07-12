@@ -1,5 +1,17 @@
 # Changelog
 
+- Revised `/llms.txt` into a proposal-conformant, evergreen index with canonical Markdown links, accurate current topic routes, explicit scope boundaries, representative optional articles, and documented AI-crawler limitations.
+- Added accessible, non-wrapping previous and next controls beneath the homepage hero article so readers can browse the
+  canonical featured selection followed by recent posts one at a time, with endpoint arrow hiding, live position
+  feedback, endpoint focus handoff, a stable 16:9 frame, and a full-width mobile card.
+- Added image-backed homepage Weekly Updates cards with shorter, line-clamped titles while preserving readable media rows on mobile.
+- Made the homepage hero automatically choose the newest published featured post while retaining older feature flags,
+  preserved a manual selected-post override, excluded the resolved post from More writing, and aligned browser/crawler
+  social selection with the same deterministic policy.
+- Added an explicit Homepage Hero control for special announcements that can use the resolved hero post's optional
+  full-screen background instead of the CMS slideshow, with a migration-safe off default, centered decorative
+  rendering, disabled rotation, critical-image preload ownership, and slideshow/static fallback when disabled or after
+  load failure.
 - Added an existing-media picker directly to the Editor.js inline Image block so editors can reuse library images without creating a duplicate block or uploading the file again.
 - Added optional full-screen blog post backgrounds with CMS media-library selection/upload/removal, decorative fixed public rendering, readable translucent article surfaces, offline-copy preservation, and legacy-post fallback behavior.
 - Redesigned the homepage recovery area as a three-post, tech-styled Weekly Updates board plus one compact Hospital Lessons feature, with focused archive/topic routes, preserved patient-safety notes, responsive placeholders, and regression coverage.

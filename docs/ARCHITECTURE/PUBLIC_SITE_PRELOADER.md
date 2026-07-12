@@ -29,8 +29,9 @@ The inline document keeps an absolute failsafe so the overlay cannot trap visito
 - `#cm-initial-loader`: static overlay in `index.html` with near-black background, brand lockup, status labels, progress rail, postcard cards, and signal sweep.
 - `SitePreloaderService`: browser-only startup coordinator that waits for app stability, route readiness, font readiness, critical image decode, and minimum visible timing before dismissing the overlay.
 - `AppComponent`: starts the preloader service from the shared site shell entry.
-- Homepage hero image: first public landing image marked as the route's critical preload image. When CMS-managed
-  slideshow images are present, only the first rendered slide should carry `[data-site-preload-image]`.
+- Homepage hero image: first public landing image marked as the route's critical preload image. An enabled resolved
+  featured-post background owns the marker while it overrides the slideshow; otherwise the first rendered CMS/default
+  slide owns it.
 - Blog detail cover image: article cover marked as the route's critical preload image.
 - Tailwind preview utility styles: converted away from broad generated-class safelisting so production CSS remains bounded.
 

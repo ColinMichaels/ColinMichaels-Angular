@@ -1,6 +1,8 @@
 import {BlogPost} from '../../blog/models/blog-post.model';
 import {HOMEPAGE_OG_IMAGE} from '../../../shared/seo/seo.metadata';
+import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../homepage-hero.defaults';
 import {HomepageHeroSettings} from '../models/homepage-hero.model';
+import {selectHomepageHeroPost} from './homepage-post-selection.util';
 
 export const HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION = 'home-social-v1';
 
@@ -17,30 +19,10 @@ export function selectHomepageSocialPost(
   posts: readonly BlogPost[],
   settings: HomepageHeroSettings
 ): BlogPost | null {
-  const newestPosts = [...posts].sort((left, right) => (
-    (right.publishedAt ?? right.updatedAt).localeCompare(left.publishedAt ?? left.updatedAt)
-    || right.updatedAt.localeCompare(left.updatedAt)
-  ));
+  // Draft CMS selections remain private; public metadata follows the default policy until settings publish.
+  const publicSettings = settings.status === 'published' ? settings : DEFAULT_HOMEPAGE_HERO_SETTINGS;
 
-  if (settings.status !== 'published' || newestPosts.length === 0) {
-    return newestPosts[0] ?? null;
-  }
-
-  if (settings.featuredPostMode === 'selected' && settings.featuredPostId) {
-    const selectedPost = newestPosts.find(post => post.id === settings.featuredPostId);
-    if (selectedPost) {
-      return selectedPost;
-    }
-  }
-
-  if (settings.featuredPostMode === 'selected' || settings.featuredPostMode === 'featured') {
-    const featuredPost = newestPosts.find(post => post.featured);
-    if (featuredPost) {
-      return featuredPost;
-    }
-  }
-
-  return newestPosts[0] ?? null;
+  return selectHomepageHeroPost(posts, publicSettings);
 }
 
 export function createHomepageSocialPreviewSelection(

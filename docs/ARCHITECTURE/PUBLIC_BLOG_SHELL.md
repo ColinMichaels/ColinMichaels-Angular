@@ -66,8 +66,9 @@ Inline-left and inline-right image figures float only at the `sm` breakpoint and
 
 ## Optional Post Backgrounds
 
-`BlogPost.backgroundImage` is an optional full-post field used only by the single-post and draft-preview routes. When it
-is absent or blank, `BlogDetailComponent` preserves the existing opaque blog page exactly. When it is present,
+`BlogPost.backgroundImage` is an optional full-post field used by the single-post and draft-preview routes and, when
+the post resolves as the homepage hero, as a custom homepage backdrop. When it is absent or blank,
+`BlogDetailComponent` preserves the existing opaque blog page exactly. When it is present,
 `BlogPostBackgroundComponent` renders the image as a decorative fixed viewport layer with a dark scrim while the
 article and footer receive translucent surfaces. The cover image remains the article hero and the source for
 cards/share fallbacks; a post background never replaces or implicitly derives from the cover.
@@ -78,6 +79,11 @@ decorative layer and restores the normal opaque page background. The component s
 so it is removed automatically when navigating to another post or page and does not mutate global `body` styles.
 If the configured image cannot load, the component reports the failure and immediately restores the standard page
 surface and cover-image preload priority instead of leaving an empty enhanced backdrop.
+
+On the homepage, the same optional field replaces all CMS hero slides only while that post owns the hero and the
+Homepage Hero manager's `Use featured post background` option is enabled. It remains decorative, uses a centered cover
+crop, disables rotation, and falls back to the configured slideshow when the option is off or after a load error. The
+cover continues to drive the article panel thumbnail and social-image fallback.
 
 The CMS Post Images module reuses `BlogMediaUploaderComponent` for existing-library selection, URL entry, upload,
 preview, and an explicit detach action. Empty values are normalized away and serialized with Firestore `deleteField()`

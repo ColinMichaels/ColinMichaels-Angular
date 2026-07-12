@@ -1,5 +1,5 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {computed, signal} from '@angular/core';
+import {computed, signal, WritableSignal} from '@angular/core';
 import {RouterTestingModule} from '@angular/router/testing';
 import {of} from 'rxjs';
 
@@ -110,8 +110,163 @@ describe('HomeArticleHeroComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelectorAll('.home-hero-panel').length).toBe(1);
-    expect(element.textContent).toContain('Post 1 title');
-    expect(element.textContent).not.toContain('Post 2 title');
+    expect(element.textContent).toContain('Post 5 title');
+    expect(element.textContent).not.toContain('Post 4 title');
+  });
+
+  it('renders the newest featured post while preserving older feature flags', async () => {
+    const olderFeatured = createPost(1, {featured: true});
+    const newerFeatured = createPost(4, {featured: true});
+    const fixture = await createComponent([
+      olderFeatured,
+      createPost(5),
+      newerFeatured,
+    ]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Post 4 title');
+    expect(element.textContent).not.toContain('Post 1 title');
+    expect(olderFeatured.featured).toBeTrue();
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 5 title');
+  });
+
+  it('cycles one post at a time and only renders arrows for available directions', async () => {
+    const fixture = await createComponent([
+      createPost(1),
+      createPost(2, {thumbnailImage: '/assets/images/backgrounds/day.webp'}),
+      createPost(3),
+    ]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelectorAll('.home-hero-panel').length).toBe(1);
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 3 title');
+    expect(element.querySelector('.home-hero-post-control-previous')).toBeNull();
+    expect(element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.type).toBe('button');
+    expect(element.querySelector('.home-hero-post-control-next')?.getAttribute('aria-label'))
+      .toBe('Show next post: Post 2 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('1 / 3');
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('.home-hero-panel').length).toBe(1);
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+    expect(element.querySelector('.home-hero-panel')?.getAttribute('href')).toBe('/blog/post-2');
+    expect(element.querySelector('.home-hero-panel')?.getAttribute('aria-label')).toBe('Read more: Post 2 title');
+    expect(element.querySelector<HTMLImageElement>('.home-hero-panel-image')?.getAttribute('src'))
+      .toBe('/assets/images/backgrounds/day.webp');
+    expect(element.querySelector('.home-hero-post-control-previous')?.getAttribute('aria-label'))
+      .toBe('Show previous post: Post 3 title');
+    expect(element.querySelector('.home-hero-post-control-next')?.getAttribute('aria-label'))
+      .toBe('Show next post: Post 1 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('2 / 3');
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 1 title');
+    expect(element.querySelector('.home-hero-post-control-next')).toBeNull();
+    expect(element.querySelector('.home-hero-post-control-previous')?.getAttribute('aria-label'))
+      .toBe('Show previous post: Post 2 title');
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-previous')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+  });
+
+  it('moves focus to the remaining arrow when endpoint navigation removes the active control', async () => {
+    const fixture = await createComponent([createPost(1), createPost(2)]);
+    const element = fixture.nativeElement as HTMLElement;
+    const nextButton = element.querySelector<HTMLButtonElement>('.home-hero-post-control-next');
+
+    nextButton?.focus();
+    nextButton?.click();
+    fixture.detectChanges();
+
+    const previousButton = element.querySelector<HTMLButtonElement>('.home-hero-post-control-previous');
+    expect(document.activeElement).toBe(previousButton);
+
+    previousButton?.click();
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(element.querySelector('.home-hero-post-control-next'));
+  });
+
+  it('does not render post navigation when only one post is available', async () => {
+    const fixture = await createComponent([createPost(1)]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelectorAll('.home-hero-panel').length).toBe(1);
+    expect(element.querySelector('.home-hero-post-controls')).toBeNull();
+  });
+
+  it('returns to the gallery lead when the published post set changes', async () => {
+    const fixture = await createComponent([
+      createPost(1),
+      createPost(2),
+      createPost(3),
+    ]);
+    const element = fixture.nativeElement as HTMLElement;
+    const postFeed = TestBed.inject(HomeBlogPostFeedService) as unknown as {
+      publishedPosts: WritableSignal<readonly BlogPost[]>;
+    };
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+
+    postFeed.publishedPosts.set([createPost(4), createPost(5)]);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 5 title');
+    expect(element.querySelector('.home-hero-post-control-previous')).toBeNull();
+  });
+
+  it('keeps the active post selected when recent posts reorder behind the same lead', async () => {
+    const leadPost = createPost(3, {featured: true});
+    const fixture = await createComponent([createPost(1), createPost(2), leadPost]);
+    const element = fixture.nativeElement as HTMLElement;
+    const postFeed = TestBed.inject(HomeBlogPostFeedService) as unknown as {
+      publishedPosts: WritableSignal<readonly BlogPost[]>;
+    };
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+
+    postFeed.publishedPosts.set([createPost(1), createPost(2), leadPost, createPost(4)]);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('3 / 4');
+  });
+
+  it('clamps to the nearest remaining post when the active post disappears behind the same lead', async () => {
+    const secondPost = createPost(2);
+    const leadPost = createPost(3, {featured: true});
+    const fixture = await createComponent([createPost(1), secondPost, leadPost]);
+    const element = fixture.nativeElement as HTMLElement;
+    const postFeed = TestBed.inject(HomeBlogPostFeedService) as unknown as {
+      publishedPosts: WritableSignal<readonly BlogPost[]>;
+    };
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 1 title');
+
+    postFeed.publishedPosts.set([secondPost, leadPost]);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 2 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('2 / 2');
+    expect(element.querySelector('.home-hero-post-control-next')).toBeNull();
   });
 
   it('uses the supplied full hero background image', async () => {
@@ -156,6 +311,143 @@ describe('HomeArticleHeroComponent', () => {
     expect(firstSlide?.style.getPropertyValue('--home-hero-transition-duration')).toBe('1400ms');
     expect(element.querySelector('.home-hero-background-image.has-ken-burns')).not.toBeNull();
     expect(element.querySelector('.home-hero-slide-controls')).toBeNull();
+  });
+
+  it('replaces the CMS slideshow with the featured post background', async () => {
+    const fixture = await createComponent([
+      createPost(1, {
+        featured: true,
+        backgroundImage: '/assets/images/backgrounds/day.webp',
+      }),
+    ], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      useFeaturedPostBackground: true,
+      slides: [
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-one',
+          imageUrl: '/assets/images/backgrounds/day.webp',
+        },
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-two',
+          imageUrl: '/assets/images/backgrounds/night.webp',
+          sortOrder: 20,
+        },
+      ],
+    });
+    const element = fixture.nativeElement as HTMLElement;
+    const images = element.querySelectorAll<HTMLImageElement>('.home-hero-background-image');
+    const background = images.item(0);
+
+    expect(images.length).toBe(1);
+    expect(background.getAttribute('src')).toBe('/assets/images/backgrounds/day.webp');
+    expect(background.getAttribute('alt')).toBe('');
+    expect(background.style.objectPosition).toBe('50% 50%');
+    expect(background.classList.contains('has-ken-burns')).toBeFalse();
+    expect(background.getAttribute('fetchpriority')).toBe('high');
+    expect(background.hasAttribute('data-site-preload-image')).toBeTrue();
+    expect(element.querySelector('.home-hero-slideshow')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('restores CMS slides when a featured post background fails to load', async () => {
+    const fixture = await createComponent([
+      createPost(1, {featured: true, backgroundImage: '/assets/images/backgrounds/day.webp'}),
+    ], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      useFeaturedPostBackground: true,
+      slides: [
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-one',
+          imageUrl: '/assets/images/backgrounds/day.webp',
+        },
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-two',
+          imageUrl: '/assets/images/backgrounds/night.webp',
+          sortOrder: 20,
+        },
+      ],
+    });
+    const element = fixture.nativeElement as HTMLElement;
+
+    element.querySelector<HTMLImageElement>('.home-hero-background-image')
+      ?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    const images = Array.from(element.querySelectorAll<HTMLImageElement>('.home-hero-background-image'));
+    expect(images.map(image => image.getAttribute('src'))).toEqual([
+      '/assets/images/backgrounds/day.webp',
+      '/assets/images/backgrounds/night.webp',
+    ]);
+  });
+
+  it('retries a post background after the hero candidate changes away and back', async () => {
+    const firstPost = createPost(1, {
+      featured: true,
+      backgroundImage: '/assets/images/backgrounds/day.webp',
+    });
+    const secondPost = createPost(2, {
+      featured: true,
+      backgroundImage: '/assets/images/backgrounds/night.webp',
+    });
+    const fixture = await createComponent([firstPost], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      useFeaturedPostBackground: true,
+    });
+    const element = fixture.nativeElement as HTMLElement;
+    const postFeed = TestBed.inject(HomeBlogPostFeedService) as unknown as {
+      publishedPosts: WritableSignal<readonly BlogPost[]>;
+    };
+
+    element.querySelector<HTMLImageElement>('.home-hero-background-image')
+      ?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(element.querySelector<HTMLImageElement>('.home-hero-background-image')?.getAttribute('src'))
+      .toBe(HERO_BACKGROUND_IMAGE);
+
+    postFeed.publishedPosts.set([secondPost]);
+    fixture.detectChanges();
+    expect(element.querySelector<HTMLImageElement>('.home-hero-background-image')?.getAttribute('src'))
+      .toBe('/assets/images/backgrounds/night.webp');
+
+    postFeed.publishedPosts.set([firstPost]);
+    fixture.detectChanges();
+    expect(element.querySelector<HTMLImageElement>('.home-hero-background-image')?.getAttribute('src'))
+      .toBe('/assets/images/backgrounds/day.webp');
+  });
+
+  it('keeps the homepage slideshow when the featured post background option is disabled', async () => {
+    const fixture = await createComponent([
+      createPost(1, {
+        featured: true,
+        backgroundImage: '/assets/images/backgrounds/day.webp',
+      }),
+    ], {
+      ...DEFAULT_HOMEPAGE_HERO_SETTINGS,
+      useFeaturedPostBackground: false,
+      slides: [
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-one',
+          imageUrl: '/assets/images/backgrounds/night.webp',
+        },
+        {
+          ...DEFAULT_HOMEPAGE_HERO_SETTINGS.slides[0],
+          id: 'slide-two',
+          imageUrl: HERO_BACKGROUND_IMAGE,
+          sortOrder: 20,
+        },
+      ],
+    });
+    const element = fixture.nativeElement as HTMLElement;
+    const images = Array.from(element.querySelectorAll<HTMLImageElement>('.home-hero-background-image'));
+
+    expect(images.map(image => image.getAttribute('src'))).toEqual([
+      '/assets/images/backgrounds/night.webp',
+      HERO_BACKGROUND_IMAGE,
+    ]);
   });
 
   it('prioritizes every rotating hero background that can become the LCP image', async () => {
@@ -238,6 +530,7 @@ describe('HomeArticleHeroComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelectorAll('.home-hero-panel').length).toBe(0);
+    expect(element.querySelector('.home-hero-post-controls')).toBeNull();
     expect(element.textContent).toContain('No published posts yet.');
     expect(element.querySelector<HTMLImageElement>('.home-hero-background-image')?.getAttribute('src'))
       .toBe(HERO_BACKGROUND_IMAGE);

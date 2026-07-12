@@ -8,6 +8,7 @@ import {createBlogCategorySlug, createBlogTagSlug} from '../../utils/blog-catego
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 
 export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact';
+export type BlogPostListingMediaPresentation = 'standard' | 'background';
 
 export interface BlogPostListingAppearance {
   label?: string;
@@ -36,8 +37,12 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       [attr.aria-label]="regionLabel"
       [attr.aria-busy]="loading"
       [attr.data-layout]="layout"
+      [attr.data-media-presentation]="mediaPresentation"
       [class.post-listing-region--clamped]="excerptLineClamp !== null"
+      [class.post-listing-region--title-clamped]="titleLineClamp !== null"
+      [class.post-listing-region--background-media]="mediaPresentation === 'background'"
       [style.--listing-excerpt-lines]="excerptLineClamp"
+      [style.--listing-title-lines]="titleLineClamp"
     >
       @if (error) {
         <div class="post-listing-state post-listing-state--error" role="alert">
@@ -114,8 +119,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
                   @if (headingLevel === 2) {
                     <h2 class="post-listing__title">
-                      <a [routerLink]="['/', pathNames.BLOG, post.slug]">
-                        <span>{{ post.title }}</span>
+                      <a
+                        [routerLink]="['/', pathNames.BLOG, post.slug]"
+                        [attr.aria-label]="postTitleIsTruncated(post) ? 'Read ' + post.title : null"
+                      >
+                        <span [attr.title]="postTitleIsTruncated(post) ? post.title : null">
+                          {{ visiblePostTitle(post) }}
+                        </span>
                         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                           <path d="M5 12h14"></path>
                           <path d="m14 7 5 5-5 5"></path>
@@ -124,8 +134,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                     </h2>
                   } @else {
                     <h3 class="post-listing__title">
-                      <a [routerLink]="['/', pathNames.BLOG, post.slug]">
-                        <span>{{ post.title }}</span>
+                      <a
+                        [routerLink]="['/', pathNames.BLOG, post.slug]"
+                        [attr.aria-label]="postTitleIsTruncated(post) ? 'Read ' + post.title : null"
+                      >
+                        <span [attr.title]="postTitleIsTruncated(post) ? post.title : null">
+                          {{ visiblePostTitle(post) }}
+                        </span>
                         <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                           <path d="M5 12h14"></path>
                           <path d="m14 7 5 5-5 5"></path>
@@ -310,6 +325,17 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       gap: 0.8rem;
       color: inherit;
       text-decoration: none;
+    }
+
+    .post-listing__title span {
+      min-width: 0;
+    }
+
+    .post-listing-region--title-clamped .post-listing__title span {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--listing-title-lines);
     }
 
     .post-listing__title svg,
@@ -503,6 +529,104 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
     .post-listing--fan .post-listing__title svg {
       display: none;
+    }
+
+    @media (min-width: 48rem) {
+      .post-listing-region--background-media .post-listing--fan .post-listing__article {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        min-height: 21rem;
+        background: var(--site-panel);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__media {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        display: block;
+        aspect-ratio: auto;
+        border: 0;
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__media::after {
+        border-color: rgb(var(--post-accent-rgb) / 0.24);
+        background:
+          linear-gradient(180deg, rgb(2 6 12 / 0.24) 0%, rgb(2 6 12 / 0.52) 42%, rgb(2 6 12 / 0.94) 100%),
+          linear-gradient(90deg, rgb(2 6 12 / 0.54) 0%, transparent 74%);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__media img {
+        filter: brightness(0.72) saturate(0.82);
+        transform: scale(1.01);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__media:focus-visible {
+        outline: 2px solid var(--post-accent-readable);
+        outline-offset: -0.45rem;
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__content {
+        position: relative;
+        z-index: 1;
+        min-height: 21rem;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        padding: clamp(1.25rem, 2.5vw, 1.9rem);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__meta {
+        color: rgb(241 245 249 / 0.84);
+        font-size: 0.7rem;
+        text-shadow: 0 1px 0.45rem rgb(0 0 0 / 0.9);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__title {
+        color: #ffffff;
+        font-size: clamp(1.15rem, 1.02rem + 0.42vw, 1.5rem);
+        line-height: 1.24;
+        text-shadow: 0 2px 0.7rem rgb(0 0 0 / 0.95);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__excerpt {
+        color: rgb(248 250 252 / 0.86);
+        font-size: 0.9rem;
+        line-height: 1.48;
+        text-shadow: 0 1px 0.5rem rgb(0 0 0 / 0.95);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__read-link {
+        border-bottom-color: rgb(var(--post-accent-rgb) / 0.78);
+        color: #ffffff;
+        text-shadow: 0 1px 0.45rem rgb(0 0 0 / 0.95);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:hover img,
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:focus-within img {
+        filter: brightness(0.8) saturate(0.96);
+        transform: scale(1.04);
+      }
+
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__media {
+        display: none;
+      }
+
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__title,
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__read-link {
+        color: var(--site-heading);
+        text-shadow: none;
+      }
+
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__meta,
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__excerpt {
+        color: var(--site-text);
+        text-shadow: none;
+      }
     }
 
     /* Dense index rows */
@@ -765,6 +889,9 @@ export class BlogPostListingComponent {
   @Input() showReadLink = false;
   @Input() readLinkLabel = 'Read article';
   @Input() excerptLineClamp: number | null = null;
+  @Input() titleLineClamp: number | null = null;
+  @Input() titleMaxLength: number | null = null;
+  @Input() mediaPresentation: BlogPostListingMediaPresentation = 'standard';
   @Input() loading = false;
   @Input() loadingLabel = 'Loading posts';
   @Input() loadingItemCount = 3;
@@ -789,6 +916,20 @@ export class BlogPostListingComponent {
 
   protected postDate(post: BlogPostSummary): string {
     return post.publishedAt ?? post.updatedAt;
+  }
+
+  protected visiblePostTitle(post: BlogPostSummary): string {
+    const maximumLength = this.normalizedTitleMaxLength;
+
+    return maximumLength === null
+      ? post.title
+      : truncateTitle(post.title, maximumLength);
+  }
+
+  protected postTitleIsTruncated(post: BlogPostSummary): boolean {
+    const maximumLength = this.normalizedTitleMaxLength;
+
+    return maximumLength !== null && normalizeTitle(post.title).length > maximumLength;
   }
 
   protected categorySlug(category: string): string {
@@ -828,4 +969,39 @@ export class BlogPostListingComponent {
   private postAppearance(post: BlogPostSummary): BlogPostListingAppearance | null {
     return this.appearanceByPostId[post.id] ?? this.appearance;
   }
+
+  private get normalizedTitleMaxLength(): number | null {
+    if (this.titleMaxLength === null || !Number.isFinite(this.titleMaxLength)) {
+      return null;
+    }
+
+    return Math.max(1, Math.floor(this.titleMaxLength));
+  }
+}
+
+function normalizeTitle(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function truncateTitle(value: string, maximumLength: number): string {
+  const normalizedValue = normalizeTitle(value);
+
+  if (normalizedValue.length <= maximumLength) {
+    return normalizedValue;
+  }
+
+  if (maximumLength === 1) {
+    return '…';
+  }
+
+  const visibleLength = maximumLength - 1;
+  const candidate = normalizedValue.slice(0, visibleLength + 1);
+  const lastSpaceIndex = candidate.lastIndexOf(' ');
+  const shouldTrimToWord = lastSpaceIndex > visibleLength * 0.62;
+  const visibleValue = (shouldTrimToWord
+      ? candidate.slice(0, lastSpaceIndex)
+      : normalizedValue.slice(0, visibleLength)
+  ).trimEnd();
+
+  return `${visibleValue}…`;
 }
