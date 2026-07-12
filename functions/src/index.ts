@@ -579,7 +579,7 @@ interface SeoBlogPostDocument {
   blocks: readonly BlogContentBlock[];
 }
 
-type HomepageFeaturedPostMode = 'latest' | 'featured' | 'selected';
+type HomepageFeaturedPostMode = 'featured' | 'selected';
 
 interface HomepageSocialSettings {
   status: 'draft' | 'published';
@@ -2181,9 +2181,8 @@ async function fetchHomepageSocialSettings(): Promise<HomepageSocialSettings> {
     .get();
   const value = snapshot.data() ?? {};
   const rawMode = getTrimmedString(value['featuredPostMode']);
-  const featuredPostMode: HomepageFeaturedPostMode = ['latest', 'featured', 'selected'].includes(rawMode)
-    ? rawMode as HomepageFeaturedPostMode
-    : 'latest';
+  // Mirror the client migration: legacy `latest` and unknown modes use the newest-featured policy.
+  const featuredPostMode: HomepageFeaturedPostMode = rawMode === 'selected' ? 'selected' : 'featured';
 
   return {
     status: getTrimmedString(value['status']) === 'draft' ? 'draft' : 'published',
@@ -2201,22 +2200,21 @@ function selectHomepageSocialPost(
     || right.updatedAt.localeCompare(left.updatedAt)
   ));
 
-  if (settings.status !== 'published' || newestPosts.length === 0) {
-    return newestPosts[0] ?? null;
-  }
+  // Draft CMS selections remain private; public metadata follows the default policy until settings publish.
+  const publicSettings: HomepageSocialSettings = settings.status === 'published'
+    ? settings
+    : {status: 'published', featuredPostMode: 'featured', featuredPostId: null};
 
-  if (settings.featuredPostMode === 'selected' && settings.featuredPostId) {
-    const selectedPost = newestPosts.find(post => post.id === settings.featuredPostId);
+  if (publicSettings.featuredPostMode === 'selected' && publicSettings.featuredPostId) {
+    const selectedPost = newestPosts.find(post => post.id === publicSettings.featuredPostId);
     if (selectedPost) {
       return selectedPost;
     }
   }
 
-  if (settings.featuredPostMode === 'selected' || settings.featuredPostMode === 'featured') {
-    const featuredPost = newestPosts.find(post => post.featured);
-    if (featuredPost) {
-      return featuredPost;
-    }
+  const featuredPost = newestPosts.find(post => post.featured);
+  if (featuredPost) {
+    return featuredPost;
   }
 
   return newestPosts[0] ?? null;

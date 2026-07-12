@@ -1,6 +1,6 @@
 export type HomepageHeroStatus = 'draft' | 'published';
 export type HomepageHeroSlideStatus = 'draft' | 'published';
-export type HomepageHeroFeaturedPostMode = 'latest' | 'featured' | 'selected';
+export type HomepageHeroFeaturedPostMode = 'featured' | 'selected';
 
 export interface HomepageHeroSlide {
   id: string;
@@ -26,6 +26,7 @@ export interface HomepageHeroSettings {
   summary: string;
   featuredPostMode: HomepageHeroFeaturedPostMode;
   featuredPostId: string | null;
+  useFeaturedPostBackground: boolean;
   slideshowEnabled: boolean;
   intervalMs: number;
   transitionMs: number;

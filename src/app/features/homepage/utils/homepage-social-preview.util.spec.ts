@@ -29,11 +29,25 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
 
 describe('homepage social preview', () => {
   const latest = createPost({});
-  const featured = createPost({id: 'featured', slug: 'featured', title: 'Featured', featured: true});
+  const featured = createPost({
+    id: 'featured',
+    slug: 'featured',
+    title: 'Featured',
+    featured: true,
+    publishedAt: '2026-07-08T00:00:00.000Z',
+  });
+  const newestFeatured = createPost({
+    id: 'newest-featured',
+    slug: 'newest-featured',
+    title: 'Newest featured',
+    featured: true,
+    publishedAt: '2026-07-10T00:00:00.000Z',
+  });
   const selected = createPost({
     id: 'selected',
     slug: 'selected',
     title: 'Selected',
+    publishedAt: '2026-07-07T00:00:00.000Z',
     seo: {
       title: 'Selected',
       description: 'Selected description',
@@ -43,14 +57,23 @@ describe('homepage social preview', () => {
     },
   });
 
-  it('uses selected, featured, and latest posts in fallback order', () => {
+  it('uses selected, newest featured, and newest published posts in fallback order', () => {
     const settings = createDefaultHomepageHeroSettings();
-    const posts = [latest, featured, selected];
+    const posts = [latest, featured, selected, newestFeatured];
 
     expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'selected', featuredPostId: 'selected'})).toBe(selected);
-    expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'selected', featuredPostId: 'missing'})).toBe(featured);
-    expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'featured'})).toBe(featured);
-    expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'latest'})).toBe(latest);
+    expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'selected', featuredPostId: 'missing'})).toBe(newestFeatured);
+    expect(selectHomepageSocialPost(posts, {...settings, featuredPostMode: 'featured'})).toBe(newestFeatured);
+    expect(selectHomepageSocialPost([latest, selected], settings)).toBe(latest);
+  });
+
+  it('uses the public newest-featured policy while CMS settings are draft', () => {
+    expect(selectHomepageSocialPost([latest, featured], {
+      ...createDefaultHomepageHeroSettings(),
+      status: 'draft',
+      featuredPostMode: 'selected',
+      featuredPostId: latest.id,
+    })).toBe(featured);
   });
 
   it('versions the resolved image without changing its original query or fragment', () => {

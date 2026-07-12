@@ -16,11 +16,15 @@ Neither parameter changes the canonical URL or `og:url`.
 The homepage social image follows this fallback order:
 
 1. The CMS-selected published post when `featuredPostMode` is `selected`.
-2. The newest published post marked `featured` when the selected post is missing or the mode is `featured`.
+2. The newest published post marked `featured` when the selected post is missing or automatic mode is active.
 3. The newest published post.
 4. The branded homepage image when no published post is available.
 
 The page title and description remain the site-level ColinMichaels.com identity. Only the image, image alt text, and known image dimensions follow the selected post.
+
+Legacy homepage settings that used `featuredPostMode: latest` normalize to automatic newest-featured selection. Draft
+homepage settings use the same public default, and older featured flags remain intact. A decorative post background
+does not replace the post's explicit Open Graph or cover image for social previews.
 
 `HomepageSocialPreviewService` applies the selection after Angular loads the homepage data. The Firebase `renderSeoHtml` Function independently resolves the same selection from `homepageSettings/home` and published Firestore posts because social crawlers generally depend on the initial server response rather than Angular-rendered tags.
 

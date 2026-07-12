@@ -142,6 +142,18 @@ writes to admin-capable Firebase Auth custom claims.
 
 Draft preview links are generated from the CMS editor for posts that remain in `draft` status. The editor saves the latest draft, writes a temporary `postPreviews/{token}` snapshot, and exposes it at `/blog/preview/{token}`. Firestore rules allow public single-document reads only while the embedded post is still a draft and the preview expiry timestamp is in the future; listing preview documents remains admin-only.
 
+## Homepage Hero Manager
+
+The homepage hero manager is available at `/admin/cms/homepage`. Automatic selection uses the newest published post
+marked Featured while retaining all older feature flags; Selected post remains an explicit manual override. Legacy
+Latest settings normalize to this automatic featured policy without a Firestore migration.
+
+The manager includes an explicit `Use featured post background` toggle, which defaults off for existing and new
+settings. When enabled and the resolved hero post has a Full-screen Post Background, the public homepage uses that
+single image until the option is disabled, the field is removed, a different post resolves, or the image fails to
+load. Otherwise the published slideshow plays normally. The post editor owns the reusable background attachment; the
+homepage manager does not duplicate it into hero settings.
+
 ## Topic Manager
 
 The topic manager is available at `/admin/cms/topics` and is restricted to CMS content roles. It manages Firestore-backed topic hub documents that drive the homepage topic landing section, public topic detail pages, and site search topic entries.

@@ -24,7 +24,7 @@ This is a presentational, repository-free component. Its parent supplies already
 - `fan`: three overlapping feature cards on desktop that become readable media rows on mobile;
 - `compact`: dense archive rows for tag results and other high-volume indexes.
 
-The component owns consistent post/category/tag links, image resolution, date metadata, heading level, excerpt/tag visibility, optional promotional excerpt clamping, topic appearance variables, and loading/error/empty states. Parents can expose the same code-native read action outside the `fan` layout with `showReadLink` and customize its label with `readLinkLabel`. `appearanceByPostId` supports mixed-topic feeds without moving topic lookup into the component.
+The component owns consistent post/category/tag links, image resolution, date metadata, heading level, excerpt/tag visibility, optional promotional excerpt clamping, topic appearance variables, and loading/error/empty states. Its default media treatment remains unchanged, while parents can opt a listing into `mediaPresentation="background"` to place each resolved post image behind that card's content. `titleMaxLength` bounds the displayed heading copy by character count, and `titleLineClamp` caps its rendered lines; both title controls are opt-in so archive consumers retain their full titles. Parents can expose the same code-native read action outside the `fan` layout with `showReadLink` and customize its label with `readLinkLabel`. `appearanceByPostId` supports mixed-topic feeds without moving topic lookup into the component.
 
 The original single-layout `BlogPostCardComponent` remains preserved for compatibility, but current public archive and homepage consumers use `BlogPostListingComponent`.
 
@@ -34,7 +34,7 @@ Location: `src/app/components/main/home-recovery-blog-sections.component.ts`
 
 The homepage recovery area is promotional rather than archival:
 
-1. **Weekly Updates** filters the shared newest-first feed to the exact Weekly Updates category, caps it at three posts, and places the existing `fan` cards inside one teal, grid-backed update board. The board uses a code-native technical rail and keylines rather than paper, cork, or raster decoration. Its primary route opens that same Weekly Updates category archive.
+1. **Weekly Updates** filters the shared newest-first feed to the exact Weekly Updates category, caps it at three posts, and places the existing `fan` cards inside one teal, grid-backed update board. This listing opts into `mediaPresentation="background"`, `titleMaxLength`, and `titleLineClamp` so each desktop card uses its resolved post image behind a shorter, height-bounded title. The board's technical rail and keylines remain code-native rather than paper or cork decoration, while the primary route opens the same Weekly Updates category archive.
 2. **Hospital lessons** excludes posts assigned to the Weekly Updates category taxonomy, caps hospital/medical matches at one post, and presents that article as a compact media-led feature beside the section introduction. A separate route opens the broader Recovery Planning topic for additional posts and planning resources.
 
 Both safety notes remain visible. The deferred homepage placeholder mirrors the three-note board and one-post hospital feature so lazy rendering does not replace two generic archive lists with a materially different layout.
@@ -116,7 +116,9 @@ Because `functions/src/index.ts` changed, deployment requires both Hosting asset
 - Parents select `h2` or `h3` card headings according to document context.
 - Fan order is DOM order; keyboard focus does not depend on visual overlap.
 - At narrow widths the fan becomes normal media rows and the topic hero actions become full-width rule-separated links.
-- The homepage update board keeps the same fan DOM/focus order; its rail and grid are decorative, and the mobile presentation becomes normal readable rows.
+- The homepage update board keeps the same fan DOM/focus order; its rail and grid are decorative, and narrow viewports return the image-backed desktop cards to normal readable media rows while retaining the bounded title treatment.
+- Reader high-contrast mode removes optional fan-card background images and restores solid theme-token text colors and
+  surfaces so information and actions do not depend on overlays or image contrast.
 - The Hospital lessons feature exposes one article action plus a separate Recovery Planning topic action, both with 44px minimum targets.
 - Topic artwork never sits behind text and receives no color overlay.
 - Layout motion is removed for `prefers-reduced-motion`.

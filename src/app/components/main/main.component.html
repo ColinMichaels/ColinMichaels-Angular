@@ -5,7 +5,7 @@
     @defer (on viewport) {
       <app-home-latest-writing-section
         heading="More writing"
-        [startIndex]="heroPostCount"
+        [excludePostId]="heroPostId()"
         [maxPosts]="3"
         [featuredFirst]="false"
       />

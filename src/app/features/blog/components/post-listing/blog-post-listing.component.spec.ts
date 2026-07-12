@@ -164,6 +164,65 @@ describe('BlogPostListingComponent', () => {
     expect(element.querySelector('.post-listing__excerpt')?.textContent).toContain('A practical description');
   });
 
+  it('keeps fan media in the standard presentation by default', () => {
+    fixture.componentRef.setInput('layout', 'fan');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const region = element.querySelector<HTMLElement>('.post-listing-region');
+
+    expect(region?.getAttribute('data-media-presentation')).toBe('standard');
+    expect(region?.classList.contains('post-listing-region--background-media')).toBeFalse();
+    expect(region?.classList.contains('post-listing-region--title-clamped')).toBeFalse();
+    expect(region?.style.getPropertyValue('--listing-title-lines')).toBe('');
+  });
+
+  it('supports background fan media and word-aware visible title truncation without losing the full title', () => {
+    const fullTitle =
+      'A weekly recovery update about rebuilding routines, rediscovering confidence, and making steady progress';
+    const shortTitle = 'A short recovery note';
+    const titleMaxLength = 64;
+
+    fixture.componentRef.setInput('posts', [
+      createPost({title: fullTitle}),
+      createPost({
+        id: 'post-short-title',
+        slug: 'short-recovery-note',
+        title: shortTitle,
+      }),
+    ]);
+    fixture.componentRef.setInput('layout', 'fan');
+    fixture.componentRef.setInput('mediaPresentation', 'background');
+    fixture.componentRef.setInput('titleMaxLength', titleMaxLength);
+    fixture.componentRef.setInput('titleLineClamp', 3);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const region = element.querySelector<HTMLElement>('.post-listing-region');
+    const longTitleLink = element.querySelector<HTMLAnchorElement>(
+      '[data-post-id="post-one"] .post-listing__title a'
+    );
+    const longTitleText = longTitleLink?.querySelector<HTMLSpanElement>('span');
+    const visibleTitle = longTitleText?.textContent?.trim() ?? '';
+    const visiblePrefix = visibleTitle.replace(/(?:\.\.\.|…)$/, '');
+    const shortTitleText = element.querySelector<HTMLSpanElement>(
+      '[data-post-id="post-short-title"] .post-listing__title span'
+    );
+
+    expect(region?.getAttribute('data-media-presentation')).toBe('background');
+    expect(region?.classList.contains('post-listing-region--background-media')).toBeTrue();
+    expect(region?.classList.contains('post-listing-region--title-clamped')).toBeTrue();
+    expect(region?.style.getPropertyValue('--listing-title-lines')).toBe('3');
+    expect(visibleTitle.length).toBeLessThanOrEqual(titleMaxLength);
+    expect(visibleTitle).toMatch(/(?:\.\.\.|…)$/);
+    expect(fullTitle.startsWith(visiblePrefix)).toBeTrue();
+    expect(fullTitle.charAt(visiblePrefix.length)).toBe(' ');
+    expect(longTitleLink?.getAttribute('aria-label')).toBe(`Read ${fullTitle}`);
+    expect(longTitleText?.getAttribute('title')).toBe(fullTitle);
+    expect(shortTitleText?.textContent?.trim()).toBe(shortTitle);
+    expect(shortTitleText?.hasAttribute('title')).toBeFalse();
+  });
+
   it('applies the topic appearance and per-post theme override through brand variables', () => {
     fixture.componentRef.setInput('appearance', {
       label: 'AI setup guides',

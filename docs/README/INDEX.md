@@ -28,3 +28,8 @@ This folder is the entry point for project documentation.
 - [Link Building Outreach](../SEO/LINK_BUILDING_OUTREACH.md)
 - [Tech Debt TODOs](../TODOS/TECH_DEBT.md)
 - [Future Roadmap](../FUTURE_FEATURES/ROADMAP.md)
+
+## SEO Reviews
+
+- [Site Identity SEO Review](../SEO/SITE_IDENTITY_REVIEW.md)
+- [Focused AI Search and llms.txt Analysis](../SEO/GEO-ANALYSIS.md)
