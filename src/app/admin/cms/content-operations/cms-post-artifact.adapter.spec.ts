@@ -13,6 +13,7 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
     title: 'Stable display title',
     excerpt: 'Original excerpt.',
     coverImage: '/assets/blog/cover.webp',
+    backgroundImage: '/assets/blog/background.webp',
     thumbnailImage: '/assets/blog/thumbnail.webp',
     featured: false,
     author: {name: 'Colin Michaels', title: 'Applications Developer'},

@@ -138,6 +138,32 @@ describe('BlogPostListingComponent', () => {
     expect(element.querySelector('.post-listing__meta')).toBeNull();
   });
 
+  it('can expose a custom read action outside the fan layout', () => {
+    fixture.componentRef.setInput('layout', 'list');
+    fixture.componentRef.setInput('showReadLink', true);
+    fixture.componentRef.setInput('readLinkLabel', 'Read this lesson');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const readLinks = element.querySelectorAll<HTMLAnchorElement>('.post-listing__read-link');
+
+    expect(readLinks.length).toBe(posts.length);
+    expect(readLinks[0].textContent).toContain('Read this lesson');
+    expect(readLinks[0].getAttribute('href')).toBe('/blog/first-post');
+  });
+
+  it('can clamp promotional excerpts without changing their content', () => {
+    fixture.componentRef.setInput('excerptLineClamp', 3);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const region = element.querySelector<HTMLElement>('.post-listing-region');
+
+    expect(region?.classList.contains('post-listing-region--clamped')).toBeTrue();
+    expect(region?.style.getPropertyValue('--listing-excerpt-lines')).toBe('3');
+    expect(element.querySelector('.post-listing__excerpt')?.textContent).toContain('A practical description');
+  });
+
   it('applies the topic appearance and per-post theme override through brand variables', () => {
     fixture.componentRef.setInput('appearance', {
       label: 'AI setup guides',

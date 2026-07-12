@@ -13,9 +13,10 @@ The organizer is a UI and feature layer over existing Firebase services:
 
 - `MediaLibraryService` wraps the existing `FirestoreService` and `BlogMediaUploadService`.
 - Image uploads use `BlogMediaUploadService` so existing image optimization and Firebase Storage upload behavior are preserved.
+- The Editor.js inline Image block receives a configured selection callback from `EditorJsComponent`, allowing its `Choose Existing` action to reuse this library and populate the current block without duplicating media queries or inserting a second block.
 - Non-image uploads use the existing `FirestoreService.uploadFileWithProgress` storage wrapper.
 - Metadata is stored through `FirestoreService` in `mediaLibraryItems` and virtual folders in `mediaLibraryFolders`.
-- Blog post attachments from `coverImage`, `seo.openGraphImage`, and image blocks are derived into the library so CMS attachments are globally visible.
+- Blog post attachments from `coverImage`, optional `backgroundImage`, `seo.openGraphImage`, and image blocks are derived into the library so CMS attachments are globally visible.
 - Editing a derived blog attachment promotes it into `mediaLibraryItems` with the same URL/storage identity so future metadata changes persist without changing the blog post URL.
 - Rename operations update display-name metadata only. They do not move or rename Firebase Storage objects.
 - Archive/delete operations update metadata status by default. Physical deletion should only be added if an existing storage deletion policy is approved.
@@ -39,6 +40,7 @@ The organizer is a UI and feature layer over existing Firebase services:
 ## Migration Notes
 
 - Existing CMS uploads continue to work unchanged under `cms/blog-media/{slug}/{assetRole}/`.
+- Optional post backgrounds use the `post-background` asset role under the same path. Clearing a post background detaches the URL from the post but does not delete the reusable media item or its Storage object.
 - Homepage hero uploads use the same path with slug `homepage` and asset role `homepage-hero`; the media library should
   treat those as reusable CMS media, not as physical files owned by the homepage settings document.
 - The organizer introduces `media-library/*` storage paths only for files uploaded from the organizer UI.

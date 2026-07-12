@@ -234,6 +234,7 @@ export class BlogRepositoryService {
       ...post,
       slug,
       coverImage: imageFields.coverImage,
+      backgroundImage: post.backgroundImage?.trim() || undefined,
       thumbnailImage: imageFields.thumbnailImage,
       ...(post.status === 'draft' && isActivePreview(post) ? {preview: post.preview} : {preview: undefined}),
       seo: {

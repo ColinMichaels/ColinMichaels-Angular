@@ -43,6 +43,7 @@ interface PostEditorForm {
   slug: FormControl<string>;
   excerpt: FormControl<string>;
   coverImage: FormControl<string>;
+  backgroundImage: FormControl<string>;
   featured: FormControl<boolean>;
   status: FormControl<BlogPostStatus>;
   publishedAt: FormControl<string>;
@@ -258,6 +259,9 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
   const importedTitle = title || currentPost.title;
   const excerpt = getTrimmedString(value['excerpt']) || getTrimmedString(value['description']) || currentPost.excerpt;
   const coverImage = getTrimmedString(value['coverImage']) || getTrimmedString(value['cover']) || currentPost.coverImage || DEFAULT_COVER_IMAGE;
+  const hasImportedBackgroundImage = Object.prototype.hasOwnProperty.call(value, 'backgroundImage')
+    || Object.prototype.hasOwnProperty.call(value, 'postBackgroundImage');
+  const backgroundImage = getTrimmedString(value['backgroundImage']) || getTrimmedString(value['postBackgroundImage']);
   const thumbnailImage = getTrimmedString(value['thumbnailImage']) || getTrimmedString(value['thumbnail']);
   const categories = getImportedStringArray(value['categories']);
   const subcategories = getImportedStringArray(value['subcategories']);
@@ -282,6 +286,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
     title: importedTitle,
     excerpt,
     coverImage,
+    ...(hasImportedBackgroundImage ? {backgroundImage} : {}),
     featured,
     author: createImportedAuthor(value['author'], currentPost.author),
     categories: categories.length > 0 ? categories : currentPost.categories,
@@ -444,22 +449,54 @@ function getErrorMessage(error: unknown): string {
                 </app-admin-control-module>
 
                 <app-admin-control-module
-                  title="Cover Image"
+                  title="Post Images"
                   [summary]="mediaModuleSummary"
-                  description="Choose the primary 16:9 image used by cards and the article hero."
+                  description="Choose the required cover image and an optional full-screen background for selected posts."
                   [expanded]="mediaSettingsOpen()"
                   (expandedChange)="mediaSettingsOpen.set($event)"
                 >
-                  <app-blog-media-uploader
-                    formControlName="coverImage"
-                    label="Cover Image"
-                    buttonLabel="Choose Cover"
-                    previewAlt="Cover image preview"
-                    assetRole="cover"
-                    [postSlug]="mediaUploadSlug"
-                    [required]="true"
-                    (mediaUploaded)="onCoverImageUploaded($event)"
-                  ></app-blog-media-uploader>
+                  <div class="grid gap-3">
+                    <app-blog-media-uploader
+                      formControlName="coverImage"
+                      label="Cover Image"
+                      buttonLabel="Choose Cover"
+                      previewAlt="Cover image preview"
+                      assetRole="cover"
+                      [postSlug]="mediaUploadSlug"
+                      [required]="true"
+                      (mediaUploaded)="onCoverImageUploaded($event)"
+                    ></app-blog-media-uploader>
+
+                    <app-blog-media-uploader
+                      formControlName="backgroundImage"
+                      label="Full-screen Post Background"
+                      description="Optional. Displays behind this article only; leave blank for the standard site background. A landscape image at least 1920px wide works best."
+                      buttonLabel="Choose Background"
+                      placeholder="Optional background image URL"
+                      previewAlt="Full-screen post background preview"
+                      assetRole="post-background"
+                      [postSlug]="mediaUploadSlug"
+                      [optimizationMaxWidth]="2560"
+                      [optimizationMaxHeight]="1600"
+                      [optimizationQuality]="0.84"
+                      (mediaUploaded)="onBackgroundImageUploaded($event)"
+                    ></app-blog-media-uploader>
+
+                    @if (postForm.controls.backgroundImage.value.trim()) {
+                      <div
+                        class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
+                        <p class="text-xs text-zinc-500">The background is decorative and does not replace the cover
+                          image.</p>
+                        <button
+                          type="button"
+                          class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
+                          (click)="clearBackgroundImage()"
+                        >
+                          Remove background from post
+                        </button>
+                      </div>
+                    }
+                  </div>
                 </app-admin-control-module>
 
                 <app-admin-control-module
@@ -897,7 +934,13 @@ export class CmsPostEditorComponent {
   }
 
   protected get mediaModuleSummary(): string {
-    return this.postForm.controls.coverImage.value.trim() ? 'Cover image ready' : 'Cover image required';
+    if (!this.postForm.controls.coverImage.value.trim()) {
+      return 'Cover image required';
+    }
+
+    return this.postForm.controls.backgroundImage.value.trim()
+      ? 'Cover ready · Custom background'
+      : 'Cover ready · Standard background';
   }
 
   protected get seoModuleSummary(): string {
@@ -1058,8 +1101,20 @@ export class CmsPostEditorComponent {
     this.markUploadedMedia(upload);
   }
 
+  protected onBackgroundImageUploaded(upload: BlogMediaUploadResult): void {
+    this.markUploadedMedia(upload);
+  }
+
   protected onOpenGraphImageUploaded(upload: BlogMediaUploadResult): void {
     this.markUploadedMedia(upload);
+  }
+
+  protected clearBackgroundImage(): void {
+    const control = this.postForm.controls.backgroundImage;
+    control.setValue('');
+    control.markAsDirty();
+    control.markAsTouched();
+    this.postForm.markAsDirty();
   }
 
   protected clearOpenGraphImage(): void {
@@ -1243,6 +1298,7 @@ export class CmsPostEditorComponent {
         slug: savedSlug,
         excerpt: formValue.excerpt.trim(),
         coverImage,
+        backgroundImage: formValue.backgroundImage.trim() || undefined,
         featured: formValue.featured,
         status: formValue.status,
         categories: fromCsv(formValue.categories),
@@ -1457,6 +1513,7 @@ export class CmsPostEditorComponent {
       slug,
       excerpt: formValue.excerpt.trim(),
       coverImage,
+      backgroundImage: formValue.backgroundImage.trim() || undefined,
       featured: formValue.featured,
       status: formValue.status,
       categories: fromCsv(formValue.categories),
@@ -1525,6 +1582,7 @@ export class CmsPostEditorComponent {
       slug: new FormControl(post.slug, {nonNullable: true, validators: [Validators.required]}),
       excerpt: new FormControl(post.excerpt, {nonNullable: true, validators: [Validators.required]}),
       coverImage: new FormControl(post.coverImage, {nonNullable: true, validators: [Validators.required]}),
+      backgroundImage: new FormControl(post.backgroundImage ?? '', {nonNullable: true}),
       featured: new FormControl(Boolean(post.featured), {nonNullable: true}),
       status: new FormControl(post.status, {nonNullable: true, validators: [Validators.required]}),
       publishedAt: new FormControl(toDateTimeLocalValue(post.publishedAt), {nonNullable: true}),
@@ -1543,6 +1601,7 @@ export class CmsPostEditorComponent {
       slug: post.slug,
       excerpt: post.excerpt,
       coverImage: post.coverImage,
+      backgroundImage: post.backgroundImage ?? '',
       featured: Boolean(post.featured),
       status: post.status,
       publishedAt: toDateTimeLocalValue(post.publishedAt),

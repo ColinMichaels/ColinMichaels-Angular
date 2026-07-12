@@ -136,6 +136,7 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   coverImage: string;
+  backgroundImage?: string;
   thumbnailImage?: string;
   featured?: boolean;
   author: BlogAuthor;

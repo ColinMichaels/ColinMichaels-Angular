@@ -61,8 +61,8 @@ const MOCK_FULL_POSTS: readonly BlogPost[] = [
     author: {
       name: 'Colin Michaels',
     },
-    categories: ['Health and Recovery'],
-    tags: ['Open Heart Surgery', 'Weekly Updates'],
+    categories: ['Weekly Updates'],
+    tags: ['Open Heart Surgery', 'Recovery'],
     status: 'published',
     seo: {
       title: 'Open heart surgery weekly update',

@@ -35,7 +35,19 @@ interface CmsImageUploadResult {
   };
 }
 
+export interface CmsImageLibrarySelection {
+  url: string;
+  alt: string;
+  caption: string;
+  imageLayout: BlogImageLayout;
+  width?: number;
+  height?: number;
+}
+
 interface CmsImageToolConfig {
+  mediaLibrary?: {
+    selectImage?: (current: CmsImageLibrarySelection) => Promise<CmsImageLibrarySelection | null>;
+  };
   uploader?: {
     uploadByFile?: (file: File) => Promise<CmsImageUploadResult>;
   };
@@ -219,7 +231,13 @@ export class CmsImageBlockTool implements BlockTool {
 
     copy.append(title, description);
 
-    const uploadButton = createElement('button', '', 'Upload');
+    const mediaLibraryButton = createElement('button', '', 'Choose Existing');
+    mediaLibraryButton.type = 'button';
+    mediaLibraryButton.dataset['imageLibrary'] = 'true';
+    mediaLibraryButton.disabled = this.readOnly || !this.config.mediaLibrary?.selectImage;
+    mediaLibraryButton.style.cssText = 'border:1px solid #0891b2;background:#fff;padding:8px 12px;font-size:12px;font-weight:700;color:#0e7490;cursor:pointer';
+
+    const uploadButton = createElement('button', '', 'Upload New');
     uploadButton.type = 'button';
     uploadButton.disabled = this.readOnly || !this.config.uploader?.uploadByFile;
     uploadButton.style.cssText = 'border:1px solid #0891b2;background:#ecfeff;padding:8px 12px;font-size:12px;font-weight:700;color:#164e63;cursor:pointer';
@@ -230,7 +248,11 @@ export class CmsImageBlockTool implements BlockTool {
     uploadInput.disabled = uploadButton.disabled;
     uploadInput.style.display = 'none';
 
-    header.append(copy, uploadButton, uploadInput);
+    const headerActions = createElement('div');
+    headerActions.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px';
+    headerActions.append(mediaLibraryButton, uploadButton, uploadInput);
+
+    header.append(copy, headerActions);
 
     const previewFrame = createElement('figure');
     previewFrame.style.cssText = 'margin:0 0 14px;border:1px solid #e4e4e7;background:#fff;min-height:180px;display:grid;place-items:center;overflow:hidden';
@@ -333,6 +355,8 @@ export class CmsImageBlockTool implements BlockTool {
     );
 
     const status = createElement('p');
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
     status.style.cssText = 'margin:12px 0 0;min-height:18px;font-size:12px;color:#52525b';
 
     const applyLayout = (layout: BlogImageLayout): void => {
@@ -354,6 +378,19 @@ export class CmsImageBlockTool implements BlockTool {
       previewImage.alt = altInput.value || 'Selected image preview';
     });
     layoutSelect.addEventListener('change', () => applyLayout(toImageLayout(layoutSelect.value, false)));
+    mediaLibraryButton.addEventListener('click', () => {
+      void this.chooseExistingImage(
+        urlInput,
+        altInput,
+        captionInput,
+        layoutSelect,
+        previewImage,
+        renderPreview,
+        applyLayout,
+        status,
+        mediaLibraryButton
+      );
+    });
     uploadButton.addEventListener('click', () => uploadInput.click());
     uploadInput.addEventListener('change', () => {
       const file = uploadInput.files?.[0];
@@ -412,6 +449,59 @@ export class CmsImageBlockTool implements BlockTool {
 
   validate(data: CmsImageBlockData): boolean {
     return Boolean((data.file?.url ?? data.url ?? '').trim());
+  }
+
+  private async chooseExistingImage(
+    urlInput: HTMLInputElement,
+    altInput: HTMLInputElement,
+    captionInput: HTMLTextAreaElement,
+    layoutSelect: HTMLSelectElement,
+    previewImage: HTMLImageElement,
+    renderPreview: (url: string) => void,
+    applyLayout: (layout: BlogImageLayout) => void,
+    status: HTMLElement,
+    mediaLibraryButton: HTMLButtonElement
+  ): Promise<void> {
+    const selectImage = this.config.mediaLibrary?.selectImage;
+
+    if (!selectImage) {
+      status.textContent = 'Media library selection is unavailable.';
+      return;
+    }
+
+    mediaLibraryButton.disabled = true;
+    status.textContent = 'Choose an existing image from the media library.';
+
+    try {
+      const selection = await selectImage({
+        url: urlInput.value.trim(),
+        alt: altInput.value.trim(),
+        caption: captionInput.value.trim(),
+        imageLayout: toImageLayout(layoutSelect.value, false),
+        ...(this.data.file.width ? {width: this.data.file.width} : {}),
+        ...(this.data.file.height ? {height: this.data.file.height} : {}),
+      });
+
+      if (!selection) {
+        status.textContent = '';
+        return;
+      }
+
+      urlInput.value = selection.url;
+      altInput.value = selection.alt;
+      captionInput.value = selection.caption;
+      layoutSelect.value = selection.imageLayout;
+      this.data.file.width = selection.width;
+      this.data.file.height = selection.height;
+      previewImage.alt = selection.alt || 'Selected image preview';
+      renderPreview(selection.url);
+      applyLayout(selection.imageLayout);
+      status.textContent = 'Selected an existing media library image.';
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : 'Unable to select a media library image.';
+    } finally {
+      mediaLibraryButton.disabled = this.readOnly || !selectImage;
+    }
   }
 
   private async uploadImage(

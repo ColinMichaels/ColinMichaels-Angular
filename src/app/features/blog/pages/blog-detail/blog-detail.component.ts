@@ -24,6 +24,7 @@ import {PwaNetworkService} from '../../../../shared/pwa/pwa-network.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
+import {BlogPostBackgroundComponent} from '../../components/post-background/blog-post-background.component';
 import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
@@ -74,6 +75,7 @@ function normalizeHealthTerm(value: string): string {
     NgClass,
     BlogBlockRendererComponent,
     BlogCommentsComponent,
+    BlogPostBackgroundComponent,
     BlogShareActionsComponent,
     BlogStickyPostToolbarComponent,
     BlogTableOfContentsComponent,
@@ -83,8 +85,21 @@ function normalizeHealthTerm(value: string): string {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="blog-page">
-      <article class="mx-auto max-w-7xl">
+    <main
+      class="blog-page blog-detail-page"
+      [class.blog-detail-page-with-background]="hasBackgroundImage()"
+    >
+      @if (activeBackgroundImageUrl(); as backgroundImage) {
+        <app-blog-post-background
+          [imageUrl]="backgroundImage"
+          (imageLoadFailed)="onBackgroundImageLoadFailed($event)"
+        ></app-blog-post-background>
+      }
+
+      <article
+        class="mx-auto max-w-7xl"
+        [class.blog-detail-content-surface]="hasBackgroundImage()"
+      >
         @if (post(); as currentPost) {
           <div
             class="mx-auto grid max-w-4xl gap-10 xl:items-start"
@@ -161,9 +176,9 @@ function normalizeHealthTerm(value: string): string {
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
                   class="blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
-                  data-site-preload-image
                   decoding="async"
-                  fetchpriority="high"
+                  [attr.fetchpriority]="hasBackgroundImage() ? 'auto' : 'high'"
+                  [attr.data-site-preload-image]="hasBackgroundImage() ? null : ''"
                   loading="eager"
                   width="1200"
                   height="675"
@@ -380,7 +395,10 @@ function normalizeHealthTerm(value: string): string {
         }
       </article>
 
-      <footer class="blog-section-rule mx-auto mt-16 max-w-5xl pb-8 text-sm text-slate-600 dark:text-zinc-400">
+      <footer
+        class="blog-section-rule mx-auto mt-16 max-w-5xl pb-8 text-sm text-slate-600 dark:text-zinc-400"
+        [class.blog-detail-footer-surface]="hasBackgroundImage()"
+      >
         <div class="grid gap-8 md:grid-cols-[1.25fr_1fr_1fr]">
           <section>
             <p class="site-meta">
@@ -439,6 +457,45 @@ function normalizeHealthTerm(value: string): string {
         </div>
       }
     </main>
+  `,
+  styles: `
+    .blog-detail-page {
+      position: relative;
+      isolation: isolate;
+    }
+
+    .blog-detail-page-with-background {
+      background: transparent;
+    }
+
+    .blog-detail-page > article,
+    .blog-detail-page > footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    .blog-detail-content-surface,
+    .blog-detail-footer-surface {
+      border: 1px solid var(--site-border);
+      background-color: var(--site-bg);
+      background-color: color-mix(in srgb, var(--site-bg) 88%, transparent);
+      box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.3);
+    }
+
+    .blog-detail-content-surface {
+      padding: clamp(1rem, 3vw, 3rem);
+    }
+
+    .blog-detail-footer-surface {
+      padding: clamp(1rem, 2.5vw, 2rem);
+    }
+
+    @media (max-width: 639px) {
+      .blog-detail-content-surface,
+      .blog-detail-footer-surface {
+        margin-inline: -0.5rem;
+      }
+    }
   `,
 })
 export class BlogDetailComponent {
@@ -510,6 +567,16 @@ export class BlogDetailComponent {
       this.repositoryLoadError()
     );
   });
+  private readonly failedBackgroundImageUrl = signal('');
+  protected readonly backgroundImageUrl = computed(() => this.post()?.backgroundImage?.trim() ?? '');
+  protected readonly activeBackgroundImageUrl = computed(() => {
+    const backgroundImageUrl = this.backgroundImageUrl();
+
+    return backgroundImageUrl && backgroundImageUrl !== this.failedBackgroundImageUrl()
+      ? backgroundImageUrl
+      : '';
+  });
+  protected readonly hasBackgroundImage = computed(() => this.activeBackgroundImageUrl().length > 0);
   protected readonly isOfflineCopy = computed(() => (
     Boolean(this.post()) && !this.remotePost() && Boolean(this.offlineRecord())
   ));
@@ -667,6 +734,12 @@ export class BlogDetailComponent {
         this.openGraph.applyMissingBlogPost(this.slug() || 'preview');
       }
     });
+  }
+
+  protected onBackgroundImageLoadFailed(imageUrl: string): void {
+    if (imageUrl === this.backgroundImageUrl()) {
+      this.failedBackgroundImageUrl.set(imageUrl);
+    }
   }
 
   protected async toggleOfflineArticle(post: BlogPost): Promise<void> {
