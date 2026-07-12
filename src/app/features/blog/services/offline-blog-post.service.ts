@@ -184,6 +184,7 @@ export class OfflineBlogPostService {
       title: post.title,
       excerpt: post.excerpt,
       coverImage: post.coverImage,
+      ...(post.backgroundImage ? {backgroundImage: post.backgroundImage} : {}),
       ...(post.thumbnailImage ? {thumbnailImage: post.thumbnailImage} : {}),
       ...(post.featured === undefined ? {} : {featured: post.featured}),
       author: {...post.author},
@@ -213,6 +214,7 @@ export class OfflineBlogPostService {
 
     const candidates = [
       post.coverImage,
+      post.backgroundImage,
       post.thumbnailImage,
       ...post.blocks
         .filter(block => block.type === 'image')

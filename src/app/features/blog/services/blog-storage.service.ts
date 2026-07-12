@@ -312,6 +312,7 @@ export class BlogStorageService {
     return {
       ...post,
       coverImage: imageFields.coverImage,
+      backgroundImage: post.backgroundImage?.trim() || deleteField(),
       thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
       preview: post.preview ?? deleteField(),
       syncedAt: serverTimestamp(),

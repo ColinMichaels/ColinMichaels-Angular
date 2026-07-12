@@ -4,7 +4,13 @@ import {map, switchMap} from 'rxjs/operators';
 
 import {FirestoreService} from '../../../services/firebase/firestore.service';
 
-export type BlogMediaAssetRole = 'cover' | 'open-graph' | 'editor-image' | 'thumbnail' | 'inline-image';
+export type BlogMediaAssetRole =
+  | 'cover'
+  | 'post-background'
+  | 'open-graph'
+  | 'editor-image'
+  | 'thumbnail'
+  | 'inline-image';
 export type BlogMediaOptimizationOutputType = 'image/webp' | 'image/jpeg' | 'image/png';
 
 export interface BlogMediaOptimizationOptions {

@@ -72,6 +72,7 @@ export function parseCmsPostArtifact(json: string): BlogPost {
 
 export function extractContentOperationGuardProjection(post: BlogPost): ContentOperationGuardProjection {
   return {
+    backgroundImage: post.backgroundImage?.trim() ?? '',
     canonical: post.seo.canonical?.trim() ?? '',
     coverImage: post.coverImage,
     createdAt: post.createdAt,

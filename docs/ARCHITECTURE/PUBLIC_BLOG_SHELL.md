@@ -64,6 +64,26 @@ On desktop, `BlogTableOfContentsComponent` sticks below the public header rather
 
 Inline-left and inline-right image figures float only at the `sm` breakpoint and above so nearby paragraphs can wrap around them. Level-two and level-three article headings clear both float directions before starting a new section. This keeps the complete figure and caption in normal visual order and prevents the heading's opaque sticky-ready surface from painting over floated media that extends below the preceding paragraph text. Narrow viewports continue rendering inline media at the full article-column width without floats.
 
+## Optional Post Backgrounds
+
+`BlogPost.backgroundImage` is an optional full-post field used only by the single-post and draft-preview routes. When it
+is absent or blank, `BlogDetailComponent` preserves the existing opaque blog page exactly. When it is present,
+`BlogPostBackgroundComponent` renders the image as a decorative fixed viewport layer with a dark scrim while the
+article and footer receive translucent surfaces. The cover image remains the article hero and the source for
+cards/share fallbacks; a post background never replaces or implicitly derives from the cover.
+
+The background is `alt=""`/`aria-hidden`, uses centered `object-fit: cover`, and becomes the route's high-priority
+preload image so it does not compete with the cover for critical priority. Reader Tools high-contrast mode hides the
+decorative layer and restores the normal opaque page background. The component stays inside the blog-detail route,
+so it is removed automatically when navigating to another post or page and does not mutate global `body` styles.
+If the configured image cannot load, the component reports the failure and immediately restores the standard page
+surface and cover-image preload priority instead of leaving an empty enhanced backdrop.
+
+The CMS Post Images module reuses `BlogMediaUploaderComponent` for existing-library selection, URL entry, upload,
+preview, and an explicit detach action. Empty values are normalized away and serialized with Firestore `deleteField()`
+because posts use merge writes. Existing documents need no migration. Draft previews preserve the full field, and
+offline public snapshots retain it and warm same-origin background assets alongside cover and body images.
+
 ## Validation
 
 Relevant regression coverage includes:
@@ -77,4 +97,6 @@ Relevant regression coverage includes:
 - `offline-articles-control.component.spec.ts` and `blog-sticky-post-toolbar.component.spec.ts` for saved-content management controls
 - `pwa-push.service.spec.ts` and `pwa-native-controls.component.spec.ts` for explicit opt-in, safe notification routing, subscription validation, and menu control states
 - `blog-block-renderer.component.spec.ts` for linkable/sticky headings, inline media layouts, and float clearing before subsequent sections
+- `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
+- `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
 - browser checks for live result filtering, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect

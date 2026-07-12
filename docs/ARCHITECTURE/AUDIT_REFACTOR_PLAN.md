@@ -312,6 +312,7 @@ Minimum content model:
 - `title`
 - `excerpt`
 - `coverImage`
+- `backgroundImage` (optional full-screen single-post backdrop)
 - `author`
 - `categories`
 - `tags`
