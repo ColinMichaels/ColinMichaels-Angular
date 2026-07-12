@@ -4,6 +4,11 @@ export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type BlogContentFormat = 'editorjs';
 
+export interface BlogCatCornerSettings {
+  enabled: boolean;
+  discoveryPost: boolean;
+}
+
 export const BLOG_TYPOGRAPHY_VARIANTS = [
   'lead',
   'sectionIntro',
@@ -47,6 +52,7 @@ export type BlogBlockType =
   | 'typography'
   | 'stats'
   | 'chart'
+  | 'catCornerUnlock'
   | 'html';
 
 export interface BlogStatItem {
@@ -149,6 +155,7 @@ export interface BlogPost {
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
   socialPromotion?: BlogSocialPromotion;
+  catCorner?: BlogCatCornerSettings;
   preview?: BlogPostPreview;
   createdAt: string;
   updatedAt: string;
@@ -167,6 +174,7 @@ export interface BlogPostSummary {
   categories: readonly string[];
   subcategories?: readonly string[];
   tags: readonly string[];
+  catCorner?: BlogCatCornerSettings;
   publishedAt: string | null;
   updatedAt: string;
 }
@@ -177,4 +185,31 @@ export interface BlogAdminStats {
   drafts: number;
   scheduled: number;
   archived: number;
+}
+
+export function isCatCornerPost(post: Pick<BlogPost, 'catCorner'>): boolean {
+  return post.catCorner?.enabled === true;
+}
+
+export function isCatCornerDiscoveryPost(post: Pick<BlogPost, 'catCorner'>): boolean {
+  return isCatCornerPost(post) && post.catCorner?.discoveryPost === true;
+}
+
+export function isPublicBlogListingPost(post: Pick<BlogPost, 'catCorner'>): boolean {
+  return !isCatCornerPost(post) || isCatCornerDiscoveryPost(post);
+}
+
+export function normalizeBlogCatCornerSettings(
+  settings: BlogCatCornerSettings | undefined
+): BlogCatCornerSettings | undefined {
+  if (!settings) {
+    return undefined;
+  }
+
+  const enabled = settings.enabled === true;
+
+  return {
+    enabled,
+    discoveryPost: enabled && settings.discoveryPost === true,
+  };
 }

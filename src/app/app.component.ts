@@ -27,6 +27,13 @@ const SITE_HEADER_EXCLUDED_ROUTES: readonly string[] = [
   `/${PATH_NAMES.ADMIN}`,
   ...OS_ROUTES,
 ];
+const READER_ROUTES: readonly string[] = [
+  '/',
+  `/${PATH_NAMES.BLOG}`,
+  `/${PATH_NAMES.CAT_CORNER}`,
+  `/${PATH_NAMES.SEARCH}`,
+  `/${PATH_NAMES.TOPICS}`,
+];
 
 function routeMatchesPrefix(url: string, route: string): boolean {
   return url === route || url.startsWith(`${route}/`);
@@ -40,6 +47,11 @@ export function shouldShowSiteHeader(url: string): boolean {
 export function shouldShowOsNotifications(url: string): boolean {
   const currentUrl = url.split('?')[0].split('#')[0];
   return OS_ROUTES.some(route => routeMatchesPrefix(currentUrl, route));
+}
+
+export function shouldShowReaderTools(url: string): boolean {
+  const currentUrl = url.split('?')[0].split('#')[0];
+  return READER_ROUTES.some(route => currentUrl === route || (route !== '/' && routeMatchesPrefix(currentUrl, route)));
 }
 
 @Component({
@@ -81,15 +93,7 @@ export class AppComponent {
     return shouldShowOsNotifications(this.currentUrl());
   });
   protected readonly showReaderTools = computed(() => {
-    const currentUrl = this.currentUrl().split('?')[0].split('#')[0];
-    const readerRoutes = [
-      '/',
-      `/${PATH_NAMES.BLOG}`,
-      `/${PATH_NAMES.SEARCH}`,
-      `/${PATH_NAMES.TOPICS}`,
-    ];
-
-    return readerRoutes.some(route => currentUrl === route || (route !== '/' && currentUrl.startsWith(`${route}/`)));
+    return shouldShowReaderTools(this.currentUrl());
   });
 
   constructor() {

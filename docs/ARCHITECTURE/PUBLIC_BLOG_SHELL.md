@@ -12,7 +12,13 @@ The public shell treats the blog as the primary content destination while keepin
 - a rounded `Search` field that opens and filters the existing live-results drawer
 - compact utilities: an optional post-list shortcut and one site/account menu
 
-The utility menu owns links to All Posts and OS, install discovery, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. Personal reading-library, saved-offline, notification, native-device, and storage settings live on the protected Profile page instead of expanding the global menu. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
+The utility menu owns links to All Posts and OS, install discovery, the Cat Corner link for `catCornerAddict`/full-admin accounts, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. Personal reading-library, saved-offline, notification, native-device, and storage settings live on the protected Profile page instead of expanding the global menu. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
+
+## Cat Corner Discovery
+
+Cat Corner uses the public shell as a playful discovery gate rather than a confidential-content boundary. The reusable Gretchen Editor.js block sends guests through the existing login return flow, then an authenticated callable grants the fixed `catCornerAddict` role. A refreshed token reveals `/cat-corner`, its utility-menu link, and the profile badge immediately; full administrators receive the same hub access without needing the role.
+
+Cat Corner discovery metadata keeps normal posts and selected discovery posts in existing public lists. Non-discovery Cat posts remain readable by direct article URL but are omitted from the homepage, Blog archives, site search, taxonomy discovery, feeds, sitemap, and crawler-facing public lists. See `CAT_CORNER.md` for the complete content, SEO, deployment, and rollback contract.
 
 ## Search Flow
 

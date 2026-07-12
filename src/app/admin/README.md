@@ -213,7 +213,7 @@ Admin authorization is enforced through Firebase Auth custom claims. The UI, cal
 
 Route guards can also require named roles by setting route data, for example `data: {roles: ['admin', 'contentEditor']}`. The `admin` role is the super-admin override for protected admin routes. `cmsAdmin` only authorizes routes that explicitly list it. Any route-level role must also be enforced in Firebase Functions and Security Rules before it protects real data.
 
-Known admin-console roles are defined in `src/app/shared/user-account/user-account.model.ts`:
+Known account and permission roles are defined in `src/app/shared/user-account/user-account.model.ts`:
 
 - `admin`
 - `cmsAdmin`
@@ -221,10 +221,13 @@ Known admin-console roles are defined in `src/app/shared/user-account/user-accou
 - `mediaManager`
 - `viewer`
 - `trustedCommenter`
+- `catCornerAddict`
 
-The `/admin` overview accepts these roles and conditionally displays available tools. CMS routes are limited to content-capable roles. Media routes are limited to media-capable roles. User management remains limited to `admin`.
+The `/admin` overview accepts only its configured administrative subset and conditionally displays available tools. CMS routes are limited to content-capable roles, media routes are limited to media-capable roles, and user management remains limited to `admin`; reader roles such as `trustedCommenter` and `catCornerAddict` do not enter the admin console.
 
 Signed-in users can inspect their current Firebase Auth profile, provider IDs, assigned roles, and point activity at `/profile`. Every bootstrapped `/users/{uid}` document receives the non-privileged `user` role for profile/status display; admin and CMS permissions still require Firebase custom claims.
+
+`catCornerAddict` is a non-administrative reader role. It reveals the Cat Corner hub/menu and renders a profile badge, but it does not grant access to `/admin`, CMS writes, media management, moderation, or user management. Admin user management may still grant or revoke it manually.
 
 ## User Management
 

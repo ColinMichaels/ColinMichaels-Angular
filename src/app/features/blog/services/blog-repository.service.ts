@@ -1,7 +1,15 @@
 import {Injectable, inject} from '@angular/core';
 import {from, map, Observable} from 'rxjs';
 
-import {BlogAdminStats, BlogPost, BlogPostStatus, BlogPostSummary} from '../models/blog-post.model';
+import {
+  BlogAdminStats,
+  BlogPost,
+  BlogPostStatus,
+  BlogPostSummary,
+  isCatCornerPost,
+  isPublicBlogListingPost,
+  normalizeBlogCatCornerSettings,
+} from '../models/blog-post.model';
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
@@ -45,6 +53,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     categories: post.categories,
     subcategories: post.subcategories ?? [],
     tags: post.tags,
+    catCorner: post.catCorner,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
   };
@@ -125,6 +134,12 @@ export class BlogRepositoryService {
     );
   }
 
+  getPublishedCatCornerPosts$(): Observable<readonly BlogPostSummary[]> {
+    return this.storage.posts$.pipe(
+      map(posts => this.createPublishedCatCornerPosts(posts))
+    );
+  }
+
   getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
     return this.storage.posts$.pipe(
       map(posts => posts.find(post => post.slug === slug && post.status === 'published'))
@@ -165,6 +180,10 @@ export class BlogRepositoryService {
 
   getPublishedFullPosts(): readonly BlogPost[] {
     return this.createPublishedFullPosts(this.getPosts());
+  }
+
+  getPublishedCatCornerPosts(): readonly BlogPostSummary[] {
+    return this.createPublishedCatCornerPosts(this.getPosts());
   }
 
   getPublishedPostBySlug(slug: string): BlogPost | undefined {
@@ -236,6 +255,7 @@ export class BlogRepositoryService {
       coverImage: imageFields.coverImage,
       backgroundImage: post.backgroundImage?.trim() || undefined,
       thumbnailImage: imageFields.thumbnailImage,
+      catCorner: normalizeBlogCatCornerSettings(post.catCorner),
       ...(post.status === 'draft' && isActivePreview(post) ? {preview: post.preview} : {preview: undefined}),
       seo: {
         ...post.seo,
@@ -461,8 +481,15 @@ export class BlogRepositoryService {
 
   private createPublishedFullPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
     return posts
-      .filter(post => post.status === 'published')
+      .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
       .sort(sortNewestFirst);
+  }
+
+  private createPublishedCatCornerPosts(posts: readonly BlogPost[]): readonly BlogPostSummary[] {
+    return posts
+      .filter(post => post.status === 'published' && isCatCornerPost(post))
+      .sort(sortNewestFirst)
+      .map(toSummary);
   }
 
   private createAdminPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
@@ -471,7 +498,7 @@ export class BlogRepositoryService {
 
   private createCategories(posts: readonly BlogPost[]): readonly string[] {
     const categories = posts
-      .filter(post => post.status === 'published')
+      .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
       .flatMap(post => getBlogTaxonomyTerms(post));
 
     return [...new Set(categories)].sort();

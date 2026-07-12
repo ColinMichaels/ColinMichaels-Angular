@@ -1,5 +1,8 @@
 # Changelog
 
+- Added the soft-gated Cat Corner editorial hub with a reusable Gretchen Easter egg, authenticated self-service `Cat Corner Addict` role, immediate profile badge/menu access, full-admin override, responsive light/dark presentation, and accepted desktop/mobile/unlock visual specifications.
+- Added migration-safe Cat Corner post/discovery metadata and CMS controls so selected discovery posts retain normal public reach while non-discovery Cat posts remain directly readable but stay out of public listings, search, feeds, sitemap, promotion workflows, and indexing.
+- Added a custom Editor.js Cat Corner unlock block, preserved unrelated Firebase claims during idempotent unlocks, and documented the feature's deliberate soft-gate security boundary, deployment order, rollback, and validation contract.
 - Revised `/llms.txt` into a proposal-conformant, evergreen index with canonical Markdown links, accurate current topic routes, explicit scope boundaries, representative optional articles, and documented AI-crawler limitations.
 - Added accessible, non-wrapping previous and next controls beneath the homepage hero article so readers can browse the
   canonical featured selection followed by recent posts one at a time, with endpoint arrow hiding, live position

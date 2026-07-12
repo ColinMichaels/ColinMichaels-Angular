@@ -11,7 +11,7 @@ import {
   createMissingBlogPostSeoMetadata,
 } from '../../../shared/seo/seo.metadata';
 import {SeoService} from '../../../shared/seo/seo.service';
-import {BlogPost} from '../models/blog-post.model';
+import {BlogPost, isPublicBlogListingPost} from '../models/blog-post.model';
 import {resolveBlogPostImage} from '../utils/blog-image-url.util';
 
 export interface BlogShareMetadata {
@@ -46,6 +46,7 @@ export class BlogOpenGraphService {
       imageAlt: metadata.imageAlt,
       imageWidth: metadata.imageWidth,
       imageHeight: metadata.imageHeight,
+      robots: isPublicBlogListingPost(post) ? undefined : 'noindex,nofollow',
       type: 'article',
       article: {
         publishedAt,

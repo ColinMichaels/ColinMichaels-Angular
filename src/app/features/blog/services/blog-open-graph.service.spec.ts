@@ -1,0 +1,78 @@
+import {DOCUMENT} from '@angular/common';
+import {TestBed} from '@angular/core/testing';
+
+import {SeoService} from '../../../shared/seo/seo.service';
+import {BlogPost} from '../models/blog-post.model';
+import {BlogOpenGraphService} from './blog-open-graph.service';
+
+function createPost(catCorner?: BlogPost['catCorner']): BlogPost {
+  return {
+    id: 'cat-corner-seo-post',
+    slug: 'cat-corner-seo-post',
+    title: 'Cat Corner SEO Post',
+    excerpt: 'A Cat Corner article.',
+    coverImage: '/assets/images/cat-corner/gretchen-easter-egg.png',
+    author: {name: 'Gretchen'},
+    categories: ['Cats'],
+    tags: ['Gretchen'],
+    status: 'published',
+    seo: {
+      title: 'Cat Corner SEO Post',
+      description: 'A Cat Corner article.',
+    },
+    contentFormat: 'editorjs',
+    blocks: [],
+    ...(catCorner ? {catCorner} : {}),
+    createdAt: '2026-07-12T12:00:00.000Z',
+    updatedAt: '2026-07-12T12:00:00.000Z',
+    publishedAt: '2026-07-12T12:00:00.000Z',
+  };
+}
+
+describe('BlogOpenGraphService Cat Corner indexing', () => {
+  let service: BlogOpenGraphService;
+  let seo: jasmine.SpyObj<SeoService>;
+
+  beforeEach(() => {
+    seo = jasmine.createSpyObj<SeoService>('SeoService', [
+      'apply',
+      'createBlogPostingJsonLd',
+      'toOpenGraphCompatibleImage',
+      'toAbsoluteUrl',
+      'createUrl',
+    ]);
+    seo.createUrl.and.callFake(path => `https://www.colinmichaels.com${path}`);
+    seo.toAbsoluteUrl.and.callFake(value => value.startsWith('http') ? value : `https://www.colinmichaels.com${value}`);
+    seo.toOpenGraphCompatibleImage.and.callFake(value => `https://www.colinmichaels.com${value}`);
+    seo.createBlogPostingJsonLd.and.returnValue({'@context': 'https://schema.org', '@type': 'BlogPosting'});
+
+    TestBed.configureTestingModule({
+      providers: [
+        BlogOpenGraphService,
+        {provide: DOCUMENT, useValue: document},
+        {provide: SeoService, useValue: seo},
+      ],
+    });
+
+    service = TestBed.inject(BlogOpenGraphService);
+  });
+
+  it('marks non-discovery Cat Corner articles noindex,nofollow', () => {
+    service.applyBlogPost(createPost({enabled: true, discoveryPost: false}));
+
+    expect(seo.apply).toHaveBeenCalledWith(jasmine.objectContaining({
+      robots: 'noindex,nofollow',
+    }));
+  });
+
+  it('leaves normal and discovery articles indexable', () => {
+    service.applyBlogPost(createPost());
+    service.applyBlogPost(createPost({enabled: true, discoveryPost: true}));
+
+    const firstMetadata = seo.apply.calls.argsFor(0)[0];
+    const secondMetadata = seo.apply.calls.argsFor(1)[0];
+
+    expect(firstMetadata.robots).toBeUndefined();
+    expect(secondMetadata.robots).toBeUndefined();
+  });
+});

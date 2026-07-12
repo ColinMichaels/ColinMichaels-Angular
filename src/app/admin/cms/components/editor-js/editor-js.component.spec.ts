@@ -114,6 +114,28 @@ describe('EditorJsComponent', () => {
     expect(textarea?.value).toContain('**this source**');
   });
 
+  it('initializes the reusable Cat Corner unlock tool without image configuration', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'cat-corner-unlock',
+        type: 'catCornerUnlock',
+        data: {},
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+
+    const element = fixture.nativeElement as HTMLElement;
+    const document = await fixture.componentInstance.getDocument();
+
+    expect(element.querySelector('[data-cat-corner-unlock]')).not.toBeNull();
+    expect(document.blocks[0]).toEqual(jasmine.objectContaining({
+      type: 'catCornerUnlock',
+      data: {},
+    }));
+  });
+
   it('fills the current inline image block from the existing media library', async () => {
     fixture.componentRef.setInput('initialData', {
       blocks: [{

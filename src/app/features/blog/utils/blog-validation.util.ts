@@ -71,6 +71,15 @@ function isBlogPostPreview(value: unknown): boolean {
   );
 }
 
+export function isBlogCatCornerSettings(value: unknown): boolean {
+  return value === undefined || (
+    isRecord(value)
+    && typeof value['enabled'] === 'boolean'
+    && typeof value['discoveryPost'] === 'boolean'
+    && (value['enabled'] === true || value['discoveryPost'] === false)
+  );
+}
+
 function isBlogSocialAnnouncement(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -121,6 +130,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
     && isBlogSocialPromotion(value['socialPromotion'])
+    && isBlogCatCornerSettings(value['catCorner'])
     && isBlogPostPreview(value['preview'])
     && typeof value['createdAt'] === 'string'
     && typeof value['updatedAt'] === 'string'
