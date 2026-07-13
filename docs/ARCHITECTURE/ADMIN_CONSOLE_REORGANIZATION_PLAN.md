@@ -21,7 +21,7 @@ Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation 
 - The Editor.js toolbar and sticky command area use the same denser hierarchy; on phones the sticky bar keeps status and Save visible while View/Delete actions move into a compact contextual menu.
 - The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, and renders the compact bulk-action surface only after at least one row is selected.
 - Calendar now distinguishes launch-following from fixed-time social plans, keeps launch plans aligned when a post is rescheduled, requires media for Instagram planning, reports provider readiness honestly, and receives direct post context from the Editor's Distribution module.
-- Social Connections is now a protected Publishing destination for Facebook, Instagram, and Threads authorization health, explicit Page selection, reconnect, and disconnect controls while external delivery remains disabled.
+- Social Connections is now a protected Publishing destination for Facebook, Instagram, and Threads authorization health, explicit Facebook Page or linked Instagram-account selection, reconnect, and disconnect controls while external delivery remains disabled.
 
 The next admin reorganization slice is Phase 3 site-content, asset, and operations consistency. Real social delivery workers remain a separate backend project.
 

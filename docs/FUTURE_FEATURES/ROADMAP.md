@@ -9,7 +9,7 @@ Updated July 13, 2026. Completed foundation work is recorded here so it is not r
 - Editor.js post authoring persists through the Firebase-backed CMS, with a public read-only block renderer and Media Library-backed assets.
 - The frontend no longer receives OpenAI or weather vendor keys; it calls the configured `APP_API_URL` boundary.
 - The Media Library supports browsing and managed CMS asset selection. Further generated-media lifecycle work remains product scope.
-- Facebook, Instagram, and Threads now have a connection-only OAuth foundation with signed one-time state, encrypted backend token storage, sanitized CMS health, explicit Facebook Page selection, and no enabled delivery worker.
+- Facebook, Instagram, and Threads now have a connection-only OAuth foundation with signed one-time state, encrypted backend token storage, sanitized CMS health, explicit Facebook Page or linked Instagram-account selection, and no enabled delivery worker. Facebook and Instagram share the Meta publishing app credentials; Threads remains separate.
 
 ## Short-Term (1-2 Sprints)
 
