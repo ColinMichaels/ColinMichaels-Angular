@@ -37,10 +37,9 @@ const SITE_CALLABLE_CORS_ORIGINS = [
   /^http:\/\/127\.0\.0\.1:\d+$/,
 ];
 
+// Facebook Login owns both Page and linked Instagram Graph authorization.
 const metaPublishingAppId = defineSecret('META_PUBLISHING_APP_ID');
 const metaPublishingAppSecret = defineSecret('META_PUBLISHING_APP_SECRET');
-const instagramAppId = defineSecret('INSTAGRAM_APP_ID');
-const instagramAppSecret = defineSecret('INSTAGRAM_APP_SECRET');
 const threadsAppId = defineSecret('THREADS_APP_ID');
 const threadsAppSecret = defineSecret('THREADS_APP_SECRET');
 const socialOAuthStateSecret = defineSecret('SOCIAL_OAUTH_STATE_SECRET');
@@ -89,6 +88,28 @@ interface FacebookTokenPayload {
   pageTokens: readonly FacebookPageToken[];
   selectedAccountId?: string;
   userAccessToken: string;
+}
+
+interface InstagramAccountToken {
+  accessToken: string;
+  accountId: string;
+  accountLabel: string;
+  pageId: string;
+  pageLabel: string;
+  username?: string;
+}
+
+interface InstagramTokenPayload {
+  accountTokens: readonly InstagramAccountToken[];
+  expiresAt: string | null;
+  selectedAccountId?: string;
+  userAccessToken: string;
+}
+
+interface MetaUserTokenExchange {
+  expiresAt: string | null;
+  userAccessToken: string;
+  version: string;
 }
 
 interface ProviderTokenPayload {
@@ -142,7 +163,6 @@ export const beginSocialConnection = onCall(
     region: FUNCTION_REGION,
     secrets: [
       metaPublishingAppId,
-      instagramAppId,
       threadsAppId,
       socialOAuthStateSecret,
     ],
@@ -199,8 +219,8 @@ export const selectSocialConnectionAccount = onCall(
     const provider = data['provider'];
     const accountId = getTrimmedString(data['accountId']);
 
-    if (provider !== 'facebook' || !accountId) {
-      throw new HttpsError('invalid-argument', 'A valid Facebook Page selection is required.');
+    if ((provider !== 'facebook' && provider !== 'instagram') || !accountId) {
+      throw new HttpsError('invalid-argument', 'A valid Meta publishing account selection is required.');
     }
 
     const firestore = getFirestore();
@@ -210,42 +230,88 @@ export const selectSocialConnectionAccount = onCall(
     const storedSecret = secretSnapshot.data() as StoredSocialConnectionSecret | undefined;
 
     if (!storedSecret?.encryptedPayload) {
-      throw new HttpsError('failed-precondition', 'Reconnect Facebook before choosing a Page.');
-    }
-
-    let tokenPayload: FacebookTokenPayload;
-
-    try {
-      tokenPayload = decryptSocialTokenPayload<FacebookTokenPayload>(
-        storedSecret.encryptedPayload,
-        socialTokenEncryptionKey.value(),
-        'facebook'
-      );
-    } catch {
-      throw new HttpsError('failed-precondition', 'The stored Facebook connection cannot be read. Reconnect it.');
-    }
-
-    const selectedPage = tokenPayload.pageTokens.find(page => page.accountId === accountId);
-
-    if (!selectedPage) {
-      throw new HttpsError('invalid-argument', 'The selected Facebook Page is not available to this connection.');
+      throw new HttpsError('failed-precondition', `Reconnect ${provider} before choosing an account.`);
     }
 
     const now = new Date().toISOString();
+
+    if (provider === 'facebook') {
+      let tokenPayload: FacebookTokenPayload;
+
+      try {
+        tokenPayload = decryptSocialTokenPayload<FacebookTokenPayload>(
+          storedSecret.encryptedPayload,
+          socialTokenEncryptionKey.value(),
+          provider
+        );
+      } catch {
+        throw new HttpsError('failed-precondition', 'The stored Facebook connection cannot be read. Reconnect it.');
+      }
+
+      const selectedPage = tokenPayload.pageTokens.find(page => page.accountId === accountId);
+
+      if (!selectedPage) {
+        throw new HttpsError('invalid-argument', 'The selected Facebook Page is not available to this connection.');
+      }
+
+      const encryptedPayload = encryptSocialTokenPayload(
+        {...tokenPayload, selectedAccountId: selectedPage.accountId},
+        socialTokenEncryptionKey.value(),
+        provider
+      );
+      const batch = firestore.batch();
+      batch.set(secretRef, {provider, encryptedPayload, updatedAt: now}, {merge: false});
+      batch.set(metadataRef, {
+        provider,
+        status: 'connected',
+        accountId: selectedPage.accountId,
+        accountLabel: selectedPage.accountLabel,
+        availableAccounts: tokenPayload.pageTokens.map(toFacebookAccountOption),
+        scopes: facebookScopes,
+        expiresAt: tokenPayload.expiresAt,
+        connectedAt: now,
+        connectedBy: uid,
+        lastValidatedAt: now,
+        updatedAt: now,
+      } satisfies SocialConnectionMetadata, {merge: false});
+      await batch.commit();
+
+      return {provider, status: 'connected', accountId: selectedPage.accountId, updatedAt: now};
+    }
+
+    let tokenPayload: InstagramTokenPayload;
+
+    try {
+      tokenPayload = decryptSocialTokenPayload<InstagramTokenPayload>(
+        storedSecret.encryptedPayload,
+        socialTokenEncryptionKey.value(),
+        provider
+      );
+    } catch {
+      throw new HttpsError('failed-precondition', 'The stored Instagram connection cannot be read. Reconnect it.');
+    }
+
+    const selectedAccount = tokenPayload.accountTokens.find(account => account.accountId === accountId);
+
+    if (!selectedAccount) {
+      throw new HttpsError('invalid-argument', 'The selected Instagram account is not available to this connection.');
+    }
+
     const encryptedPayload = encryptSocialTokenPayload(
-      {...tokenPayload, selectedAccountId: selectedPage.accountId},
+      {...tokenPayload, selectedAccountId: selectedAccount.accountId},
       socialTokenEncryptionKey.value(),
-      'facebook'
+      provider
     );
     const batch = firestore.batch();
     batch.set(secretRef, {provider, encryptedPayload, updatedAt: now}, {merge: false});
     batch.set(metadataRef, {
       provider,
       status: 'connected',
-      accountId: selectedPage.accountId,
-      accountLabel: selectedPage.accountLabel,
-      availableAccounts: tokenPayload.pageTokens.map(toFacebookAccountOption),
-      scopes: facebookScopes,
+      accountId: selectedAccount.accountId,
+      accountLabel: selectedAccount.accountLabel,
+      ...(selectedAccount.username ? {username: selectedAccount.username} : {}),
+      availableAccounts: tokenPayload.accountTokens.map(toInstagramAccountOption),
+      scopes: instagramScopes,
       expiresAt: tokenPayload.expiresAt,
       connectedAt: now,
       connectedBy: uid,
@@ -254,7 +320,7 @@ export const selectSocialConnectionAccount = onCall(
     } satisfies SocialConnectionMetadata, {merge: false});
     await batch.commit();
 
-    return {provider, status: 'connected', accountId: selectedPage.accountId, updatedAt: now};
+    return {provider, status: 'connected', accountId: selectedAccount.accountId, updatedAt: now};
   }
 );
 
@@ -314,8 +380,8 @@ export const socialInstagramOAuthCallback = onRequest(
   {
     region: FUNCTION_REGION,
     secrets: [
-      instagramAppId,
-      instagramAppSecret,
+      metaPublishingAppId,
+      metaPublishingAppSecret,
       socialOAuthStateSecret,
       socialTokenEncryptionKey,
     ],
@@ -357,7 +423,7 @@ export const socialThreadsOAuthCallback = onRequest(
 );
 
 const facebookScopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'] as const;
-const instagramScopes = ['instagram_business_basic', 'instagram_business_content_publish'] as const;
+const instagramScopes = ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'] as const;
 const threadsScopes = ['threads_basic', 'threads_content_publish'] as const;
 
 async function completeOAuthCallback(
@@ -417,24 +483,7 @@ async function claimOAuthState(provider: SocialConnectionProvider, state: string
 }
 
 async function exchangeFacebookConnection(code: string, uid: string): Promise<void> {
-  const appId = metaPublishingAppId.value();
-  const appSecret = metaPublishingAppSecret.value();
-  const version = normalizeGraphVersion(metaGraphApiVersion.value());
-  const shortTokenResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/oauth/access_token?${new URLSearchParams({
-    client_id: appId,
-    client_secret: appSecret,
-    redirect_uri: getOAuthCallbackUri('facebook'),
-    code,
-  })}`);
-  const shortAccessToken = requireProviderString(shortTokenResponse, 'access_token', 'Facebook access token');
-  const longTokenResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/oauth/access_token?${new URLSearchParams({
-    grant_type: 'fb_exchange_token',
-    client_id: appId,
-    client_secret: appSecret,
-    fb_exchange_token: shortAccessToken,
-  })}`);
-  const userAccessToken = requireProviderString(longTokenResponse, 'access_token', 'Facebook long-lived access token');
-  const expiresAt = createExpiryIso(longTokenResponse['expires_in']);
+  const {userAccessToken, expiresAt, version} = await exchangeMetaUserAccessToken(code, 'facebook');
   const pageResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/me/accounts?${new URLSearchParams({
     fields: 'id,name,access_token,tasks,instagram_business_account',
     limit: '100',
@@ -478,56 +527,99 @@ async function exchangeFacebookConnection(code: string, uid: string): Promise<vo
 }
 
 async function exchangeInstagramConnection(code: string, uid: string): Promise<void> {
-  const body = new URLSearchParams({
-    client_id: instagramAppId.value(),
-    client_secret: instagramAppSecret.value(),
-    grant_type: 'authorization_code',
-    redirect_uri: getOAuthCallbackUri('instagram'),
-    code,
-  });
-  const shortTokenResponse = await fetchProviderJson('https://api.instagram.com/oauth/access_token', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body,
-  });
-  const shortAccessToken = requireProviderString(shortTokenResponse, 'access_token', 'Instagram access token');
-  const longTokenResponse = await fetchProviderJson(`https://graph.instagram.com/access_token?${new URLSearchParams({
-    grant_type: 'ig_exchange_token',
-    client_secret: instagramAppSecret.value(),
-  })}`, {headers: {Authorization: `Bearer ${shortAccessToken}`}});
-  const accessToken = requireProviderString(longTokenResponse, 'access_token', 'Instagram long-lived access token');
-  const userId = getTrimmedString(shortTokenResponse['user_id']);
-  const expiresAt = createExpiryIso(longTokenResponse['expires_in']);
-  const version = normalizeGraphVersion(metaGraphApiVersion.value());
-  const profile = await fetchProviderJson(`https://graph.instagram.com/${version}/me?${new URLSearchParams({
-    fields: 'id,user_id,username,name,account_type',
-  })}`, {headers: {Authorization: `Bearer ${accessToken}`}});
-  const accountId = getTrimmedString(profile['user_id']) || getTrimmedString(profile['id']) || userId;
-  const username = getTrimmedString(profile['username']);
+  const {userAccessToken, expiresAt, version} = await exchangeMetaUserAccessToken(code, 'instagram');
+  const pageResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/me/accounts?${new URLSearchParams({
+    fields: 'id,name,access_token,tasks,instagram_business_account',
+    limit: '100',
+  })}`, {headers: {Authorization: `Bearer ${userAccessToken}`}});
+  const pageTokens = Array.isArray(pageResponse['data'])
+    ? pageResponse['data'].flatMap(parseFacebookPageToken)
+    : [];
+  const accountTokens = await Promise.all(pageTokens
+    .filter((page): page is FacebookPageToken & { instagramAccountId: string } => Boolean(page.instagramAccountId))
+    .map(page => loadInstagramAccountToken(page, version)));
 
-  if (!accountId) {
-    throw new Error('Instagram did not return a professional account ID.');
+  if (accountTokens.length === 0) {
+    throw new Error('No Instagram professional account linked to a manageable Facebook Page was returned.');
   }
 
   const now = new Date().toISOString();
+  const selectedAccount = accountTokens.length === 1 ? accountTokens[0] : undefined;
   await storeConnection(
     'instagram',
     uid,
-    {accessToken, expiresAt, tokenType: getTrimmedString(longTokenResponse['token_type']) || 'bearer', userId: accountId} satisfies ProviderTokenPayload,
+    {
+      userAccessToken,
+      accountTokens,
+      expiresAt,
+      ...(selectedAccount ? {selectedAccountId: selectedAccount.accountId} : {}),
+    } satisfies InstagramTokenPayload,
     {
       provider: 'instagram',
-      status: 'connected',
-      accountId,
-      accountLabel: getTrimmedString(profile['name']) || username || 'Instagram professional account',
-      username,
+      status: selectedAccount ? 'connected' : 'needs-selection',
+      ...(selectedAccount ? {
+        accountId: selectedAccount.accountId,
+        accountLabel: selectedAccount.accountLabel,
+        ...(selectedAccount.username ? {username: selectedAccount.username} : {}),
+        connectedAt: now,
+      } : {}),
+      availableAccounts: accountTokens.map(toInstagramAccountOption),
       scopes: instagramScopes,
       expiresAt,
-      connectedAt: now,
       connectedBy: uid,
       lastValidatedAt: now,
       updatedAt: now,
     }
   );
+}
+
+async function exchangeMetaUserAccessToken(
+  code: string,
+  provider: 'facebook' | 'instagram'
+): Promise<MetaUserTokenExchange> {
+  const appId = metaPublishingAppId.value();
+  const appSecret = metaPublishingAppSecret.value();
+  const version = normalizeGraphVersion(metaGraphApiVersion.value());
+  const shortTokenResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/oauth/access_token?${new URLSearchParams({
+    client_id: appId,
+    client_secret: appSecret,
+    redirect_uri: getOAuthCallbackUri(provider),
+    code,
+  })}`);
+  const shortAccessToken = requireProviderString(shortTokenResponse, 'access_token', 'Meta access token');
+  const longTokenResponse = await fetchProviderJson(`https://graph.facebook.com/${version}/oauth/access_token?${new URLSearchParams({
+    grant_type: 'fb_exchange_token',
+    client_id: appId,
+    client_secret: appSecret,
+    fb_exchange_token: shortAccessToken,
+  })}`);
+
+  return {
+    userAccessToken: requireProviderString(longTokenResponse, 'access_token', 'Meta long-lived access token'),
+    expiresAt: createExpiryIso(longTokenResponse['expires_in']),
+    version,
+  };
+}
+
+async function loadInstagramAccountToken(
+  page: FacebookPageToken & { instagramAccountId: string },
+  version: string
+): Promise<InstagramAccountToken> {
+  const profile = await fetchProviderJson(`https://graph.facebook.com/${version}/${encodeURIComponent(page.instagramAccountId)}?${new URLSearchParams({
+    fields: 'id,username,name',
+  })}`, {headers: {Authorization: `Bearer ${page.accessToken}`}});
+  const accountId = getTrimmedString(profile['id']) || page.instagramAccountId;
+  const username = getTrimmedString(profile['username']);
+  const accountName = getTrimmedString(profile['name']);
+
+  return {
+    accessToken: page.accessToken,
+    accountId,
+    accountLabel: username ? `@${username}` : accountName || `${page.accountLabel} Instagram`,
+    pageId: page.accountId,
+    pageLabel: page.accountLabel,
+    ...(username ? {username} : {}),
+  };
 }
 
 async function exchangeThreadsConnection(code: string, uid: string): Promise<void> {
@@ -707,6 +799,14 @@ function toFacebookAccountOption(page: FacebookPageToken): SocialConnectionAccou
   };
 }
 
+function toInstagramAccountOption(account: InstagramAccountToken): SocialConnectionAccountOption {
+  return {
+    id: account.accountId,
+    label: account.accountLabel,
+    note: `Linked through Facebook Page ${account.pageLabel}`,
+  };
+}
+
 function parseAccountOption(value: unknown): readonly SocialConnectionAccountOption[] {
   if (!isRecord(value)) {
     return [];
@@ -728,7 +828,7 @@ function getProviderAppId(provider: SocialConnectionProvider): string {
     case 'facebook':
       return metaPublishingAppId.value();
     case 'instagram':
-      return instagramAppId.value();
+      return metaPublishingAppId.value();
     case 'threads':
       return threadsAppId.value();
   }

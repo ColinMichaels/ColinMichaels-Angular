@@ -94,13 +94,13 @@ Social provider authorization uses separate server-only publishing credentials. 
 ```bash
 firebase functions:secrets:set META_PUBLISHING_APP_ID
 firebase functions:secrets:set META_PUBLISHING_APP_SECRET
-firebase functions:secrets:set INSTAGRAM_APP_ID
-firebase functions:secrets:set INSTAGRAM_APP_SECRET
 firebase functions:secrets:set THREADS_APP_ID
 firebase functions:secrets:set THREADS_APP_SECRET
 firebase functions:secrets:set SOCIAL_OAUTH_STATE_SECRET
 firebase functions:secrets:set SOCIAL_TOKEN_ENCRYPTION_KEY
 ```
+
+Facebook Page and Instagram professional-account authorization share `META_PUBLISHING_APP_ID` and `META_PUBLISHING_APP_SECRET`. The Instagram connection uses Instagram API with Facebook Login and discovers professional accounts linked to manageable Facebook Pages. Do not create or bind separate `INSTAGRAM_APP_ID` or `INSTAGRAM_APP_SECRET` values for this flow. Threads retains its separate app credentials.
 
 `SOCIAL_TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte random key. `SOCIAL_OAUTH_STATE_SECRET` must be an independent high-entropy value; never reuse either provider app secret. App IDs are stored with the server credential set so Angular does not need provider-specific configuration.
 
@@ -118,6 +118,8 @@ https://colinmichaels.com/api/social/meta/callback
 https://colinmichaels.com/api/social/instagram/callback
 https://colinmichaels.com/api/social/threads/callback
 ```
+
+Register both the `/api/social/meta/callback` and `/api/social/instagram/callback` redirect URLs in the same Meta app. The separate callback paths preserve provider-specific OAuth state and CMS status even though Facebook and Instagram share one Meta credential pair.
 
 Deploy Functions, Firestore rules, and Hosting rewrites together before attempting OAuth. Secret creation alone does not grant an existing Function access. The connection-only release stores token payloads encrypted in backend-only `/socialConnectionSecrets`; `/socialConnections` contains sanitized account status for CMS roles, and `/socialOAuthStates` contains short-lived one-time authorization state. Do not place tokens in Angular environments, ordinary Firestore post documents, logs, or pull-request configuration.
 
