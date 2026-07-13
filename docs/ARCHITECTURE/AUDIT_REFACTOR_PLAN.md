@@ -338,6 +338,7 @@ Migration stance:
 - [x] Render published Editor.js blocks through a read-only public renderer.
   - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, Markdown, delimiter, typography, stats, chart, and sanitized HTML blocks without importing Editor.js.
 - Store structured block JSON when possible, keep raw HTML as an explicit sanitized fallback, and sanitize embeds/HTML at render time.
+  - Interactive article apps use a dedicated Editor.js App Embed tool normalized into the typed embed model. The initial Hear the Hook integration trusts one canonical HTTPS page, applies an app-specific iframe sandbox and capability denials, validates resize messages, and retains a link fallback without widening raw HTML.
 - Keep secret-bearing AI calls out of Angular browser code. CMS writing assistance and thumbnail generation run through authenticated Firebase callable functions with `OPENAI_API_KEY` bound as a Functions secret.
 - Admin authorization uses Firebase Auth custom claims (`admin`, `cmsAdmin`, or `roles.admin`) across route guards, callable functions, Firestore rules, Realtime Database rules, and Storage rules. The login screen supports Google sign-in, and admin route guards can read future role requirements from route `data.roles`; any role that protects data must also be enforced server-side and in Firebase Security Rules.
 

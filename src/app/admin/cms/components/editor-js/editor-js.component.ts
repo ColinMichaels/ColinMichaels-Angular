@@ -23,6 +23,7 @@ import {MediaLibraryItem} from '../../../media-library/models/media-library.mode
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
 import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {AppEmbedBlockTool} from './tools/app-embed-block.tool';
 import {ChartBlockTool} from './tools/chart-block.tool';
 import {CatCornerUnlockBlockTool} from './tools/cat-corner-unlock-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
@@ -45,6 +46,7 @@ interface EditorToolModules {
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
   ChartBlock: ToolConstructable;
+  AppEmbedBlock: ToolConstructable;
   CatCornerUnlockBlock: ToolConstructable;
   HtmlBlock: ToolConstructable;
 }
@@ -144,6 +146,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
     ChartBlock: ChartBlockTool as unknown as ToolConstructable,
+    AppEmbedBlock: AppEmbedBlockTool as unknown as ToolConstructable,
     CatCornerUnlockBlock: CatCornerUnlockBlockTool as unknown as ToolConstructable,
     HtmlBlock: HtmlBlockTool as unknown as ToolConstructable,
   };
@@ -973,6 +976,9 @@ export class EditorJsComponent implements AfterViewInit {
           },
           chart: {
             class: tools.ChartBlock,
+          },
+          appEmbed: {
+            class: tools.AppEmbedBlock,
           },
           catCornerUnlock: {
             class: tools.CatCornerUnlockBlock,

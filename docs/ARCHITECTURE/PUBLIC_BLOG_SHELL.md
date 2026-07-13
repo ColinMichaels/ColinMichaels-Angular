@@ -100,6 +100,16 @@ so it is removed automatically when navigating to another post or page and does 
 If the configured image cannot load, the component reports the failure and immediately restores the standard page
 surface and cover-image preload priority instead of leaving an empty enhanced backdrop.
 
+## Interactive App Embeds
+
+The CMS `App Embed` Editor.js tool stores only a hosted URL, accessible title, and starting height. The Editor.js adapter normalizes that authoring block into the existing typed `embed` blog block, so the public renderer remains independent from Editor.js and existing post documents require no migration.
+
+Interactive framing is intentionally narrower than custom HTML. `BlogBlockRendererComponent` accepts the canonical Hear the Hook soundboard URL (plus its legacy `.html` redirect form) and no other path on the host. It renders the app in a cross-origin sandbox with scripts, same-origin behavior, and popups only; camera, microphone, geolocation, payment, clipboard, and fullscreen capabilities are explicitly denied. Custom HTML continues to remove `iframe` and `script` elements. Unapproved or invalid app destinations become normal `noopener noreferrer` links instead of trusted resource URLs.
+
+The frame starts at a bounded CMS-configured height and can receive `hear-the-hook:resize` messages in production. Resize handling requires the exact hosted origin, the matching iframe window, the exact message type, and a finite height clamped from 360px to 2400px. Preview domains retain the fixed starting height because the hosted soundboard currently posts only to `https://colinmichaels.com`. An always-visible external link covers disabled framing, future host policy changes, and readers who prefer a separate tab.
+
+Deployment requires the exact ChatGPT Sites origin in Firebase Hosting's `frame-src` policy; no Functions, rules, secrets, or data migration are needed. Rollback is removal of the post's App Embed block (or replacement with a paragraph link), followed by reverting the renderer/tool and CSP origin. The hosted app remains independently reachable throughout rollback.
+
 On the homepage, the same optional field replaces all CMS hero slides only while that post owns the hero and the
 Homepage Hero manager's `Use featured post background` option is enabled. It remains decorative, uses a centered cover
 crop, disables rotation, and falls back to the configured slideshow when the option is off or after a load error. The
@@ -123,6 +133,7 @@ Relevant regression coverage includes:
 - `offline-articles-control.component.spec.ts` and `blog-sticky-post-toolbar.component.spec.ts` for saved-content management controls
 - `pwa-push.service.spec.ts` and `pwa-native-controls.component.spec.ts` for explicit opt-in, safe notification routing, subscription validation, and menu control states
 - `blog-block-renderer.component.spec.ts` for linkable/sticky headings, inline media layouts, and float clearing before subsequent sections
+- `blog-block-renderer.component.spec.ts`, `blog-embed.util.spec.ts`, `app-embed-block.tool.spec.ts`, and `blog-editorjs-adapter.spec.ts` for exact app URL trust, authoring conversion, sandbox attributes, outbound fallback, and custom HTML iframe removal
 - `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
 - `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
 - browser checks for live result filtering, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect

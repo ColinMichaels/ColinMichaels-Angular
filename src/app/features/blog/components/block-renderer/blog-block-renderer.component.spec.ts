@@ -70,6 +70,89 @@ describe('BlogBlockRendererComponent', () => {
     expect(iframe?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
   });
 
+  it('renders the approved soundboard in a sandboxed app frame with an external fallback', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'app-embed-1',
+        type: 'embed',
+        data: {
+          provider: 'app',
+          embedUrl: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard.html',
+          caption: 'Hear the Hook voice-cloning awareness demo',
+          height: 820,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const iframe = element.querySelector<HTMLIFrameElement>('iframe[data-app-embed-id]');
+    const fallback = element.querySelector<HTMLAnchorElement>('figure a');
+
+    expect(iframe?.getAttribute('src')).toBe('https://hear-the-hook.captaincolin.chatgpt.site/soundboard');
+    expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-popups');
+    expect(iframe?.getAttribute('allow')).toContain("microphone 'none'");
+    expect(iframe?.getAttribute('referrerpolicy')).toBe('strict-origin-when-cross-origin');
+    expect(iframe?.style.height).toBe('820px');
+    expect(fallback?.getAttribute('href')).toBe('https://hear-the-hook.captaincolin.chatgpt.site/soundboard.html');
+    expect(fallback?.textContent).toContain('Open interactive app');
+  });
+
+  it('accepts bounded resize messages only from the rendered soundboard frame', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'app-embed-resize',
+        type: 'embed',
+        data: {
+          provider: 'app',
+          embedUrl: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard',
+          height: 700,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const iframe = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLIFrameElement>('iframe[data-app-embed-id]')!;
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://example.com',
+      source: iframe.contentWindow,
+      data: {type: 'hear-the-hook:resize', height: 1200},
+    }));
+    fixture.detectChanges();
+    expect(iframe.style.height).toBe('700px');
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://hear-the-hook.captaincolin.chatgpt.site',
+      source: iframe.contentWindow,
+      data: {type: 'hear-the-hook:resize', height: 9999},
+    }));
+    fixture.detectChanges();
+    expect(iframe.style.height).toBe('2400px');
+  });
+
+  it('does not frame other pages on the approved app host', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'app-embed-other-path',
+        type: 'embed',
+        data: {
+          provider: 'app',
+          url: 'https://hear-the-hook.captaincolin.chatgpt.site/other',
+          caption: 'Unapproved app path',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('iframe')).toBeNull();
+    expect(element.querySelector('a')?.getAttribute('href'))
+      .toBe('https://hear-the-hook.captaincolin.chatgpt.site/other');
+  });
+
   it('renders untrusted embeds as outbound links', () => {
     fixture.componentRef.setInput('blocks', [
       {
@@ -361,6 +444,7 @@ describe('BlogBlockRendererComponent', () => {
             <section>
               <a href="https://example.com/window-sticker">Window sticker</a>
               <img src="/assets/images/backgrounds/day.webp" alt="Factory detail">
+              <iframe src="https://example.com/unsafe-app"></iframe>
               <script>window.bad = true;</script>
               <table><tr><th>0-60 mph</th><td>4.2 sec</td></tr></table>
             </section>
@@ -378,6 +462,7 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.textContent).toContain('Spec Table');
     expect(customHtml?.textContent).toContain('0-60 mph');
     expect(customHtml?.querySelector('script')).toBeNull();
+    expect(customHtml?.querySelector('iframe')).toBeNull();
     expect(link?.getAttribute('href')).toBe('https://example.com/window-sticker');
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.classList).toContain('blog-inline-link');
