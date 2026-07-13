@@ -1,5 +1,6 @@
 # Changelog
 
+- Added a dedicated CMS App Embed block for the Hear the Hook soundboard, with exact-URL trust, sandboxed inline rendering, bounded cross-origin resize messages, CSP coverage, and an always-visible external link fallback while keeping iframes and scripts prohibited in custom HTML blocks.
 - Documented the July 13, 2026 pause point for external social auto-posting, including the completed Calendar/outbox foundation, the still-unimplemented provider connection layer, and the guarded checklist for resuming without duplicating Web Push or draining historical queued work.
 - Completed the Calendar publishing-flow slice with launch-following or fixed social timing, safe reschedule conflict handling, Instagram media planning, Editor deep links, automation-readiness guidance, and deterministic outbox reconciliation that prevents stale imports from resetting delivery work.
 - Clarified that Web Push already fires once at article publication, external providers are not connected yet, LinkedIn is the recommended first OAuth-backed adapter, Instagram requires professional-account media publishing, and YouTube Community posting remains manual under the current supported API.

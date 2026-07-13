@@ -32,6 +32,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'html',
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
+const APP_EMBED_EDITOR_BLOCK_TYPE = 'appEmbed';
 
 interface ImportedChartPoint {
   label: string;
@@ -187,6 +188,18 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
           type: YOUTUBE_EDITOR_BLOCK_TYPE,
           data: {
             url: youtubeUrl,
+          },
+        };
+      }
+
+      if (block.data.provider === 'app') {
+        return {
+          id: block.id,
+          type: APP_EMBED_EDITOR_BLOCK_TYPE,
+          data: {
+            url: block.data.embedUrl ?? block.data.url ?? '',
+            caption: block.data.caption ?? '',
+            height: block.data.height,
           },
         };
       }
@@ -517,6 +530,22 @@ export function createEditorDocument(post: BlogPost): OutputData {
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
   return document.blocks.flatMap((block, index) => {
+    if (block.type === APP_EMBED_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
+      const url = getString(block.data, 'url') ?? '';
+
+      return {
+        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+        type: 'embed',
+        data: {
+          provider: 'app',
+          url,
+          embedUrl: url,
+          caption: getString(block.data, 'caption') ?? '',
+          height: getNumber(block.data, 'height'),
+        },
+      };
+    }
+
     if (block.type === YOUTUBE_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
       const url = getString(block.data, 'url') ?? '';
 

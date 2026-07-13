@@ -23,6 +23,8 @@ Current sinks include:
 Risk:
 user-controlled or remotely controlled strings could execute markup/script payloads if not constrained.
 
+The CMS custom HTML block deliberately excludes `iframe` and `script` markup at both Editor.js save time and public Angular rendering. Interactive article apps use a separate typed embed boundary instead. The Hear the Hook soundboard is pinned to its exact HTTPS origin and approved `/soundboard` path, rendered with a static iframe sandbox and denied camera, microphone, geolocation, payment, clipboard, and fullscreen capabilities. Its optional height message is accepted only when the origin, frame window, message type, and finite bounded height all match. Other app URLs render as outbound links rather than frames.
+
 ## 2) External URL Handling (Resolved)
 
 - The redirect guard validates decoded destinations against an explicit scheme/domain allowlist before opening a new tab.

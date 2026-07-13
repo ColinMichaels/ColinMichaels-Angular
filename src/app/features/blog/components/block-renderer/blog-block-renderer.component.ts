@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
+  ElementRef,
   OnDestroy,
   Input,
   OnChanges,
@@ -33,11 +34,18 @@ import {
   BlogStatItem,
 } from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
+import {
+  getTrustedBlogAppEmbedUrl,
+  HEAR_THE_HOOK_EMBED_URL,
+  normalizeBlogAppEmbedHeight,
+} from '../../utils/blog-embed.util';
 
 interface RenderableBlogBlock {
   block: BlogContentBlock;
   safeEmbedUrl: SafeResourceUrl | null;
   externalUrl: string | null;
+  isAppEmbed: boolean;
+  appEmbedHeight: number;
   headingId: string | null;
   textHtml: SafeHtml;
   captionHtml: SafeHtml;
@@ -357,21 +365,48 @@ interface RenderableBlogImage {
           }
           @case ('embed') {
             @if (row.safeEmbedUrl) {
-              <figure class="space-y-2">
-                <div class="aspect-video overflow-hidden rounded bg-black">
+              @if (row.isAppEmbed) {
+                <figure class="overflow-hidden rounded-lg border border-slate-200 bg-slate-950 shadow-lg shadow-slate-950/10 dark:border-zinc-800 dark:shadow-black/30">
                   <iframe
                     [src]="row.safeEmbedUrl"
                     [title]="row.block.data.caption || fallbackAlt"
-                    class="h-full w-full"
+                    [style.height.px]="row.appEmbedHeight"
+                    [attr.data-app-embed-id]="row.block.id"
+                    class="block w-full bg-slate-950"
                     loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; clipboard-read 'none'; clipboard-write 'none'; fullscreen 'none'"
+                    referrerpolicy="strict-origin-when-cross-origin"
                   ></iframe>
-                </div>
-                @if (row.block.data.caption) {
-                  <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
-                }
-              </figure>
+                  <div class="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
+                    @if (row.block.data.caption) {
+                      <figcaption class="text-sm text-zinc-400" [innerHTML]="row.captionHtml"></figcaption>
+                    }
+                    <a
+                      [href]="row.externalUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300 hover:text-cyan-100"
+                    >Open interactive app</a>
+                  </div>
+                </figure>
+              } @else {
+                <figure class="space-y-2">
+                  <div class="aspect-video overflow-hidden rounded bg-black">
+                    <iframe
+                      [src]="row.safeEmbedUrl"
+                      [title]="row.block.data.caption || fallbackAlt"
+                      class="h-full w-full"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowfullscreen
+                    ></iframe>
+                  </div>
+                  @if (row.block.data.caption) {
+                    <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
+                  }
+                </figure>
+              }
             } @else if (row.externalUrl) {
               <p>
                 <a [href]="row.externalUrl" target="_blank" rel="noopener noreferrer" class="blog-inline-link">
@@ -751,6 +786,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   protected readonly faXmark = faXmark;
 
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly imageLayoutSet = new Set<string>(BLOG_IMAGE_LAYOUTS);
   private readonly copiedCodeBlockIds = new Set<string>();
@@ -789,6 +825,8 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         block,
         safeEmbedUrl: this.createSafeEmbedUrl(block),
         externalUrl: this.createExternalUrl(block),
+        isAppEmbed: getTrustedBlogAppEmbedUrl(block.data.embedUrl ?? block.data.url) !== null,
+        appEmbedHeight: normalizeBlogAppEmbedHeight(block.data.height),
         headingId: headingIdMap.get(block.id) ?? null,
         textHtml: this.createInlineHtml(block.data.text),
         captionHtml,
@@ -949,6 +987,28 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   @HostListener('document:keydown.escape')
   protected handleEscapeKey(): void {
     this.closeImageLightbox();
+  }
+
+  @HostListener('window:message', ['$event'])
+  protected handleAppEmbedMessage(event: MessageEvent<unknown>): void {
+    const trustedOrigin = new URL(HEAR_THE_HOOK_EMBED_URL).origin;
+
+    if (event.origin !== trustedOrigin || !this.isAppEmbedResizeMessage(event.data)) {
+      return;
+    }
+
+    const frame = Array.from(this.host.nativeElement.querySelectorAll<HTMLIFrameElement>('iframe[data-app-embed-id]'))
+      .find(candidate => candidate.contentWindow === event.source);
+    const blockId = frame?.dataset['appEmbedId'];
+    const row = this.renderedBlocks.find(candidate => candidate.block.id === blockId && candidate.isAppEmbed);
+    const rowUrl = getTrustedBlogAppEmbedUrl(row?.externalUrl ?? undefined);
+
+    if (!row || rowUrl?.origin !== trustedOrigin) {
+      return;
+    }
+
+    row.appEmbedHeight = normalizeBlogAppEmbedHeight(event.data.height);
+    this.cdr.markForCheck();
   }
 
   @HostListener('document:keydown.arrowleft', ['$event'])
@@ -1244,9 +1304,11 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return null;
     }
 
-    const url = this.createTrustedEmbedUrl(block.data.embedUrl ?? block.data.url);
+    const value = block.data.embedUrl ?? block.data.url;
+    const appUrl = getTrustedBlogAppEmbedUrl(value);
+    const url = appUrl ?? this.createTrustedEmbedUrl(value);
 
-    if (!url || url.protocol !== 'https:' || !this.trustedEmbedHosts.has(url.hostname)) {
+    if (!url || url.protocol !== 'https:' || (!appUrl && !this.trustedEmbedHosts.has(url.hostname))) {
       return null;
     }
 
@@ -1315,6 +1377,18 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
 
   private isYouTubeHost(hostname: string): boolean {
     return ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtube-nocookie.com'].includes(hostname);
+  }
+
+  private isAppEmbedResizeMessage(value: unknown): value is {type: 'hear-the-hook:resize'; height: number} {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+
+    const message = value as Record<string, unknown>;
+
+    return message['type'] === 'hear-the-hook:resize'
+      && typeof message['height'] === 'number'
+      && Number.isFinite(message['height']);
   }
 
   private shouldOpenInNewTab(href: string): boolean {
