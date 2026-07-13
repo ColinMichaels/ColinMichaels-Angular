@@ -34,7 +34,7 @@ Multiple announcements can target the same channel. This allows a launch announc
 ## Component Inventory
 
 - `PublishingCalendarComponent` owns month navigation, content filters, day selection, the upcoming queue, inline rescheduling, social composition, and announcement edits.
-- `SocialConnectionsPageComponent` owns sanitized Facebook, Instagram, and Threads connection health, explicit Facebook Page selection, reconnect, and disconnect actions. It never reads provider tokens.
+- `SocialConnectionsPageComponent` owns sanitized Facebook, Instagram, and Threads connection health, explicit Facebook Page or linked Instagram-account selection, reconnect, and disconnect actions. It never reads provider tokens.
 - `SocialConnectionsService` is the Angular callable boundary for connection operations.
 - `social-connection-functions.ts` owns CMS authorization, OAuth state consumption, provider token exchange, encrypted token persistence, and callback redirects without enabling delivery.
 - `social-connections.ts` owns pure provider URL, signed-state, and AES-256-GCM primitives with focused Node tests.
@@ -124,10 +124,12 @@ Resume checklist:
 
 The repository now includes the authorization and account-health layer for Facebook, Instagram, and Threads. Deployment is still required before the configured callback URLs resolve.
 
+Facebook and Instagram use one Meta publishing app credential pair. Instagram follows the Instagram API with Facebook Login model: its OAuth request adds `instagram_basic` and `instagram_content_publish` to the required Page discovery permissions, then resolves professional accounts linked to manageable Facebook Pages. It does not bind separate Instagram App ID or secret parameters. Threads remains a separate Meta app and credential pair.
+
 - `/admin/cms/social-connections` shows disconnected, connected, expired, error, or account-selection state and repeats that delivery is disabled.
 - `beginSocialConnection` requires a CMS role, creates signed single-use OAuth state, and returns a provider authorization URL.
 - Provider callbacks atomically consume state, exchange authorization codes server-side, obtain longer-lived user tokens where supported, and redirect to the protected connection page.
-- Multiple Facebook Pages stop at `needs-selection`; an editor must explicitly choose the Page before the connection becomes active.
+- Multiple Facebook Pages or linked Instagram professional accounts stop at `needs-selection`; an editor must explicitly choose the intended publishing identity before the connection becomes active.
 - `/socialConnectionSecrets/{provider}` contains only provider-bound encrypted token payloads, denies all client access, and is excluded from the legacy recursive super-admin rule.
 - `/socialConnections/{provider}` contains sanitized account identity, scopes, expiry, and validation timestamps and permits CMS reads only.
 - Disconnect deletes the encrypted token record but deliberately leaves Calendar plans and outbox records unchanged.
@@ -161,6 +163,7 @@ Cloud Tasks is a reasonable next execution layer when volume or retry needs outg
 - Existing `scheduled` posts continue to publish from `publishedAt`; the scheduled Function now performs an additional outbox scan after that work.
 - Deploy the Functions change and Firestore rules before expecting Calendar announcements to move from `scheduled` to `queued`.
 - Deploy Functions, Firestore rules, and Hosting together before testing social OAuth callbacks. Rolling back the connection-only release means removing the three callback rewrites and Functions exports; encrypted connection records may remain inert or be disconnected from the CMS first.
+- The Meta app must register both Facebook and Instagram callback URLs. Existing `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` Secret Manager values are unused and may be deleted after this release is deployed; no Firestore migration is required.
 - The current release does not make external API calls. `queued` means the backend created durable delivery work, not that a provider accepted or published the message.
 - Existing deterministic outbox records win over stale embedded announcement state, preventing an imported post snapshot from resetting completed or pending work for redelivery.
 - Do not place OAuth refresh tokens or Page/account credentials in `BlogPost.socialPromotion` or `/socialOutbox`.

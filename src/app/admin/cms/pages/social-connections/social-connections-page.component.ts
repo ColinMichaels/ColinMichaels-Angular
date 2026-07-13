@@ -33,7 +33,7 @@ const providerPresentations: readonly SocialProviderPresentation[] = [
     provider: 'instagram',
     label: 'Instagram',
     description: 'Authorize a professional Business or Creator account for media publishing.',
-    requirements: 'Requires Instagram Login and a public image or video for each planned post.',
+    requirements: 'Uses the Meta app and requires a professional account linked to a Facebook Page.',
     icon: faInstagram,
   },
   {
@@ -143,13 +143,15 @@ function getErrorMessage(error: unknown): string {
 
                 @if (connection.status === 'needs-selection' && connection.availableAccounts?.length) {
                   <fieldset class="mt-5 space-y-2">
-                    <legend class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Choose a Page</legend>
+                    <legend class="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      {{ connection.provider === 'facebook' ? 'Choose a Page' : 'Choose an Instagram account' }}
+                    </legend>
                     @for (account of connection.availableAccounts; track account.id) {
                       <button
                         type="button"
                         class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-left hover:border-cyan-400 disabled:cursor-not-allowed disabled:text-zinc-600"
                         [disabled]="actionProvider() !== null"
-                        (click)="selectFacebookPage(account.id)"
+                        (click)="selectAccount(connection.provider, account.id)"
                       >
                         <span class="block text-sm font-medium text-zinc-200">{{ account.label }}</span>
                         @if (account.note) {
@@ -240,15 +242,20 @@ export class SocialConnectionsPageComponent {
     }
   }
 
-  protected async selectFacebookPage(accountId: string): Promise<void> {
-    this.actionProvider.set('facebook');
+  protected async selectAccount(provider: SocialConnectionProvider, accountId: string): Promise<void> {
+    if (provider === 'threads') {
+      this.toast.error('Threads does not support account selection for this connection.');
+      return;
+    }
+
+    this.actionProvider.set(provider);
 
     try {
-      await this.connectionsService.selectAccount('facebook', accountId);
-      this.toast.success('Connected the selected Facebook Page. External delivery remains disabled.');
+      await this.connectionsService.selectAccount(provider, accountId);
+      this.toast.success(`Connected the selected ${provider === 'facebook' ? 'Facebook Page' : 'Instagram account'}. External delivery remains disabled.`);
       await this.refresh();
     } catch (error) {
-      this.toast.error(`Unable to select the Facebook Page: ${getErrorMessage(error)}`);
+      this.toast.error(`Unable to select the ${provider === 'facebook' ? 'Facebook Page' : 'Instagram account'}: ${getErrorMessage(error)}`);
     } finally {
       this.actionProvider.set(null);
     }

@@ -26,7 +26,17 @@ describe('SocialConnectionsPageComponent', () => {
           updatedAt: '2026-07-13T12:00:00.000Z',
           availableAccounts: [{id: 'page-1', label: 'Colin Michaels'}],
         },
-        {provider: 'instagram', status: 'disconnected', scopes: [], updatedAt: '2026-07-13T12:00:00.000Z'},
+        {
+          provider: 'instagram',
+          status: 'needs-selection',
+          scopes: ['instagram_content_publish'],
+          updatedAt: '2026-07-13T12:00:00.000Z',
+          availableAccounts: [{
+            id: 'ig-1',
+            label: '@captaincolin',
+            note: 'Linked through Facebook Page Colin Michaels'
+          }],
+        },
         {provider: 'threads', status: 'disconnected', scopes: [], updatedAt: '2026-07-13T12:00:00.000Z'},
       ],
     });
@@ -65,5 +75,19 @@ describe('SocialConnectionsPageComponent', () => {
     await fixture.whenStable();
 
     expect(connectionsService.selectAccount).toHaveBeenCalledOnceWith('facebook', 'page-1');
+  });
+
+  it('selects a linked Instagram professional account through the shared Meta connection', async () => {
+    const button = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find(candidate => candidate.textContent?.includes('@captaincolin'));
+
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error('Instagram account selection button was not found.');
+    }
+
+    button.click();
+    await fixture.whenStable();
+
+    expect(connectionsService.selectAccount).toHaveBeenCalledWith('instagram', 'ig-1');
   });
 });

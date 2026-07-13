@@ -124,9 +124,8 @@ export function createSocialAuthorizationUrl(options: {
       scopes = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
       break;
     case 'instagram':
-      authorizationUrl = new URL('https://www.instagram.com/oauth/authorize');
-      authorizationUrl.searchParams.set('force_reauth', 'true');
-      scopes = ['instagram_business_basic', 'instagram_business_content_publish'];
+      authorizationUrl = new URL(`https://www.facebook.com/${normalizeGraphVersion(options.graphApiVersion)}/dialog/oauth`);
+      scopes = ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'];
       break;
     case 'threads':
       authorizationUrl = new URL('https://threads.net/oauth/authorize');

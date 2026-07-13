@@ -30,8 +30,8 @@ export class SocialConnectionsService {
     return result.data;
   }
 
-  async selectAccount(provider: 'facebook', accountId: string): Promise<void> {
-    const callable = httpsCallable<{provider: 'facebook'; accountId: string}, unknown>(
+  async selectAccount(provider: 'facebook' | 'instagram', accountId: string): Promise<void> {
+    const callable = httpsCallable<{ provider: 'facebook' | 'instagram'; accountId: string }, unknown>(
       this.getFunctions(),
       'selectSocialConnectionAccount'
     );
