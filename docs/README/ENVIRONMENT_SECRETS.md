@@ -104,12 +104,16 @@ Facebook Page and Instagram professional-account authorization share `META_PUBLI
 
 `SOCIAL_TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte random key. `SOCIAL_OAUTH_STATE_SECRET` must be an independent high-entropy value; never reuse either provider app secret. App IDs are stored with the server credential set so Angular does not need provider-specific configuration.
 
-Optional non-secret runtime params:
+Firebase Functions also requires these non-secret runtime params. Production keeps them in
+`functions/.env.colinmichaels` so non-interactive deploys do not pause for input:
 
 ```text
 SOCIAL_OAUTH_BASE_URL=https://colinmichaels.com
 META_GRAPH_API_VERSION=v23.0
 ```
+
+Use `functions/.env.<project-id>` for another Firebase project and set the OAuth base URL to
+that environment's public callback origin. These values are configuration, not secrets.
 
 The production callbacks are:
 
