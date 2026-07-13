@@ -21,6 +21,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/publishing-calendar/publishing-calendar.component').then(m => m.PublishingCalendarComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_SOCIAL_CONNECTIONS}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./pages/social-connections/social-connections-page.component').then(m => m.SocialConnectionsPageComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_AUTHORS}`,
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/author-manager/author-manager.component').then(m => m.CmsAuthorManagerComponent),

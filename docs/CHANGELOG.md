@@ -1,5 +1,8 @@
 # Changelog
 
+- Fixed cold blog links from social apps and other external entries by loading the requested published slug independently from the auth-aware full post collection, while preserving cached post reuse and background archive/suggestion loading.
+- Added direct post-and-discussion links to every Comment Moderation card so reviewers can open the public article context in a separate tab without losing their moderation queue position.
+- Added a connection-only Facebook, Instagram, and Threads authorization layer with CMS-role-gated OAuth starts, signed one-time state, provider-bound encrypted token storage, explicit Facebook Page selection, protected callback rewrites, sanitized admin health controls, and Threads Calendar planning while keeping all external delivery workers disabled.
 - Added a plain-language `/privacy` policy with no-sale and user-requested deletion commitments, linked it from the homepage and blog information footers, and included it in client/server SEO metadata and the generated sitemap.
 - Expanded the homepage information footer with primary navigation, copyright ownership, privacy access, and a working email contact path while keeping the future spam-protected contact form deferred.
 - Added a dedicated CMS App Embed block for the Hear the Hook soundboard, with exact-page trust and canonicalization of its existing root link, sandboxed inline rendering, bounded cross-origin resize messages, CSP coverage, and an always-visible external link fallback while keeping iframes and scripts prohibited in custom HTML blocks.

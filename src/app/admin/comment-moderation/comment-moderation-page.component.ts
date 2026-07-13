@@ -1,7 +1,9 @@
 import {DatePipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, OnDestroy, inject, signal} from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {Subscription} from 'rxjs';
 
+import {PATH_NAMES} from '../../app-route-paths';
 import {BlogComment, BlogCommentStatus} from '../../features/blog/models/blog-comment.model';
 import {
   CommentModerationAction,
@@ -18,6 +20,7 @@ function getErrorMessage(error: unknown): string {
   selector: 'app-comment-moderation-page',
   imports: [
     DatePipe,
+    RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -74,8 +77,20 @@ function getErrorMessage(error: unknown): string {
                   <div>
                     <p class="font-semibold text-zinc-50">{{ comment.authorDisplayName || comment.authorUid }}</p>
                     <p class="mt-1 break-all text-xs text-zinc-500">{{ comment.authorUid }}</p>
-                    <p class="mt-1 text-xs text-zinc-500">
-                      {{ comment.createdAt | date: 'MMM d, y, h:mm a' }} on /blog/{{ comment.postSlug }}
+                    <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
+                      <span>{{ comment.createdAt | date: 'MMM d, y, h:mm a' }}</span>
+                      <span aria-hidden="true">&middot;</span>
+                      <a
+                        [routerLink]="['/', pathNames.BLOG, comment.postSlug]"
+                        fragment="blog-comments"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-medium text-cyan-300 underline decoration-cyan-300/40 underline-offset-4 hover:text-cyan-200"
+                        [attr.aria-label]="'View post and discussion for ' + comment.postSlug"
+                      >
+                        View post &amp; discussion
+                        <span aria-hidden="true">&nearr;</span>
+                      </a>
                     </p>
                     @if (comment.parentCommentId) {
                       <p class="mt-1 text-xs text-cyan-300">
@@ -120,6 +135,7 @@ export class CommentModerationPageComponent implements OnDestroy {
   private commentsSubscription?: Subscription;
 
   protected readonly statuses = moderationStatuses;
+  protected readonly pathNames = PATH_NAMES;
   protected readonly selectedStatus = signal<BlogCommentStatus>('pending');
   protected readonly comments = signal<readonly BlogComment[]>([]);
   protected readonly isLoading = signal(false);

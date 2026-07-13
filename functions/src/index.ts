@@ -65,6 +65,16 @@ import {
 } from './user-role-mutation';
 import {reconcileSocialAnnouncementStatus} from './social-delivery';
 
+export {
+  beginSocialConnection,
+  disconnectSocialConnection,
+  listSocialConnections,
+  selectSocialConnectionAccount,
+  socialInstagramOAuthCallback,
+  socialMetaOAuthCallback,
+  socialThreadsOAuthCallback,
+} from './social-connection-functions';
+
 initializeApp();
 
 const FUNCTION_REGION = 'us-east1';
@@ -251,7 +261,7 @@ const SITE_CALLABLE_CORS_ORIGINS = [
 
 let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
 
-type SocialDeliveryChannel = 'notify' | 'youtube' | 'facebook' | 'instagram' | 'linkedin';
+type SocialDeliveryChannel = 'notify' | 'youtube' | 'facebook' | 'instagram' | 'threads' | 'linkedin';
 
 interface SocialAnnouncementDocument {
   id: string;
@@ -271,6 +281,7 @@ const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
   'youtube',
   'facebook',
   'instagram',
+  'threads',
   'linkedin',
 ]);
 

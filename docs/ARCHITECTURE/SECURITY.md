@@ -7,6 +7,7 @@
 - Client-side secret exposure (API keys in browser bundle/environment files).
 - Unsafe parsing and persistence of local storage data.
 - Supply-chain risk from dependency drift and failing quality gates.
+- OAuth state replay, callback substitution, provider-token disclosure, or accidental authorization of the wrong managed social account.
 
 ## Audit Findings
 
@@ -41,7 +42,20 @@ new external destinations must be added deliberately and covered by allowed/bloc
 Risk:
 an incorrectly deployed public proxy could protect vendor keys while still allowing anonymous quota abuse or caller-controlled upstream requests.
 
-## 4) Storage Trust
+## 4) Social Provider Credentials and OAuth
+
+- Social authorization starts are Firebase callable Functions restricted to `admin`, `cmsAdmin`, or `contentEditor` claims.
+- Callback endpoints are public because providers must reach them, but each callback requires GET, a signed single-use state record with a ten-minute expiry and exact provider match, and a fresh check that the initiating account still has a CMS role.
+- Provider access tokens are encrypted with AES-256-GCM and provider-specific additional authenticated data before storage in backend-only `/socialConnectionSecrets` documents.
+- `/socialConnections` exposes only non-secret provider, account, scope, expiry, and validation metadata to CMS roles.
+- `/socialOAuthStates` and `/socialConnectionSecrets` deny all client access and are explicitly excluded from the repository's legacy recursive super-admin override. Angular receives authorization URLs and sanitized connection status, never provider tokens or app secrets.
+- Multiple managed Facebook Pages require an explicit post-callback Page selection; the backend does not silently choose the first Page.
+- Disconnect removes encrypted provider tokens but does not mutate Calendar plans or outbox records.
+
+Residual risk:
+provider review, account-role drift, token revocation, and refresh failure must be monitored before delivery workers are enabled. Keep delivery disabled until pending outbox records have an approved cutoff so authorization cannot trigger historical posts.
+
+## 5) Storage Trust
 
 - App/session state read from local storage without robust schema validation.
 
@@ -53,8 +67,9 @@ tampered storage payloads can produce runtime errors or unintended behavior.
 1. Open: replace unsafe HTML sinks with safe rendering primitives and explicit formatting tokens.
 2. Complete: validate external URLs with strict scheme/domain checks before `window.open`.
 3. In progress: browser vendor keys are removed; complete and verify the deployable backend proxy boundary before closing the item.
-4. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
-5. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
+4. Complete for connection-only scope: protect social OAuth state and encrypt provider tokens; delivery-worker authorization and retry hardening remain open.
+5. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
+6. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
 
 ## Operational Notes
 
