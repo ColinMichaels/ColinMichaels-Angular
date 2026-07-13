@@ -5,6 +5,7 @@ import {HOME_SEO_METADATA, SITE_SEARCH_SEO_METADATA} from '../../shared/seo/seo.
 import {blogRoutes} from '../blog/blog.routes';
 import {catCornerRoutes} from '../cat-corner/cat-corner.routes';
 import {topicRoutes} from '../topics/topic.routes';
+import {authorRoutes} from '../authors/author.routes';
 
 export const publicRoutes: Routes = [
   {
@@ -19,6 +20,7 @@ export const publicRoutes: Routes = [
     loadComponent: () => import('../search/pages/site-search-page.component').then(m => m.SiteSearchPageComponent),
   },
   ...catCornerRoutes,
+  ...authorRoutes,
   ...blogRoutes,
   ...topicRoutes,
 ];

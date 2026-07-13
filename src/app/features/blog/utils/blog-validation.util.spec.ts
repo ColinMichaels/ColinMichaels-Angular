@@ -76,4 +76,44 @@ describe('blog post validation', () => {
       catCorner: 'cats',
     })).toBeFalse();
   });
+
+  it('accepts optional social delivery timing and media fields', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'instagram-launch',
+          channel: 'instagram',
+          message: 'A launch announcement.',
+          scheduledAt: '2026-07-24T12:00:00.000Z',
+          deliveryTiming: 'at-publish',
+          status: 'scheduled',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+          mediaUrl: 'https://colinmichaels.com/social/launch.jpg',
+        }],
+      },
+    })).toBeTrue();
+  });
+
+  it('rejects malformed social delivery timing and media fields', () => {
+    const announcement = {
+      id: 'instagram-launch',
+      channel: 'instagram',
+      message: 'A launch announcement.',
+      scheduledAt: '2026-07-24T12:00:00.000Z',
+      status: 'scheduled',
+      createdAt: '2026-07-11T12:00:00.000Z',
+      updatedAt: '2026-07-11T12:00:00.000Z',
+    };
+
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, deliveryTiming: 'whenever'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, mediaUrl: 42}]},
+    })).toBeFalse();
+  });
 });

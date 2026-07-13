@@ -44,6 +44,21 @@ function findButton(element: HTMLElement, text: string): HTMLButtonElement {
   return button;
 }
 
+function selectAllVisiblePosts(fixture: ComponentFixture<CmsPostListComponent>): void {
+  const element = fixture.nativeElement as HTMLElement;
+  const checkbox = element.querySelector<HTMLInputElement>(
+    'thead input[aria-label="Select all posts on this page"]'
+  );
+
+  if (!checkbox) {
+    throw new Error('Select-all checkbox was not found.');
+  }
+
+  checkbox.checked = true;
+  checkbox.dispatchEvent(new Event('change'));
+  fixture.detectChanges();
+}
+
 describe('CmsPostListComponent', () => {
   let fixture: ComponentFixture<CmsPostListComponent>;
   let blogRepository: jasmine.SpyObj<Pick<
@@ -101,21 +116,53 @@ describe('CmsPostListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders bulk controls disabled until posts are selected', () => {
+  it('does not render bulk actions until a post is selected', () => {
     const element = fixture.nativeElement as HTMLElement;
     const bulkSection = element.querySelector('section[aria-label="Bulk post actions"]');
 
-    expect(bulkSection?.textContent).toContain('Bulk actions');
-    expect(bulkSection?.textContent).toContain('0 selected');
-    expect(findButton(element, 'Apply status').disabled).toBeTrue();
-    expect(findButton(element, 'Delete selected').disabled).toBeTrue();
+    expect(bulkSection).toBeNull();
+    expect(element.querySelector('thead')?.textContent).toContain('Author');
+    expect(element.querySelector('tbody')?.textContent).toContain('Colin Michaels');
+  });
+
+  it('groups maintenance actions behind a native disclosure', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const details = element.querySelector<HTMLDetailsElement>('header details');
+    const summary = details?.querySelector('summary');
+    const actions = details?.querySelector<HTMLElement>('[aria-label="Maintenance actions"]');
+    const newPostLink = element.querySelector<HTMLAnchorElement>('header a[href="/admin/cms/new"]');
+
+    expect(details).not.toBeNull();
+    expect(details?.open).toBeFalse();
+    expect(summary?.textContent).toContain('Maintenance');
+    expect(actions).not.toBeNull();
+    expect(findButton(actions as HTMLElement, 'Import JSON')).toBeTruthy();
+    expect(findButton(actions as HTMLElement, 'Export JSON')).toBeTruthy();
+    expect(findButton(actions as HTMLElement, 'Refresh Firestore')).toBeTruthy();
+    expect(newPostLink?.textContent).toContain('New Post');
+  });
+
+  it('opens the import picker and closes Maintenance', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const details = element.querySelector<HTMLDetailsElement>('header details');
+    const input = element.querySelector<HTMLInputElement>('input[type="file"]');
+
+    if (!details || !input) {
+      throw new Error('Maintenance import controls were not found.');
+    }
+
+    const inputClickSpy = spyOn(input, 'click');
+    details.open = true;
+    findButton(details, 'Import JSON').click();
+
+    expect(inputClickSpy).toHaveBeenCalled();
+    expect(details.open).toBeFalse();
   });
 
   it('selects visible posts and clears the selection', () => {
     const element = fixture.nativeElement as HTMLElement;
 
-    findButton(element, 'Select visible').click();
-    fixture.detectChanges();
+    selectAllVisiblePosts(fixture);
 
     expect(element.textContent).toContain('2 selected');
     expect(findButton(element, 'Apply status').disabled).toBeFalse();
@@ -124,17 +171,16 @@ describe('CmsPostListComponent', () => {
     findButton(element, 'Clear').click();
     fixture.detectChanges();
 
-    expect(element.textContent).toContain('0 selected');
-    expect(findButton(element, 'Apply status').disabled).toBeTrue();
+    expect(element.querySelector('section[aria-label="Bulk post actions"]')).toBeNull();
   });
 
   it('applies a bulk status change to selected posts', async () => {
     const element = fixture.nativeElement as HTMLElement;
     const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+
+    selectAllVisiblePosts(fixture);
     const statusSelect = element.querySelector('section[aria-label="Bulk post actions"] select');
 
-    findButton(element, 'Select visible').click();
-    fixture.detectChanges();
     if (!(statusSelect instanceof HTMLSelectElement)) {
       throw new Error('Bulk status select was not found.');
     }
@@ -157,8 +203,7 @@ describe('CmsPostListComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
 
-    findButton(element, 'Select visible').click();
-    fixture.detectChanges();
+    selectAllVisiblePosts(fixture);
     findButton(element, 'Delete selected').click();
 
     await fixture.whenStable();

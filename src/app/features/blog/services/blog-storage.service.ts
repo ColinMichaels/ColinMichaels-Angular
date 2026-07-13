@@ -22,7 +22,7 @@ import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/fire
 import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
 import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
-import {BlogPost} from '../models/blog-post.model';
+import {BlogPost, normalizeBlogAuthor} from '../models/blog-post.model';
 import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
 
@@ -308,9 +308,11 @@ export class BlogStorageService {
 
   private toFirestorePost(post: BlogPost): Record<string, unknown> {
     const imageFields = normalizeBlogImageFields(post);
+    const authorFields = normalizeBlogAuthor(post.author, post.authorId);
 
     return {
       ...post,
+      ...authorFields,
       coverImage: imageFields.coverImage,
       backgroundImage: post.backgroundImage?.trim() || deleteField(),
       thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
@@ -345,6 +347,12 @@ export class BlogStorageService {
 
     const candidate = {
       ...value,
+      ...normalizeBlogAuthor(
+        isRecord(value['author']) && typeof value['author']['name'] === 'string'
+          ? value['author'] as unknown as BlogPost['author']
+          : undefined,
+        typeof value['authorId'] === 'string' ? value['authorId'] : undefined
+      ),
       publishedAt: typeof value['publishedAt'] === 'string' ? value['publishedAt'] : null,
     };
 

@@ -41,6 +41,8 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
             <span class="blog-post-topic-label">{{ topicLabel }}</span>
           }
           <span>{{ post.publishedAt ? (post.publishedAt | date: 'MMM d, y') : (post.updatedAt | date: 'MMM d, y') }}</span>
+          <span aria-hidden="true">/</span>
+          <a [routerLink]="['/', pathNames.AUTHORS, post.author.slug || 'colin-michaels']" class="font-medium hover:text-cyan-700 dark:hover:text-cyan-300">{{ post.author.name }}</a>
           @for (category of post.categories; track category) {
             <span aria-hidden="true">/</span>
             <a

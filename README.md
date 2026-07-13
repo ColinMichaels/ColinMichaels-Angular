@@ -4,11 +4,11 @@ Angular and Firebase application for ColinMichaels.com. The project combines a p
 
 ## What This Project Contains
 
-- Public website for portfolio, writing, media, labs, and personal brand content.
+- Public website for portfolio, writing, media, project notes, and personal brand content.
 - Blog system with Editor.js content blocks, categories, tags, search, RSS/JSON feeds, social sharing, SEO metadata, and reading UX.
 - Protected admin CMS for creating, editing, importing, publishing, and managing blog posts and media.
 - Firebase Functions for crawler-friendly SEO HTML, sitemap/feed generation, YouTube feed loading, and CMS AI helpers.
-- Public labs area for experiments and demos.
+- Preserved labs area for experiments and demos, with `/labs` temporarily redirected during its redesign.
 - Browser OS framework for desktop/window/dock/terminal-style systems.
 
 ## Current Stack
@@ -29,7 +29,7 @@ Angular and Firebase application for ColinMichaels.com. The project combines a p
 - `src/app/shared`: reusable public-site UI, SEO helpers, models, and utilities.
 - `src/app/core-os`: reusable OS-style framework route boundary and infrastructure.
 - `src/app/components/game`: legacy desktop/game systems pending continued migration into `core-os`.
-- `src/app/labs`: public experiments and playground routes.
+- `src/app/labs`: preserved experiments and playground routes; `/labs` currently redirects to `/blog`.
 - `functions`: Firebase Functions for SEO rendering, feeds, sitemap, media, and CMS helpers.
 - `docs`: architecture, setup, changelog, planning, and migration notes.
 
@@ -101,7 +101,7 @@ See [Environment and Secrets Setup](docs/README/ENVIRONMENT_SECRETS.md) for full
 
 ### Public Site
 
-The public website is the main professional surface: homepage, portfolio content, blog, labs, media, SEO metadata, feeds, and global site shell. Normal public routes use a shared header and theme system.
+The public website is the main professional surface: homepage, portfolio content, blog, project writing, media, SEO metadata, feeds, and global site shell. Normal public routes use a shared header and theme system.
 
 Relevant areas:
 
@@ -138,7 +138,7 @@ Relevant routes:
 
 ### Labs
 
-Labs isolate experiments and playgrounds from the production public site and reusable OS framework. Experimental systems should stay under `labs`, `archive`, or playground-style boundaries unless intentionally promoted.
+Labs isolate experiments and playgrounds from the production public site and reusable OS framework. Their implementation remains preserved, but the `/labs` index redirects to `/blog` during redesign; `/topics/labs-projects` is the current public discovery surface. Experimental systems should stay under `labs`, `archive`, or playground-style boundaries unless intentionally promoted.
 
 Relevant areas:
 

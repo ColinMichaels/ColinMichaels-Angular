@@ -33,6 +33,9 @@ export interface SiteSearchItem {
   bodyText: string;
   categories: readonly string[];
   tags: readonly string[];
+  authorId?: string;
+  authorName?: string;
+  authorSlug?: string;
   date: string | null;
   image?: string;
   topic?: SiteSearchTopic;
@@ -43,6 +46,7 @@ export interface SiteSearchFilters {
   type: SiteSearchContentType | 'all';
   category: string;
   tag: string;
+  author: string;
   sort: SiteSearchSortMode;
 }
 
@@ -157,6 +161,14 @@ export function getSearchTags(items: readonly SiteSearchItem[]): readonly string
   return uniqueSorted(items.flatMap(item => item.tags));
 }
 
+export function getSearchAuthors(items: readonly SiteSearchItem[]): readonly {name: string; slug: string}[] {
+  const authors = new Map<string, string>();
+  for (const item of items) {
+    if (item.authorSlug && item.authorName) authors.set(item.authorSlug, item.authorName);
+  }
+  return [...authors].map(([slug, name]) => ({slug, name})).sort((left, right) => left.name.localeCompare(right.name));
+}
+
 export function normalizeSearchValue(value: string): string {
   return value
     .replace(/<[^>]*>/g, ' ')
@@ -171,6 +183,7 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
   const bodyText = createBlogPostBodyText(post);
   const taxonomyTerms = getBlogTaxonomyTerms(post);
   const taxonomyText = [...taxonomyTerms, ...post.tags].join(' ');
+  const authorText = [post.author.name, post.author.title, post.author.slug].filter(Boolean).join(' ');
   const titleText = post.title;
   const excerptText = post.excerpt;
   const topicHub = findTopicHubForBlogPost(post, taxonomyTerms, topicHubs);
@@ -183,18 +196,22 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
     path: `/${PATH_NAMES.BLOG}/${post.slug}`,
     titleText: normalizeSearchValue(titleText),
     excerptText: normalizeSearchValue(excerptText),
-    taxonomyText: normalizeSearchValue(taxonomyText),
+    taxonomyText: normalizeSearchValue(`${taxonomyText} ${authorText}`),
     bodyText: normalizeSearchValue(bodyText),
     searchText: normalizeSearchValue([
       titleText,
       excerptText,
       taxonomyText,
+      authorText,
       bodyText,
       post.seo.title,
       post.seo.description,
     ].join(' ')),
     categories: taxonomyTerms,
     tags: post.tags,
+    authorId: post.authorId,
+    authorName: post.author.name,
+    authorSlug: post.author.slug ?? 'colin-michaels',
     date: post.publishedAt ?? post.updatedAt,
     image: resolveBlogPostImage(post),
     ...(topicHub ? {topic: createSearchTopic(topicHub)} : {}),
@@ -310,8 +327,9 @@ function matchesFilters(item: SiteSearchItem, filters: SiteSearchFilters): boole
   const typeMatches = filters.type === 'all' || item.type === filters.type;
   const categoryMatches = !filters.category || item.categories.some(category => sameSearchFacet(category, filters.category));
   const tagMatches = !filters.tag || item.tags.some(tag => sameSearchFacet(tag, filters.tag));
+  const authorMatches = !filters.author || item.authorSlug === filters.author;
 
-  return typeMatches && categoryMatches && tagMatches;
+  return typeMatches && categoryMatches && tagMatches && authorMatches;
 }
 
 function scoreSearchItem(
@@ -334,7 +352,7 @@ function scoreSearchItem(
 
   if (item.taxonomyText.includes(normalizedQuery)) {
     score += 45;
-    matchedFields.add('Category or tag');
+    matchedFields.add(item.authorName && normalizeSearchValue(item.authorName).includes(normalizedQuery) ? 'Author' : 'Category or tag');
   }
 
   if (item.bodyText.includes(normalizedQuery)) {
@@ -355,7 +373,7 @@ function scoreSearchItem(
 
     if (item.taxonomyText.includes(token)) {
       score += 12;
-      matchedFields.add('Category or tag');
+      matchedFields.add(item.authorName && normalizeSearchValue(item.authorName).includes(token) ? 'Author' : 'Category or tag');
     }
 
     if (item.bodyText.includes(token)) {

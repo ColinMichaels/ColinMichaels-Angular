@@ -105,6 +105,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                       <time [attr.datetime]="postDate(post)">
                         {{ postDate(post) | date: 'MMM d, y':'UTC' }}
                       </time>
+                      <span class="post-listing__separator" aria-hidden="true">/</span>
+                      <a
+                        [routerLink]="['/', pathNames.AUTHORS, post.author.slug || 'colin-michaels']"
+                        class="post-listing__taxonomy-link"
+                      >
+                        {{ post.author.name }}
+                      </a>
                       @for (category of post.categories; track category) {
                         <span class="post-listing__separator" aria-hidden="true">/</span>
                         <a

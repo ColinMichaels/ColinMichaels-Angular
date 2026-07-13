@@ -126,6 +126,7 @@ export class SeoService {
     url: string;
     image: string;
     author: string;
+    authorUrl?: string;
     publishedAt: string | null;
     modifiedAt: string;
   }): SeoStructuredDataObject {
@@ -141,7 +142,7 @@ export class SeoService {
       author: {
         '@type': 'Person',
         name: options.author,
-        url: SITE_URL,
+        url: options.authorUrl ? this.toAbsoluteUrl(options.authorUrl) : SITE_URL,
       },
       publisher: {
         '@type': 'Person',

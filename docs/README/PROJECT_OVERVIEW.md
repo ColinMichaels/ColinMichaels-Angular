@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-This project combines a public portfolio and publishing site with a macOS-inspired desktop experience in the browser. The public site now keeps portfolio, blog, and labs entry points visible while the interactive in-browser "OS" remains available through its own launch route.
+This project combines a public portfolio and publishing site with a macOS-inspired desktop experience in the browser. The public site is currently blog-first: the preserved Labs implementation is out of public navigation and `/labs` temporarily redirects to `/blog`, while Labs and project writing remains available through `/topics/labs-projects`. The interactive in-browser "OS" remains available through its own launch route.
 
 The normal site routes share a global header/menu and persistent light/dark theme toggle. The OS desktop/login/boot/sleep routes remain outside that shared site shell so the reusable OS framework can preserve its own interface system.
 
@@ -16,7 +16,7 @@ The normal site routes share a global header/menu and persistent light/dark them
 
 ## Tech Stack
 
-- Angular 19 standalone components
+- Angular 22 standalone components
 - TypeScript (strict mode enabled)
 - Tailwind CSS 3
 - RxJS for reactive state/event streams
@@ -34,7 +34,7 @@ The normal site routes share a global header/menu and persistent light/dark them
 - `src/app/admin`:
   protected admin and CMS route boundary for post listing, creation, and editing.
 - `src/app/labs`:
-  public experiments index and route-backed playgrounds.
+  preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
   OS route boundary that preserves legacy desktop/login/boot/sleep URLs.
 - `src/app/components/game`:

@@ -9,6 +9,7 @@ import {
   isCatCornerPost,
   isPublicBlogListingPost,
   normalizeBlogCatCornerSettings,
+  normalizeBlogAuthor,
 } from '../models/blog-post.model';
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
@@ -40,6 +41,7 @@ export interface BlogPostBulkActionResult {
 
 function toSummary(post: BlogPost): BlogPostSummary {
   const imageFields = normalizeBlogImageFields(post);
+  const authorFields = normalizeBlogAuthor(post.author, post.authorId);
 
   return {
     id: post.id,
@@ -49,7 +51,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     coverImage: imageFields.coverImage,
     thumbnailImage: imageFields.thumbnailImage,
     featured: post.featured,
-    author: post.author,
+    ...authorFields,
     categories: post.categories,
     subcategories: post.subcategories ?? [],
     tags: post.tags,
@@ -220,9 +222,11 @@ export class BlogRepositoryService {
       excerpt: '',
       coverImage: DEFAULT_COVER_IMAGE,
       featured: false,
+      authorId: 'colin-michaels',
       author: {
         name: 'Colin Michaels',
         title: 'Applications Developer',
+        slug: 'colin-michaels',
       },
       categories: [],
       subcategories: [],
@@ -246,11 +250,13 @@ export class BlogRepositoryService {
     const existingPost = this.getPosts().find(savedPost => savedPost.id === post.id);
     const slug = this.createUniqueSlug(post.slug || post.title, post.id);
     const imageFields = normalizeBlogImageFields(post);
+    const authorFields = normalizeBlogAuthor(post.author, post.authorId);
     const publishedAt = post.status === 'published'
       ? post.publishedAt ?? now
       : post.publishedAt;
     const savedPost: BlogPost = {
       ...post,
+      ...authorFields,
       slug,
       coverImage: imageFields.coverImage,
       backgroundImage: post.backgroundImage?.trim() || undefined,

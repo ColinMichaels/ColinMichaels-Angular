@@ -25,8 +25,6 @@ Add these under `Settings -> Secrets and variables -> Actions -> Secrets` for re
 
 | Name                                     | Description                                                                                                                                                       | Example Value                                                |
 |------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
-| `OPENAI_API_KEY`                         | API key used by the legacy browser AI chat service. CMS AI uses a Firebase Functions secret with the same name instead of this browser environment value.         | `example_openai_api_key_value`                               |
-| `OPEN_WEATHER_MAP_API_KEY`               | API key used by weather data calls.                                                                                                                               | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`                           |
 | `FIREBASE_SERVICE_ACCOUNT_COLINMICHAELS` | Raw Firebase service account JSON used by GitHub Actions deploy jobs. The workflows validate this JSON and write it to a temporary ADC file for the Firebase CLI. | `{"type":"service_account","project_id":"your-project",...}` |
 
 ## Optional Compatibility Keys
@@ -73,6 +71,8 @@ This script writes:
 - `src/environments/environment.prod.ts`
 
 Both are generated from CI environment values before `npm run build`.
+
+Vendor API secrets are not Angular build inputs. The frontend receives only `APP_API_URL`; OpenAI and weather credentials must remain behind the backend boundary and must not be added to `src/environments/.env.example` or GitHub Actions build environments.
 
 ## Firebase Functions Secrets
 

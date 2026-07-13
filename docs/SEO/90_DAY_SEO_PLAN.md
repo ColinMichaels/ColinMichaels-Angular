@@ -28,7 +28,7 @@ Validated locally:
 - `npm run build` passed with existing bundle/CommonJS warnings.
 - Focused SEO specs passed.
 - Changed-file lint passed.
-- Full `npm run lint` still fails because of the existing unrelated game/OS/Firebase lint backlog.
+- Full `npm run lint` still fails with `262` existing game/OS/Firebase and accessibility errors (`0` warnings), reconfirmed under Node `24.15.0` on July 13, 2026.
 
 Still pending outside local code:
 

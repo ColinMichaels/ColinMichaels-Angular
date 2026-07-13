@@ -7,6 +7,7 @@ import {PATH_NAMES} from '../../../app-route-paths';
 import {
   getFeaturedSearchItems,
   getSearchCategories,
+  getSearchAuthors,
   getSearchTags,
   searchSiteItems,
   SiteSearchContentType,
@@ -72,7 +73,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
             </button>
           </form>
 
-          <section class="mt-5 grid gap-3 border-t border-slate-200 pt-5 dark:border-zinc-800 md:grid-cols-4" aria-label="Advanced search filters">
+          <section class="mt-5 grid gap-3 border-t border-slate-200 pt-5 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-5" aria-label="Advanced search filters">
             <label class="grid gap-2">
               <span class="site-meta">Content</span>
               <select class="site-input" [value]="typeFilter()" (change)="setTypeFilter($any($event.target).value)">
@@ -98,6 +99,16 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
                 <option value="">All tags</option>
                 @for (tag of tags(); track tag) {
                   <option [value]="tag">{{ tag }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="grid gap-2">
+              <span class="site-meta">Author</span>
+              <select class="site-input" [value]="authorFilter()" (change)="setAuthorFilter($any($event.target).value)">
+                <option value="">All authors</option>
+                @for (author of authors(); track author.slug) {
+                  <option [value]="author.slug">{{ author.name }}</option>
                 }
               </select>
             </label>
@@ -214,6 +225,12 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
           </h2>
           <p class="mt-2 max-w-3xl text-body">{{ result.excerpt }}</p>
 
+          @if (result.authorName) {
+            <a [routerLink]="['/', pathNames.AUTHORS, result.authorSlug]" class="mt-3 inline-flex text-sm font-medium text-cyan-700 hover:text-cyan-600 dark:text-cyan-300">
+              By {{ result.authorName }}
+            </a>
+          }
+
           <div class="mt-4 flex flex-wrap gap-2">
             @for (category of result.categories; track category) {
               <span class="blog-category-badge">{{ category }}</span>
@@ -243,6 +260,7 @@ export class SiteSearchPageComponent {
   protected readonly typeFilter = signal<SearchTypeFilter>(DEFAULT_TYPE_FILTER);
   protected readonly categoryFilter = signal('');
   protected readonly tagFilter = signal('');
+  protected readonly authorFilter = signal('');
   protected readonly sortMode = signal<SiteSearchSortMode>(DEFAULT_SORT);
   protected readonly items = toSignal(this.search.getSearchItems$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.search.loading$, {initialValue: true});
@@ -250,6 +268,7 @@ export class SiteSearchPageComponent {
   protected readonly normalizedQuery = computed(() => this.query().trim());
   protected readonly categories = computed(() => getSearchCategories(this.items()));
   protected readonly tags = computed(() => getSearchTags(this.items()));
+  protected readonly authors = computed(() => getSearchAuthors(this.items()));
   protected readonly blogItemCount = computed(() => this.items().filter(item => item.type === 'blog').length);
   protected readonly pageItemCount = computed(() => this.items().filter(item => item.type === 'page').length);
   protected readonly hasActiveSearch = computed(() => (
@@ -257,12 +276,14 @@ export class SiteSearchPageComponent {
     || this.typeFilter() !== DEFAULT_TYPE_FILTER
     || this.categoryFilter().length > 0
     || this.tagFilter().length > 0
+    || this.authorFilter().length > 0
   ));
   protected readonly filters = computed<SiteSearchFilters>(() => ({
     query: this.query(),
     type: this.typeFilter(),
     category: this.categoryFilter(),
     tag: this.tagFilter(),
+    author: this.authorFilter(),
     sort: this.sortMode(),
   }));
   protected readonly results = computed(() => searchSiteItems(this.items(), this.filters(), 60));
@@ -274,6 +295,7 @@ export class SiteSearchPageComponent {
       this.typeFilter.set(parseTypeFilter(params.get('type')));
       this.categoryFilter.set(params.get('category') ?? '');
       this.tagFilter.set(params.get('tag') ?? '');
+      this.authorFilter.set(params.get('author') ?? '');
       this.sortMode.set(parseSortMode(params.get('sort')));
     });
   }
@@ -304,6 +326,11 @@ export class SiteSearchPageComponent {
     this.syncQueryParams();
   }
 
+  protected setAuthorFilter(value: string): void {
+    this.authorFilter.set(value);
+    this.syncQueryParams();
+  }
+
   protected setSortMode(value: string): void {
     this.sortMode.set(parseSortMode(value));
     this.syncQueryParams();
@@ -314,6 +341,7 @@ export class SiteSearchPageComponent {
     this.typeFilter.set(DEFAULT_TYPE_FILTER);
     this.categoryFilter.set('');
     this.tagFilter.set('');
+    this.authorFilter.set('');
     this.sortMode.set(DEFAULT_SORT);
     this.syncQueryParams();
   }
@@ -329,6 +357,7 @@ export class SiteSearchPageComponent {
         type: this.typeFilter() === DEFAULT_TYPE_FILTER ? null : this.typeFilter(),
         category: this.categoryFilter() || null,
         tag: this.tagFilter() || null,
+        author: this.authorFilter() || null,
         sort: this.sortMode() === DEFAULT_SORT ? null : this.sortMode(),
       },
       replaceUrl: true,

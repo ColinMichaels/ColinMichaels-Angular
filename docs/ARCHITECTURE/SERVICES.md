@@ -2,6 +2,25 @@
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
+## `author-repository.service.ts`
+
+- Responsibility:
+  canonical author normalization, default Colin fallback, published/admin projections, ID/slug lookup, and safe
+  profile resolution for CMS and public author pages.
+- Dependencies:
+  `AuthorStorageService`, author validation utilities, and the shared Colin author profile used to seed/fallback.
+- Called by:
+  CMS post editor and author manager, public author pages, blog bylines, author statistics, and site search.
+- Persistence:
+  canonical profiles live at `/authors/{authorId}`. Posts separately retain `authorId` and a compact byline snapshot,
+  so rendering, feeds, previews, exports, and offline copies do not depend on an author join.
+- Current risks:
+  profile edits intentionally do not rewrite historical snapshots automatically. Deleting or unpublishing a referenced
+  author must be blocked or handled through a future explicit reassignment workflow.
+- Planned cleanup:
+  add server-side bulk reassignment and snapshot-refresh operations only when they can provide authorization,
+  concurrency protection, audit history, and idempotent retries.
+
 ## `seo.service.ts`
 
 - Responsibility:
@@ -95,9 +114,9 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   CLI game component.
 - Current risks:
-  auth bug in `su` command (`isAuthorized` not invoked), direct `localStorage` reads, weak input validation.
+  the `su` authorization branch is fixed and covered; direct `localStorage` reads and weak validation remain in legacy command paths.
 - Planned cleanup:
-  fix auth branch, route identity through `UserService`, validate command parameters.
+  route remaining identity reads through `UserService` and validate command parameters consistently.
 
 ## `typewriter.service.ts`
 
@@ -108,9 +127,9 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   CLI, desktop intro, home terminal.
 - Current risks:
-  loose typings (`any`), timer lifecycle concerns, `onBegin` called per char instead of per line.
+  timer teardown, queue behavior, and callback semantics are stabilized; some legacy callers still use loose payload types.
 - Planned cleanup:
-  strict event payload types, line-level hook semantics, safer timer teardown.
+  finish strict event payload types without changing the verified line/queue callback behavior.
 
 ## `settings.service.ts`
 
@@ -121,22 +140,22 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   user, weather, sound player, appearance panel, patch/music features.
 - Current risks:
-  broad `any` typing, untracked subscriptions, nested persistence flows.
+  typed internal models, guarded keyed operations, and explicit persistence subscriptions are in place; dynamic callers can still weaken contracts at the boundary.
 - Planned cleanup:
-  type-safe setting models, explicit subscription lifecycle, flatten async logic.
+  remove remaining boundary-level `any` usage and keep persistence flows observable and testable.
 
 ## `application-manager.service.ts`
 
 - Responsibility:
-  app registry, launch/close/focus, memory checks, persistence of open apps.
+  facade for app registry, launch/close/focus, memory checks, and persistence of open apps.
 - Dependencies:
   `ApplicationFactory`, `NotificationService`, `LogService`.
 - Called by:
   desktop, dock, tray, app window template, activity monitor, CLI.
 - Current risks:
-  very large mixed-responsibility service, unsafe `localStorage` JSON parse, fragile instance counting.
+  registry, catalog, persistence, and lifecycle responsibilities are extracted, with deterministic restoration and instance handling; the facade still coordinates several legacy consumers.
 - Planned cleanup:
-  extract persistence/registry helpers, guard JSON parse, fix instance limit accounting.
+  continue tightening facade types and consumer coupling without recombining the extracted services.
 
 ## `media.service.ts`
 
@@ -160,22 +179,22 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   settings, tasks, patch editor.
 - Current risks:
-  `getAllKeys()` bypasses strategy and always reads localStorage.
+  strategy-level `getAllKeys()` behavior is aligned and covered; broad generic value types remain in legacy callers.
 - Planned cleanup:
-  add strategy-level key enumeration and align behavior across storage backends.
+  tighten caller value types while preserving IndexedDB/localStorage strategy parity.
 
 ## `file-system.service.ts`
 
 - Responsibility:
   virtual file tree, path navigation, finder data/view modes.
 - Dependencies:
-  `HttpClient`, faker.
+  `HttpClient` and deterministic seeded mock content.
 - Called by:
   finder UI and tray view mode controls.
 - Current risks:
-  startup faker generation cost, nondeterministic tree shape, duplicate favorites.
+  startup content is deterministic and lightweight; the virtual file tree remains development/demo data rather than a durable filesystem contract.
 - Planned cleanup:
-  deterministic seed or static mock loading in prod, dedupe favorites, lazy/mock gate.
+  keep demo-data generation isolated and add a lazy/static mock gate only if startup profiling shows a regression.
 
 ## `game-config.service.ts`
 

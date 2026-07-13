@@ -112,6 +112,13 @@
         ]
       }
     ],
+    "redirects": [
+      {
+        "source": "/labs",
+        "destination": "/blog",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
         "source": "/sitemap.xml",

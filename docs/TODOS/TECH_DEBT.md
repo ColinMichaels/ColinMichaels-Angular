@@ -92,8 +92,9 @@ Status legend:
   - Effort: L
   - Validation: integration tests and production key removal.
   - Progress: frontend OpenAI/weather services now call backend proxy URL (`APP_API_URL`) instead of vendor APIs.
-  - Progress: added Firebase Functions API proxy (`functions/index.js`) using Firebase Secret Manager keys.
-  - Progress: removed vendor key requirements from frontend environment generation and hosting deploy workflows.
+  - Progress: removed vendor key requirements from frontend environment generation, the safe environment template, and Hosting preview build workflows.
+  - Remaining: `functions/index.js` contains a legacy proxy prototype, but the deploy entry is compiled from `functions/src/index.ts`; implement or document the real deployed API boundary before treating the proxy as complete.
+  - Remaining: require authentication/App Check where appropriate, validate caller-controlled payloads, add quota/rate controls, and verify vendor keys are absent from production browser artifacts.
 
 - [ ] Replace `innerHTML` rendering paths with safe renderers.
   - Impact: High (security)
