@@ -77,7 +77,7 @@ describe('BlogBlockRendererComponent', () => {
         type: 'embed',
         data: {
           provider: 'app',
-          embedUrl: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard.html',
+          embedUrl: 'https://hear-the-hook.captaincolin.chatgpt.site/',
           caption: 'Hear the Hook voice-cloning awareness demo',
           height: 820,
         },
@@ -94,7 +94,7 @@ describe('BlogBlockRendererComponent', () => {
     expect(iframe?.getAttribute('allow')).toContain("microphone 'none'");
     expect(iframe?.getAttribute('referrerpolicy')).toBe('strict-origin-when-cross-origin');
     expect(iframe?.style.height).toBe('820px');
-    expect(fallback?.getAttribute('href')).toBe('https://hear-the-hook.captaincolin.chatgpt.site/soundboard.html');
+    expect(fallback?.getAttribute('href')).toBe('https://hear-the-hook.captaincolin.chatgpt.site/');
     expect(fallback?.textContent).toContain('Open interactive app');
   });
 

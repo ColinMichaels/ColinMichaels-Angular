@@ -9,7 +9,7 @@ export const MIN_BLOG_APP_EMBED_HEIGHT = 360;
 export const MAX_BLOG_APP_EMBED_HEIGHT = 2400;
 
 const trustedAppEmbedHosts = new Set<string>(BLOG_APP_EMBED_HOSTS);
-const trustedHearTheHookPaths = new Set(['/soundboard', '/soundboard.html']);
+const trustedHearTheHookPaths = new Set(['/', '/soundboard', '/soundboard.html']);
 
 export function getTrustedBlogAppEmbedUrl(value: string | undefined): URL | null {
   if (!value) {
