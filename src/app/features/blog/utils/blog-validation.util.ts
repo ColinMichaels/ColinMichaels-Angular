@@ -35,7 +35,11 @@ function isOptionalPositiveInteger(value: unknown): boolean {
 function isBlogAuthor(value: unknown): value is BlogPost['author'] {
   return isRecord(value)
     && typeof value['name'] === 'string'
-    && (value['title'] === undefined || typeof value['title'] === 'string');
+    && (value['title'] === undefined || typeof value['title'] === 'string')
+    && (value['bio'] === undefined || typeof value['bio'] === 'string')
+    && (value['avatarUrl'] === undefined || typeof value['avatarUrl'] === 'string')
+    && (value['profileUrl'] === undefined || typeof value['profileUrl'] === 'string')
+    && (value['slug'] === undefined || typeof value['slug'] === 'string');
 }
 
 function isBlogSeo(value: unknown): value is BlogPost['seo'] {
@@ -120,6 +124,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && (value['backgroundImage'] === undefined || typeof value['backgroundImage'] === 'string')
     && (value['thumbnailImage'] === undefined || typeof value['thumbnailImage'] === 'string')
     && (value['featured'] === undefined || typeof value['featured'] === 'boolean')
+    && (value['authorId'] === undefined || typeof value['authorId'] === 'string')
     && isBlogAuthor(value['author'])
     && isStringArray(value['categories'])
     && (value['subcategories'] === undefined || isStringArray(value['subcategories']))

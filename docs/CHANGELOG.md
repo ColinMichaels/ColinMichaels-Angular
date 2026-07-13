@@ -1,5 +1,9 @@
 # Changelog
 
+- Redesigned public author pages as responsive editorial résumés with a portrait/contact rail, icon-led social links and publishing metrics, a color-banded biography, compact article archive, and dark-mode support without adding fictional career data.
+- Added canonical multi-author profiles with Colin Michaels as the new-post and legacy-post default while preserving the homepage's fixed Colin identity.
+- Added CMS author assignment and management with Media Library-backed avatar selection/upload, an Author column and author-aware post search, plus public author pages with derived publishing statistics and reusable post archives.
+- Added author-aware public search, dynamic bylines, profile links, and browser/crawler SEO contracts with migration-safe embedded post snapshots, deployment order, and rollback guidance.
 - Added the soft-gated Cat Corner editorial hub with a reusable Gretchen Easter egg, authenticated self-service `Cat Corner Addict` role, immediate profile badge/menu access, full-admin override, responsive light/dark presentation, and accepted desktop/mobile/unlock visual specifications.
 - Added migration-safe Cat Corner post/discovery metadata and CMS controls so selected discovery posts retain normal public reach while non-discovery Cat posts remain directly readable but stay out of public listings, search, feeds, sitemap, promotion workflows, and indexing.
 - Added a custom Editor.js Cat Corner unlock block, preserved unrelated Firebase claims during idempotent unlocks, and documented the feature's deliberate soft-gate security boundary, deployment order, rollback, and validation contract.

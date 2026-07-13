@@ -148,6 +148,14 @@ describe('BlogRepositoryService', () => {
     expect(posts[0].slug).toBe('published-post');
   });
 
+  it('defaults new posts to Colin with a stable author relationship', () => {
+    const post = service.createNewPostTemplate();
+
+    expect(post.authorId).toBe('colin-michaels');
+    expect(post.author.slug).toBe('colin-michaels');
+    expect(post.author.name).toBe('Colin Michaels');
+  });
+
   it('returns full published posts for public search without exposing drafts', () => {
     const posts = service.getPublishedFullPosts();
 

@@ -1,4 +1,5 @@
 import {BlogSocialPromotion} from './blog-social-promotion.model';
+import {DEFAULT_AUTHOR_ID, DEFAULT_AUTHOR_SLUG} from '../../authors/authors.constants';
 
 export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
@@ -93,6 +94,7 @@ export interface BlogAuthor {
   bio?: string;
   avatarUrl?: string;
   profileUrl?: string;
+  slug?: string;
 }
 
 export interface BlogPostPreview {
@@ -145,6 +147,7 @@ export interface BlogPost {
   backgroundImage?: string;
   thumbnailImage?: string;
   featured?: boolean;
+  authorId?: string;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];
@@ -170,6 +173,7 @@ export interface BlogPostSummary {
   coverImage: string;
   thumbnailImage?: string;
   featured?: boolean;
+  authorId?: string;
   author: BlogAuthor;
   categories: readonly string[];
   subcategories?: readonly string[];
@@ -185,6 +189,38 @@ export interface BlogAdminStats {
   drafts: number;
   scheduled: number;
   archived: number;
+}
+
+export function normalizeBlogAuthor(
+  author: BlogAuthor | undefined,
+  authorId?: string
+): {authorId: string; author: BlogAuthor} {
+  const name = author?.name?.trim() || 'Colin Michaels';
+  const resolvedAuthorId = authorId?.trim() || (
+    name.toLowerCase() === 'colin michaels' ? DEFAULT_AUTHOR_ID : `legacy-${createAuthorKey(name)}`
+  );
+
+  return {
+    authorId: resolvedAuthorId,
+    author: {
+      ...author,
+      name,
+      slug: author?.slug?.trim() || (resolvedAuthorId === DEFAULT_AUTHOR_ID ? DEFAULT_AUTHOR_SLUG : createAuthorKey(name)),
+      title: author?.title?.trim() || undefined,
+      bio: author?.bio?.trim() || undefined,
+      avatarUrl: author?.avatarUrl?.trim() || undefined,
+      profileUrl: author?.profileUrl?.trim() || undefined,
+    },
+  };
+}
+
+function createAuthorKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'author';
 }
 
 export function isCatCornerPost(post: Pick<BlogPost, 'catCorner'>): boolean {

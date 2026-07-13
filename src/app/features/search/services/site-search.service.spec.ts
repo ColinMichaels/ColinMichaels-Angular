@@ -67,7 +67,19 @@ describe('SiteSearchService', () => {
       type: 'all',
       category: '',
       tag: '',
+      author: '',
       sort: 'relevance',
     })[0]?.id).toBe('markdown-search-post');
+
+    const authorResult = searchSiteItems(items, {
+      query: 'Colin Michaels',
+      type: 'blog',
+      category: '',
+      tag: '',
+      author: 'colin-michaels',
+      sort: 'relevance',
+    })[0];
+    expect(authorResult?.id).toBe('markdown-search-post');
+    expect(authorResult?.matchedFields).toContain('Author');
   });
 });

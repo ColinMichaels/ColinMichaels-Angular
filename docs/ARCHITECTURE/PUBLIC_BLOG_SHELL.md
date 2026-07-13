@@ -40,6 +40,19 @@ the component owns post anatomy, links, metadata, media, accessible state panels
 into the same visual density. Topic hubs use the fan only for the first three promoted posts and return to normal list
 rows for the remaining archive. See `TOPIC_PAGES_AND_POST_LISTING.md` for the component and data migration contract.
 
+## Authors And Bylines
+
+Posts reference a canonical Firestore author through `authorId` and retain a compact `author` snapshot for cards,
+previews, feeds, offline copies, and crawler fallback rendering. New and legacy posts default to Colin Michaels, while
+the CMS author selector can assign a published post to another published author. Public bylines link to
+`/authors/:slug`; that route presents the canonical profile, derived publishing statistics, and a reusable
+`BlogPostListingComponent` archive of the author's publicly discoverable posts.
+
+Site identity remains intentionally separate from article authorship. The homepage About section, publisher identity,
+and Colin-specific recovery copy continue using the shared Colin profile even when an article has another author.
+Search indexes author name, title, and slug and supports a stable `?author=<slug>` filter on `/search`. See
+`AUTHORS_AND_BYLINES.md` for the data model, access boundaries, migration order, SEO behavior, and rollback contract.
+
 ## Labs Pause
 
 Labs code is preserved under `src/app/labs`, but its public entry points are intentionally paused:

@@ -7,6 +7,7 @@
     "node": "22"
   },
   "scripts": {
+    "migrate:post-authors": "node scripts/backfill-post-authors.mjs",
     "build": "tsc",
     "test:comment-safety": "npm run build && node --test test/comment-safety.test.cjs",
     "test:push-notifications": "npm run build && node --test test/push-notifications.test.cjs",

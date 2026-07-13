@@ -2,6 +2,7 @@ import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {COLIN_AUTHOR_PROFILE} from './author-profile.data';
+import {AuthorProfile as CanonicalAuthorProfile} from '../../features/authors/models/author.model';
 
 export type AuthorBioVariant = 'home' | 'blog';
 
@@ -133,14 +134,13 @@ export type AuthorBioVariant = 'home' | 'blog';
              class="rounded border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-900/70 dark:shadow-black/20">
         <div class="grid gap-4 sm:grid-cols-[5rem_1fr] sm:items-start">
           <a
-            routerLink="/"
-            [fragment]="profile.profileFragment"
+            [routerLink]="['/authors', blogProfile.slug]"
             class="block overflow-hidden rounded border border-slate-200 bg-slate-100 dark:border-zinc-700 dark:bg-zinc-950"
-            aria-label="Read more about Colin Michaels"
+            [attr.aria-label]="'Read more about ' + blogProfile.name"
           >
             <img
-              [src]="profile.imageUrl"
-              [alt]="profile.imageAlt"
+              [src]="blogProfile.imageUrl"
+              [alt]="blogProfile.imageAlt"
               class="aspect-square w-full object-cover"
               loading="lazy"
             >
@@ -149,15 +149,15 @@ export type AuthorBioVariant = 'home' | 'blog';
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-zinc-500">About the
               author</p>
             <h2 id="author-bio-heading" class="mt-2 text-xl font-semibold text-slate-950 dark:text-zinc-50">
-              <a routerLink="/" [fragment]="profile.profileFragment"
+              <a [routerLink]="['/authors', blogProfile.slug]"
                  class="hover:text-cyan-800 dark:hover:text-cyan-200">
-                {{ profile.name }}
+                {{ blogProfile.name }}
               </a>
             </h2>
-            <p class="mt-1 text-sm text-cyan-700 dark:text-cyan-200">{{ profile.title }}</p>
-            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ profile.shortBio }}</p>
+            <p class="mt-1 text-sm text-cyan-700 dark:text-cyan-200">{{ blogProfile.title }}</p>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ blogProfile.shortBio }}</p>
             <div class="mt-4 flex flex-wrap gap-2">
-              @for (externalProfile of profile.externalProfiles; track externalProfile.href) {
+              @for (externalProfile of blogProfile.externalProfiles; track externalProfile.href) {
                 <a
                   [href]="externalProfile.href"
                   target="_blank"
@@ -169,11 +169,10 @@ export type AuthorBioVariant = 'home' | 'blog';
               }
             </div>
             <a
-              routerLink="/"
-              [fragment]="profile.profileFragment"
+              [routerLink]="['/authors', blogProfile.slug]"
               class="mt-4 inline-flex rounded border border-cyan-700 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-300 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-zinc-950"
             >
-              Read Colin's bio
+              Read {{ blogProfile.name }}'s bio
             </a>
           </div>
         </div>
@@ -183,8 +182,38 @@ export type AuthorBioVariant = 'home' | 'blog';
 })
 export class AuthorBioComponent {
   @Input() variant: AuthorBioVariant = 'blog';
+  @Input() author: CanonicalAuthorProfile | null = null;
 
   protected readonly profile = COLIN_AUTHOR_PROFILE;
+  protected get blogProfile(): {
+    name: string;
+    slug: string;
+    title: string;
+    shortBio: string;
+    imageUrl: string;
+    imageAlt: string;
+    externalProfiles: readonly {label: string; href: string}[];
+  } {
+    const author = this.author;
+
+    return author ? {
+      name: author.name,
+      slug: author.slug,
+      title: author.title,
+      shortBio: author.shortBio,
+      imageUrl: author.avatarUrl,
+      imageAlt: author.imageAlt,
+      externalProfiles: author.externalProfiles.map(profile => ({label: profile.label, href: profile.url})),
+    } : {
+      name: this.profile.name,
+      slug: 'colin-michaels',
+      title: this.profile.title,
+      shortBio: this.profile.shortBio,
+      imageUrl: this.profile.imageUrl,
+      imageAlt: this.profile.imageAlt,
+      externalProfiles: this.profile.externalProfiles,
+    };
+  }
   protected readonly introBioSections = this.profile.homeBioSections.slice(0, 4);
   protected readonly findHereSection = this.profile.homeBioSections.find(
     section => section.heading === 'What You’ll Find Here',

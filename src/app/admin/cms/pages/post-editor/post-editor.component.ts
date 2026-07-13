@@ -1,10 +1,13 @@
-import {Component, ViewChild, effect, inject, ChangeDetectionStrategy, signal} from '@angular/core';
+import {Component, ViewChild, computed, effect, inject, ChangeDetectionStrategy, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import type {OutputData} from '@editorjs/editorjs';
 import {lastValueFrom} from 'rxjs';
 
+import {DEFAULT_AUTHOR_ID} from '../../../../features/authors/authors.constants';
+import {AuthorProfile} from '../../../../features/authors/models/author.model';
+import {AuthorRepositoryService} from '../../../../features/authors/services/author-repository.service';
 import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
 import {DEFAULT_COVER_IMAGE} from '../../../../features/blog/blog.constants';
@@ -42,8 +45,10 @@ import {
 } from '../../utils/blog-cat-corner-metadata.util';
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
+import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
 
 interface PostEditorForm {
+  authorId: FormControl<string>;
   title: FormControl<string>;
   slug: FormControl<string>;
   excerpt: FormControl<string>;
@@ -344,6 +349,7 @@ function getErrorMessage(error: unknown): string {
     CmsSeoChecklistComponent,
     CmsToastContainerComponent,
     AdminControlModuleComponent,
+    CmsAuthorFormComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -409,6 +415,25 @@ function getErrorMessage(error: unknown): string {
                         class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
                       ></textarea>
                     </label>
+                    <div class="space-y-1.5 md:col-span-2">
+                      <span class="flex items-center justify-between gap-3">
+                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Author</span>
+                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="startAddingAuthor()">Add author</button>
+                      </span>
+                      <select formControlName="authorId" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                        @for (author of authors(); track author.id) {
+                          <option [value]="author.id">{{ author.name }}{{ author.status === 'draft' ? ' (draft)' : '' }}</option>
+                        }
+                      </select>
+                      @if (selectedAuthor(); as author) {
+                        <p class="text-xs text-zinc-500">{{ author.title || 'Contributor' }} · /authors/{{ author.slug }}</p>
+                      }
+                    </div>
+                    @if (newAuthor(); as author) {
+                      <section class="border border-cyan-400/30 bg-zinc-900/70 p-4 md:col-span-2" aria-label="Add author">
+                        <app-cms-author-form [author]="author" (authorSaved)="onAuthorCreated($event)" (cancelled)="newAuthor.set(null)"></app-cms-author-form>
+                      </section>
+                    }
                   </div>
                 </app-admin-control-module>
 
@@ -837,6 +862,7 @@ export class CmsPostEditorComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly authorRepository = inject(AuthorRepositoryService);
   private readonly blogAssistant = inject(BlogAiAssistantService);
   private readonly blogAiFunctions = inject(BlogAiFunctionsService);
   private readonly blogMediaUpload = inject(BlogMediaUploadService);
@@ -850,9 +876,14 @@ export class CmsPostEditorComponent {
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
+  protected readonly authors = toSignal(this.authorRepository.getAuthors$(), {initialValue: []});
   protected currentPost = this.resolvePost();
   protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
+  protected readonly newAuthor = signal<AuthorProfile | null>(null);
+  protected readonly selectedAuthor = computed(() => (
+    this.authors().find(author => author.id === this.postForm.controls.authorId.value)
+  ));
   protected readonly postDetailsOpen = signal(true);
   protected readonly publishingSettingsOpen = signal(false);
   protected readonly mediaSettingsOpen = signal(false);
@@ -1034,6 +1065,17 @@ export class CmsPostEditorComponent {
   protected setPublishedAtNow(): void {
     this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(new Date().toISOString()));
     this.postForm.controls.publishedAt.markAsDirty();
+  }
+
+  protected startAddingAuthor(): void {
+    this.newAuthor.set(this.authorRepository.createNewAuthorTemplate());
+  }
+
+  protected onAuthorCreated(author: AuthorProfile): void {
+    this.postForm.controls.authorId.setValue(author.id);
+    this.postForm.controls.authorId.markAsDirty();
+    this.newAuthor.set(null);
+    this.toast.success(`Added ${author.name} and selected the new author.`);
   }
 
   protected onCatCornerEnabledChanged(event: Event): void {
@@ -1342,6 +1384,19 @@ export class CmsPostEditorComponent {
     }
 
     const formValue = this.postForm.getRawValue();
+    const selectedAuthor = this.authors().find(author => author.id === formValue.authorId);
+
+    if (!selectedAuthor) {
+      this.postDetailsOpen.set(true);
+      this.toast.error('Select a valid author before saving.');
+      return false;
+    }
+
+    if (formValue.status === 'published' && selectedAuthor.status !== 'published') {
+      this.postDetailsOpen.set(true);
+      this.toast.error('Publish the author profile before publishing this post.');
+      return false;
+    }
     const scheduledPublishDateError = this.getScheduledPublishDateError(formValue.status, formValue.publishedAt);
 
     if (scheduledPublishDateError) {
@@ -1357,6 +1412,8 @@ export class CmsPostEditorComponent {
     try {
       const savedPost = await this.blogRepository.savePost({
         ...this.currentPost,
+        authorId: selectedAuthor.id,
+        author: this.createAuthorSnapshot(selectedAuthor),
         title: requiredText(formValue.title, 'Untitled Post'),
         slug: savedSlug,
         excerpt: formValue.excerpt.trim(),
@@ -1570,9 +1627,14 @@ export class CmsPostEditorComponent {
       formValue.slug || formValue.title || this.currentPost.slug,
       this.currentPost.id
     );
+    const selectedAuthor = this.authors().find(author => author.id === formValue.authorId);
 
     return {
       ...this.currentPost,
+      ...(selectedAuthor ? {
+        authorId: selectedAuthor.id,
+        author: this.createAuthorSnapshot(selectedAuthor),
+      } : {}),
       title: requiredText(formValue.title, 'Untitled Post'),
       slug,
       excerpt: formValue.excerpt.trim(),
@@ -1645,6 +1707,7 @@ export class CmsPostEditorComponent {
     const catCorner = createCmsCatCornerFormValue(post.catCorner);
 
     return new FormGroup<PostEditorForm>({
+      authorId: new FormControl(post.authorId ?? DEFAULT_AUTHOR_ID, {nonNullable: true, validators: [Validators.required]}),
       title: new FormControl(post.title, {nonNullable: true, validators: [Validators.required]}),
       slug: new FormControl(post.slug, {nonNullable: true, validators: [Validators.required]}),
       excerpt: new FormControl(post.excerpt, {nonNullable: true, validators: [Validators.required]}),
@@ -1683,6 +1746,7 @@ export class CmsPostEditorComponent {
     const catCorner = createCmsCatCornerFormValue(post.catCorner);
 
     this.postForm.setValue({
+      authorId: post.authorId ?? DEFAULT_AUTHOR_ID,
       title: post.title,
       slug: post.slug,
       excerpt: post.excerpt,
@@ -1701,6 +1765,17 @@ export class CmsPostEditorComponent {
       openGraphImage: normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage),
     });
     this.syncCatCornerDiscoveryControl();
+  }
+
+  private createAuthorSnapshot(author: AuthorProfile): BlogPost['author'] {
+    return {
+      name: author.name,
+      title: author.title || undefined,
+      bio: author.shortBio || undefined,
+      avatarUrl: author.avatarUrl || undefined,
+      profileUrl: `/authors/${author.slug}`,
+      slug: author.slug,
+    };
   }
 
   protected createSeoChecklistInput(): SeoChecklistInput {

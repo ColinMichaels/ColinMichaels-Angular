@@ -109,6 +109,8 @@ describe('CmsPostListComponent', () => {
     expect(bulkSection?.textContent).toContain('0 selected');
     expect(findButton(element, 'Apply status').disabled).toBeTrue();
     expect(findButton(element, 'Delete selected').disabled).toBeTrue();
+    expect(element.querySelector('thead')?.textContent).toContain('Author');
+    expect(element.querySelector('tbody')?.textContent).toContain('Colin Michaels');
   });
 
   it('selects visible posts and clears the selection', () => {

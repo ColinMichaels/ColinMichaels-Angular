@@ -31,6 +31,7 @@ type AdminPostSortMode =
   | 'title-asc'
   | 'title-desc'
   | 'status-asc'
+  | 'author-asc'
   | 'category-asc';
 
 interface AdminPostSortOption {
@@ -52,6 +53,7 @@ const sortOptions: readonly AdminPostSortOption[] = [
   {value: 'title-asc', label: 'Title A-Z'},
   {value: 'title-desc', label: 'Title Z-A'},
   {value: 'status-asc', label: 'Status'},
+  {value: 'author-asc', label: 'Author A-Z'},
   {value: 'category-asc', label: 'Category'},
 ];
 const sortModes = new Set<AdminPostSortMode>(sortOptions.map(option => option.value));
@@ -285,6 +287,7 @@ function getErrorMessage(error: unknown): string {
                 </th>
                 <th class="px-4 py-3 font-medium">Image</th>
                 <th class="px-4 py-3 font-medium">Title</th>
+                <th class="px-4 py-3 font-medium">Author</th>
                 <th class="px-4 py-3 font-medium">Status</th>
                 <th class="px-4 py-3 font-medium">Category</th>
                 <th class="px-4 py-3 font-medium">Updated</th>
@@ -320,6 +323,10 @@ function getErrorMessage(error: unknown): string {
                     <p class="font-medium text-zinc-50">{{ row.post.title }}</p>
                     <p class="mt-1 text-xs text-zinc-600">/{{ row.post.slug }}</p>
                     <p class="mt-1 max-w-xl text-zinc-500">{{ row.post.excerpt }}</p>
+                  </td>
+                  <td class="px-4 py-4 text-zinc-300">
+                    <p class="font-medium">{{ row.post.author.name }}</p>
+                    <p class="mt-1 text-xs text-zinc-600">/{{ row.post.author.slug || row.post.authorId || 'colin-michaels' }}</p>
                   </td>
                   <td class="px-4 py-4">
                     <span [class]="statusClass(row.post.status)">{{ row.post.status }}</span>
@@ -787,6 +794,8 @@ export class CmsPostListComponent {
         post.categories.join(' '),
         post.tags.join(' '),
         post.author.name,
+        post.author.slug ?? '',
+        post.authorId ?? '',
       ].join(' ')),
     }));
   }
@@ -841,6 +850,9 @@ export class CmsPostListComponent {
         return this.compareTitles(right, left);
       case 'status-asc':
         return left.post.status.localeCompare(right.post.status) || this.compareTitles(left, right);
+      case 'author-asc':
+        return left.post.author.name.localeCompare(right.post.author.name)
+          || this.compareTitles(left, right);
       case 'category-asc':
         return left.post.categories.join(', ').localeCompare(right.post.categories.join(', '))
           || this.compareTitles(left, right);

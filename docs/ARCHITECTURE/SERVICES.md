@@ -2,6 +2,25 @@
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
+## `author-repository.service.ts`
+
+- Responsibility:
+  canonical author normalization, default Colin fallback, published/admin projections, ID/slug lookup, and safe
+  profile resolution for CMS and public author pages.
+- Dependencies:
+  `AuthorStorageService`, author validation utilities, and the shared Colin author profile used to seed/fallback.
+- Called by:
+  CMS post editor and author manager, public author pages, blog bylines, author statistics, and site search.
+- Persistence:
+  canonical profiles live at `/authors/{authorId}`. Posts separately retain `authorId` and a compact byline snapshot,
+  so rendering, feeds, previews, exports, and offline copies do not depend on an author join.
+- Current risks:
+  profile edits intentionally do not rewrite historical snapshots automatically. Deleting or unpublishing a referenced
+  author must be blocked or handled through a future explicit reassignment workflow.
+- Planned cleanup:
+  add server-side bulk reassignment and snapshot-refresh operations only when they can provide authorization,
+  concurrency protection, audit history, and idempotent retries.
+
 ## `seo.service.ts`
 
 - Responsibility:

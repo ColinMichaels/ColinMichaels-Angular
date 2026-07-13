@@ -38,6 +38,8 @@ import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {AuthorBioComponent} from '../../../../shared/author/author-bio.component';
 import {COLIN_AUTHOR_PROFILE} from '../../../../shared/author/author-profile.data';
+import {DEFAULT_AUTHOR_ID} from '../../../authors/authors.constants';
+import {AuthorRepositoryService} from '../../../authors/services/author-repository.service';
 import {
   createBlogReadingStats,
   createBlogTableOfContents,
@@ -116,7 +118,7 @@ function normalizeHealthTerm(value: string): string {
                 <div class="blog-post-meta-row">
                   <span>
                     By
-                    <a routerLink="/" [fragment]="authorProfile.profileFragment"
+                    <a [routerLink]="['/', pathNames.AUTHORS, currentPost.author.slug || 'colin-michaels']"
                        class="font-medium text-slate-800 hover:text-cyan-800 dark:text-zinc-300 dark:hover:text-cyan-200">
                       {{ currentPost.author.name }}
                     </a>
@@ -160,7 +162,7 @@ function normalizeHealthTerm(value: string): string {
                 @if (showHealthDisclaimer()) {
                   <div
                     class="border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-950 dark:border-rose-300/30 dark:bg-rose-300/10 dark:text-rose-100">
-                    {{ authorProfile.healthDisclaimer }} Confirm medical, medication, recovery, and insurance decisions
+                    {{ currentHealthDisclaimer() }} Confirm medical, medication, recovery, and insurance decisions
                     with qualified professionals.
                   </div>
                 }
@@ -306,7 +308,7 @@ function normalizeHealthTerm(value: string): string {
 
                 @defer (on viewport) {
                   <section class="blog-section-rule mt-10">
-                    <app-author-bio></app-author-bio>
+                    <app-author-bio [author]="currentAuthor() ?? null"></app-author-bio>
                   </section>
                 } @placeholder {
                   <section class="blog-section-rule mt-10" aria-hidden="true">
@@ -505,6 +507,7 @@ export class BlogDetailComponent {
   private readonly authService = inject(AuthService);
   private readonly engagementService = inject(BlogEngagementService);
   private readonly blogRepository = inject(BlogRepositoryService);
+  private readonly authorRepository = inject(AuthorRepositoryService);
   protected readonly articleLibrary = inject(BlogArticleLibraryService);
   protected readonly offlinePosts = inject(OfflineBlogPostService);
   private readonly openGraph = inject(BlogOpenGraphService);
@@ -517,6 +520,7 @@ export class BlogDetailComponent {
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly authorProfile = COLIN_AUTHOR_PROFILE;
+  protected readonly authors = toSignal(this.authorRepository.getPublishedAuthors$(), {initialValue: []});
   protected readonly slug = toSignal(
     this.route.paramMap.pipe(map(params => params.get('slug') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''}
@@ -648,10 +652,24 @@ export class BlogDetailComponent {
 
     return post ? hasMeaningfulPostUpdate(post) : false;
   });
+  protected readonly currentAuthor = computed(() => {
+    const post = this.post();
+    if (!post) return undefined;
+
+    const authorId = post.authorId ?? DEFAULT_AUTHOR_ID;
+    return this.authors().find(author => author.id === authorId || author.slug === post.author.slug);
+  });
+  protected readonly currentHealthDisclaimer = computed(() => {
+    const post = this.post();
+    if (!post) return '';
+
+    return this.currentAuthor()?.healthDisclaimer
+      ?? ((post.authorId ?? DEFAULT_AUTHOR_ID) === DEFAULT_AUTHOR_ID ? this.authorProfile.healthDisclaimer : '');
+  });
   protected readonly showHealthDisclaimer = computed(() => {
     const post = this.post();
 
-    if (!post) {
+    if (!post || !this.currentHealthDisclaimer()) {
       return false;
     }
 

@@ -85,6 +85,7 @@ const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
 const TRUSTED_COMMENT_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'] as const;
 const BLOG_POSTS_COLLECTION = 'posts';
+const AUTHORS_COLLECTION = 'authors';
 const SOCIAL_OUTBOX_COLLECTION = 'socialOutbox';
 const USERS_COLLECTION = 'users';
 const USER_ROLE_MUTATION_LOCKS_COLLECTION = 'userRoleMutationLocks';
@@ -118,6 +119,8 @@ const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|m
 const TAXONOMY_SITEMAP_MIN_POSTS = 2;
 const TAG_SITEMAP_MIN_POSTS = 3;
 const SITEMAP_REVIEW_URL_LIMIT = 180;
+const DEFAULT_AUTHOR_ID = 'colin-michaels';
+const DEFAULT_AUTHOR_SLUG = 'colin-michaels';
 const OS_ROUTE_PREFIXES = ['/os', '/external'] as const;
 const OS_ROUTES = ['/login', '/boot', '/sleep'] as const;
 const ADMIN_ROUTE_PREFIXES = ['/admin'] as const;
@@ -699,6 +702,9 @@ interface SeoBlogPostDocument {
   coverImage: string;
   thumbnailImage: string;
   authorName: string;
+  authorId: string;
+  authorSlug: string;
+  authorUrl: string;
   categories: readonly string[];
   tags: readonly string[];
   seoTitle: string;
@@ -734,11 +740,27 @@ interface SitemapUrl {
 
 interface SitemapBlogPostDocument {
   slug: string;
+  authorId: string;
+  authorSlug: string;
   categories: readonly string[];
   subcategories: readonly string[];
   tags: readonly string[];
   updatedAt: string;
   publishedAt: string | null;
+}
+
+interface SeoAuthorDocument {
+  id: string;
+  slug: string;
+  name: string;
+  title: string;
+  shortBio: string;
+  bio: string;
+  imageUrl: string;
+  imageAlt: string;
+  location: string;
+  externalProfiles: readonly string[];
+  updatedAt: string;
 }
 
 interface BlogBlockData {
@@ -1930,6 +1952,20 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     }
   }
 
+  if (normalizedPath.startsWith('/authors/')) {
+    const slug = decodeSlugSegment(normalizedPath.slice('/authors/'.length));
+    const author = await fetchPublishedSeoAuthor(slug);
+
+    if (author) {
+      const posts = await fetchPublishedFeedBlogPosts();
+      const authorPosts = posts.filter(post => isPostByAuthor(post, author));
+
+      return createAuthorSeoMetadata(author, authorPosts);
+    }
+
+    return createMissingAuthorSeoMetadata(slug);
+  }
+
   if (normalizedPath.startsWith('/blog/preview/')) {
     const previewToken = decodeSlugSegment(normalizedPath.slice('/blog/preview/'.length));
     const post = await fetchPreviewSeoBlogPost(previewToken);
@@ -2037,12 +2073,16 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
 }
 
 async function createSitemapXml(): Promise<string> {
-  const posts = await fetchPublishedSitemapBlogPosts();
+  const [posts, authors] = await Promise.all([
+    fetchPublishedSitemapBlogPosts(),
+    fetchPublishedSeoAuthors(),
+  ]);
   const latestPostUpdate = getLatestIsoDate(posts.map(post => post.updatedAt || post.publishedAt).filter(isNonEmptyString));
   const urls = [
     ...createStaticSitemapUrls(latestPostUpdate),
     ...createSitemapTaxonomyUrls(posts),
     ...createSitemapTagUrls(posts),
+    ...createSitemapAuthorUrls(posts, authors),
     ...TOPIC_HUBS.map(topicHub => ({
       path: `/topics/${topicHub.slug}`,
       lastmod: latestPostUpdate,
@@ -2063,6 +2103,29 @@ async function createSitemapXml(): Promise<string> {
   }
 
   return renderSitemapXml(uniqueUrls);
+}
+
+function createSitemapAuthorUrls(
+  posts: readonly SitemapBlogPostDocument[],
+  authors: readonly SeoAuthorDocument[]
+): readonly SitemapUrl[] {
+  const urls: SitemapUrl[] = [];
+
+  for (const author of authors) {
+    const authorPosts = posts.filter(post => (
+      post.authorId === author.id || post.authorSlug === author.slug
+    ));
+    const lastmod = getLatestIsoDate([
+      author.updatedAt,
+      ...authorPosts.flatMap(post => [post.updatedAt, post.publishedAt]).filter(isNonEmptyString),
+    ].filter(isNonEmptyString));
+
+    if (authorPosts.length > 0) {
+      urls.push({path: `/authors/${author.slug}`, lastmod});
+    }
+  }
+
+  return urls.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
@@ -2166,6 +2229,8 @@ function toSitemapBlogPostDocument(value: unknown): SitemapBlogPostDocument | nu
 
   return {
     slug,
+    authorId: getPostAuthorId(value),
+    authorSlug: getPostAuthorSlug(value),
     categories: getStringArrayValue(value['categories']),
     subcategories: getStringArrayValue(value['subcategories']),
     tags: getStringArrayValue(value['tags']),
@@ -2275,7 +2340,7 @@ function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
         authors: [
           {
             name: metadata.author,
-            url: SITE_URL,
+            url: metadata.authorUrl,
           },
         ],
         tags: metadata.tags,
@@ -2294,6 +2359,7 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
   imageWidth: number;
   imageHeight: number;
   author: string;
+  authorUrl: string;
   tags: readonly string[];
   publishedAt: string;
   modifiedAt: string;
@@ -2314,6 +2380,7 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
     imageWidth,
     imageHeight,
     author: post.authorName,
+    authorUrl: post.authorUrl,
     tags: uniqueStrings([...post.categories, ...post.tags]),
     publishedAt,
     modifiedAt: post.updatedAt,
@@ -2529,6 +2596,20 @@ function createMissingBlogPostSeoMetadata(slug: string): SeoMetadata {
   };
 }
 
+function createMissingAuthorSeoMetadata(slug: string): SeoMetadata {
+  return {
+    title: createSiteTitle('Author not found'),
+    description: 'This author profile is unavailable or has not been published.',
+    path: `/authors/${createSeoSlug(slug)}`,
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: createPreviewImageAlt('author profile'),
+    type: 'website',
+    robots: 'noindex,nofollow',
+    statusCode: 404,
+    cacheControl: 'public, max-age=60, s-maxage=60',
+  };
+}
+
 function createNotFoundSeoMetadata(path: string): SeoMetadata {
   return {
     title: createSiteTitle('Page not found'),
@@ -2652,10 +2733,31 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
       url,
       image: createAbsoluteUrl(image),
       author: post.authorName,
+      authorUrl: post.authorUrl,
       publishedAt: post.publishedAt,
       modifiedAt: post.updatedAt,
     }),
     fallbackHtml: renderBlogPostFallbackHtml(post, {title, description, image}),
+  };
+}
+
+function createAuthorSeoMetadata(
+  author: SeoAuthorDocument,
+  posts: readonly SeoBlogPostDocument[]
+): SeoMetadata {
+  const path = `/authors/${author.slug}`;
+  const description = truncateDescription(stripHtml(author.shortBio || author.bio || `${author.name} writes for ${SITE_NAME}.`));
+  const image = toOpenGraphCompatibleImage(author.imageUrl || HOMEPAGE_OG_IMAGE);
+
+  return {
+    title: createSiteTitle(author.name),
+    description,
+    path,
+    image,
+    imageAlt: author.imageAlt || `${author.name} author profile`,
+    type: 'website',
+    structuredData: createAuthorProfileJsonLd(author, posts),
+    fallbackHtml: renderAuthorFallbackHtml(author, posts),
   };
 }
 
@@ -2729,6 +2831,118 @@ async function fetchPreviewSeoBlogPost(previewToken: string): Promise<SeoBlogPos
   return toSeoBlogPostDocument(post);
 }
 
+async function fetchPublishedSeoAuthor(slug: string): Promise<SeoAuthorDocument | null> {
+  const normalizedSlug = createSeoSlug(slug);
+
+  if (!normalizedSlug) {
+    return null;
+  }
+
+  const snapshot = await getFirestore()
+    .collection(AUTHORS_COLLECTION)
+    .where('slug', '==', normalizedSlug)
+    .get();
+  const document = snapshot.docs.find(candidate => candidate.get('status') === 'published');
+
+  if (document) {
+    return toSeoAuthorDocument(document.data(), document.id);
+  }
+
+  return normalizedSlug === DEFAULT_AUTHOR_SLUG ? createDefaultSeoAuthor() : null;
+}
+
+async function fetchPublishedSeoAuthors(): Promise<readonly SeoAuthorDocument[]> {
+  const snapshot = await getFirestore()
+    .collection(AUTHORS_COLLECTION)
+    .where('status', '==', 'published')
+    .get();
+
+  const authors = snapshot.docs
+    .map(document => toSeoAuthorDocument(document.data(), document.id))
+    .filter((author): author is SeoAuthorDocument => author !== null);
+
+  return authors.some(author => author.id === DEFAULT_AUTHOR_ID || author.slug === DEFAULT_AUTHOR_SLUG)
+    ? authors
+    : [createDefaultSeoAuthor(), ...authors];
+}
+
+function createDefaultSeoAuthor(): SeoAuthorDocument {
+  return {
+    id: DEFAULT_AUTHOR_ID,
+    slug: DEFAULT_AUTHOR_SLUG,
+    name: PERSON_NAME,
+    title: PERSON_JOB_TITLE,
+    shortBio: PERSON_PROFILE_DESCRIPTION,
+    bio: PERSON_PROFILE_DESCRIPTION,
+    imageUrl: HOMEPAGE_OG_IMAGE,
+    imageAlt: createPreviewImageAlt('author profile'),
+    location: '',
+    externalProfiles: PERSON_SAME_AS,
+    updatedAt: '',
+  };
+}
+
+function toSeoAuthorDocument(value: unknown, fallbackId: string): SeoAuthorDocument | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = getTrimmedString(value['id']) || fallbackId;
+  const name = getTrimmedString(value['name']);
+  const slug = createSeoSlug(getTrimmedString(value['slug']) || id);
+
+  if (!id || !name || !slug) {
+    return null;
+  }
+
+  const rawExternalProfiles = Array.isArray(value['externalProfiles']) ? value['externalProfiles'] : [];
+
+  return {
+    id,
+    slug,
+    name,
+    title: getTrimmedString(value['title']),
+    shortBio: getTrimmedString(value['shortBio']),
+    bio: getTrimmedString(value['bio']),
+    imageUrl: getTrimmedString(value['imageUrl']) || getTrimmedString(value['avatarUrl']),
+    imageAlt: getTrimmedString(value['imageAlt']),
+    location: getTrimmedString(value['location']),
+    externalProfiles: rawExternalProfiles
+      .map(profile => isRecord(profile)
+        ? getTrimmedString(profile['href']) || getTrimmedString(profile['url'])
+        : getTrimmedString(profile))
+      .filter(isNonEmptyString)
+      .filter(isSafeExternalProfileUrl),
+    updatedAt: getIsoString(value['updatedAt']),
+  };
+}
+
+function getPostAuthorId(value: Record<string, unknown>): string {
+  const author = isRecord(value['author']) ? value['author'] : {};
+
+  return getTrimmedString(value['authorId']) || getTrimmedString(author['id']) || DEFAULT_AUTHOR_ID;
+}
+
+function getPostAuthorSlug(value: Record<string, unknown>): string {
+  const author = isRecord(value['author']) ? value['author'] : {};
+  const slug = getTrimmedString(value['authorSlug']) || getTrimmedString(author['slug']);
+
+  return createSeoSlug(slug || (getPostAuthorId(value) === DEFAULT_AUTHOR_ID ? DEFAULT_AUTHOR_SLUG : getPostAuthorId(value)));
+}
+
+function getPostAuthorUrl(value: Record<string, unknown>): string {
+  const author = isRecord(value['author']) ? value['author'] : {};
+  const explicitUrl = getTrimmedString(value['authorUrl'])
+    || getTrimmedString(author['url'])
+    || getTrimmedString(author['profileUrl']);
+
+  return explicitUrl ? createAbsoluteUrl(explicitUrl) : createAbsoluteUrl(`/authors/${getPostAuthorSlug(value)}`);
+}
+
+function isPostByAuthor(post: SeoBlogPostDocument, author: SeoAuthorDocument): boolean {
+  return post.authorId === author.id || post.authorSlug === author.slug;
+}
+
 function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocument | null {
   if (!isRecord(value)) {
     return null;
@@ -2756,6 +2970,9 @@ function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocu
     coverImage: getTrimmedString(value['coverImage']),
     thumbnailImage: getTrimmedString(value['thumbnailImage']),
     authorName: getTrimmedString(author['name']) || getTrimmedString(rawAuthor) || PERSON_NAME,
+    authorId: getPostAuthorId(value),
+    authorSlug: getPostAuthorSlug(value),
+    authorUrl: getPostAuthorUrl(value),
     categories: getStringArrayValue(value['categories']),
     tags: getStringArrayValue(value['tags']),
     seoTitle: getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']),
@@ -2928,6 +3145,15 @@ function createAbsoluteUrl(value: string): string {
   }
 }
 
+function isSafeExternalProfileUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function appendSocialImageVersion(imageUrl: string, versionSeed: string): string {
   const trimmedImageUrl = imageUrl.trim();
   if (!trimmedImageUrl) {
@@ -3036,6 +3262,7 @@ function createBlogPostingJsonLd(options: {
   url: string;
   image: string;
   author: string;
+  authorUrl: string;
   publishedAt: string | null;
   modifiedAt: string;
 }): Record<string, unknown> {
@@ -3051,7 +3278,7 @@ function createBlogPostingJsonLd(options: {
     author: {
       '@type': 'Person',
       name: options.author,
-      url: SITE_URL,
+      url: options.authorUrl,
     },
     publisher: {
       '@type': 'Person',
@@ -3061,6 +3288,49 @@ function createBlogPostingJsonLd(options: {
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': options.url,
+    },
+  };
+}
+
+function createAuthorProfileJsonLd(
+  author: SeoAuthorDocument,
+  posts: readonly SeoBlogPostDocument[]
+): Record<string, unknown> {
+  const url = createAbsoluteUrl(`/authors/${author.slug}`);
+  const personId = `${url}#person`;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    url,
+    name: `${author.name} - Author at ${SITE_NAME}`,
+    description: author.shortBio || author.bio,
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': SEO_ENTITY_IDS.website,
+      url: SITE_URL,
+      name: SITE_NAME,
+    },
+    mainEntity: {
+      '@type': 'Person',
+      '@id': personId,
+      name: author.name,
+      jobTitle: author.title || undefined,
+      description: author.shortBio || author.bio || undefined,
+      image: author.imageUrl ? createAbsoluteUrl(author.imageUrl) : undefined,
+      url,
+      homeLocation: author.location ? { '@type': 'Place', name: author.location } : undefined,
+      sameAs: author.externalProfiles.length > 0 ? author.externalProfiles : undefined,
+      subjectOf: posts.slice(0, 20).map(post => ({
+        '@type': 'BlogPosting',
+        headline: post.title,
+        url: createAbsoluteUrl(`/blog/${post.slug}`),
+      })),
+    },
+    publisher: {
+      '@id': SEO_ENTITY_IDS.person,
+      name: PERSON_NAME,
+      url: SITE_URL,
     },
   };
 }
@@ -3231,12 +3501,47 @@ function renderBlogPostFallbackHtml(
     description: metadata.description,
     body: [
       '<article class="seo-fallback-article">',
-      `  <p class="seo-fallback-meta">By ${escapeHtml(post.authorName)} - ${escapeHtml(formatFallbackDate(post.publishedAt ?? post.updatedAt))}</p>`,
+      `  <p class="seo-fallback-meta">By <a href="${escapeHtml(post.authorUrl)}">${escapeHtml(post.authorName)}</a> - ${escapeHtml(formatFallbackDate(post.publishedAt ?? post.updatedAt))}</p>`,
       categoryLinks ? `  <nav aria-label="Article categories" class="seo-fallback-taxonomy">${categoryLinks}</nav>` : '',
       `  <img src="${escapeHtml(createAbsoluteUrl(metadata.image))}" alt="${escapeHtml(post.imageAlt || `${metadata.title} preview image`)}" loading="eager">`,
       body || `  <p>${escapeHtml(metadata.description)}</p>`,
       tagLinks ? `  <nav aria-label="Article tags" class="seo-fallback-taxonomy">${tagLinks}</nav>` : '',
       '</article>',
+    ].filter(Boolean).join('\n'),
+  });
+}
+
+function renderAuthorFallbackHtml(
+  author: SeoAuthorDocument,
+  posts: readonly SeoBlogPostDocument[]
+): string {
+  const latestPublishedAt = getLatestIsoDate(posts
+    .flatMap(post => [post.publishedAt, post.updatedAt])
+    .filter(isNonEmptyString));
+  const postItems = posts.slice(0, 20).map(post => [
+    '<article class="seo-fallback-card">',
+    `  <h2><a href="${escapeHtml(createAbsoluteUrl(`/blog/${post.slug}`))}">${escapeHtml(post.title)}</a></h2>`,
+    `  <p class="seo-fallback-meta">${escapeHtml(formatFallbackDate(post.publishedAt ?? post.updatedAt))}</p>`,
+    post.excerpt ? `  <p>${escapeHtml(truncateDescription(stripHtml(post.excerpt)))}</p>` : '',
+    '</article>',
+  ].filter(Boolean).join('\n')).join('\n');
+
+  return renderFallbackShell({
+    eyebrow: 'Author',
+    title: author.name,
+    description: author.shortBio || author.bio || `${author.name} writes for ${SITE_NAME}.`,
+    body: [
+      '<section class="seo-fallback-article">',
+      author.imageUrl
+        ? `  <img src="${escapeHtml(createAbsoluteUrl(author.imageUrl))}" alt="${escapeHtml(author.imageAlt || `${author.name} author profile`)}" loading="eager">`
+        : '',
+      author.title ? `  <p>${escapeHtml(author.title)}</p>` : '',
+      author.location ? `  <p>${escapeHtml(author.location)}</p>` : '',
+      author.bio && author.bio !== author.shortBio ? `  <p>${escapeHtml(stripHtml(author.bio))}</p>` : '',
+      `  <p class="seo-fallback-meta">${posts.length} published ${posts.length === 1 ? 'article' : 'articles'}${latestPublishedAt ? ` - Latest ${escapeHtml(formatFallbackDate(latestPublishedAt))}` : ''}</p>`,
+      '  <h2>Published articles</h2>',
+      postItems || '  <p>No published posts are available for this author yet.</p>',
+      '</section>',
     ].filter(Boolean).join('\n'),
   });
 }
