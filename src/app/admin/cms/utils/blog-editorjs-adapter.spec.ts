@@ -80,6 +80,48 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('round-trips app editor blocks through the typed blog embed model', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'app-embed-1',
+          type: 'appEmbed',
+          data: {
+            url: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard',
+            caption: 'Hear the Hook',
+            height: 820,
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'app-embed-1',
+        type: 'embed',
+        data: {
+          provider: 'app',
+          url: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard',
+          embedUrl: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard',
+          caption: 'Hear the Hook',
+          height: 820,
+        },
+      },
+    ]);
+
+    const document = createEditorDocument(createPost({blocks}));
+
+    expect(document.blocks[0]).toEqual({
+      id: 'app-embed-1',
+      type: 'appEmbed',
+      data: {
+        url: 'https://hear-the-hook.captaincolin.chatgpt.site/soundboard',
+        caption: 'Hear the Hook',
+        height: 820,
+      },
+    });
+  });
+
   it('normalizes custom stats, chart, and HTML editor blocks', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [
