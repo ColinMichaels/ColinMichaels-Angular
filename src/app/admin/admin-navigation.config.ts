@@ -11,6 +11,7 @@ import {
   faTags,
   faUserGear,
   faPenNib,
+  faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {PATH_NAMES} from '../app-route-paths';
@@ -69,6 +70,13 @@ export const ADMIN_NAVIGATION_GROUPS: readonly AdminNavigationGroup[] = [
         icon: faCalendarDays,
         label: 'Calendar',
         route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_CALENDAR}`,
+      },
+      {
+        access: 'cms',
+        exact: false,
+        icon: faShareNodes,
+        label: 'Social Connections',
+        route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_SOCIAL_CONNECTIONS}`,
       },
       {
         access: 'cms',

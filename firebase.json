@@ -121,6 +121,27 @@
     ],
     "rewrites": [
       {
+        "source": "/api/social/meta/callback",
+        "function": {
+          "functionId": "socialMetaOAuthCallback",
+          "region": "us-east1"
+        }
+      },
+      {
+        "source": "/api/social/instagram/callback",
+        "function": {
+          "functionId": "socialInstagramOAuthCallback",
+          "region": "us-east1"
+        }
+      },
+      {
+        "source": "/api/social/threads/callback",
+        "function": {
+          "functionId": "socialThreadsOAuthCallback",
+          "region": "us-east1"
+        }
+      },
+      {
         "source": "/sitemap.xml",
         "function": {
           "functionId": "sitemapXml",

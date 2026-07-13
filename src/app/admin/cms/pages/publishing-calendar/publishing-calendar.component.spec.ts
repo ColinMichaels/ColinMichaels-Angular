@@ -142,6 +142,23 @@ describe('PublishingCalendarComponent', () => {
     expect(facebookAnnouncement?.scheduledAt).toBe(savedPost.publishedAt ?? undefined);
   });
 
+  it('offers Threads as a schedulable provider', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    selectPost(fixture);
+    findButton(element, 'Add social post').click();
+    fixture.detectChanges();
+    findButton(element, 'Threads').click();
+    fixture.detectChanges();
+    findButton(element, 'Save social plan').click();
+    await fixture.whenStable();
+
+    const [savedPost] = blogRepository.savePost.calls.mostRecent().args;
+    const threadsAnnouncement = savedPost.socialPromotion?.announcements
+      .find(announcement => announcement.channel === 'threads');
+    expect(threadsAnnouncement?.message).toContain(savedPost.title);
+    expect(threadsAnnouncement?.deliveryTiming).toBe('at-publish');
+  });
+
   it('moves scheduled at-publication announcements when the article schedule changes', async () => {
     const post = createScheduledPost();
     postSubject.next([{

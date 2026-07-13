@@ -38,6 +38,11 @@ service cloud.firestore {
       return hasRole('admin');
     }
 
+    function isBackendOnlySocialConnectionPath(documentPath) {
+      return documentPath.matches('socialConnectionSecrets/.*')
+        || documentPath.matches('socialOAuthStates/.*');
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -108,6 +113,19 @@ service cloud.firestore {
     match /socialOutbox/{deliveryId} {
       allow read: if canManageCmsContent();
       allow write: if false;
+    }
+
+    match /socialConnections/{providerId} {
+      allow read: if canManageCmsContent();
+      allow write: if false;
+    }
+
+    match /socialConnectionSecrets/{providerId} {
+      allow read, write: if false;
+    }
+
+    match /socialOAuthStates/{stateId} {
+      allow read, write: if false;
     }
 
     match /shareLinks/{shareId} {
@@ -217,7 +235,8 @@ service cloud.firestore {
     }
 
     match /{document=**} {
-      allow read, write: if canManageUserAccounts();
+      allow read, write: if canManageUserAccounts()
+        && !isBackendOnlySocialConnectionPath(document);
     }
   }
 }

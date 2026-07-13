@@ -3,6 +3,7 @@ export const BLOG_SOCIAL_CHANNELS = [
   'youtube',
   'facebook',
   'instagram',
+  'threads',
   'linkedin',
 ] as const;
 

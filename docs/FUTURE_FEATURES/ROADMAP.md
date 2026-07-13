@@ -9,6 +9,7 @@ Updated July 13, 2026. Completed foundation work is recorded here so it is not r
 - Editor.js post authoring persists through the Firebase-backed CMS, with a public read-only block renderer and Media Library-backed assets.
 - The frontend no longer receives OpenAI or weather vendor keys; it calls the configured `APP_API_URL` boundary.
 - The Media Library supports browsing and managed CMS asset selection. Further generated-media lifecycle work remains product scope.
+- Facebook, Instagram, and Threads now have a connection-only OAuth foundation with signed one-time state, encrypted backend token storage, sanitized CMS health, explicit Facebook Page selection, and no enabled delivery worker.
 
 ## Short-Term (1-2 Sprints)
 
@@ -23,8 +24,8 @@ Dependencies:
 
 ## Paused / Resume Later
 
-- External social auto-posting is pinned after completing Calendar timing/media composition, Editor deep linking, deterministic queue protection, and existing Web Push ownership. Resume with provider registration and LinkedIn OAuth/worker integration after the higher-priority feature; audit pending outbox records and approve an explicit enablement cutoff before any historical delivery can run.
-- Resumption depends on provider credentials, account approvals, and an explicit member-versus-organization posting decision.
+- External social delivery remains pinned after completing Calendar composition, Meta/Threads connection authorization, deterministic queue protection, and existing Web Push ownership. Resume with provider-specific delivery adapters only after auditing pending outbox records and approving an explicit enablement cutoff.
+- LinkedIn connection and the member-versus-organization posting decision remain separate deferred work.
 - The next active feature is intentionally tracked in its own task rather than inferred here.
 
 ## Medium-Term (2-4 Sprints)
@@ -34,7 +35,7 @@ Dependencies:
 - Blog AI authoring:
   refine the Firebase Functions metadata prompt, add admin-only quotas, and persist suggestion history.
 - Social delivery:
-  add isolated provider adapters, OAuth connection health, idempotent retries, manual retry/cancel controls, and delivery receipts without coupling article publication to provider uptime.
+  add isolated provider delivery adapters, token refresh scheduling, idempotent retries, manual retry/cancel controls, and delivery receipts without coupling article publication to provider uptime.
 - Strong typing pass:
   remove high-impact `any` usage in service contracts and dynamic payloads.
 - Core OS migration:

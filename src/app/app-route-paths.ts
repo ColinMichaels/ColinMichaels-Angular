@@ -4,6 +4,7 @@ export const PATH_NAMES = {
   ADMIN_CMS: 'cms',
   ADMIN_CMS_CONTENT_OPERATIONS: 'content-operations',
   ADMIN_CMS_CALENDAR: 'calendar',
+  ADMIN_CMS_SOCIAL_CONNECTIONS: 'social-connections',
   ADMIN_CMS_AUTHORS: 'authors',
   ADMIN_MEDIA_LIBRARY: 'media-library',
   ADMIN_CMS_HOMEPAGE: 'homepage',
