@@ -1,5 +1,7 @@
 # Full SEO Audit Report: colinmichaels.com
 
+> Historical baseline: this report records the July 3, 2026 audit evidence and scores. Several findings below have since been resolved. See `ACTION-PLAN.md` for the current completion and remaining-work status; do not treat the original issue list as the live backlog.
+
 - **Audit date:** July 03, 2026
 - **Homepage:** https://colinmichaels.com/
 - **Business type detected:** personal portfolio, blog, and project/labs site
@@ -172,4 +174,3 @@ The bundled visual helper timed out waiting for `networkidle`, but a custom Play
 - Corrected action plan: `ACTION-PLAN.md`
 - Screenshots: `screenshots/`
 - Shared cache summary: `.seo-cache/site-meta.json`, `.seo-cache/audit-scores.json`
-

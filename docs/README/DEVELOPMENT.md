@@ -2,11 +2,11 @@
 
 ## Prerequisites
 
-- Node.js LTS (recommended: Node 20 or Node 22)
+- Node.js `24.15.0` via `.nvmrc` (the package also accepts `^22.22.3` or `>=26.0.0`)
 - npm 10+
 - Chrome/Chromium for Karma tests
 
-Current environment note: Node `23.11.1` is unsupported by Angular 19 and currently causes unstable build behavior in this repository.
+Run `nvm use` before installing or validating. Angular 22 rejects unsupported odd-numbered Node releases such as Node 23.
 
 ## Install
 
@@ -48,23 +48,22 @@ npm run lint
 
 Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATION_STANDARD.md). New pull requests automatically start from `.github/pull_request_template.md`; feature PRs normally target `dev` as drafts so the Firebase preview workflow can run.
 
-## Current Quality Gate Status (Audit Baseline)
+## Quality Gate Reporting
 
-- `npm ci`: not re-run in this pass (existing `node_modules` reused)
-- `npm run lint`: runs and reports the current legacy baseline (`262` errors as of the PR #194 validation pass)
-- Focused changed-spec runs with `npx ng test --watch=false --browsers=ChromeHeadless --include=...`: passing (`13/13`)
-- `npm run build`: passing when Angular can fetch configured Google Fonts for production font inlining
+`npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.
 
-Current build observations:
+Current verified baseline (July 13, 2026, Node `24.15.0`):
 
-- Local Node is `v23.11.1`, outside the declared package engine `>=20.11 <23`.
-- The production build still reports the existing initial bundle warning and CommonJS warnings for `web-audio-oscillators` and `dayjs`.
+- `npm run build`: passes; CommonJS optimization warnings remain for the audio stack, `dayjs`, and `web-audio-oscillators`.
+- `npm run lint`: runs correctly but reports `262` legacy errors across OS/game and Firebase code (`0` warnings). Treat that as a failing repository-wide gate and confirm whether changed files are involved.
+- `npm --prefix functions run build`: passes.
+- Focused route contract: `app.routes.spec.ts` passes (`6/6`).
 
 ## Recommended Local Tooling Alignment
 
-1. Use Node `22` (or any version matching `package.json#engines`).
-2. Run `nvm use` (project now includes `.nvmrc`).
-3. Continue reducing the documented lint backlog from the current baseline.
+1. Run `nvm use` to select Node `24.15.0`.
+2. Confirm `node -v` and `npm -v` before diagnosing tool failures.
+3. Use a different Node release only when it satisfies `package.json#engines`.
 
 ## Troubleshooting
 

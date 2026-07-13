@@ -1,15 +1,16 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faFacebookF, faInstagram, faLinkedinIn, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {faBell, faChevronLeft, faChevronRight} from '@fortawesome/free-solid-svg-icons';
-import {RouterLink} from '@angular/router';
+import {ActivatedRoute, RouterLink} from '@angular/router';
 
 import {
   BLOG_SOCIAL_CHANNELS,
   BlogSocialAnnouncement,
   BlogSocialChannel,
+  BlogSocialDeliveryTiming,
 } from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
@@ -42,6 +43,7 @@ interface SocialChannelOption {
   label: string;
   shortLabel: string;
   description: string;
+  automationLabel: string;
   characterLimit: number;
   icon: IconDefinition;
 }
@@ -50,6 +52,8 @@ interface SocialAnnouncementDraft extends SocialChannelOption {
   enabled: boolean;
   message: string;
   scheduledAt: string;
+  deliveryTiming: BlogSocialDeliveryTiming;
+  mediaUrl: string;
 }
 
 const calendarFilters: readonly {value: PublishingCalendarFilter; label: string}[] = [
@@ -64,7 +68,8 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     id: 'notify',
     label: 'Notify',
     shortLabel: 'NT',
-    description: 'Subscriber or in-app announcement',
+    description: 'Automatic Web Push at article publication',
+    automationLabel: 'Already active; uses the article title and excerpt',
     characterLimit: 1000,
     icon: faBell,
   },
@@ -72,7 +77,8 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     id: 'youtube',
     label: 'YouTube',
     shortLabel: 'YT',
-    description: 'Channel announcement connector',
+    description: 'Manual Community post plan',
+    automationLabel: 'Manual — no supported Community Posts API',
     characterLimit: 5000,
     icon: faYoutube,
   },
@@ -81,6 +87,7 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     label: 'Facebook',
     shortLabel: 'FB',
     description: 'Page post',
+    automationLabel: 'Meta Page connection required',
     characterLimit: 63206,
     icon: faFacebookF,
   },
@@ -89,6 +96,7 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     label: 'Instagram',
     shortLabel: 'IG',
     description: 'Caption for a linked media post',
+    automationLabel: 'Meta professional account and media required',
     characterLimit: 2200,
     icon: faInstagram,
   },
@@ -97,6 +105,7 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     label: 'LinkedIn',
     shortLabel: 'IN',
     description: 'Profile or organization post',
+    automationLabel: 'LinkedIn connection required',
     characterLimit: 3000,
     icon: faLinkedinIn,
   },
@@ -163,6 +172,29 @@ function createAnnouncementId(): string {
   }
 
   return `social-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function toPublicMediaUrl(value: string): string {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return '';
+  }
+
+  try {
+    return new URL(trimmedValue, SITE_URL).toString();
+  } catch {
+    return '';
+  }
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
 }
 
 function getErrorMessage(error: unknown): string {
@@ -393,7 +425,7 @@ function getErrorMessage(error: unknown): string {
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h3 class="text-sm font-semibold text-zinc-100">Social announcements</h3>
-                      <p class="mt-1 text-xs text-zinc-500">Each service keeps its own copy and delivery time.</p>
+                      <p class="mt-1 text-xs text-zinc-500">Each service keeps its own copy and can follow the article launch or use a custom time.</p>
                     </div>
                     <button
                       type="button"
@@ -416,7 +448,9 @@ function getErrorMessage(error: unknown): string {
                               <h4 class="text-sm font-semibold text-zinc-200">{{ channelOption(announcement.channel).label }}</h4>
                               <span [class]="announcementStatusClass(announcement.status)">{{ statusLabel(announcement.status) }}</span>
                             </div>
-                            <p class="mt-1 text-xs text-zinc-500">{{ announcementDateTime(announcement) }}</p>
+                            <p class="mt-1 text-xs text-zinc-500">
+                              {{ announcement.deliveryTiming === 'at-publish' ? 'At publication' : announcementDateTime(announcement) }}
+                            </p>
                           </div>
                           @if (isAnnouncementEditable(announcement)) {
                             <button type="button" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200" (click)="openAnnouncementEditor(announcement)">Edit</button>
@@ -445,12 +479,52 @@ function getErrorMessage(error: unknown): string {
                       class="mt-3 w-full resize-y border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm leading-6 text-zinc-100 outline-none focus:border-cyan-300"
                       (input)="updateAnnouncementMessage($event)"
                     ></textarea>
-                    <input
-                      type="datetime-local"
-                      [value]="announcementScheduleDraft"
-                      class="mt-3 w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      (input)="updateAnnouncementSchedule($event)"
-                    >
+                    <fieldset class="mt-3 space-y-2">
+                      <legend class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery timing</legend>
+                      <div class="grid grid-cols-2 border border-zinc-700">
+                        <button
+                          type="button"
+                          [class]="deliveryTimingButtonClass(announcementDeliveryTiming, 'at-publish')"
+                          [attr.aria-pressed]="announcementDeliveryTiming === 'at-publish'"
+                          [disabled]="!canFollowPublication(post)"
+                          (click)="setAnnouncementDeliveryTiming('at-publish', post)"
+                        >
+                          When post goes live
+                        </button>
+                        <button
+                          type="button"
+                          [class]="deliveryTimingButtonClass(announcementDeliveryTiming, 'scheduled')"
+                          [attr.aria-pressed]="announcementDeliveryTiming === 'scheduled'"
+                          (click)="setAnnouncementDeliveryTiming('scheduled', post)"
+                        >
+                          Custom time
+                        </button>
+                      </div>
+                    </fieldset>
+                    @if (announcementDeliveryTiming === 'at-publish') {
+                      <p class="mt-2 border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
+                        Follows the article schedule: {{ postDateTime(post) }}
+                      </p>
+                    } @else {
+                      <input
+                        type="datetime-local"
+                        [value]="announcementScheduleDraft"
+                        class="mt-2 w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                        (input)="updateAnnouncementSchedule($event)"
+                      >
+                    }
+                    @if (announcement.channel === 'instagram') {
+                      <label class="mt-3 block space-y-1">
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public media URL</span>
+                        <input
+                          type="url"
+                          [value]="announcementMediaUrl"
+                          placeholder="https://..."
+                          class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                          (input)="updateAnnouncementMediaUrl($event)"
+                        >
+                      </label>
+                    }
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
@@ -473,6 +547,10 @@ function getErrorMessage(error: unknown): string {
                       Select services, then tailor the message and delivery time for each one. New deliveries remain tied to “{{ post.title }}”.
                     </p>
 
+                    <aside class="mt-3 border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100" role="status">
+                      Calendar plans queue in the protected delivery outbox. External auto-posting starts only after that provider's server-side account connection and delivery worker are configured.
+                    </aside>
+
                     <div class="mt-4 flex flex-wrap gap-2">
                       @for (draft of channelDrafts; track draft.id) {
                         <button
@@ -493,7 +571,7 @@ function getErrorMessage(error: unknown): string {
                           <div class="flex items-center justify-between gap-3">
                             <div>
                               <h4 class="text-sm font-semibold text-zinc-200">{{ draft.label }}</h4>
-                              <p class="mt-0.5 text-[11px] text-zinc-500">{{ draft.description }}</p>
+                              <p class="mt-0.5 text-[11px] text-zinc-500">{{ draft.description }} · {{ draft.automationLabel }}</p>
                             </div>
                             <span class="text-[11px] text-zinc-500">{{ draft.message.length }}/{{ draft.characterLimit }}</span>
                           </div>
@@ -504,15 +582,56 @@ function getErrorMessage(error: unknown): string {
                             class="mt-2 w-full resize-y border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-100 outline-none focus:border-cyan-300"
                             (input)="updateDraftMessage(draft.id, $event)"
                           ></textarea>
-                          <label class="mt-2 block space-y-1">
-                            <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery time</span>
-                            <input
-                              type="datetime-local"
-                              [value]="draft.scheduledAt"
-                              class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                              (input)="updateDraftSchedule(draft.id, $event)"
-                            >
-                          </label>
+                          <fieldset class="mt-2 space-y-2">
+                            <legend class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery timing</legend>
+                            <div class="grid grid-cols-2 border border-zinc-700">
+                              <button
+                                type="button"
+                                [class]="deliveryTimingButtonClass(draft.deliveryTiming, 'at-publish')"
+                                [attr.aria-pressed]="draft.deliveryTiming === 'at-publish'"
+                                [disabled]="!canFollowPublication(post)"
+                                (click)="setDraftDeliveryTiming(draft.id, 'at-publish', post)"
+                              >
+                                When post goes live
+                              </button>
+                              <button
+                                type="button"
+                                [class]="deliveryTimingButtonClass(draft.deliveryTiming, 'scheduled')"
+                                [attr.aria-pressed]="draft.deliveryTiming === 'scheduled'"
+                                (click)="setDraftDeliveryTiming(draft.id, 'scheduled', post)"
+                              >
+                                Custom time
+                              </button>
+                            </div>
+                          </fieldset>
+                          @if (draft.deliveryTiming === 'at-publish') {
+                            <p class="mt-2 border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
+                              Follows the article schedule: {{ postDateTime(post) }}
+                            </p>
+                          } @else {
+                            <label class="mt-2 block space-y-1">
+                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery time</span>
+                              <input
+                                type="datetime-local"
+                                [value]="draft.scheduledAt"
+                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                                (input)="updateDraftSchedule(draft.id, $event)"
+                              >
+                            </label>
+                          }
+                          @if (draft.id === 'instagram') {
+                            <label class="mt-2 block space-y-1">
+                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public media URL</span>
+                              <input
+                                type="url"
+                                [value]="draft.mediaUrl"
+                                placeholder="https://..."
+                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                                (input)="updateDraftMediaUrl(draft.id, $event)"
+                              >
+                              <span class="block text-[11px] leading-5 text-zinc-600">Instagram publishing requires a publicly reachable image or video.</span>
+                            </label>
+                          }
                         </section>
                       }
                     </div>
@@ -563,9 +682,30 @@ function getErrorMessage(error: unknown): string {
                 </div>
               </section>
 
-              <aside class="border border-zinc-800 bg-zinc-900/50 p-4 text-xs leading-5 text-zinc-500">
-                Scheduled social items are written to a protected delivery outbox after the source article is live. Provider credentials and API adapters remain a separate backend concern.
-              </aside>
+              <section class="border border-zinc-800 bg-zinc-900/50 p-4" aria-label="Social automation readiness">
+                <h3 class="text-sm font-semibold text-zinc-100">Automation readiness</h3>
+                <p class="mt-1 text-xs leading-5 text-zinc-500">
+                  Plans enter the protected outbox only after the article is live. Provider tokens remain server-side.
+                </p>
+                <dl class="mt-3 divide-y divide-zinc-800 border-y border-zinc-800 text-xs">
+                  <div class="flex items-start justify-between gap-4 py-2">
+                    <dt class="text-zinc-300">Web Push</dt>
+                    <dd class="text-right text-emerald-300">Active at publication</dd>
+                  </div>
+                  <div class="flex items-start justify-between gap-4 py-2">
+                    <dt class="text-zinc-300">Facebook / LinkedIn</dt>
+                    <dd class="text-right text-amber-300">Account connection required</dd>
+                  </div>
+                  <div class="flex items-start justify-between gap-4 py-2">
+                    <dt class="text-zinc-300">Instagram</dt>
+                    <dd class="text-right text-amber-300">Professional account + media required</dd>
+                  </div>
+                  <div class="flex items-start justify-between gap-4 py-2">
+                    <dt class="text-zinc-300">YouTube Community</dt>
+                    <dd class="text-right text-zinc-500">Manual workflow</dd>
+                  </div>
+                </dl>
+              </section>
             </div>
           </aside>
         </section>
@@ -577,7 +717,10 @@ function getErrorMessage(error: unknown): string {
 export class PublishingCalendarComponent {
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly toast = inject(CmsToastService);
+  private readonly route = inject(ActivatedRoute);
   private readonly today = new Date();
+  private readonly requestedPostId = this.route.snapshot.queryParamMap.get('post');
+  private hasAppliedRouteSelection = false;
 
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faChevronRight = faChevronRight;
@@ -627,8 +770,26 @@ export class PublishingCalendarComponent {
   protected scheduleDraft = '';
   protected announcementMessage = '';
   protected announcementScheduleDraft = '';
+  protected announcementDeliveryTiming: BlogSocialDeliveryTiming = 'scheduled';
+  protected announcementMediaUrl = '';
   protected saveInProgress = false;
   protected channelDrafts: readonly SocialAnnouncementDraft[] = [];
+
+  constructor() {
+    effect(() => {
+      if (!this.requestedPostId || this.hasAppliedRouteSelection) {
+        return;
+      }
+
+      const calendarEvent = this.allEvents()
+        .find(candidate => candidate.type === 'post' && candidate.post.id === this.requestedPostId);
+
+      if (calendarEvent) {
+        this.hasAppliedRouteSelection = true;
+        this.jumpToEvent(calendarEvent);
+      }
+    });
+  }
 
   protected get enabledChannelDrafts(): readonly SocialAnnouncementDraft[] {
     return this.channelDrafts.filter(draft => draft.enabled);
@@ -868,11 +1029,40 @@ export class PublishingCalendarComponent {
       return;
     }
 
+    // Fixed delivery times are an editorial promise. Only explicit at-publication
+    // announcements may move automatically when the article schedule changes.
+    const conflictingAnnouncement = post.status !== 'published'
+      ? (post.socialPromotion?.announcements ?? []).find(announcement => (
+        announcement.status === 'scheduled'
+        && announcement.deliveryTiming !== 'at-publish'
+        && new Date(announcement.scheduledAt).getTime() < publishedTimestamp
+      ))
+      : undefined;
+
+    if (conflictingAnnouncement) {
+      const channelLabel = this.channelOption(conflictingAnnouncement.channel).label;
+      this.toast.error(`Move or cancel the ${channelLabel} announcement before postponing this post past its delivery time.`);
+      return;
+    }
+
     const status: BlogPostStatus = post.status === 'published' ? 'published' : 'scheduled';
+    const updatedAt = new Date().toISOString();
+    const announcements = (post.socialPromotion?.announcements ?? []).map(announcement => (
+      post.status !== 'published'
+      && announcement.deliveryTiming === 'at-publish'
+      && announcement.status === 'scheduled'
+        ? {...announcement, scheduledAt: publishedAt, updatedAt}
+        : announcement
+    ));
     this.saveInProgress = true;
 
     try {
-      await this.blogRepository.savePost({...post, status, publishedAt});
+      await this.blogRepository.savePost({
+        ...post,
+        status,
+        publishedAt,
+        socialPromotion: post.socialPromotion ? {announcements} : undefined,
+      });
       this.toast.success(`Updated the schedule for “${post.title}”.`);
       this.closeScheduleEditor();
     } catch (error) {
@@ -886,13 +1076,19 @@ export class PublishingCalendarComponent {
     this.closeEditors();
     const earliestDelivery = Math.max(Date.now() + 10 * 60 * 1000, new Date(post.publishedAt ?? 0).getTime());
     const scheduledAt = toDateTimeLocalValue(new Date(earliestDelivery).toISOString());
+    const deliveryTiming: BlogSocialDeliveryTiming = this.canFollowPublication(post) ? 'at-publish' : 'scheduled';
+    const mediaUrl = toPublicMediaUrl(post.seo.openGraphImage || post.coverImage);
 
-    this.channelDrafts = socialChannelOptions.map(option => ({
+    this.channelDrafts = socialChannelOptions
+      .filter(option => option.id !== 'notify')
+      .map(option => ({
       ...option,
       enabled: false,
       message: this.createDefaultMessage(option.id, post),
       scheduledAt,
-    }));
+      deliveryTiming,
+      mediaUrl: option.id === 'instagram' ? mediaUrl : '',
+      }));
     this.socialComposerOpen = true;
   }
 
@@ -906,6 +1102,24 @@ export class PublishingCalendarComponent {
     return draft.enabled
       ? `${base} border-cyan-400 bg-cyan-400 text-zinc-950`
       : `${base} border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200`;
+  }
+
+  protected canFollowPublication(post: BlogPost): boolean {
+    if (post.status !== 'scheduled' || !post.publishedAt) {
+      return false;
+    }
+
+    return new Date(post.publishedAt).getTime() > Date.now();
+  }
+
+  protected deliveryTimingButtonClass(
+    currentTiming: BlogSocialDeliveryTiming,
+    buttonTiming: BlogSocialDeliveryTiming
+  ): string {
+    const base = 'px-2 py-2 text-[11px] font-medium disabled:cursor-not-allowed disabled:text-zinc-700';
+    return currentTiming === buttonTiming
+      ? `${base} bg-cyan-400 text-zinc-950`
+      : `${base} text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100`;
   }
 
   protected toggleDraftChannel(channel: BlogSocialChannel): void {
@@ -924,6 +1138,28 @@ export class PublishingCalendarComponent {
     this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, scheduledAt} : draft);
   }
 
+  protected setDraftDeliveryTiming(
+    channel: BlogSocialChannel,
+    deliveryTiming: BlogSocialDeliveryTiming,
+    post: BlogPost
+  ): void {
+    if (deliveryTiming === 'at-publish' && !this.canFollowPublication(post)) {
+      return;
+    }
+
+    const scheduledAt = deliveryTiming === 'at-publish'
+      ? toDateTimeLocalValue(post.publishedAt)
+      : toDateTimeLocalValue(new Date(Math.max(Date.now() + 10 * 60 * 1000, new Date(post.publishedAt ?? 0).getTime())).toISOString());
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
+      ? {...draft, deliveryTiming, scheduledAt}
+      : draft);
+  }
+
+  protected updateDraftMediaUrl(channel: BlogSocialChannel, event: Event): void {
+    const mediaUrl = event.target instanceof HTMLInputElement ? event.target.value : '';
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, mediaUrl} : draft);
+  }
+
   protected async saveSocialAnnouncements(post: BlogPost): Promise<void> {
     const drafts = this.enabledChannelDrafts;
 
@@ -939,7 +1175,12 @@ export class PublishingCalendarComponent {
       return;
     }
 
-    const parsedSchedules = drafts.map(draft => ({draft, scheduledAt: fromDateTimeLocalValue(draft.scheduledAt)}));
+    const parsedSchedules = drafts.map(draft => ({
+      draft,
+      scheduledAt: draft.deliveryTiming === 'at-publish'
+        ? post.publishedAt
+        : fromDateTimeLocalValue(draft.scheduledAt),
+    }));
     const invalidSchedule = parsedSchedules.find(item => !item.scheduledAt || new Date(item.scheduledAt).getTime() <= Date.now());
 
     if (invalidSchedule) {
@@ -957,6 +1198,13 @@ export class PublishingCalendarComponent {
       return;
     }
 
+    const invalidInstagramMedia = drafts.find(draft => draft.id === 'instagram' && !isHttpUrl(draft.mediaUrl));
+
+    if (invalidInstagramMedia) {
+      this.toast.error('Add a public image or video URL before scheduling Instagram.');
+      return;
+    }
+
     const now = new Date().toISOString();
     const linkUrl = `${SITE_URL}/blog/${post.slug}`;
     const announcements: readonly BlogSocialAnnouncement[] = parsedSchedules.map(({draft, scheduledAt}) => ({
@@ -964,10 +1212,12 @@ export class PublishingCalendarComponent {
       channel: draft.id,
       message: draft.message.trim(),
       scheduledAt: scheduledAt as string,
+      deliveryTiming: draft.deliveryTiming,
       status: 'scheduled',
       createdAt: now,
       updatedAt: now,
       linkUrl,
+      mediaUrl: draft.mediaUrl.trim() || undefined,
     }));
     const savedPost: BlogPost = {
       ...post,
@@ -1002,6 +1252,8 @@ export class PublishingCalendarComponent {
     this.selectedEventId.set(eventId);
     this.announcementMessage = announcement.message;
     this.announcementScheduleDraft = toDateTimeLocalValue(announcement.scheduledAt);
+    this.announcementDeliveryTiming = announcement.deliveryTiming ?? 'scheduled';
+    this.announcementMediaUrl = announcement.mediaUrl ?? '';
     this.announcementEditorOpen = true;
   }
 
@@ -1009,6 +1261,8 @@ export class PublishingCalendarComponent {
     this.announcementEditorOpen = false;
     this.announcementMessage = '';
     this.announcementScheduleDraft = '';
+    this.announcementDeliveryTiming = 'scheduled';
+    this.announcementMediaUrl = '';
   }
 
   protected updateAnnouncementMessage(event: Event): void {
@@ -1019,10 +1273,27 @@ export class PublishingCalendarComponent {
     this.announcementScheduleDraft = event.target instanceof HTMLInputElement ? event.target.value : '';
   }
 
+  protected setAnnouncementDeliveryTiming(deliveryTiming: BlogSocialDeliveryTiming, post: BlogPost): void {
+    if (deliveryTiming === 'at-publish' && !this.canFollowPublication(post)) {
+      return;
+    }
+
+    this.announcementDeliveryTiming = deliveryTiming;
+    this.announcementScheduleDraft = deliveryTiming === 'at-publish'
+      ? toDateTimeLocalValue(post.publishedAt)
+      : toDateTimeLocalValue(new Date(Math.max(Date.now() + 10 * 60 * 1000, new Date(post.publishedAt ?? 0).getTime())).toISOString());
+  }
+
+  protected updateAnnouncementMediaUrl(event: Event): void {
+    this.announcementMediaUrl = event.target instanceof HTMLInputElement ? event.target.value : '';
+  }
+
   protected async saveAnnouncement(post: BlogPost, announcement: BlogSocialAnnouncement): Promise<void> {
     const option = this.channelOption(announcement.channel);
     const message = this.announcementMessage.trim();
-    const scheduledAt = fromDateTimeLocalValue(this.announcementScheduleDraft);
+    const scheduledAt = this.announcementDeliveryTiming === 'at-publish'
+      ? post.publishedAt
+      : fromDateTimeLocalValue(this.announcementScheduleDraft);
 
     if (!message || message.length > option.characterLimit) {
       this.toast.error(`Add a valid ${option.label} message within ${option.characterLimit} characters.`);
@@ -1034,7 +1305,16 @@ export class PublishingCalendarComponent {
       return;
     }
 
-    if (post.status === 'scheduled' && post.publishedAt && scheduledAt < post.publishedAt) {
+    if (announcement.channel === 'instagram' && !isHttpUrl(this.announcementMediaUrl)) {
+      this.toast.error('Add a public image or video URL before scheduling Instagram.');
+      return;
+    }
+
+    if (
+      post.status === 'scheduled'
+      && post.publishedAt
+      && new Date(scheduledAt).getTime() < new Date(post.publishedAt).getTime()
+    ) {
       this.toast.error(`${option.label} cannot be delivered before the blog post is live.`);
       return;
     }
@@ -1043,8 +1323,10 @@ export class PublishingCalendarComponent {
       ...announcement,
       message,
       scheduledAt,
+      deliveryTiming: this.announcementDeliveryTiming,
       status: 'scheduled',
       updatedAt: new Date().toISOString(),
+      mediaUrl: this.announcementMediaUrl.trim() || undefined,
       failureReason: undefined,
     };
 
@@ -1097,6 +1379,8 @@ export class PublishingCalendarComponent {
     this.channelDrafts = [];
     this.announcementMessage = '';
     this.announcementScheduleDraft = '';
+    this.announcementDeliveryTiming = 'scheduled';
+    this.announcementMediaUrl = '';
   }
 
   private createCalendarEvents(posts: readonly BlogPost[]): readonly PublishingCalendarEvent[] {

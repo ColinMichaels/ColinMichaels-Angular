@@ -8,7 +8,7 @@ The reorganized console should make the next action obvious, reduce repeated chr
 
 ## Current Implementation Status
 
-Phase 1, the first Overview slice, and the first Phase 2 publishing-flow slice are implemented:
+Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation are implemented:
 
 - `AdminShellComponent` now owns a 224px desktop sidebar, an optional 72px icon-only collapsed state with hover/focus labels, a 64px utility header, a phone/tablet navigation drawer, the environment indicator, account links, the persistent `New Post` action, and the browser-tab title for the active admin URL. The desktop choice persists without changing the always-labeled mobile drawer.
 - `admin-navigation.config.ts` is the typed, role-aware source of truth for the five navigation groups and page titles.
@@ -19,12 +19,14 @@ Phase 1, the first Overview slice, and the first Phase 2 publishing-flow slice a
 - The Post Editor now presents secondary settings as compact control modules. Post Details remains open, while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details default closed with live summaries and status badges. Its desktop inspector rail remains sticky beneath the shell header and uses a bounded internal scroller so all controls remain reachable above the fixed command area.
 - `AdminControlModuleComponent` keeps collapsed form content mounted, preserving field state and upload progress, and invalid saves automatically reveal the section that needs attention.
 - The Editor.js toolbar and sticky command area use the same denser hierarchy; on phones the sticky bar keeps status and Save visible while View/Delete actions move into a compact contextual menu.
+- The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, and renders the compact bulk-action surface only after at least one row is selected.
+- Calendar now distinguishes launch-following from fixed-time social plans, keeps launch plans aligned when a post is rescheduled, requires media for Instagram planning, reports provider readiness honestly, and receives direct post context from the Editor's Distribution module.
 
-The next Phase 2 delivery slice is to simplify the Posts maintenance/bulk-action flow and align the schedule/social composition controls with the same compact hierarchy.
+The next admin reorganization slice is Phase 3 site-content, asset, and operations consistency. Real social provider connections remain a separate backend delivery project.
 
-## Current Friction
+## Pre-Refactor Baseline
 
-The present admin is functionally capable, but navigation and page composition grew one feature at a time:
+The original admin was functionally capable, but navigation and page composition had grown one feature at a time. This baseline explains the decisions above; the shell, public-header boundary, local-navigation cleanup, and Overview issues in the first three bullets are now resolved:
 
 - `AdminShellComponent` only renders the environment badge; each page rebuilds its own local navigation, header, actions, width, and spacing.
 - The public site header remains visible on admin routes, while admin pages also include Home, Blog, and Admin links. This creates two competing navigation systems.
@@ -133,6 +135,8 @@ Keep statistics secondary. Avoid four large metric cards when the numbers do not
 
 ### Posts
 
+Implementation status: the header maintenance disclosure and selection-only bulk action surface are complete; table, filtering, pagination, row actions, and repository behavior remain unchanged.
+
 - Keep search, sort, row count, and the post table as the primary surface.
 - Keep `New Post` as the sole primary button.
 - Move Import JSON, Export JSON, and Refresh Firestore into a `Maintenance` overflow menu.
@@ -141,6 +145,8 @@ Keep statistics secondary. Avoid four large metric cards when the numbers do not
 - Keep status, update date, publish date, edit, preview/view, and destructive actions visible according to row state.
 
 ### Calendar
+
+Implementation status: the Calendar is fitted to the shared shell and its scheduling/social composition hierarchy is aligned. Provider connection health and retries remain deferred until a real connector exists.
 
 - Use the month grid and day rail already implemented as the main canvas.
 - Let the shared shell replace Calendar’s local Admin/Posts/Blog links and New Post button.
@@ -205,6 +211,8 @@ Exit criteria:
 - no page has duplicate global navigation
 
 ### Phase 2: Publishing Flow
+
+Status: complete. Post Editor hierarchy, Posts maintenance/bulk presentation, Calendar schedule/social composition, and the Editor-to-Calendar distribution path now form one coherent workflow.
 
 - Simplify Posts header and progressive bulk actions.
 - Fit Calendar into the shared shell.

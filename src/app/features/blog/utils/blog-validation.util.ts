@@ -98,8 +98,14 @@ function isBlogSocialAnnouncement(value: unknown): boolean {
     && blogSocialAnnouncementStatusSet.has(value['status'] as BlogSocialAnnouncementStatus)
     && typeof value['createdAt'] === 'string'
     && typeof value['updatedAt'] === 'string'
+    && (
+      value['deliveryTiming'] === undefined
+      || value['deliveryTiming'] === 'at-publish'
+      || value['deliveryTiming'] === 'scheduled'
+    )
     && (value['postedAt'] === undefined || typeof value['postedAt'] === 'string')
     && (value['linkUrl'] === undefined || typeof value['linkUrl'] === 'string')
+    && (value['mediaUrl'] === undefined || typeof value['mediaUrl'] === 'string')
     && (value['failureReason'] === undefined || typeof value['failureReason'] === 'string');
 }
 

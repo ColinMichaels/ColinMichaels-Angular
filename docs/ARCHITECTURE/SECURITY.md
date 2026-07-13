@@ -23,19 +23,21 @@ Current sinks include:
 Risk:
 user-controlled or remotely controlled strings could execute markup/script payloads if not constrained.
 
-## 2) External URL Handling
+## 2) External URL Handling (Resolved)
 
-- Redirect guard opens decoded route param in a new tab with no allowlist.
+- The redirect guard validates decoded destinations against an explicit scheme/domain allowlist before opening a new tab.
+
+Residual risk:
+new external destinations must be added deliberately and covered by allowed/blocked URL tests rather than weakening the guard.
+
+## 3) Secrets in Client (Browser Exposure Resolved; Backend Delivery Open)
+
+- Angular environment generation exposes only `APP_API_URL`; OpenAI and weather vendor keys are no longer browser build inputs or preview-workflow requirements.
+- CMS OpenAI helpers use a Firebase Functions secret.
+- The legacy generic OpenAI/weather proxy in `functions/index.js` is not the TypeScript Functions deploy entry and must not be treated as the production boundary. A deployable, authenticated, validated, rate-limited weather/chat boundary or an explicitly documented external API remains required before the proxy TODO can close.
 
 Risk:
-malicious URLs or script schemes can be triggered by crafted routes.
-
-## 3) Secrets in Client
-
-- OpenAI and weather API keys are configured for client-side use.
-
-Risk:
-keys are recoverable from browser context and can be abused.
+an incorrectly deployed public proxy could protect vendor keys while still allowing anonymous quota abuse or caller-controlled upstream requests.
 
 ## 4) Storage Trust
 
@@ -44,13 +46,13 @@ keys are recoverable from browser context and can be abused.
 Risk:
 tampered storage payloads can produce runtime errors or unintended behavior.
 
-## Recommended Mitigations (Planned)
+## Mitigation Status
 
-1. Replace unsafe HTML sinks with safe rendering primitives and explicit formatting tokens.
-2. Validate external URLs with strict scheme/domain checks before `window.open`.
-3. Move third-party API calls requiring secrets behind a backend proxy/function.
-4. Add schema guards for storage rehydration and fail-safe defaults.
-5. Reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
+1. Open: replace unsafe HTML sinks with safe rendering primitives and explicit formatting tokens.
+2. Complete: validate external URLs with strict scheme/domain checks before `window.open`.
+3. In progress: browser vendor keys are removed; complete and verify the deployable backend proxy boundary before closing the item.
+4. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
+5. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
 
 ## Operational Notes
 

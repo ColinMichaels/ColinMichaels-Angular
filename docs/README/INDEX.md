@@ -17,7 +17,14 @@ This folder is the entry point for project documentation.
 - [Core Services](../ARCHITECTURE/SERVICES.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)
+- [Admin Console Reorganization](../ARCHITECTURE/ADMIN_CONSOLE_REORGANIZATION_PLAN.md)
+- [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
+- [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
+- [Public Blog Shell](../ARCHITECTURE/PUBLIC_BLOG_SHELL.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
+- [Publishing Calendar](../ARCHITECTURE/PUBLISHING_CALENDAR.md)
+- [Screen Saver](../ARCHITECTURE/SCREEN_SAVER.md)
+- [Social Preview and Share Attribution](../ARCHITECTURE/SOCIAL_PREVIEW_AND_SHARE_ATTRIBUTION.md)
 - [Mobile PWA Foundation](../ARCHITECTURE/MOBILE_PWA.md)
 - [Homepage Hero CMS](../ARCHITECTURE/HOMEPAGE_HERO_CMS.md)
 - [Topic Pages and Reusable Post Listing](../ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md)
@@ -30,6 +37,7 @@ This folder is the entry point for project documentation.
 - [Link Building Outreach](../SEO/LINK_BUILDING_OUTREACH.md)
 - [Tech Debt TODOs](../TODOS/TECH_DEBT.md)
 - [Future Roadmap](../FUTURE_FEATURES/ROADMAP.md)
+- [Codex Agent Signature Knowledge Map](../FUTURE_FEATURES/Codex-Agent-Signature-Knowledge-Map.md)
 
 ## SEO Reviews
 

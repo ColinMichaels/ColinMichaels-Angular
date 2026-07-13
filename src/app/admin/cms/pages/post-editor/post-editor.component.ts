@@ -658,6 +658,29 @@ function getErrorMessage(error: unknown): string {
                 </dl>
               </app-admin-control-module>
 
+              <app-admin-control-module
+                title="Distribution"
+                [summary]="distributionSummary"
+                description="Review the launch on Calendar and prepare channel-specific copy after the article schedule is saved."
+              >
+                <p class="text-xs leading-5 text-zinc-500">
+                  Web Push runs automatically when the article publishes. External social plans queue separately so provider failures cannot block the article launch.
+                </p>
+                @if (canOpenDistributionCalendar) {
+                  <a
+                    routerLink="/admin/cms/calendar"
+                    [queryParams]="{post: currentPost.id}"
+                    class="mt-3 inline-flex h-9 items-center justify-center border border-cyan-400 px-3 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                  >
+                    Open Calendar &amp; social plan
+                  </a>
+                } @else {
+                  <p class="mt-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-xs leading-5 text-zinc-600">
+                    Save this post as scheduled or published before planning distribution.
+                  </p>
+                }
+              </app-admin-control-module>
+
               <app-cms-draft-preview-panel
                 #draftPreviewPanel
                 [post]="currentPost"
@@ -999,6 +1022,17 @@ export class CmsPostEditorComponent {
 
     const formattedDate = postedDateFormatter.format(new Date(publishedAt));
     return status === 'scheduled' ? `Scheduled for ${formattedDate}` : formattedDate;
+  }
+
+  protected get distributionSummary(): string {
+    const announcements = this.currentPost?.socialPromotion?.announcements ?? [];
+    const activeCount = announcements.filter(announcement => announcement.status !== 'cancelled').length;
+    return activeCount === 0 ? 'No social plans' : `${activeCount} social plan${activeCount === 1 ? '' : 's'}`;
+  }
+
+  protected get canOpenDistributionCalendar(): boolean {
+    return !this.isNewPost
+      && (this.currentPost?.status === 'scheduled' || this.currentPost?.status === 'published');
   }
 
   protected get openGraphImageMode(): string {

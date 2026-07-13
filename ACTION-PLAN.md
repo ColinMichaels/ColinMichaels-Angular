@@ -1,74 +1,36 @@
 # SEO Action Plan: colinmichaels.com
 
-## Implementation Status
+## Current Status
 
-Started on July 03, 2026:
+Updated July 13, 2026. The July 3 audit recommendations are closed in local code unless listed under Remaining Work.
 
-- Completed homepage and `/labs` server-rendered fallback HTML in the Firebase SEO renderer.
-- Completed baseline security headers in Firebase Hosting with CSP in report-only mode.
-- Completed `/llms.txt`.
-- Completed homepage meta description tightening and homepage ProfilePage/WebPage JSON-LD enrichment.
-- Completed sitemap cleanup to remove `changefreq` and `priority`.
-- Started CMS metadata guardrails by tightening title/description checklist warnings.
-- Started mobile fixed-social-bar mitigation with extra homepage bottom padding.
+## Completed
 
-## Critical
+1. Added crawler-visible homepage fallback HTML with identity, trust, blog, and topic links.
+2. Resolved the later `/labs` product decision: Labs code remains preserved, while Hosting and Angular temporarily redirect `/labs` to `/blog`; the server fallback and sitemap no longer advertise the paused route, and `/topics/labs-projects` is the public discovery surface.
+3. Added `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and report-only CSP headers in Firebase Hosting.
+4. Added and subsequently proposal-aligned `/llms.txt` with canonical public destinations.
+5. Added CMS title and description length warnings while keeping article display titles independent from SEO overrides.
+6. Shortened the homepage description to the intended search-snippet range.
+7. Connected homepage ProfilePage/WebPage structured data to the existing Person and WebSite graph.
+8. Removed sitemap `changefreq` and `priority` output while retaining meaningful `lastmod` values.
+9. Added mobile bottom/safe-area spacing for fixed public controls.
+10. Expanded topic hubs with answer-first summaries, linkable guide sections, public post discovery, and crawler-visible fallback content.
 
-1. Add homepage fallback HTML in `renderSeoHtml`.
-  - Include one H1, a concise 134-167 word answer-first profile summary, links to Blog/Labs/Topics, and visible author/profile trust signals.
-  - Target files: `functions/src/index.ts` and, if needed, shared SEO metadata helpers.
+## Remaining Work
 
-2. Add `/labs` fallback HTML.
-  - Include an H1, short project/lab descriptions, durable links, and language that reinforces experiments are isolated from production page logic.
-  - Target files: `functions/src/index.ts`, labs route metadata if needed.
-
-3. Add baseline security headers.
-  - Add `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and a report-only CSP first.
-  - Target file: `firebase.json`.
-
-4. Add `/llms.txt`.
-  - Summarize the site, author, topic hubs, best blog guides, project/labs areas, feeds, and preferred citation URLs.
-  - Target file: `public/llms.txt`.
-
-## High
-
-5. Tighten long titles and meta descriptions.
-  - 6 title tags exceed 60 characters; 18 meta descriptions exceed 160 characters.
-  - Add CMS checklist warnings for `seoTitle` and `seoDescription` lengths.
-  - Target files: CMS SEO checklist utilities and blog post metadata handling.
-
-6. Shorten the homepage meta description.
-  - Current description is 193 characters.
-  - Keep the positioning but aim for 150-160 characters.
-
-7. Enrich homepage schema.
-  - Add WebPage or ProfilePage connected to existing Person/WebSite graph.
-  - Avoid Organization unless there is a real business entity to represent.
-
-## Medium
-
-8. Remove low-value sitemap `changefreq` and `priority` tags.
-  - Keep accurate `lastmod`.
-  - Target file: `functions/src/index.ts`.
-
-9. Add mobile bottom spacing for fixed social/navigation controls.
-  - Verify 390px-wide viewport does not obscure card titles or CTAs.
-
-10. Improve topic-hub extractability.
-  - Add short answer-first blocks to topic hubs and consider FAQ-style H2s where natural.
-
-## Low
-
-11. Consider IndexNow only if Bing/Yandex fast discovery becomes important.
-
-12. Add PageSpeed/CrUX/GSC credentials for future audits.
-  - This would replace heuristic performance and indexation estimates with field data.
+1. Deploy the latest Hosting and Functions route policy, then verify `/labs` returns the temporary redirect and is absent from `/sitemap.xml`.
+2. Run live/raw HTML checks for `/`, `/blog`, one topic hub, and one blog post after deployment.
+3. Run Lighthouse/PageSpeed and inspect representative URLs in Search Console; field and indexation conclusions require the relevant account access.
+4. Re-crawl titles and descriptions after deployment and refine pages that still show truncation or weak click-through rate.
+5. Consider IndexNow only if Bing/Yandex discovery becomes an operational priority.
+6. Continue the separate outreach and measurement queue in `docs/SEO/90_DAY_SEO_PLAN.md` after the target assets are live.
 
 ## Validation Checklist
 
 - Run `npm run build`.
 - Run `npm run lint`.
-- Verify live/raw HTML for `/`, `/labs`, `/blog`, one topic hub, and one blog post.
+- Verify live/raw HTML for `/`, `/blog`, one topic hub, and one blog post; verify `/labs` returns the temporary redirect without a crawler fallback page.
 - Verify `robots.txt`, `/sitemap.xml`, `/llms.txt`, `/feed.xml`, and `/feed.json`.
 - Re-run SEO audit scripts for technical, content, schema, sitemap, performance, GEO, and images.
 - Re-capture desktop/tablet/mobile screenshots.

@@ -104,7 +104,7 @@ function getErrorMessage(error: unknown): string {
             <h1 class="text-4xl font-semibold text-zinc-50">Posts</h1>
             <p class="max-w-2xl text-zinc-400">Draft, scheduled, published, and archived entries using the shared blog content model.</p>
           </div>
-          <div class="flex flex-wrap gap-3">
+          <div class="flex flex-wrap items-center gap-3">
             <input
               #bulkJsonImportInput
               type="file"
@@ -112,29 +112,49 @@ function getErrorMessage(error: unknown): string {
               accept=".json,application/json"
               (change)="importPostsJson($event)"
             >
-            <button
-              type="button"
-              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-              [disabled]="importInProgress"
-              (click)="bulkJsonImportInput.click()"
-            >
-              {{ importInProgress ? 'Importing...' : 'Import JSON' }}
-            </button>
-            <button
-              type="button"
-              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-              (click)="exportPosts()"
-            >
-              Export JSON
-            </button>
-            <button
-              type="button"
-              class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-              [disabled]="backupInProgress"
-              (click)="refreshPostsFromFirestore()"
-            >
-              {{ backupInProgress ? 'Refreshing...' : 'Refresh Firestore' }}
-            </button>
+            <details #maintenanceMenu class="group relative">
+              <summary
+                class="inline-flex cursor-pointer list-none items-center gap-2 border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+              >
+                Maintenance
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  class="h-4 w-4 transition-transform group-open:rotate-180"
+                >
+                  <path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </summary>
+              <div
+                class="absolute left-0 z-30 mt-2 w-56 border border-zinc-700 bg-zinc-950 p-1 shadow-2xl shadow-black/40 sm:left-auto sm:right-0"
+                aria-label="Maintenance actions"
+              >
+                <button
+                  type="button"
+                  class="flex w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="importInProgress"
+                  (click)="closeMaintenanceMenu(maintenanceMenu); bulkJsonImportInput.click()"
+                >
+                  {{ importInProgress ? 'Importing...' : 'Import JSON' }}
+                </button>
+                <button
+                  type="button"
+                  class="flex w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  (click)="closeMaintenanceMenu(maintenanceMenu); exportPosts()"
+                >
+                  Export JSON
+                </button>
+                <button
+                  type="button"
+                  class="flex w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="backupInProgress"
+                  (click)="closeMaintenanceMenu(maintenanceMenu); refreshPostsFromFirestore()"
+                >
+                  {{ backupInProgress ? 'Refreshing...' : 'Refresh Firestore' }}
+                </button>
+              </div>
+            </details>
             <a
               routerLink="/admin/cms/new"
               class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
@@ -199,76 +219,77 @@ function getErrorMessage(error: unknown): string {
           }
         </section>
 
-        <section
-          class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 text-sm text-zinc-300 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto] xl:items-end"
-          aria-label="Bulk post actions"
-        >
-          <div class="space-y-2">
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500">Bulk actions</p>
-            <p class="text-zinc-400">
-              {{ selectedCount }} selected
-              <span class="text-zinc-600">/ {{ filteredRows.length }} matching current filters</span>
-            </p>
-            <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-                [disabled]="pagedRows.length === 0 || bulkActionInProgress"
-                (click)="selectPagedRows()"
-              >
-                Select visible
-              </button>
-              <button
-                type="button"
-                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-                [disabled]="filteredRows.length === 0 || bulkActionInProgress"
-                (click)="selectFilteredRows()"
-              >
-                Select filtered
-              </button>
-              <button
-                type="button"
-                class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-                [disabled]="selectedCount === 0 || bulkActionInProgress"
-                (click)="clearSelection()"
-              >
-                Clear
-              </button>
+        @if (selectedCount > 0) {
+          <section
+            class="grid gap-3 border border-zinc-800 bg-zinc-900/70 p-3 text-sm text-zinc-300 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto] xl:items-end"
+            aria-label="Bulk post actions"
+          >
+            <div class="space-y-2">
+              <p class="font-medium text-cyan-200">
+                {{ selectedCount }} selected
+                <span class="font-normal text-zinc-500">/ {{ filteredRows.length }} matching current filters</span>
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="pagedRows.length === 0 || bulkActionInProgress"
+                  (click)="selectPagedRows()"
+                >
+                  Select visible
+                </button>
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="filteredRows.length === 0 || bulkActionInProgress"
+                  (click)="selectFilteredRows()"
+                >
+                  Select filtered
+                </button>
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="bulkActionInProgress"
+                  (click)="clearSelection()"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-          </div>
 
-          <label class="space-y-2">
-            <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Change status to</span>
-            <select
-              [value]="bulkStatus"
-              class="w-full min-w-40 border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+            <label class="space-y-2">
+              <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Change status to</span>
+              <select
+                [value]="bulkStatus"
+                class="w-full min-w-40 border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                [disabled]="bulkActionInProgress"
+                (change)="updateBulkStatus($event)"
+              >
+                @for (status of bulkStatusOptions; track status) {
+                  <option [value]="status">{{ statusLabel(status) }}</option>
+                }
+              </select>
+            </label>
+
+            <button
+              type="button"
+              class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
               [disabled]="bulkActionInProgress"
-              (change)="updateBulkStatus($event)"
+              (click)="bulkUpdateSelectedStatus()"
             >
-              @for (status of bulkStatusOptions; track status) {
-                <option [value]="status">{{ statusLabel(status) }}</option>
-              }
-            </select>
-          </label>
+              {{ bulkActionInProgress ? 'Working...' : 'Apply status' }}
+            </button>
 
-          <button
-            type="button"
-            class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
-            [disabled]="selectedCount === 0 || bulkActionInProgress"
-            (click)="bulkUpdateSelectedStatus()"
-          >
-            {{ bulkActionInProgress ? 'Working...' : 'Apply status' }}
-          </button>
-
-          <button
-            type="button"
-            class="inline-flex justify-center border border-red-400 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
-            [disabled]="selectedCount === 0 || bulkActionInProgress"
-            (click)="bulkDeleteSelectedPosts()"
-          >
-            Delete selected
-          </button>
-        </section>
+            <button
+              type="button"
+              class="inline-flex justify-center border border-red-400 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+              [disabled]="bulkActionInProgress"
+              (click)="bulkDeleteSelectedPosts()"
+            >
+              Delete selected
+            </button>
+          </section>
+        }
 
         <section class="overflow-x-auto border border-zinc-800">
           <table class="min-w-full divide-y divide-zinc-800 text-left text-sm">
@@ -361,7 +382,7 @@ function getErrorMessage(error: unknown): string {
               </tr>
             } @empty {
               <tr class="bg-zinc-950">
-                <td colspan="8" class="px-4 py-12 text-center">
+                <td colspan="9" class="px-4 py-12 text-center">
                   <p class="text-base font-medium text-zinc-200">No posts match your search.</p>
                   <p class="mt-2 text-sm text-zinc-500">Clear the search or adjust the sort options.</p>
                   </td>
@@ -609,6 +630,10 @@ export class CmsPostListComponent {
 
   protected goToNextPage(): void {
     this.currentPage = Math.min(this.totalPages, this.visiblePage + 1);
+  }
+
+  protected closeMaintenanceMenu(menu: HTMLDetailsElement): void {
+    menu.open = false;
   }
 
   protected exportPosts(): void {

@@ -58,6 +58,7 @@ Search indexes author name, title, and slug and supports a stable `?author=<slug
 Labs code is preserved under `src/app/labs`, but its public entry points are intentionally paused:
 
 - `/labs` redirects to `/blog`
+- Firebase Hosting performs the temporary `302` before the catch-all SEO renderer, and `/labs` is omitted from the sitemap and homepage fallback links
 - the header, homepage Labs promotion, blog footer, and static search items omit Labs
 - existing experimental components are not deleted or moved
 - `/background` remains available as an existing standalone route

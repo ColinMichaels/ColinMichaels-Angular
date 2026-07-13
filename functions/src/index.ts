@@ -22,7 +22,6 @@ import {
   HOMEPAGE_DESCRIPTION,
   HOMEPAGE_OG_IMAGE,
   HOMEPAGE_TITLE,
-  LABS_DESCRIPTION,
   PERSON_JOB_TITLE,
   PERSON_KNOWS_ABOUT,
   PERSON_NAME,
@@ -64,6 +63,7 @@ import {
   ownsUserRoleMutationLease,
   replaceManagedUserRoleClaims,
 } from './user-role-mutation';
+import {reconcileSocialAnnouncementStatus} from './social-delivery';
 
 initializeApp();
 
@@ -258,10 +258,12 @@ interface SocialAnnouncementDocument {
   channel: SocialDeliveryChannel;
   message: string;
   scheduledAt: string;
+  deliveryTiming?: 'at-publish' | 'scheduled';
   status: 'scheduled';
   createdAt: string;
   updatedAt: string;
   linkUrl?: string;
+  mediaUrl?: string;
 }
 
 const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
@@ -296,7 +298,13 @@ function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly So
       && scheduledTime <= now.getTime()
       && typeof announcement['createdAt'] === 'string'
       && typeof announcement['updatedAt'] === 'string'
-      && (announcement['linkUrl'] === undefined || typeof announcement['linkUrl'] === 'string');
+      && (
+        announcement['deliveryTiming'] === undefined
+        || announcement['deliveryTiming'] === 'at-publish'
+        || announcement['deliveryTiming'] === 'scheduled'
+      )
+      && (announcement['linkUrl'] === undefined || typeof announcement['linkUrl'] === 'string')
+      && (announcement['mediaUrl'] === undefined || typeof announcement['mediaUrl'] === 'string');
   });
 }
 
@@ -357,21 +365,39 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
       const slug = typeof currentPost['slug'] === 'string' ? currentPost['slug'] : '';
       const postTitle = typeof currentPost['title'] === 'string' ? currentPost['title'] : 'Untitled Post';
       const defaultLinkUrl = slug ? `${SITE_URL}/blog/${slug}` : SITE_URL;
+      const deliveryEntries = dueAnnouncements.map(announcement => ({
+        announcement,
+        ref: firestore.collection(SOCIAL_OUTBOX_COLLECTION).doc(`${currentSnapshot.id}__${announcement.id}`),
+      }));
+      // Read every deterministic delivery before writing. An existing outbox record is
+      // authoritative so an imported stale post cannot recreate or reset provider work.
+      const existingDeliverySnapshots = await transaction.getAll(...deliveryEntries.map(entry => entry.ref));
+      const existingDeliveriesByAnnouncementId = new Map(
+        deliveryEntries.flatMap((entry, index) => existingDeliverySnapshots[index]?.exists
+          ? [[entry.announcement.id, existingDeliverySnapshots[index]] as const]
+          : [])
+      );
       const announcements = socialPromotion['announcements'].map(announcement => {
         if (!isRecord(announcement) || typeof announcement['id'] !== 'string' || !dueAnnouncementIds.has(announcement['id'])) {
           return announcement;
         }
 
+        const existingDelivery = existingDeliveriesByAnnouncementId.get(announcement['id']);
+        const status = reconcileSocialAnnouncementStatus(existingDelivery?.get('status'));
+
         return {
           ...announcement,
-          status: 'queued',
+          status,
           updatedAt: nowIso,
         };
       });
 
-      for (const announcement of dueAnnouncements) {
-        const deliveryId = `${currentSnapshot.id}__${announcement.id}`;
-        const deliveryRef = firestore.collection(SOCIAL_OUTBOX_COLLECTION).doc(deliveryId);
+      for (const {announcement, ref: deliveryRef} of deliveryEntries) {
+        if (existingDeliveriesByAnnouncementId.has(announcement.id)) {
+          continue;
+        }
+
+        const deliveryId = deliveryRef.id;
 
         transaction.set(deliveryRef, {
           id: deliveryId,
@@ -382,6 +408,8 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
           channel: announcement.channel,
           message: announcement.message.trim(),
           linkUrl: announcement.linkUrl?.trim() || defaultLinkUrl,
+          ...(announcement.mediaUrl?.trim() ? {mediaUrl: announcement.mediaUrl.trim()} : {}),
+          deliveryTiming: announcement.deliveryTiming ?? 'scheduled',
           scheduledAt: announcement.scheduledAt,
           status: 'pending',
           attemptCount: 0,
@@ -391,11 +419,11 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
       }
 
       transaction.update(postSnapshot.ref, {
-        socialPromotion: {announcements},
+        'socialPromotion.announcements': announcements,
         updatedAt: nowIso,
         syncedAt: FieldValue.serverTimestamp(),
       });
-      return dueAnnouncements.length;
+      return deliveryEntries.length - existingDeliverySnapshots.filter(snapshot => snapshot.exists).length;
     });
     queuedCount += queuedForPost;
   }
@@ -1988,10 +2016,6 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createMissingBlogPostSeoMetadata(slug);
   }
 
-  if (normalizedPath === '/labs') {
-    return createLabsSeoMetadata();
-  }
-
   if (normalizedPath === '/background') {
     return createStaticSeoMetadata({
       title: createSiteTitle('Full Screen Background Lab'),
@@ -2136,9 +2160,6 @@ function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
     {
       path: '/blog',
       lastmod: blogLastmod,
-    },
-    {
-      path: '/labs',
     },
     {
       path: '/background',
@@ -2512,18 +2533,6 @@ function selectHomepageSocialPost(
   }
 
   return newestPosts[0] ?? null;
-}
-
-function createLabsSeoMetadata(): SeoMetadata {
-  return {
-    ...createStaticSeoMetadata({
-      title: createSiteTitle('Projects & Labs'),
-      description: LABS_DESCRIPTION,
-      path: '/labs',
-      imageAlt: createPreviewImageAlt('projects and labs'),
-    }),
-    fallbackHtml: renderLabsFallbackHtml(),
-  };
 }
 
 function createBlogIndexSeoMetadata(posts: readonly SeoBlogPostDocument[]): SeoMetadata {
@@ -3365,9 +3374,9 @@ function renderHomeFallbackHtml(): string {
       description: 'Current essays, implementation notes, recovery updates, and project writeups.'
     },
     {
-      href: '/labs',
-      label: 'Open labs',
-      description: 'Interactive demos and reusable OS-style browser interface experiments.'
+      href: '/topics/labs-projects',
+      label: 'Explore labs and projects',
+      description: 'Public project notes, browser experiments, and reusable OS-style interface systems.'
     },
     {
       href: '/topics/ai-setup',
@@ -3404,50 +3413,6 @@ function renderHomeFallbackHtml(): string {
       '  <ul class="seo-fallback-list">',
       topicLinks,
       '  </ul>',
-      '</section>',
-    ].join('\n'),
-  });
-}
-
-function renderLabsFallbackHtml(): string {
-  const labItems = [
-    {
-      title: 'Core OS Framework',
-      href: '/os',
-      description: 'Reusable dock, window manager, terminal, tooltip, context menu, desktop UI, and command-system experiments.',
-    },
-    {
-      title: 'Full Screen Background Lab',
-      href: '/background',
-      description: 'Image, video, overlay, and parallax background tests for visual interaction work.',
-    },
-    {
-      title: 'Project and Blog Writeups',
-      href: '/blog/category/projects',
-      description: 'Public notes that explain which experiments are durable, rough, archived, or still evolving.',
-    },
-    {
-      title: 'Labs Topic Hub',
-      href: '/topics/labs-projects',
-      description: 'A guide to labs, project demos, browser experiments, UI systems, and creative coding notes.',
-    },
-  ].map(item => [
-    '<article class="seo-fallback-card">',
-    `  <h2><a href="${escapeHtml(createAbsoluteUrl(item.href))}">${escapeHtml(item.title)}</a></h2>`,
-    `  <p>${escapeHtml(item.description)}</p>`,
-    '</article>',
-  ].join('\n')).join('\n');
-
-  return renderFallbackShell({
-    eyebrow: 'Labs',
-    title: 'Projects & Labs',
-    description: LABS_DESCRIPTION,
-    body: [
-      '<section class="seo-fallback-article">',
-      '  <h2>Experimental systems stay visible</h2>',
-      '  <p>Labs collect visual, browser, music, game, and interaction prototypes without mixing them into production website page logic. Durable OS-style systems belong in Core OS, while unfinished or exploratory work stays isolated in labs, archive, or playground paths.</p>',
-      '  <h2>Explore the public lab paths</h2>',
-      labItems,
       '</section>',
     ].join('\n'),
   });
