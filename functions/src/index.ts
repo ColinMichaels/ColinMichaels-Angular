@@ -1933,6 +1933,15 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createSiteSearchSeoMetadata();
   }
 
+  if (normalizedPath === '/privacy') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Privacy Policy'),
+      description: `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`,
+      path: '/privacy',
+      imageAlt: createPreviewImageAlt('privacy policy'),
+    });
+  }
+
   if (normalizedPath === '/cat-corner') {
     return createNoindexRouteSeoMetadata({
       title: createSiteTitle('Cat Corner'),
@@ -2160,6 +2169,9 @@ function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
     {
       path: '/blog',
       lastmod: blogLastmod,
+    },
+    {
+      path: '/privacy',
     },
     {
       path: '/background',
