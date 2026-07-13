@@ -282,6 +282,7 @@ export class SiteSearchDrawerComponent {
       type: 'all',
       category: '',
       tag: '',
+      author: '',
       sort: 'relevance',
     }, 6);
   });

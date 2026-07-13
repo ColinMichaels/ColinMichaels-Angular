@@ -66,7 +66,7 @@ The homepage identity copy and topic-hub descriptions are concise, self-containe
 
 Public homepage, blog, article, and topic routes receive visible fallback HTML from the Firebase SEO renderer for crawlers and no-JavaScript readers. `/llms.txt` is a static Hosting asset and does not depend on Angular or JavaScript. The direct `/labs` route is a redirect and is therefore intentionally excluded from the index.
 
-There is separate pre-existing route-policy drift: the Functions renderer and sitemap still classify `/labs` as a public page while Angular redirects it to `/blog`. This change follows the user-facing route behavior in `llms.txt`; reconciling the sitemap and server fallback policy should be handled as a dedicated route cleanup.
+The former route-policy drift is resolved: Firebase Hosting now returns a temporary redirect for `/labs` before the SEO renderer, the Functions fallback no longer classifies `/labs` as a public page, and the sitemap omits it. Angular retains the matching client-side redirect while the preserved Labs implementation is redesigned.
 
 ## 8. Top Five Highest-Impact Changes
 
@@ -74,7 +74,7 @@ There is separate pre-existing route-policy drift: the Functions renderer and si
 2. Keep the index limited to public, canonical, evergreen destinations and review it when routes or topic hubs change. Completed for the current routes.
 3. Preserve standards-based `robots.txt` access for search crawlers unless the site owner makes a separate policy decision. No change needed.
 4. Validate HTTP 200, `text/plain`, and build-copy parity after deployment. Local build-copy validation is part of this change; live validation is required after the revised file is deployed.
-5. Reconcile the pre-existing `/labs` redirect with the Functions sitemap and fallback policy in a dedicated route cleanup. Deferred from this file-only behavior change.
+5. Keep the `/labs` Hosting redirect, Functions fallback policy, Angular route, sitemap, and `llms.txt` aligned. Completed July 13, 2026.
 
 ## 9. Schema Recommendations
 

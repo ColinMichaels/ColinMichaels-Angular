@@ -1,8 +1,8 @@
 # Architecture Audit and Refactor Plan
 
-Date: 2026-05-12
+Original audit date: 2026-05-12
 
-Scope: Angular 19 standalone application using TailwindCSS, Firebase, AngularFire, ngx-markdown, and an experimental OS-style desktop framework.
+Original scope: Angular 19 standalone application using TailwindCSS, Firebase, AngularFire, ngx-markdown, and an experimental OS-style desktop framework. The application now uses Angular 22; counts and command results below are retained as the historical May baseline unless a later update explicitly supersedes them.
 
 This plan is intentionally phased. It preserves routes, content, Firebase configuration, and existing OS-style systems while moving reusable infrastructure toward `core-os`, shared UI toward `shared`, public website concerns toward `features`, administrative tooling toward `admin`, and experiments toward `labs` or `archive`.
 
@@ -31,7 +31,7 @@ The safest refactor is a move-and-adapt plan:
 
 No systems should be deleted during this work. Suspected unused systems should be archived after a reference check.
 
-## Current Validation Baseline
+## Historical Validation Baseline (2026-05-12)
 
 Commands run:
 
@@ -333,8 +333,8 @@ Firebase collections:
 Migration stance:
 
 - Keep existing markdown docs under `assets/docs`.
-- [~] Add Editor.js as an admin-only editor, not a public runtime dependency.
-  - Progress: the post editor lazy-loads Editor.js/tools in `admin/cms`; persistence is still local save-preview only.
+- [x] Add Editor.js as an admin-only editor, not a public runtime dependency.
+  - Progress: the browser-guarded post editor lazy-loads and destroys Editor.js/tools in `admin/cms`; post saves now persist through the Firebase-backed blog repository.
 - [x] Render published Editor.js blocks through a read-only public renderer.
   - Progress: `BlogBlockRendererComponent` handles paragraph, header, image, embed, list, quote, code, Markdown, delimiter, typography, stats, chart, and sanitized HTML blocks without importing Editor.js.
 - Store structured block JSON when possible, keep raw HTML as an explicit sanitized fallback, and sanitize embeds/HTML at render time.
@@ -523,8 +523,8 @@ Exit criteria:
 ### Phase 1: Folder Skeleton and Route Grouping
 
 - [x] Add empty target folders with README files.
-- [~] Split `app.routes.ts` into public, OS, admin, and lab route arrays.
-  - Progress: added `features/public/public.routes.ts`, `core-os/os.routes.ts`, `admin/admin.routes.ts`, and `labs/lab.routes.ts`.
+- [x] Split `app.routes.ts` into public, OS, admin, and lab route arrays.
+  - Progress: `app.routes.ts` composes `features/public/public.routes.ts`, `core-os/os.routes.ts`, `admin/admin.routes.ts`, and `labs/lab.routes.ts`; `app.routes.spec.ts` snapshots the route contract.
 - [x] Keep route paths unchanged.
   - Progress: added `app.routes.spec.ts` to snapshot the current route paths.
 - [x] Move `NotFoundComponent` to `shared/not-found` or leave a compatibility export.

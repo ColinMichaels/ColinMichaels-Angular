@@ -61,6 +61,7 @@ export class BlogOpenGraphService {
         url: metadata.url,
         image: metadata.image,
         author: post.author.name,
+        authorUrl: `/authors/${post.author.slug || 'colin-michaels'}`,
         publishedAt: post.publishedAt,
         modifiedAt: post.updatedAt,
       }),

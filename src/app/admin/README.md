@@ -20,6 +20,27 @@ The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. E
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 
+## Authors And Post Assignment
+
+The author manager is available at `/admin/cms/authors` for CMS content roles. It owns canonical profiles stored in
+Firestore `/authors`; post forms reference those profiles rather than maintaining independent free-text author data.
+
+Component inventory:
+
+- `CmsAuthorManagerComponent` provides the author list plus create and edit controls for canonical profile fields and publication status; its avatar control reuses the Media Library picker/uploader and stores the resulting Firebase URL.
+- `AuthorRepositoryService` owns default Colin fallback, normalization, published/admin projections, lookup, and reference checks.
+- `AuthorStorageService` owns auth-aware Firestore reads and writes for `/authors`.
+- `CmsPostEditorComponent` provides an author selector and inline add-author form, defaults new posts to Colin Michaels, and refreshes the embedded byline snapshot when saving.
+- `CmsPostListComponent` includes an Author column and author-aware text search/sorting without changing the post route or pagination contract.
+
+Safety and migration notes:
+
+- A published post must reference a published canonical author.
+- Existing posts without `authorId` resolve to Colin and can be backfilled without changing their routes or content.
+- Author deletion remains unavailable while posts reference that profile; reassignment must be explicit.
+- The homepage continues to use Colin's shared profile regardless of author assignments.
+- See `docs/ARCHITECTURE/AUTHORS_AND_BYLINES.md` for the public route, snapshot, search, SEO, deployment, and rollback contracts.
+
 ## Content Operations Bulk Editor
 
 The Bulk Post Editor is available at `/admin/cms/content-operations` for CMS content roles. It is the first dry-run slice of the future content-operations service and does not write to canonical posts.

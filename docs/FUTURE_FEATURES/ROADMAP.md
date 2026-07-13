@@ -1,27 +1,34 @@
 # Roadmap
 
+Updated July 13, 2026. Completed foundation work is recorded here so it is not repeatedly scheduled as future scope.
+
+## Delivered Foundations
+
+- Quality gates are wired, Node is pinned, real specs are discovered, and CLI/auth, application lifecycle, storage, typewriter, and deterministic file-system behavior have focused coverage.
+- `ApplicationManagerService` responsibilities and `SettingsService` internals were decomposed without changing public APIs.
+- Editor.js post authoring persists through the Firebase-backed CMS, with a public read-only block renderer and Media Library-backed assets.
+- The frontend no longer receives OpenAI or weather vendor keys; it calls the configured `APP_API_URL` boundary.
+- The Media Library supports browsing and managed CMS asset selection. Further generated-media lifecycle work remains product scope.
+
 ## Short-Term (1-2 Sprints)
 
-- Re-enable trustworthy quality gates (lint, real test execution, stable build environment).
-- Fix high-risk correctness and security bugs identified in audit.
-- Add targeted tests around CLI parsing/auth, app manager lifecycle, and storage rehydration.
-- Connect the publishing Calendar outbox to the first supported provider, starting with Notify/FCM or LinkedIn after credentials and account approvals are available.
+- Define and deploy the real protected OpenAI/weather API boundary. The legacy `functions/index.js` prototype is not the TypeScript Functions deploy entry and must not be promoted without authentication/App Check decisions, payload validation, quotas, and rate controls.
+- Start the rendering-safety program with an inventory that separates plain-text terminal/tooltip/notification sinks from the blog's intentionally sanitized rich-content renderer; add XSS regressions before changing visual behavior.
+- Deploy and validate the completed SEO route/fallback work, then run Search Console/PageSpeed checks and begin qualified outreach.
 
 Dependencies:
 
-- Supported Node runtime for reproducible builds.
-- Stable lint config path.
+- A backend ownership decision for `APP_API_URL` and its authentication/rate-limit policy.
+- Deployed URLs and account access for SEO measurement.
 
-Risks:
+## Paused / Resume Later
 
-- Existing script/config drift may hide real code issues until gates are repaired.
+- External social auto-posting is pinned after completing Calendar timing/media composition, Editor deep linking, deterministic queue protection, and existing Web Push ownership. Resume with provider registration and LinkedIn OAuth/worker integration after the higher-priority feature; audit pending outbox records and approve an explicit enablement cutoff before any historical delivery can run.
+- Resumption depends on provider credentials, account approvals, and an explicit member-versus-organization posting decision.
+- The next active feature is intentionally tracked in its own task rather than inferred here.
 
 ## Medium-Term (2-4 Sprints)
 
-- Service decomposition:
-  split `ApplicationManagerService` and simplify `SettingsService`.
-- Blog/CMS foundation:
-  connect the Editor.js draft save flow to Firebase and add media upload rules.
 - Content operations:
   move the dry-run Bulk Post Editor behind an authenticated server API with immutable artifacts, durable revisions, capability authorization, optimistic concurrency, approval/audit records, and idempotent apply/rollback jobs before enabling canonical writes.
 - Blog AI authoring:
@@ -30,8 +37,8 @@ Risks:
   add isolated provider adapters, OAuth connection health, idempotent retries, manual retry/cancel controls, and delivery receipts without coupling article publication to provider uptime.
 - Strong typing pass:
   remove high-impact `any` usage in service contracts and dynamic payloads.
-- Performance cleanup:
-  reduce startup random generation and avoid avoidable subscription churn.
+- Core OS migration:
+  move reusable implementation out of `components/game` in small import-only batches with compatibility review and route/lifecycle verification.
 
 Dependencies:
 
@@ -43,21 +50,15 @@ Risks:
 
 ## Long-Term (4+ Sprints)
 
-- Security hardening:
-  migrate secret-bearing API calls to backend proxy.
-- Rendering safety:
-  remove risky `innerHTML` patterns in terminal/tooltip/notification systems.
 - Product evolution:
   richer app ecosystem, saved desktop sessions, advanced window tiling/layout presets.
-- AI media generation:
-  add a richer CMS media library for browsing, replacing, and deleting generated thumbnails.
+- AI media lifecycle:
+  extend the CMS Media Library with intentional replacement/deletion rules for generated thumbnails.
 - Offline content operations:
   add resumable local operation queues only after the online artifact, revision, and apply contract is stable.
 
-Dependencies:
-
-- Backend support for proxy endpoints and auth/rate-limiting.
-
 Risks:
 
-- UI behavior drift during renderer hardening unless covered by tests and visual checks.
+- OS moves can affect runtime sequencing if done in broad rewrites.
+- Renderer hardening can change terminal and overlay presentation without focused behavior and visual tests.
+- Bulk apply and provider delivery can create irreversible external state unless authorization, idempotency, audit, retry, and rollback contracts are designed first.

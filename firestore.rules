@@ -59,6 +59,10 @@ service cloud.firestore {
       return resource.data.status == 'published';
     }
 
+    function isPublishedAuthor() {
+      return resource.data.status == 'published';
+    }
+
     function isPublishedTopic() {
       return resource.data.status == 'published';
     }
@@ -83,6 +87,11 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow get, list: if canManageCmsContent() || isPublishedPost();
+      allow create, update, delete: if canManageCmsContent();
+    }
+
+    match /authors/{authorId} {
+      allow get, list: if canManageCmsContent() || isPublishedAuthor();
       allow create, update, delete: if canManageCmsContent();
     }
 
