@@ -8,8 +8,10 @@ import {
 } from './blog-embed.util';
 
 describe('blog embed utilities', () => {
-  it('accepts only the canonical Hear the Hook page and its legacy redirect path', () => {
+  it('accepts only the canonical Hear the Hook page and its approved aliases', () => {
     expect(getTrustedBlogAppEmbedUrl(HEAR_THE_HOOK_EMBED_URL)?.toString()).toBe(HEAR_THE_HOOK_EMBED_URL);
+    expect(getTrustedBlogAppEmbedUrl('https://hear-the-hook.captaincolin.chatgpt.site/')?.toString())
+      .toBe(HEAR_THE_HOOK_EMBED_URL);
     expect(getTrustedBlogAppEmbedUrl('https://hear-the-hook.captaincolin.chatgpt.site/soundboard.html')?.toString())
       .toBe(HEAR_THE_HOOK_EMBED_URL);
   });
