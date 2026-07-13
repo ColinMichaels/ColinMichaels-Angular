@@ -12,6 +12,7 @@ describe('routes', () => {
     expect(routePaths(routes)).toEqual([
       '',
       PATH_NAMES.SEARCH,
+      PATH_NAMES.PRIVACY,
       PATH_NAMES.CAT_CORNER,
       `${PATH_NAMES.AUTHORS}/:slug`,
       PATH_NAMES.BLOG,

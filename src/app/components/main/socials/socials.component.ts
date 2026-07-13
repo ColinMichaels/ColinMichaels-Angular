@@ -23,6 +23,7 @@ import {RouterLink} from '@angular/router';
   }`
 })
 export class SocialsComponent {
+  // Keep this fixed bar social-only; legal, contact, and primary navigation belong in the page footer.
   links = [
     {
       link: "youtube.com/CaptainColin",

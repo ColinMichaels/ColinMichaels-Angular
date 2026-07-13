@@ -32,7 +32,7 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Server rendering:
   Firebase `renderSeoHtml` classifies incoming clean URLs before Angular loads. Known public routes receive indexable metadata, unknown routes return `404` with `noindex,follow`, missing published blog posts return `404` missing-post metadata, OS/admin routes stay valid but `noindex,nofollow`, and blog/topic pages can receive visible fallback HTML inside `<app-root>`.
 - Sitemap policy:
-  `sitemapXml` includes static public pages, topic hubs, published posts, and taxonomy URLs that meet thresholds. Categories/subcategories require at least `2` published posts. Tags require at least `3` published posts. Lower-count taxonomy pages remain accessible but use `noindex,follow` metadata and are omitted from the sitemap.
+  `sitemapXml` includes static public pages such as `/privacy`, topic hubs, published posts, and taxonomy URLs that meet thresholds. Categories/subcategories require at least `2` published posts. Tags require at least `3` published posts. Lower-count taxonomy pages remain accessible but use `noindex,follow` metadata and are omitted from the sitemap.
 - Crawler fallback content:
   `/blog` receives crawlable article links and summaries. `/blog/:slug` receives semantic article fallback with author, date, categories, tags, cover image, and sanitized body blocks. `/topics/:slug` receives a lightweight visible topic fallback.
 - Current risks:

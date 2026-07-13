@@ -16,6 +16,7 @@ export const PATH_NAMES = {
   CAT_CORNER: 'cat-corner',
   CAT_CORNER_UNLOCK: 'unlock',
   SEARCH: 'search',
+  PRIVACY: 'privacy',
   LABS: 'labs',
   TOPICS: 'topics',
   LOGOUT: 'logout',

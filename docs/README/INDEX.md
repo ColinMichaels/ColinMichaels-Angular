@@ -21,6 +21,7 @@ This folder is the entry point for project documentation.
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
 - [Public Blog Shell](../ARCHITECTURE/PUBLIC_BLOG_SHELL.md)
+- [Privacy Policy and Public Footer](../ARCHITECTURE/PRIVACY_POLICY_AND_PUBLIC_FOOTER.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
 - [Publishing Calendar](../ARCHITECTURE/PUBLISHING_CALENDAR.md)
 - [Screen Saver](../ARCHITECTURE/SCREEN_SAVER.md)
