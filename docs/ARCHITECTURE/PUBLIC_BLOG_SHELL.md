@@ -73,6 +73,14 @@ Reader Tools remains available on public reading routes and owns the persisted l
 
 The protected `/profile` route is the management surface for device-local reader data and capability-gated app preferences. It groups reading history, favorites, read later, offline article removal, Web Push opt-in, native share/fullscreen/wake-lock actions, and storage protection without changing the underlying browser-local storage boundaries. Empty reading and offline lists remain visible there so users can discover where future saved items will be managed.
 
+## Direct Article Loading
+
+`BlogDetailComponent` resolves a cold `/blog/:slug` entry through a bounded Firestore query for that published slug instead of waiting for the auth-aware full post collection. This keeps links opened from social apps, email, search, and other fresh browser sessions independent from the heavier archive/suggestion load. If the post is already in the repository cache, the detail route reuses it without issuing the additional query.
+
+The direct query requires both `status == published` and the exact slug so Firestore rules can prove that drafts are not exposed. Firestore merges the existing automatic equality indexes; no document migration or composite-index deployment is required. The full published collection continues loading in the background for previous/next navigation and suggestions, while its loading or error state no longer blocks the primary article and cover image.
+
+Rollback is limited to restoring the repository slug observable to the shared collection stream and restoring the detail page's shared repository loading state. No stored content or Firebase configuration changes are involved.
+
 ## Sticky Post Toolbar
 
 `BlogStickyPostToolbarComponent` sits immediately after the full blog-detail header in the article grid. It scrolls into place naturally and then remains pinned beneath `SiteHeaderComponent` with the current cover thumbnail, truncated title, persistent read percentage and progress bar, a single Share control that fans provider actions leftward on hover/focus or tap, separate favorite/read-later controls, an explicit offline download/update/remove action, and a comments shortcut. The progress control lives inside the post rail instead of competing with the public header at the viewport's top edge. Progress is scoped to the rendered article-body container: the title/cover header remains at 0%, the final body block reaches 100%, and post navigation, tags/share controls, comments, suggested posts, and the site footer do not extend the reading distance. IndexedDB retains the greatest article-body percentage reached, marks the post read at 95%, and restores that status on later visits without moving the page automatically. Favorites and read later store only summary metadata; only the offline control downloads the article body. On mobile, the public header and post rail use shared 56px and 52px height tokens, and the rail keeps its thumbnail, title, status, and actions in one row. The section heading uses their combined 108px offset, so the three sticky
@@ -136,4 +144,5 @@ Relevant regression coverage includes:
 - `blog-block-renderer.component.spec.ts`, `blog-embed.util.spec.ts`, `app-embed-block.tool.spec.ts`, and `blog-editorjs-adapter.spec.ts` for exact app URL trust, authoring conversion, sandbox attributes, outbound fallback, and custom HTML iframe removal
 - `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
 - `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
+- `blog-repository.service.spec.ts` for cached and cold direct-slug article loading without a full-collection dependency
 - browser checks for live result filtering, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect

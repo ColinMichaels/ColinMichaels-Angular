@@ -9,6 +9,7 @@ import {
   Firestore,
   getDoc,
   getDocs,
+  limit,
   query,
   serverTimestamp,
   setDoc,
@@ -135,6 +136,35 @@ export class BlogStorageService {
     const snapshot = await getDocs(this.createPublishedPostsQuery(firestore));
 
     return this.toBlogPosts(snapshot.docs.map(postSnapshot => postSnapshot.data()));
+  }
+
+  async loadPublishedPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const normalizedSlug = slug.trim();
+
+    if (!normalizedSlug) {
+      return undefined;
+    }
+
+    const cachedPost = this.postsSubject.value.find(post => (
+      post.slug === normalizedSlug && post.status === 'published'
+    ));
+
+    if (cachedPost) {
+      return cachedPost;
+    }
+
+    // Cold article entries must not wait for the auth-aware full collection sync.
+    const firestore = this.requireFirestore();
+    const snapshot = await getDocs(query(
+      collection(firestore, BLOG_POSTS_COLLECTION),
+      where('status', '==', 'published'),
+      where('slug', '==', normalizedSlug),
+      limit(1)
+    ));
+
+    return snapshot.docs
+      .map(postSnapshot => this.fromFirestorePost(postSnapshot.data()))
+      .find((post): post is BlogPost => Boolean(post));
   }
 
   private startAuthAwareFirestoreSync(): (() => void) | undefined {

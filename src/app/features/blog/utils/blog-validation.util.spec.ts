@@ -94,6 +94,21 @@ describe('blog post validation', () => {
         }],
       },
     })).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'threads-launch',
+          channel: 'threads',
+          message: 'A Threads launch announcement.',
+          scheduledAt: '2026-07-24T12:00:00.000Z',
+          deliveryTiming: 'scheduled',
+          status: 'scheduled',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+        }],
+      },
+    })).toBeTrue();
   });
 
   it('rejects malformed social delivery timing and media fields', () => {

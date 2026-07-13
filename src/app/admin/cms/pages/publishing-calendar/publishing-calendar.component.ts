@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} fr
 import {toSignal} from '@angular/core/rxjs-interop';
 import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {faFacebookF, faInstagram, faLinkedinIn, faYoutube} from '@fortawesome/free-brands-svg-icons';
+import {faFacebookF, faInstagram, faLinkedinIn, faThreads, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {faBell, faChevronLeft, faChevronRight} from '@fortawesome/free-solid-svg-icons';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 
@@ -99,6 +99,15 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     automationLabel: 'Meta professional account and media required',
     characterLimit: 2200,
     icon: faInstagram,
+  },
+  {
+    id: 'threads',
+    label: 'Threads',
+    shortLabel: 'TH',
+    description: 'Threads profile post',
+    automationLabel: 'Threads account connection required',
+    characterLimit: 500,
+    icon: faThreads,
   },
   {
     id: 'linkedin',
@@ -693,18 +702,24 @@ function getErrorMessage(error: unknown): string {
                     <dd class="text-right text-emerald-300">Active at publication</dd>
                   </div>
                   <div class="flex items-start justify-between gap-4 py-2">
-                    <dt class="text-zinc-300">Facebook / LinkedIn</dt>
+                    <dt class="text-zinc-300">Facebook / Instagram / Threads</dt>
                     <dd class="text-right text-amber-300">Account connection required</dd>
                   </div>
                   <div class="flex items-start justify-between gap-4 py-2">
-                    <dt class="text-zinc-300">Instagram</dt>
-                    <dd class="text-right text-amber-300">Professional account + media required</dd>
+                    <dt class="text-zinc-300">LinkedIn</dt>
+                    <dd class="text-right text-amber-300">Separate connection still deferred</dd>
                   </div>
                   <div class="flex items-start justify-between gap-4 py-2">
                     <dt class="text-zinc-300">YouTube Community</dt>
                     <dd class="text-right text-zinc-500">Manual workflow</dd>
                   </div>
                 </dl>
+                <a
+                  routerLink="/admin/cms/social-connections"
+                  class="mt-3 inline-flex border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                >
+                  Manage social connections
+                </a>
               </section>
             </div>
           </aside>
@@ -983,6 +998,8 @@ export class PublishingCalendarComponent {
         return `${base} border-blue-500/40 bg-blue-500/10 text-blue-300`;
       case 'instagram':
         return `${base} border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-300`;
+      case 'threads':
+        return `${base} border-zinc-500/50 bg-zinc-700/20 text-zinc-200`;
       case 'linkedin':
         return `${base} border-sky-500/40 bg-sky-500/10 text-sky-300`;
       case 'notify':
@@ -1487,6 +1504,8 @@ export class PublishingCalendarComponent {
         return `I just published “${post.title}.”\n\n${post.excerpt}\n\nRead it here: ${url}`;
       case 'instagram':
         return `New on the blog: ${post.title}\n\n${post.excerpt}\n\nRead it at the link: ${url}${hashtags ? `\n\n${hashtags}` : ''}`;
+      case 'threads':
+        return `New on the blog: ${post.title}\n\n${post.excerpt}\n\n${url}`;
       case 'linkedin':
         return `I just published a new article: ${post.title}\n\n${post.excerpt}\n\n${url}`;
     }

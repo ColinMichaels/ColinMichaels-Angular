@@ -533,12 +533,16 @@ export class BlogDetailComponent {
   protected readonly isPreviewRoute = computed(() => this.previewToken().length > 0);
   protected readonly previewLoading = signal(false);
   protected readonly previewLoadError = signal<string | null>(null);
+  protected readonly publishedPostLoading = signal(false);
+  protected readonly publishedPostLoadError = signal<string | null>(null);
   protected readonly remotePost = toSignal(
     this.route.paramMap.pipe(
       switchMap(params => {
         const previewToken = params.get('previewToken') ?? '';
 
         if (previewToken) {
+          this.publishedPostLoading.set(false);
+          this.publishedPostLoadError.set(null);
           this.previewLoading.set(true);
           this.previewLoadError.set(null);
 
@@ -551,14 +555,29 @@ export class BlogDetailComponent {
           );
         }
 
-        return this.blogRepository.getPublishedPostBySlug$(params.get('slug') ?? '');
+        const slug = params.get('slug') ?? '';
+        this.previewLoading.set(false);
+        this.previewLoadError.set(null);
+        this.publishedPostLoading.set(Boolean(slug));
+        this.publishedPostLoadError.set(null);
+
+        if (!slug) {
+          this.publishedPostLoading.set(false);
+          return of(undefined);
+        }
+
+        return this.blogRepository.getPublishedPostBySlug$(slug).pipe(
+          catchError(error => {
+            this.publishedPostLoadError.set(this.describePublishedPostError(error));
+            return of(undefined);
+          }),
+          finalize(() => this.publishedPostLoading.set(false))
+        );
       })
     ),
     {initialValue: undefined}
   );
   protected readonly posts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
-  private readonly repositoryLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
-  private readonly repositoryLoadError = toSignal(this.blogRepository.error$, {initialValue: null});
   protected readonly offlineRecord = computed(() => (
     this.isPreviewRoute()
       ? undefined
@@ -569,7 +588,7 @@ export class BlogDetailComponent {
       this.remotePost(),
       this.offlineRecord(),
       this.network.offline(),
-      this.repositoryLoadError()
+      this.publishedPostLoadError()
     );
   });
   private readonly failedBackgroundImageUrl = signal('');
@@ -608,7 +627,7 @@ export class BlogDetailComponent {
 
     return this.network.offline() && this.offlinePosts.ready()
       ? false
-      : this.repositoryLoading();
+      : this.publishedPostLoading();
   });
   protected readonly loadError = computed(() => {
     if (this.isPreviewRoute()) {
@@ -619,7 +638,7 @@ export class BlogDetailComponent {
       return 'This post is not saved for offline reading. Reconnect, open the post, and use Save offline first.';
     }
 
-    return this.repositoryLoadError();
+    return this.publishedPostLoadError();
   });
   protected readonly canEditPost = toSignal(
     this.authService.getRoleAuthorization(CMS_ACCESS_ROLES, true).pipe(
@@ -1007,6 +1026,21 @@ export class BlogDetailComponent {
     const toolbarTop = Number.parseFloat(window.getComputedStyle(toolbar).top) || 0;
 
     return toolbarTop + toolbar.getBoundingClientRect().height;
+  }
+
+  private describePublishedPostError(error: unknown): string {
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'Unable to load this post: access was denied.';
+        case 'unavailable':
+          return 'Unable to load this post: the service is temporarily unavailable.';
+        default:
+          return `Unable to load this post: ${error.message}`;
+      }
+    }
+
+    return error instanceof Error ? error.message : 'Unable to load this post.';
   }
 
   private describePreviewError(error: unknown): string {

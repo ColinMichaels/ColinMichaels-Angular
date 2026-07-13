@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {BehaviorSubject, of} from 'rxjs';
+import {BehaviorSubject, firstValueFrom, of} from 'rxjs';
 
 import {BlogPost} from '../models/blog-post.model';
 import {BlogStorageService} from './blog-storage.service';
@@ -39,6 +39,9 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
 class FakeBlogStorageService {
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
   private readonly previews = new Map<string, BlogPost>();
+  private readonly directPublishedPosts = new Map<string, BlogPost>();
+
+  readonly loadPublishedPostBySlugCalls: string[] = [];
 
   readonly posts$ = this.postsSubject.asObservable();
   readonly loading$ = of(false);
@@ -108,6 +111,15 @@ class FakeBlogStorageService {
 
   async loadPublishedPostsFromFirestore(): Promise<readonly BlogPost[]> {
     return this.getPosts().filter(post => post.status === 'published');
+  }
+
+  setDirectPublishedPost(post: BlogPost): void {
+    this.directPublishedPosts.set(post.slug, post);
+  }
+
+  async loadPublishedPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    this.loadPublishedPostBySlugCalls.push(slug);
+    return this.directPublishedPosts.get(slug);
   }
 }
 
@@ -236,6 +248,23 @@ describe('BlogRepositoryService', () => {
 
   it('does not expose draft posts by public slug lookup', () => {
     expect(service.getPublishedPostBySlug('draft-post')).toBeUndefined();
+  });
+
+  it('uses an isolated Firestore lookup when a direct post is not in the collection cache', async () => {
+    storage.setPosts([]);
+    storage.setDirectPublishedPost(publishedPost);
+
+    const post = await firstValueFrom(service.getPublishedPostBySlug$('published-post'));
+
+    expect(post).toEqual(publishedPost);
+    expect(storage.loadPublishedPostBySlugCalls).toEqual(['published-post']);
+  });
+
+  it('uses the collection cache without a second direct post request', async () => {
+    const post = await firstValueFrom(service.getPublishedPostBySlug$('published-post'));
+
+    expect(post).toEqual(publishedPost);
+    expect(storage.loadPublishedPostBySlugCalls).toEqual([]);
   });
 
   it('keeps Firestore drafts available to the admin repository view', () => {

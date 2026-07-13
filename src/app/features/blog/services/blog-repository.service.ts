@@ -1,5 +1,5 @@
 import {Injectable, inject} from '@angular/core';
-import {from, map, Observable} from 'rxjs';
+import {from, map, Observable, of} from 'rxjs';
 
 import {
   BlogAdminStats,
@@ -143,9 +143,11 @@ export class BlogRepositoryService {
   }
 
   getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
-    return this.storage.posts$.pipe(
-      map(posts => posts.find(post => post.slug === slug && post.status === 'published'))
-    );
+    const cachedPost = this.getPublishedPostBySlug(slug);
+
+    return cachedPost
+      ? of(cachedPost)
+      : from(this.storage.loadPublishedPostBySlug(slug));
   }
 
   getPreviewPostByToken$(token: string): Observable<BlogPost | undefined> {

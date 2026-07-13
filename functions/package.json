@@ -11,6 +11,7 @@
     "build": "tsc",
     "test:comment-safety": "npm run build && node --test test/comment-safety.test.cjs",
     "test:push-notifications": "npm run build && node --test test/push-notifications.test.cjs",
+    "test:social-connections": "npm run build && node --test test/social-connections.test.cjs",
     "test:social-delivery": "npm run build && node --test test/social-delivery.test.cjs",
     "serve": "npm run build && cd .. && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
