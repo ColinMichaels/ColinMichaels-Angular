@@ -25,4 +25,11 @@ describe('SocialsComponent', () => {
   it('does not duplicate the OS launch entry in the footer links', () => {
     expect(component.links.some(link => link.title === 'game')).toBeFalse();
   });
+
+  it('keeps informational links out of the fixed social bar', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('a[href="/privacy"]')).toBeNull();
+    expect(element.textContent).not.toContain('Contact');
+  });
 });

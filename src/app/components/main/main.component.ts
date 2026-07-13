@@ -72,6 +72,7 @@ export class MainComponent {
     return selectHomepageHeroPost(this.blogPostFeed.publishedPosts(), publicSettings)?.id ?? null;
   });
   protected readonly faArrowUpRightFromSquare = faArrowUpRightFromSquare;
+  protected readonly currentYear = new Date().getFullYear();
   protected readonly homepageDescription = HOMEPAGE_DESCRIPTION;
   protected readonly homepageTitle = HOMEPAGE_TITLE;
   protected readonly siteUrl = SITE_URL;

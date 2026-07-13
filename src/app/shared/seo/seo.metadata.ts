@@ -82,6 +82,15 @@ export const SITE_SEARCH_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,follow',
 };
 
+export const PRIVACY_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Privacy Policy'),
+  description: `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`,
+  path: '/privacy',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('privacy policy'),
+  type: 'website',
+};
+
 export const CAT_CORNER_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Cat Corner'),
   description: 'Dispatches, photographs, and household intelligence from Gretchen, Cat Corner Editor-in-Chief.',

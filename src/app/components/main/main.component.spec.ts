@@ -224,6 +224,23 @@ describe('MainComponent', () => {
     expect(element.querySelector('[aria-label="Share ColinMichaels.com"]')).not.toBeNull();
   });
 
+  it('renders informational navigation and ownership details in the homepage footer section', () => {
+    fixture.detectChanges();
+
+    const footer = (fixture.nativeElement as HTMLElement).querySelector('#site-footer');
+    const footerText = footer?.textContent ?? '';
+
+    expect(footer?.querySelector('nav[aria-label="Footer navigation"]')).not.toBeNull();
+    expect(footer?.querySelector('a[href="/privacy"]')?.textContent?.trim()).toBe('Privacy Policy');
+    expect(footer?.querySelector('a[href="mailto:colin@colinmichaels.com"]')?.textContent?.trim()).toBe('Contact');
+    expect(footerText).toContain(`© ${new Date().getFullYear()} Colin Michaels. All rights reserved.`);
+    expect(footerText).toContain('Home');
+    expect(footerText).toContain('Blog');
+    expect(footerText).toContain('Topics');
+    expect(footerText).toContain('About');
+    expect(footerText).toContain('Open OS');
+  });
+
   it('renders CMS-managed recommended links on the homepage', () => {
     fixture.detectChanges();
 

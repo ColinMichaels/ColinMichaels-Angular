@@ -422,6 +422,7 @@ function normalizeHealthTerm(value: string): string {
             <h2 class="text-sm font-semibold text-slate-950 dark:text-zinc-100">Resources</h2>
             <div class="mt-3 grid gap-2">
               <a href="/sitemap.xml" class="hover:text-cyan-800 dark:hover:text-cyan-200">Sitemap</a>
+              <a [routerLink]="['/', pathNames.PRIVACY]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Privacy</a>
               <a
                 href="https://github.com/ColinMichaels"
                 rel="noreferrer"
