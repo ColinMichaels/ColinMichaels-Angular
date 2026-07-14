@@ -1,5 +1,6 @@
 # Changelog
 
+- Added the public social OAuth base URL and Meta Graph API version to the production Functions dotenv file so non-interactive Firebase deploys can resolve both parameters without prompting.
 - Unified Facebook and Instagram authorization under the Meta publishing app, removed obsolete standalone Instagram secret bindings, and resolved linked professional Instagram accounts through manageable Facebook Pages.
 - Fixed cold blog links from social apps and other external entries by loading the requested published slug independently from the auth-aware full post collection, while preserving cached post reuse and background archive/suggestion loading.
 - Added direct post-and-discussion links to every Comment Moderation card so reviewers can open the public article context in a separate tab without losing their moderation queue position.
