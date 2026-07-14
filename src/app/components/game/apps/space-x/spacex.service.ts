@@ -1,14 +1,21 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
-import {SpaceXCrew, SpaceXLaunch, SpaceXLaunchpad, SpaceXRocket} from './models/spacex-models';
+import {
+  SpaceXCrew,
+  SpaceXLaunch,
+  SpaceXLaunchpad,
+  SpaceXPanelItemId,
+  SpaceXPanelSelection,
+  SpaceXRocket
+} from './models/spacex-models';
 
 @Injectable({providedIn: 'root'})
 export class SpacexService {
   private readonly baseUrl = 'https://api.spacexdata.com';
 
   launches: BehaviorSubject<SpaceXLaunch[]> = new BehaviorSubject<SpaceXLaunch[]>([]);
-  selectedPanel = new BehaviorSubject({});
+  selectedPanel = new BehaviorSubject<SpaceXPanelSelection>({});
   selectedLaunchId = new BehaviorSubject('');
   selectedLaunch: BehaviorSubject<SpaceXLaunch> = new BehaviorSubject<SpaceXLaunch>({} as SpaceXLaunch);
 
@@ -40,7 +47,7 @@ export class SpacexService {
     return this.http.get<SpaceXLaunchpad>(`${this.baseUrl}/v4/launchpads/${id}`);
   }
 
-  setPanel(panel: string, itemId: string) {
+  setPanel(panel: string, itemId: SpaceXPanelItemId) {
     this.selectedPanel.next({panel, itemId});
   }
 

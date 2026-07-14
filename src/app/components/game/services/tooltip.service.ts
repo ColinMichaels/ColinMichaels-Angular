@@ -1,6 +1,7 @@
 import {
   ApplicationRef,
   ComponentRef,
+  EmbeddedViewRef,
   Injectable,
   Injector, createComponent, Renderer2, RendererFactory2
 } from '@angular/core';
@@ -64,7 +65,7 @@ export class TooltipService {
     // Attach the component to the app and apply positioning
     this.appRef.attachView(this.tooltipComponentRef.hostView);
 
-    const domElem = (this.tooltipComponentRef.hostView as any).rootNodes[0];
+    const domElem = this.getTooltipElement();
     this.renderer.appendChild(document.body, domElem);
 
     this.positionTooltip(options.hostElement, domElem, options.position || 'top');
@@ -76,19 +77,31 @@ export class TooltipService {
   }
 
 
-  hide(force = false, fadeDuration = 0) {
-    // todo: add back in force and hide delay
+  hide() {
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);
     }
     if (this.tooltipComponentRef) {
-      const domElem = (this.tooltipComponentRef.hostView as any).rootNodes[0];
+      const domElem = this.getTooltipElement();
       this.renderer.removeChild(document.body, domElem);
       this.appRef.detachView(this.tooltipComponentRef.hostView);
       this.tooltipComponentRef.destroy();
       this.tooltipComponentRef = null;
     }
 
+  }
+
+  private getTooltipElement(): HTMLElement {
+    if (!this.tooltipComponentRef) {
+      throw new Error('Cannot access a tooltip before it is created.');
+    }
+
+    const [rootNode] = (this.tooltipComponentRef.hostView as EmbeddedViewRef<unknown>).rootNodes;
+    if (!(rootNode instanceof HTMLElement)) {
+      throw new Error('Tooltip root node is not an HTML element.');
+    }
+
+    return rootNode;
   }
 
 

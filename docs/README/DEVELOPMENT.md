@@ -52,12 +52,14 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 
 `npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.
 
-Current verified baseline (July 13, 2026, Node `24.15.0`):
+Current verified baseline (July 14, 2026, Node `24.15.0`):
 
 - `npm run build`: passes; CommonJS optimization warnings remain for the audio stack, `dayjs`, and `web-audio-oscillators`.
-- `npm run lint`: runs correctly but reports `262` legacy errors across OS/game and Firebase code (`0` warnings). Treat that as a failing repository-wide gate and confirm whether changed files are involved.
+- `npm run lint`: runs correctly but reports `100` explicit-typing errors (`0` warnings): `98` are isolated to Firebase production/test utilities and `2` remain in the intentionally deferred weather component. The template-accessibility backlog is clear; treat the repository-wide gate as failing until the Firebase typing slice is complete.
 - `npm --prefix functions run build`: passes.
-- Focused route contract: `app.routes.spec.ts` passes (`6/6`).
+- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`517/517`).
+- Focused route and motion-sensitive component contracts pass (`25/25`).
+- Focused accessibility-cleanup component contracts pass, including native system-tray, desktop-keyboard, and SpaceX interaction coverage.
 
 ## Recommended Local Tooling Alignment
 

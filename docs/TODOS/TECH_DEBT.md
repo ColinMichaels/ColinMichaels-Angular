@@ -33,10 +33,22 @@ Status legend:
   - Effort: S
   - Validation: guard unit tests for allowed and blocked URLs.
 
-- [x] Stabilize baseline unit tests to full pass (`88/88` in CI-like headless run).
+- [x] Stabilize baseline unit tests to full pass (`517/517` in CI-like headless run).
   - Impact: High
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
+
+- [x] Resolve the OS/game template-accessibility lint backlog.
+  - Impact: High
+  - Effort: M
+  - Progress: reduced accessibility errors from `82` to `0` by replacing custom click targets with native controls, associating labels, adding accessible names and state, and completing system tray, desktop, Finder, notification, and SpaceX semantics.
+  - Validation: touched-file ESLint pass, focused interaction tests, full headless suite (`517/517`), and application build.
+
+- [~] Resolve the remaining Firebase explicit-typing lint backlog.
+  - Impact: Medium
+  - Effort: M
+  - Remaining: `98` Firebase production/test errors; the separate `2` weather errors are intentionally deferred with the unused weather integration.
+  - Validation: preserve the Firestore emulator/mock contracts, run focused Firebase specs, then repeat the repository lint, test, and build gates.
 
 ## Medium Refactors
 
@@ -85,16 +97,16 @@ Status legend:
   - Validation: finder behavior and startup responsiveness, deterministic startup unit tests (`file-system.service.spec.ts`), `tsc --noEmit`.
   - Progress: replaced random deep favorite-folder generation at startup with deterministic lightweight seeded folder content.
 
-## Larger Changes (Riskier, Stage Later)
+## De-scoped / Removal Review
 
-- [~] Move OpenAI and weather calls behind backend proxy/functions.
-  - Impact: High (security)
-  - Effort: L
-  - Validation: integration tests and production key removal.
-  - Progress: frontend OpenAI/weather services now call backend proxy URL (`APP_API_URL`) instead of vendor APIs.
-  - Progress: removed vendor key requirements from frontend environment generation, the safe environment template, and Hosting preview build workflows.
-  - Remaining: `functions/index.js` contains a legacy proxy prototype, but the deploy entry is compiled from `functions/src/index.ts`; implement or document the real deployed API boundary before treating the proxy as complete.
-  - Remaining: require authentication/App Check where appropriate, validate caller-controlled payloads, add quota/rate controls, and verify vendor keys are absent from production browser artifacts.
+- [ ] Review the inactive OpenAI and weather integrations for archival or removal.
+  - Impact: Medium
+  - Effort: M
+  - Decision: Do not build or deploy a new OpenAI/weather API boundary. These integrations are not active product requirements.
+  - Safety: Preserve the existing prototypes until a focused reference, configuration, secret, and migration review confirms they can be removed without affecting CMS, OS, or deployment workflows.
+  - Validation: no frontend vendor keys, no active route regression, no orphaned Functions secrets/configuration, and documented rollback/removal notes.
+
+## Larger Changes (Riskier, Stage Later)
 
 - [ ] Replace `innerHTML` rendering paths with safe renderers.
   - Impact: High (security)

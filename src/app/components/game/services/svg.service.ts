@@ -5,6 +5,12 @@ import {HttpClient} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 import {FileExtensions} from './file-system.service';
 
+export interface LoadedSvgIcon {
+  name: string;
+  type: string;
+  icon: Observable<SafeHtml>;
+}
+
 /**
  * Service for managing custom SVG icons within the application. The service
  * provides functionality to fetch, sanitize, cache, and retrieve custom icons.
@@ -45,7 +51,7 @@ export class SvgService {
     return sanitizedSvg$.pipe(shareReplay(1));
   }
 
-  loadIcons(list: any[], type = 'system') {
+  loadIcons(list: readonly string[], type = 'system'): LoadedSvgIcon[] {
     return list.map((icon) => {
       return {
         name: icon,

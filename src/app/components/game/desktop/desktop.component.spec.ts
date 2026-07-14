@@ -10,6 +10,7 @@ import { SoundService } from '../services/sound.service';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import {LogService} from '../services/log.service';
+import {GameLevel} from '../services/game-config.service';
 
 describe('DesktopComponent', () => {
   let component: DesktopComponent;
@@ -145,11 +146,26 @@ describe('DesktopComponent', () => {
     );
   });
 
+  it('should focus the desktop from keyboard activation', () => {
+    appManagerServiceMock.setApplicationFocus.calls.reset();
+    const event = {
+      target: 'desktop',
+      currentTarget: 'desktop',
+      key: 'Enter',
+      preventDefault: jasmine.createSpy('preventDefault'),
+    } as unknown as KeyboardEvent;
+
+    component.onDesktopKeyDown(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(appManagerServiceMock.setApplicationFocus).toHaveBeenCalledWith('desktop', 0, 0);
+  });
+
   it('should call showNotificationUpdates in onBeginInvestigation', () => {
-    spyOn(component as any, 'showNotificationUpdates');
+    notificationServiceMock.show.calls.reset();
     component.onBeginInvestigation();
 
-    expect((component as any).showNotificationUpdates).toHaveBeenCalled();
+    expect(notificationServiceMock.show).toHaveBeenCalledTimes(4);
   });
 
   it('should enqueue a line in onBeginInvestigation if user has no name', () => {
@@ -222,7 +238,11 @@ describe('DesktopComponent', () => {
   });
 
   it('should enqueue lines when onLevelLoaded is called', () => {
-    const levelMock = { id: '1', name: 'Level 1' } as any;
+    const levelMock: GameLevel = {
+      id: '1',
+      name: 'Level 1',
+      unlockedCommands: [],
+    };
 
     component.onLevelLoaded(levelMock);
 

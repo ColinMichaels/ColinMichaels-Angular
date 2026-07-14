@@ -83,7 +83,7 @@ export class FinderAppComponent {
   }
 
 
-  trackByName(_: number, file: any): string {
+  trackByName(_: number, file: FileEntry): string {
     return file.name;
   }
 

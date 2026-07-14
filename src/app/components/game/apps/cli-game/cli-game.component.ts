@@ -5,7 +5,7 @@ import {SoundService} from '../../services/sound.service';
 import {NgClass} from '@angular/common';
 import {OsUserService} from '../../services/os-user.service';
 import {CLIService, CLIResponse} from '../../services/cli.service';
-import {AiChatService} from '../../services/ai-chat.service';
+import {AiChatResponse, AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ApplicationManagerService} from '../../services/application-manager.service';
@@ -208,7 +208,7 @@ export class CliGameComponent implements OnInit {
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res: any) => { // Consider defining a more specific type for `res`
+        next: (res: AiChatResponse) => {
           try {
             const cleaned = res.choices[0].message.content.replace(/[\n\r]/g, '').replace('json', '');
             const parsed = JSON.parse(cleaned);
@@ -225,7 +225,7 @@ export class CliGameComponent implements OnInit {
                 mode: 'dramatic'
               });
             }
-          } catch (e) {
+          } catch {
             this.typewriter.enqueueLine({
               text: 'Unknown. Please try again. (Error parsing AI response)',
               agent: 'system',

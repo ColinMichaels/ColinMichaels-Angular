@@ -6,7 +6,12 @@ import {CommonModule} from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="dial-container" (click)="advancePosition()">
+    <button
+      type="button"
+      class="dial-container"
+      aria-label="Advance dial position"
+      (click)="advancePosition()"
+    >
       <div class="dial-body" [style.transform]="'rotate(' + currentRotation + 'deg)'">
         <div class="dial-marker"></div>
       </div>
@@ -20,7 +25,7 @@ import {CommonModule} from '@angular/common';
           </span>
         </div>
       </div>
-    </div>
+    </button>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
@@ -29,6 +34,10 @@ import {CommonModule} from '@angular/common';
       width: 60px;
       height: 60px;
       cursor: pointer;
+      appearance: none;
+      padding: 0;
+      border: 0;
+      background: transparent;
     }
 
     .dial-body {

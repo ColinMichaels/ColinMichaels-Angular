@@ -3,9 +3,21 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {BlogStickyPostToolbarComponent} from './blog-sticky-post-toolbar.component';
 
 describe('BlogStickyPostToolbarComponent', () => {
+  const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<BlogStickyPostToolbarComponent>;
 
   beforeEach(async () => {
+    window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: jasmine.createSpy('addEventListener'),
+      removeEventListener: jasmine.createSpy('removeEventListener'),
+      addListener: jasmine.createSpy('addListener'),
+      removeListener: jasmine.createSpy('removeListener'),
+      dispatchEvent: jasmine.createSpy('dispatchEvent'),
+    });
+
     await TestBed.configureTestingModule({
       imports: [BlogStickyPostToolbarComponent],
     }).compileComponents();
@@ -16,6 +28,10 @@ describe('BlogStickyPostToolbarComponent', () => {
     fixture.componentRef.setInput('sharePath', 'blog/sticky-post');
     fixture.componentRef.setInput('readingProgress', 42);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
   });
 
   it('keeps the post title, cover, share fan, and comments shortcut together', () => {

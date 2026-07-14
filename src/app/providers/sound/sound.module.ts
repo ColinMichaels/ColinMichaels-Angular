@@ -21,7 +21,7 @@ type SoundModuleFactory = (injector: Injector) => SoundModule;
 type SoundModuleProvider = {
   provide: InjectionToken<SoundModuleFactory>;
   useFactory: SoundModuleFactory;
-  deps?: any[];
+  deps?: unknown[];
 }
 
 export declare class SoundModule {

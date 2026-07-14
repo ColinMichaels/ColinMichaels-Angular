@@ -19,12 +19,12 @@ import {ScrollClassToggleDirective} from './directives/scroll-class-toggle.direc
  *  See Each directive for usage and examples
  */
 @NgModule({
-  declarations: [
+  imports: [
+    CommonModule,
     StickyDirective,
     HideOnScrollDirective,
     ScrollClassToggleDirective
   ],
-  imports: [CommonModule],
   exports: [
     StickyDirective,
     HideOnScrollDirective,

@@ -8,10 +8,12 @@ import {MediaItem} from '../../services/media.service';
 import {faTools} from '@fortawesome/free-solid-svg-icons';
 import {TailwindClassGeneratorService} from '../../services/tailwind-class-generator.service';
 
+type TooltipExample = Partial<Omit<TooltipOptions, 'hostElement'>> & Pick<TooltipOptions, 'text'>;
+
 export interface TooltipExampleSet  {
   title:string;
   message?:string;
-  tooltips: TooltipOptions[];
+  tooltips: TooltipExample[];
 }
 
 @Component({
@@ -53,13 +55,13 @@ export interface TooltipExampleSet  {
 
 
 export class TooltipExamplesComponent implements OnInit{
-  showDocs: any;
+  showDocs = false;
   docs = `tooltip.doc.md`;
 
-  defaultTooltips: Partial<TooltipOptions>[] = [];
-  customTooltips: Partial<TooltipOptions>[] = [];
-  customTooltips2: Partial<TooltipOptions>[] = [];
-  allTooltips: any[]= [];
+  defaultTooltips: TooltipExample[] = [];
+  customTooltips: TooltipExample[] = [];
+  customTooltips2: TooltipExample[] = [];
+  allTooltips: TooltipExampleSet[] = [];
 
   constructor(private notify: NotificationService, private tailwindGenerator: TailwindClassGeneratorService) {
   }
@@ -162,7 +164,7 @@ export class TooltipExamplesComponent implements OnInit{
     ];
   }
 
-  showNotify(tooltip: TooltipOptions, message: string) {
+  showNotify(tooltip: TooltipExample, message: string) {
     this.notify.show({
       title: tooltip.text,
       message: message,
@@ -183,7 +185,7 @@ export class TooltipExamplesComponent implements OnInit{
     });
   }
 
-  buildNotifyMessage(tooltip: TooltipOptions) {
+  buildNotifyMessage(tooltip: TooltipExample) {
    return `tClass:[${tooltip.toolTipClass}] css:[${tooltip.cssClass}]`;
   }
 

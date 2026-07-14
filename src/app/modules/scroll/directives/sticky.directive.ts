@@ -9,7 +9,7 @@ import {
 
 @Directive({
   selector: '[appSticky]',
-  standalone: false
+  standalone: true
 })
 export class StickyDirective implements AfterViewInit {
   @Input() stickyTop: string = '0px';

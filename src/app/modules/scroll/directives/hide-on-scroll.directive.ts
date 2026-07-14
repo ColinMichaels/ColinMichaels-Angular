@@ -9,7 +9,7 @@ import {
 
 @Directive({
   selector: '[appHideOnScroll]',
-  standalone: false
+  standalone: true
 })
 export class HideOnScrollDirective implements OnInit {
   @Input() scrollThreshold = 100;

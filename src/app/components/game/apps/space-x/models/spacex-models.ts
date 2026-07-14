@@ -1,5 +1,30 @@
+export interface SpaceXFairings {
+  reused: boolean | null;
+  recovery_attempt: boolean | null;
+  recovered: boolean | null;
+  ships: string[];
+}
+
+export interface SpaceXFailure {
+  time: number;
+  altitude: number | null;
+  reason: string;
+}
+
+export interface SpaceXCrewAssignment {
+  crew: string;
+  role: string;
+}
+
+export type SpaceXPanelItemId = string | SpaceXCrewAssignment[];
+
+export interface SpaceXPanelSelection {
+  panel?: string;
+  itemId?: SpaceXPanelItemId;
+}
+
 export interface SpaceXLaunch {
-  fairings: any;
+  fairings: SpaceXFairings | null | undefined;
   links: {
     patch: {
       small: string;
@@ -28,9 +53,9 @@ export interface SpaceXLaunch {
   window: number;
   rocket: string;
   success: boolean;
-  failures: any[];
+  failures: SpaceXFailure[];
   details: string;
-  crew: any;
+  crew: SpaceXCrewAssignment[];
   ships: string[];
   capsules: string[];
   payloads: string[];
@@ -181,4 +206,3 @@ export interface SpaceXCrew {
   status: 'active' | 'inactive' | string;
   id: string;
 }
-

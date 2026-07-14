@@ -1,5 +1,11 @@
 # Changelog
 
+- Completed the OS/game accessibility lint cleanup, replaced remaining tray/desktop/SpaceX custom interactions with keyboard-native controls, tightened shared media, settings, storage, window, sound, scroll, video-provider, and SpaceX types, migrated scroll directives to standalone, reduced the lint baseline from `208` to `100` errors, and expanded the passing suite to `517` specs.
+- Continued the OS accessibility cleanup through Finder and notifications with named native controls, keyboard-ready folder navigation, explicit dismiss/clear-all actions, focused interaction coverage, and deterministic visibility/motion slideshow tests; reduced the lint baseline from 221 to 208 errors and expanded the passing suite to 514 specs.
+- Replaced non-semantic click targets and unassociated form labels across the first OS accessibility cleanup batch, added keyboard-native controls and accessible names, removed redundant terminal autofocus, tightened touched component types, and reduced the lint baseline from 262 to 221 errors.
+- Restored the full 511-spec baseline by updating the Social Connections route contract and making motion-sensitive scroll tests independent of host accessibility preferences.
+- Removed OpenAI/weather API development from the active roadmap while preserving existing inactive integrations for a documented removal review.
+- Simplified Tailwind source scanning and stopped tracking generated Firebase hosting output and local editor settings without deleting local files.
 - Added the public social OAuth base URL and Meta Graph API version to the production Functions dotenv file so non-interactive Firebase deploys can resolve both parameters without prompting.
 - Unified Facebook and Instagram authorization under the Meta publishing app, removed obsolete standalone Instagram secret bindings, and resolved linked professional Instagram accounts through manageable Facebook Pages.
 - Fixed cold blog links from social apps and other external entries by loading the requested published slug independently from the auth-aware full post collection, while preserving cached post reuse and background archive/suggestion loading.

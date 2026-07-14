@@ -1,35 +1,36 @@
 <div class="fixed top-8 right-4 z-40 pointer-events-none h-full">
   <div class="relative space-y-2.5 h-screen min-w-[200px]">
-    <div
-      (click)="dismiss(notification.id)"
-      (mouseleave)="clearAllBtn.classList.add('hidden')"
-      *ngFor="let notification of notifications"
+    <article
+      *ngFor="let notification of notifications; let first = first"
       [class]="notification.classList ?? defaultClass"
       class="group relative flex items-start max-w-sm w-full p-2 rounded-xl shadow-xl shadow-black/50
            border border-white/10 hover:bg-zinc-900 transition-all transform-gpu
            duration-150 ease-in-out animate-slide-in pointer-events-auto">
-      <div
-        #clearAllBtn
-        (click)="handleClearAllClick()"
-        [class.opacity-0]="!multipleNotifications"
-        class="absolute -top-2 -left-2 text-xs text-zinc-400 opacity-100 rounded-2xl
-             hover:text-white bg-zinc-700 hidden py-1 px-2 cursor-pointer z-50">
-        Clear All
-      </div>
-      <div (mouseenter)="clearAllBtn.classList.remove('hidden')"
-           class="close absolute -top-2 -left-2 hidden group-hover:flex w-full">
-        <div class="w-4 h-4 flex items-center justify-center rounded-full text-white/90
-               hover:text-white bg-zinc-700">
+      <button
+        type="button"
+        class="notification-dismiss absolute inset-0 z-10 rounded-xl cursor-pointer"
+        [attr.aria-label]="'Dismiss ' + notification.title + ' notification'"
+        (click)="dismiss(notification.id)"
+      >
+        <span class="absolute -top-2 -left-2 hidden group-hover:flex group-focus-within:flex w-4 h-4 items-center justify-center rounded-full text-white/90 hover:text-white bg-zinc-700">
           <fa-icon [icon]="faTimes" class="text-xs"/>
-        </div>
-      </div>
+        </span>
+      </button>
+      <button
+        *ngIf="first && multipleNotifications"
+        type="button"
+        (click)="handleClearAllClick()"
+        class="notification-clear-all absolute -top-2 left-4 z-20 py-1 px-2 rounded-2xl text-xs text-zinc-400
+             opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-white bg-zinc-700 cursor-pointer">
+        Clear All
+      </button>
       <div
         [ngClass]="getNotificationTypeClass(notification.type)"
-        class="w-8 h-8 rounded-md hover:bg-zinc-700 flex items-center justify-center
+        class="relative z-0 w-8 h-8 rounded-md hover:bg-zinc-700 flex items-center justify-center
              shadow-lg hover:shadow-inner border-white/10">
         <app-media *ngIf="notification.media" [media]="notification.media"/>
       </div>
-      <div class="flex-1 w-full overflow-hidden space-x-1 px-2">
+      <div class="relative z-0 flex-1 w-full overflow-hidden space-x-1 px-2">
         <div class="font-semibold text-xs truncate w-full block">
           {{ notification.title }}
         </div>
@@ -38,9 +39,9 @@
           class="text-xs text-zinc-300 leading-snug line-clamp-2"
         ></div>
       </div>
-      <div class="flex align-top text-[8px] font-light">
+      <div class="relative z-0 flex align-top text-[8px] font-light">
         <div class="text-zinc-400">{{ notification.timestamp | timeAgo }}</div>
       </div>
-    </div>
+    </article>
   </div>
 </div>

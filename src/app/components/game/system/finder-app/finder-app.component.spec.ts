@@ -23,4 +23,16 @@ describe('FinderAppComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('exposes Finder navigation and view choices as named buttons', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const favorite = element.querySelector<HTMLButtonElement>('aside button');
+    const listView = element.querySelector<HTMLButtonElement>('button[aria-label="List view"]');
+    const back = element.querySelector<HTMLButtonElement>('button[aria-label="Go back"]');
+
+    expect(favorite?.type).toBe('button');
+    expect(favorite?.getAttribute('aria-current')).toBe('page');
+    expect(listView?.getAttribute('aria-pressed')).toBe('true');
+    expect(back?.disabled).toBeTrue();
+  });
 });

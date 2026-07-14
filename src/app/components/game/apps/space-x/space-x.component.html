@@ -2,7 +2,11 @@
   <!-- Header Section with Subtle Gradient Background -->
   <div class="px-6 py-2 border-b border-white/30 relative pointer-events-auto cursor-pointer">
     <div class="absolute top-2 right-2">
-      <button class="text-blue-400 hover:text-blue-300 text-xs p-1 bg-blue-900/40 rounded" (click)="toggleSidebar()">
+      <button type="button"
+              class="text-blue-400 hover:text-blue-300 text-xs p-1 bg-blue-900/40 rounded"
+              aria-label="Toggle launch list"
+              [attr.aria-expanded]="showSidebar"
+              (click)="toggleSidebar()">
         <fa-icon [icon]="faBars"></fa-icon>
       </button>
     </div>
@@ -23,6 +27,7 @@
           <a *ngIf="selectedLaunch.links.webcast"
              [href]="selectedLaunch.links.webcast"
              target="_blank"
+             rel="noopener noreferrer"
              class="hover:text-blue-300"
              [appTooltip]="'Watch Webcast'"
              tooltipPosition="bottom">
@@ -31,6 +36,7 @@
           <a *ngIf="selectedLaunch.links.wikipedia"
              [href]="selectedLaunch.links.wikipedia"
              target="_blank"
+             rel="noopener noreferrer"
              class="hover:text-blue-300"
              [appTooltip]="'Read Wikipedia'"
              tooltipPosition="bottom">
@@ -39,6 +45,7 @@
           <a *ngIf="selectedLaunch.links.presskit"
              [href]="selectedLaunch.links.presskit"
              target="_blank"
+             rel="noopener noreferrer"
              class="hover:text-blue-300"
              [appTooltip]="'Press Kit'"
              tooltipPosition="bottom">
@@ -47,6 +54,7 @@
           <a *ngIf="selectedLaunch.links.article"
              [href]="selectedLaunch.links.article"
              target="_blank"
+             rel="noopener noreferrer"
              class="hover:text-blue-300"
              [appTooltip]="'Read Article'"
              tooltipPosition="bottom">
@@ -95,7 +103,9 @@
 
     <!-- Navigation Controls -->
     <div class="flex justify-center space-x-4 text-blue-400 mt-3">
-      <button class="p-1 hover:text-blue-300 text-xs disabled:text-blue-800"
+      <button type="button"
+              class="p-1 hover:text-blue-300 text-xs disabled:text-blue-800"
+              aria-label="Previous launch"
               (click)="previousLaunch()"
               [disabled]="launches.length === 0">
         <fa-icon [icon]="faChevronLeft"/>
@@ -105,7 +115,9 @@
         <span class="mx-1 text-blue-300">of</span>
         <span class="bg-blue-900/70 px-1.5 py-0.5 rounded">{{ launches.length }}</span>
       </div>
-      <button class="p-1 hover:text-blue-300 text-xs disabled:text-blue-800"
+      <button type="button"
+              class="p-1 hover:text-blue-300 text-xs disabled:text-blue-800"
+              aria-label="Next launch"
               (click)="nextLaunch()"
               [disabled]="launches.length === 0">
         <fa-icon [icon]="faChevronRight"/>
@@ -117,39 +129,43 @@
   <div class="border-b border-white/30">
     <div class="flex justify-around">
       <button *ngIf="selectedLaunch.links.flickr.original.length > 0"
+              type="button"
               class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+              [attr.aria-pressed]="panel === 'images'"
               [class.bg-blue-900]="panel === 'images'"
               [class.text-blue-300]="panel === 'images'"
               [class.text-gray-300]="panel !== 'images'"
-              (keydown)="loadPanel('images', selectedLaunch.rocket)"
               (click)="loadPanel('images', selectedLaunch.rocket)">
         IMAGES
       </button>
 
-      <button class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+      <button type="button"
+              class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+              [attr.aria-pressed]="panel === 'rocket'"
               [class.bg-blue-900]="panel === 'rocket'"
               [class.text-blue-300]="panel === 'rocket'"
               [class.text-gray-300]="panel !== 'rocket'"
-              (keydown)="loadPanel('rocket', selectedLaunch.rocket)"
               (click)="loadPanel('rocket', selectedLaunch.rocket)">
         ROCKET
       </button>
 
-      <button class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+      <button type="button"
+              class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+              [attr.aria-pressed]="panel === 'launchpad'"
               [class.bg-blue-900]="panel === 'launchpad'"
               [class.text-blue-300]="panel === 'launchpad'"
               [class.text-gray-300]="panel !== 'launchpad'"
-              (keydown)="loadPanel('launchpad', selectedLaunch.launchpad)"
               (click)="loadPanel('launchpad', selectedLaunch.launchpad)">
         LAUNCHPAD
       </button>
 
       <button *ngIf="selectedLaunch.crew?.length > 0"
+              type="button"
               class="w-full py-1.5 px-3 text-xs tracking-wider hover:bg-blue-900/40 transition-colors"
+              [attr.aria-pressed]="panel === 'crew'"
               [class.bg-blue-900]="panel === 'crew'"
               [class.text-blue-300]="panel === 'crew'"
               [class.text-gray-300]="panel !== 'crew'"
-              (keydown)="loadPanel('crew', selectedLaunch.crew)"
               (click)="loadPanel('crew', selectedLaunch.crew)">
         CREW
       </button>
@@ -166,16 +182,17 @@
   <div *ngIf="panel === 'images'" class="p-4 max-h-[450px] min-h-[450px] overflow-y-auto no-scrollbar">
     <!-- Images Panel -->
     <div class="grid grid-cols-3 lg:grid-cols-4 gap-2 animate-fadeIn">
-      <div *ngFor="let img of selectedLaunch.links.flickr.original"
+      <button *ngFor="let img of selectedLaunch.links.flickr.original"
+           type="button"
+           aria-label="Open mission image in a new window"
            class="aspect-square relative overflow-hidden rounded shadow-md cursor-zoom-in
            bg-blue-900/20 border border-blue-800/50"
            (click)="openImage(img)"
-           (keydown)="openImage(img)"
            [appTooltip]="'Click to view full size'">
         <img [src]="img"
              class="w-full h-full object-cover hover:scale-150 transition-transform ease-in-out duration-500"
-             loading="lazy" alt=""/>
-      </div>
+             loading="lazy" alt="Mission image"/>
+      </button>
 
       <!-- Empty State for Images -->
       <div *ngIf="selectedLaunch.links.flickr.original.length === 0"
@@ -193,10 +210,11 @@
          class="absolute top-16 max-h-[500px] w-[240px] overflow-y-auto right-0 py-2 bg-blue-950/30 backdrop-blur-md border-l border-white/30 shadow-lg animate-slideInRight">
     <h3 class="text-blue-400 text-sm font-semibold border-b border-white/20 pb-1 px-3 mb-2">LAUNCHES</h3>
     <div class="overflow-y-auto">
-      <div *ngFor="let launch of launches; let i = index"
-           class="hover:bg-blue-900/30 cursor-pointer border-b border-white/10 transition-colors"
+      <button *ngFor="let launch of launches; let i = index"
+           type="button"
+           class="w-full hover:bg-blue-900/30 cursor-pointer border-b border-white/10 transition-colors"
+           [attr.aria-pressed]="i === currentIndex"
            [class.bg-blue-900]="i === currentIndex"
-           (keydown)="selectLaunch(launch, i)"
            (click)="selectLaunch(launch, i)">
         <div class="grid grid-cols-8 gap-1 p-2">
           <div class="col-span-1 text-sm flex items-center">
@@ -213,7 +231,7 @@
             {{ launch.date_utc | date:'y' }}
           </div>
         </div>
-      </div>
+      </button>
     </div>
   </aside>
 </div>

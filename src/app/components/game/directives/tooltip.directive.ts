@@ -56,6 +56,6 @@ export class TooltipDirective {
 
   @HostListener('mouseleave')
   onMouseLeave() {
-    this.tooltipService.hide(false, this.tooltipfadeDuration ?? 0);
+    this.tooltipService.hide();
   }
 }

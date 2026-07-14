@@ -28,11 +28,11 @@ import {RouterLink} from '@angular/router';
             Welcome to the <span class="text-purple-500">Game</span>.
           </h1>
 
-          <div id="floating-element"
+          <button type="button" id="floating-element"
                class="floating-card bg-white/10 hover:bg-purple-500 hover:text-white cursor-pointer"
                (click)="toggleBackground()">
             <p>This should do something shouldn't it?</p>
-          </div>
+          </button>
 
           <div id="background-shapes" class="background-shapes">
             <div class="shape shape-1"></div>

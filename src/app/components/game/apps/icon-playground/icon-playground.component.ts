@@ -1,5 +1,5 @@
 import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
-import {SvgService} from '../../services/svg.service'; // Adjust the path
+import {LoadedSvgIcon, SvgService} from '../../services/svg.service';
 import {NgFor} from '@angular/common';
 import {FileExtensions, SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
@@ -14,19 +14,22 @@ import {NotificationService} from '../../services/notification.service';
   template: `
     <div class="icon-gallery p-4 py-10">
       <div class="grid grid-cols-5 gap-2 gap-y-8 mt-4">
-        <div *ngFor="let icon of iconsList"
-             class="icon-item flex flex-col items-center" (click)="showNotify(icon.name, icon)">
+        <button *ngFor="let icon of iconsList"
+             type="button"
+             class="icon-item flex flex-col items-center border-0 bg-transparent p-0 text-inherit"
+             [attr.aria-label]="'Preview ' + icon.name + ' icon'"
+             (click)="showNotify(icon.name, icon)">
           <div class="w-10 h-10 shadow-xl shadow-black/50 active:shadow-0" [appTooltip]="icon.name">
-            <svg-icon [icon]="icon.icon"/>
+            <app-svg-icon [icon]="icon.icon"/>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   `
 })
 export class IconPlaygroundComponent implements OnInit {
 
-  iconsList!: any[];
+  iconsList: LoadedSvgIcon[] = [];
 
   constructor(
     private readonly svg: SvgService,
@@ -37,17 +40,17 @@ export class IconPlaygroundComponent implements OnInit {
     this.iconsList = this.getSystemIcons().concat(this.getFileIcons());
   }
 
-  private getSystemIcons(): any[] {
+  private getSystemIcons(): LoadedSvgIcon[] {
     const systemSvgIcons = Object.values(SvgIcons);
     return this.svg.loadIcons(systemSvgIcons, 'system');
   }
 
-  private getFileIcons(): any[] {
+  private getFileIcons(): LoadedSvgIcon[] {
     const fileTypeIcons = Object.values(FileExtensions);
     return this.svg.loadIcons(fileTypeIcons, 'filetypes');
   }
 
-  showNotify(message = '', icon: any) {
+  showNotify(message = '', icon: LoadedSvgIcon) {
     const test = this.svg.loadIcons([icon.name], icon.type)[0];
     console.warn('test',test);
     this.notify.show({
