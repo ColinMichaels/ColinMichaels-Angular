@@ -18,6 +18,7 @@ import {
 } from '../../../../features/topics/utils/topic-hub-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 
 function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase();
@@ -30,6 +31,7 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-topic-manager',
   imports: [
+    AdminPageHeaderComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -37,15 +39,11 @@ function getErrorMessage(error: unknown): string {
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
-        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">Topics</h1>
-            <p class="max-w-2xl text-zinc-400">
-              Manage topic landing pages, homepage topic cards, search visibility, and the current floating field styling.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-3">
+        <app-admin-page-header
+          title="Topics"
+          description="Manage topic landing pages, homepage topic cards, search visibility, and the current floating field styling."
+        >
+          <div adminPageHeaderActions class="contents">
             <button
               type="button"
               class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
@@ -70,7 +68,7 @@ function getErrorMessage(error: unknown): string {
               {{ seedInProgress ? 'Seeding...' : 'Seed Missing Defaults' }}
             </button>
           </div>
-        </header>
+        </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-4">
           <div class="border border-zinc-800 bg-zinc-900 p-4">

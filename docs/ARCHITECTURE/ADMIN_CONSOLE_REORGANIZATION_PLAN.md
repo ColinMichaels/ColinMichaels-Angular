@@ -22,6 +22,7 @@ Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation 
 - The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, and renders the compact bulk-action surface only after at least one row is selected.
 - Calendar now distinguishes launch-following from fixed-time social plans, keeps launch plans aligned when a post is rescheduled, requires media for Instagram planning, reports provider readiness honestly, and receives direct post context from the Editor's Distribution module.
 - Social Connections is now a protected Publishing destination for Facebook, Instagram, and Threads authorization health, explicit Facebook Page or linked Instagram-account selection, reconnect, and disconnect controls while external delivery remains disabled.
+- Phase 3 has started with `AdminPageHeaderComponent` as the shared page identity/action contract for Homepage Hero, Topics, and Recommended Links. This removes duplicated headers without changing their routes, Firestore operations, or specialized list/detail editors.
 
 The next admin reorganization slice is Phase 3 site-content, asset, and operations consistency. Real social delivery workers remain a separate backend project.
 
@@ -228,6 +229,8 @@ Exit criteria:
 - no publishing behavior or Firestore contract changes unintentionally
 
 ### Phase 3: Site Content, Assets, And Operations
+
+Status: in progress. Homepage Hero, Topics, and Recommended Links now share the Phase 3 page-header contract; save-state/list-detail normalization and the remaining Media, Comments, and Users surfaces are still pending.
 
 - Migrate Homepage, Topics, Links, Media, Comments, and Users to the shell.
 - Normalize page headers and list/detail layouts without flattening specialized tools.
