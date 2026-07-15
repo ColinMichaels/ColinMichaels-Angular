@@ -16,6 +16,7 @@ Component inventory:
 - `AdminPageHeaderComponent` provides the shared page identity, description, and projected action layout adopted by Homepage Hero, Topics, and Recommended Links. It changes presentation only; routes, forms, and persistence remain owned by each manager.
 - `AdminEditorActionBarComponent` provides a shared inline or panel save surface with live status, busy semantics, and projected feature-owned actions. Homepage Hero, Topics, and Recommended Links retain their existing submit/delete handlers while reporting saving and unsaved states consistently.
 - `AdminStatCardComponent` standardizes the compact metric cards used by Homepage Hero, Topics, and Recommended Links while accepting the managers' existing computed values as inputs.
+- `AdminAlertComponent` and `AdminEmptyStateComponent` standardize assertive load-error announcements and polite empty-list feedback while preserving each manager's feature-owned message.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 

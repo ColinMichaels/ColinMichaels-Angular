@@ -18,7 +18,9 @@ import {
 } from '../../../../features/topics/utils/topic-hub-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
+import {AdminEmptyStateComponent} from '../../../shared/admin-empty-state.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
@@ -33,7 +35,9 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-topic-manager',
   imports: [
+    AdminAlertComponent,
     AdminEditorActionBarComponent,
+    AdminEmptyStateComponent,
     AdminPageHeaderComponent,
     AdminStatCardComponent,
     ReactiveFormsModule,
@@ -82,9 +86,7 @@ function getErrorMessage(error: unknown): string {
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <section class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -118,9 +120,9 @@ function getErrorMessage(error: unknown): string {
                   <span class="h-1.5 w-full" [style.background]="topic.theme.accent"></span>
                 </button>
               } @empty {
-                <div class="border border-dashed border-zinc-700 p-4 text-sm leading-6 text-zinc-400">
-                  No topics found. Seed the current defaults or create a new draft topic.
-                </div>
+                <app-admin-empty-state
+                  message="No topics found. Seed the current defaults or create a new draft topic."
+                ></app-admin-empty-state>
               }
             </div>
           </aside>

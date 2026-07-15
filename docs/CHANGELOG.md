@@ -1,5 +1,6 @@
 # Changelog
 
+- Standardized CMS load-error and empty-list feedback with shared accessible alert and status components across Homepage Hero, Topics, and Recommended Links, preserving the managers' existing copy and visual treatment while removing repeated state markup.
 - Stabilized sticky post-toolbar motion tests by isolating the Reader Tools reduced-motion class, covering both smooth and immediate scroll behavior, and preventing unrelated preference state from changing full-suite expectations.
 - Replaced 13 duplicated Homepage Hero, Topics, and Recommended Links metric blocks with a shared `AdminStatCardComponent`, preserving the existing computed values and responsive grids while centralizing label, value, sizing, capitalization, and card styling.
 - Added a shared CMS editor action bar across Homepage Hero, Topics, and Recommended Links with consistent save/delete layout, accessible live status, explicit busy state, and unsaved-change feedback while preserving existing form submission and Firestore handlers.

@@ -35,6 +35,7 @@ import {
 import {HomepageHeroRepositoryService} from '../../../../features/homepage/services/homepage-hero-repository.service';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
@@ -50,6 +51,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
 @Component({
   selector: 'app-cms-homepage-hero-manager',
   imports: [
+    AdminAlertComponent,
     AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
     AdminStatCardComponent,
@@ -96,9 +98,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <form class="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(360px,0.58fr)]"

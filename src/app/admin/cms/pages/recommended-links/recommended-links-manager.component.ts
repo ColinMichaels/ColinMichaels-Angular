@@ -18,7 +18,9 @@ import {
 } from '../../../../features/recommended-links/utils/recommended-link-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
+import {AdminEmptyStateComponent} from '../../../shared/admin-empty-state.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
@@ -33,7 +35,9 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-recommended-links-manager',
   imports: [
+    AdminAlertComponent,
     AdminEditorActionBarComponent,
+    AdminEmptyStateComponent,
     AdminPageHeaderComponent,
     AdminStatCardComponent,
     ReactiveFormsModule,
@@ -83,9 +87,7 @@ function getErrorMessage(error: unknown): string {
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <section class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
@@ -122,9 +124,9 @@ function getErrorMessage(error: unknown): string {
                   </span>
                 </button>
               } @empty {
-                <div class="border border-dashed border-zinc-700 p-4 text-sm leading-6 text-zinc-400">
-                  No links found. Seed the current defaults or create a new draft link.
-                </div>
+                <app-admin-empty-state
+                  message="No links found. Seed the current defaults or create a new draft link."
+                ></app-admin-empty-state>
               }
             </div>
           </aside>
