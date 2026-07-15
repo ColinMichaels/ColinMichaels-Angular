@@ -33,7 +33,7 @@ Status legend:
   - Effort: S
   - Validation: guard unit tests for allowed and blocked URLs.
 
-- [x] Stabilize baseline unit tests to full pass (`517/517` in CI-like headless run).
+- [x] Stabilize baseline unit tests to full pass (`522/522` in CI-like headless run).
   - Impact: High
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
@@ -55,6 +55,12 @@ Status legend:
   - Effort: S
   - Progress: moved build, serve, extraction, and Karma targets to `@angular/build`, removed 354 obsolete Webpack-era packages from the lockfile without changing retained package versions, and switched Day.js to its ESM distribution.
   - Validation: focused and full Karma execution no longer report the deprecated-builder warning; repository lint and build pass, and CommonJS warnings are reduced from `7` to `5` audio-only findings.
+
+- [x] Replace the legacy SoundFont CommonJS loader with browser-native audio.
+  - Impact: Medium
+  - Effort: M
+  - Progress: preserved the SoundFont driver and preset catalog while replacing whole-instrument CommonJS loading with cached per-note `fetch`, `decodeAudioData`, gain envelopes, retry eviction, and deterministic teardown. Removed `soundfont-player` and six transitive packages.
+  - Validation: native SoundFont and PatchService specs pass (`11/11`), repository lint and build pass, and CommonJS warnings are reduced from `5` to `2`.
 
 ## Medium Refactors
 

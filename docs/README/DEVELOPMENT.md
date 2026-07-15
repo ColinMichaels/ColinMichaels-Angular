@@ -52,12 +52,12 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 
 `npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.
 
-Current verified baseline (July 14, 2026, Node `24.15.0`):
+Current verified baseline (July 15, 2026, Node `24.15.0`):
 
-- `npm run build`: passes; `5` CommonJS optimization warnings remain in the optional audio stack. Day.js now uses its ESM distribution.
+- `npm run build`: passes; `2` CommonJS optimization warnings remain in the optional custom-oscillator and Tone.js paths. Day.js and SoundFont playback no longer contribute warnings.
 - `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
 - `npm --prefix functions run build`: passes.
-- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`517/517`).
+- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`522/522`).
 - Focused route and motion-sensitive component contracts pass (`25/25`).
 - Focused accessibility-cleanup component contracts pass, including native system-tray, desktop-keyboard, and SpaceX interaction coverage.
 
