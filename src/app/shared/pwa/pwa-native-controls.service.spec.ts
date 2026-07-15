@@ -37,6 +37,7 @@ describe('PwaNativeControlsService', () => {
   });
 
   it('acquires and releases a screen wake lock from a user toggle', async () => {
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
     let released = false;
     const sentinel = new EventTarget() as WakeLockSentinel;
     const release = jasmine.createSpy('release').and.callFake(async () => {

@@ -135,7 +135,12 @@ describe('BlogStickyPostToolbarComponent', () => {
         .querySelector<HTMLButtonElement>('button[aria-label="Scroll to top of post"]');
       button?.click();
 
-      expect(scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'smooth', block: 'start'});
+      const reduceMotion = document.defaultView
+        ?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
+      expect(scrollIntoView).toHaveBeenCalledOnceWith({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
       expect(focus).toHaveBeenCalledOnceWith({preventScroll: true});
     } finally {
       target.remove();

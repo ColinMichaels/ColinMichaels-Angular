@@ -54,10 +54,10 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 
 Current verified baseline (July 15, 2026, Node `24.15.0`):
 
-- `npm run build`: passes; `2` CommonJS optimization warnings remain in the optional custom-oscillator and Tone.js paths. Day.js and SoundFont playback no longer contribute warnings.
+- `npm run build`: passes; `1` CommonJS optimization warning remains in Tone.js's transitive `automation-events` dependency. Day.js, SoundFont playback, and custom oscillators no longer contribute warnings.
 - `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
 - `npm --prefix functions run build`: passes.
-- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`522/522`).
+- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`525/525`).
 - Focused route and motion-sensitive component contracts pass (`25/25`).
 - Focused accessibility-cleanup component contracts pass, including native system-tray, desktop-keyboard, and SpaceX interaction coverage.
 

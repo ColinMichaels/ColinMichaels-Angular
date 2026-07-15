@@ -1,10 +1,10 @@
 import {Injectable, OnDestroy} from '@angular/core';
 import {SettingsService} from './settings.service';
-import {customOscillators} from 'web-audio-oscillators';
 import {LogService} from './log.service';
 import {SOUND_DRIVERS, SoundDriverId, SoundDriverMetadata} from './sound-drivers/sound-driver.types';
 import {ToneSampledSoundDriver} from './sound-drivers/tone-sampled-sound.driver';
 import {SoundFontSampledSoundDriver} from './sound-drivers/soundfont-sampled-sound.driver';
+import {createCustomOscillator, isCustomOscillatorType} from './audio/custom-oscillators';
 
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type SynthFilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
@@ -565,16 +565,12 @@ export class PatchService implements OnDestroy {
       return;
     }
 
-    const audioCtx = this.getAudioContext();
-    const oscillatorFactories = customOscillators as Record<string, (context: AudioContext) => OscillatorNode>;
-    const createCustomOscillator = oscillatorFactories[type];
-
-    if (!createCustomOscillator) {
+    if (!isCustomOscillatorType(type)) {
       this.logger.warn(`Unknown oscillator patch: ${type}`);
       return;
     }
 
-    const customOscillator = createCustomOscillator(audioCtx);
+    const audioCtx = this.getAudioContext();
     const time = audioCtx.currentTime;
     for (const note of notes) {
       const freq = FREQUENCIES[note];
@@ -582,15 +578,16 @@ export class PatchService implements OnDestroy {
         this.logger.warn(`Unknown note: ${note}`);
         continue;
       }
+      const customOscillator = createCustomOscillator(audioCtx, type);
+      if (!customOscillator) continue;
+
       const gain = audioCtx.createGain();
       const pan = audioCtx.createStereoPanner();
-      pan.pan.setValueAtTime(-1, time);
-      customOscillator.connect(pan);
-
-
+      pan.pan.setValueAtTime(0, time);
       customOscillator.frequency.setValueAtTime(freq, time);
       customOscillator.connect(gain);
-      customOscillator.connect(audioCtx.destination);
+      gain.connect(pan);
+      pan.connect(audioCtx.destination);
 
       gain.gain.setValueAtTime(0.05, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + duration);

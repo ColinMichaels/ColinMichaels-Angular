@@ -33,7 +33,7 @@ Status legend:
   - Effort: S
   - Validation: guard unit tests for allowed and blocked URLs.
 
-- [x] Stabilize baseline unit tests to full pass (`522/522` in CI-like headless run).
+- [x] Stabilize baseline unit tests to full pass (`525/525` in CI-like headless run).
   - Impact: High
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
@@ -61,6 +61,12 @@ Status legend:
   - Effort: M
   - Progress: preserved the SoundFont driver and preset catalog while replacing whole-instrument CommonJS loading with cached per-note `fetch`, `decodeAudioData`, gain envelopes, retry eviction, and deterministic teardown. Removed `soundfont-player` and six transitive packages.
   - Validation: native SoundFont and PatchService specs pass (`11/11`), repository lint and build pass, and CommonJS warnings are reduced from `5` to `2`.
+
+- [x] Replace the CommonJS custom-oscillator wrapper.
+  - Impact: High
+  - Effort: M
+  - Progress: preserved all 25 oscillator names with a typed local factory, imported only the 15 required external wave tables, cached generated waves per audio context, corrected multi-note gain/pan routing, and removed `web-audio-oscillators` while retaining its MIT wave-table source as a direct dependency.
+  - Validation: oscillator and PatchService specs pass (`9/9`), the full headless suite passes (`525/525`), repository lint and build pass, the waveform-heavy lazy chunk drops from about `979 kB` to `284 kB`, and CommonJS warnings are reduced from `2` to `1`.
 
 ## Medium Refactors
 

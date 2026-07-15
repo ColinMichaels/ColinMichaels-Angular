@@ -106,8 +106,10 @@ describe('BlogTableOfContentsComponent', () => {
 
     expect(clickEvent.defaultPrevented).toBeTrue();
     expect(scrollTo).toHaveBeenCalledTimes(1);
+    const reduceMotion = document.defaultView
+      ?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
     expect(scrollTo.calls.mostRecent().args[0] as unknown as ScrollToOptions)
-      .toEqual({top: 480, behavior: 'smooth'});
+      .toEqual({top: 480, behavior: reduceMotion ? 'auto' : 'smooth'});
     expect(headingSelected).toHaveBeenCalledOnceWith('smooth-heading');
     expect(heading.style.position).toBe('sticky');
 
