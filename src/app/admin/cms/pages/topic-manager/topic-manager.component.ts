@@ -18,6 +18,7 @@ import {
 } from '../../../../features/topics/utils/topic-hub-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 
 function normalizeSearchValue(value: string): string {
@@ -31,6 +32,7 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-topic-manager',
   imports: [
+    AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
@@ -437,15 +439,8 @@ function getErrorMessage(error: unknown): string {
               </div>
             </section>
 
-            <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-5">
-              <p class="text-sm text-zinc-500">
-                @if (selectedTopicId) {
-                  Editing {{ selectedTopicId }}
-                } @else {
-                  Create or select a topic to begin.
-                }
-              </p>
-              <div class="flex flex-wrap gap-3">
+            <app-admin-editor-action-bar [status]="editorActionStatus" [busy]="saveInProgress">
+              <div adminEditorActions class="contents">
                 <button
                   type="button"
                   class="inline-flex justify-center border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
@@ -462,7 +457,7 @@ function getErrorMessage(error: unknown): string {
                   {{ saveInProgress ? 'Saving...' : 'Save Topic' }}
                 </button>
               </div>
-            </footer>
+            </app-admin-editor-action-bar>
           </form>
         </section>
       </section>
@@ -672,6 +667,22 @@ export class CmsTopicManagerComponent {
     } finally {
       this.seedInProgress = false;
     }
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.saveInProgress) {
+      return 'Saving topic...';
+    }
+
+    if (this.topicForm.dirty) {
+      return this.selectedTopicId
+        ? `Unsaved changes for ${this.selectedTopicId}.`
+        : 'Unsaved changes for a new topic.';
+    }
+
+    return this.selectedTopicId
+      ? `Editing ${this.selectedTopicId}`
+      : 'Create or select a topic to begin.';
   }
 
   private patchTopicForm(topic: TopicHub): void {

@@ -35,6 +35,7 @@ import {
 import {HomepageHeroRepositoryService} from '../../../../features/homepage/services/homepage-hero-repository.service';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 
 function getErrorMessage(error: unknown): string {
@@ -48,6 +49,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
 @Component({
   selector: 'app-cms-homepage-hero-manager',
   imports: [
+    AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
@@ -365,15 +367,20 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
               </p>
             </section>
 
-            <footer class="flex flex-wrap justify-end gap-3 border border-zinc-800 bg-zinc-900/70 p-5">
+            <app-admin-editor-action-bar
+              [status]="editorActionStatus"
+              [busy]="saveInProgress || uploadInProgress"
+              [panel]="true"
+            >
               <button
+                adminEditorActions
                 type="submit"
                 class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
                 [disabled]="heroForm.invalid || saveInProgress || uploadInProgress"
               >
                 {{ saveInProgress ? 'Saving...' : 'Save Homepage Hero' }}
               </button>
-            </footer>
+            </app-admin-editor-action-bar>
           </aside>
         </form>
       </section>
@@ -639,6 +646,20 @@ export class CmsHomepageHeroManagerComponent {
 
   protected previewHeadlineLines(): readonly string[] {
     return this.getHeadlineLinesFromForm();
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.uploadInProgress) {
+      return this.uploadStatus() || 'Uploading homepage media...';
+    }
+
+    if (this.saveInProgress) {
+      return 'Saving homepage hero settings...';
+    }
+
+    return this.heroForm.dirty
+      ? 'Unsaved homepage hero changes.'
+      : 'Homepage hero settings are up to date.';
   }
 
   private patchHeroForm(settings: HomepageHeroSettings): void {

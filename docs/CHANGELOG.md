@@ -1,5 +1,6 @@
 # Changelog
 
+- Added a shared CMS editor action bar across Homepage Hero, Topics, and Recommended Links with consistent save/delete layout, accessible live status, explicit busy state, and unsaved-change feedback while preserving existing form submission and Firestore handlers.
 - Started the admin Phase 3 site-content consistency pass with a shared `AdminPageHeaderComponent` used by Homepage Hero, Topics, and Recommended Links, preserving each manager's actions, routes, editor density, and Firestore behavior while removing duplicated page identity markup.
 - Replaced public blog and main-site `innerHTML` rendering with a shared sanitized rich-text renderer and inert HTML-to-text utilities, preserved Editor.js formatting and link/image behavior, rendered terminal/contact content as text, and added XSS regression coverage plus live article verification while leaving OS-only HTML paths outside this public-site cleanup scope.
 - Replaced the last allowlisted CommonJS package, `editorjs-youtube-embed`, with a typed local Editor.js block that preserves the existing `youtubeEmbed` and `{url}` document contract, validates YouTube watch/share/short URLs, renders accessible previews, supports read-only editing, removes the package and CommonJS allowlist, and leaves the production build warning-free without suppressed dependencies.

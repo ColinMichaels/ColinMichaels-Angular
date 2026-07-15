@@ -18,6 +18,7 @@ import {
 } from '../../../../features/recommended-links/utils/recommended-link-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
 
 function normalizeSearchValue(value: string): string {
@@ -31,6 +32,7 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-recommended-links-manager',
   imports: [
+    AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
@@ -249,15 +251,8 @@ function getErrorMessage(error: unknown): string {
               </article>
             </section>
 
-            <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-5">
-              <p class="text-sm text-zinc-500">
-                @if (selectedRecommendedLinkId) {
-                  Editing {{ selectedRecommendedLinkId }}
-                } @else {
-                  Create or select a recommended link to begin.
-                }
-              </p>
-              <div class="flex flex-wrap gap-3">
+            <app-admin-editor-action-bar [status]="editorActionStatus" [busy]="saveInProgress">
+              <div adminEditorActions class="contents">
                 <button
                   type="button"
                   class="inline-flex justify-center border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
@@ -274,7 +269,7 @@ function getErrorMessage(error: unknown): string {
                   {{ saveInProgress ? 'Saving...' : 'Save Link' }}
                 </button>
               </div>
-            </footer>
+            </app-admin-editor-action-bar>
           </form>
         </section>
       </section>
@@ -451,6 +446,22 @@ export class CmsRecommendedLinksManagerComponent {
       default:
         return 'shrink-0 text-xs uppercase tracking-wide text-amber-300';
     }
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.saveInProgress) {
+      return 'Saving recommended link...';
+    }
+
+    if (this.recommendedLinkForm.dirty) {
+      return this.selectedRecommendedLinkId
+        ? `Unsaved changes for ${this.selectedRecommendedLinkId}.`
+        : 'Unsaved changes for a new recommended link.';
+    }
+
+    return this.selectedRecommendedLinkId
+      ? `Editing ${this.selectedRecommendedLinkId}`
+      : 'Create or select a recommended link to begin.';
   }
 
   private patchRecommendedLinkForm(link: RecommendedLink): void {

@@ -14,6 +14,7 @@ Component inventory:
 - `admin-navigation.config.ts` defines grouped destinations, icons, exact/prefix matching, page titles, and role visibility for Overview, Publishing, Site Content, Assets, and Administration.
 - `AdminEnvironmentBadgeComponent` supports the compact shell-footer treatment while preserving the detailed badge for feature surfaces that need it.
 - `AdminPageHeaderComponent` provides the shared page identity, description, and projected action layout adopted by Homepage Hero, Topics, and Recommended Links. It changes presentation only; routes, forms, and persistence remain owned by each manager.
+- `AdminEditorActionBarComponent` provides a shared inline or panel save surface with live status, busy semantics, and projected feature-owned actions. Homepage Hero, Topics, and Recommended Links retain their existing submit/delete handlers while reporting saving and unsaved states consistently.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 
