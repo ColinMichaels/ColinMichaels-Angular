@@ -50,6 +50,12 @@ Status legend:
   - Progress: replaced Firebase production and test `any` usage with explicit document, filter, upload, batch, log, snapshot, and test-harness types. Typed the two dormant weather findings without adding or activating an external API integration.
   - Validation: repository lint passes with `0` errors and `0` warnings; focused Firebase/weather specs, the full headless suite, and the application build pass.
 
+- [x] Migrate off the deprecated Angular Webpack build package.
+  - Impact: Medium
+  - Effort: S
+  - Progress: moved build, serve, extraction, and Karma targets to `@angular/build`, removed 354 obsolete Webpack-era packages from the lockfile without changing retained package versions, and switched Day.js to its ESM distribution.
+  - Validation: focused and full Karma execution no longer report the deprecated-builder warning; repository lint and build pass, and CommonJS warnings are reduced from `7` to `5` audio-only findings.
+
 ## Medium Refactors
 
 - [x] Refactor `SettingsService` for typed models and safe subscription lifecycle.

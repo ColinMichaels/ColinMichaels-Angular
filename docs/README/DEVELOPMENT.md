@@ -54,7 +54,7 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 
 Current verified baseline (July 14, 2026, Node `24.15.0`):
 
-- `npm run build`: passes; CommonJS optimization warnings remain for the audio stack, `dayjs`, and `web-audio-oscillators`.
+- `npm run build`: passes; `5` CommonJS optimization warnings remain in the optional audio stack. Day.js now uses its ESM distribution.
 - `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
 - `npm --prefix functions run build`: passes.
 - `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`517/517`).
