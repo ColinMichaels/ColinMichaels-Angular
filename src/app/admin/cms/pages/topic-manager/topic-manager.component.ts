@@ -22,6 +22,7 @@ import {AdminAlertComponent} from '../../../shared/admin-alert.component';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminEmptyStateComponent} from '../../../shared/admin-empty-state.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminSearchFieldComponent} from '../../../shared/admin-search-field.component';
 import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function normalizeSearchValue(value: string): string {
@@ -39,6 +40,7 @@ function getErrorMessage(error: unknown): string {
     AdminEditorActionBarComponent,
     AdminEmptyStateComponent,
     AdminPageHeaderComponent,
+    AdminSearchFieldComponent,
     AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
@@ -91,16 +93,12 @@ function getErrorMessage(error: unknown): string {
 
         <section class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside class="space-y-4 border border-zinc-800 bg-zinc-900/70 p-4">
-            <label class="space-y-2">
-              <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Search topics</span>
-              <input
-                type="search"
-                [value]="searchTerm"
-                placeholder="Search title, slug, terms..."
-                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                (input)="updateSearch($event)"
-              >
-            </label>
+            <app-admin-search-field
+              label="Search topics"
+              placeholder="Search title, slug, terms..."
+              [value]="searchTerm"
+              (valueChange)="searchTerm = $event"
+            ></app-admin-search-field>
 
             <div class="space-y-2" aria-label="Topic list">
               @for (topic of filteredTopics(); track topic.id) {
@@ -562,10 +560,6 @@ export class CmsTopicManagerComponent {
       topic.status,
       ...topic.terms,
     ].join(' ')).includes(normalizedSearchTerm));
-  }
-
-  protected updateSearch(event: Event): void {
-    this.searchTerm = (event.target as HTMLInputElement | null)?.value ?? '';
   }
 
   protected selectTopic(topic: TopicHub): void {

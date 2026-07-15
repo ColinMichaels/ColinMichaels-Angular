@@ -57,7 +57,7 @@ Current verified baseline (July 15, 2026, Node `24.15.0`):
 - `npm run build`: passes with `0` optimization warnings and no `allowedCommonJsDependencies` exemptions after replacing the legacy Day.js, audio, and Editor.js YouTube runtime paths.
 - `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
 - `npm --prefix functions run build`: passes.
-- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`547/547`).
+- `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`548/548`).
 - Focused route and motion-sensitive component contracts pass (`25/25`).
 - Focused accessibility-cleanup component contracts pass, including native system-tray, desktop-keyboard, and SpaceX interaction coverage.
 
