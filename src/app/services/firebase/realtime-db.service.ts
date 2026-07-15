@@ -22,8 +22,6 @@ import {FIREBASE_DATABASE} from './firebase.tokens';
 
 export interface DatabaseItem {
   id?: string;
-
-  [key: string]: any;
 }
 
 @Injectable({
@@ -301,7 +299,7 @@ export class RealtimeDbService {
   }
 
   // Batch operations
-  async batchUpdate(updates: { [path: string]: any }): Promise<void> {
+  async batchUpdate(updates: Record<string, unknown>): Promise<void> {
     try {
       const dbRef = ref(this.requireDb());
       await update(dbRef, updates);

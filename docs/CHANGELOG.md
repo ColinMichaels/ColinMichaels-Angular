@@ -1,5 +1,6 @@
 # Changelog
 
+- Cleared the remaining Firebase and dormant weather explicit-typing backlog, replaced private-method `any` casts in Firestore tests with a typed harness, and restored `npm run lint` to `0` errors and `0` warnings without adding or activating an external weather API integration.
 - Completed the OS/game accessibility lint cleanup, replaced remaining tray/desktop/SpaceX custom interactions with keyboard-native controls, tightened shared media, settings, storage, window, sound, scroll, video-provider, and SpaceX types, migrated scroll directives to standalone, reduced the lint baseline from `208` to `100` errors, and expanded the passing suite to `517` specs.
 - Continued the OS accessibility cleanup through Finder and notifications with named native controls, keyboard-ready folder navigation, explicit dismiss/clear-all actions, focused interaction coverage, and deterministic visibility/motion slideshow tests; reduced the lint baseline from 221 to 208 errors and expanded the passing suite to 514 specs.
 - Replaced non-semantic click targets and unassociated form labels across the first OS accessibility cleanup batch, added keyboard-native controls and accessible names, removed redundant terminal autofocus, tightened touched component types, and reduced the lint baseline from 262 to 221 errors.

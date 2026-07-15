@@ -44,11 +44,11 @@ Status legend:
   - Progress: reduced accessibility errors from `82` to `0` by replacing custom click targets with native controls, associating labels, adding accessible names and state, and completing system tray, desktop, Finder, notification, and SpaceX semantics.
   - Validation: touched-file ESLint pass, focused interaction tests, full headless suite (`517/517`), and application build.
 
-- [~] Resolve the remaining Firebase explicit-typing lint backlog.
+- [x] Resolve the remaining Firebase explicit-typing lint backlog.
   - Impact: Medium
   - Effort: M
-  - Remaining: `98` Firebase production/test errors; the separate `2` weather errors are intentionally deferred with the unused weather integration.
-  - Validation: preserve the Firestore emulator/mock contracts, run focused Firebase specs, then repeat the repository lint, test, and build gates.
+  - Progress: replaced Firebase production and test `any` usage with explicit document, filter, upload, batch, log, snapshot, and test-harness types. Typed the two dormant weather findings without adding or activating an external API integration.
+  - Validation: repository lint passes with `0` errors and `0` warnings; focused Firebase/weather specs, the full headless suite, and the application build pass.
 
 ## Medium Refactors
 

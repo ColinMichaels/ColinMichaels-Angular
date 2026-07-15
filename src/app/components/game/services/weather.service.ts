@@ -18,9 +18,21 @@ import {faCloud, faCloudRain, faSun} from '@fortawesome/free-solid-svg-icons';
 import {faSnowflake} from '@fortawesome/free-regular-svg-icons';
 
 export interface WeatherData {
+  location: string;
   temp: number;
+  feelsLike: number;
+  humidity: number;
+  visibility: number;
+  pressure: number;
+  wind: WeatherWind;
   description: string;
   icon: string;
+}
+
+export interface WeatherWind {
+  speed: number;
+  deg?: number;
+  gust?: number;
 }
 
 export interface ForecastEntry {
@@ -33,6 +45,16 @@ export interface ForecastEntry {
 export interface WeatherBundle {
   current: WeatherData;
   forecast: ForecastEntry[];
+}
+
+export interface DailyForecast {
+  date: Date;
+  dayOfWeek: string;
+  temp: number;
+  highTemp: number;
+  lowTemp: number;
+  description: string;
+  icon: string;
 }
 
 interface OpenWeatherCondition {
@@ -49,7 +71,7 @@ interface OpenWeatherCurrentResponse {
     pressure: number;
   };
   visibility: number;
-  wind: unknown;
+  wind: WeatherWind;
   weather: OpenWeatherCondition[];
 }
 
@@ -112,15 +134,7 @@ export class WeatherService {
    * day of week (short name), average temperature, highest temperature, lowest temperature,
    * and the most common description and icon.
    */
-  getAverageDailyForecast(forecastEntries: ForecastEntry[]): Array<{
-    date: Date;
-    dayOfWeek: string;
-    temp: number;
-    highTemp: number;
-    lowTemp: number;
-    description: string;
-    icon: string;
-  }> {
+  getAverageDailyForecast(forecastEntries: ForecastEntry[]): DailyForecast[] {
     if (forecastEntries.length === 0) {
       return [];
     }
@@ -140,15 +154,7 @@ export class WeatherService {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     // Calculate statistics for each day
-    const result: Array<{
-      date: Date;
-      dayOfWeek: string;
-      temp: number;
-      highTemp: number;
-      lowTemp: number;
-      description: string;
-      icon: string;
-    }> = [];
+    const result: DailyForecast[] = [];
 
     dailyGroups.forEach((entries, dateKey) => {
       // Calculate average temperature

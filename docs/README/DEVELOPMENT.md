@@ -55,7 +55,7 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 Current verified baseline (July 14, 2026, Node `24.15.0`):
 
 - `npm run build`: passes; CommonJS optimization warnings remain for the audio stack, `dayjs`, and `web-audio-oscillators`.
-- `npm run lint`: runs correctly but reports `100` explicit-typing errors (`0` warnings): `98` are isolated to Firebase production/test utilities and `2` remain in the intentionally deferred weather component. The template-accessibility backlog is clear; treat the repository-wide gate as failing until the Firebase typing slice is complete.
+- `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
 - `npm --prefix functions run build`: passes.
 - `npm run test -- --watch=false --browsers=ChromeHeadless`: passes (`517/517`).
 - Focused route and motion-sensitive component contracts pass (`25/25`).
