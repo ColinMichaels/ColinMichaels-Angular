@@ -2,7 +2,7 @@ import {Injectable, OnDestroy} from '@angular/core';
 import {SettingsService} from './settings.service';
 import {LogService} from './log.service';
 import {SOUND_DRIVERS, SoundDriverId, SoundDriverMetadata} from './sound-drivers/sound-driver.types';
-import {ToneSampledSoundDriver} from './sound-drivers/tone-sampled-sound.driver';
+import {NativeSampledSoundDriver} from './sound-drivers/native-sampled-sound.driver';
 import {SoundFontSampledSoundDriver} from './sound-drivers/soundfont-sampled-sound.driver';
 import {createCustomOscillator, isCustomOscillatorType} from './audio/custom-oscillators';
 
@@ -539,14 +539,14 @@ export class PatchService implements OnDestroy {
 
   private audioCtx?: AudioContext;
   private selectedSoundDriverId: SoundDriverId = 'web-audio';
-  private readonly toneSampledDriver: ToneSampledSoundDriver;
+  private readonly nativeSampledDriver: NativeSampledSoundDriver;
   private readonly soundFontDriver: SoundFontSampledSoundDriver;
 
   constructor(
     private settingsService: SettingsService,
     private readonly logger: LogService
   ) {
-    this.toneSampledDriver = new ToneSampledSoundDriver(this.logger);
+    this.nativeSampledDriver = new NativeSampledSoundDriver(this.logger);
     this.soundFontDriver = new SoundFontSampledSoundDriver(this.logger);
   }
 
@@ -604,7 +604,7 @@ export class PatchService implements OnDestroy {
     driverId: SoundDriverId = this.selectedSoundDriverId
   ): void {
     if (driverId === 'tone-sampler') {
-      void this.toneSampledDriver.playPreset(note, duration, presetName);
+      void this.nativeSampledDriver.playPreset(note, duration, presetName);
       return;
     }
 
@@ -655,8 +655,8 @@ export class PatchService implements OnDestroy {
     patch: SynthPatch = DEFAULT_SYNTH_PATCH,
     driverId: SoundDriverId = 'web-audio'
   ): void {
-    if (driverId === 'tone-sampler' && this.toneSampledDriver.canPlayPreset(patch.name)) {
-      void this.toneSampledDriver.playPreset(note, duration, patch.name);
+    if (driverId === 'tone-sampler' && this.nativeSampledDriver.canPlayPreset(patch.name)) {
+      void this.nativeSampledDriver.playPreset(note, duration, patch.name);
       return;
     }
 
@@ -839,7 +839,7 @@ export class PatchService implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.toneSampledDriver.dispose();
+    this.nativeSampledDriver.dispose();
     this.soundFontDriver.dispose();
     this.audioCtx?.close();
   }

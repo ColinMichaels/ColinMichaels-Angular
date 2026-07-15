@@ -33,7 +33,7 @@ Status legend:
   - Effort: S
   - Validation: guard unit tests for allowed and blocked URLs.
 
-- [x] Stabilize baseline unit tests to full pass (`525/525` in CI-like headless run).
+- [x] Stabilize baseline unit tests to full pass (`533/533` in CI-like headless run).
   - Impact: High
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
@@ -67,6 +67,18 @@ Status legend:
   - Effort: M
   - Progress: preserved all 25 oscillator names with a typed local factory, imported only the 15 required external wave tables, cached generated waves per audio context, corrected multi-note gain/pan routing, and removed `web-audio-oscillators` while retaining its MIT wave-table source as a direct dependency.
   - Validation: oscillator and PatchService specs pass (`9/9`), the full headless suite passes (`525/525`), repository lint and build pass, the waveform-heavy lazy chunk drops from about `979 kB` to `284 kB`, and CommonJS warnings are reduced from `2` to `1`.
+
+- [x] Replace the Tone.js sampled-preset runtime with native Web Audio.
+  - Impact: High
+  - Effort: M
+  - Progress: retained the compatibility `tone-sampler` settings ID and all 26 preset mappings while replacing eager Tone.js sampler loading with cached nearest-sample fetch/decode, pitch shifting, gain release envelopes, failed-request eviction, and deterministic source/context teardown. Removed Tone.js and three transitive packages.
+  - Validation: native sampler, SoundFont, and PatchService specs pass (`16/16`), the full headless suite passes (`530/530`), dependency audit reports `0` vulnerabilities, lint passes with `0` findings, and the production build passes with `0` optimization warnings while removing the roughly `348 kB` Tone lazy chunk.
+
+- [x] Replace the final allowlisted CommonJS Editor.js tool.
+  - Impact: Medium
+  - Effort: S
+  - Progress: replaced `editorjs-youtube-embed` with a typed local YouTube block while preserving the saved `youtubeEmbed` and `{url}` contract, expanded URL validation and accessible previews, and removed the package plus the final `allowedCommonJsDependencies` configuration.
+  - Validation: YouTube tool, Editor.js integration, and adapter specs pass (`17/17`), the full headless suite passes (`533/533`), dependency audit reports `0` vulnerabilities, and the production build passes with `0` warnings and no CommonJS exemptions.
 
 ## Medium Refactors
 

@@ -32,6 +32,7 @@ import {HtmlBlockTool} from './tools/html-block.tool';
 import {CmsMarkdownBlockTool} from './tools/markdown-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
+import {YouTubeEmbedBlockTool} from './tools/youtube-embed-block.tool';
 
 interface EditorToolModules {
   Header: ToolConstructable;
@@ -39,7 +40,7 @@ interface EditorToolModules {
   Quote: ToolConstructable;
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
-  YoutubeEmbed: ToolConstructable;
+  YouTubeEmbed: ToolConstructable;
   CmsCodeBlock: ToolConstructable;
   CmsMarkdownBlock: ToolConstructable;
   CmsImageBlock: ToolConstructable;
@@ -123,14 +124,12 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     quoteModule,
     delimiterModule,
     embedModule,
-    youtubeEmbedModule,
   ] = await Promise.all([
     import('@editorjs/header'),
     import('@editorjs/list'),
     import('@editorjs/quote'),
     import('@editorjs/delimiter'),
     import('@editorjs/embed'),
-    import('editorjs-youtube-embed'),
   ]);
 
   return {
@@ -139,7 +138,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     Quote: getToolConstructable(quoteModule, 'Quote'),
     Delimiter: getToolConstructable(delimiterModule, 'Delimiter'),
     Embed: getToolConstructable(embedModule, 'Embed'),
-    YoutubeEmbed: getToolConstructable(youtubeEmbedModule, 'YouTube Embed'),
+    YouTubeEmbed: YouTubeEmbedBlockTool as unknown as ToolConstructable,
     CmsCodeBlock: CmsCodeBlockTool as unknown as ToolConstructable,
     CmsMarkdownBlock: CmsMarkdownBlockTool as unknown as ToolConstructable,
     CmsImageBlock: CmsImageBlockTool as unknown as ToolConstructable,
@@ -998,7 +997,7 @@ export class EditorJsComponent implements AfterViewInit {
             inlineToolbar: false,
           },
           youtubeEmbed: {
-            class: tools.YoutubeEmbed,
+            class: tools.YouTubeEmbed,
             inlineToolbar: false,
           },
           image: {

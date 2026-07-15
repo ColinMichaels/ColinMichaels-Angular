@@ -30,7 +30,7 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
 }
 
 describe('blog-editorjs-adapter', () => {
-  it('normalizes editorjs-youtube-embed blocks into trusted blog embed blocks', () => {
+  it('normalizes saved youtubeEmbed blocks into trusted blog embed blocks', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [
         {
