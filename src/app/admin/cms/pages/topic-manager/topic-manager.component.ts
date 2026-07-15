@@ -20,6 +20,7 @@ import {CmsToastContainerComponent} from '../../components/toast/cms-toast.compo
 import {CmsToastService} from '../../services/cms-toast.service';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase();
@@ -34,6 +35,7 @@ function getErrorMessage(error: unknown): string {
   imports: [
     AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
+    AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -73,22 +75,10 @@ function getErrorMessage(error: unknown): string {
         </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-4">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Topics</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().total }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().published }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Drafts</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().drafts }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Archived</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().archived }}</p>
-          </div>
+          <app-admin-stat-card label="Total Topics" [value]="stats().total"></app-admin-stat-card>
+          <app-admin-stat-card label="Published" [value]="stats().published"></app-admin-stat-card>
+          <app-admin-stat-card label="Drafts" [value]="stats().drafts"></app-admin-stat-card>
+          <app-admin-stat-card label="Archived" [value]="stats().archived"></app-admin-stat-card>
         </section>
 
         @if (loadError(); as error) {

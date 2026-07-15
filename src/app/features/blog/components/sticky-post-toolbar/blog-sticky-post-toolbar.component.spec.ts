@@ -5,8 +5,11 @@ import {BlogStickyPostToolbarComponent} from './blog-sticky-post-toolbar.compone
 describe('BlogStickyPostToolbarComponent', () => {
   const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<BlogStickyPostToolbarComponent>;
+  let readerMotionReduceWasSet: boolean;
 
   beforeEach(async () => {
+    readerMotionReduceWasSet = document.documentElement.classList.contains('reader-motion-reduce');
+    document.documentElement.classList.remove('reader-motion-reduce');
     window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
       matches: false,
       media: '(prefers-reduced-motion: reduce)',
@@ -32,6 +35,7 @@ describe('BlogStickyPostToolbarComponent', () => {
 
   afterEach(() => {
     window.matchMedia = originalMatchMedia;
+    document.documentElement.classList.toggle('reader-motion-reduce', readerMotionReduceWasSet);
   });
 
   it('keeps the post title, cover, share fan, and comments shortcut together', () => {
@@ -135,13 +139,36 @@ describe('BlogStickyPostToolbarComponent', () => {
         .querySelector<HTMLButtonElement>('button[aria-label="Scroll to top of post"]');
       button?.click();
 
-      const reduceMotion = document.defaultView
-        ?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
       expect(scrollIntoView).toHaveBeenCalledOnceWith({
-        behavior: reduceMotion ? 'auto' : 'smooth',
+        behavior: 'smooth',
         block: 'start',
       });
       expect(focus).toHaveBeenCalledOnceWith({preventScroll: true});
+    } finally {
+      target.remove();
+    }
+  });
+
+  it('uses immediate scrolling when Reader Tools reduces motion', () => {
+    const target = document.createElement('header');
+    target.id = 'blog-post-top';
+    target.tabIndex = -1;
+    const scrollIntoView = spyOn(target, 'scrollIntoView');
+    document.body.append(target);
+    document.documentElement.classList.add('reader-motion-reduce');
+
+    try {
+      const component = fixture.componentInstance as unknown as {
+        showScrollTop: {set(value: boolean): void};
+      };
+      component.showScrollTop.set(true);
+      fixture.detectChanges();
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLButtonElement>('button[aria-label="Scroll to top of post"]')
+        ?.click();
+
+      expect(scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'auto', block: 'start'});
     } finally {
       target.remove();
     }

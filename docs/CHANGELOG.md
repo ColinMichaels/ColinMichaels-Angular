@@ -1,5 +1,7 @@
 # Changelog
 
+- Stabilized sticky post-toolbar motion tests by isolating the Reader Tools reduced-motion class, covering both smooth and immediate scroll behavior, and preventing unrelated preference state from changing full-suite expectations.
+- Replaced 13 duplicated Homepage Hero, Topics, and Recommended Links metric blocks with a shared `AdminStatCardComponent`, preserving the existing computed values and responsive grids while centralizing label, value, sizing, capitalization, and card styling.
 - Added a shared CMS editor action bar across Homepage Hero, Topics, and Recommended Links with consistent save/delete layout, accessible live status, explicit busy state, and unsaved-change feedback while preserving existing form submission and Firestore handlers.
 - Started the admin Phase 3 site-content consistency pass with a shared `AdminPageHeaderComponent` used by Homepage Hero, Topics, and Recommended Links, preserving each manager's actions, routes, editor density, and Firestore behavior while removing duplicated page identity markup.
 - Replaced public blog and main-site `innerHTML` rendering with a shared sanitized rich-text renderer and inert HTML-to-text utilities, preserved Editor.js formatting and link/image behavior, rendered terminal/contact content as text, and added XSS regression coverage plus live article verification while leaving OS-only HTML paths outside this public-site cleanup scope.

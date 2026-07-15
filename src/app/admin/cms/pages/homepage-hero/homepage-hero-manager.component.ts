@@ -37,6 +37,7 @@ import {CmsToastContainerComponent} from '../../components/toast/cms-toast.compo
 import {CmsToastService} from '../../services/cms-toast.service';
 import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
 import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
@@ -51,6 +52,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
   imports: [
     AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
+    AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -82,22 +84,15 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
         </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-4">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Hero Status</p>
-            <p class="mt-2 text-2xl font-semibold capitalize">{{ settings().status }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().totalSlides }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().publishedSlides }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Draft Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().draftSlides }}</p>
-          </div>
+          <app-admin-stat-card
+            label="Hero Status"
+            [value]="settings().status"
+            size="compact"
+            [capitalize]="true"
+          ></app-admin-stat-card>
+          <app-admin-stat-card label="Total Slides" [value]="stats().totalSlides"></app-admin-stat-card>
+          <app-admin-stat-card label="Published Slides" [value]="stats().publishedSlides"></app-admin-stat-card>
+          <app-admin-stat-card label="Draft Slides" [value]="stats().draftSlides"></app-admin-stat-card>
         </section>
 
         @if (loadError(); as error) {
