@@ -33,4 +33,22 @@ describe('HomeTerminalWindowComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders typed content as text with a separate blinking cursor', () => {
+    typedText$.next('<img src=x onerror=alert(1)>Safe%');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('img')).toBeNull();
+    expect(element.textContent).toContain('<img src=x onerror=alert(1)>Safe%');
+    expect(element.querySelector('.animate-blink')?.textContent).toBe('%');
+  });
+
+  it('queues plain-text line breaks instead of HTML fragments', () => {
+    const queuedLines = typewriterServiceMock.enqueueLine.calls.allArgs().map(([line]) => line.text);
+
+    expect(queuedLines.some(text => text.includes('<br>'))).toBeFalse();
+    expect(queuedLines.some(text => text.includes('<span'))).toBeFalse();
+  });
 });

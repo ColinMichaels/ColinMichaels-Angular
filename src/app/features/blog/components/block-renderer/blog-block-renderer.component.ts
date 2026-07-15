@@ -5,12 +5,11 @@ import {
   OnDestroy,
   Input,
   OnChanges,
-  SecurityContext,
   inject,
   ChangeDetectionStrategy,
   HostListener,
 } from '@angular/core';
-import {DomSanitizer, SafeHtml, SafeResourceUrl} from '@angular/platform-browser';
+import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
   faCheck,
@@ -34,11 +33,13 @@ import {
   BlogStatItem,
 } from '../../models/blog-post.model';
 import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
+import {htmlToPlainText} from '../../utils/blog-html.util';
 import {
   getTrustedBlogAppEmbedUrl,
   HEAR_THE_HOOK_EMBED_URL,
   normalizeBlogAppEmbedHeight,
 } from '../../utils/blog-embed.util';
+import {BlogRichTextComponent} from '../rich-text/blog-rich-text.component';
 
 interface RenderableBlogBlock {
   block: BlogContentBlock;
@@ -47,11 +48,11 @@ interface RenderableBlogBlock {
   isAppEmbed: boolean;
   appEmbedHeight: number;
   headingId: string | null;
-  textHtml: SafeHtml;
-  captionHtml: SafeHtml;
-  attributionHtml: SafeHtml;
-  blockHtml: SafeHtml;
-  itemHtml: readonly SafeHtml[];
+  textHtml: string;
+  captionHtml: string;
+  attributionHtml: string;
+  blockHtml: string;
+  itemHtml: readonly string[];
   stats: readonly RenderableBlogStat[];
   chart: RenderableBlogChart | null;
   imageAlt: string;
@@ -87,14 +88,14 @@ interface RenderableBlogChart {
 interface RenderableBlogImage {
   url: string;
   alt: string;
-  captionHtml: SafeHtml;
+  captionHtml: string;
   captionText: string;
   downloadName: string;
 }
 
 @Component({
   selector: 'app-blog-block-renderer',
-  imports: [FaIconComponent, CatCornerEasterEggComponent],
+  imports: [FaIconComponent, CatCornerEasterEggComponent, BlogRichTextComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300">
@@ -110,7 +111,7 @@ interface RenderableBlogImage {
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
                   class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
                 >
-                  <span [innerHTML]="row.textHtml"></span>
+                  <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
                     <span aria-hidden="true"
                           class="text-sm text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
@@ -129,7 +130,7 @@ interface RenderableBlogImage {
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
                   class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
                 >
-                  <span [innerHTML]="row.textHtml"></span>
+                  <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
                     <span aria-hidden="true"
                           class="text-base text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
@@ -139,72 +140,64 @@ interface RenderableBlogImage {
             }
           }
           @case ('paragraph') {
-            <p [innerHTML]="row.textHtml"></p>
+            <p><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
           }
           @case ('quote') {
             <blockquote class="border-l-2 border-cyan-600 pl-5 text-slate-800 dark:border-cyan-300 dark:text-zinc-200">
-              <p [innerHTML]="row.textHtml"></p>
+              <p><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               @if (row.block.data.caption) {
-                <cite class="mt-2 block text-sm not-italic text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></cite>
+                <cite class="mt-2 block text-sm not-italic text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></cite>
               }
             </blockquote>
           }
           @case ('typography') {
             @switch (row.block.data.variant) {
               @case ('eyebrow') {
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300"
-                   [innerHTML]="row.textHtml"></p>
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @case ('sectionIntro') {
-                <p class="border-l border-sky-600/70 pl-5 text-lg leading-8 text-slate-800 dark:border-sky-300/60 dark:text-sky-50"
-                   [innerHTML]="row.textHtml"></p>
+                <p class="border-l border-sky-600/70 pl-5 text-lg leading-8 text-slate-800 dark:border-sky-300/60 dark:text-sky-50"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @case ('pullQuote') {
                 <blockquote class="my-10 border-y border-amber-500/50 py-7 text-slate-950 dark:border-amber-300/40 dark:text-zinc-100">
-                  <p class="text-2xl font-semibold leading-10 sm:text-3xl"
-                     [innerHTML]="row.textHtml"></p>
+                  <p class="text-2xl font-semibold leading-10 sm:text-3xl"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
                   @if (row.block.data.attribution) {
-                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200"
-                          [innerHTML]="row.attributionHtml"></cite>
+                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></cite>
                   }
                 </blockquote>
               }
               @case ('keyTakeaway') {
                 <aside class="border border-teal-600/35 bg-teal-50 p-5 text-teal-950 dark:border-teal-300/35 dark:bg-teal-950/30 dark:text-teal-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 dark:text-teal-200"
-                       [innerHTML]="row.attributionHtml"></p>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 dark:text-teal-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></p>
                   }
-                  <div class="text-lg font-medium leading-8" [innerHTML]="row.textHtml"></div>
+                  <div class="text-lg font-medium leading-8"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></div>
                 </aside>
               }
               @case ('callout') {
                 <aside class="border border-emerald-600/35 bg-emerald-50 p-5 text-emerald-950 dark:border-emerald-400/30 dark:bg-emerald-950/30 dark:text-emerald-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300"
-                       [innerHTML]="row.attributionHtml"></p>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></p>
                   }
-                  <div class="leading-8" [innerHTML]="row.textHtml"></div>
+                  <div class="leading-8"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></div>
                 </aside>
               }
               @case ('warning') {
                 <aside class="border border-rose-600/35 bg-rose-50 p-5 text-rose-950 dark:border-rose-300/35 dark:bg-rose-950/25 dark:text-rose-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-rose-700 dark:text-rose-200"
-                       [innerHTML]="row.attributionHtml"></p>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-rose-700 dark:text-rose-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></p>
                   }
-                  <div class="leading-8" [innerHTML]="row.textHtml"></div>
+                  <div class="leading-8"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></div>
                 </aside>
               }
               @case ('aside') {
-                <aside class="border-l border-slate-300 pl-5 text-sm leading-7 text-slate-600 dark:border-zinc-600 dark:text-zinc-400"
-                       [innerHTML]="row.textHtml"></aside>
+                <aside class="border-l border-slate-300 pl-5 text-sm leading-7 text-slate-600 dark:border-zinc-600 dark:text-zinc-400"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></aside>
               }
               @case ('caption') {
-                <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.textHtml"></p>
+                <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @default {
-                <p class="text-xl leading-9 text-slate-900 dark:text-zinc-100" [innerHTML]="row.textHtml"></p>
+                <p class="text-xl leading-9 text-slate-900 dark:text-zinc-100"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
             }
           }
@@ -227,7 +220,7 @@ interface RenderableBlogImage {
                   }
                 </div>
                 @if (row.block.data.caption) {
-                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></p>
                 }
               </section>
             }
@@ -296,7 +289,7 @@ interface RenderableBlogImage {
                   </div>
                 }
                 @if (chart.caption) {
-                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500" [innerHTML]="row.captionHtml"></p>
+                  <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></p>
                 }
               </section>
             }
@@ -306,25 +299,25 @@ interface RenderableBlogImage {
               @if (row.block.data.title) {
                 <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ row.block.data.title }}</h3>
               }
-              <section class="blog-custom-html" [innerHTML]="row.blockHtml"></section>
+              <section class="blog-custom-html"><app-blog-rich-text [html]="row.blockHtml" mode="block"></app-blog-rich-text></section>
             }
           }
           @case ('markdown') {
             @if (row.block.data.markdown) {
-              <section class="blog-custom-html blog-markdown" [innerHTML]="row.blockHtml"></section>
+              <section class="blog-custom-html blog-markdown"><app-blog-rich-text [html]="row.blockHtml" mode="markdown"></app-blog-rich-text></section>
             }
           }
           @case ('list') {
             @if (row.block.data.ordered) {
               <ol class="blog-list blog-list-ordered">
                 @for (item of row.itemHtml; track $index) {
-                  <li class="blog-list-item blog-list-item-ordered" [innerHTML]="item"></li>
+                  <li class="blog-list-item blog-list-item-ordered"><app-blog-rich-text [html]="item"></app-blog-rich-text></li>
                 }
               </ol>
             } @else {
               <ul class="blog-list blog-list-unordered">
                 @for (item of row.itemHtml; track $index) {
-                  <li class="blog-list-item blog-list-item-unordered" [innerHTML]="item"></li>
+                  <li class="blog-list-item blog-list-item-unordered"><app-blog-rich-text [html]="item"></app-blog-rich-text></li>
                 }
               </ul>
             }
@@ -358,7 +351,7 @@ interface RenderableBlogImage {
                   </span>
                 </button>
                 @if (row.block.data.caption) {
-                  <figcaption [class]="imageCaptionClass(row)" [innerHTML]="row.captionHtml"></figcaption>
+                  <figcaption [class]="imageCaptionClass(row)"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
                 }
               </figure>
             }
@@ -380,7 +373,7 @@ interface RenderableBlogImage {
                   ></iframe>
                   <div class="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
                     @if (row.block.data.caption) {
-                      <figcaption class="text-sm text-zinc-400" [innerHTML]="row.captionHtml"></figcaption>
+                      <figcaption class="text-sm text-zinc-400"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
                     }
                     <a
                       [href]="row.externalUrl"
@@ -403,14 +396,14 @@ interface RenderableBlogImage {
                     ></iframe>
                   </div>
                   @if (row.block.data.caption) {
-                    <figcaption class="text-sm text-zinc-500" [innerHTML]="row.captionHtml"></figcaption>
+                    <figcaption class="text-sm text-zinc-500"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
                   }
                 </figure>
               }
             } @else if (row.externalUrl) {
               <p>
                 <a [href]="row.externalUrl" target="_blank" rel="noopener noreferrer" class="blog-inline-link">
-                  <span [innerHTML]="row.captionHtml || row.externalUrl"></span>
+                  <app-blog-rich-text [html]="row.captionHtml || row.externalUrl"></app-blog-rich-text>
                 </a>
               </p>
             }
@@ -526,7 +519,7 @@ interface RenderableBlogImage {
 
           <footer class="pointer-events-auto mx-auto max-w-4xl text-center">
             @if (image.captionText) {
-              <p class="text-sm leading-6 text-zinc-300" [innerHTML]="image.captionHtml"></p>
+              <p class="text-sm leading-6 text-zinc-300"><app-blog-rich-text [html]="image.captionHtml"></app-blog-rich-text></p>
             } @else {
               <p class="sr-only">{{ image.alt }}</p>
             }
@@ -806,7 +799,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     const imageGallery: RenderableBlogImage[] = [];
 
     this.renderedBlocks = this.blocks.map(block => {
-      const captionHtml = this.createInlineHtml(block.data.caption);
+      const captionHtml = block.data.caption ?? '';
       const imageAlt = this.createImageAlt(block);
       let galleryIndex: number | null = null;
 
@@ -828,16 +821,13 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         isAppEmbed: getTrustedBlogAppEmbedUrl(block.data.embedUrl ?? block.data.url) !== null,
         appEmbedHeight: normalizeBlogAppEmbedHeight(block.data.height),
         headingId: headingIdMap.get(block.id) ?? null,
-        textHtml: this.createInlineHtml(block.data.text),
+        textHtml: block.data.text ?? '',
         captionHtml,
-        attributionHtml: this.createInlineHtml(block.data.attribution),
-        blockHtml: this.createBlockHtml(
-          block.type === 'markdown'
-            ? marked.parse(block.data.markdown ?? '', {async: false})
-            : block.data.html,
-          block.type === 'markdown',
-        ),
-        itemHtml: (block.data.items ?? []).map(item => this.createInlineHtml(item)),
+        attributionHtml: block.data.attribution ?? '',
+        blockHtml: block.type === 'markdown'
+          ? marked.parse(block.data.markdown ?? '', {async: false})
+          : block.data.html ?? '',
+        itemHtml: block.data.items ?? [],
         stats: this.createStats(block.data.stats),
         chart: this.createChart(block),
         imageAlt,
@@ -1031,50 +1021,6 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     this.showNextImage();
   }
 
-  private createInlineHtml(value: string | undefined): SafeHtml {
-    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
-
-    if (!sanitizedHtml) {
-      return '';
-    }
-
-    const template = document.createElement('template');
-    template.innerHTML = sanitizedHtml;
-
-    this.enhanceAnchors(template);
-
-    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
-  }
-
-  private createBlockHtml(value: string | undefined, normalizeMarkdownHeadings = false): SafeHtml {
-    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
-
-    if (!sanitizedHtml) {
-      return '';
-    }
-
-    const template = document.createElement('template');
-    template.innerHTML = sanitizedHtml;
-    template.content.querySelectorAll('script, style').forEach(element => element.remove());
-
-    if (normalizeMarkdownHeadings) {
-      template.content.querySelectorAll('h1').forEach(heading => {
-        const replacement = document.createElement('h2');
-        replacement.innerHTML = heading.innerHTML;
-        heading.replaceWith(replacement);
-      });
-    }
-
-    template.content.querySelectorAll('img').forEach(image => {
-      image.setAttribute('loading', image.getAttribute('loading') ?? 'lazy');
-      image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
-      image.classList.add('blog-image-reveal');
-    });
-    this.enhanceAnchors(template);
-
-    return this.sanitizer.bypassSecurityTrustHtml(template.innerHTML);
-  }
-
   private createStats(stats: readonly BlogStatItem[] | undefined): readonly RenderableBlogStat[] {
     return (stats ?? [])
       .map(item => ({
@@ -1166,37 +1112,8 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     return Math.max(0, Math.min(100, value));
   }
 
-  private enhanceAnchors(template: HTMLTemplateElement): void {
-    template.content.querySelectorAll('a[href]').forEach(anchor => {
-      const href = anchor.getAttribute('href')?.trim() ?? '';
-
-      anchor.classList.add('blog-inline-link');
-
-      if (!href || href.toLowerCase().startsWith('unsafe:')) {
-        anchor.removeAttribute('href');
-        anchor.removeAttribute('target');
-        anchor.removeAttribute('rel');
-        return;
-      }
-
-      if (this.shouldOpenInNewTab(href)) {
-        anchor.setAttribute('target', '_blank');
-        anchor.setAttribute('rel', 'noopener noreferrer');
-      }
-    });
-  }
-
   private createPlainText(value: string | undefined): string {
-    const sanitizedHtml = this.sanitizer.sanitize(SecurityContext.HTML, value ?? '') ?? '';
-
-    if (!sanitizedHtml) {
-      return '';
-    }
-
-    const template = document.createElement('template');
-    template.innerHTML = sanitizedHtml;
-
-    return template.content.textContent?.trim() ?? '';
+    return htmlToPlainText(this.host.nativeElement.ownerDocument, value);
   }
 
   private createImageAlt(block: BlogContentBlock): string {
@@ -1391,7 +1308,4 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       && Number.isFinite(message['height']);
   }
 
-  private shouldOpenInNewTab(href: string): boolean {
-    return href.length > 0 && !href.startsWith('#');
-  }
 }

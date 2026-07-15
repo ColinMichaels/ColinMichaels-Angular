@@ -33,7 +33,7 @@ Status legend:
   - Effort: S
   - Validation: guard unit tests for allowed and blocked URLs.
 
-- [x] Stabilize baseline unit tests to full pass (`533/533` in CI-like headless run).
+- [x] Stabilize baseline unit tests to full pass (`541/541` in CI-like headless run).
   - Impact: High
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
@@ -138,10 +138,11 @@ Status legend:
 
 ## Larger Changes (Riskier, Stage Later)
 
-- [ ] Replace `innerHTML` rendering paths with safe renderers.
+- [x] Replace public blog and main-site `innerHTML` rendering paths with safe renderers.
   - Impact: High (security)
   - Effort: L
-  - Validation: XSS regression tests + UI snapshot/manual checks.
+  - Progress: centralized sanitized Editor.js rich-text rendering, removed public blog/main `[innerHTML]` bindings and trusted-HTML bypasses, converted metadata/share extraction to inert DOM parsing, and rendered terminal/contact strings as text. Remaining direct HTML manipulation is isolated to reusable OS/game framework paths and is outside the current public-site scope.
+  - Validation: repository scan finds no public blog/main/CMS implementation matches for `innerHTML`, `bypassSecurityTrustHtml`, `insertAdjacentHTML`, or `outerHTML`; focused XSS/rendering tests pass (`39/39`); the full headless suite passes (`541/541`); and live homepage, blog archive, and article rendering checks preserve headings, lists, links, images, and contents navigation without active-content nodes.
 
 - [x] Enforce supported Node LTS through `.nvmrc`/`engines` and CI checks.
   - Impact: Medium
