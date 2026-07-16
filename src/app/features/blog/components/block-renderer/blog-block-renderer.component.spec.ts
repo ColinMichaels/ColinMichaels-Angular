@@ -283,6 +283,29 @@ describe('BlogBlockRendererComponent', () => {
     expect(heading?.hasAttribute('data-sticky-section-heading')).toBeTrue();
   });
 
+  it('expands TLDR headings and adds an accessible top tooltip', () => {
+    fixture.componentRef.setInput('anchorPath', '/blog/test-post');
+    fixture.componentRef.setInput('blocks', [{
+      id: 'summary-heading',
+      type: 'header',
+      data: {text: 'TLDR', level: 2},
+    }]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const heading = element.querySelector('h2');
+    const link = heading?.querySelector('a');
+    const tooltip = heading?.querySelector<HTMLElement>('[role="tooltip"]');
+
+    expect(heading?.id).toBe('tldr');
+    expect(heading?.textContent).toContain('Quick Summary (TL;DR)');
+    expect(link?.getAttribute('href')).toBe('/blog/test-post#tldr');
+    expect(link?.getAttribute('aria-describedby')).toBe('tldr-description');
+    expect(tooltip?.id).toBe('tldr-description');
+    expect(tooltip?.textContent).toContain('Too long; didn’t read');
+    expect(tooltip?.classList).toContain('blog-quick-summary-tooltip');
+  });
+
   it('clears inline image floats before level-three headings', () => {
     fixture.componentRef.setInput('blocks', [
       {

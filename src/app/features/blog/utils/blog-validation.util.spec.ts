@@ -77,7 +77,7 @@ describe('blog post validation', () => {
     })).toBeFalse();
   });
 
-  it('accepts optional social delivery timing and media fields', () => {
+  it('accepts optional social strategy, delivery timing, and media fields', () => {
     expect(isBlogPost({
       ...createPost(),
       socialPromotion: {
@@ -91,6 +91,10 @@ describe('blog post validation', () => {
           createdAt: '2026-07-11T12:00:00.000Z',
           updatedAt: '2026-07-11T12:00:00.000Z',
           mediaUrl: 'https://colinmichaels.com/social/launch.jpg',
+          mediaType: 'image',
+          linkPlacement: 'profile',
+          contentAngle: 'personal-story',
+          postFormat: 'story',
         }],
       },
     })).toBeTrue();
@@ -111,7 +115,61 @@ describe('blog post validation', () => {
     })).toBeTrue();
   });
 
-  it('rejects malformed social delivery timing and media fields', () => {
+  it('accepts unscheduled drafts, unscheduled cancellations, and the canonical X channel', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'x-draft',
+          channel: 'x',
+          message: 'A draft X thread.',
+          status: 'draft',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+          postFormat: 'thread',
+        }],
+      },
+    })).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'cancelled-draft',
+          channel: 'facebook',
+          message: 'A cancelled plan with no delivery time.',
+          status: 'cancelled',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+        }],
+      },
+    })).toBeTrue();
+  });
+
+  it('requires a valid delivery time for scheduled delivery states', () => {
+    const announcement = {
+      id: 'facebook-launch',
+      channel: 'facebook',
+      message: 'A launch announcement.',
+      status: 'scheduled',
+      createdAt: '2026-07-11T12:00:00.000Z',
+      updatedAt: '2026-07-11T12:00:00.000Z',
+    };
+
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [announcement]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, scheduledAt: 'not-a-date'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, status: 'draft', scheduledAt: 'not-a-date'}]},
+    })).toBeFalse();
+  });
+
+  it('rejects malformed social strategy, delivery timing, and media fields', () => {
     const announcement = {
       id: 'instagram-launch',
       channel: 'instagram',
@@ -129,6 +187,30 @@ describe('blog post validation', () => {
     expect(isBlogPost({
       ...createPost(),
       socialPromotion: {announcements: [{...announcement, mediaUrl: 42}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, mediaType: 'audio'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, mediaType: 'image'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, linkPlacement: 'algorithm'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, contentAngle: 'viral'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, postFormat: 'livestream'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, postFormat: 'thread'}]},
     })).toBeFalse();
   });
 });

@@ -2,12 +2,12 @@
 
 ## Purpose
 
-The protected `/admin/cms/calendar` route is the planning surface for article launches and the announcements that promote them. Social announcements remain part of the source `BlogPost`, so editors do not have to reconcile a separate campaign database with the CMS schedule.
+The protected post editor is the primary composition surface for an article and the announcements that promote it. Its URL-backed `Post`, `Social shares`, and `Preview & SEO` workspaces let an editor develop native social copy while the article is still taking shape. The protected `/admin/cms/calendar` route remains the timing and queue surface. Social announcements stay part of the source `BlogPost`, so editors do not have to reconcile a separate campaign database with the CMS schedule.
 
 The first implementation deliberately separates planning and queueing from third-party delivery:
 
 1. An editor schedules or publishes a blog post with the existing `status` and `publishedAt` fields.
-2. The Calendar stores zero or more channel-specific announcements under `post.socialPromotion.announcements`. An announcement can follow the article's publication time or keep a custom delivery time.
+2. The shared social editor stores zero or more channel-specific announcements under `post.socialPromotion.announcements`. A draft can remain unscheduled in the post editor; Calendar can later make it follow publication or assign a custom delivery time.
 3. The existing five-minute `publishScheduledPosts` Function promotes due posts to `published`.
 4. In the same scheduled run, due announcements whose source post is live are written transactionally to `/socialOutbox/{postId}__{announcementId}` and marked `queued` on the post. Existing deterministic outbox records are reconciled instead of overwritten.
 5. Future connector workers claim outbox documents, call provider APIs, and update delivery state to `posted` or `failed`.
@@ -21,24 +21,70 @@ This outbox boundary prevents provider availability, access-token expiry, rate l
 Each `BlogSocialAnnouncement` includes:
 
 - stable announcement ID
-- channel: `notify`, `youtube`, `facebook`, `instagram`, `threads`, or `linkedin`
+- channel: `notify`, `youtube`, `facebook`, `instagram`, `threads`, `x`, or `linkedin`
 - channel-specific message
-- ISO delivery time
+- optional ISO delivery time while the announcement is a draft; every later lifecycle state requires a valid time
 - optional delivery timing: `at-publish` follows later article reschedules; missing/`scheduled` keeps a fixed time for backward compatibility
 - lifecycle state: `draft`, `scheduled`, `queued`, `posted`, `failed`, or `cancelled`
 - created and updated timestamps
 - optional link URL, provider media URL, posted timestamp, and failure reason
+- optional promotion angle: personal story, conversation starter, practical takeaway, or behind the scenes
+- optional native media type: image or video, paired with a public media URL
+- optional link placement: main post, first comment, profile, or no link
+- optional native post format: text, link, image, video, reel, story, carousel, thread, or Community post, validated against the selected channel
 
 Multiple announcements can target the same channel. This allows a launch announcement plus later follow-up posts for an article that is already live.
 
+Announcements created before the native-promotion fields were added remain valid. Missing `linkPlacement` means the historical in-post link behavior; a saved `mediaUrl` without `mediaType` is treated as an image in the Calendar.
+
+## Native-First Promotion Workflow
+
+The Calendar composer treats an article share as a small campaign asset rather than a generated link preview. Every channel plan can independently choose:
+
+1. a promotion angle that leads with Colin's story, a question, a useful takeaway, or the reason the article was written;
+2. editable starter copy generated deterministically from the article title and excerpt;
+3. a public image or video to publish natively with the text; and
+4. whether the article URL belongs in the main post, a first comment, the profile, or nowhere in that share.
+
+Facebook defaults to a personal-story/image/first-comment experiment, Instagram defaults to personal-story/image/profile-link, Threads defaults to a conversation starter, and LinkedIn defaults to a practical takeaway. These are editable starting points, not claims that one distribution tactic is universally preferred. Editors should replace generic context with a real personal detail, observation, or question before scheduling.
+
+The source article URL is retained separately from the visible message even when link placement is `first-comment`, `profile`, or `none`. This gives a future delivery worker enough information to perform a follow-up comment or omit the URL from the provider payload without losing the canonical campaign destination.
+
+## Post Editor Workflow
+
+The post route remains `/admin/cms/:slug/edit`; workspace state is represented with query parameters rather than new routes. Calendar and other CMS surfaces can deep-link to `?tab=social&channel=facebook&announcement=<id>`. Editor.js stays mounted while workspaces are hidden so changing tabs cannot discard an unsaved article document.
+
+The shared social editor is a controlled component. It owns channel selection, platform formats, native-media planning, copy, approximate previews, AI suggestions, and local dirty state, but it does not inject `BlogRepositoryService`. The post editor merges social changes into its normal whole-post save. Calendar remains a separate persistence host for schedule operations. This prevents a child component from overwriting unsaved article fields with a stale post snapshot.
+
+Calendar opens the shared editor in a full-width scheduling workspace. Unsaved Calendar composition is cached per post for the lifetime of the page, so closing the workspace, changing days, or receiving a live repository update does not silently replace in-progress copy. A successful save clears that cached draft.
+
+An unscheduled social draft or cancelled plan is valid and intentionally absent from the Calendar timeline and delivery outbox. Saving the article preserves that record. Scheduling a draft later adds a valid `scheduledAt` value and changes its lifecycle state to `scheduled`.
+
+## AI-Assisted Social Copy
+
+`generateBlogSocialPosts` is a CMS-authenticated Firebase callable designed to use the Firebase-managed `OPENAI_API_KEY` secret and `OPENAI_TEXT_MODEL` parameter through the OpenAI Responses API with a strict JSON schema. The client supplies the current unsaved article context, canonical article URL, and the selected channel, angle, link placement, format, and optional current draft. The callable returns two or three channel-specific alternatives with a short rationale and a grounded media concept.
+
+AI output is suggestion-only. It never auto-saves, changes timing, or overwrites edited copy; an editor must choose **Apply**. The backend treats article content and current copy as untrusted reference data, preserves the requested target contract even when long source material is truncated, prohibits invented lived experience, quotes, statistics, urgency, and unsupported claims, and requires `[Add personal detail]` when a personal-story angle lacks a sourced detail. Returned variants are rejected if they exceed the platform limit or place a URL in a `first-comment`, `profile`, or `none` message. If the callable is unavailable, the UI keeps the existing draft and offers the deterministic `createBlogSocialMessage` starter copy instead.
+
+Suggestion rationale and media concepts remain transient UI state. They are not written to a published `BlogPost`. Because embedded `socialPromotion` data follows the existing post-document access model, editors must not place private campaign notes, credentials, audience data, or provider tokens in announcement copy or metadata. Moving promotion drafts into a dedicated protected collection remains the appropriate future change if private campaign collaboration is required.
+
+### Checkpoint And Deferred Activation
+
+This source checkpoint includes the callable contract, guarded backend implementation, explicit-apply editor experience, and deterministic local fallback. It does not add, rotate, export, or expose an OpenAI credential, and it does not deploy Hosting or Functions. Live AI validation is a separate follow-up: confirm `OPENAI_API_KEY` in the intended Firebase project, review the `OPENAI_TEXT_MODEL` value, deploy Hosting and Functions together, and exercise the callable with an authenticated CMS account. Until that activation succeeds, the composer remains usable through manual copy and deterministic starter text.
+
+Social-provider account connections and delivery workers are a separate boundary from AI copy generation. An editor can generate or prepare channel-specific copy without connecting Facebook, Instagram, X, LinkedIn, Threads, or YouTube, but actual third-party publishing still follows the connector readiness and rollout controls below.
+
 ## Component Inventory
 
-- `PublishingCalendarComponent` owns month navigation, content filters, day selection, the upcoming queue, inline rescheduling, social composition, and announcement edits.
+- `PublishingCalendarComponent` owns month navigation, content filters, day selection, the upcoming queue, inline rescheduling, and host-level persistence for scheduled social plans.
+- `SocialPromotionEditorComponent` is the controlled, reusable composition surface shared by the post editor and Calendar. It owns channel drafts, format/media/link choices, approximate previews, explicit AI suggestion application, and schedule fields without directly writing a post.
+- `blog-social-promotion.util.ts` owns migration-safe channel defaults and deterministic native-first starter copy so the Calendar component does not duplicate copy rules.
 - `SocialConnectionsPageComponent` owns sanitized Facebook, Instagram, and Threads connection health, explicit Facebook Page or linked Instagram-account selection, reconnect, and disconnect actions. It never reads provider tokens.
 - `SocialConnectionsService` is the Angular callable boundary for connection operations.
 - `social-connection-functions.ts` owns CMS authorization, OAuth state consumption, provider token exchange, encrypted token persistence, and callback redirects without enabling delivery.
 - `social-connections.ts` owns pure provider URL, signed-state, and AES-256-GCM primitives with focused Node tests.
-- `CmsPostEditorComponent` exposes a Distribution module that links saved scheduled/published posts directly into their Calendar plan.
+- `CmsPostEditorComponent` owns the URL-backed Post/Social/Preview workspace shell, protects Editor.js from tab unmounts, merges social dirty state into unified saves and JSON backups, and links scheduled/published posts into Calendar.
+- `BlogAiFunctionsService` exposes the protected social-copy callable; `blog-social-ai.ts` owns its bounded input parsing, strict provider schema, grounding prompt, and response validation.
 - `BlogSocialPromotion` and `BlogSocialAnnouncement` extend the shared blog model without changing public article rendering.
 - `BlogRepositoryService` remains the single post persistence boundary; Calendar changes use its existing `savePost` workflow.
 - `publishScheduledPosts` remains the scheduled publication entry point and now also creates protected delivery outbox documents.
@@ -52,8 +98,9 @@ Provider APIs and access policies change independently, so connectors should be 
 | --- | --- | --- |
 | Notify | Existing Web Push publish trigger | `notifyPublishedPost` already sends one generic title/excerpt alert on the transition to `published`. Calendar no longer creates a second Notify plan; migrate this trigger before adding editable notification copy to the outbox or subscribers could receive duplicates. |
 | Facebook | Meta Pages API | Requires a Meta app, a managed Page, approved current permissions, and a renewable Page access-token flow. Confirm current review requirements during implementation. |
-| Instagram | Instagram Content Publishing API | Intended for professional accounts and media publishing. A Calendar item will need an approved image/video asset; a link-only announcement is not a sufficient Instagram payload. |
+| Instagram | Instagram Content Publishing API | Intended for professional accounts and media publishing. The Calendar requires an image/video selection and public media URL; a link-only announcement is not a sufficient Instagram payload. |
 | Threads | Threads API | Connection authorization and Calendar planning are supported. Future delivery uses the separate Threads container/publish workflow and remains disabled until the outbox worker cutoff is approved. |
+| X (Twitter) | Manual plan | Composition and thread-format planning are supported, but no X account connection or delivery worker is configured. Keep delivery manual until a separate provider review and connection boundary are approved. |
 | LinkedIn | Versioned Posts API | Supports member or organization posts, including article content. Requires OAuth, the appropriate social write permission, author URN, and current version headers. |
 | YouTube | Manual or alternate workflow initially | The current YouTube Data API reference exposes writable resources such as videos and playlists but no documented Community Post creation resource. Treat Community posting as manual unless Google adds a supported endpoint; a future adapter could instead coordinate video upload or metadata updates. |
 
@@ -148,6 +195,8 @@ Before enabling any real connector:
 - distinguish retryable rate-limit/server failures from permanent permission or payload failures
 - refresh OAuth tokens server-side and surface expired connections in the Calendar
 - validate provider payloads again in the worker, including required media and current length limits
+- map `mediaType` and `mediaUrl` into the provider's native upload/container workflow instead of falling back to a link-preview post
+- honor `linkPlacement`: omit the URL from the main payload for profile/no-link plans and create a follow-up comment only where the provider and connected identity support it
 - provide a manual retry and cancel path for failed or pending deliveries
 - avoid logging message bodies or tokens when provider responses contain sensitive data
 - keep article publication successful even when all social providers fail
@@ -158,6 +207,12 @@ Cloud Tasks is a reasonable next execution layer when volume or retry needs outg
 
 - No backfill is required. Posts without `socialPromotion` behave exactly as before.
 - Existing announcements without `deliveryTiming` retain their fixed `scheduledAt` behavior. Only new or explicitly changed `at-publish` announcements follow article reschedules.
+- Existing announcements without `contentAngle`, `mediaType`, or `linkPlacement` require no backfill. They render as custom copy, infer image media from any existing `mediaUrl`, and retain in-post link behavior.
+- Existing announcements without `postFormat` require no backfill and keep the legacy provider behavior. New formats are optional, channel-validated metadata for the editor and future workers.
+- Existing announcements keep their required schedule. New `draft` and `cancelled` records may omit `scheduledAt`; unscheduled records never enter Calendar events or the outbox parser.
+- `x` is an additive channel value. Older clients ignore the optional promotion data; no X connection or automatic delivery is enabled by this release.
+- Deploy Hosting and Functions together before relying on AI social suggestions. Before deployment, verify the Firebase-managed OpenAI secret/model configuration in the intended project; this checkpoint commits no credential, browser-visible API key, or new Firestore collection.
+- Rolling back the Calendar UI and Functions queue changes leaves the optional strategy fields inert in Firestore. Older clients ignore them while continuing to read the existing message, link URL, and media URL fields.
 - Postponing an article past a fixed custom announcement is rejected until the editor moves or cancels that announcement; Calendar never silently rewrites a planned follow-up.
 - Instagram plans now require an HTTP(S) media URL. Client validation is syntactic; the future provider worker must enforce reachable HTTPS media and reject private/local hosts before Meta fetches it.
 - Existing `scheduled` posts continue to publish from `publishedAt`; the scheduled Function now performs an additional outbox scan after that work.

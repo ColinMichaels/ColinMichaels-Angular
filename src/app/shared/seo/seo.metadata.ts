@@ -82,6 +82,15 @@ export const SITE_SEARCH_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,follow',
 };
 
+export const AUTHORS_INDEX_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Authors'),
+  description: `Meet the writers sharing articles, projects, and personal perspectives on ${SITE_NAME}.`,
+  path: '/authors',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('authors directory'),
+  type: 'website',
+};
+
 export const PRIVACY_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Privacy Policy'),
   description: `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`,

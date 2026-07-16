@@ -26,6 +26,16 @@ export function createBlogCategoryTitle(value: string): string {
     .replace(/\b[a-z]/g, letter => letter.toUpperCase());
 }
 
+export function parseBlogCategoryFilterSlugs(value: string | null | undefined): readonly string[] {
+  return [...new Set(
+    (value ?? '')
+      .split(',')
+      .map(slug => slug.trim())
+      .filter(Boolean)
+      .map(createBlogCategorySlug)
+  )];
+}
+
 export function getBlogTaxonomyTerms(post: {
   categories: readonly string[];
   subcategories?: readonly string[];

@@ -49,6 +49,20 @@ describe('blog reading utilities', () => {
     expect(createBlogHeadingIdMap(blocks).get('detail')).toBe('intro-and-setup-2');
   });
 
+  it('expands TLDR labels without changing their existing anchor IDs', () => {
+    const blocks: BlogPost['blocks'] = [
+      {id: 'summary-plain', type: 'header', data: {text: 'TLDR', level: 2}},
+      {id: 'summary-punctuated', type: 'header', data: {text: 'TL;DR', level: 2}},
+    ];
+
+    expect(createBlogTableOfContents(blocks)).toEqual([
+      {blockId: 'summary-plain', id: 'tldr', level: 2, text: 'Quick Summary (TL;DR)'},
+      {blockId: 'summary-punctuated', id: 'tl-dr', level: 2, text: 'Quick Summary (TL;DR)'},
+    ]);
+    expect(createBlogHeadingIdMap(blocks).get('summary-plain')).toBe('tldr');
+    expect(createBlogHeadingIdMap(blocks).get('summary-punctuated')).toBe('tl-dr');
+  });
+
   it('calculates reading stats from visible article text', () => {
     const post = createPost({
       excerpt: 'One two.',

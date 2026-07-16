@@ -9,6 +9,11 @@ import {DEFAULT_AUTHOR_ID} from '../../../../features/authors/authors.constants'
 import {AuthorProfile} from '../../../../features/authors/models/author.model';
 import {AuthorRepositoryService} from '../../../../features/authors/services/author-repository.service';
 import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
+import {
+  BLOG_SOCIAL_CHANNELS,
+  BlogSocialChannel,
+  BlogSocialPromotion,
+} from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
 import {DEFAULT_COVER_IMAGE} from '../../../../features/blog/blog.constants';
 import {
@@ -46,6 +51,31 @@ import {
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
 import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
+import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
+
+type PostEditorWorkspace = 'post' | 'social' | 'preview';
+
+interface PostEditorWorkspaceTab {
+  id: PostEditorWorkspace;
+  label: string;
+  description: string;
+}
+
+const POST_EDITOR_WORKSPACES: readonly PostEditorWorkspaceTab[] = [
+  {id: 'post', label: 'Post', description: 'Write and publish the article'},
+  {id: 'social', label: 'Social shares', description: 'Compose native platform posts'},
+  {id: 'preview', label: 'Preview & SEO', description: 'Review the reader and search experience'},
+];
+
+function isPostEditorWorkspace(value: string | null): value is PostEditorWorkspace {
+  return POST_EDITOR_WORKSPACES.some(workspace => workspace.id === value);
+}
+
+function isComposableSocialChannel(value: string | null): value is BlogSocialChannel {
+  return value !== null
+    && value !== 'notify'
+    && BLOG_SOCIAL_CHANNELS.includes(value as BlogSocialChannel);
+}
 
 interface PostEditorForm {
   authorId: FormControl<string>;
@@ -350,6 +380,7 @@ function getErrorMessage(error: unknown): string {
     CmsToastContainerComponent,
     AdminControlModuleComponent,
     CmsAuthorFormComponent,
+    SocialPromotionEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -387,7 +418,28 @@ function getErrorMessage(error: unknown): string {
             </div>
           </header>
 
-          <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <nav class="overflow-x-auto border border-zinc-800 bg-zinc-900/40" aria-label="Post workspace">
+            <div class="flex min-w-max">
+              @for (workspace of workspaces; track workspace.id) {
+                <button
+                  type="button"
+                  [class]="workspaceTabClass(workspace.id)"
+                  [attr.aria-current]="activeWorkspace() === workspace.id ? 'page' : null"
+                  (click)="setWorkspace(workspace.id)"
+                >
+                  <span class="block text-sm font-semibold">{{ workspace.label }}</span>
+                  <span class="mt-0.5 hidden text-[11px] font-normal sm:block">{{ workspace.description }}</span>
+                </button>
+              }
+            </div>
+          </nav>
+
+          <section
+            class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"
+            [hidden]="activeWorkspace() !== 'post'"
+            [style.display]="activeWorkspace() === 'post' ? null : 'none'"
+            aria-label="Post editor workspace"
+          >
             <section class="space-y-3">
               <form [formGroup]="postForm" class="space-y-2">
                 <app-admin-control-module
@@ -661,39 +713,28 @@ function getErrorMessage(error: unknown): string {
               <app-admin-control-module
                 title="Distribution"
                 [summary]="distributionSummary"
-                description="Review the launch on Calendar and prepare channel-specific copy after the article schedule is saved."
+                description="Compose channel-specific native posts while the article is still taking shape."
               >
                 <p class="text-xs leading-5 text-zinc-500">
-                  Web Push runs automatically when the article publishes. External social plans queue separately so provider failures cannot block the article launch.
+                  Social drafts save with this post. Scheduling remains available from Calendar after the article launch time is set.
                 </p>
+                <button
+                  type="button"
+                  class="mt-3 inline-flex h-9 items-center justify-center border border-cyan-400 px-3 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                  (click)="setWorkspace('social')"
+                >
+                  Compose social shares
+                </button>
                 @if (canOpenDistributionCalendar) {
-                  <a
-                    routerLink="/admin/cms/calendar"
-                    [queryParams]="{post: currentPost.id}"
-                    class="mt-3 inline-flex h-9 items-center justify-center border border-cyan-400 px-3 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                  <button
+                    type="button"
+                    class="mt-3 inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                    (click)="openDistributionCalendar()"
                   >
-                    Open Calendar &amp; social plan
-                  </a>
-                } @else {
-                  <p class="mt-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-xs leading-5 text-zinc-600">
-                    Save this post as scheduled or published before planning distribution.
-                  </p>
+                    Open Calendar
+                  </button>
                 }
               </app-admin-control-module>
-
-              <app-cms-draft-preview-panel
-                #draftPreviewPanel
-                [post]="currentPost"
-                [status]="postForm.controls.status.value"
-                [isSaving]="isSaveInProgress"
-                [isDeleting]="isDeleteInProgress"
-                (generateRequested)="generatePreviewLink()"
-                (postChanged)="onPreviewPostChanged($event)"
-              ></app-cms-draft-preview-panel>
-
-              <app-cms-seo-checklist
-                [checklistInput]="createSeoChecklistInput()"
-              ></app-cms-seo-checklist>
 
               <app-cms-assistant-panel
                 [result]="assistantResult"
@@ -745,6 +786,80 @@ function getErrorMessage(error: unknown): string {
           </section>
 
           <section
+            class="space-y-4"
+            [hidden]="activeWorkspace() !== 'social'"
+            [style.display]="activeWorkspace() === 'social' ? null : 'none'"
+            aria-label="Social shares workspace"
+          >
+            <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Article campaign</p>
+                  <h2 class="mt-1 text-xl font-semibold text-zinc-50">Build the social story alongside the article</h2>
+                  <p class="mt-1 max-w-3xl text-sm leading-6 text-zinc-500">
+                    Draft native text, images, videos, reels, stories, threads, and Community posts here. Save them with the article, then use Calendar when a delivery time is ready.
+                  </p>
+                </div>
+                <span class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400">
+                  {{ distributionSummary }}
+                </span>
+              </div>
+            </header>
+
+            <app-social-promotion-editor
+              [post]="socialWorkspacePost"
+              mode="compose"
+              [initialChannel]="initialSocialChannel"
+              [initialAnnouncementId]="initialSocialAnnouncementId"
+              [saving]="isSaveInProgress"
+              [assistantContextProvider]="socialAssistantContextProvider"
+              (promotionChange)="onSocialPromotionChange($event)"
+              (saveRequested)="saveSocialPromotion($event)"
+              (openCalendarRequested)="openDistributionCalendar()"
+            ></app-social-promotion-editor>
+          </section>
+
+          <section
+            class="space-y-4"
+            [hidden]="activeWorkspace() !== 'preview'"
+            [style.display]="activeWorkspace() === 'preview' ? null : 'none'"
+            aria-label="Preview and SEO workspace"
+          >
+            <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Final review</p>
+              <h2 class="mt-1 text-xl font-semibold text-zinc-50">See the article the way readers and search engines will</h2>
+              <p class="mt-1 max-w-3xl text-sm leading-6 text-zinc-500">
+                Generate a temporary reader preview, then resolve the SEO and share-card checks before publishing.
+              </p>
+            </header>
+
+            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <app-cms-draft-preview-panel
+                #draftPreviewPanel
+                [post]="currentPost"
+                [status]="postForm.controls.status.value"
+                [isSaving]="isSaveInProgress"
+                [isDeleting]="isDeleteInProgress"
+                (generateRequested)="generatePreviewLink()"
+                (postChanged)="onPreviewPostChanged($event)"
+              ></app-cms-draft-preview-panel>
+
+              <div class="space-y-3">
+                <app-cms-seo-checklist
+                  [checklistInput]="createSeoChecklistInput()"
+                ></app-cms-seo-checklist>
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-full items-center justify-center border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 hover:border-cyan-400 hover:text-cyan-200"
+                  (click)="openSeoFields()"
+                >
+                  Edit SEO &amp; share-card fields
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section
             class="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-2 shadow-2xl shadow-black/40 backdrop-blur transition-[left] duration-200 sm:px-8 lg:left-[var(--admin-sidebar-width)] lg:px-12"
             aria-label="Post actions"
           >
@@ -769,7 +884,7 @@ function getErrorMessage(error: unknown): string {
               </div>
 
               <div class="flex min-w-0 items-center gap-2">
-                @if (postForm.dirty) {
+                @if (hasUnsavedChanges) {
                   <span class="hidden text-xs text-amber-300/80 lg:inline">● Unsaved changes</span>
                 }
                 <div class="flex items-center justify-end gap-2">
@@ -899,10 +1014,23 @@ export class CmsPostEditorComponent {
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
+  protected readonly workspaces = POST_EDITOR_WORKSPACES;
+  protected readonly activeWorkspace = signal<PostEditorWorkspace>(
+    isPostEditorWorkspace(this.route.snapshot.queryParamMap.get('tab'))
+      ? this.route.snapshot.queryParamMap.get('tab') as PostEditorWorkspace
+      : 'post'
+  );
+  protected readonly initialSocialChannel = isComposableSocialChannel(this.route.snapshot.queryParamMap.get('channel'))
+    ? this.route.snapshot.queryParamMap.get('channel') as BlogSocialChannel
+    : 'facebook';
+  protected readonly initialSocialAnnouncementId = this.route.snapshot.queryParamMap.get('announcement') ?? undefined;
   protected readonly authors = toSignal(this.authorRepository.getAuthors$(), {initialValue: []});
   protected currentPost = this.resolvePost();
   protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
+  protected socialPromotionDraft: BlogSocialPromotion = this.currentPost?.socialPromotion ?? {announcements: []};
+  protected socialWorkspacePost = this.createSocialWorkspacePost();
+  protected hasUnsavedSocialChanges = false;
   protected readonly newAuthor = signal<AuthorProfile | null>(null);
   protected readonly selectedAuthor = computed(() => (
     this.authors().find(author => author.id === this.postForm.controls.authorId.value)
@@ -923,6 +1051,7 @@ export class CmsPostEditorComponent {
   protected isThumbnailLoading: string | null = null;
   protected thumbnailError = '';
   protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
+  protected readonly socialAssistantContextProvider = (): Promise<BlogAssistantContext> => this.createAssistantContext();
   protected readonly uploadEditorImage = async (file: File): Promise<EditorImageUploadResult> => {
     const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
       slug: this.mediaUploadSlug,
@@ -951,7 +1080,7 @@ export class CmsPostEditorComponent {
     effect(() => {
       const post = this.firestorePost?.();
 
-      if (!post || (this.hasHydratedFirestorePost && this.postForm.dirty)) {
+      if (!post || (this.hasHydratedFirestorePost && (this.postForm.dirty || this.hasUnsavedSocialChanges))) {
         return;
       }
 
@@ -1025,7 +1154,7 @@ export class CmsPostEditorComponent {
   }
 
   protected get distributionSummary(): string {
-    const announcements = this.currentPost?.socialPromotion?.announcements ?? [];
+    const announcements = this.socialPromotionDraft.announcements;
     const activeCount = announcements.filter(announcement => announcement.status !== 'cancelled').length;
     return activeCount === 0 ? 'No social plans' : `${activeCount} social plan${activeCount === 1 ? '' : 's'}`;
   }
@@ -1064,6 +1193,62 @@ export class CmsPostEditorComponent {
 
   protected get lastSavedSummary(): string {
     return this.lastSaved ? `${this.lastSaved.blockCount} blocks · ${this.lastSaved.savedAt}` : 'Available after the first save';
+  }
+
+  protected get hasUnsavedChanges(): boolean {
+    return this.postForm.dirty || this.hasUnsavedSocialChanges;
+  }
+
+  protected workspaceTabClass(workspace: PostEditorWorkspace): string {
+    const base = 'min-w-36 border-r border-zinc-800 px-4 py-3 text-left transition last:border-r-0 sm:min-w-52';
+    return this.activeWorkspace() === workspace
+      ? `${base} bg-cyan-400 text-zinc-950`
+      : `${base} text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100`;
+  }
+
+  protected setWorkspace(workspace: PostEditorWorkspace): void {
+    if (workspace === 'social') {
+      this.socialWorkspacePost = this.createSocialWorkspacePost();
+    }
+
+    this.activeWorkspace.set(workspace);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {tab: workspace},
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  protected openSeoFields(): void {
+    this.seoSettingsOpen.set(true);
+    this.setWorkspace('post');
+  }
+
+  protected onSocialPromotionChange(promotion: BlogSocialPromotion): void {
+    this.socialPromotionDraft = promotion;
+    this.hasUnsavedSocialChanges = true;
+  }
+
+  protected async saveSocialPromotion(promotion: BlogSocialPromotion): Promise<void> {
+    this.onSocialPromotionChange(promotion);
+    await this.savePost();
+  }
+
+  protected async openDistributionCalendar(): Promise<void> {
+    if (!this.canOpenDistributionCalendar || !this.currentPost) {
+      this.toast.error('Save this post with a publish schedule before opening its Calendar plan.');
+      return;
+    }
+
+    if (this.hasUnsavedChanges) {
+      const saved = await this.savePost();
+      if (!saved) {
+        return;
+      }
+    }
+
+    void this.router.navigate(['/admin/cms/calendar'], {queryParams: {post: this.currentPost.id}});
   }
 
   protected syncSlugFromTitle(): void {
@@ -1391,7 +1576,15 @@ export class CmsPostEditorComponent {
   }
 
   protected onPreviewPostChanged(post: BlogPost): void {
-    this.currentPost = post;
+    const socialPromotion = this.hasUnsavedSocialChanges
+      ? this.socialPromotionDraft
+      : post.socialPromotion ?? {announcements: []};
+    this.currentPost = {
+      ...post,
+      socialPromotion: socialPromotion.announcements.length > 0 ? socialPromotion : undefined,
+    };
+    this.socialPromotionDraft = socialPromotion;
+    this.socialWorkspacePost = this.createSocialWorkspacePost();
     this.syncLastSavedBackupJson();
   }
 
@@ -1465,6 +1658,9 @@ export class CmsPostEditorComponent {
           openGraphImage,
         },
         blocks: createBlogBlocksFromEditorDocument(saved.data),
+        socialPromotion: this.socialPromotionDraft.announcements.length > 0
+          ? this.socialPromotionDraft
+          : undefined,
         updatedAt: saved.savedAt,
         publishedAt: this.getPublishedAt(formValue.status, formValue.publishedAt, this.currentPost.publishedAt, saved.savedAt),
       });
@@ -1474,13 +1670,19 @@ export class CmsPostEditorComponent {
       this.postForm.controls.canonical.setValue(savedPost.seo.canonical ?? this.createCanonicalUrl(savedPost.slug), {emitEvent: false});
       this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
       this.postForm.markAsPristine();
+      this.socialPromotionDraft = savedPost.socialPromotion ?? {announcements: []};
+      this.socialWorkspacePost = this.createSocialWorkspacePost();
+      this.hasUnsavedSocialChanges = false;
       this.lastSaved = saved;
       this.lastSavedBackupJson = this.createPostBackupJson(savedPost);
       this.toast.success(`Saved "${savedPost.title}" to Firestore.`);
 
       if (this.isNewPost && !this.hasCreatedPost) {
         this.hasCreatedPost = true;
-        void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {replaceUrl: true});
+        void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {
+          replaceUrl: true,
+          queryParamsHandling: 'preserve',
+        });
       }
 
       return true;
@@ -1500,6 +1702,9 @@ export class CmsPostEditorComponent {
     this.currentPost = post;
     this.initialData = createEditorDocument(post);
     this.setFormFromPost(post);
+    this.socialPromotionDraft = post.socialPromotion ?? {announcements: []};
+    this.socialWorkspacePost = this.createSocialWorkspacePost();
+    this.hasUnsavedSocialChanges = false;
     this.postForm.markAsPristine();
     this.hasHydratedFirestorePost = true;
 
@@ -1626,10 +1831,41 @@ export class CmsPostEditorComponent {
 
     this.currentPost = nextPost;
     this.setFormFromPost(nextPost);
+    this.socialPromotionDraft = nextPost.socialPromotion ?? {announcements: []};
+    this.socialWorkspacePost = this.createSocialWorkspacePost();
+    this.hasUnsavedSocialChanges = true;
     this.postForm.markAsDirty();
     this.lastSaved = null;
     this.lastSavedBackupJson = '';
     await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
+  }
+
+  private createSocialWorkspacePost(): BlogPost {
+    const sourcePost = this.currentPost ?? this.blogRepository.createNewPostTemplate();
+    const form = this.postForm.getRawValue();
+    const coverImage = requiredText(form.coverImage, sourcePost.coverImage || DEFAULT_COVER_IMAGE);
+
+    return {
+      ...sourcePost,
+      title: requiredText(form.title, 'Untitled Post'),
+      slug: createBlogSlug(form.slug || form.title || sourcePost.slug),
+      excerpt: form.excerpt.trim(),
+      coverImage,
+      backgroundImage: form.backgroundImage.trim() || undefined,
+      featured: form.featured,
+      status: form.status,
+      categories: fromCsv(form.categories),
+      tags: fromCsv(form.tags),
+      seo: {
+        ...sourcePost.seo,
+        title: requiredText(form.seoTitle, form.title),
+        description: requiredText(form.seoDescription, form.excerpt),
+        canonical: form.canonical.trim() || this.createCanonicalUrl(form.slug),
+        openGraphImage: normalizeOpenGraphImage(form.openGraphImage, coverImage),
+      },
+      publishedAt: fromDateTimeLocalValue(form.publishedAt),
+      socialPromotion: this.socialPromotionDraft,
+    };
   }
 
   private async createAssistantContext(): Promise<BlogAssistantContext> {
@@ -1687,6 +1923,9 @@ export class CmsPostEditorComponent {
         openGraphImage,
       },
       blocks: createBlogBlocksFromEditorDocument(document),
+      socialPromotion: this.socialPromotionDraft.announcements.length > 0
+        ? this.socialPromotionDraft
+        : undefined,
       updatedAt: backupCreatedAt,
       publishedAt: this.getPublishedAt(formValue.status, formValue.publishedAt, this.currentPost.publishedAt, backupCreatedAt),
     };
