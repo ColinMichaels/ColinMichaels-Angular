@@ -82,7 +82,12 @@ export class BlogRichTextComponent implements OnChanges {
     fragment.querySelectorAll('img').forEach(image => {
       const src = image.getAttribute('src')?.trim().toLowerCase() ?? '';
 
-      if (src.startsWith('unsafe:') || src.startsWith('javascript:')) {
+      if (
+        src.startsWith('unsafe:') ||
+        src.startsWith('javascript:') ||
+        src.startsWith('data:') ||
+        src.startsWith('vbscript:')
+      ) {
         image.removeAttribute('src');
       }
 
