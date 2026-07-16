@@ -94,6 +94,7 @@ describe('blog post validation', () => {
           mediaType: 'image',
           linkPlacement: 'profile',
           contentAngle: 'personal-story',
+          postFormat: 'story',
         }],
       },
     })).toBeTrue();
@@ -112,6 +113,60 @@ describe('blog post validation', () => {
         }],
       },
     })).toBeTrue();
+  });
+
+  it('accepts unscheduled drafts, unscheduled cancellations, and the canonical X channel', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'x-draft',
+          channel: 'x',
+          message: 'A draft X thread.',
+          status: 'draft',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+          postFormat: 'thread',
+        }],
+      },
+    })).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {
+        announcements: [{
+          id: 'cancelled-draft',
+          channel: 'facebook',
+          message: 'A cancelled plan with no delivery time.',
+          status: 'cancelled',
+          createdAt: '2026-07-11T12:00:00.000Z',
+          updatedAt: '2026-07-11T12:00:00.000Z',
+        }],
+      },
+    })).toBeTrue();
+  });
+
+  it('requires a valid delivery time for scheduled delivery states', () => {
+    const announcement = {
+      id: 'facebook-launch',
+      channel: 'facebook',
+      message: 'A launch announcement.',
+      status: 'scheduled',
+      createdAt: '2026-07-11T12:00:00.000Z',
+      updatedAt: '2026-07-11T12:00:00.000Z',
+    };
+
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [announcement]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, scheduledAt: 'not-a-date'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, status: 'draft', scheduledAt: 'not-a-date'}]},
+    })).toBeFalse();
   });
 
   it('rejects malformed social strategy, delivery timing, and media fields', () => {
@@ -148,6 +203,14 @@ describe('blog post validation', () => {
     expect(isBlogPost({
       ...createPost(),
       socialPromotion: {announcements: [{...announcement, contentAngle: 'viral'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, postFormat: 'livestream'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, postFormat: 'thread'}]},
     })).toBeFalse();
   });
 });

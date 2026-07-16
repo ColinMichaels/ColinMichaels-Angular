@@ -53,6 +53,17 @@ function findButton(element: HTMLElement, label: string): HTMLButtonElement {
   return button;
 }
 
+function findButtonContaining(element: HTMLElement, label: string): HTMLButtonElement {
+  const button = Array.from(element.querySelectorAll('button'))
+    .find(candidate => candidate.textContent?.includes(label));
+
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Button containing label “${label}” was not found.`);
+  }
+
+  return button;
+}
+
 function selectPost(fixture: ComponentFixture<PublishingCalendarComponent>): void {
   const postSelect = (fixture.nativeElement as HTMLElement).querySelector('select');
 
@@ -116,10 +127,8 @@ describe('PublishingCalendarComponent', () => {
 
     findButton(element, 'Add social post').click();
     fixture.detectChanges();
-    findButton(element, 'Facebook').click();
-    fixture.detectChanges();
 
-    const composer = element.querySelector('section[aria-label="Add social posts"]');
+    const composer = element.querySelector('app-social-promotion-editor');
     const textarea = composer?.querySelector('textarea');
 
     if (!(textarea instanceof HTMLTextAreaElement)) {
@@ -133,7 +142,7 @@ describe('PublishingCalendarComponent', () => {
     textarea.value = 'A Facebook-specific share message.';
     textarea.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    findButton(element, 'Save social plan').click();
+    findButton(element, 'Save scheduled post').click();
 
     await fixture.whenStable();
 
@@ -150,14 +159,44 @@ describe('PublishingCalendarComponent', () => {
     expect(facebookAnnouncement?.mediaUrl).toBe('https://colinmichaels.com/assets/images/backgrounds/night.webp');
   });
 
+  it('preserves an unsaved Calendar composition when the workspace is closed and reopened', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    selectPost(fixture);
+    findButton(element, 'Add social post').click();
+    fixture.detectChanges();
+
+    let textarea = element.querySelector('app-social-promotion-editor textarea');
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      throw new Error('Facebook message editor was not found.');
+    }
+    textarea.value = 'A Calendar draft that should survive closing.';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    findButton(element, 'Close workspace').click();
+    fixture.detectChanges();
+    expect(element.querySelector('app-social-promotion-editor')).toBeNull();
+
+    findButton(element, 'Add social post').click();
+    fixture.detectChanges();
+    textarea = element.querySelector('app-social-promotion-editor textarea');
+    expect(textarea instanceof HTMLTextAreaElement ? textarea.value : '')
+      .toBe('A Calendar draft that should survive closing.');
+    expect(element.textContent).toContain('Unsaved Calendar draft preserved.');
+  });
+
   it('offers Threads as a schedulable provider', async () => {
     const element = fixture.nativeElement as HTMLElement;
     selectPost(fixture);
     findButton(element, 'Add social post').click();
     fixture.detectChanges();
-    findButton(element, 'Threads').click();
+    const composer = element.querySelector('app-social-promotion-editor');
+    if (!(composer instanceof HTMLElement)) {
+      throw new Error('Shared social composer was not found.');
+    }
+    findButtonContaining(composer, 'Threads').click();
     fixture.detectChanges();
-    findButton(element, 'Save social plan').click();
+    findButton(element, 'Save scheduled post').click();
     await fixture.whenStable();
 
     const [savedPost] = blogRepository.savePost.calls.mostRecent().args;
@@ -172,25 +211,31 @@ describe('PublishingCalendarComponent', () => {
     selectPost(fixture);
     findButton(element, 'Add social post').click();
     fixture.detectChanges();
-    findButton(element, 'LinkedIn').click();
+    const composer = element.querySelector('app-social-promotion-editor');
+    if (!(composer instanceof HTMLElement)) {
+      throw new Error('Shared social composer was not found.');
+    }
+    findButtonContaining(composer, 'LinkedIn').click();
     fixture.detectChanges();
 
-    const composer = element.querySelector('section[aria-label="Add social posts"]');
     const selects = composer?.querySelectorAll('select');
 
-    if (!selects || selects.length !== 3) {
+    if (!selects || selects.length < 5) {
       throw new Error('LinkedIn strategy controls were not found.');
     }
 
     selects[0].value = 'behind-the-scenes';
     selects[0].dispatchEvent(new Event('change'));
-    selects[1].value = 'none';
+    selects[1].value = 'video';
     selects[1].dispatchEvent(new Event('change'));
-    selects[2].value = 'video';
-    selects[2].dispatchEvent(new Event('change'));
+    const noLinkOption = composer.querySelector<HTMLInputElement>('input[name="social-link-placement"][value="none"]');
+    if (!(noLinkOption instanceof HTMLInputElement)) {
+      throw new Error('LinkedIn no-link option was not found.');
+    }
+    noLinkOption.click();
     fixture.detectChanges();
 
-    findButton(element, 'Use starter copy').click();
+    findButton(element, 'Regenerate starter copy').click();
     fixture.detectChanges();
 
     const mediaInput = composer?.querySelector<HTMLInputElement>('input[type="url"]');
@@ -202,7 +247,7 @@ describe('PublishingCalendarComponent', () => {
     mediaInput.value = 'https://colinmichaels.com/social/voice-cloning-demo.mp4';
     mediaInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    findButton(element, 'Save social plan').click();
+    findButton(element, 'Save scheduled post').click();
     await fixture.whenStable();
 
     const [savedPost] = blogRepository.savePost.calls.mostRecent().args;
@@ -310,9 +355,13 @@ describe('PublishingCalendarComponent', () => {
     selectPost(fixture);
     findButton(element, 'Add social post').click();
     fixture.detectChanges();
-    findButton(element, 'Instagram').click();
+    const composer = element.querySelector('app-social-promotion-editor');
+    if (!(composer instanceof HTMLElement)) {
+      throw new Error('Shared social composer was not found.');
+    }
+    findButtonContaining(composer, 'Instagram').click();
     fixture.detectChanges();
-    findButton(element, 'Save social plan').click();
+    findButton(element, 'Save scheduled post').click();
     await fixture.whenStable();
 
     const [savedPost] = blogRepository.savePost.calls.mostRecent().args;
@@ -331,7 +380,7 @@ describe('PublishingCalendarComponent', () => {
     findButton(element, 'Add social post').click();
     fixture.detectChanges();
 
-    const composer = element.querySelector('section[aria-label="Add social posts"]');
+    const composer = element.querySelector('app-social-promotion-editor');
     const channelLabels = Array.from(composer?.querySelectorAll('button') ?? [])
       .map(button => button.textContent?.trim());
     expect(channelLabels).not.toContain('Notify');

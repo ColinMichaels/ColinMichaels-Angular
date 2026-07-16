@@ -71,6 +71,15 @@ import {
   POST_POLL_ID_PATTERN,
   PostPollDefinition,
 } from './post-polls';
+import {
+  BLOG_SOCIAL_AI_SYSTEM_PROMPT,
+  BlogSocialAiRequest,
+  BlogSocialAiResult,
+  blogSocialAiSchema,
+  createBlogSocialAiUserPrompt,
+  parseBlogSocialAiOutput,
+  parseBlogSocialAiRequest,
+} from './blog-social-ai';
 
 export {
   beginSocialConnection,
@@ -270,7 +279,8 @@ const SITE_CALLABLE_CORS_ORIGINS = [
 
 let youtubeFeedCache: YoutubeFeedCacheEntry | null = null;
 
-type SocialDeliveryChannel = 'notify' | 'youtube' | 'facebook' | 'instagram' | 'threads' | 'linkedin';
+type SocialDeliveryChannel = 'notify' | 'youtube' | 'facebook' | 'instagram' | 'threads' | 'x' | 'linkedin';
+type SocialPostFormat = 'text' | 'link' | 'image' | 'video' | 'reel' | 'story' | 'carousel' | 'thread' | 'community';
 
 interface SocialAnnouncementDocument {
   id: string;
@@ -286,6 +296,7 @@ interface SocialAnnouncementDocument {
   mediaType?: 'image' | 'video';
   linkPlacement?: 'post' | 'first-comment' | 'profile' | 'none';
   contentAngle?: 'personal-story' | 'conversation-starter' | 'practical-takeaway' | 'behind-the-scenes';
+  postFormat?: SocialPostFormat;
 }
 
 const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
@@ -294,6 +305,7 @@ const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
   'facebook',
   'instagram',
   'threads',
+  'x',
   'linkedin',
 ]);
 const SOCIAL_CONTENT_ANGLES = new Set([
@@ -304,6 +316,26 @@ const SOCIAL_CONTENT_ANGLES = new Set([
 ]);
 const SOCIAL_LINK_PLACEMENTS = new Set(['post', 'first-comment', 'profile', 'none']);
 const SOCIAL_MEDIA_TYPES = new Set(['image', 'video']);
+const SOCIAL_POST_FORMATS = new Set<SocialPostFormat>([
+  'text',
+  'link',
+  'image',
+  'video',
+  'reel',
+  'story',
+  'carousel',
+  'thread',
+  'community',
+]);
+const SOCIAL_POST_FORMATS_BY_CHANNEL: Readonly<Record<SocialDeliveryChannel, ReadonlySet<SocialPostFormat>>> = {
+  notify: new Set(['text', 'link']),
+  youtube: new Set(['video', 'reel', 'community']),
+  facebook: new Set(['text', 'link', 'image', 'video', 'reel', 'story']),
+  instagram: new Set(['image', 'video', 'reel', 'story', 'carousel']),
+  threads: new Set(['text', 'link', 'image', 'video', 'thread']),
+  x: new Set(['text', 'link', 'image', 'video', 'thread']),
+  linkedin: new Set(['text', 'link', 'image', 'video', 'carousel']),
+};
 
 function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly SocialAnnouncementDocument[] {
   if (!isRecord(value) || !Array.isArray(value['announcements'])) {
@@ -352,6 +384,15 @@ function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly So
       && (
         announcement['contentAngle'] === undefined
         || (typeof announcement['contentAngle'] === 'string' && SOCIAL_CONTENT_ANGLES.has(announcement['contentAngle']))
+      )
+      && (
+        announcement['postFormat'] === undefined
+        || (
+          typeof announcement['postFormat'] === 'string'
+          && SOCIAL_POST_FORMATS.has(announcement['postFormat'] as SocialPostFormat)
+          && SOCIAL_POST_FORMATS_BY_CHANNEL[channel as SocialDeliveryChannel]
+            .has(announcement['postFormat'] as SocialPostFormat)
+        )
       );
   });
 }
@@ -463,6 +504,7 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
           // Snapshot legacy defaults so delivery workers receive one explicit, migration-safe payload contract.
           linkPlacement: announcement.linkPlacement ?? 'post',
           ...(announcement.contentAngle ? {contentAngle: announcement.contentAngle} : {}),
+          ...(announcement.postFormat ? {postFormat: announcement.postFormat} : {}),
           deliveryTiming: announcement.deliveryTiming ?? 'scheduled',
           scheduledAt: announcement.scheduledAt,
           status: 'pending',
@@ -1385,6 +1427,28 @@ export const generateBlogMetadata = onCall(
       suggestions: parsed.suggestions,
       thumbnailSuggestions: parsed.thumbnailSuggestions,
     } satisfies BlogAssistantResult;
+  }
+);
+
+export const generateBlogSocialPosts = onCall(
+  {
+    region: FUNCTION_REGION,
+    secrets: [openAiApiKey],
+    timeoutSeconds: 60,
+    memory: '512MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    requireCmsAccess(request.auth);
+    const data = parseBlogSocialAiRequest(request.data);
+    const suggestions = await callOpenAiSocialPosts(data);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      source: 'backend',
+      suggestions,
+    } satisfies BlogSocialAiResult;
   }
 );
 
@@ -4957,6 +5021,73 @@ async function callOpenAiResponses(context: BlogAssistantContext): Promise<OpenA
   });
 
   return parseOpenAiResponse<OpenAiResponsePayload>(response, 'Unable to generate blog metadata.');
+}
+
+async function callOpenAiSocialPosts(data: BlogSocialAiRequest): Promise<BlogSocialAiResult['suggestions']> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${OPENAI_API_URL}/responses`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${openAiApiKey.value()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: openAiTextModel.value(),
+        input: [
+          {
+            role: 'system',
+            content: BLOG_SOCIAL_AI_SYSTEM_PROMPT,
+          },
+          {
+            role: 'user',
+            content: createBlogSocialAiUserPrompt(data, MAX_TEXT_LENGTH),
+          },
+        ],
+        max_output_tokens: 5000,
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'blog_social_post_suggestions',
+            strict: true,
+            schema: blogSocialAiSchema,
+          },
+        },
+      }),
+    });
+  } catch (error) {
+    logger.error('OpenAI social copy request could not be completed.', {
+      errorType: error instanceof Error ? error.name : 'unknown',
+    });
+    throw new HttpsError('internal', 'Unable to generate social copy.');
+  }
+
+  const payload = await response.json().catch(() => ({})) as OpenAiResponsePayload & OpenAiErrorResponse;
+
+  if (!response.ok) {
+    logger.error('OpenAI social copy request failed.', {
+      providerType: payload.error?.type ?? 'unknown',
+      status: response.status,
+    });
+    throw new HttpsError('internal', 'Unable to generate social copy.');
+  }
+
+  const text = extractOutputText(payload);
+
+  if (!text) {
+    logger.error('OpenAI social copy response did not include text output.');
+    throw new HttpsError('internal', 'Unable to generate social copy.');
+  }
+
+  try {
+    return parseBlogSocialAiOutput(JSON.parse(text), data.targets);
+  } catch (error) {
+    logger.error('OpenAI social copy response failed validation.', {
+      errorCode: error instanceof HttpsError ? error.code : 'unknown',
+    });
+    throw new HttpsError('internal', 'Unable to generate social copy.');
+  }
 }
 
 async function generateImage(prompt: string, model: string): Promise<{ base64Data: string; contentType: string }> {

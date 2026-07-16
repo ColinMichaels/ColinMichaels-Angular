@@ -7,6 +7,10 @@ import {
   BlogStoredThumbnail,
   BlogThumbnailGenerationRequest,
 } from '../models/blog-ai-assistant.model';
+import {
+  BlogSocialAiRequest,
+  BlogSocialAiResult,
+} from '../models/blog-social-ai.model';
 import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
 
 @Injectable({
@@ -19,6 +23,17 @@ export class BlogAiFunctionsService {
     const functions = this.getFunctions();
     const callable = httpsCallable<BlogAssistantContext, BlogAssistantResult>(functions, 'generateBlogMetadata');
     const result = await callable(context);
+
+    return result.data;
+  }
+
+  async generateSocialPosts(request: BlogSocialAiRequest): Promise<BlogSocialAiResult> {
+    const functions = this.getFunctions();
+    const callable = httpsCallable<BlogSocialAiRequest, BlogSocialAiResult>(
+      functions,
+      'generateBlogSocialPosts'
+    );
+    const result = await callable(request);
 
     return result.data;
   }

@@ -13,6 +13,7 @@
     "migrate:post-authors": "node scripts/backfill-post-authors.mjs",
     "build": "tsc",
     "test:comment-safety": "npm run build && node --test test/comment-safety.test.cjs",
+    "test:blog-social-ai": "npm run build && node --test test/blog-social-ai.test.cjs",
     "test:push-notifications": "npm run build && node --test test/push-notifications.test.cjs",
     "test:social-connections": "npm run build && node --test test/social-connections.test.cjs",
     "test:social-delivery": "npm run build && node --test test/social-delivery.test.cjs",

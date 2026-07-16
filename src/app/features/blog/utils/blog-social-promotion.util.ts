@@ -3,6 +3,7 @@ import {
   BlogSocialChannel,
   BlogSocialContentAngle,
   BlogSocialLinkPlacement,
+  BlogSocialPostFormat,
 } from '../models/blog-social-promotion.model';
 
 type SocialMessagePost = Pick<BlogPost, 'excerpt' | 'slug' | 'tags' | 'title'>;
@@ -13,6 +14,7 @@ const DEFAULT_ANGLE_BY_CHANNEL: Readonly<Record<BlogSocialChannel, BlogSocialCon
   facebook: 'personal-story',
   instagram: 'personal-story',
   threads: 'conversation-starter',
+  x: 'conversation-starter',
   linkedin: 'practical-takeaway',
 };
 
@@ -22,7 +24,28 @@ const DEFAULT_LINK_PLACEMENT_BY_CHANNEL: Readonly<Record<BlogSocialChannel, Blog
   facebook: 'first-comment',
   instagram: 'profile',
   threads: 'post',
+  x: 'post',
   linkedin: 'post',
+};
+
+const POST_FORMATS_BY_CHANNEL: Readonly<Record<BlogSocialChannel, readonly BlogSocialPostFormat[]>> = {
+  notify: ['text', 'link'],
+  youtube: ['video', 'reel', 'community'],
+  facebook: ['text', 'link', 'image', 'video', 'reel', 'story'],
+  instagram: ['image', 'video', 'reel', 'story', 'carousel'],
+  threads: ['text', 'link', 'image', 'video', 'thread'],
+  x: ['text', 'link', 'image', 'video', 'thread'],
+  linkedin: ['text', 'link', 'image', 'video', 'carousel'],
+};
+
+const DEFAULT_POST_FORMAT_BY_CHANNEL: Readonly<Record<BlogSocialChannel, BlogSocialPostFormat>> = {
+  notify: 'link',
+  youtube: 'video',
+  facebook: 'image',
+  instagram: 'image',
+  threads: 'text',
+  x: 'text',
+  linkedin: 'text',
 };
 
 export function defaultSocialContentAngle(channel: BlogSocialChannel): BlogSocialContentAngle {
@@ -31,6 +54,21 @@ export function defaultSocialContentAngle(channel: BlogSocialChannel): BlogSocia
 
 export function defaultSocialLinkPlacement(channel: BlogSocialChannel): BlogSocialLinkPlacement {
   return DEFAULT_LINK_PLACEMENT_BY_CHANNEL[channel];
+}
+
+export function socialPostFormatsForChannel(channel: BlogSocialChannel): readonly BlogSocialPostFormat[] {
+  return POST_FORMATS_BY_CHANNEL[channel];
+}
+
+export function defaultSocialPostFormat(channel: BlogSocialChannel): BlogSocialPostFormat {
+  return DEFAULT_POST_FORMAT_BY_CHANNEL[channel];
+}
+
+export function isSocialPostFormatAllowed(
+  channel: BlogSocialChannel,
+  postFormat: BlogSocialPostFormat
+): boolean {
+  return POST_FORMATS_BY_CHANNEL[channel].includes(postFormat);
 }
 
 export function createBlogSocialMessage(
@@ -43,7 +81,7 @@ export function createBlogSocialMessage(
   const title = post.title.trim();
   const excerpt = post.excerpt.trim();
   const articleUrl = `${siteUrl.replace(/\/$/, '')}/blog/${post.slug}`;
-  const message = channel === 'threads'
+  const message = channel === 'threads' || channel === 'x'
     ? createCompactMessage(title, excerpt, angle)
     : createFullMessage(title, excerpt, angle);
   const linkCallToAction = createLinkCallToAction(linkPlacement, articleUrl);

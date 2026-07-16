@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} fr
 import {toSignal} from '@angular/core/rxjs-interop';
 import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {faFacebookF, faInstagram, faLinkedinIn, faThreads, faYoutube} from '@fortawesome/free-brands-svg-icons';
+import {faFacebookF, faInstagram, faLinkedinIn, faThreads, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {faBell, faChevronLeft, faChevronRight} from '@fortawesome/free-solid-svg-icons';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 
@@ -14,17 +14,18 @@ import {
   BlogSocialDeliveryTiming,
   BlogSocialLinkPlacement,
   BlogSocialMediaType,
+  BlogSocialPromotion,
 } from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
 import {
   createBlogSocialMessage,
   defaultSocialContentAngle,
-  defaultSocialLinkPlacement,
 } from '../../../../features/blog/utils/blog-social-promotion.util';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
 
 type PublishingCalendarFilter = 'all' | 'scheduled' | 'published' | 'social';
 
@@ -54,17 +55,6 @@ interface SocialChannelOption {
   automationLabel: string;
   characterLimit: number;
   icon: IconDefinition;
-}
-
-interface SocialAnnouncementDraft extends SocialChannelOption {
-  enabled: boolean;
-  message: string;
-  contentAngle: BlogSocialContentAngle;
-  linkPlacement: BlogSocialLinkPlacement;
-  scheduledAt: string;
-  deliveryTiming: BlogSocialDeliveryTiming;
-  mediaType: BlogSocialMediaType | 'none';
-  mediaUrl: string;
 }
 
 const calendarFilters: readonly {value: PublishingCalendarFilter; label: string}[] = [
@@ -154,6 +144,15 @@ const socialChannelOptions: readonly SocialChannelOption[] = [
     icon: faThreads,
   },
   {
+    id: 'x',
+    label: 'X (Twitter)',
+    shortLabel: 'X',
+    description: 'X profile post or thread',
+    automationLabel: 'Manual plan — X connection is not configured',
+    characterLimit: 280,
+    icon: faXTwitter,
+  },
+  {
     id: 'linkedin',
     label: 'LinkedIn',
     shortLabel: 'IN',
@@ -219,28 +218,6 @@ function fromDateTimeLocalValue(value: string): string | null {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
-function createAnnouncementId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `social-${crypto.randomUUID()}`;
-  }
-
-  return `social-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function toPublicMediaUrl(value: string): string {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return '';
-  }
-
-  try {
-    return new URL(trimmedValue, SITE_URL).toString();
-  } catch {
-    return '';
-  }
-}
-
 function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
@@ -260,6 +237,7 @@ function getErrorMessage(error: unknown): string {
     CmsToastContainerComponent,
     FaIconComponent,
     RouterLink,
+    SocialPromotionEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -272,8 +250,12 @@ function getErrorMessage(error: unknown): string {
           </p>
         </header>
 
-        <section class="grid border border-zinc-800 xl:grid-cols-[minmax(0,1fr)_410px]">
-          <section class="min-w-0 border-zinc-800 xl:border-r" aria-label="Monthly publishing calendar">
+        <section [class]="calendarShellClass">
+          <section
+            class="min-w-0 border-zinc-800 xl:border-r"
+            [hidden]="socialComposerOpen"
+            aria-label="Monthly publishing calendar"
+          >
             <div class="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 sm:px-5">
               <div class="flex items-center gap-2">
                 <button
@@ -442,7 +424,14 @@ function getErrorMessage(error: unknown): string {
                       [routerLink]="['/admin/cms', post.slug, 'edit']"
                       class="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
                     >
-                      Open editor
+                      Edit article
+                    </a>
+                    <a
+                      [routerLink]="['/admin/cms', post.slug, 'edit']"
+                      [queryParams]="{tab: 'social'}"
+                      class="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                    >
+                      Social workspace
                     </a>
                   </div>
                 </article>
@@ -483,7 +472,7 @@ function getErrorMessage(error: unknown): string {
                     <button
                       type="button"
                       class="border border-cyan-400 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
-                      (click)="openSocialComposer(post)"
+                      (click)="openSocialComposer()"
                     >
                       Add social post
                     </button>
@@ -511,6 +500,13 @@ function getErrorMessage(error: unknown): string {
                           @if (isAnnouncementEditable(announcement)) {
                             <button type="button" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200" (click)="openAnnouncementEditor(announcement)">Edit</button>
                           }
+                          <a
+                            [routerLink]="['/admin/cms', post.slug, 'edit']"
+                            [queryParams]="{tab: 'social', channel: announcement.channel, announcement: announcement.id}"
+                            class="text-xs font-semibold text-zinc-400 hover:text-cyan-200"
+                          >
+                            Workspace
+                          </a>
                         </div>
                         <p class="mt-3 line-clamp-3 whitespace-pre-line text-xs leading-5 text-zinc-400">{{ announcement.message }}</p>
                       </article>
@@ -644,166 +640,33 @@ function getErrorMessage(error: unknown): string {
                 }
 
                 @if (socialComposerOpen) {
-                  <section class="border border-cyan-400/40 bg-zinc-900/70 p-4" aria-label="Add social posts">
-                    <h3 class="text-base font-semibold text-zinc-50">Plan social posts</h3>
-                    <p class="mt-2 text-xs leading-5 text-zinc-500">
-                      Select services, then build a native-first post around a personal story, conversation, useful takeaway, or behind-the-scenes angle. Add an image or video and choose where the article link belongs instead of defaulting to a bare link share.
-                    </p>
-
-                    <aside class="mt-3 border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100" role="status">
-                      Calendar plans queue in the protected delivery outbox. External auto-posting starts only after that provider's server-side account connection and delivery worker are configured.
-                    </aside>
-
-                    <div class="mt-4 flex flex-wrap gap-2">
-                      @for (draft of channelDrafts; track draft.id) {
-                        <button
-                          type="button"
-                          [class]="channelToggleClass(draft)"
-                          [attr.aria-pressed]="draft.enabled"
-                          (click)="toggleDraftChannel(draft.id)"
-                        >
-                          <fa-icon [icon]="draft.icon" aria-hidden="true"></fa-icon>
-                          {{ draft.label }}
-                        </button>
-                      }
-                    </div>
-
-                    <div class="mt-4 space-y-4">
-                      @for (draft of enabledChannelDrafts; track draft.id) {
-                        <section class="border-l-2 border-zinc-700 pl-3">
-                          <div class="flex items-center justify-between gap-3">
-                            <div>
-                              <h4 class="text-sm font-semibold text-zinc-200">{{ draft.label }}</h4>
-                              <p class="mt-0.5 text-[11px] text-zinc-500">{{ draft.description }} · {{ draft.automationLabel }}</p>
-                            </div>
-                            <span class="text-[11px] text-zinc-500">{{ draft.message.length }}/{{ draft.characterLimit }}</span>
-                          </div>
-                          <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                            <label class="space-y-1">
-                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Promotion angle</span>
-                              <select
-                                [value]="draft.contentAngle"
-                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                                (change)="updateDraftContentAngle(draft.id, $event)"
-                              >
-                                @for (option of socialContentAngleOptions; track option.value) {
-                                  <option [value]="option.value">{{ option.label }}</option>
-                                }
-                              </select>
-                            </label>
-                            <label class="space-y-1">
-                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Article link</span>
-                              <select
-                                [value]="draft.linkPlacement"
-                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                                (change)="updateDraftLinkPlacement(draft.id, $event)"
-                              >
-                                @for (option of socialLinkPlacementOptions; track option.value) {
-                                  <option [value]="option.value">{{ option.label }}</option>
-                                }
-                              </select>
-                            </label>
-                          </div>
-                          <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-                            <p class="text-[11px] leading-5 text-zinc-500">
-                              Starter copy is a draft—add the real detail, moment, or opinion that makes this sound like Colin.
-                            </p>
-                            <button
-                              type="button"
-                              class="shrink-0 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
-                              (click)="useDraftStarterCopy(draft.id, post)"
-                            >
-                              Use starter copy
-                            </button>
-                          </div>
-                          <textarea
-                            rows="5"
-                            [value]="draft.message"
-                            [attr.maxlength]="draft.characterLimit"
-                            class="mt-2 w-full resize-y border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-100 outline-none focus:border-cyan-300"
-                            (input)="updateDraftMessage(draft.id, $event)"
-                          ></textarea>
-                          <fieldset class="mt-2 space-y-2">
-                            <legend class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery timing</legend>
-                            <div class="grid grid-cols-2 border border-zinc-700">
-                              <button
-                                type="button"
-                                [class]="deliveryTimingButtonClass(draft.deliveryTiming, 'at-publish')"
-                                [attr.aria-pressed]="draft.deliveryTiming === 'at-publish'"
-                                [disabled]="!canFollowPublication(post)"
-                                (click)="setDraftDeliveryTiming(draft.id, 'at-publish', post)"
-                              >
-                                When post goes live
-                              </button>
-                              <button
-                                type="button"
-                                [class]="deliveryTimingButtonClass(draft.deliveryTiming, 'scheduled')"
-                                [attr.aria-pressed]="draft.deliveryTiming === 'scheduled'"
-                                (click)="setDraftDeliveryTiming(draft.id, 'scheduled', post)"
-                              >
-                                Custom time
-                              </button>
-                            </div>
-                          </fieldset>
-                          @if (draft.deliveryTiming === 'at-publish') {
-                            <p class="mt-2 border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400">
-                              Follows the article schedule: {{ postDateTime(post) }}
-                            </p>
-                          } @else {
-                            <label class="mt-2 block space-y-1">
-                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Delivery time</span>
-                              <input
-                                type="datetime-local"
-                                [value]="draft.scheduledAt"
-                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                                (input)="updateDraftSchedule(draft.id, $event)"
-                              >
-                            </label>
-                          }
-                          <div class="mt-2 grid gap-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
-                            <label class="space-y-1">
-                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Native media</span>
-                              <select
-                                [value]="draft.mediaType"
-                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                                (change)="updateDraftMediaType(draft.id, $event)"
-                              >
-                                @for (option of socialMediaTypeOptions; track option.value) {
-                                  <option [value]="option.value">{{ option.label }}</option>
-                                }
-                              </select>
-                            </label>
-                            @if (draft.mediaType !== 'none') {
-                              <label class="space-y-1">
-                                <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public image or video URL</span>
-                              <input
-                                type="url"
-                                [value]="draft.mediaUrl"
-                                placeholder="https://..."
-                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
-                                (input)="updateDraftMediaUrl(draft.id, $event)"
-                              >
-                              </label>
-                            }
-                          </div>
-                          @if (draft.id === 'instagram') {
-                            <span class="mt-1 block text-[11px] leading-5 text-zinc-600">Instagram requires a publicly reachable image or video.</span>
-                          }
-                        </section>
-                      }
-                    </div>
-
-                    <div class="mt-4 flex gap-2">
+                  <section class="space-y-3" aria-label="Schedule social posts">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border border-cyan-400/40 bg-cyan-400/5 px-4 py-3">
+                      <div>
+                        <h3 class="text-sm font-semibold text-zinc-100">Calendar scheduling mode</h3>
+                        <p class="mt-1 text-xs text-zinc-500">Compose with the same workspace used by the post editor, then save a delivery-ready plan. Closing keeps this draft for the current Calendar session.</p>
+                        @if (hasCachedCalendarPromotion(post.id)) {
+                          <p class="mt-1 text-xs font-medium text-amber-200" role="status">Unsaved Calendar draft preserved.</p>
+                        }
+                      </div>
                       <button
                         type="button"
-                        class="border border-cyan-400 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                        [disabled]="enabledChannelDrafts.length === 0 || saveInProgress"
-                        (click)="saveSocialAnnouncements(post)"
+                        class="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                        (click)="closeSocialComposer()"
                       >
-                        {{ saveInProgress ? 'Saving...' : 'Save social plan' }}
+                        Close workspace
                       </button>
-                      <button type="button" class="px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200" (click)="closeSocialComposer()">Cancel</button>
                     </div>
+                    <app-social-promotion-editor
+                      [post]="socialComposerSourcePost ?? post"
+                      mode="schedule"
+                      initialChannel="facebook"
+                      [createNew]="socialComposerCreateNew"
+                      [saving]="saveInProgress"
+                      (promotionChange)="cacheCalendarPromotion(post.id, $event)"
+                      (saveRequested)="savePromotionFromEditor(post, $event)"
+                      (openCalendarRequested)="closeSocialComposer()"
+                    ></app-social-promotion-editor>
                   </section>
                 }
               } @else {
@@ -858,6 +721,10 @@ function getErrorMessage(error: unknown): string {
                     <dd class="text-right text-amber-300">Separate connection still deferred</dd>
                   </div>
                   <div class="flex items-start justify-between gap-4 py-2">
+                    <dt class="text-zinc-300">X (Twitter)</dt>
+                    <dd class="text-right text-zinc-500">Manual workflow</dd>
+                  </div>
+                  <div class="flex items-start justify-between gap-4 py-2">
                     <dt class="text-zinc-300">YouTube Community</dt>
                     <dd class="text-right text-zinc-500">Manual workflow</dd>
                   </div>
@@ -883,6 +750,7 @@ export class PublishingCalendarComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly today = new Date();
   private readonly requestedPostId = this.route.snapshot.queryParamMap.get('post');
+  private readonly calendarPromotionDrafts = new Map<string, BlogSocialPromotion>();
   private hasAppliedRouteSelection = false;
 
   protected readonly faChevronLeft = faChevronLeft;
@@ -916,7 +784,7 @@ export class PublishingCalendarComponent {
   protected readonly selectedAnnouncement = computed(() => this.selectedEvent()?.announcement);
   protected readonly selectedPostAnnouncements = computed(() => (this.selectedPost()?.socialPromotion?.announcements ?? [])
     .filter(announcement => announcement.status !== 'cancelled')
-    .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt)));
+    .sort((left, right) => (left.scheduledAt ?? '9999').localeCompare(right.scheduledAt ?? '9999')));
   protected readonly selectedDateLabel = computed(() => {
     const [year, month, day] = this.selectedDateKey().split('-').map(Number);
     return longDateFormatter.format(new Date(year, month - 1, day));
@@ -932,6 +800,8 @@ export class PublishingCalendarComponent {
 
   protected scheduleEditorOpen = false;
   protected socialComposerOpen = false;
+  protected socialComposerSourcePost: BlogPost | null = null;
+  protected socialComposerCreateNew = true;
   protected announcementEditorOpen = false;
   protected scheduleDraft = '';
   protected announcementMessage = '';
@@ -942,7 +812,6 @@ export class PublishingCalendarComponent {
   protected announcementMediaType: BlogSocialMediaType | 'none' = 'none';
   protected announcementMediaUrl = '';
   protected saveInProgress = false;
-  protected channelDrafts: readonly SocialAnnouncementDraft[] = [];
 
   constructor() {
     effect(() => {
@@ -960,12 +829,14 @@ export class PublishingCalendarComponent {
     });
   }
 
-  protected get enabledChannelDrafts(): readonly SocialAnnouncementDraft[] {
-    return this.channelDrafts.filter(draft => draft.enabled);
-  }
-
   protected setFilter(filter: PublishingCalendarFilter): void {
     this.activeFilter.set(filter);
+  }
+
+  protected get calendarShellClass(): string {
+    return this.socialComposerOpen
+      ? 'grid border border-zinc-800 xl:grid-cols-1'
+      : 'grid border border-zinc-800 xl:grid-cols-[minmax(0,1fr)_410px]';
   }
 
   protected filterButtonClass(filter: PublishingCalendarFilter): string {
@@ -1097,6 +968,10 @@ export class PublishingCalendarComponent {
   }
 
   protected announcementDateTime(announcement: BlogSocialAnnouncement): string {
+    if (!announcement.scheduledAt) {
+      return 'Unscheduled draft';
+    }
+
     const date = new Date(announcement.scheduledAt);
     return `${shortDateFormatter.format(date)} at ${timeFormatter.format(date)}`;
   }
@@ -1170,6 +1045,8 @@ export class PublishingCalendarComponent {
         return `${base} border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-300`;
       case 'threads':
         return `${base} border-zinc-500/50 bg-zinc-700/20 text-zinc-200`;
+      case 'x':
+        return `${base} border-zinc-400/50 bg-zinc-700/20 text-zinc-100`;
       case 'linkedin':
         return `${base} border-sky-500/40 bg-sky-500/10 text-sky-300`;
       case 'notify':
@@ -1222,7 +1099,7 @@ export class PublishingCalendarComponent {
       ? (post.socialPromotion?.announcements ?? []).find(announcement => (
         announcement.status === 'scheduled'
         && announcement.deliveryTiming !== 'at-publish'
-        && new Date(announcement.scheduledAt).getTime() < publishedTimestamp
+        && new Date(announcement.scheduledAt ?? '').getTime() < publishedTimestamp
       ))
       : undefined;
 
@@ -1259,44 +1136,32 @@ export class PublishingCalendarComponent {
     }
   }
 
-  protected openSocialComposer(post: BlogPost): void {
+  protected openSocialComposer(): void {
+    const post = this.selectedPost();
+    if (!post) {
+      return;
+    }
+
     this.closeEditors();
-    const earliestDelivery = Math.max(Date.now() + 10 * 60 * 1000, new Date(post.publishedAt ?? 0).getTime());
-    const scheduledAt = toDateTimeLocalValue(new Date(earliestDelivery).toISOString());
-    const deliveryTiming: BlogSocialDeliveryTiming = this.canFollowPublication(post) ? 'at-publish' : 'scheduled';
-    const mediaUrl = toPublicMediaUrl(post.seo.openGraphImage || post.coverImage);
-
-    this.channelDrafts = socialChannelOptions
-      .filter(option => option.id !== 'notify')
-      .map(option => {
-        const contentAngle = defaultSocialContentAngle(option.id);
-        const linkPlacement = defaultSocialLinkPlacement(option.id);
-
-        return {
-          ...option,
-          enabled: false,
-          message: createBlogSocialMessage(option.id, post, contentAngle, linkPlacement, SITE_URL),
-          contentAngle,
-          linkPlacement,
-          scheduledAt,
-          deliveryTiming,
-          mediaType: mediaUrl ? 'image' : 'none',
-          mediaUrl,
-        };
-      });
+    const cachedPromotion = this.calendarPromotionDrafts.get(post.id);
+    this.socialComposerSourcePost = {
+      ...post,
+      ...(cachedPromotion ? {socialPromotion: cachedPromotion} : {}),
+    };
+    this.socialComposerCreateNew = !cachedPromotion;
     this.socialComposerOpen = true;
   }
 
   protected closeSocialComposer(): void {
     this.socialComposerOpen = false;
-    this.channelDrafts = [];
   }
 
-  protected channelToggleClass(draft: SocialAnnouncementDraft): string {
-    const base = 'inline-flex items-center gap-2 border px-3 py-2 text-xs font-semibold';
-    return draft.enabled
-      ? `${base} border-cyan-400 bg-cyan-400 text-zinc-950`
-      : `${base} border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200`;
+  protected cacheCalendarPromotion(postId: string, promotion: BlogSocialPromotion): void {
+    this.calendarPromotionDrafts.set(postId, promotion);
+  }
+
+  protected hasCachedCalendarPromotion(postId: string): boolean {
+    return this.calendarPromotionDrafts.has(postId);
   }
 
   protected canFollowPublication(post: BlogPost): boolean {
@@ -1317,170 +1182,18 @@ export class PublishingCalendarComponent {
       : `${base} text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100`;
   }
 
-  protected toggleDraftChannel(channel: BlogSocialChannel): void {
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {...draft, enabled: !draft.enabled}
-      : draft);
-  }
-
-  protected updateDraftMessage(channel: BlogSocialChannel, event: Event): void {
-    const message = event.target instanceof HTMLTextAreaElement ? event.target.value : '';
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, message} : draft);
-  }
-
-  protected updateDraftContentAngle(channel: BlogSocialChannel, event: Event): void {
-    if (!(event.target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    const contentAngle = event.target.value as BlogSocialContentAngle;
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {...draft, contentAngle}
-      : draft);
-  }
-
-  protected updateDraftLinkPlacement(channel: BlogSocialChannel, event: Event): void {
-    if (!(event.target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    const linkPlacement = event.target.value as BlogSocialLinkPlacement;
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {...draft, linkPlacement}
-      : draft);
-  }
-
-  protected useDraftStarterCopy(channel: BlogSocialChannel, post: BlogPost): void {
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {
-        ...draft,
-        message: createBlogSocialMessage(channel, post, draft.contentAngle, draft.linkPlacement, SITE_URL),
-      }
-      : draft);
-  }
-
-  protected updateDraftSchedule(channel: BlogSocialChannel, event: Event): void {
-    const scheduledAt = event.target instanceof HTMLInputElement ? event.target.value : '';
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, scheduledAt} : draft);
-  }
-
-  protected setDraftDeliveryTiming(
-    channel: BlogSocialChannel,
-    deliveryTiming: BlogSocialDeliveryTiming,
-    post: BlogPost
-  ): void {
-    if (deliveryTiming === 'at-publish' && !this.canFollowPublication(post)) {
-      return;
-    }
-
-    const scheduledAt = deliveryTiming === 'at-publish'
-      ? toDateTimeLocalValue(post.publishedAt)
-      : toDateTimeLocalValue(new Date(Math.max(Date.now() + 10 * 60 * 1000, new Date(post.publishedAt ?? 0).getTime())).toISOString());
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {...draft, deliveryTiming, scheduledAt}
-      : draft);
-  }
-
-  protected updateDraftMediaUrl(channel: BlogSocialChannel, event: Event): void {
-    const mediaUrl = event.target instanceof HTMLInputElement ? event.target.value : '';
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, mediaUrl} : draft);
-  }
-
-  protected updateDraftMediaType(channel: BlogSocialChannel, event: Event): void {
-    if (!(event.target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    const mediaType = event.target.value as BlogSocialMediaType | 'none';
-    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
-      ? {...draft, mediaType, mediaUrl: mediaType === 'none' ? '' : draft.mediaUrl}
-      : draft);
-  }
-
-  protected async saveSocialAnnouncements(post: BlogPost): Promise<void> {
-    const drafts = this.enabledChannelDrafts;
-
-    if (drafts.length === 0) {
-      this.toast.error('Choose at least one service.');
-      return;
-    }
-
-    const invalidMessage = drafts.find(draft => !draft.message.trim() || draft.message.length > draft.characterLimit);
-
-    if (invalidMessage) {
-      this.toast.error(`Add a valid ${invalidMessage.label} message within ${invalidMessage.characterLimit} characters.`);
-      return;
-    }
-
-    const parsedSchedules = drafts.map(draft => ({
-      draft,
-      scheduledAt: draft.deliveryTiming === 'at-publish'
-        ? post.publishedAt
-        : fromDateTimeLocalValue(draft.scheduledAt),
-    }));
-    const invalidSchedule = parsedSchedules.find(item => !item.scheduledAt || new Date(item.scheduledAt).getTime() <= Date.now());
-
-    if (invalidSchedule) {
-      this.toast.error(`Choose a future delivery time for ${invalidSchedule.draft.label}.`);
-      return;
-    }
-
-    const postPublishTimestamp = new Date(post.publishedAt ?? 0).getTime();
-    const beforePublish = post.status === 'scheduled'
-      ? parsedSchedules.find(item => new Date(item.scheduledAt as string).getTime() < postPublishTimestamp)
-      : undefined;
-
-    if (beforePublish) {
-      this.toast.error(`${beforePublish.draft.label} cannot be delivered before the blog post is live.`);
-      return;
-    }
-
-    const missingInstagramMedia = drafts.find(draft => draft.id === 'instagram' && draft.mediaType === 'none');
-
-    if (missingInstagramMedia) {
-      this.toast.error('Choose an image or video before scheduling Instagram.');
-      return;
-    }
-
-    const invalidMedia = drafts.find(draft => draft.mediaType !== 'none' && !isHttpUrl(draft.mediaUrl));
-
-    if (invalidMedia) {
-      this.toast.error(`Add a public image or video URL for ${invalidMedia.label}.`);
-      return;
-    }
-
-    const now = new Date().toISOString();
-    const linkUrl = `${SITE_URL}/blog/${post.slug}`;
-    const announcements: readonly BlogSocialAnnouncement[] = parsedSchedules.map(({draft, scheduledAt}) => ({
-      id: createAnnouncementId(),
-      channel: draft.id,
-      message: draft.message.trim(),
-      scheduledAt: scheduledAt as string,
-      deliveryTiming: draft.deliveryTiming,
-      status: 'scheduled',
-      createdAt: now,
-      updatedAt: now,
-      linkUrl,
-      contentAngle: draft.contentAngle,
-      linkPlacement: draft.linkPlacement,
-      mediaType: draft.mediaType === 'none' ? undefined : draft.mediaType,
-      mediaUrl: draft.mediaUrl.trim() || undefined,
-    }));
-    const savedPost: BlogPost = {
-      ...post,
-      socialPromotion: {
-        announcements: [
-          ...(post.socialPromotion?.announcements ?? []),
-          ...announcements,
-        ],
-      },
-    };
-
+  protected async savePromotionFromEditor(post: BlogPost, promotion: BlogSocialPromotion): Promise<void> {
     this.saveInProgress = true;
 
     try {
-      await this.blogRepository.savePost(savedPost);
-      this.toast.success(`Scheduled ${announcements.length} social announcement${announcements.length === 1 ? '' : 's'} for “${post.title}”.`);
+      await this.blogRepository.savePost({
+        ...post,
+        socialPromotion: promotion,
+      });
+      this.calendarPromotionDrafts.delete(post.id);
+      this.socialComposerSourcePost = {...post, socialPromotion: promotion};
+      this.socialComposerCreateNew = true;
+      this.toast.success(`Saved the social plan for “${post.title}”.`);
       this.closeSocialComposer();
     } catch (error) {
       this.toast.error(`Unable to save the social plan: ${getErrorMessage(error)}`);
@@ -1488,7 +1201,6 @@ export class PublishingCalendarComponent {
       this.saveInProgress = false;
     }
   }
-
   protected isAnnouncementEditable(announcement: BlogSocialAnnouncement): boolean {
     return announcement.status === 'draft' || announcement.status === 'scheduled' || announcement.status === 'failed';
   }
@@ -1500,7 +1212,7 @@ export class PublishingCalendarComponent {
     this.announcementMessage = announcement.message;
     this.announcementContentAngle = announcement.contentAngle ?? defaultSocialContentAngle(announcement.channel);
     this.announcementLinkPlacement = announcement.linkPlacement ?? 'post';
-    this.announcementScheduleDraft = toDateTimeLocalValue(announcement.scheduledAt);
+    this.announcementScheduleDraft = toDateTimeLocalValue(announcement.scheduledAt ?? null);
     this.announcementDeliveryTiming = announcement.deliveryTiming ?? 'scheduled';
     this.announcementMediaType = announcement.mediaUrl ? (announcement.mediaType ?? 'image') : 'none';
     this.announcementMediaUrl = announcement.mediaUrl ?? '';
@@ -1671,7 +1383,6 @@ export class PublishingCalendarComponent {
     this.socialComposerOpen = false;
     this.announcementEditorOpen = false;
     this.scheduleDraft = '';
-    this.channelDrafts = [];
     this.announcementMessage = '';
     this.announcementContentAngle = 'personal-story';
     this.announcementLinkPlacement = 'post';
@@ -1704,7 +1415,7 @@ export class PublishingCalendarComponent {
           continue;
         }
 
-        const timestamp = new Date(announcement.scheduledAt).getTime();
+        const timestamp = new Date(announcement.scheduledAt ?? '').getTime();
 
         if (Number.isFinite(timestamp)) {
           events.push({

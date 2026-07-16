@@ -1,0 +1,545 @@
+<section class="overflow-hidden border border-zinc-800 bg-zinc-950/60" aria-labelledby="social-promotion-title">
+  <header class="border-b border-zinc-800 bg-zinc-950 px-4 py-4 sm:px-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="min-w-0">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-cyan-300">Social promotion workspace</p>
+        <h2 id="social-promotion-title" class="mt-1 truncate text-xl font-semibold text-zinc-50">{{ post().title || 'Untitled post' }}</h2>
+        <p class="mt-1 text-sm text-zinc-500">
+          Build native-first posts here, then use the Calendar when the timing matters.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="border border-zinc-800 bg-black/30 px-3 py-2 text-zinc-400">
+          {{ post().status | titlecase }} article
+        </span>
+        <span
+          class="border px-3 py-2"
+          [class.border-amber-500/50]="isDirty()"
+          [class.text-amber-200]="isDirty()"
+          [class.border-zinc-800]="!isDirty()"
+          [class.text-zinc-500]="!isDirty()"
+        >
+          {{ isDirty() ? 'Unsaved social changes' : 'Social drafts up to date' }}
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <nav
+    class="flex gap-2 overflow-x-auto border-b border-zinc-800 bg-black/30 p-3 sm:p-4"
+    role="tablist"
+    aria-label="Social channel"
+    aria-orientation="horizontal"
+  >
+    @for (channel of channels; track channel.id) {
+      <button
+        type="button"
+        role="tab"
+        class="group relative min-w-[7.25rem] shrink-0 border px-3 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+        [class.border-cyan-300]="isChannelActive(channel.id)"
+        [class.bg-cyan-400/10]="isChannelActive(channel.id)"
+        [class.border-zinc-800]="!isChannelActive(channel.id)"
+        [class.bg-zinc-950]="!isChannelActive(channel.id)"
+        [id]="'social-tab-' + channel.id"
+        [attr.tabindex]="isChannelActive(channel.id) ? 0 : -1"
+        [attr.aria-selected]="isChannelActive(channel.id)"
+        [attr.aria-controls]="'social-panel-' + channel.id"
+        (click)="selectChannel(channel.id)"
+        (keydown)="onChannelKeydown($event, channel.id)"
+      >
+        <span class="flex items-center gap-2">
+          <fa-icon [icon]="channel.icon" [class]="channel.iconClass"></fa-icon>
+          <span class="text-xs font-semibold text-zinc-100">{{ channel.label }}</span>
+        </span>
+        <span class="mt-2 flex items-center gap-2 text-[0.65rem] text-zinc-500">
+          <span
+            class="h-1.5 w-1.5 rounded-full"
+            [class.bg-emerald-400]="hasChannelWork(channel.id)"
+            [class.bg-zinc-700]="!hasChannelWork(channel.id)"
+          ></span>
+          {{ channelState(channel.id) }}
+        </span>
+      </button>
+    }
+  </nav>
+
+  @if (activeAnnouncement(); as announcement) {
+    <div
+      class="grid min-w-0 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]"
+      role="tabpanel"
+      [id]="'social-panel-' + activeChannel()"
+      [attr.aria-labelledby]="'social-tab-' + activeChannel()"
+      tabindex="0"
+    >
+      <div class="min-w-0 space-y-6 p-4 sm:p-6 xl:border-r xl:border-zinc-800">
+        @if (isLifecycleReadOnly()) {
+          <div class="border border-amber-500/40 bg-amber-950/20 px-4 py-3 text-sm leading-6 text-amber-100" role="status">
+            This delivery is {{ statusLabel(announcement.status).toLowerCase() }} and its history is read-only.
+            {{ announcement.status === 'failed' ? 'Create a retry draft below to revise the same idea safely.' : 'Use “Create another draft” below to reuse the idea safely.' }}
+          </div>
+        }
+
+        <section class="space-y-4" aria-labelledby="social-strategy-heading">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-300">1 · Strategy</p>
+              <h3 id="social-strategy-heading" class="mt-1 text-base font-semibold text-zinc-100">
+                Shape this for {{ activeChannelOption().label }}
+              </h3>
+              <p class="mt-1 text-xs leading-5 text-zinc-500">{{ activeChannelOption().description }}</p>
+            </div>
+            @if (!isLifecycleReadOnly()) {
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                (click)="startAnotherDraft()"
+              >
+                Start another {{ activeChannelOption().shortLabel }} draft
+              </button>
+            }
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="space-y-2 text-sm text-zinc-300">
+              <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Content angle</span>
+              <select
+                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                [value]="announcement.contentAngle"
+                [disabled]="isLifecycleReadOnly()"
+                (change)="onAngleChange($event)"
+              >
+                @for (angle of angles; track angle.value) {
+                  <option [value]="angle.value" [selected]="announcement.contentAngle === angle.value">{{ angle.label }}</option>
+                }
+              </select>
+              <span class="block text-xs leading-5 text-zinc-500">
+                {{ angleDescription(announcement.contentAngle) }}
+              </span>
+            </label>
+
+            <label class="space-y-2 text-sm text-zinc-300">
+              <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Post format</span>
+              <select
+                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                [value]="announcement.postFormat"
+                [disabled]="isLifecycleReadOnly()"
+                (change)="onFormatChange($event)"
+              >
+                @for (format of availableFormats(); track format) {
+                  <option [value]="format" [selected]="announcement.postFormat === format">{{ formatLabel(format) }}</option>
+                }
+              </select>
+              <span class="block text-xs leading-5 text-zinc-500">
+                Native formats usually earn attention before the article link asks for a click.
+              </span>
+            </label>
+          </div>
+
+          <fieldset class="space-y-2">
+            <legend class="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Article link placement</legend>
+            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              @for (placement of linkPlacements; track placement.value) {
+                <label
+                  class="cursor-pointer border p-3 transition"
+                  [class.border-cyan-400]="announcement.linkPlacement === placement.value"
+                  [class.bg-cyan-400/10]="announcement.linkPlacement === placement.value"
+                  [class.border-zinc-800]="announcement.linkPlacement !== placement.value"
+                >
+                  <span class="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      class="mt-0.5 border-zinc-600 bg-zinc-950 text-cyan-400 focus:ring-cyan-400"
+                      name="social-link-placement"
+                      [value]="placement.value"
+                      [checked]="announcement.linkPlacement === placement.value"
+                      [disabled]="isLifecycleReadOnly()"
+                      (change)="onLinkPlacementChange($event)"
+                    >
+                    <span>
+                      <span class="block text-xs font-medium text-zinc-200">{{ placement.label }}</span>
+                      <span class="mt-1 block text-[0.68rem] leading-4 text-zinc-500">{{ placement.description }}</span>
+                    </span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+        </section>
+
+        <section class="space-y-4 border-t border-zinc-800 pt-6" aria-labelledby="social-media-heading">
+          <div>
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-300">2 · Native media</p>
+            <h3 id="social-media-heading" class="mt-1 text-base font-semibold text-zinc-100">Give the platform something to show</h3>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
+            <label class="space-y-2">
+              <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Media type</span>
+              <select
+                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                [value]="announcement.mediaType ?? 'none'"
+                [disabled]="isLifecycleReadOnly()"
+                (change)="onMediaTypeChange($event)"
+              >
+                @for (mediaType of mediaTypes; track mediaType.value) {
+                  <option [value]="mediaType.value" [selected]="(announcement.mediaType ?? 'none') === mediaType.value">{{ mediaType.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="space-y-2">
+              <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Media URL</span>
+              <input
+                type="url"
+                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                [value]="announcement.mediaUrl ?? ''"
+                [disabled]="isLifecycleReadOnly() || !announcement.mediaType"
+                placeholder="https://… image or video"
+                (input)="onMediaUrlInput($event)"
+              >
+            </label>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            @if (socialImage()) {
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                [disabled]="isLifecycleReadOnly()"
+                (click)="usePostImage(socialImage())"
+              >
+                Use post social image
+              </button>
+            }
+            @if (coverImage()) {
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                [disabled]="isLifecycleReadOnly()"
+                (click)="usePostImage(coverImage())"
+              >
+                Use cover image
+              </button>
+            }
+            @if (announcement.mediaUrl) {
+              <button
+                type="button"
+                class="border border-zinc-800 px-3 py-2 text-xs text-zinc-500 hover:border-red-500/70 hover:text-red-300"
+                [disabled]="isLifecycleReadOnly()"
+                (click)="clearMedia()"
+              >
+                Remove media
+              </button>
+            }
+          </div>
+
+          @if (hasMediaValidationError()) {
+            <p class="border border-red-500/40 bg-red-950/20 px-3 py-2 text-xs leading-5 text-red-200" role="alert">
+              This format needs native media. Add a complete public http(s) image or video URL before saving.
+            </p>
+          }
+        </section>
+
+        <section class="space-y-4 border-t border-zinc-800 pt-6" aria-labelledby="social-copy-heading">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-300">3 · Copy</p>
+              <h3 id="social-copy-heading" class="mt-1 text-base font-semibold text-zinc-100">Write the post people see first</h3>
+            </div>
+            <button
+              type="button"
+              class="border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+              [disabled]="isLifecycleReadOnly()"
+              (click)="regenerateStarterCopy()"
+            >
+              Regenerate starter copy
+            </button>
+          </div>
+
+          <label class="block space-y-2">
+            <span class="sr-only">{{ activeChannelOption().label }} post copy</span>
+            <textarea
+              rows="10"
+              class="w-full resize-y border bg-zinc-950 px-4 py-3 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-cyan-300"
+              [class.border-red-500]="isOverCharacterLimit()"
+              [class.border-zinc-700]="!isOverCharacterLimit()"
+              [value]="announcement.message"
+              [disabled]="isLifecycleReadOnly()"
+              [attr.aria-invalid]="isOverCharacterLimit()"
+              (input)="onMessageInput($event)"
+            ></textarea>
+          </label>
+          <div class="flex items-center justify-between gap-4 text-xs">
+            <p class="text-zinc-500">Lead with the story, takeaway, or question—not the URL.</p>
+            <p [class.text-red-300]="isOverCharacterLimit()" [class.text-zinc-500]="!isOverCharacterLimit()">
+              {{ characterCount() | number }} / {{ activeChannelOption().characterLimit | number }}
+            </p>
+          </div>
+        </section>
+
+        <section class="space-y-4 border border-violet-500/30 bg-violet-950/10 p-4 sm:p-5" aria-labelledby="social-ai-heading">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-violet-300">Optional AI assistance</p>
+              <h3 id="social-ai-heading" class="mt-1 text-base font-semibold text-zinc-100">Create distinct platform-ready variants</h3>
+              <p class="mt-1 text-xs leading-5 text-zinc-500">
+                Suggestions use the article draft as context. Nothing is applied or saved automatically.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="shrink-0 border border-violet-400 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+              [disabled]="isAiLoading() || isLifecycleReadOnly()"
+              (click)="generateAiSuggestions()"
+            >
+              {{ isAiLoading() ? 'Writing variants…' : 'Write variants with AI' }}
+            </button>
+          </div>
+
+          <label class="block space-y-2">
+            <span class="text-xs font-medium text-zinc-400">Optional direction</span>
+            <input
+              type="text"
+              class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-violet-300"
+              placeholder="Example: emphasize the family safe-word takeaway"
+              [value]="aiInstruction()"
+              [disabled]="isLifecycleReadOnly()"
+              (input)="onAiInstructionInput($event)"
+            >
+          </label>
+
+          @if (aiError()) {
+            <p class="border border-amber-500/40 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100" role="status">
+              {{ aiError() }}
+            </p>
+          }
+          @if (aiNotice()) {
+            <p class="border border-emerald-500/40 bg-emerald-950/20 px-3 py-2 text-xs leading-5 text-emerald-100" role="status">
+              {{ aiNotice() }}
+            </p>
+          }
+
+          @if (aiSuggestions().length > 0) {
+            <div class="grid gap-3">
+              @for (suggestion of aiSuggestions(); track suggestion.id; let index = $index) {
+                <article class="space-y-3 border border-zinc-800 bg-zinc-950/80 p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">Variant {{ index + 1 }}</p>
+                    <button
+                      type="button"
+                      class="shrink-0 border border-violet-400/70 px-3 py-1.5 text-xs font-semibold text-violet-100 hover:bg-violet-400 hover:text-zinc-950"
+                      (click)="applyAiSuggestion(suggestion)"
+                    >
+                      Apply variant
+                    </button>
+                  </div>
+                  <p class="whitespace-pre-wrap text-sm leading-6 text-zinc-200">{{ suggestion.message }}</p>
+                  <div class="grid gap-2 border-t border-zinc-800 pt-3 text-xs leading-5 sm:grid-cols-2">
+                    <p class="text-zinc-500"><span class="text-zinc-300">Why it works:</span> {{ suggestion.rationale }}</p>
+                    <p class="text-zinc-500"><span class="text-zinc-300">Media concept:</span> {{ suggestion.mediaConcept }}</p>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="space-y-4 border-t border-zinc-800 pt-6" aria-labelledby="social-timing-heading">
+          <div>
+            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-300">4 · Status & timing</p>
+            <h3 id="social-timing-heading" class="mt-1 text-base font-semibold text-zinc-100">Keep composing or make it calendar-ready</h3>
+          </div>
+
+          @if (announcement.status === 'posted' || announcement.status === 'queued' || announcement.status === 'failed') {
+            <div class="flex flex-col gap-3 border border-zinc-800 bg-black/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm font-medium text-zinc-200">This post is {{ statusLabel(announcement.status).toLowerCase() }}.</p>
+                <p class="mt-1 text-xs text-zinc-500">
+                  {{ announcement.status === 'failed'
+                    ? 'Keep the failed attempt as history, then create a retry draft with the same copy and media.'
+                    : 'Preserve its delivery history and start a new draft for another share.' }}
+                </p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @if (announcement.status === 'failed') {
+                  <button
+                    type="button"
+                    class="shrink-0 border border-cyan-400 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
+                    (click)="createRetryDraft()"
+                  >
+                    Create retry draft
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="shrink-0 border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                  (click)="startAnotherDraft()"
+                >
+                  Create another draft
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <label class="space-y-2">
+                <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Status</span>
+                <select
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                  [value]="announcement.status"
+                  (change)="onStatusChange($event)"
+                >
+                  @for (status of statuses; track status.value) {
+                    <option [value]="status.value" [selected]="announcement.status === status.value">{{ status.label }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="space-y-2">
+                <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Delivery timing</span>
+                <select
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                  [value]="announcement.deliveryTiming ?? 'scheduled'"
+                  (change)="onTimingChange($event)"
+                >
+                  <option value="at-publish" [disabled]="!canUseAtPublish()" [selected]="announcement.deliveryTiming === 'at-publish'">At article publication</option>
+                  <option value="scheduled" [selected]="announcement.deliveryTiming !== 'at-publish'">Custom date and time</option>
+                </select>
+              </label>
+
+              <label class="space-y-2 sm:col-span-2 xl:col-span-1">
+                <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Date and time</span>
+                <input
+                  type="datetime-local"
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  [value]="toDateTimeLocal(announcement.scheduledAt)"
+                  [disabled]="announcement.status !== 'scheduled' || announcement.deliveryTiming === 'at-publish'"
+                  (change)="onScheduleChange($event)"
+                >
+              </label>
+            </div>
+
+            <p class="text-xs text-zinc-500">
+              {{ announcement.status === 'draft' ? 'Drafts can stay unscheduled until the campaign is ready.' : formatDateTime(announcement.scheduledAt) }}
+            </p>
+            @if (scheduleValidationError()) {
+              <p class="border border-red-500/40 bg-red-950/20 px-3 py-2 text-xs leading-5 text-red-200" role="alert">
+                {{ scheduleValidationError() }}
+              </p>
+            }
+          }
+        </section>
+
+        <footer class="flex flex-col-reverse gap-3 border-t border-zinc-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            class="border border-zinc-700 px-4 py-3 text-sm text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+            (click)="requestOpenCalendar()"
+          >
+            {{ mode() === 'schedule' ? 'Back to calendar' : 'Open in publishing calendar' }}
+          </button>
+          <button
+            type="button"
+            class="border border-cyan-300 bg-cyan-300 px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500"
+            [disabled]="saving() || !canSave()"
+            (click)="requestSave()"
+          >
+            {{ saving() ? 'Saving…' : announcement.status === 'scheduled' ? 'Save scheduled post' : 'Save social draft' }}
+          </button>
+        </footer>
+      </div>
+
+      <aside class="min-w-0 space-y-5 bg-black/20 p-4 sm:p-6" aria-label="Social post preview and channel status">
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">Approximate preview</p>
+              <h3 class="mt-1 text-sm font-semibold text-zinc-200">{{ activeChannelOption().label }}</h3>
+            </div>
+            <span class="border border-zinc-800 px-2 py-1 text-[0.65rem] uppercase tracking-[0.14em] text-zinc-500">
+              {{ formatLabel(announcement.postFormat) }}
+            </span>
+          </div>
+
+          <article class="overflow-hidden border border-zinc-700 bg-zinc-50 text-zinc-950 shadow-2xl shadow-black/30">
+            <header class="flex items-center gap-3 p-4">
+              @if (post().author.avatarUrl) {
+                <img class="h-10 w-10 rounded-full object-cover" [src]="post().author.avatarUrl" alt="">
+              } @else {
+                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-zinc-50">CM</span>
+              }
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold">{{ post().author.name }}</p>
+                <p class="text-xs text-zinc-500">Draft · {{ activeChannelOption().label }}</p>
+              </div>
+              <fa-icon [icon]="activeChannelOption().icon" [class]="activeChannelOption().iconClass"></fa-icon>
+            </header>
+
+            <p class="whitespace-pre-wrap px-4 pb-4 text-sm leading-6">{{ announcement.message }}</p>
+
+            @if (announcement.mediaUrl && announcement.mediaType === 'image') {
+              <img class="max-h-[28rem] w-full bg-zinc-200 object-cover" [src]="announcement.mediaUrl" [alt]="post().title">
+            } @else if (announcement.mediaUrl && announcement.mediaType === 'video') {
+              <video class="max-h-[28rem] w-full bg-black object-contain" [src]="announcement.mediaUrl" controls preload="metadata"></video>
+            }
+
+            @if (announcement.linkPlacement === 'post') {
+              <div class="border-t border-zinc-300 bg-zinc-100 p-4">
+                <p class="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">{{ articleUrl() }}</p>
+                <p class="mt-1 text-sm font-semibold">{{ post().title }}</p>
+                <p class="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600">{{ post().excerpt }}</p>
+              </div>
+            }
+          </article>
+
+          @if (announcement.linkPlacement !== 'post') {
+            <p class="border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-500">
+              @switch (announcement.linkPlacement) {
+                @case ('first-comment') { Add {{ articleUrl() }} as the first comment after publishing. }
+                @case ('profile') { Make sure the profile link points to {{ articleUrl() }}. }
+                @default { This version is intentionally link-free. }
+              }
+            </p>
+          }
+        </section>
+
+        <section class="border border-zinc-800 bg-zinc-950/80" aria-labelledby="campaign-status-heading">
+          <header class="border-b border-zinc-800 px-4 py-3">
+            <h3 id="campaign-status-heading" class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300">Campaign status</h3>
+          </header>
+          <ul class="divide-y divide-zinc-800">
+            @for (channel of channels; track channel.id) {
+              <li class="flex items-center justify-between gap-3 px-4 py-3">
+                <span class="flex min-w-0 items-center gap-2 text-sm text-zinc-300">
+                  <fa-icon [icon]="channel.icon" [class]="channel.iconClass"></fa-icon>
+                  <span class="truncate">{{ channel.label }}</span>
+                </span>
+                <span
+                  class="shrink-0 text-xs"
+                  [class.text-emerald-300]="hasChannelWork(channel.id)"
+                  [class.text-zinc-600]="!hasChannelWork(channel.id)"
+                >
+                  {{ channelState(channel.id) }}
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="border border-zinc-800 bg-zinc-950/80 p-4 text-xs leading-5 text-zinc-500">
+          <p class="font-semibold uppercase tracking-[0.18em] text-zinc-300">Current delivery plan</p>
+          <dl class="mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2">
+            <dt>State</dt>
+            <dd class="text-zinc-300">{{ statusLabel(announcement.status) }}</dd>
+            <dt>Timing</dt>
+            <dd class="text-zinc-300">{{ announcement.deliveryTiming === 'at-publish' ? 'At article publication' : formatDateTime(announcement.scheduledAt) }}</dd>
+            <dt>Link</dt>
+            <dd class="text-zinc-300">{{ linkPlacementLabel(announcement.linkPlacement) }}</dd>
+            <dt>Media</dt>
+            <dd class="text-zinc-300">{{ announcement.mediaType ? (announcement.mediaType | titlecase) : 'None' }}</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+  }
+</section>
