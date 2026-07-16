@@ -104,7 +104,13 @@ export class BlogRichTextComponent implements OnChanges {
 
       anchor.classList.add('blog-inline-link');
 
-      if (!href || normalizedHref.startsWith('unsafe:') || normalizedHref.startsWith('javascript:')) {
+      if (
+        !href ||
+        normalizedHref.startsWith('unsafe:') ||
+        normalizedHref.startsWith('javascript:') ||
+        normalizedHref.startsWith('data:') ||
+        normalizedHref.startsWith('vbscript:')
+      ) {
         anchor.removeAttribute('href');
         anchor.removeAttribute('target');
         anchor.removeAttribute('rel');
