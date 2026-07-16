@@ -38,6 +38,12 @@ Status legend:
   - Effort: M
   - Validation: `npm run test -- --watch=false --browsers=ChromeHeadless`.
 
+- [x] Clear the root and Functions Dependabot backlog.
+  - Impact: High (security)
+  - Effort: M
+  - Progress: reduced the root audit from `10` vulnerable paths (`3` low, `7` high) and the Functions audit from `10` vulnerable paths (`9` moderate, `1` high) to `0` in both lockfiles. Aligned Angular runtime/tooling patches, accepted compatible transitive updates, retained Firebase Admin 13 to honor the Firebase Functions peer contract, and documented the temporary Vite/esbuild and Google-client/UUID overrides with removal conditions.
+  - Validation: both npm audits report `0`; app and Functions builds pass under supported Node runtimes; lint passes with `0` findings; the full Angular suite passes (`573/573`); and all Functions tests pass (`27/27`).
+
 - [x] Resolve the OS/game template-accessibility lint backlog.
   - Impact: High
   - Effort: M
