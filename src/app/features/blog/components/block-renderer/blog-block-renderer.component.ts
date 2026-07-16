@@ -32,7 +32,12 @@ import {
   BlogImageLayout,
   BlogStatItem,
 } from '../../models/blog-post.model';
-import {createBlogHeadingIdMap} from '../../utils/blog-reading.util';
+import {
+  BLOG_QUICK_SUMMARY_DESCRIPTION,
+  BLOG_QUICK_SUMMARY_LABEL,
+  createBlogHeadingIdMap,
+  isBlogQuickSummaryHeading,
+} from '../../utils/blog-reading.util';
 import {htmlToPlainText} from '../../utils/blog-html.util';
 import {
   getTrustedBlogAppEmbedUrl,
@@ -51,6 +56,7 @@ interface RenderableBlogBlock {
   isSunoEmbed: boolean;
   appEmbedHeight: number;
   headingId: string | null;
+  quickSummaryTooltipId: string | null;
   textHtml: string;
   captionHtml: string;
   attributionHtml: string;
@@ -108,11 +114,12 @@ interface RenderableBlogImage {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="blog-anchored-subheading clear-both group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
+                class="blog-anchored-subheading relative clear-both group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  class="blog-heading-anchor inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  [attr.aria-describedby]="row.quickSummaryTooltipId"
                 >
                   <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
@@ -120,18 +127,26 @@ interface RenderableBlogImage {
                           class="text-sm text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
                   }
                 </a>
+                @if (row.quickSummaryTooltipId) {
+                  <span
+                    [id]="row.quickSummaryTooltipId"
+                    class="blog-quick-summary-tooltip"
+                    role="tooltip"
+                  >{{ quickSummaryDescription }}</span>
+                }
               </h3>
             } @else {
               <h2
                 [id]="row.headingId"
-                class="blog-section-heading clear-both group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
+                class="blog-section-heading relative clear-both group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
                 [class.blog-sticky-section-heading]="row.headingId === activeHeadingId"
                 [attr.data-sticky-active]="row.headingId === activeHeadingId ? '' : null"
                 data-sticky-section-heading
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  class="blog-heading-anchor inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  [attr.aria-describedby]="row.quickSummaryTooltipId"
                 >
                   <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
@@ -139,6 +154,13 @@ interface RenderableBlogImage {
                           class="text-base text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
                   }
                 </a>
+                @if (row.quickSummaryTooltipId) {
+                  <span
+                    [id]="row.quickSummaryTooltipId"
+                    class="blog-quick-summary-tooltip"
+                    role="tooltip"
+                  >{{ quickSummaryDescription }}</span>
+                }
               </h2>
             }
           }
@@ -570,6 +592,55 @@ interface RenderableBlogImage {
       scroll-margin-top: calc(var(--blog-sticky-stack-height) + env(safe-area-inset-top));
     }
 
+    .blog-quick-summary-tooltip {
+      position: absolute;
+      bottom: calc(100% + .65rem);
+      left: 0;
+      z-index: 60;
+      visibility: hidden;
+      width: max-content;
+      max-width: min(20rem, calc(100vw - 2rem));
+      padding: .55rem .7rem;
+      border: 1px solid var(--site-border);
+      background: var(--site-heading);
+      color: var(--site-panel);
+      font-family: var(--font-body);
+      font-size: .78rem;
+      font-weight: 500;
+      line-height: 1.45;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(.3rem);
+      transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+      white-space: normal;
+    }
+
+    .blog-quick-summary-tooltip::after {
+      position: absolute;
+      top: 100%;
+      left: 1rem;
+      width: .65rem;
+      height: .65rem;
+      border-right: 1px solid var(--site-border);
+      border-bottom: 1px solid var(--site-border);
+      background: var(--site-heading);
+      content: '';
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .blog-heading-anchor:hover + .blog-quick-summary-tooltip,
+    .blog-heading-anchor:focus-visible + .blog-quick-summary-tooltip {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blog-quick-summary-tooltip {
+        transition: none;
+      }
+    }
+
     .blog-section-heading.blog-sticky-section-heading {
       font-size: clamp(.95rem, calc(1rem * var(--reader-font-scale)), 1.35rem) !important;
       line-height: 1.3 !important;
@@ -817,6 +888,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   protected readonly faMagnifyingGlassPlus = faMagnifyingGlassPlus;
   protected readonly faXmark = faXmark;
   protected readonly sunoEmbedHeight = SUNO_EMBED_HEIGHT;
+  protected readonly quickSummaryDescription = BLOG_QUICK_SUMMARY_DESCRIPTION;
 
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -842,6 +914,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       const captionHtml = block.data.caption ?? '';
       const imageAlt = this.createImageAlt(block);
       const sunoUrls = getBlogSunoEmbedUrls(block.data.embedUrl ?? block.data.url);
+      const headingId = headingIdMap.get(block.id) ?? null;
+      const isQuickSummary = block.type === 'header'
+        && isBlogQuickSummaryHeading(this.createPlainText(block.data.text));
       let galleryIndex: number | null = null;
 
       if (block.type === 'image' && block.data.url) {
@@ -862,8 +937,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         isAppEmbed: getTrustedBlogAppEmbedUrl(block.data.embedUrl ?? block.data.url) !== null,
         isSunoEmbed: sunoUrls !== null,
         appEmbedHeight: normalizeBlogAppEmbedHeight(block.data.height),
-        headingId: headingIdMap.get(block.id) ?? null,
-        textHtml: block.data.text ?? '',
+        headingId,
+        quickSummaryTooltipId: isQuickSummary && headingId ? `${headingId}-description` : null,
+        textHtml: isQuickSummary ? BLOG_QUICK_SUMMARY_LABEL : block.data.text ?? '',
         captionHtml,
         attributionHtml: block.data.attribution ?? '',
         blockHtml: block.type === 'markdown'
