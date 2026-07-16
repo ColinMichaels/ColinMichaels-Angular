@@ -4,8 +4,12 @@ import {
   BLOG_SOCIAL_CONTENT_ANGLES,
   BLOG_SOCIAL_LINK_PLACEMENTS,
   BLOG_SOCIAL_MEDIA_TYPES,
+  BLOG_SOCIAL_POST_FORMATS,
+  BlogSocialChannel,
   BlogSocialAnnouncementStatus,
+  BlogSocialPostFormat,
 } from '../models/blog-social-promotion.model';
+import {isSocialPostFormatAllowed} from './blog-social-promotion.util';
 
 export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const blogPostStatusSet = new Set<string>(BLOG_POST_STATUSES);
@@ -13,6 +17,7 @@ const blogSocialChannelSet = new Set<string>(BLOG_SOCIAL_CHANNELS);
 const blogSocialContentAngleSet = new Set<string>(BLOG_SOCIAL_CONTENT_ANGLES);
 const blogSocialLinkPlacementSet = new Set<string>(BLOG_SOCIAL_LINK_PLACEMENTS);
 const blogSocialMediaTypeSet = new Set<string>(BLOG_SOCIAL_MEDIA_TYPES);
+const blogSocialPostFormatSet = new Set<string>(BLOG_SOCIAL_POST_FORMATS);
 const blogSocialAnnouncementStatusSet = new Set<BlogSocialAnnouncementStatus>([
   'draft',
   'scheduled',
@@ -95,13 +100,21 @@ function isBlogSocialAnnouncement(value: unknown): boolean {
     return false;
   }
 
+  const status = value['status'];
+  const scheduledAt = value['scheduledAt'];
+  const hasValidSchedule = typeof scheduledAt === 'string'
+    && scheduledAt.trim().length > 0
+    && Number.isFinite(new Date(scheduledAt).getTime());
+  const channel = value['channel'];
+  const postFormat = value['postFormat'];
+
   return typeof value['id'] === 'string'
-    && typeof value['channel'] === 'string'
-    && blogSocialChannelSet.has(value['channel'])
+    && typeof channel === 'string'
+    && blogSocialChannelSet.has(channel)
     && typeof value['message'] === 'string'
-    && typeof value['scheduledAt'] === 'string'
-    && typeof value['status'] === 'string'
-    && blogSocialAnnouncementStatusSet.has(value['status'] as BlogSocialAnnouncementStatus)
+    && (hasValidSchedule || ((status === 'draft' || status === 'cancelled') && scheduledAt === undefined))
+    && typeof status === 'string'
+    && blogSocialAnnouncementStatusSet.has(status as BlogSocialAnnouncementStatus)
     && typeof value['createdAt'] === 'string'
     && typeof value['updatedAt'] === 'string'
     && (
@@ -128,6 +141,14 @@ function isBlogSocialAnnouncement(value: unknown): boolean {
     && (
       value['contentAngle'] === undefined
       || (typeof value['contentAngle'] === 'string' && blogSocialContentAngleSet.has(value['contentAngle']))
+    )
+    && (
+      postFormat === undefined
+      || (
+        typeof postFormat === 'string'
+        && blogSocialPostFormatSet.has(postFormat)
+        && isSocialPostFormatAllowed(channel as BlogSocialChannel, postFormat as BlogSocialPostFormat)
+      )
     )
     && (value['failureReason'] === undefined || typeof value['failureReason'] === 'string');
 }

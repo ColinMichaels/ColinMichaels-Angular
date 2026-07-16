@@ -2,6 +2,9 @@ import {
   createBlogSocialMessage,
   defaultSocialContentAngle,
   defaultSocialLinkPlacement,
+  defaultSocialPostFormat,
+  isSocialPostFormatAllowed,
+  socialPostFormatsForChannel,
 } from './blog-social-promotion.util';
 
 const post = {
@@ -30,6 +33,32 @@ describe('blog social promotion utilities', () => {
     expect(message).toContain(post.excerpt);
     expect(message).toContain('first comment');
     expect(message).not.toContain('https://');
+  });
+
+  it('offers native channel formats with an image-first Facebook default', () => {
+    expect(defaultSocialPostFormat('facebook')).toBe('image');
+    expect(socialPostFormatsForChannel('facebook')).toContain('reel');
+    expect(socialPostFormatsForChannel('instagram')).toContain('carousel');
+    expect(socialPostFormatsForChannel('youtube')).toContain('community');
+    expect(isSocialPostFormatAllowed('x', 'thread')).toBeTrue();
+    expect(isSocialPostFormatAllowed('instagram', 'thread')).toBeFalse();
+  });
+
+  it('treats X as a compact conversation-first channel', () => {
+    expect(defaultSocialContentAngle('x')).toBe('conversation-starter');
+    expect(defaultSocialLinkPlacement('x')).toBe('post');
+
+    const message = createBlogSocialMessage(
+      'x',
+      post,
+      'conversation-starter',
+      'post',
+      'https://colinmichaels.com'
+    );
+
+    expect(message).toContain('How would you approach it?');
+    expect(message).toContain('https://colinmichaels.com/blog/voice-cloning-safe-word');
+    expect(message).not.toContain('I\u2019m curious how other people would approach this.');
   });
 
   it('can create an in-post educational share with a canonical article link', () => {

@@ -348,6 +348,7 @@ export class BlogStorageService {
       thumbnailImage: imageFields.thumbnailImage ?? deleteField(),
       catCorner: post.catCorner ?? deleteField(),
       preview: post.preview ?? deleteField(),
+      socialPromotion: post.socialPromotion ?? deleteField(),
       syncedAt: serverTimestamp(),
       storageVersion: 1,
     };
