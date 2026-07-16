@@ -25,12 +25,25 @@ import {BlogRepositoryService} from '../../../blog/services/blog-repository.serv
 import {createBlogReadingStats} from '../../../blog/utils/blog-reading.util';
 import {SeoService} from '../../../../shared/seo/seo.service';
 import {HOMEPAGE_OG_IMAGE, SITE_NAME, SITE_URL, createSiteTitle} from '../../../../shared/seo/seo.metadata';
+import {
+  clampPaginationPage,
+  DEFAULT_PAGINATION_PAGE_SIZE,
+  getPaginationPageCount,
+  paginateItems,
+  parsePaginationPage,
+} from '../../../../shared/pagination/pagination.util';
+import {SitePaginationComponent} from '../../../../shared/pagination/site-pagination.component';
+import {
+  BLOG_ARCHIVE_VIEW_OPTIONS,
+  parseBlogArchiveView,
+  resolveBlogArchiveListingLayout,
+} from '../../../blog/utils/blog-archive-view.util';
 import {AuthorStats} from '../../models/author.model';
 import {AuthorRepositoryService} from '../../services/author-repository.service';
 
 @Component({
   selector: 'app-author-page',
-  imports: [DatePipe, DecimalPipe, FontAwesomeModule, RouterLink, BlogPostListingComponent],
+  imports: [DatePipe, DecimalPipe, FontAwesomeModule, RouterLink, BlogPostListingComponent, SitePaginationComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page author-resume-page">
@@ -39,7 +52,7 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
           <nav class="blog-breadcrumb author-breadcrumb" aria-label="Author navigation">
             <a routerLink="/" class="font-medium">Home</a>
             <span aria-hidden="true">/</span>
-            <a [routerLink]="['/', pathNames.BLOG]" class="font-medium">Blog</a>
+            <a [routerLink]="['/', pathNames.AUTHORS]" class="font-medium">Authors</a>
             <span aria-hidden="true">/</span>
             <span aria-current="page">{{ profile.name }}</span>
           </nav>
@@ -149,9 +162,23 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
                 <h2 id="author-writing-heading">Articles by {{ profile.name }}</h2>
                 <p>Ideas, project notes, and lessons from the work.</p>
               </div>
+
+              <app-site-pagination
+                [totalItems]="posts().length"
+                [routeCommands]="['/authors', profile.slug]"
+                fragment="author-writing-heading"
+                itemLabel="articles"
+                [showSummary]="false"
+                [showPageNavigation]="false"
+                [viewOptions]="archiveViewOptions"
+                [activeView]="archiveView()"
+                defaultView="list"
+                [viewAriaLabel]="'Article view options for ' + profile.name"
+              ></app-site-pagination>
+
               <app-blog-post-listing
-                [posts]="posts()"
-                layout="compact"
+                [posts]="paginatedPosts()"
+                [layout]="listingLayout()"
                 [showTags]="false"
                 [showReadLink]="true"
                 [excerptLineClamp]="2"
@@ -159,6 +186,18 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
                 emptyMessage="Published writing from this author will appear here."
                 [regionLabel]="'Articles by ' + profile.name"
               ></app-blog-post-listing>
+
+              <app-site-pagination
+                [currentPage]="currentPage()"
+                [totalItems]="posts().length"
+                [pageSize]="postsPageSize"
+                [routeCommands]="['/authors', profile.slug]"
+                fragment="author-writing-heading"
+                itemLabel="articles"
+                itemLabelSingular="article"
+                ariaLabel="Articles pagination"
+                [showViewOptions]="false"
+              ></app-site-pagination>
             </div>
           </section>
         } @else {
@@ -574,6 +613,7 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
       .author-location {
         margin-top: 1.5rem;
       }
+
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -612,7 +652,19 @@ export class AuthorPageComponent {
   private readonly blog = inject(BlogRepositoryService);
   private readonly seo = inject(SeoService);
   protected readonly pathNames = PATH_NAMES;
+  protected readonly postsPageSize = DEFAULT_PAGINATION_PAGE_SIZE;
+  protected readonly archiveViewOptions = BLOG_ARCHIVE_VIEW_OPTIONS;
   protected readonly slug = toSignal(this.route.paramMap.pipe(map(params => params.get('slug') ?? '')), {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''});
+  private readonly requestedPage = toSignal(
+    this.route.queryParamMap.pipe(map(params => parsePaginationPage(params.get('page')))),
+    {initialValue: parsePaginationPage(this.route.snapshot.queryParamMap.get('page'))}
+  );
+  private readonly requestedView = toSignal(
+    this.route.queryParamMap.pipe(map(params => params.get('view'))),
+    {initialValue: this.route.snapshot.queryParamMap.get('view')}
+  );
+  protected readonly archiveView = computed(() => parseBlogArchiveView(this.requestedView(), 'list'));
+  protected readonly listingLayout = computed(() => resolveBlogArchiveListingLayout(this.archiveView()));
   private readonly authorList = toSignal(this.authors.getPublishedAuthors$(), {initialValue: []});
   private readonly publishedPosts = toSignal(this.blog.getPublishedFullPosts$(), {initialValue: []});
   protected readonly author = computed(() => this.authorList().find(author => author.slug === this.slug()));
@@ -620,6 +672,13 @@ export class AuthorPageComponent {
     const author = this.author();
     return author ? this.publishedPosts().filter(post => post.authorId === author.id || post.author.slug === author.slug) : [];
   });
+  protected readonly totalPages = computed(() => getPaginationPageCount(this.posts().length, this.postsPageSize));
+  protected readonly currentPage = computed(() => clampPaginationPage(this.requestedPage(), this.totalPages()));
+  protected readonly paginatedPosts = computed(() => paginateItems(
+    this.posts(),
+    this.currentPage(),
+    this.postsPageSize
+  ));
   protected readonly bioParagraphs = computed(() => this.author()?.bio.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean) ?? []);
   protected readonly stats = computed<AuthorStats | null>(() => {
     const posts = this.posts();

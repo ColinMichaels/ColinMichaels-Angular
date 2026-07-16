@@ -12,6 +12,24 @@ import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
 import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.util';
+import {
+  clampPaginationPage,
+  DEFAULT_PAGINATION_PAGE_SIZE,
+  getPaginationPageCount,
+  paginateItems,
+  parsePaginationPage,
+} from '../../../../shared/pagination/pagination.util';
+import {SitePaginationComponent} from '../../../../shared/pagination/site-pagination.component';
+import {
+  BLOG_ARCHIVE_VIEW_OPTIONS,
+  parseBlogArchiveView,
+  resolveBlogArchiveListingLayout,
+} from '../../utils/blog-archive-view.util';
+import {
+  createBlogCategorySlug,
+  getBlogTaxonomyTerms,
+  parseBlogCategoryFilterSlugs,
+} from '../../utils/blog-category-url.util';
 
 @Component({
   selector: 'app-blog-index',
@@ -20,6 +38,7 @@ import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.uti
     FontAwesomeModule,
     BlogCategoryNavComponent,
     BlogPostListingComponent,
+    SitePaginationComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -29,9 +48,6 @@ import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.uti
           <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 class="blog-page-title">Blog</h1>
-              <p class="blog-page-description">
-                Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.
-              </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <a
@@ -52,10 +68,25 @@ import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.uti
               </a>
             </div>
           </div>
-          <app-blog-category-nav></app-blog-category-nav>
+          <div class="blog-archive-toolbar">
+            <app-blog-category-nav [selectedSlugs]="selectedCategorySlugs()"></app-blog-category-nav>
+
+            <app-site-pagination
+              [totalItems]="posts().length"
+              [routeCommands]="['/', pathNames.BLOG]"
+              fragment="blog-post-list"
+              itemLabel="posts"
+              [showSummary]="false"
+              [showPageNavigation]="false"
+              [viewOptions]="archiveViewOptions"
+              [activeView]="archiveView()"
+              defaultView="image-title"
+              viewAriaLabel="Blog post view options"
+            ></app-site-pagination>
+          </div>
         </header>
 
-        <section>
+        <section id="blog-post-list">
           @if (!isLoading() && !loadError() && activeTopic(); as topic) {
             <p class="blog-section-rule blog-results-summary">
               Showing {{ posts().length }} published post{{ posts().length === 1 ? '' : 's' }}
@@ -65,8 +96,8 @@ import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.uti
           }
 
           <app-blog-post-listing
-            [posts]="posts()"
-            layout="list"
+            [posts]="paginatedPosts()"
+            [layout]="listingLayout()"
             [loading]="isLoading()"
             [error]="loadError()"
             [appearance]="activeTopicAppearance()"
@@ -74,6 +105,18 @@ import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.uti
             emptyMessage="Published writing will appear here as it becomes available."
             regionLabel="Published blog posts"
           ></app-blog-post-listing>
+
+          <app-site-pagination
+            [currentPage]="currentPage()"
+            [totalItems]="posts().length"
+            [pageSize]="postsPageSize"
+            [routeCommands]="['/', pathNames.BLOG]"
+            fragment="blog-post-list"
+            itemLabel="posts"
+            itemLabelSingular="post"
+            ariaLabel="Blog posts pagination"
+            [showViewOptions]="false"
+          ></app-site-pagination>
         </section>
       </section>
     </main>
@@ -86,6 +129,8 @@ export class BlogIndexComponent {
   private readonly openGraph = inject(BlogOpenGraphService);
 
   protected readonly pathNames = PATH_NAMES;
+  protected readonly postsPageSize = DEFAULT_PAGINATION_PAGE_SIZE;
+  protected readonly archiveViewOptions = BLOG_ARCHIVE_VIEW_OPTIONS;
   protected readonly faCode = faCode;
   protected readonly faRss = faRss;
   private readonly allPosts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
@@ -99,18 +144,52 @@ export class BlogIndexComponent {
     this.route.queryParamMap.pipe(map(params => params.get('topic') ?? '')),
     {initialValue: this.route.snapshot.queryParamMap.get('topic') ?? ''}
   );
+  private readonly requestedPage = toSignal(
+    this.route.queryParamMap.pipe(map(params => parsePaginationPage(params.get('page')))),
+    {initialValue: parsePaginationPage(this.route.snapshot.queryParamMap.get('page'))}
+  );
+  private readonly requestedView = toSignal(
+    this.route.queryParamMap.pipe(map(params => params.get('view'))),
+    {initialValue: this.route.snapshot.queryParamMap.get('view')}
+  );
+  private readonly requestedCategories = toSignal(
+    this.route.queryParamMap.pipe(map(params => params.get('categories'))),
+    {initialValue: this.route.snapshot.queryParamMap.get('categories')}
+  );
+  protected readonly selectedCategorySlugs = computed(() => (
+    parseBlogCategoryFilterSlugs(this.requestedCategories())
+  ));
+  protected readonly archiveView = computed(() => parseBlogArchiveView(this.requestedView(), 'image-title'));
+  protected readonly listingLayout = computed(() => resolveBlogArchiveListingLayout(this.archiveView()));
   protected readonly activeTopic = computed(() => (
     this.topicHubs().find(topic => topic.slug === this.topicSlug()) ?? null
   ));
   protected readonly posts = computed(() => {
     const topic = this.activeTopic();
+    const categorySlugs = this.selectedCategorySlugs();
 
-    if (!topic) {
-      return this.allPosts();
-    }
+    return this.allPosts().filter(post => {
+      if (topic && !postMatchesTopicHub(post, topic)) {
+        return false;
+      }
 
-    return this.allPosts().filter(post => postMatchesTopicHub(post, topic));
+      if (!categorySlugs.length) {
+        return true;
+      }
+
+      const postCategorySlugs = new Set(
+        getBlogTaxonomyTerms(post).map(createBlogCategorySlug)
+      );
+      return categorySlugs.every(slug => postCategorySlugs.has(slug));
+    });
   });
+  protected readonly totalPages = computed(() => getPaginationPageCount(this.posts().length, this.postsPageSize));
+  protected readonly currentPage = computed(() => clampPaginationPage(this.requestedPage(), this.totalPages()));
+  protected readonly paginatedPosts = computed(() => paginateItems(
+    this.posts(),
+    this.currentPage(),
+    this.postsPageSize
+  ));
   protected readonly activeTopicAppearance = computed(() => {
     const topic = this.activeTopic();
 

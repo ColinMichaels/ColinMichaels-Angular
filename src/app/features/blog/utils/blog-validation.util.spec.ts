@@ -77,7 +77,7 @@ describe('blog post validation', () => {
     })).toBeFalse();
   });
 
-  it('accepts optional social delivery timing and media fields', () => {
+  it('accepts optional social strategy, delivery timing, and media fields', () => {
     expect(isBlogPost({
       ...createPost(),
       socialPromotion: {
@@ -91,6 +91,9 @@ describe('blog post validation', () => {
           createdAt: '2026-07-11T12:00:00.000Z',
           updatedAt: '2026-07-11T12:00:00.000Z',
           mediaUrl: 'https://colinmichaels.com/social/launch.jpg',
+          mediaType: 'image',
+          linkPlacement: 'profile',
+          contentAngle: 'personal-story',
         }],
       },
     })).toBeTrue();
@@ -111,7 +114,7 @@ describe('blog post validation', () => {
     })).toBeTrue();
   });
 
-  it('rejects malformed social delivery timing and media fields', () => {
+  it('rejects malformed social strategy, delivery timing, and media fields', () => {
     const announcement = {
       id: 'instagram-launch',
       channel: 'instagram',
@@ -129,6 +132,22 @@ describe('blog post validation', () => {
     expect(isBlogPost({
       ...createPost(),
       socialPromotion: {announcements: [{...announcement, mediaUrl: 42}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, mediaType: 'audio'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, mediaType: 'image'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, linkPlacement: 'algorithm'}]},
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      socialPromotion: {announcements: [{...announcement, contentAngle: 'viral'}]},
     })).toBeFalse();
   });
 });

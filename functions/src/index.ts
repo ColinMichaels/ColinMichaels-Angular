@@ -138,6 +138,7 @@ const TAXONOMY_SITEMAP_MIN_POSTS = 2;
 const TAG_SITEMAP_MIN_POSTS = 3;
 const SITEMAP_REVIEW_URL_LIMIT = 180;
 const DEFAULT_AUTHOR_ID = 'colin-michaels';
+const AUTHORS_INDEX_DESCRIPTION = `Meet the writers sharing articles, projects, and personal perspectives on ${SITE_NAME}.`;
 const DEFAULT_AUTHOR_SLUG = 'colin-michaels';
 const OS_ROUTE_PREFIXES = ['/os', '/external'] as const;
 const OS_ROUTES = ['/login', '/boot', '/sleep'] as const;
@@ -282,6 +283,9 @@ interface SocialAnnouncementDocument {
   updatedAt: string;
   linkUrl?: string;
   mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  linkPlacement?: 'post' | 'first-comment' | 'profile' | 'none';
+  contentAngle?: 'personal-story' | 'conversation-starter' | 'practical-takeaway' | 'behind-the-scenes';
 }
 
 const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
@@ -292,6 +296,14 @@ const SOCIAL_DELIVERY_CHANNELS = new Set<SocialDeliveryChannel>([
   'threads',
   'linkedin',
 ]);
+const SOCIAL_CONTENT_ANGLES = new Set([
+  'personal-story',
+  'conversation-starter',
+  'practical-takeaway',
+  'behind-the-scenes',
+]);
+const SOCIAL_LINK_PLACEMENTS = new Set(['post', 'first-comment', 'profile', 'none']);
+const SOCIAL_MEDIA_TYPES = new Set(['image', 'video']);
 
 function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly SocialAnnouncementDocument[] {
   if (!isRecord(value) || !Array.isArray(value['announcements'])) {
@@ -323,7 +335,24 @@ function getScheduledSocialAnnouncements(value: unknown, now: Date): readonly So
         || announcement['deliveryTiming'] === 'scheduled'
       )
       && (announcement['linkUrl'] === undefined || typeof announcement['linkUrl'] === 'string')
-      && (announcement['mediaUrl'] === undefined || typeof announcement['mediaUrl'] === 'string');
+      && (announcement['mediaUrl'] === undefined || typeof announcement['mediaUrl'] === 'string')
+      && (
+        announcement['mediaType'] === undefined
+        || (
+          typeof announcement['mediaType'] === 'string'
+          && SOCIAL_MEDIA_TYPES.has(announcement['mediaType'])
+          && typeof announcement['mediaUrl'] === 'string'
+          && announcement['mediaUrl'].trim().length > 0
+        )
+      )
+      && (
+        announcement['linkPlacement'] === undefined
+        || (typeof announcement['linkPlacement'] === 'string' && SOCIAL_LINK_PLACEMENTS.has(announcement['linkPlacement']))
+      )
+      && (
+        announcement['contentAngle'] === undefined
+        || (typeof announcement['contentAngle'] === 'string' && SOCIAL_CONTENT_ANGLES.has(announcement['contentAngle']))
+      );
   });
 }
 
@@ -427,7 +456,13 @@ async function queueDueSocialAnnouncements(now: Date): Promise<number> {
           channel: announcement.channel,
           message: announcement.message.trim(),
           linkUrl: announcement.linkUrl?.trim() || defaultLinkUrl,
-          ...(announcement.mediaUrl?.trim() ? {mediaUrl: announcement.mediaUrl.trim()} : {}),
+          ...(announcement.mediaUrl?.trim() ? {
+            mediaUrl: announcement.mediaUrl.trim(),
+            mediaType: announcement.mediaType ?? 'image',
+          } : {}),
+          // Snapshot legacy defaults so delivery workers receive one explicit, migration-safe payload contract.
+          linkPlacement: announcement.linkPlacement ?? 'post',
+          ...(announcement.contentAngle ? {contentAngle: announcement.contentAngle} : {}),
           deliveryTiming: announcement.deliveryTiming ?? 'scheduled',
           scheduledAt: announcement.scheduledAt,
           status: 'pending',
@@ -2122,6 +2157,12 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     }
   }
 
+  if (normalizedPath === '/authors') {
+    const authors = await fetchPublishedSeoAuthors();
+
+    return createAuthorsIndexSeoMetadata(authors);
+  }
+
   if (normalizedPath.startsWith('/authors/')) {
     const slug = decodeSlugSegment(normalizedPath.slice('/authors/'.length));
     const author = await fetchPublishedSeoAuthor(slug);
@@ -2244,8 +2285,9 @@ async function createSitemapXml(): Promise<string> {
     fetchPublishedSeoAuthors(),
   ]);
   const latestPostUpdate = getLatestIsoDate(posts.map(post => post.updatedAt || post.publishedAt).filter(isNonEmptyString));
+  const latestAuthorUpdate = getLatestIsoDate(authors.map(author => author.updatedAt).filter(isNonEmptyString));
   const urls = [
-    ...createStaticSitemapUrls(latestPostUpdate),
+    ...createStaticSitemapUrls(latestPostUpdate, latestAuthorUpdate),
     ...createSitemapTaxonomyUrls(posts),
     ...createSitemapTagUrls(posts),
     ...createSitemapAuthorUrls(posts, authors),
@@ -2294,7 +2336,7 @@ function createSitemapAuthorUrls(
   return urls.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
+function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string): readonly SitemapUrl[] {
   return [
     {
       path: '/',
@@ -2305,6 +2347,10 @@ function createStaticSitemapUrls(blogLastmod?: string): readonly SitemapUrl[] {
     },
     {
       path: '/privacy',
+    },
+    {
+      path: '/authors',
+      lastmod: authorsLastmod,
     },
     {
       path: '/background',
@@ -2912,6 +2958,44 @@ function createAuthorSeoMetadata(
     type: 'website',
     structuredData: createAuthorProfileJsonLd(author, posts),
     fallbackHtml: renderAuthorFallbackHtml(author, posts),
+  };
+}
+
+function createAuthorsIndexSeoMetadata(authors: readonly SeoAuthorDocument[]): SeoMetadata {
+  const path = '/authors';
+  const url = createAbsoluteUrl(path);
+
+  return {
+    title: createSiteTitle('Authors'),
+    description: AUTHORS_INDEX_DESCRIPTION,
+    path,
+    image: HOMEPAGE_OG_IMAGE,
+    imageAlt: createPreviewImageAlt('authors directory'),
+    type: 'website',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `Authors at ${SITE_NAME}`,
+      description: AUTHORS_INDEX_DESCRIPTION,
+      url,
+      isPartOf: {
+        '@type': 'WebSite',
+        '@id': SEO_ENTITY_IDS.website,
+        url: SITE_URL,
+        name: SITE_NAME,
+      },
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: authors.length,
+        itemListElement: authors.map((author, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: author.name,
+          url: createAbsoluteUrl(`/authors/${author.slug}`),
+        })),
+      },
+    },
+    fallbackHtml: renderAuthorsIndexFallbackHtml(authors),
   };
 }
 
@@ -3653,6 +3737,31 @@ function renderAuthorFallbackHtml(
       postItems || '  <p>No published posts are available for this author yet.</p>',
       '</section>',
     ].filter(Boolean).join('\n'),
+  });
+}
+
+function renderAuthorsIndexFallbackHtml(authors: readonly SeoAuthorDocument[]): string {
+  const authorItems = authors.map(author => [
+    '<article class="seo-fallback-card">',
+    author.imageUrl
+      ? `  <img src="${escapeHtml(createAbsoluteUrl(author.imageUrl))}" alt="${escapeHtml(author.imageAlt || `${author.name} author profile`)}" loading="lazy">`
+      : '',
+    `  <h2><a href="${escapeHtml(createAbsoluteUrl(`/authors/${author.slug}`))}">${escapeHtml(author.name)}</a></h2>`,
+    author.title ? `  <p class="seo-fallback-meta">${escapeHtml(author.title)}</p>` : '',
+    author.shortBio || author.bio ? `  <p>${escapeHtml(stripHtml(author.shortBio || author.bio))}</p>` : '',
+    author.location ? `  <p>${escapeHtml(author.location)}</p>` : '',
+    '</article>',
+  ].filter(Boolean).join('\n')).join('\n');
+
+  return renderFallbackShell({
+    eyebrow: 'Contributors',
+    title: 'Authors',
+    description: AUTHORS_INDEX_DESCRIPTION,
+    body: [
+      '<section class="seo-fallback-list">',
+      authorItems || '  <p>No published author profiles are available yet.</p>',
+      '</section>',
+    ].join('\n'),
   });
 }
 

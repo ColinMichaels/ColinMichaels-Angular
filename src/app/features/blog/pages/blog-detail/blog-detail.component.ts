@@ -105,12 +105,12 @@ function normalizeHealthTerm(value: string): string {
       >
         @if (post(); as currentPost) {
           <div
-            class="blog-detail-reading-grid mx-auto grid max-w-4xl gap-10 xl:max-w-[90rem] xl:items-start"
+            class="blog-detail-reading-grid mx-auto grid max-w-4xl gap-6 xl:max-w-[90rem] xl:items-start"
           >
             <div class="min-w-0 xl:col-start-2 xl:row-start-1">
               <header
                 id="blog-post-top"
-                class="blog-section-rule blog-page-header scroll-mt-20 space-y-6 focus:outline-none"
+                class="blog-section-rule blog-page-header mb-0 scroll-mt-20 space-y-5 pb-5 focus:outline-none"
                 tabindex="-1"
               >
                 <h1
@@ -136,14 +136,6 @@ function normalizeHealthTerm(value: string): string {
                     <span>{{ stats.wordCount | number }} words</span>
                   }
                 </div>
-                <div class="flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
-                  @for (category of currentPost.categories; track category) {
-                    <span class="blog-category-badge">
-                      {{ category }}
-                    </span>
-                  }
-                </div>
-                <p class="text-lg leading-8 text-slate-600 dark:text-zinc-400">{{ currentPost.excerpt }}</p>
                 @if (isPreviewRoute()) {
                   <div
                     class="border border-amber-500/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/50 dark:bg-amber-400/10 dark:text-amber-100">
@@ -177,7 +169,7 @@ function normalizeHealthTerm(value: string): string {
                 <img
                   [src]="currentPost.coverImage"
                   [alt]="currentPost.title + ' cover image'"
-                  class="blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
+                  class="blog-post-cover-image blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
                   decoding="async"
                   [attr.fetchpriority]="hasBackgroundImage() ? 'auto' : 'high'"
                   [attr.data-site-preload-image]="hasBackgroundImage() ? null : ''"
@@ -185,6 +177,16 @@ function normalizeHealthTerm(value: string): string {
                   width="1200"
                   height="675"
                 >
+                <div class="blog-post-taxonomy flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
+                  @for (category of currentPost.categories; track category) {
+                    <span class="blog-category-badge">
+                      {{ category }}
+                    </span>
+                  }
+                </div>
+                <p class="blog-post-dek text-lg leading-8 text-slate-600 dark:text-zinc-400">
+                  {{ currentPost.excerpt }}
+                </p>
               </header>
             </div>
 

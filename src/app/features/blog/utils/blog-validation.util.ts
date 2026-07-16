@@ -1,12 +1,18 @@
 import {BlogPost, BlogPostStatus} from '../models/blog-post.model';
 import {
   BLOG_SOCIAL_CHANNELS,
+  BLOG_SOCIAL_CONTENT_ANGLES,
+  BLOG_SOCIAL_LINK_PLACEMENTS,
+  BLOG_SOCIAL_MEDIA_TYPES,
   BlogSocialAnnouncementStatus,
 } from '../models/blog-social-promotion.model';
 
 export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const blogPostStatusSet = new Set<string>(BLOG_POST_STATUSES);
 const blogSocialChannelSet = new Set<string>(BLOG_SOCIAL_CHANNELS);
+const blogSocialContentAngleSet = new Set<string>(BLOG_SOCIAL_CONTENT_ANGLES);
+const blogSocialLinkPlacementSet = new Set<string>(BLOG_SOCIAL_LINK_PLACEMENTS);
+const blogSocialMediaTypeSet = new Set<string>(BLOG_SOCIAL_MEDIA_TYPES);
 const blogSocialAnnouncementStatusSet = new Set<BlogSocialAnnouncementStatus>([
   'draft',
   'scheduled',
@@ -106,6 +112,23 @@ function isBlogSocialAnnouncement(value: unknown): boolean {
     && (value['postedAt'] === undefined || typeof value['postedAt'] === 'string')
     && (value['linkUrl'] === undefined || typeof value['linkUrl'] === 'string')
     && (value['mediaUrl'] === undefined || typeof value['mediaUrl'] === 'string')
+    && (
+      value['mediaType'] === undefined
+      || (
+        typeof value['mediaType'] === 'string'
+        && blogSocialMediaTypeSet.has(value['mediaType'])
+        && typeof value['mediaUrl'] === 'string'
+        && value['mediaUrl'].trim().length > 0
+      )
+    )
+    && (
+      value['linkPlacement'] === undefined
+      || (typeof value['linkPlacement'] === 'string' && blogSocialLinkPlacementSet.has(value['linkPlacement']))
+    )
+    && (
+      value['contentAngle'] === undefined
+      || (typeof value['contentAngle'] === 'string' && blogSocialContentAngleSet.has(value['contentAngle']))
+    )
     && (value['failureReason'] === undefined || typeof value['failureReason'] === 'string');
 }
 

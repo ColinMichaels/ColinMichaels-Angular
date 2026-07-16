@@ -14,6 +14,7 @@ describe('routes', () => {
       PATH_NAMES.SEARCH,
       PATH_NAMES.PRIVACY,
       PATH_NAMES.CAT_CORNER,
+      PATH_NAMES.AUTHORS,
       `${PATH_NAMES.AUTHORS}/:slug`,
       PATH_NAMES.BLOG,
       `${PATH_NAMES.BLOG}/search`,

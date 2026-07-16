@@ -126,6 +126,10 @@ describe('PublishingCalendarComponent', () => {
       throw new Error('Facebook message editor was not found.');
     }
 
+    expect(textarea.value).toContain('felt worth sharing personally');
+    expect(textarea.value).toContain('first comment');
+    expect(textarea.value).not.toContain('https://');
+
     textarea.value = 'A Facebook-specific share message.';
     textarea.dispatchEvent(new Event('input'));
     fixture.detectChanges();
@@ -140,6 +144,10 @@ describe('PublishingCalendarComponent', () => {
     expect(facebookAnnouncement?.status).toBe('scheduled');
     expect(facebookAnnouncement?.deliveryTiming).toBe('at-publish');
     expect(facebookAnnouncement?.scheduledAt).toBe(savedPost.publishedAt ?? undefined);
+    expect(facebookAnnouncement?.contentAngle).toBe('personal-story');
+    expect(facebookAnnouncement?.linkPlacement).toBe('first-comment');
+    expect(facebookAnnouncement?.mediaType).toBe('image');
+    expect(facebookAnnouncement?.mediaUrl).toBe('https://colinmichaels.com/assets/images/backgrounds/night.webp');
   });
 
   it('offers Threads as a schedulable provider', async () => {
@@ -157,6 +165,54 @@ describe('PublishingCalendarComponent', () => {
       .find(announcement => announcement.channel === 'threads');
     expect(threadsAnnouncement?.message).toContain(savedPost.title);
     expect(threadsAnnouncement?.deliveryTiming).toBe('at-publish');
+  });
+
+  it('saves a native video plan without putting the article link in the message', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    selectPost(fixture);
+    findButton(element, 'Add social post').click();
+    fixture.detectChanges();
+    findButton(element, 'LinkedIn').click();
+    fixture.detectChanges();
+
+    const composer = element.querySelector('section[aria-label="Add social posts"]');
+    const selects = composer?.querySelectorAll('select');
+
+    if (!selects || selects.length !== 3) {
+      throw new Error('LinkedIn strategy controls were not found.');
+    }
+
+    selects[0].value = 'behind-the-scenes';
+    selects[0].dispatchEvent(new Event('change'));
+    selects[1].value = 'none';
+    selects[1].dispatchEvent(new Event('change'));
+    selects[2].value = 'video';
+    selects[2].dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    findButton(element, 'Use starter copy').click();
+    fixture.detectChanges();
+
+    const mediaInput = composer?.querySelector<HTMLInputElement>('input[type="url"]');
+
+    if (!(mediaInput instanceof HTMLInputElement)) {
+      throw new Error('LinkedIn media URL editor was not found.');
+    }
+
+    mediaInput.value = 'https://colinmichaels.com/social/voice-cloning-demo.mp4';
+    mediaInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    findButton(element, 'Save social plan').click();
+    await fixture.whenStable();
+
+    const [savedPost] = blogRepository.savePost.calls.mostRecent().args;
+    const linkedInAnnouncement = savedPost.socialPromotion?.announcements
+      .find(announcement => announcement.channel === 'linkedin');
+    expect(linkedInAnnouncement?.contentAngle).toBe('behind-the-scenes');
+    expect(linkedInAnnouncement?.linkPlacement).toBe('none');
+    expect(linkedInAnnouncement?.mediaType).toBe('video');
+    expect(linkedInAnnouncement?.mediaUrl).toBe('https://colinmichaels.com/social/voice-cloning-demo.mp4');
+    expect(linkedInAnnouncement?.message).not.toContain('https://');
   });
 
   it('moves scheduled at-publication announcements when the article schedule changes', async () => {
@@ -264,6 +320,8 @@ describe('PublishingCalendarComponent', () => {
       .filter(announcement => announcement.channel === 'instagram') ?? [];
     const createdAnnouncement = instagramAnnouncements.at(-1);
     expect(createdAnnouncement?.mediaUrl).toBe('https://colinmichaels.com/assets/images/backgrounds/night.webp');
+    expect(createdAnnouncement?.mediaType).toBe('image');
+    expect(createdAnnouncement?.linkPlacement).toBe('profile');
     expect(createdAnnouncement?.deliveryTiming).toBe('at-publish');
   });
 

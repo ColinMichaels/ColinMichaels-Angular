@@ -18,7 +18,7 @@ import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
   imports: [NgClass],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'mb-10 block xl:sticky xl:mb-0',
+    class: 'block xl:sticky',
   },
   template: `
     <nav

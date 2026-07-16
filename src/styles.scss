@@ -366,6 +366,11 @@ app-site-header :is(h1, a, button),
   line-height: 1.08 !important;
 }
 
+.public-reader-scope .blog-category-page-title {
+  font-size: clamp(1.75rem, calc(2.1rem * var(--reader-font-scale)), 3.5rem) !important;
+  line-height: 1.1 !important;
+}
+
 .public-reader-scope .heading-section {
   font-size: clamp(1.9rem, calc(2.35rem * var(--reader-font-scale)), 4.25rem) !important;
   line-height: 1.14 !important;

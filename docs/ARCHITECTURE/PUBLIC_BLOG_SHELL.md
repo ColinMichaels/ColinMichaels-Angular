@@ -40,6 +40,16 @@ the component owns post anatomy, links, metadata, media, accessible state panels
 into the same visual density. Topic hubs use the fan only for the first three promoted posts and return to normal list
 rows for the remaining archive. See `TOPIC_PAGES_AND_POST_LISTING.md` for the component and data migration contract.
 
+## Archive Navigation And Filtering
+
+The public archive shell keeps repository queries in route components and shares presentation and URL-state behavior through three reusable boundaries:
+
+- `SitePaginationComponent` owns accessible previous, next, numbered-page, range-summary, and List/Grid/Image + title controls without querying content. It merges unrelated query parameters and omits default page/view values so canonical page-one URLs remain clean.
+- `pagination.util.ts` owns positive page parsing, page-count calculation, out-of-range clamping, immutable slicing, and compact page windows. Public blog, category, and author archives use the shared ten-item default while retaining full result sets for statistics and filter counts.
+- `BlogCategoryNavComponent` owns the category-only combobox, match counts, removable selected chips, keyboard highlighting, outside-click dismissal, and Clear filters action. Multi-category selection resolves to the blog index through `?categories=slug,slug`, where every selected category must match a result.
+
+`blog-archive-view.util.ts` maps the shared `?view=` contract to the existing post-listing layouts. Changing a category or view clears `?page=` while preserving unrelated topic and category state, preventing stale page numbers from producing empty slices. No post, category, or author data migration is required; rolling back restores the previous route templates and leaves the optional query parameters inert.
+
 ## Authors And Bylines
 
 Posts reference a canonical Firestore author through `authorId` and retain a compact `author` snapshot for cards,
@@ -85,6 +95,8 @@ Rollback is limited to restoring the repository slug observable to the shared co
 
 `BlogStickyPostToolbarComponent` sits immediately after the full blog-detail header in the article grid. It scrolls into place naturally and then remains pinned beneath `SiteHeaderComponent` with the current cover thumbnail, truncated title, persistent read percentage and progress bar, a single Share control that fans provider actions leftward on hover/focus or tap, separate favorite/read-later controls, an explicit offline download/update/remove action, and a comments shortcut. The progress control lives inside the post rail instead of competing with the public header at the viewport's top edge. Progress is scoped to the rendered article-body container: the title/cover header remains at 0%, the final body block reaches 100%, and post navigation, tags/share controls, comments, suggested posts, and the site footer do not extend the reading distance. IndexedDB retains the greatest article-body percentage reached, marks the post read at 95%, and restores that status on later visits without moving the page automatically. Favorites and read later store only summary metadata; only the offline control downloads the article body. On mobile, the public header and post rail use shared 56px and 52px height tokens, and the rail keeps its thumbnail, title, status, and actions in one row. The section heading uses their combined 108px offset, so the three sticky
 surfaces meet without gaps; the wider layout uses the same contract with 64px and 60px layers. The share fan preserves keyboard dismissal and reduced-motion behavior while keeping the reading rail compact. The comments shortcut targets a stable wrapper around the deferred comments block so anchor navigation triggers loading without losing the scroll destination. System and Reader Tools reduced-motion preferences switch the comments jump from smooth to immediate scrolling.
+
+The detail grid, header, toolbar, table of contents, and article body use a single 24px inter-row rhythm at narrow and wide layouts. The header keeps its divider with 20px bottom padding, while the table-of-contents component contributes no outer margin of its own. This prevents parent grid gaps and child margins from stacking into 80px empty bands while preserving component reuse and sticky positioning.
 
 Once the post header leaves the viewport, the reading rail exposes a scroll-to-top action using one `IntersectionObserver` rather than a continuous scroll listener. Only the active level-two content heading receives sticky positioning below the public header and reading rail; when the next heading reaches the pinned heading's lower edge, the previous heading immediately returns to normal flow. The pinned treatment also reduces heading type and vertical padding while leaving full-size headings in article flow. Heading anchor offsets account for both persistent rails on desktop and mobile.
 
