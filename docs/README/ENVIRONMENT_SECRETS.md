@@ -94,13 +94,17 @@ Social provider authorization uses separate server-only publishing credentials. 
 ```bash
 firebase functions:secrets:set META_PUBLISHING_APP_ID
 firebase functions:secrets:set META_PUBLISHING_APP_SECRET
+firebase functions:secrets:set INSTAGRAM_APP_ID
+firebase functions:secrets:set INSTAGRAM_APP_SECRET
 firebase functions:secrets:set THREADS_APP_ID
 firebase functions:secrets:set THREADS_APP_SECRET
 firebase functions:secrets:set SOCIAL_OAUTH_STATE_SECRET
 firebase functions:secrets:set SOCIAL_TOKEN_ENCRYPTION_KEY
 ```
 
-Facebook Page and Instagram professional-account authorization share `META_PUBLISHING_APP_ID` and `META_PUBLISHING_APP_SECRET`. The Instagram connection uses Instagram API with Facebook Login and discovers professional accounts linked to manageable Facebook Pages. Do not create or bind separate `INSTAGRAM_APP_ID` or `INSTAGRAM_APP_SECRET` values for this flow. Threads retains its separate app credentials.
+Facebook Page authorization uses `META_PUBLISHING_APP_ID` and `META_PUBLISHING_APP_SECRET`. Instagram uses the separate Instagram app ID and secret shown under **Instagram API → API setup with Instagram login**, bound as `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`. Its direct Business Login flow does not discover accounts through Facebook Pages. Threads retains its separate app credentials.
+
+Facebook Page authorization also requires a **Facebook Login for Business** configuration that includes `pages_show_list`, `pages_read_engagement`, and `pages_manage_posts`. Store its non-secret configuration ID in `META_FACEBOOK_LOGIN_CONFIG_ID`; the authorization URL uses that configuration and requests declined permissions again.
 
 `SOCIAL_TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte random key. `SOCIAL_OAUTH_STATE_SECRET` must be an independent high-entropy value; never reuse either provider app secret. App IDs are stored with the server credential set so Angular does not need provider-specific configuration.
 
@@ -110,6 +114,7 @@ Firebase Functions also requires these non-secret runtime params. Production kee
 ```text
 SOCIAL_OAUTH_BASE_URL=https://colinmichaels.com
 META_GRAPH_API_VERSION=v23.0
+META_FACEBOOK_LOGIN_CONFIG_ID=<facebook-login-for-business-configuration-id>
 ```
 
 Use `functions/.env.<project-id>` for another Firebase project and set the OAuth base URL to
@@ -123,7 +128,7 @@ https://colinmichaels.com/api/social/instagram/callback
 https://colinmichaels.com/api/social/threads/callback
 ```
 
-Register both the `/api/social/meta/callback` and `/api/social/instagram/callback` redirect URLs in the same Meta app. The separate callback paths preserve provider-specific OAuth state and CMS status even though Facebook and Instagram share one Meta credential pair.
+Register `/api/social/meta/callback` in Facebook Login for Business and `/api/social/instagram/callback` under Instagram API → API setup with Instagram login → Business login settings. Instagram must have `instagram_business_basic` and `instagram_business_content_publish` available for the app. The separate callback paths preserve provider-specific OAuth state and CMS status.
 
 Deploy Functions, Firestore rules, and Hosting rewrites together before attempting OAuth. Secret creation alone does not grant an existing Function access. The connection-only release stores token payloads encrypted in backend-only `/socialConnectionSecrets`; `/socialConnections` contains sanitized account status for CMS roles, and `/socialOAuthStates` contains short-lived one-time authorization state. Do not place tokens in Angular environments, ordinary Firestore post documents, logs, or pull-request configuration.
 

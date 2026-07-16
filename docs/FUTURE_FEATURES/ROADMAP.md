@@ -10,7 +10,7 @@ Updated July 14, 2026. Completed foundation work is recorded here so it is not r
 - Public blog and main-site HTML rendering is centralized behind sanitized rich-text and inert plain-text utilities with XSS regressions; direct HTML manipulation that remains is isolated to OS/game framework paths.
 - OpenAI and weather vendor keys are absent from the frontend. Further API-boundary work is de-scoped, and existing inactive integration code is preserved only until a focused removal review.
 - The Media Library supports browsing and managed CMS asset selection. Further generated-media lifecycle work remains product scope.
-- Facebook, Instagram, and Threads now have a connection-only OAuth foundation with signed one-time state, encrypted backend token storage, sanitized CMS health, explicit Facebook Page or linked Instagram-account selection, and no enabled delivery worker. Facebook and Instagram share the Meta publishing app credentials; Threads remains separate.
+- Facebook, Instagram, and Threads now have a connection-only OAuth foundation with signed one-time state, encrypted backend token storage, sanitized CMS health, explicit Facebook Page selection, direct Instagram Business Login, and no enabled delivery worker. Facebook, Instagram, and Threads each use provider-appropriate credential bindings.
 
 ## Short-Term (1-2 Sprints)
 
