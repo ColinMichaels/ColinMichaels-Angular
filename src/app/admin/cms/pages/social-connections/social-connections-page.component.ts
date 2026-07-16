@@ -33,7 +33,7 @@ const providerPresentations: readonly SocialProviderPresentation[] = [
     provider: 'instagram',
     label: 'Instagram',
     description: 'Authorize a professional Business or Creator account for media publishing.',
-    requirements: 'Uses the Meta app and requires a professional account linked to a Facebook Page.',
+    requirements: 'Uses Instagram Business Login with a separate Instagram app credential pair.',
     icon: faInstagram,
   },
   {
@@ -141,10 +141,10 @@ function getErrorMessage(error: unknown): string {
                   }
                 </dl>
 
-                @if (connection.status === 'needs-selection' && connection.availableAccounts?.length) {
+                @if (connection.provider === 'facebook' && connection.status === 'needs-selection' && connection.availableAccounts?.length) {
                   <fieldset class="mt-5 space-y-2">
                     <legend class="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                      {{ connection.provider === 'facebook' ? 'Choose a Page' : 'Choose an Instagram account' }}
+                      Choose a Page
                     </legend>
                     @for (account of connection.availableAccounts; track account.id) {
                       <button
@@ -242,20 +242,15 @@ export class SocialConnectionsPageComponent {
     }
   }
 
-  protected async selectAccount(provider: SocialConnectionProvider, accountId: string): Promise<void> {
-    if (provider === 'threads') {
-      this.toast.error('Threads does not support account selection for this connection.');
-      return;
-    }
-
+  protected async selectAccount(provider: 'facebook', accountId: string): Promise<void> {
     this.actionProvider.set(provider);
 
     try {
       await this.connectionsService.selectAccount(provider, accountId);
-      this.toast.success(`Connected the selected ${provider === 'facebook' ? 'Facebook Page' : 'Instagram account'}. External delivery remains disabled.`);
+      this.toast.success('Connected the selected Facebook Page. External delivery remains disabled.');
       await this.refresh();
     } catch (error) {
-      this.toast.error(`Unable to select the ${provider === 'facebook' ? 'Facebook Page' : 'Instagram account'}: ${getErrorMessage(error)}`);
+      this.toast.error(`Unable to select the Facebook Page: ${getErrorMessage(error)}`);
     } finally {
       this.actionProvider.set(null);
     }
