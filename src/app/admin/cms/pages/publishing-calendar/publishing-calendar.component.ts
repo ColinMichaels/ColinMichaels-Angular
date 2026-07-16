@@ -10,10 +10,18 @@ import {
   BLOG_SOCIAL_CHANNELS,
   BlogSocialAnnouncement,
   BlogSocialChannel,
+  BlogSocialContentAngle,
   BlogSocialDeliveryTiming,
+  BlogSocialLinkPlacement,
+  BlogSocialMediaType,
 } from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {
+  createBlogSocialMessage,
+  defaultSocialContentAngle,
+  defaultSocialLinkPlacement,
+} from '../../../../features/blog/utils/blog-social-promotion.util';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
@@ -51,8 +59,11 @@ interface SocialChannelOption {
 interface SocialAnnouncementDraft extends SocialChannelOption {
   enabled: boolean;
   message: string;
+  contentAngle: BlogSocialContentAngle;
+  linkPlacement: BlogSocialLinkPlacement;
   scheduledAt: string;
   deliveryTiming: BlogSocialDeliveryTiming;
+  mediaType: BlogSocialMediaType | 'none';
   mediaUrl: string;
 }
 
@@ -61,6 +72,39 @@ const calendarFilters: readonly {value: PublishingCalendarFilter; label: string}
   {value: 'scheduled', label: 'Scheduled'},
   {value: 'published', label: 'Published'},
   {value: 'social', label: 'Social'},
+];
+const socialContentAngleOptions: readonly {value: BlogSocialContentAngle; label: string; description: string}[] = [
+  {
+    value: 'personal-story',
+    label: 'Personal story',
+    description: 'Lead with why the topic matters to you before asking for a click.',
+  },
+  {
+    value: 'conversation-starter',
+    label: 'Conversation starter',
+    description: 'Open with a useful question designed to invite comments.',
+  },
+  {
+    value: 'practical-takeaway',
+    label: 'Practical takeaway',
+    description: 'Teach one useful idea and position the article as the deeper guide.',
+  },
+  {
+    value: 'behind-the-scenes',
+    label: 'Behind the scenes',
+    description: 'Explain why you wrote the article and what you learned making it.',
+  },
+];
+const socialLinkPlacementOptions: readonly {value: BlogSocialLinkPlacement; label: string; description: string}[] = [
+  {value: 'post', label: 'In the post', description: 'Include the article URL in the main message.'},
+  {value: 'first-comment', label: 'First comment', description: 'Publish native content first and add the article as a follow-up comment.'},
+  {value: 'profile', label: 'Profile link', description: 'Direct readers to the link on your profile.'},
+  {value: 'none', label: 'No link', description: 'Use this share for reach and conversation only.'},
+];
+const socialMediaTypeOptions: readonly {value: BlogSocialMediaType | 'none'; label: string}[] = [
+  {value: 'image', label: 'Image'},
+  {value: 'video', label: 'Video'},
+  {value: 'none', label: 'No native media'},
 ];
 const weekdayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 const socialChannelOptions: readonly SocialChannelOption[] = [
@@ -460,6 +504,9 @@ function getErrorMessage(error: unknown): string {
                             <p class="mt-1 text-xs text-zinc-500">
                               {{ announcement.deliveryTiming === 'at-publish' ? 'At publication' : announcementDateTime(announcement) }}
                             </p>
+                            <p class="mt-1 text-[11px] text-zinc-600">
+                              {{ contentAngleLabel(announcement.contentAngle) }} · {{ announcementMediaLabel(announcement) }} · Link: {{ linkPlacementLabel(announcement.linkPlacement) }}
+                            </p>
                           </div>
                           @if (isAnnouncementEditable(announcement)) {
                             <button type="button" class="text-xs font-semibold text-cyan-300 hover:text-cyan-200" (click)="openAnnouncementEditor(announcement)">Edit</button>
@@ -481,6 +528,39 @@ function getErrorMessage(error: unknown): string {
                       <h3 class="text-sm font-semibold text-zinc-100">Edit {{ channelOption(announcement.channel).label }}</h3>
                       <span class="text-xs text-zinc-500">{{ announcementMessage.length }}/{{ channelOption(announcement.channel).characterLimit }}</span>
                     </div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label class="space-y-1">
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Promotion angle</span>
+                        <select
+                          [value]="announcementContentAngle"
+                          class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                          (change)="updateAnnouncementContentAngle($event)"
+                        >
+                          @for (option of socialContentAngleOptions; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="space-y-1">
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Article link</span>
+                        <select
+                          [value]="announcementLinkPlacement"
+                          class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                          (change)="updateAnnouncementLinkPlacement($event)"
+                        >
+                          @for (option of socialLinkPlacementOptions; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                        </select>
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      class="mt-2 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+                      (click)="useAnnouncementStarterCopy(post, announcement.channel)"
+                    >
+                      Use starter copy for these choices
+                    </button>
                     <textarea
                       rows="5"
                       [value]="announcementMessage"
@@ -522,9 +602,22 @@ function getErrorMessage(error: unknown): string {
                         (input)="updateAnnouncementSchedule($event)"
                       >
                     }
-                    @if (announcement.channel === 'instagram') {
-                      <label class="mt-3 block space-y-1">
-                        <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public media URL</span>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                      <label class="space-y-1">
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Native media</span>
+                        <select
+                          [value]="announcementMediaType"
+                          class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                          (change)="updateAnnouncementMediaType($event)"
+                        >
+                          @for (option of socialMediaTypeOptions; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      @if (announcementMediaType !== 'none') {
+                        <label class="space-y-1">
+                          <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public image or video URL</span>
                         <input
                           type="url"
                           [value]="announcementMediaUrl"
@@ -532,8 +625,9 @@ function getErrorMessage(error: unknown): string {
                           class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
                           (input)="updateAnnouncementMediaUrl($event)"
                         >
-                      </label>
-                    }
+                        </label>
+                      }
+                    </div>
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
@@ -553,7 +647,7 @@ function getErrorMessage(error: unknown): string {
                   <section class="border border-cyan-400/40 bg-zinc-900/70 p-4" aria-label="Add social posts">
                     <h3 class="text-base font-semibold text-zinc-50">Plan social posts</h3>
                     <p class="mt-2 text-xs leading-5 text-zinc-500">
-                      Select services, then tailor the message and delivery time for each one. New deliveries remain tied to “{{ post.title }}”.
+                      Select services, then build a native-first post around a personal story, conversation, useful takeaway, or behind-the-scenes angle. Add an image or video and choose where the article link belongs instead of defaulting to a bare link share.
                     </p>
 
                     <aside class="mt-3 border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100" role="status">
@@ -583,6 +677,44 @@ function getErrorMessage(error: unknown): string {
                               <p class="mt-0.5 text-[11px] text-zinc-500">{{ draft.description }} · {{ draft.automationLabel }}</p>
                             </div>
                             <span class="text-[11px] text-zinc-500">{{ draft.message.length }}/{{ draft.characterLimit }}</span>
+                          </div>
+                          <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                            <label class="space-y-1">
+                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Promotion angle</span>
+                              <select
+                                [value]="draft.contentAngle"
+                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                                (change)="updateDraftContentAngle(draft.id, $event)"
+                              >
+                                @for (option of socialContentAngleOptions; track option.value) {
+                                  <option [value]="option.value">{{ option.label }}</option>
+                                }
+                              </select>
+                            </label>
+                            <label class="space-y-1">
+                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Article link</span>
+                              <select
+                                [value]="draft.linkPlacement"
+                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                                (change)="updateDraftLinkPlacement(draft.id, $event)"
+                              >
+                                @for (option of socialLinkPlacementOptions; track option.value) {
+                                  <option [value]="option.value">{{ option.label }}</option>
+                                }
+                              </select>
+                            </label>
+                          </div>
+                          <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-[11px] leading-5 text-zinc-500">
+                              Starter copy is a draft—add the real detail, moment, or opinion that makes this sound like Colin.
+                            </p>
+                            <button
+                              type="button"
+                              class="shrink-0 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+                              (click)="useDraftStarterCopy(draft.id, post)"
+                            >
+                              Use starter copy
+                            </button>
                           </div>
                           <textarea
                             rows="5"
@@ -628,9 +760,22 @@ function getErrorMessage(error: unknown): string {
                               >
                             </label>
                           }
-                          @if (draft.id === 'instagram') {
-                            <label class="mt-2 block space-y-1">
-                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public media URL</span>
+                          <div class="mt-2 grid gap-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                            <label class="space-y-1">
+                              <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Native media</span>
+                              <select
+                                [value]="draft.mediaType"
+                                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
+                                (change)="updateDraftMediaType(draft.id, $event)"
+                              >
+                                @for (option of socialMediaTypeOptions; track option.value) {
+                                  <option [value]="option.value">{{ option.label }}</option>
+                                }
+                              </select>
+                            </label>
+                            @if (draft.mediaType !== 'none') {
+                              <label class="space-y-1">
+                                <span class="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Public image or video URL</span>
                               <input
                                 type="url"
                                 [value]="draft.mediaUrl"
@@ -638,8 +783,11 @@ function getErrorMessage(error: unknown): string {
                                 class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-300"
                                 (input)="updateDraftMediaUrl(draft.id, $event)"
                               >
-                              <span class="block text-[11px] leading-5 text-zinc-600">Instagram publishing requires a publicly reachable image or video.</span>
-                            </label>
+                              </label>
+                            }
+                          </div>
+                          @if (draft.id === 'instagram') {
+                            <span class="mt-1 block text-[11px] leading-5 text-zinc-600">Instagram requires a publicly reachable image or video.</span>
                           }
                         </section>
                       }
@@ -741,6 +889,9 @@ export class PublishingCalendarComponent {
   protected readonly faChevronRight = faChevronRight;
   protected readonly calendarFilters = calendarFilters;
   protected readonly weekdayLabels = weekdayLabels;
+  protected readonly socialContentAngleOptions = socialContentAngleOptions;
+  protected readonly socialLinkPlacementOptions = socialLinkPlacementOptions;
+  protected readonly socialMediaTypeOptions = socialMediaTypeOptions;
   protected readonly activeFilter = signal<PublishingCalendarFilter>('all');
   protected readonly viewMonth = signal(startOfMonth(this.today));
   protected readonly selectedDateKey = signal(toLocalDateKey(this.today));
@@ -784,8 +935,11 @@ export class PublishingCalendarComponent {
   protected announcementEditorOpen = false;
   protected scheduleDraft = '';
   protected announcementMessage = '';
+  protected announcementContentAngle: BlogSocialContentAngle = 'personal-story';
+  protected announcementLinkPlacement: BlogSocialLinkPlacement = 'post';
   protected announcementScheduleDraft = '';
   protected announcementDeliveryTiming: BlogSocialDeliveryTiming = 'scheduled';
+  protected announcementMediaType: BlogSocialMediaType | 'none' = 'none';
   protected announcementMediaUrl = '';
   protected saveInProgress = false;
   protected channelDrafts: readonly SocialAnnouncementDraft[] = [];
@@ -988,6 +1142,22 @@ export class PublishingCalendarComponent {
     return channelOptionsById.get(channel) ?? socialChannelOptions[0];
   }
 
+  protected contentAngleLabel(angle: BlogSocialContentAngle | undefined): string {
+    return socialContentAngleOptions.find(option => option.value === angle)?.label ?? 'Custom copy';
+  }
+
+  protected linkPlacementLabel(placement: BlogSocialLinkPlacement | undefined): string {
+    return socialLinkPlacementOptions.find(option => option.value === (placement ?? 'post'))?.label ?? 'In the post';
+  }
+
+  protected announcementMediaLabel(announcement: BlogSocialAnnouncement): string {
+    if (!announcement.mediaUrl) {
+      return 'No native media';
+    }
+
+    return announcement.mediaType === 'video' ? 'Video' : 'Image';
+  }
+
   protected channelIconClass(channel: BlogSocialChannel): string {
     const base = 'grid h-8 w-8 shrink-0 place-items-center border';
 
@@ -1098,14 +1268,22 @@ export class PublishingCalendarComponent {
 
     this.channelDrafts = socialChannelOptions
       .filter(option => option.id !== 'notify')
-      .map(option => ({
-      ...option,
-      enabled: false,
-      message: this.createDefaultMessage(option.id, post),
-      scheduledAt,
-      deliveryTiming,
-      mediaUrl: option.id === 'instagram' ? mediaUrl : '',
-      }));
+      .map(option => {
+        const contentAngle = defaultSocialContentAngle(option.id);
+        const linkPlacement = defaultSocialLinkPlacement(option.id);
+
+        return {
+          ...option,
+          enabled: false,
+          message: createBlogSocialMessage(option.id, post, contentAngle, linkPlacement, SITE_URL),
+          contentAngle,
+          linkPlacement,
+          scheduledAt,
+          deliveryTiming,
+          mediaType: mediaUrl ? 'image' : 'none',
+          mediaUrl,
+        };
+      });
     this.socialComposerOpen = true;
   }
 
@@ -1150,6 +1328,37 @@ export class PublishingCalendarComponent {
     this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, message} : draft);
   }
 
+  protected updateDraftContentAngle(channel: BlogSocialChannel, event: Event): void {
+    if (!(event.target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const contentAngle = event.target.value as BlogSocialContentAngle;
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
+      ? {...draft, contentAngle}
+      : draft);
+  }
+
+  protected updateDraftLinkPlacement(channel: BlogSocialChannel, event: Event): void {
+    if (!(event.target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const linkPlacement = event.target.value as BlogSocialLinkPlacement;
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
+      ? {...draft, linkPlacement}
+      : draft);
+  }
+
+  protected useDraftStarterCopy(channel: BlogSocialChannel, post: BlogPost): void {
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
+      ? {
+        ...draft,
+        message: createBlogSocialMessage(channel, post, draft.contentAngle, draft.linkPlacement, SITE_URL),
+      }
+      : draft);
+  }
+
   protected updateDraftSchedule(channel: BlogSocialChannel, event: Event): void {
     const scheduledAt = event.target instanceof HTMLInputElement ? event.target.value : '';
     this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, scheduledAt} : draft);
@@ -1175,6 +1384,17 @@ export class PublishingCalendarComponent {
   protected updateDraftMediaUrl(channel: BlogSocialChannel, event: Event): void {
     const mediaUrl = event.target instanceof HTMLInputElement ? event.target.value : '';
     this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel ? {...draft, mediaUrl} : draft);
+  }
+
+  protected updateDraftMediaType(channel: BlogSocialChannel, event: Event): void {
+    if (!(event.target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const mediaType = event.target.value as BlogSocialMediaType | 'none';
+    this.channelDrafts = this.channelDrafts.map(draft => draft.id === channel
+      ? {...draft, mediaType, mediaUrl: mediaType === 'none' ? '' : draft.mediaUrl}
+      : draft);
   }
 
   protected async saveSocialAnnouncements(post: BlogPost): Promise<void> {
@@ -1215,10 +1435,17 @@ export class PublishingCalendarComponent {
       return;
     }
 
-    const invalidInstagramMedia = drafts.find(draft => draft.id === 'instagram' && !isHttpUrl(draft.mediaUrl));
+    const missingInstagramMedia = drafts.find(draft => draft.id === 'instagram' && draft.mediaType === 'none');
 
-    if (invalidInstagramMedia) {
-      this.toast.error('Add a public image or video URL before scheduling Instagram.');
+    if (missingInstagramMedia) {
+      this.toast.error('Choose an image or video before scheduling Instagram.');
+      return;
+    }
+
+    const invalidMedia = drafts.find(draft => draft.mediaType !== 'none' && !isHttpUrl(draft.mediaUrl));
+
+    if (invalidMedia) {
+      this.toast.error(`Add a public image or video URL for ${invalidMedia.label}.`);
       return;
     }
 
@@ -1234,6 +1461,9 @@ export class PublishingCalendarComponent {
       createdAt: now,
       updatedAt: now,
       linkUrl,
+      contentAngle: draft.contentAngle,
+      linkPlacement: draft.linkPlacement,
+      mediaType: draft.mediaType === 'none' ? undefined : draft.mediaType,
       mediaUrl: draft.mediaUrl.trim() || undefined,
     }));
     const savedPost: BlogPost = {
@@ -1268,8 +1498,11 @@ export class PublishingCalendarComponent {
     const eventId = `social:${this.selectedPost()?.id ?? ''}:${announcement.id}`;
     this.selectedEventId.set(eventId);
     this.announcementMessage = announcement.message;
+    this.announcementContentAngle = announcement.contentAngle ?? defaultSocialContentAngle(announcement.channel);
+    this.announcementLinkPlacement = announcement.linkPlacement ?? 'post';
     this.announcementScheduleDraft = toDateTimeLocalValue(announcement.scheduledAt);
     this.announcementDeliveryTiming = announcement.deliveryTiming ?? 'scheduled';
+    this.announcementMediaType = announcement.mediaUrl ? (announcement.mediaType ?? 'image') : 'none';
     this.announcementMediaUrl = announcement.mediaUrl ?? '';
     this.announcementEditorOpen = true;
   }
@@ -1277,13 +1510,38 @@ export class PublishingCalendarComponent {
   protected closeAnnouncementEditor(): void {
     this.announcementEditorOpen = false;
     this.announcementMessage = '';
+    this.announcementContentAngle = 'personal-story';
+    this.announcementLinkPlacement = 'post';
     this.announcementScheduleDraft = '';
     this.announcementDeliveryTiming = 'scheduled';
+    this.announcementMediaType = 'none';
     this.announcementMediaUrl = '';
   }
 
   protected updateAnnouncementMessage(event: Event): void {
     this.announcementMessage = event.target instanceof HTMLTextAreaElement ? event.target.value : '';
+  }
+
+  protected updateAnnouncementContentAngle(event: Event): void {
+    if (event.target instanceof HTMLSelectElement) {
+      this.announcementContentAngle = event.target.value as BlogSocialContentAngle;
+    }
+  }
+
+  protected updateAnnouncementLinkPlacement(event: Event): void {
+    if (event.target instanceof HTMLSelectElement) {
+      this.announcementLinkPlacement = event.target.value as BlogSocialLinkPlacement;
+    }
+  }
+
+  protected useAnnouncementStarterCopy(post: BlogPost, channel: BlogSocialChannel): void {
+    this.announcementMessage = createBlogSocialMessage(
+      channel,
+      post,
+      this.announcementContentAngle,
+      this.announcementLinkPlacement,
+      SITE_URL
+    );
   }
 
   protected updateAnnouncementSchedule(event: Event): void {
@@ -1305,6 +1563,18 @@ export class PublishingCalendarComponent {
     this.announcementMediaUrl = event.target instanceof HTMLInputElement ? event.target.value : '';
   }
 
+  protected updateAnnouncementMediaType(event: Event): void {
+    if (!(event.target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    this.announcementMediaType = event.target.value as BlogSocialMediaType | 'none';
+
+    if (this.announcementMediaType === 'none') {
+      this.announcementMediaUrl = '';
+    }
+  }
+
   protected async saveAnnouncement(post: BlogPost, announcement: BlogSocialAnnouncement): Promise<void> {
     const option = this.channelOption(announcement.channel);
     const message = this.announcementMessage.trim();
@@ -1322,8 +1592,13 @@ export class PublishingCalendarComponent {
       return;
     }
 
-    if (announcement.channel === 'instagram' && !isHttpUrl(this.announcementMediaUrl)) {
-      this.toast.error('Add a public image or video URL before scheduling Instagram.');
+    if (announcement.channel === 'instagram' && this.announcementMediaType === 'none') {
+      this.toast.error('Choose an image or video before scheduling Instagram.');
+      return;
+    }
+
+    if (this.announcementMediaType !== 'none' && !isHttpUrl(this.announcementMediaUrl)) {
+      this.toast.error(`Add a public image or video URL for ${option.label}.`);
       return;
     }
 
@@ -1343,6 +1618,9 @@ export class PublishingCalendarComponent {
       deliveryTiming: this.announcementDeliveryTiming,
       status: 'scheduled',
       updatedAt: new Date().toISOString(),
+      contentAngle: this.announcementContentAngle,
+      linkPlacement: this.announcementLinkPlacement,
+      mediaType: this.announcementMediaType === 'none' ? undefined : this.announcementMediaType,
       mediaUrl: this.announcementMediaUrl.trim() || undefined,
       failureReason: undefined,
     };
@@ -1395,8 +1673,11 @@ export class PublishingCalendarComponent {
     this.scheduleDraft = '';
     this.channelDrafts = [];
     this.announcementMessage = '';
+    this.announcementContentAngle = 'personal-story';
+    this.announcementLinkPlacement = 'post';
     this.announcementScheduleDraft = '';
     this.announcementDeliveryTiming = 'scheduled';
+    this.announcementMediaType = 'none';
     this.announcementMediaUrl = '';
   }
 
@@ -1487,27 +1768,4 @@ export class PublishingCalendarComponent {
     });
   }
 
-  private createDefaultMessage(channel: BlogSocialChannel, post: BlogPost): string {
-    const url = `${SITE_URL}/blog/${post.slug}`;
-    const hashtags = post.tags
-      .slice(0, 3)
-      .map(tag => `#${tag.replace(/[^a-zA-Z0-9]/g, '')}`)
-      .filter(tag => tag.length > 1)
-      .join(' ');
-
-    switch (channel) {
-      case 'notify':
-        return `New post: ${post.title}\n\n${post.excerpt}\n\n${url}`;
-      case 'youtube':
-        return `New on ColinMichaels.com: ${post.title}\n\n${post.excerpt}\n\nRead the full post: ${url}`;
-      case 'facebook':
-        return `I just published “${post.title}.”\n\n${post.excerpt}\n\nRead it here: ${url}`;
-      case 'instagram':
-        return `New on the blog: ${post.title}\n\n${post.excerpt}\n\nRead it at the link: ${url}${hashtags ? `\n\n${hashtags}` : ''}`;
-      case 'threads':
-        return `New on the blog: ${post.title}\n\n${post.excerpt}\n\n${url}`;
-      case 'linkedin':
-        return `I just published a new article: ${post.title}\n\n${post.excerpt}\n\n${url}`;
-    }
-  }
 }

@@ -28,12 +28,31 @@ Each `BlogSocialAnnouncement` includes:
 - lifecycle state: `draft`, `scheduled`, `queued`, `posted`, `failed`, or `cancelled`
 - created and updated timestamps
 - optional link URL, provider media URL, posted timestamp, and failure reason
+- optional promotion angle: personal story, conversation starter, practical takeaway, or behind the scenes
+- optional native media type: image or video, paired with a public media URL
+- optional link placement: main post, first comment, profile, or no link
 
 Multiple announcements can target the same channel. This allows a launch announcement plus later follow-up posts for an article that is already live.
+
+Announcements created before the native-promotion fields were added remain valid. Missing `linkPlacement` means the historical in-post link behavior; a saved `mediaUrl` without `mediaType` is treated as an image in the Calendar.
+
+## Native-First Promotion Workflow
+
+The Calendar composer treats an article share as a small campaign asset rather than a generated link preview. Every channel plan can independently choose:
+
+1. a promotion angle that leads with Colin's story, a question, a useful takeaway, or the reason the article was written;
+2. editable starter copy generated deterministically from the article title and excerpt;
+3. a public image or video to publish natively with the text; and
+4. whether the article URL belongs in the main post, a first comment, the profile, or nowhere in that share.
+
+Facebook defaults to a personal-story/image/first-comment experiment, Instagram defaults to personal-story/image/profile-link, Threads defaults to a conversation starter, and LinkedIn defaults to a practical takeaway. These are editable starting points, not claims that one distribution tactic is universally preferred. Editors should replace generic context with a real personal detail, observation, or question before scheduling.
+
+The source article URL is retained separately from the visible message even when link placement is `first-comment`, `profile`, or `none`. This gives a future delivery worker enough information to perform a follow-up comment or omit the URL from the provider payload without losing the canonical campaign destination.
 
 ## Component Inventory
 
 - `PublishingCalendarComponent` owns month navigation, content filters, day selection, the upcoming queue, inline rescheduling, social composition, and announcement edits.
+- `blog-social-promotion.util.ts` owns migration-safe channel defaults and deterministic native-first starter copy so the Calendar component does not duplicate copy rules.
 - `SocialConnectionsPageComponent` owns sanitized Facebook, Instagram, and Threads connection health, explicit Facebook Page or linked Instagram-account selection, reconnect, and disconnect actions. It never reads provider tokens.
 - `SocialConnectionsService` is the Angular callable boundary for connection operations.
 - `social-connection-functions.ts` owns CMS authorization, OAuth state consumption, provider token exchange, encrypted token persistence, and callback redirects without enabling delivery.
@@ -52,7 +71,7 @@ Provider APIs and access policies change independently, so connectors should be 
 | --- | --- | --- |
 | Notify | Existing Web Push publish trigger | `notifyPublishedPost` already sends one generic title/excerpt alert on the transition to `published`. Calendar no longer creates a second Notify plan; migrate this trigger before adding editable notification copy to the outbox or subscribers could receive duplicates. |
 | Facebook | Meta Pages API | Requires a Meta app, a managed Page, approved current permissions, and a renewable Page access-token flow. Confirm current review requirements during implementation. |
-| Instagram | Instagram Content Publishing API | Intended for professional accounts and media publishing. A Calendar item will need an approved image/video asset; a link-only announcement is not a sufficient Instagram payload. |
+| Instagram | Instagram Content Publishing API | Intended for professional accounts and media publishing. The Calendar requires an image/video selection and public media URL; a link-only announcement is not a sufficient Instagram payload. |
 | Threads | Threads API | Connection authorization and Calendar planning are supported. Future delivery uses the separate Threads container/publish workflow and remains disabled until the outbox worker cutoff is approved. |
 | LinkedIn | Versioned Posts API | Supports member or organization posts, including article content. Requires OAuth, the appropriate social write permission, author URN, and current version headers. |
 | YouTube | Manual or alternate workflow initially | The current YouTube Data API reference exposes writable resources such as videos and playlists but no documented Community Post creation resource. Treat Community posting as manual unless Google adds a supported endpoint; a future adapter could instead coordinate video upload or metadata updates. |
@@ -148,6 +167,8 @@ Before enabling any real connector:
 - distinguish retryable rate-limit/server failures from permanent permission or payload failures
 - refresh OAuth tokens server-side and surface expired connections in the Calendar
 - validate provider payloads again in the worker, including required media and current length limits
+- map `mediaType` and `mediaUrl` into the provider's native upload/container workflow instead of falling back to a link-preview post
+- honor `linkPlacement`: omit the URL from the main payload for profile/no-link plans and create a follow-up comment only where the provider and connected identity support it
 - provide a manual retry and cancel path for failed or pending deliveries
 - avoid logging message bodies or tokens when provider responses contain sensitive data
 - keep article publication successful even when all social providers fail
@@ -158,6 +179,8 @@ Cloud Tasks is a reasonable next execution layer when volume or retry needs outg
 
 - No backfill is required. Posts without `socialPromotion` behave exactly as before.
 - Existing announcements without `deliveryTiming` retain their fixed `scheduledAt` behavior. Only new or explicitly changed `at-publish` announcements follow article reschedules.
+- Existing announcements without `contentAngle`, `mediaType`, or `linkPlacement` require no backfill. They render as custom copy, infer image media from any existing `mediaUrl`, and retain in-post link behavior.
+- Rolling back the Calendar UI and Functions queue changes leaves the optional strategy fields inert in Firestore. Older clients ignore them while continuing to read the existing message, link URL, and media URL fields.
 - Postponing an article past a fixed custom announcement is rejected until the editor moves or cancels that announcement; Calendar never silently rewrites a planned follow-up.
 - Instagram plans now require an HTTP(S) media URL. Client validation is syntactic; the future provider worker must enforce reachable HTTPS media and reject private/local hosts before Meta fetches it.
 - Existing `scheduled` posts continue to publish from `publishedAt`; the scheduled Function now performs an additional outbox scan after that work.

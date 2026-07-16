@@ -78,13 +78,39 @@ Public post rendering resolves the canonical profile when available and falls ba
 
 | Route | Owner | Contract |
 | --- | --- | --- |
+| `/authors` | `AuthorsIndexComponent` | Public, indexable directory of every published canonical author profile. |
 | `/authors/:slug` | `AuthorPageComponent` | Public, indexable profile and published-post archive for one published author. Missing and draft authors resolve to the normal not-found/noindex behavior. |
 | `/admin/cms/authors` | CMS author manager | Protected list/create/edit surface for canonical profiles. |
 | `/admin/cms/new` | CMS post editor | Starts with Colin selected. |
 | `/admin/cms/:slug/edit` | CMS post editor | Loads the assigned author, supports selecting another profile, and can open the inline add-author workflow. |
 | `/admin/cms` | CMS post list | Adds an Author column plus author-aware text search and sorting. |
 
+The public author directory reads only `getPublishedAuthors$()` and renders each canonical profile as a portrait-led navigation card with the author name, title, location, and short bio. It does not load blog posts. The homepage footer links to `/authors`, and individual author breadcrumbs return to the directory.
+
 The public author page reuses `BlogPostListingComponent` for the archive. It presents the canonical author data as an editorial résumé: a portrait and icon-led contact rail, career summary, derived publishing record, long-form biography, and compact writing archive. The layout uses only profile and post data already present in the author contract; it does not infer employers, credentials, or experience dates. Loading, empty, and missing-profile states remain intact. Blog detail bylines and author bio cards link to `/authors/:slug` and use snapshot fallback rather than routing all writers to the homepage.
+
+Author archives render ten posts per page and resolve the active page from `?page=`. The shared `SitePaginationComponent`
+owns the accessible previous, next, numbered-page, range-summary, responsive, and URL-link presentation so other public
+archives can adopt the same contract. Shared pagination utilities own positive page parsing, out-of-range clamping,
+page-count calculation, compact page windows, and immutable array slicing. Page one omits the query parameter, while
+later pages remain directly linkable and preserve unrelated query parameters.
+
+The main `/blog` index and `/blog/category/:category` archives adopt the same component and ten-post page size. Blog
+index pagination links merge the active `?topic=` filter with `?page=` so navigating the filtered archive does not
+discard the selected topic.
+
+Category discovery uses a shared chip-based multi-filter rather than a scrolling shortcut rail. Category landing
+pages seed the control with their route category, while additional selections move to `/blog?categories=slug,slug`.
+Every selected category must match a post, selected chips can be removed independently, Clear filters removes the
+category query state, and pagination or view changes preserve the remaining category filters.
+
+The shared pagination template can also receive URL-backed view options and render them independently from its range
+summary and page navigation. Author, blog, and category archives expose
+the same List, Grid, and Image + title choices through `?view=` while retaining their previous presentation as the
+query-free default. The view controls appear above each listing—directly beneath category filters on blog archives—while
+the range summary and numbered pagination remain below the posts. List maps to the dense post index, Grid maps to image
+cards, and Image + title maps to editorial media rows. Changing the view resets `?page=` to the first page while
+preserving unrelated filters, so a stale page number cannot produce an empty slice after a presentation change.
 
 The CMS author form uses `BlogMediaUploaderComponent` for avatar selection and upload. Editors can reuse an existing Media Library item or upload a portrait through the standard Firebase Storage pipeline; the resulting hosted URL is stored in `AuthorProfile.avatarUrl`. Author profiles do not own a separate upload implementation.
 
@@ -109,10 +135,11 @@ The full `/search` page supports an author filter represented by the stable slug
 ## SEO And Syndication
 
 - Author pages use a canonical `/authors/:slug` URL and `ProfilePage` plus `Person` JSON-LD.
+- The author directory uses canonical `/authors` metadata with `CollectionPage` plus `ItemList` JSON-LD and crawler fallback cards.
 - `BlogPosting.author` uses the selected author's name and profile URL.
 - Colin remains the website publisher and homepage `Person` identity for posts by any writer.
 - RSS, JSON Feed, crawler fallback HTML, social metadata, draft previews, exports, and offline snapshots use the post's author snapshot.
-- The sitemap includes published author profiles that have at least one publicly discoverable published post.
+- The sitemap includes the `/authors` directory plus published author profiles that have at least one publicly discoverable published post.
 - Draft authors and missing slugs return a real missing-route/noindex response and are excluded from the sitemap.
 
 Angular metadata and Firebase Functions rendering must be updated together so crawlers and browser navigation expose the same author.

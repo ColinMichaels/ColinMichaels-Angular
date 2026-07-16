@@ -236,6 +236,7 @@ describe('MainComponent', () => {
     expect(footerText).toContain(`© ${new Date().getFullYear()} Colin Michaels. All rights reserved.`);
     expect(footerText).toContain('Home');
     expect(footerText).toContain('Blog');
+    expect(footer?.querySelector('a[href="/authors"]')?.textContent?.trim()).toBe('Authors');
     expect(footerText).toContain('Topics');
     expect(footerText).toContain('About');
     expect(footerText).toContain('Open OS');

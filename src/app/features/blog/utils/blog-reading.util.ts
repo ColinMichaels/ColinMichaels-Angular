@@ -3,6 +3,9 @@ import {createBlogMarkdownPlainText} from './blog-markdown.util';
 
 const WORDS_PER_MINUTE = 225;
 
+export const BLOG_QUICK_SUMMARY_LABEL = 'Quick Summary (TL;DR)';
+export const BLOG_QUICK_SUMMARY_DESCRIPTION = 'Too long; didn’t read — a brief summary of the article.';
+
 export interface BlogTableOfContentsItem {
   blockId: string;
   id: string;
@@ -21,8 +24,9 @@ export function createBlogTableOfContents(blocks: readonly BlogContentBlock[]): 
   return blocks
     .filter(block => block.type === 'header')
     .map(block => {
-      const text = toPlainText(block.data.text ?? '');
-      const baseId = createHeadingBaseId(text);
+      const sourceText = toPlainText(block.data.text ?? '');
+      // Build the anchor from stored copy before applying presentation aliases so existing links remain stable.
+      const baseId = createHeadingBaseId(sourceText);
       const seenCount = usedIds.get(baseId) ?? 0;
       const level: 2 | 3 = block.data.level === 3 ? 3 : 2;
       usedIds.set(baseId, seenCount + 1);
@@ -31,10 +35,14 @@ export function createBlogTableOfContents(blocks: readonly BlogContentBlock[]): 
         blockId: block.id,
         id: seenCount > 0 ? `${baseId}-${seenCount + 1}` : baseId,
         level,
-        text,
+        text: isBlogQuickSummaryHeading(sourceText) ? BLOG_QUICK_SUMMARY_LABEL : sourceText,
       };
     })
     .filter(item => item.text.length > 0);
+}
+
+export function isBlogQuickSummaryHeading(value: string): boolean {
+  return value.toLocaleLowerCase().replace(/[^a-z]/g, '') === 'tldr';
 }
 
 export function createBlogHeadingIdMap(blocks: readonly BlogContentBlock[]): ReadonlyMap<string, string> {
