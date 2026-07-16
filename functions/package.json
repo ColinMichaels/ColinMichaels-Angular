@@ -6,6 +6,9 @@
   "engines": {
     "node": "22"
   },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
   "scripts": {
     "migrate:post-authors": "node scripts/backfill-post-authors.mjs",
     "build": "tsc",
