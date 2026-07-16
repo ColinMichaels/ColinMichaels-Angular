@@ -38,9 +38,10 @@ service cloud.firestore {
       return hasRole('admin');
     }
 
-    function isBackendOnlySocialConnectionPath(documentPath) {
+    function isBackendOnlyPath(documentPath) {
       return documentPath.matches('socialConnectionSecrets/.*')
-        || documentPath.matches('socialOAuthStates/.*');
+        || documentPath.matches('socialOAuthStates/.*')
+        || documentPath.matches('postPolls/.*');
     }
 
     function isOwner(userId) {
@@ -225,6 +226,10 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /postPolls/{postId}/{document=**} {
+      allow read, write: if false;
+    }
+
     match /userPointEvents/{eventId} {
       allow read: if canManageUserAccounts() || (isSignedIn() && request.auth.uid == resource.data.uid);
       allow write: if false;
@@ -236,7 +241,7 @@ service cloud.firestore {
 
     match /{document=**} {
       allow read, write: if canManageUserAccounts()
-        && !isBackendOnlySocialConnectionPath(document);
+        && !isBackendOnlyPath(document);
     }
   }
 }

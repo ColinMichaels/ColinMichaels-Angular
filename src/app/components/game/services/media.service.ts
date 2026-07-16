@@ -1,4 +1,7 @@
 import { Injectable } from '@angular/core';
+import {IconProp} from '@fortawesome/fontawesome-svg-core';
+import {Observable} from 'rxjs';
+import {SafeHtml} from '@angular/platform-browser';
 
 // Define supported icon libraries/types
 export type IconType = 'material' | 'fontawesome' | 'custom' | 'svg';
@@ -8,7 +11,7 @@ export interface IconDefinition {
   type: IconType;
   name: string;          // icon name/id within the library
   className?: string;    // optional CSS classes
-  svgPath?: any;     // for SVG icons
+  svgPath?: IconProp | Observable<SafeHtml>;
   color?: string;       // optional color override
   size?: string | number; // optional size override
 }

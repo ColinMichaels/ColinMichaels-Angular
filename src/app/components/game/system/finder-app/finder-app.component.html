@@ -2,13 +2,15 @@
   <!-- Sidebar -->
   <aside class="w-1/4 border-r border-white/10 bg-zinc-800 p-4 space-y-1 text-xs overflow-y-auto">
     <header class="text-zinc-500 text-xs">Favorites</header>
-    <div *ngFor="let dir of favoriteDirs"
-         class="flex items-center space-x-2 py-1 rounded hover:bg-white/10 cursor-pointer"
+    <button *ngFor="let dir of favoriteDirs"
+         type="button"
+         class="flex w-full items-center space-x-2 py-1 rounded text-left hover:bg-white/10 cursor-pointer"
          [class]="dir.path === currentPath ? 'bg-white/10' : ''"
+         [attr.aria-current]="dir.path === currentPath ? 'page' : null"
          (click)="navigate(dir.path)">
       <span class="text-blue-400"><fa-icon [icon]="faFolder"></fa-icon></span>
       <span class="truncate w-9/12">{{ dir.name }}</span>
-    </div>
+    </button>
   </aside>
 
   <!-- Main Panel -->
@@ -18,8 +20,12 @@
       <div class="flex justify-between space-x-4 text-zinc-500">
         <div class="flex flex-col items-center">
           <div class="flex space-x-4">
-            <fa-icon [icon]="faChevronLeft" size="sm" class="hover:text-zinc-300" (click)="goBack()"></fa-icon>
-            <fa-icon [icon]="faChevronRight" size="sm" class="hover:text-zinc-300"  (click)="goForward()"></fa-icon>
+            <button type="button" aria-label="Go back" [disabled]="navIndex <= 0" (click)="goBack()">
+              <fa-icon [icon]="faChevronLeft" size="sm" class="hover:text-zinc-300"></fa-icon>
+            </button>
+            <button type="button" aria-label="Go forward" [disabled]="navIndex >= navHistory.length - 1" (click)="goForward()">
+              <fa-icon [icon]="faChevronRight" size="sm" class="hover:text-zinc-300"></fa-icon>
+            </button>
           </div>
           <div class="text-zinc-500 text-[10px]">Back/Forward</div>
         </div>
@@ -29,23 +35,26 @@
         <span class="ml-4 font-semibold truncate w-9/12">{{ getDirName(currentPath) }}</span>
       </div>
       <div class="flex space-x-2">
-        <fa-icon [icon]="faSearch" size="sm" class="hover:text-zinc-300 text-zinc-500"></fa-icon>
+        <fa-icon aria-hidden="true" [icon]="faSearch" size="sm" class="hover:text-zinc-300 text-zinc-500"></fa-icon>
       </div>
       <div class="flex items-center space-x-4">
-        <select [(ngModel)]="sortBy" class="menu-dropdown">
+        <select [(ngModel)]="sortBy" class="menu-dropdown" aria-label="Sort files by">
           <option value="name">Name</option>
           <option value="type">Type</option>
           <option value="modified">Modified</option>
         </select>
         <div class="flex flex-col space-y-1 justify-items-center text-center">
           <div class="space-x-2 text-zinc-600">
-            <button (click)="setViewMode(VIEW_MODES.list)" [class.text-white]="viewMode === VIEW_MODES.list">
+            <button type="button" aria-label="List view" (click)="setViewMode(VIEW_MODES.list)"
+                    [attr.aria-pressed]="viewMode === VIEW_MODES.list" [class.text-white]="viewMode === VIEW_MODES.list">
               <fa-icon [icon]="faList" size="sm"></fa-icon>
             </button>
-            <button (click)="setViewMode(VIEW_MODES.grid)" [class.text-white]="viewMode === VIEW_MODES.grid">
+            <button type="button" aria-label="Grid view" (click)="setViewMode(VIEW_MODES.grid)"
+                    [attr.aria-pressed]="viewMode === VIEW_MODES.grid" [class.text-white]="viewMode === VIEW_MODES.grid">
               <fa-icon [icon]="faTableCellsLarge" size="sm"></fa-icon>
             </button>
-            <button (click)="setViewMode(VIEW_MODES.columns)" [class.text-white]="viewMode === VIEW_MODES.columns">
+            <button type="button" aria-label="Columns view" (click)="setViewMode(VIEW_MODES.columns)"
+                    [attr.aria-pressed]="viewMode === VIEW_MODES.columns" [class.text-white]="viewMode === VIEW_MODES.columns">
               <fa-icon [icon]="faTableColumns"  size="sm"></fa-icon>
             </button>
           </div>
@@ -62,10 +71,12 @@
              class="flex w-full items-center justify-between px-4 py-1 text-sm text-white border-b border-white/10 hover:bg-white/10">
           <fa-icon *ngIf="file.isDir" [icon]="faChevronRight"  size="xs" class="text-white/50 -mr-3 -translate-x-3"></fa-icon>
           <div class="flex space-x-2  justify-between w-full">
-            <div class="flex items-center space-x-2 cursor-pointer w-1/3" (click)="file.isDir ? navigate(file.path) : null">
+            <button type="button" class="flex items-center space-x-2 cursor-pointer w-1/3 text-left"
+                    [disabled]="!file.isDir" [attr.aria-label]="file.isDir ? 'Open ' + file.name + ' folder' : null"
+                    (click)="navigate(file.path)">
               <fa-icon [icon]="file.isDir ? faFolder : faFile" [class]="file.isDir ? 'text-blue-300' : ''"></fa-icon>
               <span class="truncate text-xs">{{ file.name }}</span>
-            </div>
+            </button>
             <span class="truncate text-gray-400 text-xs w-1/3">{{ file.modified | date: 'short' }}</span>
             <span class="text-xs text-gray-400 w-1/3">{{ file.type }}</span>
           </div>
@@ -75,11 +86,13 @@
       <!-- Grid View -->
       <div grid-view *ngIf="(getCurrentDir() | async) as dir">
         <div class="grid grid-cols-4 gap-4 p-4 text-white text-center">
-          <div *ngFor="let file of dir.children; trackBy: trackByName" class="flex flex-col items-center cursor-pointer"
-               (click)="file.isDir ? navigate(file.path) : null">
+          <button *ngFor="let file of dir.children; trackBy: trackByName" type="button"
+               class="flex flex-col items-center cursor-pointer" [disabled]="!file.isDir"
+               [attr.aria-label]="file.isDir ? 'Open ' + file.name + ' folder' : null"
+               (click)="navigate(file.path)">
             <fa-icon [icon]="file.isDir ? faFolder : faFile" [class.text-blue-300]="file.isDir"></fa-icon>
             <div class="truncate w-20 text-[10px]">{{ file.name }}</div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -87,15 +100,16 @@
       <div columns-view *ngIf="(getCurrentDir() | async) as dir">
         <div class="flex h-full overflow-hidden text-white">
           <div class="w-1/3 border-r border-white/10 overflow-auto">
-            <div *ngFor="let file of dir.children; trackBy: trackByName"
+            <button *ngFor="let file of dir.children; trackBy: trackByName" type="button"
                  class="hover:bg-white/10 px-2 py-1 rounded cursor-pointer text-xs"
-                 (click)="file.isDir ? navigate(file.path) : null">
+                 [disabled]="!file.isDir" [attr.aria-label]="file.isDir ? 'Open ' + file.name + ' folder' : null"
+                 (click)="navigate(file.path)">
               <div class="flex flex-auto items-center justify-around space-x-1">
                 <fa-icon [icon]="file.isDir ? faFolder: faFile" [class.text-blue-300]="file.isDir"></fa-icon>
                 <div class="truncate w-20 text-[10px]">{{ file.name }}</div>
                 <fa-icon [icon]="faChevronRight" size="xs" *ngIf="file.isDir" class=" text-zinc-600 justify-self-end"></fa-icon>
               </div>
-            </div>
+            </button>
           </div>
           <div class="w-2/3 p-4">
             <p class="text-xs text-gray-400">Select a file or folder to view its details.</p>

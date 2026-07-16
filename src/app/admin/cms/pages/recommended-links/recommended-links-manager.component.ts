@@ -18,6 +18,12 @@ import {
 } from '../../../../features/recommended-links/utils/recommended-link-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
+import {AdminEmptyStateComponent} from '../../../shared/admin-empty-state.component';
+import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminSearchFieldComponent} from '../../../shared/admin-search-field.component';
+import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase();
@@ -30,6 +36,12 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-recommended-links-manager',
   imports: [
+    AdminAlertComponent,
+    AdminEditorActionBarComponent,
+    AdminEmptyStateComponent,
+    AdminPageHeaderComponent,
+    AdminSearchFieldComponent,
+    AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -37,15 +49,11 @@ function getErrorMessage(error: unknown): string {
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
-        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">Recommended Links</h1>
-            <p class="max-w-3xl text-zinc-400">
-              Manage the homepage recommendation pool. Assign a published link to featured slot 1, 2, or 3 to rotate what appears below the author bio.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-3">
+        <app-admin-page-header
+          title="Recommended Links"
+          description="Manage the homepage recommendation pool. Assign a published link to featured slot 1, 2, or 3 to rotate what appears below the author bio."
+        >
+          <div adminPageHeaderActions class="contents">
             <button
               type="button"
               class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
@@ -70,49 +78,28 @@ function getErrorMessage(error: unknown): string {
               {{ seedInProgress ? 'Seeding...' : 'Seed Defaults' }}
             </button>
           </div>
-        </header>
+        </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-5">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Links</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().total }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().published }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Featured Slots</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().featured }}/3</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Drafts</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().drafts }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Archived</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().archived }}</p>
-          </div>
+          <app-admin-stat-card label="Total Links" [value]="stats().total"></app-admin-stat-card>
+          <app-admin-stat-card label="Published" [value]="stats().published"></app-admin-stat-card>
+          <app-admin-stat-card label="Featured Slots" [value]="stats().featured + '/3'"></app-admin-stat-card>
+          <app-admin-stat-card label="Drafts" [value]="stats().drafts"></app-admin-stat-card>
+          <app-admin-stat-card label="Archived" [value]="stats().archived"></app-admin-stat-card>
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <section class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
           <aside class="space-y-4 border border-zinc-800 bg-zinc-900/70 p-4">
-            <label class="space-y-2">
-              <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Search links</span>
-              <input
-                type="search"
-                [value]="searchTerm"
-                placeholder="Search title, host, tag..."
-                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                (input)="updateSearch($event)"
-              >
-            </label>
+            <app-admin-search-field
+              label="Search links"
+              placeholder="Search title, host, tag..."
+              [value]="searchTerm"
+              (valueChange)="searchTerm = $event"
+            ></app-admin-search-field>
 
             <div class="space-y-2" aria-label="Recommended link list">
               @for (link of filteredRecommendedLinks(); track link.id) {
@@ -135,9 +122,9 @@ function getErrorMessage(error: unknown): string {
                   </span>
                 </button>
               } @empty {
-                <div class="border border-dashed border-zinc-700 p-4 text-sm leading-6 text-zinc-400">
-                  No links found. Seed the current defaults or create a new draft link.
-                </div>
+                <app-admin-empty-state
+                  message="No links found. Seed the current defaults or create a new draft link."
+                ></app-admin-empty-state>
               }
             </div>
           </aside>
@@ -251,15 +238,8 @@ function getErrorMessage(error: unknown): string {
               </article>
             </section>
 
-            <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-5">
-              <p class="text-sm text-zinc-500">
-                @if (selectedRecommendedLinkId) {
-                  Editing {{ selectedRecommendedLinkId }}
-                } @else {
-                  Create or select a recommended link to begin.
-                }
-              </p>
-              <div class="flex flex-wrap gap-3">
+            <app-admin-editor-action-bar [status]="editorActionStatus" [busy]="saveInProgress">
+              <div adminEditorActions class="contents">
                 <button
                   type="button"
                   class="inline-flex justify-center border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
@@ -276,7 +256,7 @@ function getErrorMessage(error: unknown): string {
                   {{ saveInProgress ? 'Saving...' : 'Save Link' }}
                 </button>
               </div>
-            </footer>
+            </app-admin-editor-action-bar>
           </form>
         </section>
       </section>
@@ -347,10 +327,6 @@ export class CmsRecommendedLinksManagerComponent {
       link.status,
       link.featuredSlot ? `slot ${link.featuredSlot}` : 'not featured',
     ].join(' ')).includes(normalizedSearchTerm));
-  }
-
-  protected updateSearch(event: Event): void {
-    this.searchTerm = (event.target as HTMLInputElement | null)?.value ?? '';
   }
 
   protected selectRecommendedLink(link: RecommendedLink): void {
@@ -453,6 +429,22 @@ export class CmsRecommendedLinksManagerComponent {
       default:
         return 'shrink-0 text-xs uppercase tracking-wide text-amber-300';
     }
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.saveInProgress) {
+      return 'Saving recommended link...';
+    }
+
+    if (this.recommendedLinkForm.dirty) {
+      return this.selectedRecommendedLinkId
+        ? `Unsaved changes for ${this.selectedRecommendedLinkId}.`
+        : 'Unsaved changes for a new recommended link.';
+    }
+
+    return this.selectedRecommendedLinkId
+      ? `Editing ${this.selectedRecommendedLinkId}`
+      : 'Create or select a recommended link to begin.';
   }
 
   private patchRecommendedLinkForm(link: RecommendedLink): void {

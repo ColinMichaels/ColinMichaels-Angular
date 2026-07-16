@@ -51,7 +51,7 @@ type ScrollDirection = 'left' | 'right' | 'top' | 'bottom';
  */
 @Directive({
   selector: '[appScrollClassToggle]',
-  standalone: false
+  standalone: true
 })
 export class ScrollClassToggleDirective implements AfterViewInit {
   @Input() scrollThreshold = 100;

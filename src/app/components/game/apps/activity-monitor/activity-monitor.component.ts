@@ -62,7 +62,7 @@ interface Process {
 export class ActivityMonitorComponent implements OnInit, OnDestroy {
   tabs = ['CPU', 'MEMORY', 'ENERGY', 'DISK', 'NETWORK', 'MAGIC'];
   activeTab = 'CPU';
-  intervalId: any;
+  intervalId?: ReturnType<typeof setInterval>;
 
   processes = [
     { name: 'Finder', cpu: 3.2, cpuTime: '18:23:43', threads: 37, idleWakeUps: 206, gpu: 2.6, gpuTime: '4:25:41', pid: 390, user: 'colin' },
@@ -162,7 +162,7 @@ export class ActivityMonitorComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.cpuChartData = [];
     this.gpuChartData = [];
-    clearInterval(this.intervalId);
+    if (this.intervalId) clearInterval(this.intervalId);
   }
 
   /** window manager */

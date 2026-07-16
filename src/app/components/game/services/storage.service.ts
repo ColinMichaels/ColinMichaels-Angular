@@ -3,7 +3,7 @@ import {from, Observable, of} from 'rxjs';
 import {catchError} from 'rxjs/operators';
 
 interface StorageStrategy {
-  setItem(key: string, value: any): Promise<void>;
+  setItem(key: string, value: unknown): Promise<void>;
 
   getItem<T>(key: string): Promise<T | null>;
 
@@ -40,7 +40,7 @@ export class StorageService {
   }
 
   // Public API methods - returns Observables for better integration with Angular
-  setItem(key: string, value: any): Observable<void> {
+  setItem(key: string, value: unknown): Observable<void> {
     return from(this.strategy.setItem(key, value)).pipe(
       catchError(error => {
         console.error('Storage operation failed:', error);
@@ -64,7 +64,7 @@ export class StorageService {
 
   // Store multiple values as a collection (e.g., a "set")
   // Convenience methods for arrays
-  setItems(key: string, values: any[]): Observable<void> {
+  setItems(key: string, values: unknown[]): Observable<void> {
     return this.setItem(key, values);
   }
 
@@ -133,7 +133,7 @@ class IndexedDBStrategy implements StorageStrategy {
     });
   }
 
-  async setItem(key: string, value: any): Promise<void> {
+  async setItem(key: string, value: unknown): Promise<void> {
     const db = await this.db;
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, 'readwrite');
@@ -195,7 +195,7 @@ class IndexedDBStrategy implements StorageStrategy {
 }
 
 class LocalStorageStrategy implements StorageStrategy {
-  async setItem(key: string, value: any): Promise<void> {
+  async setItem(key: string, value: unknown): Promise<void> {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {

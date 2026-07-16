@@ -1,10 +1,10 @@
 import {Injectable, OnDestroy} from '@angular/core';
 import {SettingsService} from './settings.service';
-import {customOscillators} from 'web-audio-oscillators';
 import {LogService} from './log.service';
 import {SOUND_DRIVERS, SoundDriverId, SoundDriverMetadata} from './sound-drivers/sound-driver.types';
-import {ToneSampledSoundDriver} from './sound-drivers/tone-sampled-sound.driver';
+import {NativeSampledSoundDriver} from './sound-drivers/native-sampled-sound.driver';
 import {SoundFontSampledSoundDriver} from './sound-drivers/soundfont-sampled-sound.driver';
+import {createCustomOscillator, isCustomOscillatorType} from './audio/custom-oscillators';
 
 export type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type SynthFilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
@@ -539,14 +539,14 @@ export class PatchService implements OnDestroy {
 
   private audioCtx?: AudioContext;
   private selectedSoundDriverId: SoundDriverId = 'web-audio';
-  private readonly toneSampledDriver: ToneSampledSoundDriver;
+  private readonly nativeSampledDriver: NativeSampledSoundDriver;
   private readonly soundFontDriver: SoundFontSampledSoundDriver;
 
   constructor(
     private settingsService: SettingsService,
     private readonly logger: LogService
   ) {
-    this.toneSampledDriver = new ToneSampledSoundDriver(this.logger);
+    this.nativeSampledDriver = new NativeSampledSoundDriver(this.logger);
     this.soundFontDriver = new SoundFontSampledSoundDriver(this.logger);
   }
 
@@ -565,16 +565,12 @@ export class PatchService implements OnDestroy {
       return;
     }
 
-    const audioCtx = this.getAudioContext();
-    const oscillatorFactories = customOscillators as Record<string, (context: AudioContext) => OscillatorNode>;
-    const createCustomOscillator = oscillatorFactories[type];
-
-    if (!createCustomOscillator) {
+    if (!isCustomOscillatorType(type)) {
       this.logger.warn(`Unknown oscillator patch: ${type}`);
       return;
     }
 
-    const customOscillator = createCustomOscillator(audioCtx);
+    const audioCtx = this.getAudioContext();
     const time = audioCtx.currentTime;
     for (const note of notes) {
       const freq = FREQUENCIES[note];
@@ -582,15 +578,16 @@ export class PatchService implements OnDestroy {
         this.logger.warn(`Unknown note: ${note}`);
         continue;
       }
+      const customOscillator = createCustomOscillator(audioCtx, type);
+      if (!customOscillator) continue;
+
       const gain = audioCtx.createGain();
       const pan = audioCtx.createStereoPanner();
-      pan.pan.setValueAtTime(-1, time);
-      customOscillator.connect(pan);
-
-
+      pan.pan.setValueAtTime(0, time);
       customOscillator.frequency.setValueAtTime(freq, time);
       customOscillator.connect(gain);
-      customOscillator.connect(audioCtx.destination);
+      gain.connect(pan);
+      pan.connect(audioCtx.destination);
 
       gain.gain.setValueAtTime(0.05, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
@@ -607,7 +604,7 @@ export class PatchService implements OnDestroy {
     driverId: SoundDriverId = this.selectedSoundDriverId
   ): void {
     if (driverId === 'tone-sampler') {
-      void this.toneSampledDriver.playPreset(note, duration, presetName);
+      void this.nativeSampledDriver.playPreset(note, duration, presetName);
       return;
     }
 
@@ -658,8 +655,8 @@ export class PatchService implements OnDestroy {
     patch: SynthPatch = DEFAULT_SYNTH_PATCH,
     driverId: SoundDriverId = 'web-audio'
   ): void {
-    if (driverId === 'tone-sampler' && this.toneSampledDriver.canPlayPreset(patch.name)) {
-      void this.toneSampledDriver.playPreset(note, duration, patch.name);
+    if (driverId === 'tone-sampler' && this.nativeSampledDriver.canPlayPreset(patch.name)) {
+      void this.nativeSampledDriver.playPreset(note, duration, patch.name);
       return;
     }
 
@@ -842,7 +839,7 @@ export class PatchService implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.toneSampledDriver.dispose();
+    this.nativeSampledDriver.dispose();
     this.soundFontDriver.dispose();
     this.audioCtx?.close();
   }

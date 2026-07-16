@@ -6,7 +6,7 @@ import {
   Input,
   AfterViewInit,
   ViewContainerRef,
-  Type, computed, OnChanges, OnDestroy, ComponentRef,
+  Type, computed, OnChanges, OnDestroy, ComponentRef, SimpleChanges,
   ChangeDetectionStrategy
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
@@ -28,6 +28,14 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 const DEFAULT_OFFSET = 40;
 const DEFAULT_WIDTH = 'w-[640px]';
 const DEFAULT_HEIGHT = 'h-auto';
+
+interface ParamsAwareComponent {
+  params?: unknown;
+}
+
+const isParamsAwareComponent = (instance: unknown): instance is ParamsAwareComponent => (
+  typeof instance === 'object' && instance !== null
+);
 
 
 @Component({
@@ -70,15 +78,15 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() defaultWidth = DEFAULT_WIDTH;
   @Input() defaultHeight = DEFAULT_HEIGHT;
   @Input() autoFit = false;
-  @Input() embeddedComponent: Type<any> = CliGameComponent;
+  @Input() embeddedComponent: Type<unknown> = CliGameComponent;
   @Input() minWidth: number = WINDOW_WIDTH_MIN;
   @Input() maxWidth: number = WINDOW_WIDTH_MAX;
   @Input() minHeight: number = WINDOW_HEIGHT_MIN;
   @Input() maxHeight: number = WINDOW_HEIGHT_MAX;
   @Input() focused: boolean = false;
-  @Input() params: any;
+  @Input() params: unknown;
 
-  private componentRef?: ComponentRef<any>;
+  private componentRef?: ComponentRef<unknown>;
 
   /** Font Awesome Icons */
   faTimes = faTimes;
@@ -115,9 +123,9 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.subscribeToFocusEvents();
   }
 
-  ngOnChanges(changes: any) {
-    if(changes.id){
-      this.focused = this.embeddedApp()?.id === changes.id.currentValue;
+  ngOnChanges(changes: SimpleChanges) {
+    if(changes['id']){
+      this.focused = this.embeddedApp()?.id === changes['id'].currentValue;
     }
   }
 
@@ -169,7 +177,9 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (this.embeddedComponent) {
       this.containerRef.clear();
       this.componentRef = this.containerRef.createComponent(this.embeddedComponent);
-      this.componentRef.instance.params = this.params;
+      if (isParamsAwareComponent(this.componentRef.instance)) {
+        this.componentRef.instance.params = this.params;
+      }
     }
   }
 

@@ -1,5 +1,11 @@
 import {Component, ChangeDetectionStrategy} from '@angular/core';
-import {SpaceXLaunch, SpaceXRocket, SpaceXLaunchpad, SpaceXCrew} from '../models/spacex-models';
+import {
+  SpaceXCrew,
+  SpaceXLaunch,
+  SpaceXLaunchpad,
+  SpaceXPanelItemId,
+  SpaceXRocket
+} from '../models/spacex-models';
 import {SpacexCrewComponent} from '../spacex-crew/spacex-crew.component';
 import {SpacexLaunchpadComponent} from '../spacex-launchpad/spacex-launchpad.component';
 import {SpacexRocketComponent} from '../spacex-rocket/spacex-rocket.component';
@@ -27,39 +33,40 @@ export class SpacexSubPanelComponent {
   launchpad!: SpaceXLaunchpad;
   crew: SpaceXCrew[] = [];
   panel: string = 'rocket';
-  itemId: string = '';
+  itemId: SpaceXPanelItemId = '';
 
   constructor(
     private readonly spacex: SpacexService,
   ) {
     this.spacex.selectedPanel.pipe(takeUntilDestroyed())
-      .subscribe((panel: any) => {
-        this.panel = panel.panel;
-        this.itemId = panel.itemId;
-        this.loadPanelData(panel.itemId, panel.panel);
+      .subscribe(selection => {
+        if (!selection.panel || !selection.itemId) return;
+
+        this.panel = selection.panel;
+        this.itemId = selection.itemId;
+        this.loadPanelData(selection.itemId, selection.panel);
       })
   }
 
-  private loadPanelData(id: any, type: 'launch' | 'rocket' | 'launchpad' | 'crew') {
-    console.warn(id);
-    if (!id) return;
-
+  private loadPanelData(id: SpaceXPanelItemId, type: string) {
     switch (type) {
       case 'launch':
+        if (typeof id !== 'string') return;
         this.spacex.getLaunchById(id).pipe(take(1)).subscribe(data => this.launch = data);
         break;
       case 'rocket':
+        if (typeof id !== 'string') return;
         this.spacex.getRocketById(id).pipe(take(1)).subscribe(data => this.rocket = data);
         break;
       case 'launchpad':
+        if (typeof id !== 'string') return;
         this.spacex.getLaunchpadById(id).pipe(take(1)).subscribe(data => this.launchpad = data);
         break;
       case 'crew':
-        id.map((crew: any) => {
-          console.log(crew);
-          this.spacex.getCrewById(crew.crew).pipe(take(1)).subscribe((data: SpaceXCrew) => this.crew.push(data));
-        })
-
+        if (typeof id === 'string') return;
+        id.forEach(({crew}) => {
+          this.spacex.getCrewById(crew).pipe(take(1)).subscribe((data: SpaceXCrew) => this.crew.push(data));
+        });
         break;
     }
   }

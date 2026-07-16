@@ -5,7 +5,7 @@
     <section class="flex space-x-2 overflow-hidden justify-start cursor-not-allowed pointer-events-auto">
       <ng-container *ngFor="let app of staticApps">
         <div class="w-7 h-7"  [appTooltip]="'Coming Soon'">
-              <svg-icon [icon]="app.icon"/>
+              <app-svg-icon [icon]="app.icon"/>
         </div>
       </ng-container>
     </section>

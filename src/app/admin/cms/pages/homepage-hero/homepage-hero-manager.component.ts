@@ -35,6 +35,10 @@ import {
 import {HomepageHeroRepositoryService} from '../../../../features/homepage/services/homepage-hero-repository.service';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
+import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
@@ -47,6 +51,10 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
 @Component({
   selector: 'app-cms-homepage-hero-manager',
   imports: [
+    AdminAlertComponent,
+    AdminEditorActionBarComponent,
+    AdminPageHeaderComponent,
+    AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -54,15 +62,11 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
-        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">Homepage Hero</h1>
-            <p class="max-w-3xl text-zinc-400">
-              Manage the first viewport copy, featured article selection, and rotating background image set.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-3">
+        <app-admin-page-header
+          title="Homepage Hero"
+          description="Manage the first viewport copy, featured article selection, and rotating background image set."
+        >
+          <div adminPageHeaderActions class="contents">
             <button
               type="button"
               class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
@@ -79,31 +83,22 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
               Load Defaults
             </button>
           </div>
-        </header>
+        </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-4">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Hero Status</p>
-            <p class="mt-2 text-2xl font-semibold capitalize">{{ settings().status }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().totalSlides }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().publishedSlides }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Draft Slides</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().draftSlides }}</p>
-          </div>
+          <app-admin-stat-card
+            label="Hero Status"
+            [value]="settings().status"
+            size="compact"
+            [capitalize]="true"
+          ></app-admin-stat-card>
+          <app-admin-stat-card label="Total Slides" [value]="stats().totalSlides"></app-admin-stat-card>
+          <app-admin-stat-card label="Published Slides" [value]="stats().publishedSlides"></app-admin-stat-card>
+          <app-admin-stat-card label="Draft Slides" [value]="stats().draftSlides"></app-admin-stat-card>
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <form class="grid gap-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(360px,0.58fr)]"
@@ -367,15 +362,20 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
               </p>
             </section>
 
-            <footer class="flex flex-wrap justify-end gap-3 border border-zinc-800 bg-zinc-900/70 p-5">
+            <app-admin-editor-action-bar
+              [status]="editorActionStatus"
+              [busy]="saveInProgress || uploadInProgress"
+              [panel]="true"
+            >
               <button
+                adminEditorActions
                 type="submit"
                 class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
                 [disabled]="heroForm.invalid || saveInProgress || uploadInProgress"
               >
                 {{ saveInProgress ? 'Saving...' : 'Save Homepage Hero' }}
               </button>
-            </footer>
+            </app-admin-editor-action-bar>
           </aside>
         </form>
       </section>
@@ -641,6 +641,20 @@ export class CmsHomepageHeroManagerComponent {
 
   protected previewHeadlineLines(): readonly string[] {
     return this.getHeadlineLinesFromForm();
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.uploadInProgress) {
+      return this.uploadStatus() || 'Uploading homepage media...';
+    }
+
+    if (this.saveInProgress) {
+      return 'Saving homepage hero settings...';
+    }
+
+    return this.heroForm.dirty
+      ? 'Unsaved homepage hero changes.'
+      : 'Homepage hero settings are up to date.';
   }
 
   private patchHeroForm(settings: HomepageHeroSettings): void {

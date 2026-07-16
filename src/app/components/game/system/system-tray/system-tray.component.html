@@ -13,125 +13,164 @@
   <div class="h-8 bg-zinc-900/50 text-white flex items-center justify-between pl-2 pr-4">
     <div class="flex items-center text-xs h-full">
       <section class="relative">
-        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
-             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apple' }"
-             (click)="toggleMenu('apple')">
+        <button type="button"
+                class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+                aria-label="Apple menu"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="menuOpen() === 'apple'"
+                [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apple' }"
+                (click)="toggleMenu('apple')">
           <fa-icon [icon]="faApple" size="1x"></fa-icon>
-        </div>
+        </button>
         <div
           *ngIf="menuOpen() === 'apple'"
           class="menu-dropdown absolute top-6"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
-          <div class="menu-item" (click)="openApp('about')">About This App</div>
+          <button type="button" role="menuitem" class="menu-item w-full text-left" (click)="openApp('about')">About This App</button>
           <hr class="menu-separator"/>
-          <div class="menu-item" (click)="openApp('system-settings')">System Settings</div>
+          <button type="button" role="menuitem" class="menu-item w-full text-left" (click)="openApp('system-settings')">System Settings</button>
           <hr class="menu-separator"/>
-            <div class="menu-item" [routerLink]="['/sleep']">Sleep</div>
-            <div class="menu-item" [routerLink]="['/boot']">Restart</div>
-            <div class="menu-item" [routerLink]="['/']">Shutdown</div>
+            <a role="menuitem" class="menu-item block" [routerLink]="['/sleep']">Sleep</a>
+            <a role="menuitem" class="menu-item block" [routerLink]="['/boot']">Restart</a>
+            <a role="menuitem" class="menu-item block" [routerLink]="['/']">Shutdown</a>
             <hr class="menu-separator"/>
-          <div class="menu-item" [routerLink]="['/']">Log Out {{ userName }}</div>
+          <a role="menuitem" class="menu-item block" [routerLink]="['/']">Log Out {{ userName }}</a>
         </div>
       </section>
       <section class="relative">
-        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
-             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'file' }"
-             (click)="toggleMenu('file')">
+        <button type="button"
+                class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="menuOpen() === 'file'"
+                [ngClass]="{ 'bg-zinc-800': menuOpen() === 'file' }"
+                (click)="toggleMenu('file')">
           File
-        </div>
+        </button>
         <div
           *ngIf="menuOpen() === 'file'"
           class="menu-dropdown absolute -left-2 top-6"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
-          <div class="menu-item" (click)="openApp('finder')">New Window</div>
-          <div class="menu-item" [class.disabled]="false" (click)="closeAllApps()">Close All</div>
+          <button type="button" role="menuitem" class="menu-item w-full text-left" (click)="openApp('finder')">New Window</button>
+          <button type="button" role="menuitem" class="menu-item w-full text-left" [class.disabled]="false" (click)="closeAllApps()">Close All</button>
         </div>
       </section>
       <section class="relative">
-        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
-             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'view' }"
-             (click)="toggleMenu('view')">
+        <button type="button"
+                class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="menuOpen() === 'view'"
+                [ngClass]="{ 'bg-zinc-800': menuOpen() === 'view' }"
+                (click)="toggleMenu('view')">
           View
-        </div>
+        </button>
         <div
           *ngIf="menuOpen() === 'view'"
           class="menu-dropdown absolute -left-2 top-6"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
-          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.columns"
-               (click)="setViewMode(VIEW_MODES.columns)">as Icons</div>
-          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.list"
-               (click)="setViewMode(VIEW_MODES.list)">as List</div>
-          <div class="menu-item" [class.active]="viewMode()=== VIEW_MODES.grid"
-               (click)="setViewMode(VIEW_MODES.grid)">as Grid</div>
+          <button type="button" role="menuitemradio" class="menu-item w-full text-left"
+                  [attr.aria-checked]="viewMode() === VIEW_MODES.columns"
+                  [class.active]="viewMode() === VIEW_MODES.columns"
+                  (click)="setViewMode(VIEW_MODES.columns)">as Icons</button>
+          <button type="button" role="menuitemradio" class="menu-item w-full text-left"
+                  [attr.aria-checked]="viewMode() === VIEW_MODES.list"
+                  [class.active]="viewMode() === VIEW_MODES.list"
+                  (click)="setViewMode(VIEW_MODES.list)">as List</button>
+          <button type="button" role="menuitemradio" class="menu-item w-full text-left"
+                  [attr.aria-checked]="viewMode() === VIEW_MODES.grid"
+                  [class.active]="viewMode() === VIEW_MODES.grid"
+                  (click)="setViewMode(VIEW_MODES.grid)">as Grid</button>
         </div>
       </section>
       <section class="relative">
-        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
-             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apps' }"
-             (click)="toggleMenu('apps')">Apps
-        </div>
+        <button type="button"
+                class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="menuOpen() === 'apps'"
+                [ngClass]="{ 'bg-zinc-800': menuOpen() === 'apps' }"
+                (click)="toggleMenu('apps')">Apps
+        </button>
         <div
           *ngIf="menuOpen() === 'apps'"
           class="menu-dropdown absolute -left-2 top-6"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
           <ng-container *ngFor="let app of appManager.registeredApps">
-            <div *ngIf="app.installed"
-                 (click)="app.running ? closeApp(app.id) : openApp(app.id)"
-                 [class.active]="app.running"
-                 class="p-1 menu-item truncate">
+            <button *ngIf="app.installed"
+                    type="button"
+                    role="menuitem"
+                    (click)="app.running ? closeApp(app.id) : openApp(app.id)"
+                    [class.active]="app.running"
+                    class="p-1 menu-item truncate w-full text-left">
               {{ app.title }}
-            </div>
+            </button>
           </ng-container>
         </div>
       </section>
       <section class="relative">
-        <div class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
-             [ngClass]="{ 'bg-zinc-800': menuOpen() === 'help' }"
-             (click)="toggleMenu('help')">
+        <button type="button"
+                class="cursor-pointer hover:bg-zinc-800 px-2 py-1 rounded"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="menuOpen() === 'help'"
+                [ngClass]="{ 'bg-zinc-800': menuOpen() === 'help' }"
+                (click)="toggleMenu('help')">
           Help
-        </div>
+        </button>
         <div
           *ngIf="menuOpen() === 'help'"
           class="menu-dropdown absolute -left-2 top-6"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
-          <div class="menu-item" (click)="openApp('about')">About This App</div>
+          <button type="button" role="menuitem" class="menu-item w-full text-left" (click)="openApp('about')">About This App</button>
         </div>
       </section>
     </div>
 
 
     <div class="flex space-x-4 justify-items-end align-middle">
-      <section #memory class="relative text-[10px] flex-grow text-gray-300 cursor-pointer" (click)="toggleMenu('memory')">
-        <fa-icon [icon]="faMemory"></fa-icon>
-        : {{ inGbs(usedMemory) }} / {{ inGbs(totalMemory) }}
-        <span class="text-[6px]">GB</span>
+      <section #memory class="relative text-[10px] flex-grow text-gray-300">
+        <button type="button"
+                class="cursor-pointer"
+                aria-haspopup="menu"
+                aria-label="Memory usage"
+                [attr.aria-expanded]="menuOpen() === 'memory'"
+                (click)="toggleMenu('memory')">
+          <fa-icon [icon]="faMemory"></fa-icon>
+          : {{ inGbs(usedMemory) }} / {{ inGbs(totalMemory) }}
+          <span class="text-[6px]">GB</span>
+        </button>
         <div
           *ngIf="menuOpen() === 'memory'"
           class="menu-dropdown absolute top-full"
+          role="menu"
           (mouseenter)="isHoveringMenu.set(true)"
           (mouseleave)="isHoveringMenu.set(false)"
         >
-          <div class="flex flex-col  justify-around w-full" (click)="openApp('finder')">
-            <div class="flex justify-between menu-item">
+          <div class="flex flex-col justify-around w-full">
+            <button type="button" role="menuitem" class="flex justify-between menu-item w-full"
+                    (click)="openApp('finder')">
               <span class="text-white/50">Finder</span>
               <span class="text-[8px]">512 MB</span>
-            </div>
+            </button>
           <ng-container *ngFor="let app of runningApps">
             <div class="menu-separator"></div>
-            <div class="flex justify-between menu-item" (click)="openApp(app.id)">
+            <button type="button" role="menuitem" class="flex justify-between menu-item w-full"
+                    (click)="openApp(app.id)">
                 <span class="text-white/50 w-1/2 truncate">{{ app.title }}</span>
                 <span class="text-[8px]">{{ app.memory }} MB</span>
-            </div>
+            </button>
           </ng-container>
           </div>
 

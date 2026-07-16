@@ -1,8 +1,12 @@
 <ng-container>
   <div class="min-h-screen relative z-0 w-full bg-cover bg-center overflow-hidden pointer-events-auto"
+       role="application"
+       aria-label="Interactive desktop"
+       tabindex="0"
        [style]="`background-image: url(${backgroundImage})`"
        (contextmenu)="onRightClick($event)"
        (click)="onClickWindow($event)"
+       (keydown)="onDesktopKeyDown($event)"
        (dblclick)="onDoubleClicked($event)">
     <app-system-tray/>
     <app-level-loader

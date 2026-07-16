@@ -74,6 +74,26 @@ function configureHomepageHeroRepository(settings: HomepageHeroSettings = DEFAUL
 }
 
 describe('HomeArticleHeroComponent', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+    window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: jasmine.createSpy('addEventListener'),
+      removeEventListener: jasmine.createSpy('removeEventListener'),
+      addListener: jasmine.createSpy('addListener'),
+      removeListener: jasmine.createSpy('removeListener'),
+      dispatchEvent: jasmine.createSpy('dispatchEvent'),
+    });
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
   async function createComponent(
     posts: readonly BlogPost[],
     heroSettings: HomepageHeroSettings = DEFAULT_HOMEPAGE_HERO_SETTINGS

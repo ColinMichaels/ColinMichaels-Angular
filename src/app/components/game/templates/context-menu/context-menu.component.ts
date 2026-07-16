@@ -40,7 +40,7 @@ import {NgForOf, NgIf} from '@angular/common';
 })
 export class ContextMenuComponent {
   focusedIndex = 0;
-  @Input() inputConfig!: { menuId: any; items: any; userRoles: string[] | undefined };
+  @Input() inputConfig?: ContextMenuConfig;
 
   constructor(@Inject(CONTEXT_MENU_DATA) public injectedConfig: ContextMenuConfig) {
   }

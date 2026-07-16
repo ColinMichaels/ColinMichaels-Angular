@@ -52,11 +52,46 @@ export interface BackgroundConfig {
   };
 }
 
+interface YouTubePlayer {
+  destroy(): void;
+  playVideo(): void;
+  pauseVideo(): void;
+  setVolume(volume: number): void;
+  mute(): void;
+  unMute(): void;
+  seekTo(timeInSeconds: number): void;
+}
+
+interface YouTubePlayerEvent {
+  target: YouTubePlayer;
+}
+
+interface YouTubeStateChangeEvent extends YouTubePlayerEvent {
+  data: number;
+}
+
+interface YouTubeApi {
+  Player: new (element: HTMLElement, options: unknown) => YouTubePlayer;
+  PlayerState: {ENDED: number};
+}
+
+interface VimeoPlayer {
+  ready(): Promise<void>;
+  play(): Promise<unknown>;
+  pause(): Promise<unknown>;
+  setCurrentTime(timeInSeconds: number): Promise<unknown>;
+  setVolume(volume: number): Promise<unknown>;
+}
+
+interface VimeoApi {
+  Player: new (element: HTMLIFrameElement, options: unknown) => VimeoPlayer;
+}
+
 declare global {
   interface Window {
-    YT: any;
+    YT: YouTubeApi;
     onYouTubeIframeAPIReady: () => void;
-    Vimeo: any;
+    Vimeo: VimeoApi;
   }
 }
 
@@ -286,11 +321,11 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
   protected vimeoReady = signal(false);
   private resizeObserver?: ResizeObserver;
   private animationFrame?: number;
-  private youtubePlayer?: any;
-  private vimeoPlayer?: any;
+  private youtubePlayer?: YouTubePlayer;
+  private vimeoPlayer?: VimeoPlayer;
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private sanitizer: DomSanitizer
   ) {
   }
@@ -479,14 +514,14 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
         hd: provider.quality === 'hd720' || provider.quality === 'hd1080' ? 1 : 0
       },
       events: {
-        onReady: (event: any) => {
+        onReady: (event: YouTubePlayerEvent) => {
           this.youtubeReady.set(true);
           if (provider.autoplay !== false) {
             event.target.playVideo();
           }
           this.onVideoLoaded();
         },
-        onStateChange: (event: any) => {
+        onStateChange: (event: YouTubeStateChangeEvent) => {
           // Loop the video if needed
           if (event.data === window.YT.PlayerState.ENDED && provider.loop !== false) {
             event.target.playVideo();

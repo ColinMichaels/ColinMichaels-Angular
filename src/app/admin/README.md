@@ -13,6 +13,11 @@ Component inventory:
 - `AdminShellComponent` provides the fixed desktop sidebar, responsive navigation drawer, 64px utility header, environment/account footer, and persistent CMS `New Post` action. Desktop users can collapse the sidebar to a 72px icon rail; labels remain available through hover/focus tooltips and the preference persists locally. The shell also owns the browser-tab title while active, using the same URL-derived section label shown in the utility header so navigation cannot retain stale metadata from a previous admin page.
 - `admin-navigation.config.ts` defines grouped destinations, icons, exact/prefix matching, page titles, and role visibility for Overview, Publishing, Site Content, Assets, and Administration.
 - `AdminEnvironmentBadgeComponent` supports the compact shell-footer treatment while preserving the detailed badge for feature surfaces that need it.
+- `AdminPageHeaderComponent` provides the shared page identity, description, and projected action layout adopted by Homepage Hero, Topics, and Recommended Links. It changes presentation only; routes, forms, and persistence remain owned by each manager.
+- `AdminEditorActionBarComponent` provides a shared inline or panel save surface with live status, busy semantics, and projected feature-owned actions. Homepage Hero, Topics, and Recommended Links retain their existing submit/delete handlers while reporting saving and unsaved states consistently.
+- `AdminStatCardComponent` standardizes the compact metric cards used by Homepage Hero, Topics, and Recommended Links while accepting the managers' existing computed values as inputs.
+- `AdminAlertComponent` and `AdminEmptyStateComponent` standardize assertive load-error announcements and polite empty-list feedback while preserving each manager's feature-owned message.
+- `AdminSearchFieldComponent` standardizes the labeled search control used by Topics and Recommended Links while each manager continues to own its local filtering state.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 
@@ -78,7 +83,7 @@ The editor calls Firebase callable functions first and falls back to the determi
 
 ## CMS Editor.js Tools
 
-The CMS editor extends the base Editor.js toolset with custom `code`, `markdown`, `typography`, `stats`, `chart`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently. Markdown blocks preserve their source and are parsed through the sanitized public renderer. Editor blocks are styled with hover/focus block-type hints and preview-oriented rendering so drafts better resemble the published post while editing.
+The CMS editor extends the base Editor.js toolset with custom `code`, `markdown`, `typography`, `stats`, `chart`, `poll`, `sunoEmbed`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently. Markdown blocks preserve their source and are parsed through the sanitized public renderer. Editor blocks are styled with hover/focus block-type hints and preview-oriented rendering so drafts better resemble the published post while editing.
 
 Markdown persists as `{ type: 'markdown', data: { markdown: string } }`. The public renderer parses that source with `marked`, passes the resulting HTML through Angular's HTML sanitizer, removes unsafe link destinations, and normalizes a block-local level-one heading to `<h2>` so a post never gains a second document `<h1>`. Search, reading-time estimates, and local metadata suggestions use a lightweight plain-text projection that removes Markdown formatting and link destinations without rewriting the stored source. This is an additive block type with no data migration; rolling back the UI leaves saved Markdown data intact, but an older editor build should not resave a post containing an unsupported block type.
 
@@ -106,6 +111,8 @@ Supported custom content blocks:
 - Code: multi-line snippets with optional language labels, soft-wrapped CMS previews, and reader-facing copy actions on public posts
 - Stats: repeated label/value/caption items for specification snapshots and key metrics, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
 - Chart: simple bar or line charts with visible point labels, values, units, notes, and captions, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
+- Poll: two to eight stable answer options, authenticated one-vote-per-account updates, `afterVote`, `always`, or `hidden` result visibility enforced by backend callables, and an author-controlled right-rail or inline article placement; see `docs/ARCHITECTURE/EDITORJS_POLLS.md` and `docs/ARCHITECTURE/BLOG_READING_RAILS.md`
+- Suno Song: an exact Suno song/embed URL plus optional caption, normalized into the existing typed blog embed model and rendered with a responsive sandboxed player and direct fallback; see `docs/ARCHITECTURE/EDITORJS_SUNO_EMBEDS.md`
 - HTML: sanitized custom markup for one-off sections such as spec tables or static SVG snippets; scripts and unsafe markup are not rendered
 
 Required backend setup:

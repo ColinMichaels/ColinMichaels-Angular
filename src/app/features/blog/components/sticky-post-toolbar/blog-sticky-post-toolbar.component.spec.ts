@@ -3,9 +3,24 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {BlogStickyPostToolbarComponent} from './blog-sticky-post-toolbar.component';
 
 describe('BlogStickyPostToolbarComponent', () => {
+  const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<BlogStickyPostToolbarComponent>;
+  let readerMotionReduceWasSet: boolean;
 
   beforeEach(async () => {
+    readerMotionReduceWasSet = document.documentElement.classList.contains('reader-motion-reduce');
+    document.documentElement.classList.remove('reader-motion-reduce');
+    window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: jasmine.createSpy('addEventListener'),
+      removeEventListener: jasmine.createSpy('removeEventListener'),
+      addListener: jasmine.createSpy('addListener'),
+      removeListener: jasmine.createSpy('removeListener'),
+      dispatchEvent: jasmine.createSpy('dispatchEvent'),
+    });
+
     await TestBed.configureTestingModule({
       imports: [BlogStickyPostToolbarComponent],
     }).compileComponents();
@@ -16,6 +31,11 @@ describe('BlogStickyPostToolbarComponent', () => {
     fixture.componentRef.setInput('sharePath', 'blog/sticky-post');
     fixture.componentRef.setInput('readingProgress', 42);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+    document.documentElement.classList.toggle('reader-motion-reduce', readerMotionReduceWasSet);
   });
 
   it('keeps the post title, cover, share fan, and comments shortcut together', () => {
@@ -119,8 +139,36 @@ describe('BlogStickyPostToolbarComponent', () => {
         .querySelector<HTMLButtonElement>('button[aria-label="Scroll to top of post"]');
       button?.click();
 
-      expect(scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'smooth', block: 'start'});
+      expect(scrollIntoView).toHaveBeenCalledOnceWith({
+        behavior: 'smooth',
+        block: 'start',
+      });
       expect(focus).toHaveBeenCalledOnceWith({preventScroll: true});
+    } finally {
+      target.remove();
+    }
+  });
+
+  it('uses immediate scrolling when Reader Tools reduces motion', () => {
+    const target = document.createElement('header');
+    target.id = 'blog-post-top';
+    target.tabIndex = -1;
+    const scrollIntoView = spyOn(target, 'scrollIntoView');
+    document.body.append(target);
+    document.documentElement.classList.add('reader-motion-reduce');
+
+    try {
+      const component = fixture.componentInstance as unknown as {
+        showScrollTop: {set(value: boolean): void};
+      };
+      component.showScrollTop.set(true);
+      fixture.detectChanges();
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLButtonElement>('button[aria-label="Scroll to top of post"]')
+        ?.click();
+
+      expect(scrollIntoView).toHaveBeenCalledOnceWith({behavior: 'auto', block: 'start'});
     } finally {
       target.remove();
     }

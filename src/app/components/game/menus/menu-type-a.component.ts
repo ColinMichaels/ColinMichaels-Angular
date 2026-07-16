@@ -15,6 +15,6 @@ import {JsonPipe} from '@angular/common';
   styles: ``
 })
 export class MenuTypeAComponent {
-  constructor(@Inject(CONTEXT_MENU_DATA) public data: any) {}
+  constructor(@Inject(CONTEXT_MENU_DATA) public data: {customData?: unknown}) {}
 
 }

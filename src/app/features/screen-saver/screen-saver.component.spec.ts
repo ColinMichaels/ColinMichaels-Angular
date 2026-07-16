@@ -35,6 +35,7 @@ function createSettings(): HomepageHeroSettings {
 }
 
 describe('ScreenSaverComponent', () => {
+  const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<ScreenSaverComponent>;
   let moduleId: ReturnType<typeof signal<ScreenSaverModuleId>>;
   let kenBurnsEnabled: ReturnType<typeof signal<boolean>>;
@@ -44,6 +45,17 @@ describe('ScreenSaverComponent', () => {
   let addFiles: jasmine.Spy;
 
   beforeEach(async () => {
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+    window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: jasmine.createSpy('addEventListener'),
+      removeEventListener: jasmine.createSpy('removeEventListener'),
+      addListener: jasmine.createSpy('addListener'),
+      removeListener: jasmine.createSpy('removeListener'),
+      dispatchEvent: jasmine.createSpy('dispatchEvent'),
+    });
     moduleId = signal<ScreenSaverModuleId>('hero');
     kenBurnsEnabled = signal(true);
     kenBurnsSpeed = signal(2);
@@ -91,6 +103,7 @@ describe('ScreenSaverComponent', () => {
   afterEach(() => {
     fixture.destroy();
     document.body.style.overflow = '';
+    window.matchMedia = originalMatchMedia;
   });
 
   it('toggles the full-screen viewer with the S key', () => {

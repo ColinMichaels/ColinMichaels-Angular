@@ -12,10 +12,12 @@ import {TailwindClassGeneratorService} from '../../services/tailwind-class-gener
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    <div
+    <button
+      type="button"
+      aria-label="Wake and return to login"
       [class]="rndBgClass?.bg ? rndBgClass?.bg + '/90' :  'bg-black'"
       class="w-screen h-screen transition-colors transform-gpu
-      duration-1000 ease-in-out flex flex-col items-center justify-center"
+      duration-1000 ease-in-out flex flex-col items-center justify-center border-0 p-0"
       (click)="handleClick()"
     >
       <fa-icon
@@ -24,7 +26,7 @@ import {TailwindClassGeneratorService} from '../../services/tailwind-class-gener
         class="text-7xl animate-pulse transition-colors  duration-1000 mb-4"
       ></fa-icon>
       <p class="text-white/70 text-sm">Click to wake</p>
-    </div>
+    </button>
     <div class="pointer-events-none">
       <div class="w-full h-full absolute top-0 left-0
     gradient--bg-sunset animate-pulse opacity-60">
@@ -39,8 +41,8 @@ import {TailwindClassGeneratorService} from '../../services/tailwind-class-gener
   `
 })
 export class SleepScreenComponent implements OnInit, OnDestroy {
-  timer!: any;
-  rndBgClass!: any;
+  timer: ReturnType<typeof setInterval> | undefined;
+  rndBgClass: {text: string; bg: string} | undefined;
 
   constructor(
     private router: Router,
@@ -63,7 +65,10 @@ export class SleepScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.timer = null;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
   }
 
   protected readonly faApple = faApple;

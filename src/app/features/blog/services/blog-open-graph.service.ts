@@ -12,6 +12,7 @@ import {
 } from '../../../shared/seo/seo.metadata';
 import {SeoService} from '../../../shared/seo/seo.service';
 import {BlogPost, isPublicBlogListingPost} from '../models/blog-post.model';
+import {htmlToPlainText} from '../utils/blog-html.util';
 import {resolveBlogPostImage} from '../utils/blog-image-url.util';
 
 export interface BlogShareMetadata {
@@ -169,9 +170,6 @@ export class BlogOpenGraphService {
   }
 
   private toPlainText(value: string): string {
-    const element = this.document.createElement('div');
-    element.innerHTML = value;
-
-    return element.textContent?.trim() ?? value.trim();
+    return htmlToPlainText(this.document, value);
   }
 }

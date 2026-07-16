@@ -12,11 +12,17 @@
       </div>
     </div>
     <ul class="space-y-1">
-      <li *ngFor="let item of settingsMenu" (click)="selectPanel(item)"
-          class="flex items-center space-x-2 p-1 rounded-lg cursor-pointer "
-          [ngClass]="{ 'bg-blue-700/70': activePanel.key === item.key }">
-        <fa-icon [icon]="item.icon"></fa-icon>
-        <span class="truncate">{{ item.label }}</span>
+      <li *ngFor="let item of settingsMenu">
+        <button
+          type="button"
+          (click)="selectPanel(item)"
+          class="flex w-full items-center space-x-2 p-1 rounded-lg cursor-pointer"
+          [attr.aria-pressed]="activePanel.key === item.key"
+          [ngClass]="{ 'bg-blue-700/70': activePanel.key === item.key }"
+        >
+          <fa-icon [icon]="item.icon"></fa-icon>
+          <span class="truncate">{{ item.label }}</span>
+        </button>
       </li>
     </ul>
   </aside>
