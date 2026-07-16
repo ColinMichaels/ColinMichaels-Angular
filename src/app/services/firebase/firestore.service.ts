@@ -14,7 +14,7 @@ import {
   setDoc as setDocFn,
   Timestamp,
   updateDoc as updateDocFn,
-  where as whereFn,
+  where as whereFn, WhereFilterOp,
   writeBatch as writeBatchFn
 } from 'firebase/firestore';
 import {
@@ -24,7 +24,8 @@ import {
   FirebaseStorage,
   uploadBytes as uploadBytesFn,
   uploadBytesResumable as uploadBytesResumableFn,
-  uploadString as uploadStringFn
+  uploadString as uploadStringFn,
+  UploadMetadata
 } from 'firebase/storage';
 import {from, Observable, throwError, of} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
@@ -38,6 +39,26 @@ export interface FirestoreDocument {
   updatedAt?: Timestamp;
 
   [key: string]: unknown;
+}
+
+export type FirestoreFilter = [field: string, operator: WhereFilterOp, value: unknown];
+
+export interface UserSettingsDocument extends FirestoreDocument {
+  settings?: Record<string, unknown>;
+}
+
+export interface FirestoreLogEntry extends FirestoreDocument {
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  userId?: string;
+  metadata?: unknown;
+}
+
+export interface BatchOperation {
+  type: 'set' | 'update' | 'delete';
+  collection: string;
+  id: string;
+  data?: FirestoreDocument;
 }
 
 @Injectable({
@@ -275,7 +296,7 @@ export class FirestoreService {
    */
   queryDocuments<T>(
     collectionPath: string,
-    filters?: [string, any, any][],
+    filters?: FirestoreFilter[],
     sortField?: string,
     sortDirection: 'asc' | 'desc' = 'desc',
     limitCount?: number
@@ -359,7 +380,7 @@ export class FirestoreService {
    */
   listenToCollection<T>(
     collectionPath: string,
-    filters?: [string, any, any][],
+    filters?: FirestoreFilter[],
     sortField?: string,
     sortDirection: 'asc' | 'desc' = 'desc'
   ): Observable<T[]> {
@@ -404,7 +425,7 @@ export class FirestoreService {
    * @param metadata - Optional metadata
    * @returns Observable of the download URL
    */
-  uploadFile(path: string, file: File | Blob, metadata?: any): Observable<string> {
+  uploadFile(path: string, file: File | Blob, metadata?: UploadMetadata): Observable<string> {
     const storageRef = this.ref(this.storage, path);
 
     return from(this.uploadBytes(storageRef, file, metadata)).pipe(
@@ -423,7 +444,7 @@ export class FirestoreService {
    * @param metadata - Optional metadata
    * @returns Observable that emits upload progress and final URL
    */
-  uploadFileWithProgress(path: string, file: File | Blob, metadata?: any): Observable<{
+  uploadFileWithProgress(path: string, file: File | Blob, metadata?: UploadMetadata): Observable<{
     progress: number,
     downloadUrl?: string
   }> {
@@ -461,7 +482,7 @@ export class FirestoreService {
    * @param metadata - Optional metadata
    * @returns Observable of the download URL
    */
-  uploadBase64(path: string, dataUrl: string, metadata?: any): Observable<string> {
+  uploadBase64(path: string, dataUrl: string, metadata?: UploadMetadata): Observable<string> {
     const storageRef = this.ref(this.storage, path);
 
     return from(this.uploadString(storageRef, dataUrl, 'data_url', metadata)).pipe(
@@ -495,7 +516,7 @@ export class FirestoreService {
    * @param settings - Settings object
    * @returns Observable of void
    */
-  saveUserSettings(userId: string, settings: any): Observable<void> {
+  saveUserSettings(userId: string, settings: Record<string, unknown>): Observable<void> {
     return this.updateDocument('users', userId, {settings}).pipe(
       map(() => void 0)
     );
@@ -506,8 +527,8 @@ export class FirestoreService {
    * @param userId - User ID
    * @returns Observable of settings object
    */
-  getUserSettings(userId: string): Observable<any> {
-    return this.getDocument<any>('users', userId).pipe(
+  getUserSettings(userId: string): Observable<Record<string, unknown> | null> {
+    return this.getDocument<UserSettingsDocument>('users', userId).pipe(
       map(user => user?.settings || null)
     );
   }
@@ -521,7 +542,7 @@ export class FirestoreService {
     level: 'info' | 'warn' | 'error' | 'debug';
     message: string;
     userId?: string;
-    metadata?: any;
+    metadata?: unknown;
   }): Observable<string> {
     return this.saveDocument('logs', {
       ...logEntry,
@@ -540,8 +561,8 @@ export class FirestoreService {
     userId?: string,
     level?: 'info' | 'warn' | 'error' | 'debug',
     limit?: number
-  ): Observable<any[]> {
-    const filters: [string, any, any][] = [];
+  ): Observable<FirestoreLogEntry[]> {
+    const filters: FirestoreFilter[] = [];
 
     if (userId) {
       filters.push(['userId', '==', userId]);
@@ -551,7 +572,7 @@ export class FirestoreService {
       filters.push(['level', '==', level]);
     }
 
-    return this.queryDocuments<any>(
+    return this.queryDocuments<FirestoreLogEntry>(
       'logs',
       filters,
       'timestamp',
@@ -566,7 +587,7 @@ export class FirestoreService {
    * @param profileData - Profile data
    * @returns Observable of void
    */
-  saveUserProfile(userId: string, profileData: any): Observable<void> {
+  saveUserProfile(userId: string, profileData: FirestoreDocument): Observable<void> {
     return this.updateDocument('users', userId, profileData);
   }
 
@@ -575,8 +596,8 @@ export class FirestoreService {
    * @param userId - User ID
    * @returns Observable of user profile
    */
-  getUserProfile(userId: string): Observable<any> {
-    return this.getDocument<any>('users', userId);
+  getUserProfile(userId: string): Observable<FirestoreDocument | null> {
+    return this.getDocument<FirestoreDocument>('users', userId);
   }
 
   /**
@@ -585,7 +606,7 @@ export class FirestoreService {
    * @param userData - User data
    * @returns Observable of void
    */
-  createOrUpdateUser(userId: string, userData: any): Observable<void> {
+  createOrUpdateUser(userId: string, userData: FirestoreDocument): Observable<void> {
     return this.saveDocument('users', {...userData, id: userId}, userId).pipe(
       map(() => void 0)
     );
@@ -613,12 +634,7 @@ export class FirestoreService {
    * @param operations - Array of batch operations
    * @returns Observable of void
    */
-  executeBatch(operations: Array<{
-    type: 'set' | 'update' | 'delete';
-    collection: string;
-    id: string;
-    data?: any;
-  }>): Observable<void> {
+  executeBatch(operations: BatchOperation[]): Observable<void> {
     const batch = this.writeBatch(this.firestore);
 
     operations.forEach(operation => {

@@ -16,6 +16,7 @@ import {faFacebook, faLinkedin, faXTwitter} from '@fortawesome/free-brands-svg-i
 import {faEnvelope, faLink, faShareNodes} from '@fortawesome/free-solid-svg-icons';
 import {BlogShareEvent, BlogShareProvider} from '../../services/blog-engagement.service';
 import {createOpaqueShareId} from '../../services/share-attribution.service';
+import {htmlToPlainText} from '../../utils/blog-html.util';
 
 type BlogShareVariant = 'compact' | 'panel' | 'toolbar';
 
@@ -369,9 +370,6 @@ export class BlogShareActionsComponent implements OnDestroy {
   }
 
   private toPlainText(value: string): string {
-    const element = this.document.createElement('div');
-    element.innerHTML = value;
-
-    return element.textContent?.trim() ?? value.trim();
+    return htmlToPlainText(this.document, value);
   }
 }

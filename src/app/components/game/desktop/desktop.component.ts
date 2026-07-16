@@ -126,6 +126,13 @@ export class DesktopComponent implements OnInit, AfterViewInit {
     }
   }
 
+  onDesktopKeyDown(event: KeyboardEvent) {
+    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      this.appManager.setApplicationFocus('desktop', 0, 0);
+    }
+  }
+
   onBeginInvestigation() {
     this.showIntro = false;
     this.appManager.openApplication('cli');

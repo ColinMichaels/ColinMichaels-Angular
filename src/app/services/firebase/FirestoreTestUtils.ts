@@ -1,5 +1,13 @@
 import {FirestoreService} from './firestore.service';
 
+export interface FirestoreTestDocument {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: Date;
+  [key: string]: unknown;
+}
+
 /**
  * Test utilities for Firestore service integration tests
  */
@@ -10,7 +18,7 @@ export class FirestoreTestUtils {
   /**
    * Creates test data for documents
    */
-  createTestDocument(overrides: any = {}) {
+  createTestDocument(overrides: Record<string, unknown> = {}): FirestoreTestDocument {
     return {
       id: `test-${Date.now()}`,
       name: 'Test Document',
@@ -23,7 +31,7 @@ export class FirestoreTestUtils {
   /**
    * Creates multiple test documents
    */
-  createTestDocuments(count: number, baseData: any = {}) {
+  createTestDocuments(count: number, baseData: Record<string, unknown> = {}): FirestoreTestDocument[] {
     return Array.from({length: count}, (_, index) =>
       this.createTestDocument({
         ...baseData,

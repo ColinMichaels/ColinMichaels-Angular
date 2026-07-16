@@ -1,19 +1,25 @@
 import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 
 import {
+  BLOG_BLOCK_PLACEMENTS,
   BLOG_CHART_TYPES,
   BLOG_IMAGE_LAYOUTS,
+  BLOG_POLL_RESULTS_VISIBILITIES,
   BLOG_TYPOGRAPHY_VARIANTS,
   BlogBlockData,
+  BlogBlockPlacement,
   BlogBlockType,
   BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
   BlogImageLayout,
+  BlogPollOption,
+  BlogPollResultsVisibility,
   BlogPost,
   BlogStatItem,
   BlogTypographyVariant,
 } from '../../../features/blog/models/blog-post.model';
+import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../../features/blog/utils/blog-suno-embed.util';
 
 const supportedBlockTypes = new Set<BlogBlockType>([
   'paragraph',
@@ -28,10 +34,12 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'typography',
   'stats',
   'chart',
+  'poll',
   'catCornerUnlock',
   'html',
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
+const SUNO_EDITOR_BLOCK_TYPE = 'sunoEmbed';
 const APP_EMBED_EDITOR_BLOCK_TYPE = 'appEmbed';
 
 interface ImportedChartPoint {
@@ -91,6 +99,18 @@ function toChartType(value: unknown): BlogChartType {
   return typeof value === 'string' && (BLOG_CHART_TYPES as readonly string[]).includes(value)
     ? value as BlogChartType
     : 'bar';
+}
+
+function toPollResultsVisibility(value: unknown): BlogPollResultsVisibility {
+  return typeof value === 'string' && (BLOG_POLL_RESULTS_VISIBILITIES as readonly string[]).includes(value)
+    ? value as BlogPollResultsVisibility
+    : 'afterVote';
+}
+
+function toBlockPlacement(value: unknown, fallback?: BlogBlockPlacement): BlogBlockPlacement | undefined {
+  return typeof value === 'string' && (BLOG_BLOCK_PLACEMENTS as readonly string[]).includes(value)
+    ? value as BlogBlockPlacement
+    : fallback;
 }
 
 function toListData(blockData: BlogBlockData): Record<string, unknown> {
@@ -204,6 +224,19 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
         };
       }
 
+      if (block.data.provider === 'suno') {
+        const urls = getBlogSunoEmbedUrls(block.data.url ?? block.data.embedUrl);
+
+        return {
+          id: block.id,
+          type: SUNO_EDITOR_BLOCK_TYPE,
+          data: {
+            url: urls?.songUrl.toString() ?? block.data.url ?? block.data.embedUrl ?? '',
+            caption: block.data.caption ?? '',
+          },
+        };
+      }
+
       return {
         id: block.id,
         type: block.type,
@@ -300,6 +333,23 @@ function extractChartPoints(value: unknown): readonly BlogChartPoint[] {
   }
 
   return points;
+}
+
+function extractPollOptions(value: unknown): readonly BlogPollOption[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const id = getString(item, 'id')?.trim() || `option-${index + 1}`;
+    const label = getString(item, 'label')?.trim() ?? '';
+
+    return label ? [{id, label}] : [];
+  }).slice(0, 8);
 }
 
 function toImportedStatItem(item: unknown): BlogStatItem | null {
@@ -511,6 +561,13 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         unit: getString(data, 'unit') ?? '',
         chartPoints: extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data'])),
       };
+    case 'poll':
+      return {
+        question: getString(data, 'question') ?? '',
+        description: getString(data, 'description') ?? '',
+        pollOptions: extractPollOptions(extractArrayByAlias(data, ['pollOptions', 'options', 'answers'])),
+        pollResultsVisibility: toPollResultsVisibility(data['pollResultsVisibility']),
+      };
     case 'catCornerUnlock':
       return {};
     case 'html':
@@ -530,6 +587,26 @@ export function createEditorDocument(post: BlogPost): OutputData {
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
   return document.blocks.flatMap((block, index) => {
+    if (block.type === SUNO_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
+      const urls = getBlogSunoEmbedUrls(getString(block.data, 'url'));
+
+      if (!urls) {
+        return [];
+      }
+
+      return {
+        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+        type: 'embed',
+        data: {
+          provider: 'suno',
+          url: urls.songUrl.toString(),
+          embedUrl: urls.embedUrl.toString(),
+          caption: getString(block.data, 'caption') ?? '',
+          height: SUNO_EMBED_HEIGHT,
+        },
+      };
+    }
+
     if (block.type === APP_EMBED_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
       const url = getString(block.data, 'url') ?? '';
 
@@ -565,11 +642,15 @@ export function createBlogBlocksFromEditorDocument(document: OutputData): readon
     }
 
     const type = block.type as BlogBlockType;
+    const placement = toBlockPlacement(block.data['placement'], type === 'poll' ? 'rail' : undefined);
 
     return {
       id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
       type,
-      data: createBlockData(type, block.data),
+      data: {
+        ...createBlockData(type, block.data),
+        ...(placement ? {placement} : {}),
+      },
     };
   });
 }

@@ -109,6 +109,6 @@ export class TooltipOverlayComponent implements AfterViewInit, OnDestroy {
     if (this.dismissTimeout) {
       clearTimeout(this.dismissTimeout);
     }
-    this.tooltipService.hide(true);
+    this.tooltipService.hide();
   }
 }

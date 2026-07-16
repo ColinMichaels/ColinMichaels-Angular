@@ -3,7 +3,7 @@ const includeGeneratedPreviewSafelist = process.env.TAILWIND_INCLUDE_GENERATED_P
 
 module.exports = {
   darkMode: 'class', // Use class strategy for dark mode
-  content: ['./src/**/*.{html,ts}', './src/app/components/**/*.html', './src/app/components/**/*.ts'],
+  content: ['./src/**/*.{html,ts}'],
   mode: 'jit',
   theme: {
     extend: {

@@ -64,6 +64,13 @@ import {
   replaceManagedUserRoleClaims,
 } from './user-role-mutation';
 import {reconcileSocialAnnouncementStatus} from './social-delivery';
+import {
+  createPostPollResults,
+  normalizePostPollCounts,
+  parsePostPollDefinition,
+  POST_POLL_ID_PATTERN,
+  PostPollDefinition,
+} from './post-polls';
 
 export {
   beginSocialConnection,
@@ -100,6 +107,7 @@ const SOCIAL_OUTBOX_COLLECTION = 'socialOutbox';
 const USERS_COLLECTION = 'users';
 const USER_ROLE_MUTATION_LOCKS_COLLECTION = 'userRoleMutationLocks';
 const POST_COMMENTS_COLLECTION = 'postComments';
+const POST_POLLS_COLLECTION = 'postPolls';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
 const SHARE_LINKS_COLLECTION = 'shareLinks';
 const SHARE_LANDING_EVENTS_COLLECTION = 'shareLandingEvents';
@@ -816,6 +824,12 @@ interface BlogBlockData {
   code?: string;
   variant?: string;
   attribution?: string;
+  question?: string;
+  description?: string;
+  pollOptions?: readonly {
+    id: string;
+    label: string;
+  }[];
 }
 
 interface BlogContentBlock {
@@ -1561,6 +1575,114 @@ export const unregisterPushSubscription = onCall(
 
     await subscriptionRef.delete();
     return {removed: true};
+  }
+);
+
+export const getPostPollResults = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const data = parsePostPollRequest(request.data, false);
+    const definition = await requirePublishedPostPollTarget(data.postId, data.postSlug, data.pollId);
+    const pollRef = getFirestore()
+      .collection(POST_POLLS_COLLECTION)
+      .doc(data.postId)
+      .collection('polls')
+      .doc(data.pollId);
+    const aggregatePromise = pollRef.get();
+    const votePromise = request.auth?.uid
+      ? pollRef.collection('votes').doc(request.auth.uid).get()
+      : Promise.resolve(null);
+    const [aggregateSnapshot, voteSnapshot] = await Promise.all([aggregatePromise, votePromise]);
+    const counts = normalizePostPollCounts(aggregateSnapshot.data()?.['counts'], definition.options);
+    const storedOptionId = voteSnapshot?.exists
+      ? getTrimmedString(voteSnapshot.data()?.['optionId']) || null
+      : null;
+    const selectedOptionId = definition.options.some(option => option.id === storedOptionId)
+      ? storedOptionId
+      : null;
+    const resultsVisible = definition.resultsVisibility === 'always'
+      || (definition.resultsVisibility === 'afterVote' && selectedOptionId !== null);
+
+    return createPostPollResults(definition, counts, selectedOptionId, resultsVisible);
+  }
+);
+
+export const submitPostPollVote = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const auth = requireSignedIn(request.auth, 'You must be signed in to vote.');
+    const data = parsePostPollRequest(request.data, true);
+    const definition = await requirePublishedPostPollTarget(data.postId, data.postSlug, data.pollId);
+
+    if (!definition.options.some(option => option.id === data.optionId)) {
+      throw new HttpsError('invalid-argument', 'Choose a valid poll answer.');
+    }
+
+    const firestore = getFirestore();
+    const pollRef = firestore
+      .collection(POST_POLLS_COLLECTION)
+      .doc(data.postId)
+      .collection('polls')
+      .doc(data.pollId);
+    const voteRef = pollRef.collection('votes').doc(auth.uid);
+    const now = new Date().toISOString();
+    const counts = await firestore.runTransaction(async transaction => {
+      const [aggregateSnapshot, voteSnapshot] = await Promise.all([
+        transaction.get(pollRef),
+        transaction.get(voteRef),
+      ]);
+      const currentCounts = normalizePostPollCounts(aggregateSnapshot.data()?.['counts'], definition.options);
+      const previousOptionId = voteSnapshot.exists
+        ? getTrimmedString(voteSnapshot.data()?.['optionId'])
+        : '';
+
+      if (previousOptionId !== data.optionId) {
+        if (previousOptionId && Object.hasOwn(currentCounts, previousOptionId)) {
+          currentCounts[previousOptionId] = Math.max(0, currentCounts[previousOptionId] - 1);
+        }
+
+        currentCounts[data.optionId] = (currentCounts[data.optionId] ?? 0) + 1;
+      }
+
+      transaction.set(pollRef, {
+        postId: data.postId,
+        postSlug: data.postSlug,
+        pollId: data.pollId,
+        question: definition.question,
+        optionIds: definition.options.map(option => option.id),
+        counts: currentCounts,
+        updatedAt: now,
+        updatedAtTimestamp: FieldValue.serverTimestamp(),
+      }, {merge: false});
+      transaction.set(voteRef, {
+        uid: auth.uid,
+        optionId: data.optionId,
+        createdAt: getTrimmedString(voteSnapshot.data()?.['createdAt']) || now,
+        updatedAt: now,
+        updatedAtTimestamp: FieldValue.serverTimestamp(),
+      }, {merge: false});
+
+      return currentCounts;
+    });
+
+    return createPostPollResults(
+      definition,
+      counts,
+      data.optionId,
+      definition.resultsVisibility !== 'hidden'
+    );
   }
 );
 
@@ -3641,6 +3763,28 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock): string {
     case 'delimiter':
       return '<hr>';
 
+    case 'poll': {
+      const question = stripHtml(data.question ?? '');
+      const description = stripHtml(data.description ?? '');
+      const options = (data.pollOptions ?? [])
+        .map(option => stripHtml(option.label))
+        .filter(Boolean)
+        .map(option => `  <li>${escapeHtml(option)}</li>`)
+        .join('\n');
+
+      if (!question || !options) {
+        return '';
+      }
+
+      return [
+        '<section aria-label="Poll">',
+        `  <h3>${escapeHtml(question)}</h3>`,
+        description ? `  <p>${escapeHtml(description)}</p>` : '',
+        `  <ul>\n${options}\n  </ul>`,
+        '</section>',
+      ].filter(Boolean).join('\n');
+    }
+
     default: {
       const text = stripHtml(data.text ?? data.caption ?? '');
 
@@ -4124,6 +4268,29 @@ function parseSubmitPostCommentRequest(value: unknown): {
   return {postId, postSlug, body, parentCommentId};
 }
 
+function parsePostPollRequest(value: unknown, requireOption: boolean): {
+  postId: string;
+  postSlug: string;
+  pollId: string;
+  optionId: string;
+} {
+  const record = requireRecord(value, 'Poll request must be an object.');
+  const postId = getTrimmedString(record['postId']);
+  const postSlug = getTrimmedString(record['postSlug']);
+  const pollId = getTrimmedString(record['pollId']);
+  const optionId = getTrimmedString(record['optionId']);
+
+  if (!postId || !postSlug || !POST_POLL_ID_PATTERN.test(pollId)) {
+    throw new HttpsError('invalid-argument', 'Post id, slug, and a valid poll id are required.');
+  }
+
+  if (requireOption && !POST_POLL_ID_PATTERN.test(optionId)) {
+    throw new HttpsError('invalid-argument', 'Choose a valid poll answer.');
+  }
+
+  return {postId, postSlug, pollId, optionId};
+}
+
 function parseModeratePostCommentRequest(value: unknown): { commentId: string; action: CommentModerationAction } {
   const record = requireRecord(value, 'Comment moderation must be an object.');
   const commentId = getTrimmedString(record['commentId']);
@@ -4213,6 +4380,28 @@ async function requirePublishedPostTarget(postId: string, postSlug: string): Pro
   if (!snapshot.exists || storedSlug !== postSlug || status !== 'published') {
     throw new HttpsError('failed-precondition', 'Engagement is only available for published posts.');
   }
+}
+
+async function requirePublishedPostPollTarget(
+  postId: string,
+  postSlug: string,
+  pollId: string
+): Promise<PostPollDefinition> {
+  const snapshot = await getFirestore().collection(BLOG_POSTS_COLLECTION).doc(postId).get();
+  const data = snapshot.data() ?? {};
+  const storedSlug = getTrimmedString(data['slug']);
+  const status = getTrimmedString(data['status']);
+  const definition = parsePostPollDefinition(data, pollId);
+
+  if (!snapshot.exists || storedSlug !== postSlug || status !== 'published') {
+    throw new HttpsError('failed-precondition', 'Polling is only available for published posts.');
+  }
+
+  if (!definition) {
+    throw new HttpsError('not-found', 'Poll not found on this post.');
+  }
+
+  return definition;
 }
 
 async function requireApprovedCommentReplyTarget(

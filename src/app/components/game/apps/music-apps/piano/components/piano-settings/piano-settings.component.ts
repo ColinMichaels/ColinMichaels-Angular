@@ -1,5 +1,6 @@
 import {Component, EventEmitter, Input, Output, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from '@angular/common';
+import {SynthPatch} from '../../../../../services/patch.service';
 
 @Component({
   selector: 'app-piano-settings',
@@ -87,24 +88,24 @@ import {NgForOf} from '@angular/common';
 export class PianoSettingsComponent {
   @Input() isVisible: boolean = false;
   @Input() startingOctave: number = 4;
-  @Input() patches: any[] = []; // Adjust the type based on your patch structure
-  @Input() selectedPatch: any; // Current selected patch
+  @Input() patches: readonly SynthPatch[] = [];
+  @Input() selectedPatch: SynthPatch | null = null;
 
   @Output() octaveChange = new EventEmitter<number>();
-  @Output() patchChange = new EventEmitter<any>();
-  @Output() close = new EventEmitter<void>();
+  @Output() patchChange = new EventEmitter<SynthPatch>();
+  @Output() closePanel = new EventEmitter<void>();
 
   onOctaveChange(event: Event) {
     const value = parseInt((event.target as HTMLInputElement).value);
     this.octaveChange.emit(value);
   }
 
-  onPatchChange(patch: any) {
+  onPatchChange(patch: SynthPatch) {
     this.patchChange.emit(patch);
   }
 
   closeSidebar() {
-    this.close.emit();
+    this.closePanel.emit();
   }
 
 }

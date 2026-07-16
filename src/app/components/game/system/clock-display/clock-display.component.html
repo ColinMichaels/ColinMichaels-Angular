@@ -1,3 +1,8 @@
-<div class="flex items-center text-white text-xs font-light" (click)="toggleFormat()" >
-  <div>{{ timerDisplay }}</div>
-</div>
+<button
+  type="button"
+  class="flex items-center border-0 bg-transparent p-0 text-white text-xs font-light"
+  aria-label="Toggle 12 or 24 hour time format"
+  (click)="toggleFormat()"
+>
+  {{ timerDisplay }}
+</button>

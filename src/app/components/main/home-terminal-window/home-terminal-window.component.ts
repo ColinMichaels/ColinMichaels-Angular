@@ -9,7 +9,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
     <div class="bg-black text-green-500 shadow-xl shadow-black/20  min-h-[30vh]
       rounded-b-xl p-6 text-left text-xs font-mono">
       <p class="mb-4 text-emerald-400">More about me......</p>
-      <p [innerHTML]="typedText"></p>
+      <p class="whitespace-pre-line">{{ typedTextWithoutCursor }}@if (hasBlinkingCursor) {<span class="animate-blink">%</span>}</p>
     </div>`,
   changeDetection: ChangeDetectionStrategy.Eager,
   encapsulation: ViewEncapsulation.None,
@@ -28,6 +28,14 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 export class HomeTerminalWindowComponent implements AfterViewInit {
   typedText = '';
 
+  protected get hasBlinkingCursor(): boolean {
+    return /%\n?$/.test(this.typedText);
+  }
+
+  protected get typedTextWithoutCursor(): string {
+    return this.typedText.replace(/%(\n?)$/, '$1');
+  }
+
   constructor(private readonly typewriter: TypewriterService
   ) {
     this.typewriter.enableSound(false);
@@ -41,17 +49,17 @@ export class HomeTerminalWindowComponent implements AfterViewInit {
     this.typewriter.enqueueLine({
       text: `Beyond coding, I channel my creativity through FPV drone piloting, videography, and photography. These
       pursuits enhance my ability to approach problems from unique perspectives and bring a dynamic edge to my
-      projects.<br><br>`,
+      projects.\n`,
       agent: 'user'
     });
     this.typewriter.enqueueLine({
       text: `I believe in continuous learning and am always exploring new technologies and methodologies to refine my
       craft. Whether it's developing a new application or capturing the perfect aerial shot, I approach each
-      project with enthusiasm and a commitment to excellence.<br><br>`,
+      project with enthusiasm and a commitment to excellence.\n`,
       agent: 'user'
     })
     this.typewriter.enqueueLine({
-      text: `colin&#64;colinmichaels.com ~<span class="animate-blink">%</span>`,
+      text: 'colin@colinmichaels.com ~%',
       agent: 'user',
       showPath: true
     })

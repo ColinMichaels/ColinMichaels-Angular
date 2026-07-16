@@ -70,6 +70,56 @@ describe('BlogBlockRendererComponent', () => {
     expect(iframe?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
   });
 
+  it('renders an approved Suno song in its responsive player with a direct fallback', () => {
+    const songId = '44cd6eab-d6d7-4cb9-bea7-af398776556e';
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'suno-1',
+        type: 'embed',
+        data: {
+          provider: 'suno',
+          url: `https://suno.com/song/${songId}`,
+          embedUrl: `https://suno.com/embed/${songId}`,
+          caption: 'Some Memories Never Stop Playing',
+          height: 240,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const iframe = element.querySelector<HTMLIFrameElement>('iframe');
+    const fallback = element.querySelector<HTMLAnchorElement>('figure a');
+
+    expect(iframe?.getAttribute('src')).toBe(`https://suno.com/embed/${songId}`);
+    expect(iframe?.getAttribute('title')).toBe('Some Memories Never Stop Playing');
+    expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-popups');
+    expect(iframe?.getAttribute('allow')).toBe('autoplay; encrypted-media; fullscreen');
+    expect(iframe?.style.height).toBe('240px');
+    expect(fallback?.getAttribute('href')).toBe(`https://suno.com/song/${songId}`);
+    expect(fallback?.textContent).toContain('Listen on Suno');
+  });
+
+  it('renders malformed Suno URLs as external links instead of trusted frames', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'suno-invalid',
+        type: 'embed',
+        data: {
+          provider: 'suno',
+          url: 'https://suno.com/playlist/not-a-song',
+          caption: 'Invalid Suno destination',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('iframe')).toBeNull();
+    expect(element.querySelector('a')?.getAttribute('href')).toBe('https://suno.com/playlist/not-a-song');
+  });
+
   it('renders the approved soundboard in a sandboxed app frame with an external fallback', () => {
     fixture.componentRef.setInput('blocks', [
       {

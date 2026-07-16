@@ -40,7 +40,7 @@ export class NotificationService {
     }
   }
 
-  warn(message: string, params?: any) {
+  warn(message: string) {
     this.show({
       title: 'Warning',
       message,
@@ -49,7 +49,7 @@ export class NotificationService {
     });
   }
 
-  error(message: string, params?: any) {
+  error(message: string) {
     this.show({
       title: 'Error',
       message,
@@ -57,7 +57,7 @@ export class NotificationService {
     })
   }
 
-  info(message: string, params?: any) {
+  info(message: string) {
     this.show({
       title: 'Info',
       message,
@@ -66,7 +66,13 @@ export class NotificationService {
     });
   }
 
-  success(message: string, params?: any) {
+  success(message: string) {
+    this.show({
+      title: 'Success',
+      message,
+      type: 'success',
+      duration: 5000
+    });
   }
 
   dismiss(id: string) {

@@ -2,6 +2,14 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../../../environments/environment';
 
+export interface AiChatResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,6 +33,6 @@ export class AiChatService {
       messages: [{role: 'user', content: combined}],
     };
 
-    return this.http.post(this.openAiChatUrl, body);
+    return this.http.post<AiChatResponse>(this.openAiChatUrl, body);
   }
 }

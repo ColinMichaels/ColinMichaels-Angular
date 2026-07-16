@@ -18,6 +18,12 @@ import {
 } from '../../../../features/topics/utils/topic-hub-validation.util';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {AdminAlertComponent} from '../../../shared/admin-alert.component';
+import {AdminEditorActionBarComponent} from '../../../shared/admin-editor-action-bar.component';
+import {AdminEmptyStateComponent} from '../../../shared/admin-empty-state.component';
+import {AdminPageHeaderComponent} from '../../../shared/admin-page-header.component';
+import {AdminSearchFieldComponent} from '../../../shared/admin-search-field.component';
+import {AdminStatCardComponent} from '../../../shared/admin-stat-card.component';
 
 function normalizeSearchValue(value: string): string {
   return value.trim().toLowerCase();
@@ -30,6 +36,12 @@ function getErrorMessage(error: unknown): string {
 @Component({
   selector: 'app-cms-topic-manager',
   imports: [
+    AdminAlertComponent,
+    AdminEditorActionBarComponent,
+    AdminEmptyStateComponent,
+    AdminPageHeaderComponent,
+    AdminSearchFieldComponent,
+    AdminStatCardComponent,
     ReactiveFormsModule,
     CmsToastContainerComponent,
   ],
@@ -37,15 +49,11 @@ function getErrorMessage(error: unknown): string {
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
-        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">Topics</h1>
-            <p class="max-w-2xl text-zinc-400">
-              Manage topic landing pages, homepage topic cards, search visibility, and the current floating field styling.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-3">
+        <app-admin-page-header
+          title="Topics"
+          description="Manage topic landing pages, homepage topic cards, search visibility, and the current floating field styling."
+        >
+          <div adminPageHeaderActions class="contents">
             <button
               type="button"
               class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
@@ -70,45 +78,27 @@ function getErrorMessage(error: unknown): string {
               {{ seedInProgress ? 'Seeding...' : 'Seed Missing Defaults' }}
             </button>
           </div>
-        </header>
+        </app-admin-page-header>
 
         <section class="grid gap-4 sm:grid-cols-4">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Total Topics</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().total }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Published</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().published }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Drafts</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().drafts }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Archived</p>
-            <p class="mt-2 text-3xl font-semibold">{{ stats().archived }}</p>
-          </div>
+          <app-admin-stat-card label="Total Topics" [value]="stats().total"></app-admin-stat-card>
+          <app-admin-stat-card label="Published" [value]="stats().published"></app-admin-stat-card>
+          <app-admin-stat-card label="Drafts" [value]="stats().drafts"></app-admin-stat-card>
+          <app-admin-stat-card label="Archived" [value]="stats().archived"></app-admin-stat-card>
         </section>
 
         @if (loadError(); as error) {
-          <section class="border border-red-500/40 bg-red-950/40 p-4 text-sm text-red-100">
-            {{ error }}
-          </section>
+          <app-admin-alert [message]="error"></app-admin-alert>
         }
 
         <section class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside class="space-y-4 border border-zinc-800 bg-zinc-900/70 p-4">
-            <label class="space-y-2">
-              <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Search topics</span>
-              <input
-                type="search"
-                [value]="searchTerm"
-                placeholder="Search title, slug, terms..."
-                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                (input)="updateSearch($event)"
-              >
-            </label>
+            <app-admin-search-field
+              label="Search topics"
+              placeholder="Search title, slug, terms..."
+              [value]="searchTerm"
+              (valueChange)="searchTerm = $event"
+            ></app-admin-search-field>
 
             <div class="space-y-2" aria-label="Topic list">
               @for (topic of filteredTopics(); track topic.id) {
@@ -128,9 +118,9 @@ function getErrorMessage(error: unknown): string {
                   <span class="h-1.5 w-full" [style.background]="topic.theme.accent"></span>
                 </button>
               } @empty {
-                <div class="border border-dashed border-zinc-700 p-4 text-sm leading-6 text-zinc-400">
-                  No topics found. Seed the current defaults or create a new draft topic.
-                </div>
+                <app-admin-empty-state
+                  message="No topics found. Seed the current defaults or create a new draft topic."
+                ></app-admin-empty-state>
               }
             </div>
           </aside>
@@ -439,15 +429,8 @@ function getErrorMessage(error: unknown): string {
               </div>
             </section>
 
-            <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-5">
-              <p class="text-sm text-zinc-500">
-                @if (selectedTopicId) {
-                  Editing {{ selectedTopicId }}
-                } @else {
-                  Create or select a topic to begin.
-                }
-              </p>
-              <div class="flex flex-wrap gap-3">
+            <app-admin-editor-action-bar [status]="editorActionStatus" [busy]="saveInProgress">
+              <div adminEditorActions class="contents">
                 <button
                   type="button"
                   class="inline-flex justify-center border border-red-500/60 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
@@ -464,7 +447,7 @@ function getErrorMessage(error: unknown): string {
                   {{ saveInProgress ? 'Saving...' : 'Save Topic' }}
                 </button>
               </div>
-            </footer>
+            </app-admin-editor-action-bar>
           </form>
         </section>
       </section>
@@ -579,10 +562,6 @@ export class CmsTopicManagerComponent {
     ].join(' ')).includes(normalizedSearchTerm));
   }
 
-  protected updateSearch(event: Event): void {
-    this.searchTerm = (event.target as HTMLInputElement | null)?.value ?? '';
-  }
-
   protected selectTopic(topic: TopicHub): void {
     this.selectedTopicId = topic.id;
     this.patchTopicForm(topic);
@@ -674,6 +653,22 @@ export class CmsTopicManagerComponent {
     } finally {
       this.seedInProgress = false;
     }
+  }
+
+  protected get editorActionStatus(): string {
+    if (this.saveInProgress) {
+      return 'Saving topic...';
+    }
+
+    if (this.topicForm.dirty) {
+      return this.selectedTopicId
+        ? `Unsaved changes for ${this.selectedTopicId}.`
+        : 'Unsaved changes for a new topic.';
+    }
+
+    return this.selectedTopicId
+      ? `Editing ${this.selectedTopicId}`
+      : 'Create or select a topic to begin.';
   }
 
   private patchTopicForm(topic: TopicHub): void {

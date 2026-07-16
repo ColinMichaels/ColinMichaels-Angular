@@ -88,7 +88,7 @@ surfaces meet without gaps; the wider layout uses the same contract with 64px an
 
 Once the post header leaves the viewport, the reading rail exposes a scroll-to-top action using one `IntersectionObserver` rather than a continuous scroll listener. Only the active level-two content heading receives sticky positioning below the public header and reading rail; when the next heading reaches the pinned heading's lower edge, the previous heading immediately returns to normal flow. The pinned treatment also reduces heading type and vertical padding while leaving full-size headings in article flow. Heading anchor offsets account for both persistent rails on desktop and mobile.
 
-On desktop, `BlogTableOfContentsComponent` sticks below the public header rather than underneath it. The active heading link uses `aria-current="location"`, and the contents scroller recenters that link when article scroll position changes so long outlines continue following the reader without moving the page itself. TOC clicks scroll to each heading's natural document position rather than its current sticky rectangle, which preserves backward navigation after earlier headings have already pinned to the reading stack.
+On desktop, `BlogTableOfContentsComponent` owns the left reading rail and sticks below the public header rather than underneath it. The active heading link uses `aria-current="location"`, and the contents scroller recenters that link when article scroll position changes so long outlines continue following the reader without moving the page itself. TOC clicks scroll to each heading's natural document position rather than its current sticky rectangle, which preserves backward navigation after earlier headings have already pinned to the reading stack. A separate right rail renders post polls or future explicitly placed custom blocks above the existing taxonomy-ranked suggested posts. Below the desktop breakpoint both rails return to normal document flow without duplicating interactive components. See `BLOG_READING_RAILS.md` for placement, migration, and rollback details.
 
 Inline-left and inline-right image figures float only at the `sm` breakpoint and above so nearby paragraphs can wrap around them. Level-two and level-three article headings clear both float directions before starting a new section. This keeps the complete figure and caption in normal visual order and prevents the heading's opaque sticky-ready surface from painting over floated media that extends below the preceding paragraph text. Narrow viewports continue rendering inline media at the full article-column width without floats.
 
@@ -118,6 +118,12 @@ The frame starts at a bounded CMS-configured height and can receive `hear-the-ho
 
 Deployment requires the exact ChatGPT Sites origin in Firebase Hosting's `frame-src` policy; no Functions, rules, secrets, or data migration are needed. Rollback is removal of the post's App Embed block (or replacement with a paragraph link), followed by reverting the renderer/tool and CSP origin. The hosted app remains independently reachable throughout rollback.
 
+## Suno Song Embeds
+
+The dedicated CMS `Suno Song` tool accepts only exact HTTPS `/song/{uuid}` or `/embed/{uuid}` destinations on `suno.com`, canonicalizes both forms, and stores them through the existing typed `embed` blog block with `provider: 'suno'`. It is separate from App Embed because Suno has a fixed 240px media-player contract rather than an application height or resize-message lifecycle.
+
+The public renderer repeats URL validation, loads the exact canonical player in a provider-specific sandbox, and keeps a visible `Listen on Suno` link. Invalid or future unsupported Suno paths remain external links. Custom HTML still cannot frame Suno or any other provider, and `frame-src` adds only the exact Suno origin. See `docs/ARCHITECTURE/EDITORJS_SUNO_EMBEDS.md` for the complete data, privacy, deployment, and rollback contract.
+
 On the homepage, the same optional field replaces all CMS hero slides only while that post owns the hero and the
 Homepage Hero manager's `Use featured post background` option is enabled. It remains decorative, uses a centered cover
 crop, disables rotation, and falls back to the configured slideshow when the option is off or after a load error. The
@@ -142,6 +148,8 @@ Relevant regression coverage includes:
 - `pwa-push.service.spec.ts` and `pwa-native-controls.component.spec.ts` for explicit opt-in, safe notification routing, subscription validation, and menu control states
 - `blog-block-renderer.component.spec.ts` for linkable/sticky headings, inline media layouts, and float clearing before subsequent sections
 - `blog-block-renderer.component.spec.ts`, `blog-embed.util.spec.ts`, `app-embed-block.tool.spec.ts`, and `blog-editorjs-adapter.spec.ts` for exact app URL trust, authoring conversion, sandbox attributes, outbound fallback, and custom HTML iframe removal
+- `blog-suno-embed.util.spec.ts`, `suno-embed-block.tool.spec.ts`, `editor-js.component.spec.ts`, `blog-editorjs-adapter.spec.ts`, and `blog-block-renderer.component.spec.ts` for Suno URL trust, authoring registration, canonical round trips, sandbox attributes, responsive height, and external fallback
+- `blog-block-placement.util.spec.ts`, `poll-block.tool.spec.ts`, `blog-editorjs-adapter.spec.ts`, `blog-post-rail.component.spec.ts`, and `blog-poll.component.spec.ts` for left/center/right ownership, migration-safe poll placement, compact rail presentation, and suggested-post reuse
 - `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
 - `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
 - `blog-repository.service.spec.ts` for cached and cold direct-slug article loading without a full-collection dependency

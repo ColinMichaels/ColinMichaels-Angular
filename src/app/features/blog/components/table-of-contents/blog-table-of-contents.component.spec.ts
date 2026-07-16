@@ -3,14 +3,30 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {BlogTableOfContentsComponent} from './blog-table-of-contents.component';
 
 describe('BlogTableOfContentsComponent', () => {
+  const originalMatchMedia = window.matchMedia;
   let fixture: ComponentFixture<BlogTableOfContentsComponent>;
 
   beforeEach(async () => {
+    window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: jasmine.createSpy('addEventListener'),
+      removeEventListener: jasmine.createSpy('removeEventListener'),
+      addListener: jasmine.createSpy('addListener'),
+      removeListener: jasmine.createSpy('removeListener'),
+      dispatchEvent: jasmine.createSpy('dispatchEvent'),
+    });
+
     await TestBed.configureTestingModule({
       imports: [BlogTableOfContentsComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BlogTableOfContentsComponent);
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
   });
 
   it('renders post-scoped section links with active section state', () => {
@@ -90,8 +106,10 @@ describe('BlogTableOfContentsComponent', () => {
 
     expect(clickEvent.defaultPrevented).toBeTrue();
     expect(scrollTo).toHaveBeenCalledTimes(1);
+    const reduceMotion = document.defaultView
+      ?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
     expect(scrollTo.calls.mostRecent().args[0] as unknown as ScrollToOptions)
-      .toEqual({top: 480, behavior: 'smooth'});
+      .toEqual({top: 480, behavior: reduceMotion ? 'auto' : 'smooth'});
     expect(headingSelected).toHaveBeenCalledOnceWith('smooth-heading');
     expect(heading.style.position).toBe('sticky');
 

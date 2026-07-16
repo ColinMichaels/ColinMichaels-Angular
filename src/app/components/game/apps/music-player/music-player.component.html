@@ -48,11 +48,17 @@
     <div>
       <h3 class="font-semibold text-sm mb-2 text-zinc-300">Library</h3>
       <ul class="space-y-1 text-sm">
-        <li *ngFor="let track of trackLibrary" (click)="selectTrack(track)"
+        <li *ngFor="let track of trackLibrary">
+          <button
+            type="button"
+            (click)="selectTrack(track)"
             [class.text-emerald-400]="track.id === currentTrack.id"
-            class="cursor-pointer hover:text-emerald-300">
-          {{ track.title }}<br>
-          <span class="text-xs text-zinc-400">{{ track.artist }}</span>
+            [attr.aria-pressed]="track.id === currentTrack.id"
+            class="w-full cursor-pointer bg-transparent p-0 text-left hover:text-emerald-300"
+          >
+            {{ track.title }}<br>
+            <span class="text-xs text-zinc-400">{{ track.artist }}</span>
+          </button>
         </li>
       </ul>
     </div>

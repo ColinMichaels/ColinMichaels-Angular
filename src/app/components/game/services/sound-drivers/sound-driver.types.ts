@@ -1,3 +1,4 @@
+// Keep `tone-sampler` as the persisted ID so existing user settings migrate to the native sampler automatically.
 export type SoundDriverId = 'web-audio' | 'tone-sampler' | 'soundfont';
 
 export interface SoundDriverMetadata {
@@ -16,8 +17,8 @@ export const SOUND_DRIVERS: readonly SoundDriverMetadata[] = [
   },
   {
     id: 'tone-sampler',
-    label: 'Tone Sampler',
-    description: 'Sampled presets',
+    label: 'Native Sampler',
+    description: 'Efficient multi-sampled presets',
     supportsCustomPatches: false,
   },
   {

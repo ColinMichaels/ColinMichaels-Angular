@@ -3,6 +3,9 @@ import {IconDefinition, IMediaItem, MediaItem} from '../../services/media.servic
 import {NgIf} from '@angular/common';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {SvgIconComponent} from '../app-icon/svg-icon.component';
+import {IconProp} from '@fortawesome/fontawesome-svg-core';
+import {Observable} from 'rxjs';
+import {SafeHtml} from '@angular/platform-browser';
 
 @Component({
   selector: 'app-media',
@@ -52,7 +55,7 @@ import {SvgIconComponent} from '../app-icon/svg-icon.component';
 
         <!-- FontAwesome Icons -->
         <fa-icon *ngIf="icon.type === 'fontawesome'"
-                 [icon]="icon.className || icon.svgPath">
+                 [icon]="fontAwesomeIcon">
         </fa-icon>
 
         <!-- Custom Icons -->
@@ -62,13 +65,13 @@ import {SvgIconComponent} from '../app-icon/svg-icon.component';
            [style.font-size.px]="icon.size || 24">
         </i>
         <!-- Inline SVG -->
-        <svg-icon *ngIf="icon.type === 'svg'"
-                  [icon]="icon.svgPath"
+        <app-svg-icon *ngIf="icon.type === 'svg'"
+                  [icon]="svgIcon"
                   [style.color]="icon.color"
                   class="media-svg w-8 h-8"
                   [style.width.px]="icon.size || 24"
                   [style.height.px]="icon.size || 24">
-        </svg-icon>
+        </app-svg-icon>
       </ng-container>
     </ng-container>
 
@@ -97,6 +100,26 @@ export class MediaComponent {
 
   get icon(): IconDefinition | null {
     return this.isIcon() ? this.media.content?.data as IconDefinition : null;
+  }
+
+  get fontAwesomeIcon(): IconProp {
+    const icon = this.icon;
+    if (!icon || icon.type !== 'fontawesome') {
+      throw new Error('Font Awesome icon data is unavailable.');
+    }
+    const iconValue = icon.svgPath instanceof Observable ? icon.className : icon.svgPath ?? icon.className;
+    if (!iconValue) {
+      throw new Error('Font Awesome icons require a class name or SVG path.');
+    }
+    return iconValue as IconProp;
+  }
+
+  get svgIcon(): Observable<SafeHtml> {
+    const icon = this.icon;
+    if (!icon || icon.type !== 'svg' || !(icon.svgPath instanceof Observable)) {
+      throw new Error('SVG icon data is unavailable.');
+    }
+    return icon.svgPath;
   }
 
   get imageUrl(): string | null {

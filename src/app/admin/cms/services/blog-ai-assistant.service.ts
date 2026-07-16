@@ -164,6 +164,12 @@ export class BlogAiAssistantService {
           data.unit,
           ...(data.chartPoints ?? []).flatMap(point => [point.label, String(point.value), point.note]),
         ].filter(Boolean).join(' ');
+      case 'poll':
+        return [
+          data.question,
+          data.description,
+          ...(data.pollOptions ?? []).map(option => option.label),
+        ].filter(Boolean).join(' ');
       case 'html':
         return [data.title, data.html].filter(Boolean).join(' ');
       case 'delimiter':

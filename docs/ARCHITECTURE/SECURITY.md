@@ -55,7 +55,27 @@ an incorrectly deployed public proxy could protect vendor keys while still allow
 Residual risk:
 provider review, account-role drift, token revocation, and refresh failure must be monitored before delivery workers are enabled. Keep delivery disabled until pending outbox records have an approved cutoff so authorization cannot trigger historical posts.
 
-## 5) Storage Trust
+## 5) Blog Poll Votes
+
+- Poll definitions live in published post blocks, but aggregate and per-user vote documents under `/postPolls` deny all browser reads and writes, including the recursive administrator fallback.
+- Callable Functions reload the current published post, validate the post/slug/poll/option relationship, and transact one vote document per authenticated UID.
+- `afterVote`, `always`, and `hidden` result policies are enforced when the backend response is built. A stale vote for a removed option cannot unlock aggregate results.
+- Public result responses contain labels, counts, percentages, and the caller's selected option only; they never contain voter identities.
+
+Residual risk:
+polls are lightweight authenticated editorial interactions, not anonymous or high-assurance ballots. Review App Check, account-abuse controls, rate limits, monitoring, and deletion/export requirements before sensitive or high-volume use.
+
+## 6) Suno Song Embeds
+
+- Suno songs use a dedicated typed Editor.js block rather than raw iframe HTML or the generic interactive-app boundary.
+- Authoring and public rendering both require an exact HTTPS `suno.com` song/embed path with a UUID and reject credentials, ports, queries, fragments, alternate paths, and lookalike hosts.
+- The iframe is sandboxed, receives only media/fullscreen permissions, uses a fixed responsive height, and retains a normal external fallback.
+- Hosting CSP adds only `https://suno.com` to `frame-src`; Suno is not added to `script-src`, `connect-src`, or the generic YouTube/Vimeo host set.
+
+Residual risk:
+the embedded third-party player remains subject to Suno's availability, privacy/cookie behavior, URL contracts, and content rights. Editors must treat Link Only songs as disclosed when placed in a public post.
+
+## 7) Storage Trust
 
 - App/session state read from local storage without robust schema validation.
 
@@ -68,8 +88,10 @@ tampered storage payloads can produce runtime errors or unintended behavior.
 2. Complete: validate external URLs with strict scheme/domain checks before `window.open`.
 3. In progress: browser vendor keys are removed; complete and verify the deployable backend proxy boundary before closing the item.
 4. Complete for connection-only scope: protect social OAuth state and encrypt provider tokens; delivery-worker authorization and retry hardening remain open.
-5. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
-6. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
+5. Complete for the initial poll scope: keep votes backend-only and result visibility server-enforced; high-assurance abuse/privacy controls remain deferred.
+6. Complete for the initial Suno scope: validate one exact provider contract and retain a link fallback; broader music providers remain untrusted.
+7. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
+8. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
 
 ## Operational Notes
 

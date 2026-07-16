@@ -42,12 +42,14 @@ interface Chat {
         </div>
         <div class="flex-1 overflow-y-auto">
           <ul>
-            <li
-              *ngFor="let chat of chatList"
-              (click)="selectChat(chat)"
-              [class.bg-gray-700]="selectedChat?.id === chat.id"
-              class="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-800 transition-colors"
-            >
+            <li *ngFor="let chat of chatList">
+              <button
+                type="button"
+                (click)="selectChat(chat)"
+                [class.bg-gray-700]="selectedChat?.id === chat.id"
+                [attr.aria-pressed]="selectedChat?.id === chat.id"
+                class="flex w-full items-center px-4 py-3 text-left cursor-pointer hover:bg-gray-800 transition-colors"
+              >
               <img
                 *ngIf="chat.avatarUrl; else groupAvatars"
                 [src]="chat.avatarUrl"
@@ -73,12 +75,13 @@ interface Chat {
                   {{ getLastMessagePreview(chat) }}
                 </div>
               </div>
-              <div *ngIf="getUnreadCount(chat) > 0" class="ml-auto">
+              <div *ngIf="getUnreadCount() > 0" class="ml-auto">
                 <span
                   class="bg-blue-500 text-white text-xs font-semibold rounded-full px-2 py-0.5"
-                  >{{ getUnreadCount(chat) }}</span
+                  >{{ getUnreadCount() }}</span
                 >
               </div>
+              </button>
             </li>
           </ul>
         </div>
@@ -267,12 +270,13 @@ interface Chat {
       *ngIf="showEmojiPicker"
       class="absolute bottom-20 right-8 bg-gray-800 border border-gray-700 rounded-lg p-2 grid grid-cols-6 gap-2"
     >
-      <span
+      <button
         *ngFor="let emo of emojiList"
+        type="button"
         (click)="addEmoji(emo)"
+        [attr.aria-label]="'Add ' + emo + ' emoji'"
         class="cursor-pointer text-2xl hover:bg-gray-700 rounded-md p-1 transition-colors"
-        >{{ emo }}</span
-      >
+      >{{ emo }}</button>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -368,7 +372,7 @@ export class MessagesComponent {
       (last.content.length > 20 ? last.content.slice(0, 20) + '…' : last.content);
   }
 
-  getUnreadCount(chat: Chat): number {
+  getUnreadCount(): number {
     // For demo purposes, just zero
     return 0;
   }
@@ -434,6 +438,7 @@ export class MessagesComponent {
         el.scrollTop = el.scrollHeight;
       }, 50);
     } catch {
+      return;
     }
   }
 

@@ -1,42 +1,7 @@
 import {LogService} from '../log.service';
 
-type SoundFontBank = 'FluidR3_GM' | 'MusyngKite';
-type SoundFontFormat = 'mp3' | 'ogg';
-
-interface SoundFontInstrumentOptions {
-  soundfont?: SoundFontBank;
-  format?: SoundFontFormat;
-  gain?: number;
-  attack?: number;
-  release?: number;
-}
-
-interface SoundFontPlayOptions {
-  duration: number;
-  gain: number;
-}
-
-interface SoundFontPlayerLike {
-  play(note: string, when?: number, options?: SoundFontPlayOptions): void;
-
-  stop(when?: number): unknown;
-}
-
-interface SoundFontModuleLike {
-  instrument(
-    audioContext: AudioContext,
-    name: string,
-    options?: SoundFontInstrumentOptions
-  ): Promise<SoundFontPlayerLike>;
-
-  default?: {
-    instrument(
-      audioContext: AudioContext,
-      name: string,
-      options?: SoundFontInstrumentOptions
-    ): Promise<SoundFontPlayerLike>;
-  };
-}
+type AudioContextFactory = () => AudioContext;
+type SampleFetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 interface SoundFontInstrumentDefinition {
   instrument: string;
@@ -44,6 +9,9 @@ interface SoundFontInstrumentDefinition {
   attack: number;
   release: number;
 }
+
+const SOUNDFONT_SAMPLE_BASE_URL = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/';
+const MINIMUM_GAIN = 0.0001;
 
 const soundFontInstrument = (
   instrument: string,
@@ -88,10 +56,14 @@ const SOUNDFONT_INSTRUMENTS: Record<string, SoundFontInstrumentDefinition> = {
 
 export class SoundFontSampledSoundDriver {
   private audioCtx?: AudioContext;
-  private soundFontModule?: SoundFontModuleLike;
-  private readonly players = new Map<string, Promise<SoundFontPlayerLike>>();
+  private readonly buffers = new Map<string, Promise<AudioBuffer>>();
+  private readonly activeSources = new Set<AudioBufferSourceNode>();
 
-  constructor(private readonly logger: LogService) {
+  constructor(
+    private readonly logger: LogService,
+    private readonly createAudioContext: AudioContextFactory = () => new AudioContext(),
+    private readonly fetchSample: SampleFetcher = (input, init) => fetch(input, init)
+  ) {
   }
 
   canPlayPreset(presetName: string): boolean {
@@ -111,60 +83,91 @@ export class SoundFontSampledSoundDriver {
         await audioCtx.resume();
       }
 
-      const player = await this.getPlayer(instrument);
-      player.play(note, audioCtx.currentTime, {
-        duration,
-        gain: instrument.gain,
-      });
+      const buffer = await this.getSampleBuffer(instrument.instrument, note);
+      this.playBuffer(audioCtx, buffer, duration, instrument);
     } catch (error) {
       this.logger.warn(`SoundFont playback failed: ${String(error)}`);
     }
   }
 
   dispose(): void {
-    for (const playerPromise of this.players.values()) {
-      playerPromise.then(player => player.stop()).catch(() => undefined);
+    for (const source of this.activeSources) {
+      try {
+        source.stop();
+      } catch {
+        // The source may already have stopped naturally.
+      }
     }
-    this.players.clear();
+    this.activeSources.clear();
+    this.buffers.clear();
     this.audioCtx?.close().catch(error => this.logger.warn(`SoundFont context close failed: ${String(error)}`));
   }
 
-  private async getPlayer(instrument: SoundFontInstrumentDefinition): Promise<SoundFontPlayerLike> {
-    let playerPromise = this.players.get(instrument.instrument);
-    if (!playerPromise) {
-      playerPromise = this.createPlayer(instrument);
-      this.players.set(instrument.instrument, playerPromise);
+  private async getSampleBuffer(instrument: string, note: string): Promise<AudioBuffer> {
+    const sampleName = this.getSampleName(note);
+    const cacheKey = `${instrument}:${sampleName}`;
+    let bufferPromise = this.buffers.get(cacheKey);
+    if (!bufferPromise) {
+      bufferPromise = this.loadSampleBuffer(instrument, sampleName).catch(error => {
+        this.buffers.delete(cacheKey);
+        throw error;
+      });
+      this.buffers.set(cacheKey, bufferPromise);
     }
 
-    return playerPromise;
+    return bufferPromise;
   }
 
-  private async createPlayer(instrument: SoundFontInstrumentDefinition): Promise<SoundFontPlayerLike> {
-    const soundFont = await this.getSoundFontModule();
-    const loadInstrument = soundFont.instrument ?? soundFont.default?.instrument;
-    if (!loadInstrument) {
-      throw new Error('soundfont-player instrument loader is unavailable');
+  private async loadSampleBuffer(instrument: string, sampleName: string): Promise<AudioBuffer> {
+    const sampleUrl = `${SOUNDFONT_SAMPLE_BASE_URL}${instrument}-mp3/${sampleName}.mp3`;
+    const response = await this.fetchSample(sampleUrl);
+    if (!response.ok) {
+      throw new Error(`Sample request failed with status ${response.status}`);
     }
 
-    return loadInstrument(this.getAudioContext(), instrument.instrument, {
-      soundfont: 'FluidR3_GM',
-      format: 'mp3',
-      gain: instrument.gain,
-      attack: instrument.attack,
-      release: instrument.release,
-    });
+    return this.getAudioContext().decodeAudioData(await response.arrayBuffer());
   }
 
-  private async getSoundFontModule(): Promise<SoundFontModuleLike> {
-    if (!this.soundFontModule) {
-      this.soundFontModule = (await import('soundfont-player')) as unknown as SoundFontModuleLike;
+  private playBuffer(
+    audioCtx: AudioContext,
+    buffer: AudioBuffer,
+    duration: number,
+    instrument: SoundFontInstrumentDefinition
+  ): void {
+    const source = audioCtx.createBufferSource();
+    const gain = audioCtx.createGain();
+    const startTime = audioCtx.currentTime;
+    const playDuration = Math.max(duration, 0.01);
+    const endTime = startTime + playDuration;
+    const attackEnd = startTime + Math.min(instrument.attack, playDuration / 2);
+    const releaseStart = Math.max(attackEnd, endTime - Math.min(instrument.release, playDuration / 2));
+
+    source.buffer = buffer;
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(MINIMUM_GAIN, startTime);
+    gain.gain.linearRampToValueAtTime(instrument.gain, attackEnd);
+    gain.gain.setValueAtTime(instrument.gain, releaseStart);
+    gain.gain.exponentialRampToValueAtTime(MINIMUM_GAIN, endTime);
+
+    this.activeSources.add(source);
+    source.addEventListener('ended', () => this.activeSources.delete(source), {once: true});
+    source.start(startTime);
+    source.stop(endTime);
+  }
+
+  private getSampleName(note: string): string {
+    const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(note.trim());
+    if (!match) {
+      throw new Error(`Unsupported note format: ${note}`);
     }
 
-    return this.soundFontModule;
+    const [, pitch, accidental, octave] = match;
+    return `${pitch.toUpperCase()}${accidental === '#' ? 's' : accidental}${octave}`;
   }
 
   private getAudioContext(): AudioContext {
-    this.audioCtx ??= new AudioContext();
+    this.audioCtx ??= this.createAudioContext();
     return this.audioCtx;
   }
 

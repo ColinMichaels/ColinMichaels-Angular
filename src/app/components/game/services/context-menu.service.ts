@@ -47,9 +47,9 @@ export interface ContextMenuConfig {
   userRoles?: string[];
 }
 
-export const CONTEXT_MENU_DATA = new InjectionToken<any>('CONTEXT_MENU_DATA');
+export const CONTEXT_MENU_DATA = new InjectionToken<unknown>('CONTEXT_MENU_DATA');
 
-export const ContextMenuRegistry: Record<string, Type<any>> = {
+export const ContextMenuRegistry: Record<string, Type<unknown>> = {
   'type-a': MenuTypeAComponent,
   'type-b': MenuTypeBComponent,
 };

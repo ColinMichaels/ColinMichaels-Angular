@@ -1,4 +1,4 @@
-import {Inject, Injectable, OnDestroy, OnInit} from '@angular/core';
+import {Inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {SettingsService} from './settings.service';
 import {LogService} from './log.service';
@@ -12,9 +12,17 @@ interface SoundOptions {
   onEnded?: () => void;
 }
 
+interface BatteryManager {
+  level: number;
+}
+
+interface NavigatorWithBattery extends Navigator {
+  getBattery?: () => Promise<BatteryManager>;
+}
+
 
 @Injectable({ providedIn: 'root' })
-export class SoundService implements OnDestroy, OnInit {
+export class SoundService implements OnDestroy {
 
   private readonly basePath = 'assets/audio/efx/';
 
@@ -31,6 +39,7 @@ export class SoundService implements OnDestroy, OnInit {
   private readonly mute$ = new BehaviorSubject<boolean>(false);
 
   public isInitialized = false;
+  private environmentInitialized = false;
 
   private lastPlayedTimestamps: Record<string, number> = {};
   private debounceIntervalMs = 60; // Adjust as needed
@@ -41,13 +50,6 @@ export class SoundService implements OnDestroy, OnInit {
     private readonly logger: LogService,
     @Inject(SOUND_SERVICE_CONFIG) private soundConfig: SoundServiceConfig
   ) {
-  }
-
-  ngOnInit() {
-    this.detectMobileAndMute();
-    this.bootAudio().then(() => {
-      this.patchService.registerPatches();
-    });
   }
 
   async preloadAudio(fileName: string): Promise<boolean> {
@@ -71,11 +73,16 @@ export class SoundService implements OnDestroy, OnInit {
 
 
   async bootAudio(): Promise<void> {
+    if (!this.environmentInitialized) {
+      this.detectMobileAndMute();
+      this.environmentInitialized = true;
+    }
     if (this.isInitialized) return Promise.resolve();
 
     try {
       await this.preloadAudio('bootup.mp3');
       this.isInitialized = true;
+      this.patchService.registerPatches();
       this.logger.debug('[SoundService] Audio system initialized');
     } catch (error) {
       this.logger.error('[SoundService] Failed to initialize audio:', error);
@@ -88,8 +95,9 @@ export class SoundService implements OnDestroy, OnInit {
     const hasTouch = 'ontouchstart' in window ||
       navigator.maxTouchPoints > 0;
     const hasLowBattery = false;
-    if ('getBattery' in navigator) {
-      (navigator as any).getBattery().then((battery: { level: number }) => {
+    const getBattery = (navigator as NavigatorWithBattery).getBattery;
+    if (getBattery) {
+      getBattery.call(navigator).then((battery) => {
         if (battery.level < 0.2) {
           this.setMute(true);
           console.log('[SoundService] Low battery detected. Sound muted.');

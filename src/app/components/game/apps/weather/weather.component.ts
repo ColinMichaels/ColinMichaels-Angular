@@ -1,7 +1,7 @@
 import {Component, OnInit, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {SettingsService} from '../../services/settings.service';
-import {WeatherService} from '../../services/weather.service';
+import {DailyForecast, WeatherBundle, WeatherService} from '../../services/weather.service';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {TooltipDirective} from '../../directives/tooltip.directive';
 
@@ -16,8 +16,8 @@ export class WeatherComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private readonly weatherService = inject(WeatherService);
   isDarkMode = signal(false);
-  currentWeather: any;
-  fiveDayForecast: any;
+  currentWeather?: WeatherBundle;
+  fiveDayForecast: DailyForecast[] = [];
   lastLoadDate: Date = new Date();
 
   ngOnInit() {

@@ -85,6 +85,17 @@ describe('TopicHubComponent', () => {
     expect(element.textContent).toContain('AI workflows worth starting with');
   });
 
+  it('keeps hero title words intact when the heading wraps', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const heading = element.querySelector<HTMLElement>('.topic-hub-hero-copy h1');
+    const style = heading ? getComputedStyle(heading) : null;
+
+    expect(heading).not.toBeNull();
+    expect(style?.overflowWrap).toBe('normal');
+    expect(style?.wordBreak).toBe('normal');
+    expect(style?.hyphens).toBe('none');
+  });
+
   it('uses fan and list presentations to prioritize posts before the guide', () => {
     const element = fixture.nativeElement as HTMLElement;
     const listingRegions = [...element.querySelectorAll<HTMLElement>('[data-layout]')];

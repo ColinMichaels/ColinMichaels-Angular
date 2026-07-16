@@ -4,7 +4,7 @@ import {Observable} from 'rxjs';
 import {AsyncPipe} from '@angular/common';
 
 @Component({
-  selector: 'svg-icon',
+  selector: 'app-svg-icon',
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom,
   imports: [

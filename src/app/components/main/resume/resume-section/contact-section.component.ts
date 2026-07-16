@@ -78,7 +78,7 @@ export class Transformer {
             [tooltipPosition]="'bottom'" [tooltipCssClass]="'bg-red-500/80 text-white'"
            class="text-green-600 hover:underline">{{ this.contact['email'] }}
         </a>
-        | <span [innerHTML]="this.contact['phone'] "></span>
+        | <span>{{ this.contact['phone'] }}</span>
       </p>
       <a
         [appTooltip]="tooltips[2].message"

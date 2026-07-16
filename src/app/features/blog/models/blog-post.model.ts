@@ -5,6 +5,13 @@ export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type BlogContentFormat = 'editorjs';
 
+export const BLOG_BLOCK_PLACEMENTS = [
+  'content',
+  'rail',
+] as const;
+
+export type BlogBlockPlacement = typeof BLOG_BLOCK_PLACEMENTS[number];
+
 export interface BlogCatCornerSettings {
   enabled: boolean;
   discoveryPost: boolean;
@@ -40,6 +47,14 @@ export const BLOG_CHART_TYPES = [
 
 export type BlogChartType = typeof BLOG_CHART_TYPES[number];
 
+export const BLOG_POLL_RESULTS_VISIBILITIES = [
+  'afterVote',
+  'always',
+  'hidden',
+] as const;
+
+export type BlogPollResultsVisibility = typeof BLOG_POLL_RESULTS_VISIBILITIES[number];
+
 export type BlogBlockType =
   'paragraph'
   | 'header'
@@ -53,6 +68,7 @@ export type BlogBlockType =
   | 'typography'
   | 'stats'
   | 'chart'
+  | 'poll'
   | 'catCornerUnlock'
   | 'html';
 
@@ -66,6 +82,11 @@ export interface BlogChartPoint {
   label: string;
   value: number;
   note?: string;
+}
+
+export interface BlogPollOption {
+  id: string;
+  label: string;
 }
 
 export interface BlogSeoMetadata {
@@ -104,6 +125,7 @@ export interface BlogPostPreview {
 }
 
 export interface BlogBlockData {
+  placement?: BlogBlockPlacement;
   title?: string;
   text?: string;
   level?: 2 | 3;
@@ -129,6 +151,10 @@ export interface BlogBlockData {
   chartType?: BlogChartType;
   chartPoints?: readonly BlogChartPoint[];
   unit?: string;
+  question?: string;
+  description?: string;
+  pollOptions?: readonly BlogPollOption[];
+  pollResultsVisibility?: BlogPollResultsVisibility;
   html?: string;
 }
 

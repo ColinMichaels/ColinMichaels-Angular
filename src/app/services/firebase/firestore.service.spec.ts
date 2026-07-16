@@ -1,15 +1,51 @@
 import {TestBed} from '@angular/core/testing';
-import {Firestore} from 'firebase/firestore';
-import {FirebaseStorage} from 'firebase/storage';
-import {FirestoreService, FirestoreDocument} from './firestore.service';
+import {FirestoreService, FirestoreDocument, FirestoreFilter} from './firestore.service';
 import {of} from 'rxjs';
 import {FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
 
+interface TestDocument {
+  id: string;
+  name: string;
+  status?: string;
+}
+
+interface DocumentSnapshotStub {
+  exists: () => boolean;
+  id: string;
+  data: () => Omit<TestDocument, 'id'>;
+}
+
+interface UploadProgressStub {
+  bytesTransferred: number;
+  totalBytes: number;
+}
+
+interface FirestoreServiceTestHarness {
+  doc: jasmine.Spy;
+  collection: jasmine.Spy;
+  setDoc: jasmine.Spy;
+  getDoc: jasmine.Spy;
+  updateDoc: jasmine.Spy;
+  deleteDoc: jasmine.Spy;
+  getDocs: jasmine.Spy;
+  query: jasmine.Spy;
+  where: jasmine.Spy;
+  orderBy: jasmine.Spy;
+  limit: jasmine.Spy;
+  onSnapshot: jasmine.Spy;
+  serverTimestamp: jasmine.Spy;
+  writeBatch: jasmine.Spy;
+  ref: jasmine.Spy;
+  uploadBytes: jasmine.Spy;
+  getDownloadURL: jasmine.Spy;
+  deleteObject: jasmine.Spy;
+  uploadString: jasmine.Spy;
+  uploadBytesResumable: jasmine.Spy;
+}
+
 describe('FirestoreService', () => {
   let service: FirestoreService;
-  let mockFirestore: jasmine.SpyObj<Firestore>;
-  let mockStorage: jasmine.SpyObj<FirebaseStorage>;
-
+  let harness: FirestoreServiceTestHarness;
   // Mock implementations for Firebase functions
   let mockDoc: jasmine.Spy;
   let mockCollection: jasmine.Spy;
@@ -49,9 +85,7 @@ describe('FirestoreService', () => {
     });
 
     service = TestBed.inject(FirestoreService);
-    mockFirestore = TestBed.inject(FIREBASE_FIRESTORE) as jasmine.SpyObj<Firestore>;
-    mockStorage = TestBed.inject(FIREBASE_STORAGE) as jasmine.SpyObj<FirebaseStorage>;
-
+    harness = service as unknown as FirestoreServiceTestHarness;
     // Setup Firebase function mocks
     setupFirebaseMocks();
   });
@@ -78,7 +112,7 @@ describe('FirestoreService', () => {
     mockWhere = jasmine.createSpy('where').and.returnValue({id: 'mock-where'});
     mockOrderBy = jasmine.createSpy('orderBy').and.returnValue({id: 'mock-orderby'});
     mockLimit = jasmine.createSpy('limit').and.returnValue({id: 'mock-limit'});
-    mockOnSnapshot = jasmine.createSpy('onSnapshot').and.callFake((ref: any, callback: any) => {
+    mockOnSnapshot = jasmine.createSpy('onSnapshot').and.callFake((ref: unknown, callback: (snapshot: DocumentSnapshotStub) => void) => {
       setTimeout(() => callback({
         exists: () => true,
         id: 'test-id',
@@ -104,7 +138,12 @@ describe('FirestoreService', () => {
     mockDeleteObject = jasmine.createSpy('deleteObject').and.returnValue(Promise.resolve());
     mockUploadString = jasmine.createSpy('uploadString').and.returnValue(Promise.resolve({}));
     mockUploadBytesResumable = jasmine.createSpy('uploadBytesResumable').and.returnValue({
-      on: jasmine.createSpy('on').and.callFake((event: string, progress: any, error: any, complete: any) => {
+      on: jasmine.createSpy('on').and.callFake((
+        event: string,
+        progress: (snapshot: UploadProgressStub) => void,
+        error: (reason: unknown) => void,
+        complete: () => void
+      ) => {
         setTimeout(() => progress({bytesTransferred: 50, totalBytes: 100}), 0);
         setTimeout(() => complete(), 10);
       }),
@@ -112,26 +151,26 @@ describe('FirestoreService', () => {
     });
 
     // Replace the Firebase functions in the service
-    (service as any).doc = mockDoc;
-    (service as any).collection = mockCollection;
-    (service as any).setDoc = mockSetDoc;
-    (service as any).getDoc = mockGetDoc;
-    (service as any).updateDoc = mockUpdateDoc;
-    (service as any).deleteDoc = mockDeleteDoc;
-    (service as any).getDocs = mockGetDocs;
-    (service as any).query = mockQuery;
-    (service as any).where = mockWhere;
-    (service as any).orderBy = mockOrderBy;
-    (service as any).limit = mockLimit;
-    (service as any).onSnapshot = mockOnSnapshot;
-    (service as any).serverTimestamp = mockServerTimestamp;
-    (service as any).writeBatch = mockWriteBatch;
-    (service as any).ref = mockRef;
-    (service as any).uploadBytes = mockUploadBytes;
-    (service as any).getDownloadURL = mockGetDownloadURL;
-    (service as any).deleteObject = mockDeleteObject;
-    (service as any).uploadString = mockUploadString;
-    (service as any).uploadBytesResumable = mockUploadBytesResumable;
+    harness.doc = mockDoc;
+    harness.collection = mockCollection;
+    harness.setDoc = mockSetDoc;
+    harness.getDoc = mockGetDoc;
+    harness.updateDoc = mockUpdateDoc;
+    harness.deleteDoc = mockDeleteDoc;
+    harness.getDocs = mockGetDocs;
+    harness.query = mockQuery;
+    harness.where = mockWhere;
+    harness.orderBy = mockOrderBy;
+    harness.limit = mockLimit;
+    harness.onSnapshot = mockOnSnapshot;
+    harness.serverTimestamp = mockServerTimestamp;
+    harness.writeBatch = mockWriteBatch;
+    harness.ref = mockRef;
+    harness.uploadBytes = mockUploadBytes;
+    harness.getDownloadURL = mockGetDownloadURL;
+    harness.deleteObject = mockDeleteObject;
+    harness.uploadString = mockUploadString;
+    harness.uploadBytesResumable = mockUploadBytesResumable;
   }
 
   it('should be created', () => {
@@ -141,9 +180,9 @@ describe('FirestoreService', () => {
   describe('Document Operations', () => {
     describe('saveDocument', () => {
       beforeEach(() => {
-        spyOn(service as any, 'doc').and.returnValue({id: 'mock-ref'});
-        spyOn(service as any, 'setDoc').and.returnValue(Promise.resolve());
-        spyOn(service as any, 'serverTimestamp').and.returnValue('mock-timestamp');
+        spyOn(harness, 'doc').and.returnValue({id: 'mock-ref'});
+        spyOn(harness, 'setDoc').and.returnValue(Promise.resolve());
+        spyOn(harness, 'serverTimestamp').and.returnValue('mock-timestamp');
       });
 
       it('should save a document with generated ID', (done) => {
@@ -176,7 +215,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle save errors', (done) => {
-        spyOn(service as any, 'setDoc').and.returnValue(
+        spyOn(harness, 'setDoc').and.returnValue(
           Promise.reject(new Error('Save failed'))
         );
 
@@ -196,7 +235,7 @@ describe('FirestoreService', () => {
 
     describe('getDocument', () => {
       beforeEach(() => {
-        spyOn(service as any, 'doc').and.returnValue({id: 'mock-ref'});
+        spyOn(harness, 'doc').and.returnValue({id: 'mock-ref'});
       });
 
       it('should retrieve an existing document', (done) => {
@@ -206,13 +245,13 @@ describe('FirestoreService', () => {
           data: () => ({name: 'Test Document'})
         };
 
-        spyOn(service as any, 'getDoc').and.returnValue(Promise.resolve(mockSnapshot));
+        spyOn(harness, 'getDoc').and.returnValue(Promise.resolve(mockSnapshot));
 
-        service.getDocument('test-collection', 'test-id').subscribe({
-          next: (doc: any) => {
+        service.getDocument<TestDocument>('test-collection', 'test-id').subscribe({
+          next: (doc) => {
             expect(doc).toBeDefined();
             expect(doc?.id).toBe('test-id');
-            expect((doc as any)?.name).toBe('Test Document');
+            expect(doc?.name).toBe('Test Document');
             done();
           },
           error: done.fail
@@ -224,7 +263,7 @@ describe('FirestoreService', () => {
           exists: () => false
         };
 
-        spyOn(service as any, 'getDoc').and.returnValue(Promise.resolve(mockSnapshot));
+        spyOn(harness, 'getDoc').and.returnValue(Promise.resolve(mockSnapshot));
 
         service.getDocument('test-collection', 'non-existent').subscribe({
           next: (doc) => {
@@ -236,7 +275,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle get errors', (done) => {
-        spyOn(service as any, 'getDoc').and.returnValue(
+        spyOn(harness, 'getDoc').and.returnValue(
           Promise.reject(new Error('Get failed'))
         );
 
@@ -252,17 +291,18 @@ describe('FirestoreService', () => {
 
     describe('updateDocument', () => {
       beforeEach(() => {
-        spyOn(service as any, 'doc').and.returnValue({id: 'mock-ref'});
-        spyOn(service as any, 'serverTimestamp').and.returnValue('mock-timestamp');
+        spyOn(harness, 'doc').and.returnValue({id: 'mock-ref'});
+        spyOn(harness, 'serverTimestamp').and.returnValue('mock-timestamp');
       });
 
       it('should update a document', (done) => {
-        spyOn(service as any, 'updateDoc').and.returnValue(Promise.resolve());
+        spyOn(harness, 'updateDoc').and.returnValue(Promise.resolve());
 
         const updateData = {name: 'Updated Name'};
 
         service.updateDocument('test-collection', 'test-id', updateData).subscribe({
           next: () => {
+            expect(harness.updateDoc).toHaveBeenCalled();
             done();
           },
           error: done.fail
@@ -270,7 +310,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle update errors', (done) => {
-        spyOn(service as any, 'updateDoc').and.returnValue(
+        spyOn(harness, 'updateDoc').and.returnValue(
           Promise.reject(new Error('Update failed'))
         );
 
@@ -286,14 +326,15 @@ describe('FirestoreService', () => {
 
     describe('deleteDocument', () => {
       beforeEach(() => {
-        spyOn(service as any, 'doc').and.returnValue({id: 'mock-ref'});
+        spyOn(harness, 'doc').and.returnValue({id: 'mock-ref'});
       });
 
       it('should delete a document', (done) => {
-        spyOn(service as any, 'deleteDoc').and.returnValue(Promise.resolve());
+        spyOn(harness, 'deleteDoc').and.returnValue(Promise.resolve());
 
         service.deleteDocument('test-collection', 'test-id').subscribe({
           next: () => {
+            expect(harness.deleteDoc).toHaveBeenCalled();
             done();
           },
           error: done.fail
@@ -301,7 +342,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle delete errors', (done) => {
-        spyOn(service as any, 'deleteDoc').and.returnValue(
+        spyOn(harness, 'deleteDoc').and.returnValue(
           Promise.reject(new Error('Delete failed'))
         );
 
@@ -319,8 +360,8 @@ describe('FirestoreService', () => {
   describe('Query Operations', () => {
     describe('queryDocuments', () => {
       beforeEach(() => {
-        spyOn(service as any, 'collection').and.returnValue({id: 'mock-collection'});
-        spyOn(service as any, 'query').and.returnValue({id: 'mock-query'});
+        spyOn(harness, 'collection').and.returnValue({id: 'mock-collection'});
+        spyOn(harness, 'query').and.returnValue({id: 'mock-query'});
       });
 
       it('should query documents without filters', (done) => {
@@ -330,10 +371,10 @@ describe('FirestoreService', () => {
         ];
         const mockSnapshot = {docs: mockDocs};
 
-        spyOn(service as any, 'getDocs').and.returnValue(Promise.resolve(mockSnapshot));
+        spyOn(harness, 'getDocs').and.returnValue(Promise.resolve(mockSnapshot));
 
-        service.queryDocuments('test-collection').subscribe({
-          next: (docs: any) => {
+        service.queryDocuments<TestDocument>('test-collection').subscribe({
+          next: (docs) => {
             expect(docs.length).toBe(2);
             expect(docs[0].id).toBe('1');
             expect(docs[1].id).toBe('2');
@@ -349,15 +390,15 @@ describe('FirestoreService', () => {
         ];
         const mockSnapshot = {docs: mockDocs};
 
-        spyOn(service as any, 'where').and.returnValue({id: 'mock-where'});
-        spyOn(service as any, 'getDocs').and.returnValue(Promise.resolve(mockSnapshot));
+        spyOn(harness, 'where').and.returnValue({id: 'mock-where'});
+        spyOn(harness, 'getDocs').and.returnValue(Promise.resolve(mockSnapshot));
 
-        const filters: [string, any, any][] = [['status', '==', 'active']];
+        const filters: FirestoreFilter[] = [['status', '==', 'active']];
 
-        service.queryDocuments('test-collection', filters).subscribe({
+        service.queryDocuments<TestDocument>('test-collection', filters).subscribe({
           next: (docs) => {
             expect(docs.length).toBe(1);
-            expect((docs[0] as any).status).toBe('active');
+            expect(docs[0].status).toBe('active');
             done();
           },
           error: done.fail
@@ -365,7 +406,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle query errors', (done) => {
-        spyOn(service as any, 'getDocs').and.returnValue(
+        spyOn(harness, 'getDocs').and.returnValue(
           Promise.reject(new Error('Query failed'))
         );
 
@@ -383,15 +424,15 @@ describe('FirestoreService', () => {
   describe('Storage Operations', () => {
     describe('uploadFile', () => {
       beforeEach(() => {
-        spyOn(service as any, 'ref').and.returnValue({id: 'mock-storage-ref'});
+        spyOn(harness, 'ref').and.returnValue({id: 'mock-storage-ref'});
       });
 
       it('should upload a file and return download URL', (done) => {
         const mockFile = new File(['test content'], 'test.txt', {type: 'text/plain'});
         const mockDownloadUrl = 'https://example.com/test.txt';
 
-        spyOn(service as any, 'uploadBytes').and.returnValue(Promise.resolve({}));
-        spyOn(service as any, 'getDownloadURL').and.returnValue(Promise.resolve(mockDownloadUrl));
+        spyOn(harness, 'uploadBytes').and.returnValue(Promise.resolve({}));
+        spyOn(harness, 'getDownloadURL').and.returnValue(Promise.resolve(mockDownloadUrl));
 
         service.uploadFile('test/path', mockFile).subscribe({
           next: (url) => {
@@ -405,7 +446,7 @@ describe('FirestoreService', () => {
       it('should handle upload errors', (done) => {
         const mockFile = new File(['test content'], 'test.txt');
 
-        spyOn(service as any, 'uploadBytes').and.returnValue(
+        spyOn(harness, 'uploadBytes').and.returnValue(
           Promise.reject(new Error('Upload failed'))
         );
 
@@ -421,14 +462,15 @@ describe('FirestoreService', () => {
 
     describe('deleteFile', () => {
       beforeEach(() => {
-        spyOn(service as any, 'ref').and.returnValue({id: 'mock-storage-ref'});
+        spyOn(harness, 'ref').and.returnValue({id: 'mock-storage-ref'});
       });
 
       it('should delete a file', (done) => {
-        spyOn(service as any, 'deleteObject').and.returnValue(Promise.resolve());
+        spyOn(harness, 'deleteObject').and.returnValue(Promise.resolve());
 
         service.deleteFile('test/path').subscribe({
           next: () => {
+            expect(harness.deleteObject).toHaveBeenCalled();
             done();
           },
           error: done.fail
@@ -436,7 +478,7 @@ describe('FirestoreService', () => {
       });
 
       it('should handle delete file errors', (done) => {
-        spyOn(service as any, 'deleteObject').and.returnValue(
+        spyOn(harness, 'deleteObject').and.returnValue(
           Promise.reject(new Error('Delete failed'))
         );
 
@@ -452,15 +494,15 @@ describe('FirestoreService', () => {
 
     describe('uploadBase64', () => {
       beforeEach(() => {
-        spyOn(service as any, 'ref').and.returnValue({id: 'mock-storage-ref'});
+        spyOn(harness, 'ref').and.returnValue({id: 'mock-storage-ref'});
       });
 
       it('should upload base64 string', (done) => {
         const dataUrl = 'data:text/plain;base64,dGVzdCBjb250ZW50';
         const mockDownloadUrl = 'https://example.com/test.txt';
 
-        spyOn(service as any, 'uploadString').and.returnValue(Promise.resolve({}));
-        spyOn(service as any, 'getDownloadURL').and.returnValue(Promise.resolve(mockDownloadUrl));
+        spyOn(harness, 'uploadString').and.returnValue(Promise.resolve({}));
+        spyOn(harness, 'getDownloadURL').and.returnValue(Promise.resolve(mockDownloadUrl));
 
         service.uploadBase64('test/path', dataUrl).subscribe({
           next: (url) => {
@@ -553,20 +595,20 @@ describe('FirestoreService', () => {
           data: () => ({name: 'Test Document'})
         };
 
-        spyOn(service as any, 'doc').and.returnValue({id: 'mock-ref'});
-        spyOn(service as any, 'onSnapshot').and.callFake(
-          (docRef: any, callback: any) => {
+        spyOn(harness, 'doc').and.returnValue({id: 'mock-ref'});
+        harness.onSnapshot = jasmine.createSpy('onSnapshot').and.callFake(
+          (docRef: unknown, callback: (snapshot: DocumentSnapshotStub) => void) => {
             setTimeout(() => callback(mockSnapshot), 0);
             return () => {
             }; // Return unsubscribe function
           }
         );
 
-        service.listenToDocument('test-collection', 'test-id').subscribe({
-          next: (doc: any) => {
+        service.listenToDocument<TestDocument>('test-collection', 'test-id').subscribe({
+          next: (doc) => {
             expect(doc).toBeDefined();
             expect(doc?.id).toBe('test-id');
-            expect((doc as any)?.name).toBe('Test Document');
+            expect(doc?.name).toBe('Test Document');
             done();
           },
           error: done.fail
@@ -582,18 +624,20 @@ describe('FirestoreService', () => {
         ];
         const mockSnapshot = {docs: mockDocs};
 
-        spyOn(service as any, 'collection').and.returnValue({id: 'mock-collection'});
-        spyOn(service as any, 'query').and.returnValue({id: 'mock-query'});
-        spyOn(service as any, 'onSnapshot').and.callFake(
-          (query: any, callback: any) => {
+        spyOn(harness, 'collection').and.returnValue({id: 'mock-collection'});
+        spyOn(harness, 'query').and.returnValue({id: 'mock-query'});
+        harness.onSnapshot = jasmine.createSpy('onSnapshot').and.callFake(
+          (queryRef: unknown, callback: (snapshot: {
+            docs: Array<{id: string; data: () => {name: string}}>
+          }) => void) => {
             setTimeout(() => callback(mockSnapshot), 0);
             return () => {
             };
           }
         );
 
-        service.listenToCollection('test-collection').subscribe({
-          next: (docs: any) => {
+        service.listenToCollection<TestDocument>('test-collection').subscribe({
+          next: (docs) => {
             expect(docs.length).toBe(2);
             expect(docs[0].id).toBe('1');
             expect(docs[1].id).toBe('2');

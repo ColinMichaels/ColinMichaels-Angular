@@ -3,7 +3,6 @@ import {
   Input,
   ViewContainerRef,
   ViewChild,
-  ComponentRef,
   AfterViewInit,
   SimpleChanges, OnChanges,
   ChangeDetectionStrategy
@@ -24,8 +23,6 @@ export class SettingsSubpanelComponent implements AfterViewInit, OnChanges {
   @ViewChild('panelHost', { read: ViewContainerRef, static: true })
   panelHost!: ViewContainerRef;
 
-  private componentRef?: ComponentRef<any>;
-
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['panelKey'] && !changes['panelKey'].isFirstChange()) {
       this.loadPanel();
@@ -42,17 +39,17 @@ export class SettingsSubpanelComponent implements AfterViewInit, OnChanges {
     switch (this.panelKey) {
       case 'general': {
         const { GeneralSettingsComponent } = await import('../../settings-panel/panels/general-settings/general-settings.component');
-        this.componentRef = this.panelHost.createComponent(GeneralSettingsComponent);
+        this.panelHost.createComponent(GeneralSettingsComponent);
         break;
       }
       case 'network': {
         const { NetworkSettingsComponent } = await import('../../settings-panel/panels/network-settings/network-settings.component');
-        this.componentRef = this.panelHost.createComponent(NetworkSettingsComponent);
+        this.panelHost.createComponent(NetworkSettingsComponent);
         break;
       }
       case 'appearance': {
         const { AppearanceSettingsComponent } = await import('../../settings-panel/panels/appearance-settings/appearance-settings.component');
-        this.componentRef = this.panelHost.createComponent(AppearanceSettingsComponent);
+        this.panelHost.createComponent(AppearanceSettingsComponent);
         break;
       }
       default:

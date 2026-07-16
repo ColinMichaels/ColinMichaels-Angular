@@ -94,6 +94,31 @@ describe('EditorJsComponent', () => {
     expect(element.querySelector('iframe')?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
   });
 
+  it('initializes saved Suno blocks with the dedicated song tool', async () => {
+    const songId = '44cd6eab-d6d7-4cb9-bea7-af398776556e';
+    fixture.componentRef.setInput('initialData', {
+      blocks: [
+        {
+          id: 'suno-embed',
+          type: 'sunoEmbed',
+          data: {
+            url: `https://suno.com/song/${songId}`,
+            caption: 'Some Memories Never Stop Playing',
+          },
+        },
+      ],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector<HTMLInputElement>('[data-suno-embed-url]')?.value)
+      .toBe(`https://suno.com/song/${songId}`);
+    expect(element.querySelector('iframe')?.getAttribute('src')).toBe(`https://suno.com/embed/${songId}`);
+  });
+
   it('initializes saved Markdown blocks with the custom source editor', async () => {
     fixture.componentRef.setInput('initialData', {
       blocks: [{

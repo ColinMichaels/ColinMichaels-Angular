@@ -10,7 +10,7 @@ import {
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faHackerNews, faWikipediaW, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import {TooltipDirective} from '../../directives/tooltip.directive';
-import {SpaceXLaunch} from './models/spacex-models';
+import {SpaceXLaunch, SpaceXPanelItemId} from './models/spacex-models';
 import {SpacexSubPanelComponent} from './spacex-sub-panel/spacex-sub-panel.component';
 import {SpacexService} from './spacex.service';
 import {ClickOutsideDirective} from "../../../../modules/scroll/directives/click-outside.directive";
@@ -81,7 +81,7 @@ export class SpaceXComponent {
     id: ''
   };
   panel: string = 'images';
-  itemId: string = '';
+  itemId: SpaceXPanelItemId = '';
   showSidebar = false;
   showSubPanel = false;
   subPanel: string = 'rocket';
@@ -92,16 +92,18 @@ export class SpaceXComponent {
   constructor(private readonly spaceXService: SpacexService) {
     this.spaceXService.getAllLaunches().pipe(
       takeUntilDestroyed()
-    ).subscribe((launchInfo: any) => {
-      this.launches = launchInfo.sort((a: any, b: any) => a.flight_number - b.flight_number)
-        .filter((launch: any) => launch.details)
-        .slice(0, 200).reverse() as SpaceXLaunch[];
+    ).subscribe((launchInfo: SpaceXLaunch[]) => {
+      this.launches = [...launchInfo]
+        .sort((a, b) => a.flight_number - b.flight_number)
+        .filter(launch => Boolean(launch.details))
+        .slice(0, 200)
+        .reverse();
       const launch = this.selectedLaunch = this.launches[this.currentIndex];
       this.spaceXService.setSelectLaunch(launch);
     });
   }
 
-  loadPanel(panel = 'rocket', itemId: string) {
+  loadPanel(panel = 'rocket', itemId: SpaceXPanelItemId) {
     this.panel = panel;
     this.itemId = itemId;
     this.spaceXService.setPanel(panel, itemId);
