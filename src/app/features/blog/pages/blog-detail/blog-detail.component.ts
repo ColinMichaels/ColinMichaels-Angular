@@ -1,4 +1,4 @@
-import {DatePipe, DecimalPipe, isPlatformBrowser, NgClass} from '@angular/common';
+import {DatePipe, DecimalPipe, isPlatformBrowser} from '@angular/common';
 import {
   Component,
   computed,
@@ -25,6 +25,7 @@ import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-b
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogPostBackgroundComponent} from '../../components/post-background/blog-post-background.component';
+import {BlogPostRailComponent} from '../../components/post-rail/blog-post-rail.component';
 import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
@@ -35,7 +36,6 @@ import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {OfflineBlogPostService, selectReadableBlogPost} from '../../services/offline-blog-post.service';
 import {getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
-import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {AuthorBioComponent} from '../../../../shared/author/author-bio.component';
 import {COLIN_AUTHOR_PROFILE} from '../../../../shared/author/author-profile.data';
 import {DEFAULT_AUTHOR_ID} from '../../../authors/authors.constants';
@@ -45,6 +45,7 @@ import {
   createBlogTableOfContents,
   hasMeaningfulPostUpdate
 } from '../../utils/blog-reading.util';
+import {createBlogPostLayoutBlocks} from '../../utils/blog-block-placement.util';
 
 const HEALTH_CONTENT_TERMS = [
   'cardiac',
@@ -74,10 +75,10 @@ function normalizeHealthTerm(value: string): string {
   imports: [
     DatePipe,
     DecimalPipe,
-    NgClass,
     BlogBlockRendererComponent,
     BlogCommentsComponent,
     BlogPostBackgroundComponent,
+    BlogPostRailComponent,
     BlogShareActionsComponent,
     BlogStickyPostToolbarComponent,
     BlogTableOfContentsComponent,
@@ -99,15 +100,14 @@ function normalizeHealthTerm(value: string): string {
       }
 
       <article
-        class="mx-auto max-w-7xl"
+        class="mx-auto max-w-[96rem]"
         [class.blog-detail-content-surface]="hasBackgroundImage()"
       >
         @if (post(); as currentPost) {
           <div
-            class="mx-auto grid max-w-4xl gap-10 xl:items-start"
-            [ngClass]="hasTableOfContents() ? 'xl:max-w-7xl xl:grid-cols-[minmax(0,1fr)_20rem]' : 'xl:max-w-5xl'"
+            class="blog-detail-reading-grid mx-auto grid max-w-4xl gap-10 xl:max-w-[90rem] xl:items-start"
           >
-            <div class="min-w-0 xl:col-start-1 xl:row-start-1">
+            <div class="min-w-0 xl:col-start-2 xl:row-start-1">
               <header
                 id="blog-post-top"
                 class="blog-section-rule blog-page-header scroll-mt-20 space-y-6 focus:outline-none"
@@ -190,7 +190,7 @@ function normalizeHealthTerm(value: string): string {
 
             @if (shareMetadata(); as share) {
               <app-blog-sticky-post-toolbar
-                class="xl:col-start-1 xl:row-start-2"
+                class="xl:col-start-2 xl:row-start-2"
                 [title]="currentPost.title"
                 [imageUrl]="currentPost.coverImage"
                 [excerpt]="share.description"
@@ -217,7 +217,7 @@ function normalizeHealthTerm(value: string): string {
 
             @if (hasTableOfContents()) {
               @defer (when hasTableOfContents()) {
-                <aside class="min-w-0 xl:col-start-2 xl:row-span-3 xl:row-start-1 xl:self-stretch">
+                <aside class="min-w-0 xl:col-start-1 xl:row-span-4 xl:row-start-1 xl:self-stretch">
                   <app-blog-table-of-contents
                     [items]="tableOfContents()"
                     [postPath]="createCurrentPostPath(currentPost.slug)"
@@ -228,17 +228,33 @@ function normalizeHealthTerm(value: string): string {
               }
             }
 
-            <div class="min-w-0 xl:col-start-1 xl:row-start-3">
+            <div class="min-w-0 xl:col-start-2 xl:row-start-3">
               <div #readingContent data-reading-content>
                 <app-blog-block-renderer
-                  [blocks]="currentPost.blocks"
+                  [blocks]="contentBlocks()"
                   [fallbackAlt]="currentPost.title"
+                  [postId]="currentPost.id"
+                  [postSlug]="currentPost.slug"
                   [anchorPath]="createCurrentPostPath(currentPost.slug)"
                   [activeHeadingId]="activeContentSectionId()"
                 ></app-blog-block-renderer>
               </div>
+            </div>
 
-              <footer class="blog-section-rule mt-14">
+            @if (hasRightRail()) {
+              <aside class="blog-detail-right-rail min-w-0 xl:col-start-3 xl:row-span-4 xl:row-start-1">
+                <app-blog-post-rail
+                  [blocks]="railBlocks()"
+                  [suggestedPosts]="suggestedPosts()"
+                  [postId]="currentPost.id"
+                  [postSlug]="currentPost.slug"
+                  [postTitle]="currentPost.title"
+                  [postPath]="createCurrentPostPath(currentPost.slug)"
+                ></app-blog-post-rail>
+              </aside>
+            }
+
+            <footer class="blog-section-rule min-w-0 mt-14 xl:col-start-2 xl:row-start-4">
                 @if (previousPost() || nextPost()) {
                   <nav aria-label="Post navigation" class="grid gap-4 sm:grid-cols-2">
                     @if (previousPost(); as previous) {
@@ -316,59 +332,7 @@ function normalizeHealthTerm(value: string): string {
                   </section>
                 }
 
-                @if (suggestedPosts().length > 0) {
-                  <section aria-labelledby="suggested-posts-heading" class="blog-section-rule mt-10">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <p class="eyebrow-sm eyebrow-cyan">Keep
-                          reading</p>
-                        <h2 id="suggested-posts-heading"
-                            class="mt-1 text-2xl font-semibold text-slate-950 dark:text-zinc-50">Suggested
-                          posts</h2>
-                      </div>
-                      <a [routerLink]="['/', pathNames.BLOG]"
-                         class="text-sm font-medium text-slate-600 hover:text-cyan-800 dark:text-zinc-400 dark:hover:text-cyan-200">
-                        View all posts
-                      </a>
-                    </div>
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      @for (suggestedPost of suggestedPosts(); track suggestedPost.id) {
-                        <a
-                          [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
-                          class="site-card-interactive group flex min-h-full flex-col overflow-hidden"
-                        >
-                          <span
-                            class="blog-image-reveal blog-post-image-frame relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-zinc-900">
-                            <img
-                              [src]="suggestedPostImage(suggestedPost)"
-                              [alt]="suggestedPost.title + ' thumbnail image'"
-                              class="blog-post-image-fill"
-                              loading="lazy"
-                            >
-                            <span
-                              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950/92 to-transparent px-3 pb-3 pt-8">
-                              <span
-                                class="inline-flex rounded border border-cyan-300/70 bg-zinc-950/70 px-2 py-1 text-xs font-semibold text-cyan-100">
-                                Read related post
-                              </span>
-                            </span>
-                          </span>
-                          <span class="flex flex-1 min-w-0 flex-col p-4">
-                            <span class="text-xs text-slate-500 dark:text-zinc-500">
-                              {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
-                            </span>
-                            <span
-                              class="mt-1 block text-lg font-semibold leading-6 text-slate-950 group-hover:text-cyan-800 dark:text-zinc-100 dark:group-hover:text-cyan-200">{{ suggestedPost.title }}</span>
-                            <span
-                              class="mt-2 line-clamp-3 block text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ suggestedPost.excerpt }}</span>
-                          </span>
-                        </a>
-                      }
-                    </div>
-                  </section>
-                }
               </footer>
-            </div>
           </div>
         } @else if (loadError(); as error) {
           <section
@@ -481,7 +445,7 @@ function normalizeHealthTerm(value: string): string {
     .blog-detail-footer-surface {
       border: 1px solid var(--site-border);
       background-color: var(--site-bg);
-      background-color: color-mix(in srgb, var(--site-bg) 88%, transparent);
+      background-color: color-mix(in srgb, var(--site-bg) 68%, transparent);
       box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.3);
     }
 
@@ -491,6 +455,27 @@ function normalizeHealthTerm(value: string): string {
 
     .blog-detail-footer-surface {
       padding: clamp(1rem, 2.5vw, 2rem);
+    }
+
+    @media (min-width: 1280px) {
+      .blog-detail-content-surface {
+        padding-inline: 0;
+      }
+
+      .blog-detail-reading-grid {
+        grid-template-columns: minmax(0, 18%) minmax(0, 54%) minmax(0, 24%);
+        column-gap: 2%;
+        row-gap: 1.5rem;
+      }
+
+      .blog-detail-right-rail {
+        position: sticky;
+        top: calc(var(--site-header-sticky-height) + 1rem);
+        align-self: start;
+        max-height: calc(100dvh - var(--site-header-sticky-height) - 2rem);
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+      }
     }
 
     @media (max-width: 639px) {
@@ -661,10 +646,15 @@ export class BlogDetailComponent {
 
     return post ? createBlogReadingStats(post) : null;
   });
-  protected readonly tableOfContents = computed(() => {
+  protected readonly layoutBlocks = computed(() => {
     const post = this.post();
 
-    return post ? createBlogTableOfContents(post.blocks) : [];
+    return createBlogPostLayoutBlocks(post?.blocks ?? []);
+  });
+  protected readonly contentBlocks = computed(() => this.layoutBlocks().content);
+  protected readonly railBlocks = computed(() => this.layoutBlocks().rail);
+  protected readonly tableOfContents = computed(() => {
+    return createBlogTableOfContents(this.contentBlocks());
   });
   protected readonly hasTableOfContents = computed(() => this.tableOfContents().length > 1);
   protected readonly showUpdatedDate = computed(() => {
@@ -732,6 +722,9 @@ export class BlogDetailComponent {
       .map(({post}) => post)
       .slice(0, 3);
   });
+  protected readonly hasRightRail = computed(() => (
+    this.railBlocks().length > 0 || this.suggestedPosts().length > 0
+  ));
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -928,10 +921,6 @@ export class BlogDetailComponent {
 
   private getPostDate(post: BlogPostSummary): string {
     return post.publishedAt ?? post.updatedAt;
-  }
-
-  protected suggestedPostImage(post: BlogPostSummary): string {
-    return resolveBlogPostImage(post);
   }
 
   protected createCurrentPostPath(slug: string): string {

@@ -263,14 +263,21 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       padding-block: clamp(2.25rem, 6vw, 5.75rem);
     }
 
+    .topic-hub-hero-copy {
+      min-width: 0;
+    }
+
     .topic-hub-hero-copy h1 {
       max-width: 46rem;
       color: var(--site-heading);
       font-family: var(--font-heading);
-      font-size: clamp(3rem, 8vw, 5.8rem);
+      font-size: clamp(2.65rem, 4.2vw, 3.9rem);
       font-weight: 650;
+      hyphens: none;
       letter-spacing: -0.045em;
       line-height: 0.98;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .topic-hub-hero-copy > p {
@@ -513,10 +520,6 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
 
       .topic-hub-grid {
         background-size: 4.5rem 4.5rem;
-      }
-
-      .topic-hub-hero-copy h1 {
-        font-size: clamp(2.7rem, 14vw, 4rem);
       }
 
       .topic-hub-actions {

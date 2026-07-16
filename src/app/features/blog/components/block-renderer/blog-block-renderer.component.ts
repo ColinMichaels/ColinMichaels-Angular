@@ -39,13 +39,16 @@ import {
   HEAR_THE_HOOK_EMBED_URL,
   normalizeBlogAppEmbedHeight,
 } from '../../utils/blog-embed.util';
+import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../utils/blog-suno-embed.util';
 import {BlogRichTextComponent} from '../rich-text/blog-rich-text.component';
+import {BlogPollComponent} from '../poll/blog-poll.component';
 
 interface RenderableBlogBlock {
   block: BlogContentBlock;
   safeEmbedUrl: SafeResourceUrl | null;
   externalUrl: string | null;
   isAppEmbed: boolean;
+  isSunoEmbed: boolean;
   appEmbedHeight: number;
   headingId: string | null;
   textHtml: string;
@@ -95,7 +98,7 @@ interface RenderableBlogImage {
 
 @Component({
   selector: 'app-blog-block-renderer',
-  imports: [FaIconComponent, CatCornerEasterEggComponent, BlogRichTextComponent],
+  imports: [FaIconComponent, CatCornerEasterEggComponent, BlogPollComponent, BlogRichTextComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300">
@@ -294,6 +297,14 @@ interface RenderableBlogImage {
               </section>
             }
           }
+          @case ('poll') {
+            <app-blog-poll
+              [block]="row.block"
+              [postId]="postId"
+              [postSlug]="postSlug"
+              [compact]="displayMode === 'rail'"
+            ></app-blog-poll>
+          }
           @case ('html') {
             @if (row.block.data.html) {
               @if (row.block.data.title) {
@@ -381,6 +392,31 @@ interface RenderableBlogImage {
                       rel="noopener noreferrer"
                       class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300 hover:text-cyan-100"
                     >Open interactive app</a>
+                  </div>
+                </figure>
+              } @else if (row.isSunoEmbed) {
+                <figure class="overflow-hidden rounded-lg border border-slate-200 bg-slate-950 shadow-lg shadow-slate-950/10 dark:border-zinc-800 dark:shadow-black/30">
+                  <iframe
+                    [src]="row.safeEmbedUrl"
+                    [title]="row.block.data.caption || 'Suno song player'"
+                    [style.height.px]="sunoEmbedHeight"
+                    class="block w-full bg-slate-950"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                  ></iframe>
+                  <div class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-2">
+                    @if (row.block.data.caption) {
+                      <figcaption class="text-sm text-zinc-400"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
+                    }
+                    <a
+                      [href]="row.externalUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex min-h-11 items-center text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                    >Listen on Suno</a>
                   </div>
                 </figure>
               } @else {
@@ -764,6 +800,9 @@ interface RenderableBlogImage {
 export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   @Input() blocks: readonly BlogContentBlock[] = [];
   @Input() fallbackAlt = 'Blog content';
+  @Input() postId = '';
+  @Input() postSlug = '';
+  @Input() displayMode: 'article' | 'rail' = 'article';
   @Input() anchorPath = '';
   @Input() activeHeadingId: string | null = null;
 
@@ -777,6 +816,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   protected readonly faDownload = faDownload;
   protected readonly faMagnifyingGlassPlus = faMagnifyingGlassPlus;
   protected readonly faXmark = faXmark;
+  protected readonly sunoEmbedHeight = SUNO_EMBED_HEIGHT;
 
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -801,6 +841,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     this.renderedBlocks = this.blocks.map(block => {
       const captionHtml = block.data.caption ?? '';
       const imageAlt = this.createImageAlt(block);
+      const sunoUrls = getBlogSunoEmbedUrls(block.data.embedUrl ?? block.data.url);
       let galleryIndex: number | null = null;
 
       if (block.type === 'image' && block.data.url) {
@@ -819,6 +860,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         safeEmbedUrl: this.createSafeEmbedUrl(block),
         externalUrl: this.createExternalUrl(block),
         isAppEmbed: getTrustedBlogAppEmbedUrl(block.data.embedUrl ?? block.data.url) !== null,
+        isSunoEmbed: sunoUrls !== null,
         appEmbedHeight: normalizeBlogAppEmbedHeight(block.data.height),
         headingId: headingIdMap.get(block.id) ?? null,
         textHtml: block.data.text ?? '',
@@ -1223,9 +1265,14 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
 
     const value = block.data.embedUrl ?? block.data.url;
     const appUrl = getTrustedBlogAppEmbedUrl(value);
-    const url = appUrl ?? this.createTrustedEmbedUrl(value);
+    const sunoUrl = getBlogSunoEmbedUrls(value)?.embedUrl ?? null;
+    const url = appUrl ?? sunoUrl ?? this.createTrustedEmbedUrl(value);
 
-    if (!url || url.protocol !== 'https:' || (!appUrl && !this.trustedEmbedHosts.has(url.hostname))) {
+    if (
+      !url
+      || url.protocol !== 'https:'
+      || (!appUrl && !sunoUrl && !this.trustedEmbedHosts.has(url.hostname))
+    ) {
       return null;
     }
 
@@ -1233,7 +1280,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   }
 
   private createExternalUrl(block: BlogContentBlock): string | null {
-    const url = this.parseHttpUrl(block.data.url ?? block.data.embedUrl);
+    const value = block.data.url ?? block.data.embedUrl;
+    const sunoUrl = getBlogSunoEmbedUrls(value)?.songUrl;
+    const url = sunoUrl ?? this.parseHttpUrl(value);
 
     return url?.toString() ?? null;
   }

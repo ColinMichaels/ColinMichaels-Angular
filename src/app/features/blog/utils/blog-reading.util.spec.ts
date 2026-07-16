@@ -81,6 +81,30 @@ describe('blog reading utilities', () => {
     });
   });
 
+  it('counts poll questions, supporting copy, and answer labels', () => {
+    const post = createPost({
+      excerpt: '',
+      blocks: [{
+        id: 'poll',
+        type: 'poll',
+        data: {
+          question: 'Which feature should ship next?',
+          description: 'Choose the most useful improvement.',
+          pollOptions: [
+            {id: 'search', label: 'Faster search'},
+            {id: 'themes', label: 'More themes'},
+          ],
+          pollResultsVisibility: 'afterVote',
+        },
+      }],
+    });
+
+    expect(createBlogReadingStats(post)).toEqual({
+      readingMinutes: 1,
+      wordCount: 14,
+    });
+  });
+
   it('only treats updates at least one day after publish as meaningful', () => {
     expect(hasMeaningfulPostUpdate(createPost())).toBeTrue();
     expect(hasMeaningfulPostUpdate(createPost({

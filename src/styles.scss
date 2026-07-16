@@ -371,8 +371,13 @@ app-site-header :is(h1, a, button),
   line-height: 1.14 !important;
 }
 
+/* Keep concise topic titles intact while allowing Reader Assistance scaling to wrap longer titles at spaces. */
 .public-reader-scope .topic-hub-page h1 {
-  font-size: clamp(3rem, calc(4.65rem * var(--reader-font-scale)), 6rem) !important;
+  font-size: clamp(
+    2.65rem,
+    calc(4.2vw * var(--reader-font-scale)),
+    calc(3.9rem * var(--reader-font-scale))
+  ) !important;
   line-height: 1.02 !important;
 }
 

@@ -30,7 +30,9 @@ import {CmsCodeBlockTool} from './tools/code-block.tool';
 import {CmsImageBlockTool, CmsImageLibrarySelection} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
 import {CmsMarkdownBlockTool} from './tools/markdown-block.tool';
+import {PollBlockTool} from './tools/poll-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
+import {SunoEmbedBlockTool} from './tools/suno-embed-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
 import {YouTubeEmbedBlockTool} from './tools/youtube-embed-block.tool';
 
@@ -47,6 +49,8 @@ interface EditorToolModules {
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
   ChartBlock: ToolConstructable;
+  PollBlock: ToolConstructable;
+  SunoEmbed: ToolConstructable;
   AppEmbedBlock: ToolConstructable;
   CatCornerUnlockBlock: ToolConstructable;
   HtmlBlock: ToolConstructable;
@@ -145,6 +149,8 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
     ChartBlock: ChartBlockTool as unknown as ToolConstructable,
+    PollBlock: PollBlockTool as unknown as ToolConstructable,
+    SunoEmbed: SunoEmbedBlockTool as unknown as ToolConstructable,
     AppEmbedBlock: AppEmbedBlockTool as unknown as ToolConstructable,
     CatCornerUnlockBlock: CatCornerUnlockBlockTool as unknown as ToolConstructable,
     HtmlBlock: HtmlBlockTool as unknown as ToolConstructable,
@@ -975,6 +981,12 @@ export class EditorJsComponent implements AfterViewInit {
           },
           chart: {
             class: tools.ChartBlock,
+          },
+          poll: {
+            class: tools.PollBlock,
+          },
+          sunoEmbed: {
+            class: tools.SunoEmbed,
           },
           appEmbed: {
             class: tools.AppEmbedBlock,

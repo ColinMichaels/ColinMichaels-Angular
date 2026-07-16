@@ -122,6 +122,89 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('round-trips Suno editor blocks through canonical song and player URLs', () => {
+    const songId = '44cd6eab-d6d7-4cb9-bea7-af398776556e';
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'suno-embed-1',
+          type: 'sunoEmbed',
+          data: {
+            url: `https://suno.com/embed/${songId}`,
+            caption: 'Some Memories Never Stop Playing',
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'suno-embed-1',
+        type: 'embed',
+        data: {
+          provider: 'suno',
+          url: `https://suno.com/song/${songId}`,
+          embedUrl: `https://suno.com/embed/${songId}`,
+          caption: 'Some Memories Never Stop Playing',
+          height: 240,
+        },
+      },
+    ]);
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'suno-embed-1',
+      type: 'sunoEmbed',
+      data: {
+        url: `https://suno.com/song/${songId}`,
+        caption: 'Some Memories Never Stop Playing',
+      },
+    });
+  });
+
+  it('round-trips poll definitions without result or vote state', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'poll-1',
+          type: 'poll',
+          data: {
+            placement: 'rail',
+            question: 'Which topic should I cover next?',
+            description: 'Choose one answer.',
+            pollOptions: [
+              {id: 'angular', label: 'Angular'},
+              {id: 'firebase', label: 'Firebase'},
+            ],
+            pollResultsVisibility: 'afterVote',
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'poll-1',
+        type: 'poll',
+        data: {
+          placement: 'rail',
+          question: 'Which topic should I cover next?',
+          description: 'Choose one answer.',
+          pollOptions: [
+            {id: 'angular', label: 'Angular'},
+            {id: 'firebase', label: 'Firebase'},
+          ],
+          pollResultsVisibility: 'afterVote',
+        },
+      },
+    ]);
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'poll-1',
+      type: 'poll',
+      data: blocks[0].data,
+    });
+  });
+
   it('normalizes custom stats, chart, and HTML editor blocks', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [
