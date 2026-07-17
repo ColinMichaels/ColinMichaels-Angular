@@ -11,6 +11,7 @@
   class="app-route-frame min-h-[100dvh] bg-zinc-800/70"
   [class.site-theme-scope]="showSiteHeader()"
   [class.public-reader-scope]="showReaderTools()"
+  [class.pb-28]="activeUserView()"
 >
   <router-outlet></router-outlet>
   @if (showReaderTools()) {
@@ -19,4 +20,5 @@
     }
   }
 </div>
+<app-user-view-banner/>
 <app-screen-saver-launcher/>

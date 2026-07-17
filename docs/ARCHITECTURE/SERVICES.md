@@ -1,5 +1,20 @@
 # Core Services
 
+## `auth.service.ts`
+
+- Responsibility:
+  Firebase sign-in/provider flows, claim refresh, current-profile projection, role authorization, and the admin-only tab-scoped **View as User** effective profile.
+- Dependencies:
+  Firebase Auth, `UserAccountService`, Angular Router, and session storage for the recoverable preview projection.
+- Called by:
+  route guards, site account controls, Profile, Cat Corner, admin navigation, the Admin Guide, and User Management.
+- Security boundary:
+  View as activation force-refreshes the real actor token and requires `admin`; the target profile changes Angular role and identity presentation only. Firebase requests retain the real actor token.
+- Current risks:
+  the preview cannot validate backend denials and must stay read-oriented; any new role consumer should use `getRoleAuthorization` or `getCurrentUserProfile` when it is expected to honor the effective view.
+- Planned cleanup:
+  add emulator-backed permission-matrix tests if diagnosis needs authoritative callable, Firestore, Storage, or Realtime Database enforcement for a target account.
+
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
 ## `author-repository.service.ts`

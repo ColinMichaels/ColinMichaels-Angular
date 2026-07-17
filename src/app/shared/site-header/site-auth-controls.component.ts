@@ -1,13 +1,12 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {NavigationEnd, Router, RouterLink} from '@angular/router';
-import {User} from 'firebase/auth';
 import {filter, map, startWith, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {AdminAuthorization, AuthService} from '../../services/auth.service';
 import {writeAuthDebug} from '../debug/auth-debug';
-import {ADMIN_CONSOLE_ROLES, CAT_CORNER_ACCESS_ROLES} from '../user-account/user-account.model';
+import {ADMIN_CONSOLE_ROLES, CAT_CORNER_ACCESS_ROLES, UserAccountProfile} from '../user-account/user-account.model';
 
 type AuthControlsVariant = 'desktop' | 'mobile';
 
@@ -245,10 +244,10 @@ export class SiteAuthControlsComponent {
     {initialValue: false}
   );
   protected readonly currentUser = toSignal(
-    this.authService.user$.pipe(
-      tap(user => this.debugHeader('account controls auth state resolved', {
-        signedIn: !!user,
-        user: user ? this.createUserDebugSummary(user) : null,
+    this.authService.getCurrentUserProfile().pipe(
+      tap(profile => this.debugHeader('account controls auth state resolved', {
+        signedIn: !!profile,
+        user: profile ? this.createUserDebugSummary(profile) : null,
       }))
     ),
     {initialValue: null}
@@ -269,14 +268,14 @@ export class SiteAuthControlsComponent {
     return currentUrl.startsWith('/') ? currentUrl : '/';
   }
 
-  private createUserDebugSummary(user: User): Record<string, unknown> {
+  private createUserDebugSummary(user: UserAccountProfile): Record<string, unknown> {
     return {
       uid: user.uid,
       email: user.email,
       displayName: user.displayName,
       emailVerified: user.emailVerified,
       isAnonymous: user.isAnonymous,
-      providerIds: user.providerData.map(provider => provider.providerId),
+      providerIds: user.providerIds,
     };
   }
 

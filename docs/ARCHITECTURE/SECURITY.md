@@ -97,6 +97,7 @@ tampered storage payloads can produce runtime errors or unintended behavior.
 
 - Firebase database rules are present; keep auth checks strict and avoid widening `.read` scopes.
 - Admin user management is restricted to Firebase Auth users with `admin: true` or `roles.admin: true`; `cmsAdmin` does not grant access to `/admin/users` or the user-management callable functions.
+- Admin **View as User** is a client-side effective-profile and role preview, not Firebase impersonation. Activation force-refreshes and verifies the actor's real `admin` claim, tab-scoped state is bound to that actor UID, and a persistent banner provides an exit path. Firebase callables and Security Rules still receive the actor's admin token, so the mode must not be used as proof of backend denial and mutations remain attributable to the administrator.
 - The admin overview can be entered by limited roles such as `contentEditor`, `mediaManager`, and `viewer`, but protected child routes still require their own route role data and matching backend/security-rule enforcement before exposing data.
 - Role updates are made through Firebase callable functions using the Admin SDK. The client must never write role or permission claims directly.
 - `claimCatCornerAccess` is a narrow self-service exception implemented with the Admin SDK: it accepts no caller-selected role and can only add `roles.catCornerAddict` to the authenticated caller while preserving unrelated claims. The Cat Corner role grants no CMS or administrative permission.
