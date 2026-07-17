@@ -33,6 +33,8 @@ Each `BlogSocialAnnouncement` includes:
 - optional link placement: main post, first comment, profile, or no link
 - optional native post format: text, link, image, video, reel, story, carousel, thread, or Community post, validated against the selected channel
 
+The shared Social Shares composer resolves image and video attachments through `BlogMediaUploaderComponent`. Editors can reuse a ready item from the Media Library, upload through the existing Firebase Storage pipeline, or paste a public HTTP(S) URL. The selected URL and explicit `mediaType` remain the only announcement fields persisted, so no media migration or duplicate attachment collection is required. Image uploads keep the existing 8 MB optimized blog-media path; video uploads use the Media Library path and its existing 25 MB Storage-rule limit.
+
 Multiple announcements can target the same channel. This allows a launch announcement plus later follow-up posts for an article that is already live.
 
 Announcements created before the native-promotion fields were added remain valid. Missing `linkPlacement` means the historical in-post link behavior; a saved `mediaUrl` without `mediaType` is treated as an image in the Calendar.
