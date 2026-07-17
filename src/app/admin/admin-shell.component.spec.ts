@@ -45,6 +45,7 @@ describe('AdminShellComponent', () => {
     expect(element.querySelector('app-admin-environment-badge')).not.toBeNull();
     expect(element.textContent).toContain('Firebase');
     expect(element.textContent).toContain('COLIN MICHAELS');
+    expect(element.textContent).toContain('Admin Guide');
     expect(element.textContent).toContain('Publishing');
     expect(element.textContent).toContain('Posts');
     expect(element.textContent).toContain('Bulk Editor');

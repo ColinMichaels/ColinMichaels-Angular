@@ -1,6 +1,7 @@
 import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {
   faCalendarDays,
+  faBookOpen,
   faComments,
   faGaugeHigh,
   faHouse,
@@ -44,6 +45,13 @@ export const ADMIN_NAVIGATION_GROUPS: readonly AdminNavigationGroup[] = [
         icon: faGaugeHigh,
         label: 'Overview',
         route: adminRoute,
+      },
+      {
+        access: 'all',
+        exact: true,
+        icon: faBookOpen,
+        label: 'Admin Guide',
+        route: `${adminRoute}/${PATH_NAMES.ADMIN_GUIDE}`,
       },
     ],
   },

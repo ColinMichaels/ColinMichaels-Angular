@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Admin Guide"
+  short_description: "Keep role-aware admin help current"
+  default_prompt: "Use $update-admin-guide to document the latest blog or admin feature in the role-aware Admin Guide."
