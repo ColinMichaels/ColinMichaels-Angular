@@ -28,6 +28,12 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./comment-moderation/comment-moderation-page.component').then(m => m.CommentModerationPageComponent),
       },
       {
+        path: PATH_NAMES.ADMIN_GUIDE,
+        canActivate: [AdminAuthGuard],
+        data: {roles: ADMIN_CONSOLE_ROLES},
+        loadComponent: () => import('./guide/admin-guide-page.component').then(m => m.AdminGuidePageComponent),
+      },
+      {
         path: '',
         canActivateChild: [AdminAuthGuard],
         data: {roles: ADMIN_CONSOLE_ROLES},

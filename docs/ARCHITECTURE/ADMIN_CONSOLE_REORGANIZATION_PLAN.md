@@ -12,6 +12,7 @@ Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation 
 
 - `AdminShellComponent` now owns a 224px desktop sidebar, an optional 72px icon-only collapsed state with hover/focus labels, a 64px utility header, a phone/tablet navigation drawer, the environment indicator, account links, the persistent `New Post` action, and the browser-tab title for the active admin URL. The desktop choice persists without changing the always-labeled mobile drawer.
 - `admin-navigation.config.ts` is the typed, role-aware source of truth for the five navigation groups and page titles.
+- The Workspace group includes a searchable `/admin/guide` operating manual whose task content, Common tasks, result counts, and direct links are filtered by the same shared role groups as their destination routes.
 - The public site header is excluded from `/admin/**`, leaving one navigation system inside the console.
 - Page-local Admin/Home/Blog navigation was removed from the Overview, Posts, Editor, Calendar, Comments, Users, Media, Homepage, Topics, Recommended Links, and access-denied surfaces.
 - The Overview is now an operations dashboard backed by repository post data: publishing counts, the next scheduled post, recent drafts, recently published work, and compact site-management links.
@@ -46,6 +47,7 @@ Keep the existing routes. Reorganize how they are presented rather than introduc
 ### Overview
 
 - Overview (`/admin`)
+- Admin Guide (`/admin/guide`)
 
 ### Publishing
 

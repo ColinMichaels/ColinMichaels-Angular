@@ -3,6 +3,7 @@ import {getAdminPageTitle} from './admin-navigation.config';
 describe('getAdminPageTitle', () => {
   it('returns the active admin section for browser and shell titles', () => {
     expect(getAdminPageTitle('/admin')).toBe('Overview');
+    expect(getAdminPageTitle('/admin/guide')).toBe('Admin Guide');
     expect(getAdminPageTitle('/admin/cms')).toBe('Posts');
     expect(getAdminPageTitle('/admin/cms/new')).toBe('New Post');
     expect(getAdminPageTitle('/admin/cms/example-post/edit')).toBe('Edit Post');
