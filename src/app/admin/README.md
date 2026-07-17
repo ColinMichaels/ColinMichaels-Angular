@@ -20,8 +20,12 @@ Component inventory:
 - `AdminSearchFieldComponent` standardizes the labeled search control used by Topics and Recommended Links while each manager continues to own its local filtering state.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
+- `AdminGuidePageComponent` provides the searchable `/admin/guide` operating manual with stable fragment links, clipboard sharing, direct protected-route actions, a desktop contents rail, and a mobile jump menu.
+- `admin-guide.content.ts` is the typed instruction source. It filters entries by the shared route-role constants before search, Common tasks, categories, and result counts are derived, so unauthorized workflows are absent rather than disabled.
 
 The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
+
+The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk Editor, Social Connections, Authors, Homepage, Topics, Recommended Links, Media Library, Comments, and Users. The checked-in `agents/skills/update-admin-guide` skill and its local `$update-admin-guide` installation define the required source, permission, test, documentation, and rendered-validation workflow after future blog or admin features change. See `docs/ARCHITECTURE/ADMIN_GUIDE.md` for the complete contract and rollback notes.
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 

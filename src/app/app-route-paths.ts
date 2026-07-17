@@ -1,6 +1,7 @@
 export const PATH_NAMES = {
   ADMIN: 'admin',
   ADMIN_ACCESS_DENIED: 'access-denied',
+  ADMIN_GUIDE: 'guide',
   ADMIN_CMS: 'cms',
   ADMIN_CMS_CONTENT_OPERATIONS: 'content-operations',
   ADMIN_CMS_CALENDAR: 'calendar',
