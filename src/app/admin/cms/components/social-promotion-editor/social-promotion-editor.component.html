@@ -173,7 +173,7 @@
             <h3 id="social-media-heading" class="mt-1 text-base font-semibold text-zinc-100">Give the platform something to show</h3>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="grid items-start gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
             <label class="space-y-2">
               <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Media type</span>
               <select
@@ -188,17 +188,29 @@
               </select>
             </label>
 
-            <label class="space-y-2">
-              <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Media URL</span>
-              <input
-                type="url"
-                class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+            @if (announcement.mediaType; as mediaType) {
+              <app-blog-media-uploader
+                [label]="mediaLabel(mediaType)"
+                description="Choose an existing Media Library item, upload a file, or paste a public URL."
+                [buttonLabel]="'Choose ' + mediaType"
+                [placeholder]="'Upload or paste a public ' + mediaType + ' URL'"
+                [previewAlt]="post().title"
+                [postSlug]="post().slug"
+                [assetRole]="'social-' + activeChannel()"
+                [accept]="mediaAccept(mediaType)"
+                [allowedMediaTypes]="allowedMediaTypes(mediaType)"
+                [maxSizeBytes]="mediaMaxSizeBytes(mediaType)"
+                [optimizeImages]="mediaType === 'image'"
+                [disabled]="isLifecycleReadOnly()"
                 [value]="announcement.mediaUrl ?? ''"
-                [disabled]="isLifecycleReadOnly() || !announcement.mediaType"
-                placeholder="https://… image or video"
-                (input)="onMediaUrlInput($event)"
-              >
-            </label>
+                (valueChange)="onMediaUrlChange($event)"
+              ></app-blog-media-uploader>
+            } @else {
+              <div
+                class="border border-dashed border-zinc-800 bg-zinc-950/50 px-4 py-5 text-sm leading-6 text-zinc-500">
+                Choose Image or Video to select an existing Media Library item, upload a file, or paste a public URL.
+              </div>
+            }
           </div>
 
           <div class="flex flex-wrap gap-2">
