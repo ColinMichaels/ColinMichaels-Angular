@@ -18,7 +18,11 @@ import {
   BlogMediaOptimizationOutputType,
   BlogMediaUploadResult,
 } from '../../services/blog-media-upload.service';
-import {MediaLibraryItem, MediaUploadEvent} from '../../../media-library/models/media-library.models';
+import {
+  MediaLibraryItem,
+  MediaType,
+  MediaUploadEvent,
+} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-library/services/media-library.service';
 
 @Component({
@@ -61,7 +65,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
         <button
           type="button"
           class="shrink-0 border border-cyan-400 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-          [disabled]="isDisabled || isUploading"
+          [disabled]="uploaderDisabled || isUploading"
           (click)="openPicker()"
         >
           {{ isUploading ? 'Uploading' : buttonLabel }}
@@ -75,7 +79,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
           class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
           [value]="value"
           [placeholder]="placeholder"
-          [disabled]="isDisabled"
+          [disabled]="uploaderDisabled"
           (input)="onUrlInput($event)"
           (blur)="markAsTouched()"
         >
@@ -107,12 +111,20 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
 
       @if (value) {
         <figure class="overflow-hidden border border-zinc-800 bg-black">
-          <button
-            type="button"
-            class="group relative flex w-full items-center justify-center text-left"
-            [attr.aria-label]="'Preview ' + label"
-            (click)="openLightbox()"
-          >
+          @if (currentMediaType === 'video') {
+            <video
+              class="max-h-56 w-full object-contain"
+              [src]="value"
+              controls
+              preload="metadata"
+            ></video>
+          } @else {
+            <button
+              type="button"
+              class="group relative flex w-full items-center justify-center text-left"
+              [attr.aria-label]="'Preview ' + label"
+              (click)="openLightbox()"
+            >
             <img
               class="max-h-56 max-w-full object-contain"
               [src]="value"
@@ -120,9 +132,10 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
               loading="lazy"
             >
             <span class="absolute inset-x-0 bottom-0 bg-zinc-950/80 px-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-              Preview image
+              Preview {{ mediaKindLabel }}
             </span>
-          </button>
+            </button>
+          }
         </figure>
       }
     </section>
@@ -158,11 +171,21 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
           </header>
 
           <div class="flex max-h-[78vh] items-center justify-center bg-black p-3">
-            <img
-              class="max-h-[74vh] max-w-full object-contain"
-              [src]="value"
-              [alt]="previewAlt"
-            >
+            @if (currentMediaType === 'video') {
+              <video
+                class="max-h-[74vh] max-w-full object-contain"
+                [src]="value"
+                controls
+                autoplay
+                preload="metadata"
+              ></video>
+            } @else {
+              <img
+                class="max-h-[74vh] max-w-full object-contain"
+                [src]="value"
+                [alt]="previewAlt"
+              >
+            }
           </div>
 
           <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 px-4 py-3 text-xs text-zinc-500">
@@ -199,7 +222,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
             <div class="min-w-0 space-y-1">
               <p class="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Media Library</p>
               <h2 class="text-xl font-semibold text-zinc-50">Choose {{ label }}</h2>
-              <p class="text-sm leading-6 text-zinc-400">Select an existing image or upload a new media item.</p>
+              <p class="text-sm leading-6 text-zinc-400">Select existing {{ mediaKindLabelPlural }} or upload a new media item.</p>
             </div>
             <button
               type="button"
@@ -242,7 +265,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                     <input
                       type="search"
                       class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                      placeholder="Search images, folders, tags..."
+                      [placeholder]="'Search ' + mediaKindLabelPlural + ', folders, tags...'"
                       [value]="pickerSearch"
                       (input)="onPickerSearchInput($event)"
                     >
@@ -259,14 +282,14 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                   } @else if (filteredLibraryItems.length === 0) {
                     <div class="flex min-h-[320px] items-center justify-center border border-dashed border-zinc-800 bg-zinc-900/40 p-8 text-center">
                       <div class="max-w-sm space-y-3">
-                        <p class="text-base font-medium text-zinc-100">No matching images</p>
-                        <p class="text-sm leading-6 text-zinc-500">Upload a new image or adjust the search to find an existing media item.</p>
+                        <p class="text-base font-medium text-zinc-100">No matching {{ mediaKindLabelPlural }}</p>
+                        <p class="text-sm leading-6 text-zinc-500">Upload new {{ mediaKindLabel }} or adjust the search to find an existing media item.</p>
                         <button
                           type="button"
                           class="border border-cyan-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
                           (click)="pickerMode = 'upload'"
                         >
-                          Upload Image
+                          Upload {{ mediaKindLabel }}
                         </button>
                       </div>
                     </div>
@@ -288,12 +311,21 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                               'aspect-[1200/630]': assetRole === 'open-graph'
                             }"
                           >
-                            <img
-                              class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
-                              [src]="getMediaItemThumbnailUrl(item)"
-                              [alt]="item.altText || item.displayName"
-                              loading="lazy"
-                            >
+                            @if (item.mediaType === 'video') {
+                              <video
+                                class="h-full w-full object-cover"
+                                [src]="getMediaItemThumbnailUrl(item)"
+                                muted
+                                preload="metadata"
+                              ></video>
+                            } @else {
+                              <img
+                                class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                                [src]="getMediaItemThumbnailUrl(item)"
+                                [alt]="item.altText || item.displayName"
+                                loading="lazy"
+                              >
+                            }
                           </span>
                           <span class="block space-y-1 p-3">
                             <span class="block truncate text-sm font-semibold text-zinc-100">{{ item.displayName }}</span>
@@ -317,7 +349,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                     type="file"
                     class="hidden"
                     [accept]="accept"
-                    [disabled]="isDisabled || isUploading"
+                    [disabled]="uploaderDisabled || isUploading"
                     (change)="onFileSelected($event)"
                   >
                   <section
@@ -332,15 +364,15 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                       <div class="mx-auto grid h-14 w-14 place-items-center border border-zinc-700 bg-zinc-950 text-2xl text-cyan-200">▧</div>
                       <div class="space-y-2">
                         <p class="text-lg font-semibold text-zinc-100">Upload a new media item</p>
-                        <p class="text-sm leading-6 text-zinc-500">Images are uploaded into the media library and applied to this field when complete.</p>
+                        <p class="text-sm leading-6 text-zinc-500">{{ uploadDescription }}</p>
                       </div>
                       <button
                         type="button"
                         class="border border-cyan-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                        [disabled]="isDisabled || isUploading"
+                        [disabled]="uploaderDisabled || isUploading"
                         (click)="pickerFileInput.click()"
                       >
-                        {{ isUploading ? 'Uploading' : 'Upload Image' }}
+                        {{ isUploading ? 'Uploading' : 'Upload ' + mediaKindLabel }}
                       </button>
                       @if (uploadFileName) {
                         <p class="text-xs text-zinc-500">{{ uploadFileName }}</p>
@@ -356,15 +388,24 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Selected</p>
                 @if (selectedLibraryItem; as selected) {
                   <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
-                    <img
-                      class="w-full object-contain"
-                      [ngClass]="{
-                        'aspect-[16/9]': assetRole !== 'open-graph',
-                        'aspect-[1200/630]': assetRole === 'open-graph'
-                      }"
-                      [src]="getMediaItemThumbnailUrl(selected)"
-                      [alt]="selected.altText || selected.displayName"
-                    >
+                    @if (selected.mediaType === 'video') {
+                      <video
+                        class="aspect-video w-full object-contain"
+                        [src]="getMediaItemThumbnailUrl(selected)"
+                        controls
+                        preload="metadata"
+                      ></video>
+                    } @else {
+                      <img
+                        class="w-full object-contain"
+                        [ngClass]="{
+                          'aspect-[16/9]': assetRole !== 'open-graph',
+                          'aspect-[1200/630]': assetRole === 'open-graph'
+                        }"
+                        [src]="getMediaItemThumbnailUrl(selected)"
+                        [alt]="selected.altText || selected.displayName"
+                      >
+                    }
                     <figcaption class="space-y-1 p-3">
                       <p class="truncate text-sm font-semibold text-zinc-100">{{ selected.displayName }}</p>
                       <p class="break-all text-xs leading-5 text-zinc-500">{{ getMediaItemUrl(selected) }}</p>
@@ -372,7 +413,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                   </figure>
                 } @else {
                   <div class="border border-dashed border-zinc-800 p-4 text-sm leading-6 text-zinc-500">
-                    Choose an image from the library to apply it to this field.
+                    Choose {{ mediaKindLabel }} from the library to apply it to this field.
                   </div>
                 }
               </div>
@@ -397,7 +438,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                   [disabled]="!selectedLibraryItem || isUploading"
                   (click)="applySelectedLibraryItem()"
                 >
-                  Use Selected Image
+                  Use Selected {{ mediaKindLabel }}
                 </button>
                 <button
                   type="button"
@@ -431,10 +472,13 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   @Input() optimizationQuality = 0.82;
   @Input() optimizationOutputType: BlogMediaOptimizationOutputType = 'image/webp';
   @Input() forceOptimizationOutputType = false;
+  @Input() allowedMediaTypes: readonly MediaType[] = ['image'];
+  @Input() disabled = false;
+  @Input() value = '';
 
   @Output() mediaUploaded = new EventEmitter<BlogMediaUploadResult>();
+  @Output() valueChange = new EventEmitter<string>();
 
-  protected value = '';
   protected isDisabled = false;
   protected isUploading = false;
   protected isDragging = false;
@@ -490,17 +534,40 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.isDisabled = isDisabled;
   }
 
+  protected get uploaderDisabled(): boolean {
+    return this.disabled || this.isDisabled;
+  }
+
+  protected get mediaKindLabel(): string {
+    const mediaType = this.allowedMediaTypes.length === 1 ? this.allowedMediaTypes[0] : 'media';
+    return `${mediaType.charAt(0).toUpperCase()}${mediaType.slice(1)}`;
+  }
+
+  protected get mediaKindLabelPlural(): string {
+    return this.allowedMediaTypes.length === 1 ? `${this.mediaKindLabel}s` : 'Media';
+  }
+
+  protected get uploadDescription(): string {
+    return `${this.mediaKindLabelPlural} are uploaded into the media library and applied to this field when complete.`;
+  }
+
+  protected get currentMediaType(): MediaType {
+    return this.findSelectedLibraryItem()?.mediaType
+      ?? (this.allowedMediaTypes.length === 1 ? this.allowedMediaTypes[0] : 'image');
+  }
+
   protected get filteredLibraryItems(): readonly MediaLibraryItem[] {
     const search = this.pickerSearch.trim().toLowerCase();
-    const imageItems = this.libraryItems
-      .filter(item => item.mediaType === 'image' && item.status === 'ready' && this.getMediaItemUrl(item))
+    const allowedTypes = new Set(this.allowedMediaTypes);
+    const mediaItems = this.libraryItems
+      .filter(item => allowedTypes.has(item.mediaType) && item.status === 'ready' && this.getMediaItemUrl(item))
       .sort((left, right) => (right.uploadedAt ?? '').localeCompare(left.uploadedAt ?? ''));
 
     if (!search) {
-      return imageItems;
+      return mediaItems;
     }
 
-    return imageItems.filter(item => [
+    return mediaItems.filter(item => [
       item.displayName,
       item.originalFileName,
       item.fileName,
@@ -512,7 +579,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   protected openPicker(): void {
-    if (this.isDisabled) {
+    if (this.uploaderDisabled) {
       return;
     }
 
@@ -546,6 +613,12 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   protected applyMediaItem(item: MediaLibraryItem): void {
+    if (!this.allowedMediaTypes.includes(item.mediaType)) {
+      this.errorMessage = `Choose a ${this.mediaKindLabel.toLowerCase()} file.`;
+      this.selectedLibraryItem = null;
+      return;
+    }
+
     const url = this.getMediaItemUrl(item);
 
     if (!url) {
@@ -592,7 +665,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   protected onDragOver(event: DragEvent): void {
     event.preventDefault();
 
-    if (!this.isDisabled && !this.isUploading) {
+    if (!this.uploaderDisabled && !this.isUploading) {
       this.isDragging = true;
     }
   }
@@ -606,7 +679,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     event.preventDefault();
     this.isDragging = false;
 
-    if (this.isDisabled || this.isUploading) {
+    if (this.uploaderDisabled || this.isUploading) {
       return;
     }
 
@@ -638,6 +711,16 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   private uploadFile(file: File): void {
+    const mediaType = this.mediaTypeForFile(file);
+    if (!mediaType || !this.allowedMediaTypes.includes(mediaType)) {
+      this.errorMessage = `Choose a ${this.mediaKindLabel.toLowerCase()} file.`;
+      return;
+    }
+    if (file.size > this.maxSizeBytes) {
+      this.errorMessage = `${this.mediaKindLabel.charAt(0).toUpperCase()}${this.mediaKindLabel.slice(1)} must be smaller than ${this.formatBytes(this.maxSizeBytes)}.`;
+      return;
+    }
+
     this.uploadSubscription?.unsubscribe();
     this.isUploading = true;
     this.uploadProgress = 0;
@@ -660,7 +743,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.uploadProgress = event.progress;
 
     if (event.status === 'failed') {
-      this.handleUploadError(event.error ?? 'Unable to upload image.');
+      this.handleUploadError(event.error ?? `Unable to upload ${this.mediaKindLabel}.`);
       return;
     }
 
@@ -681,7 +764,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.isUploading = false;
     this.errorMessage = error instanceof Error
       ? error.message
-      : typeof error === 'string' ? error : 'Unable to upload image.';
+      : typeof error === 'string' ? error : `Unable to upload ${this.mediaKindLabel}.`;
     this.optimizationMessage = '';
   }
 
@@ -690,6 +773,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.errorMessage = '';
     this.successMessage = '';
     this.optimizationMessage = '';
+    this.valueChange.emit(value);
     this.onChange(value);
   }
 
@@ -716,7 +800,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
       downloadUrl: this.getMediaItemUrl(item),
       storagePath: item.storagePath ?? '',
       originalName: (item.originalFileName ?? item.fileName ?? item.displayName) || fileName,
-      contentType: item.mimeType ?? 'image/*',
+      contentType: item.mimeType ?? `${item.mediaType}/*`,
       size,
       originalSize: size,
       optimized: false,
@@ -739,7 +823,27 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
       return null;
     }
 
-    return this.libraryItems.find(item => this.getMediaItemUrl(item) === this.value) ?? null;
+    return this.libraryItems.find(item => (
+      this.allowedMediaTypes.includes(item.mediaType)
+      && this.getMediaItemUrl(item) === this.value
+    )) ?? null;
+  }
+
+  private mediaTypeForFile(file: File): MediaType | null {
+    if (file.type.startsWith('image/')) {
+      return 'image';
+    }
+    if (file.type.startsWith('video/')) {
+      return 'video';
+    }
+    if (file.type.startsWith('audio/')) {
+      return 'audio';
+    }
+    if (file.type === 'application/pdf') {
+      return 'document';
+    }
+
+    return null;
   }
 
   private formatBytes(value: number): string {

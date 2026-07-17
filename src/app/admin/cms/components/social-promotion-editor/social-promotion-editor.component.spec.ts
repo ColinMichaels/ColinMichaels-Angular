@@ -1,6 +1,10 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {By} from '@angular/platform-browser';
+import {of} from 'rxjs';
 
 import {BlogPost} from '../../../../features/blog/models/blog-post.model';
+import {MediaLibraryService} from '../../../media-library/services/media-library.service';
+import {BlogMediaUploaderComponent} from '../media-uploader/blog-media-uploader.component';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {SocialPromotionEditorComponent} from './social-promotion-editor.component';
 
@@ -48,7 +52,16 @@ describe('SocialPromotionEditorComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [SocialPromotionEditorComponent],
-      providers: [{provide: BlogAiFunctionsService, useValue: aiFunctions}],
+      providers: [
+        {provide: BlogAiFunctionsService, useValue: aiFunctions},
+        {
+          provide: MediaLibraryService,
+          useValue: {
+            listenToMediaItems: () => of([]),
+            uploadFiles: jasmine.createSpy('uploadFiles'),
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SocialPromotionEditorComponent);
@@ -218,6 +231,38 @@ describe('SocialPromotionEditorComponent', () => {
 
     expect(findButton(fixture, 'Save social draft').disabled).toBeTrue();
     expect(fixture.nativeElement.textContent).toContain('complete public http(s) image or video URL');
+  });
+
+  it('reuses the media uploader for image and video attachments', () => {
+    let latestMediaType = '';
+    let latestMediaUrl = '';
+    fixture.componentInstance.promotionChange.subscribe(promotion => {
+      latestMediaType = promotion.announcements[0]?.mediaType ?? '';
+      latestMediaUrl = promotion.announcements[0]?.mediaUrl ?? '';
+    });
+
+    const selects = Array.from(fixture.nativeElement.querySelectorAll('select')) as HTMLSelectElement[];
+    const mediaTypeSelect = selects[2];
+    mediaTypeSelect.value = 'video';
+    mediaTypeSelect.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(latestMediaType).toBe('video');
+    expect(latestMediaUrl).toBe('');
+
+    const uploader = fixture.debugElement.query(By.directive(BlogMediaUploaderComponent))
+      .componentInstance as BlogMediaUploaderComponent;
+    expect(uploader.allowedMediaTypes).toEqual(['video']);
+    expect(uploader.accept).toBe('video/*');
+    expect(uploader.maxSizeBytes).toBe(25 * 1024 * 1024);
+
+    const videoUrl = 'https://cdn.example.com/social-video.mp4';
+    uploader.valueChange.emit(videoUrl);
+    fixture.detectChanges();
+
+    expect(latestMediaType).toBe('video');
+    expect(latestMediaUrl).toBe(videoUrl);
+    expect(fixture.nativeElement.querySelector('video')?.getAttribute('src')).toBe(videoUrl);
   });
 
   it('keeps queued and posted delivery history read-only', () => {

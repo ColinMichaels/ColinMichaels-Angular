@@ -47,6 +47,7 @@ import {
   BlogSocialAiSuggestion,
 } from '../../models/blog-social-ai.model';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
+import {BlogMediaUploaderComponent} from '../media-uploader/blog-media-uploader.component';
 
 export type SocialPromotionEditorMode = 'compose' | 'schedule';
 type EditableSocialChannel = Exclude<BlogSocialChannel, 'notify'>;
@@ -246,7 +247,7 @@ function toPublicMediaUrl(value: string): string {
 
 @Component({
   selector: 'app-social-promotion-editor',
-  imports: [CommonModule, FaIconComponent],
+  imports: [CommonModule, FaIconComponent, BlogMediaUploaderComponent],
   templateUrl: './social-promotion-editor.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -273,6 +274,8 @@ export class SocialPromotionEditorComponent {
   protected readonly linkPlacements = linkPlacementOptions;
   protected readonly mediaTypes = mediaTypeOptions;
   protected readonly statuses = statusOptions;
+  protected readonly maxSocialImageSizeBytes = 8 * 1024 * 1024;
+  protected readonly maxSocialVideoSizeBytes = 25 * 1024 * 1024;
 
   protected readonly activeChannel = signal<EditableSocialChannel>('facebook');
   protected readonly activeAnnouncement = signal<BlogSocialAnnouncement | null>(null);
@@ -508,13 +511,29 @@ export class SocialPromotionEditorComponent {
     const value = (event.target as HTMLSelectElement).value as BlogSocialMediaType | 'none';
     this.updateActive({
       mediaType: value === 'none' ? undefined : value,
-      ...(value === 'none' ? {mediaUrl: undefined} : {}),
+      mediaUrl: undefined,
     });
   }
 
-  protected onMediaUrlInput(event: Event): void {
-    const mediaUrl = (event.target as HTMLInputElement).value;
-    this.updateActive({mediaUrl: mediaUrl.trim() || undefined});
+  protected onMediaUrlChange(value: string): void {
+    const mediaUrl = value.trim();
+    this.updateActive({mediaUrl: mediaUrl || undefined});
+  }
+
+  protected allowedMediaTypes(mediaType: BlogSocialMediaType): readonly BlogSocialMediaType[] {
+    return [mediaType];
+  }
+
+  protected mediaAccept(mediaType: BlogSocialMediaType): string {
+    return mediaType === 'video' ? 'video/*' : 'image/*';
+  }
+
+  protected mediaMaxSizeBytes(mediaType: BlogSocialMediaType): number {
+    return mediaType === 'video' ? this.maxSocialVideoSizeBytes : this.maxSocialImageSizeBytes;
+  }
+
+  protected mediaLabel(mediaType: BlogSocialMediaType): string {
+    return mediaType === 'video' ? 'Social video' : 'Social image';
   }
 
   protected usePostImage(value: string): void {

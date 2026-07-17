@@ -49,8 +49,25 @@ const uploadedImage: MediaLibraryItem = {
   altText: 'Uploaded social image',
 };
 
+const existingVideo: MediaLibraryItem = {
+  ...existingImage,
+  id: 'media-video',
+  displayName: 'Existing social video',
+  originalFileName: 'existing-social.mp4',
+  fileName: 'existing-social.mp4',
+  extension: 'mp4',
+  mediaType: 'video',
+  mimeType: 'video/mp4',
+  thumbnailUrl: undefined,
+  previewUrl: 'https://cdn.example.com/existing-social.mp4',
+  originalUrl: 'https://cdn.example.com/existing-social.mp4',
+  downloadUrl: 'https://cdn.example.com/existing-social.mp4',
+  durationMs: 12_000,
+  altText: null,
+};
+
 class MockMediaLibraryService {
-  readonly items$ = new BehaviorSubject<readonly MediaLibraryItem[]>([existingImage]);
+  readonly items$ = new BehaviorSubject<readonly MediaLibraryItem[]>([existingImage, existingVideo]);
   readonly uploadFiles = jasmine.createSpy('uploadFiles').and.returnValue(of({
     fileName: 'uploaded-social.jpg',
     progress: 100,
@@ -134,6 +151,50 @@ describe('BlogMediaUploaderComponent', () => {
     expect(onChange).toHaveBeenCalledWith('/assets/images/backgrounds/night.jpg');
     expect(queryInputValue('input[type="text"]')).toBe('/assets/images/backgrounds/night.jpg');
     expect(queryText()).toContain('Uploaded uploaded-social.jpg to the media library.');
+  });
+
+  it('filters the picker to allowed videos and applies an existing video', () => {
+    const onChange = jasmine.createSpy('onChange');
+    const valueChange = jasmine.createSpy('valueChange');
+    fixture.componentInstance.registerOnChange(onChange);
+    fixture.componentInstance.valueChange.subscribe(valueChange);
+    fixture.componentRef.setInput('buttonLabel', 'Choose Video');
+    fixture.componentRef.setInput('allowedMediaTypes', ['video']);
+    fixture.componentRef.setInput('accept', 'video/*');
+    fixture.detectChanges();
+
+    clickButtonByText('Choose Video');
+    fixture.detectChanges();
+
+    expect(queryText()).toContain('Existing social video');
+    expect(queryText()).not.toContain('Existing hero image');
+
+    clickButtonByText('Existing social video');
+    fixture.detectChanges();
+    clickButtonByText('Use Selected Video');
+    fixture.detectChanges();
+
+    const videoUrl = 'https://cdn.example.com/existing-social.mp4';
+    expect(onChange).toHaveBeenCalledWith(videoUrl);
+    expect(valueChange).toHaveBeenCalledWith(videoUrl);
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLVideoElement>('video')?.src).toBe(videoUrl);
+  });
+
+  it('does not preselect an existing item with a disallowed media type', () => {
+    fixture.componentRef.setInput('value', existingImage.downloadUrl ?? '');
+    fixture.componentRef.setInput('buttonLabel', 'Choose Video');
+    fixture.componentRef.setInput('allowedMediaTypes', ['video']);
+    fixture.detectChanges();
+
+    clickButtonByText('Choose Video');
+    fixture.detectChanges();
+
+    const applyButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')
+    ).find(candidate => candidate.textContent?.includes('Use Selected Video'));
+
+    expect(queryText()).not.toContain('Existing hero image');
+    expect(applyButton?.disabled).toBeTrue();
   });
 
   function clickButtonByText(text: string): void {
