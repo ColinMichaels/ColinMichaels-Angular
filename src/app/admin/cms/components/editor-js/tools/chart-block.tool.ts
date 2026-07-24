@@ -155,11 +155,17 @@ export class ChartBlockTool implements BlockTool {
     const unit = getFieldValue(block, '[data-chart-unit]');
     const chartType = toChartType(block.querySelector<HTMLSelectElement>('[data-chart-type]')?.value);
     const chartPoints = [...block.querySelectorAll<HTMLElement>('[data-chart-point-row]')]
-      .map((row, index) => ({
-        label: getFieldValue(row, '[data-chart-point-label]') || `Point ${index + 1}`,
-        value: Number(getFieldValue(row, '[data-chart-point-value]')),
-        note: getFieldValue(row, '[data-chart-point-note]'),
-      }))
+      .map((row, index) => {
+        const rawValue = getFieldValue(row, '[data-chart-point-value]');
+        const series = getFieldValue(row, '[data-chart-point-series]');
+
+        return {
+          label: getFieldValue(row, '[data-chart-point-label]') || `Point ${index + 1}`,
+          value: rawValue ? Number(rawValue) : Number.NaN,
+          note: getFieldValue(row, '[data-chart-point-note]'),
+          ...(series ? {series} : {}),
+        };
+      })
       .filter(point => Number.isFinite(point.value));
 
     return {
@@ -179,10 +185,13 @@ export class ChartBlockTool implements BlockTool {
 function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): HTMLElement {
   const row = document.createElement('div');
   row.dataset['chartPointRow'] = 'true';
-  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
+  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,.45fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
 
   const label = createInput('Label', 'Mustang GT', point?.label ?? '', readOnly);
   setFieldDataset(label, 'chartPointLabel');
+
+  const series = createInput('Series', 'Optional group', point?.series ?? '', readOnly);
+  setFieldDataset(series, 'chartPointSeries');
 
   const value = createInput(
     'Value',
@@ -208,7 +217,7 @@ function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): H
   setFieldDataset(note, 'chartPointNote');
   note.style.gridColumn = '1 / -1';
 
-  row.append(label, value, removeButton, note);
+  row.append(label, series, value, removeButton, note);
 
   return row;
 }
@@ -223,7 +232,7 @@ function createChartImportPanel(readOnly: boolean, replaceRows: (points: readonl
   heading.style.cssText = 'margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#075985';
 
   const helpText = document.createElement('p');
-  helpText.textContent = 'Required fields: label and numeric value. Optional field: note. Paste CSV with a header row like label,value,note, or use JSON with a chartPoints, points, rows, items, or data array.';
+  helpText.textContent = 'Required fields: label and numeric value. Optional fields: series and note. Paste CSV with a header row like label,value,series,note, use a chartPoints array, or paste Chart.js labels/datasets JSON.';
   helpText.style.cssText = 'margin:0 0 8px;font-size:12px;line-height:1.45;color:#0c4a6e';
 
   const formatText = document.createElement('p');
@@ -390,6 +399,7 @@ function normalizeChartData(data: ChartBlockData | undefined): Required<ChartBlo
         label: typeof point.label === 'string' && point.label.trim() ? point.label.trim() : `Point ${index + 1}`,
         value: typeof point.value === 'number' && Number.isFinite(point.value) ? point.value : Number.NaN,
         note: typeof point.note === 'string' ? point.note.trim() : '',
+        series: typeof point.series === 'string' ? point.series.trim() : '',
       }))
       .filter(point => Number.isFinite(point.value))
     : [];

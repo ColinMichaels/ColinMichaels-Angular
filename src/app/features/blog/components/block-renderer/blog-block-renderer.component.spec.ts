@@ -506,6 +506,37 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.querySelector('[aria-label^="Power by Trim"]')).not.toBeNull();
   });
 
+  it('renders independent lines and a legend for multi-series chart points', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'chart-series-1',
+        type: 'chart',
+        data: {
+          title: 'Title trends',
+          chartType: 'line',
+          unit: '%',
+          chartPoints: [
+            {label: '1995–2004', value: 18, series: 'One-word titles'},
+            {label: '1995–2004', value: 5.3, series: 'Titles using love'},
+            {label: '2015–2024', value: 28.2, series: 'One-word titles'},
+            {label: '2015–2024', value: 3, series: 'Titles using love'},
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const legend = element.querySelector<HTMLElement>('[aria-label="Chart legend"]');
+    const chart = element.querySelector<SVGElement>('svg[role="img"]');
+
+    expect(legend?.textContent).toContain('One-word titles');
+    expect(legend?.textContent).toContain('Titles using love');
+    expect(chart?.querySelectorAll('polyline').length).toBe(2);
+    expect(chart?.querySelectorAll('circle').length).toBe(4);
+    expect(chart?.getAttribute('aria-label')).toContain('One-word titles, 1995–2004: 18 %');
+  });
+
   it('renders sanitized custom HTML blocks', () => {
     fixture.componentRef.setInput('blocks', [
       {
