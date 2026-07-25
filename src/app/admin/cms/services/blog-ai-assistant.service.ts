@@ -163,6 +163,15 @@ export class BlogAiAssistantService {
           data.caption,
           data.unit,
           ...(data.chartPoints ?? []).flatMap(point => [point.label, String(point.value), point.note]),
+          ...(data.labels ?? []),
+          ...(data.datasets ?? []).flatMap(dataset => [
+            dataset.label,
+            ...dataset.data.map(value => value === null ? '' : String(value)),
+          ]),
+          data.xAxisTitle,
+          data.yAxisTitle,
+          data.sourceLabel,
+          data.accessibilitySummary,
         ].filter(Boolean).join(' ');
       case 'poll':
         return [

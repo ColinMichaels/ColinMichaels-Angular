@@ -118,7 +118,7 @@ Supported custom content blocks:
 
 - Code: multi-line snippets with optional language labels, soft-wrapped CMS previews, and reader-facing copy actions on public posts
 - Stats: repeated label/value/caption items for specification snapshots and key metrics, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
-- Chart: simple bar or line charts with visible point labels, values, units, notes, and captions, with CSV/JSON file import, pasted comma-separated row import, required-field help, and downloadable examples
+- Chart: Chart.js bar or line charts that support the original single-series point editor plus JSON-backed labels and multiple datasets, per-series colors, legends, axis titles and bounds, value formatting, source links, accessible summaries/tables, CSV/JSON point import, required-field help, and downloadable examples
 - Poll: two to eight stable answer options, authenticated one-vote-per-account updates, `afterVote`, `always`, or `hidden` result visibility enforced by backend callables, and an author-controlled right-rail or inline article placement; see `docs/ARCHITECTURE/EDITORJS_POLLS.md` and `docs/ARCHITECTURE/BLOG_READING_RAILS.md`
 - Suno Song: an exact Suno song/embed URL plus optional caption, normalized into the existing typed blog embed model and rendered with a responsive sandboxed player and direct fallback; see `docs/ARCHITECTURE/EDITORJS_SUNO_EMBEDS.md`
 - HTML: sanitized custom markup for one-off sections such as spec tables or static SVG snippets; scripts and unsafe markup are not rendered

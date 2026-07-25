@@ -597,4 +597,76 @@ describe('blog-editorjs-adapter', () => {
       },
     ]);
   });
+
+  it('preserves Chart.js labels, datasets, axes, formatting, sources, and accessibility metadata', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'chart-datasets',
+        type: 'chart',
+        data: {
+          title: 'Song titles compressed while love lost share',
+          caption: 'Thirty years of Billboard titles.',
+          chartType: 'line',
+          labels: ['1995–2004', '2005–2014', '2015–2024'],
+          datasets: [
+            {
+              label: 'One-word titles',
+              data: [18, 22.6, 28.2],
+              borderColor: '#22d3ee',
+              backgroundColor: 'rgba(34, 211, 238, 0.72)',
+            },
+            {
+              label: 'Titles containing love',
+              data: [5.3, 4.7, 3],
+              borderColor: '#f472b6',
+              backgroundColor: 'rgba(244, 114, 182, 0.72)',
+            },
+          ],
+          xAxisTitle: 'Billboard year-end era',
+          yAxisTitle: 'Share of titles',
+          yMax: 30,
+          valueSuffix: '%',
+          decimals: 1,
+          showLegend: true,
+          sourceLabel: 'Billboard Year-End Hot 100 lists',
+          sourceUrl: 'https://example.com/billboard',
+          accessibilitySummary: 'One-word titles rose while love-title share fell.',
+        },
+      }],
+    });
+
+    expect(blocks[0].data).toEqual({
+      title: 'Song titles compressed while love lost share',
+      caption: 'Thirty years of Billboard titles.',
+      chartType: 'line',
+      unit: '',
+      chartPoints: [],
+      labels: ['1995–2004', '2005–2014', '2015–2024'],
+      datasets: [
+        {
+          label: 'One-word titles',
+          data: [18, 22.6, 28.2],
+          borderColor: '#22d3ee',
+          backgroundColor: 'rgba(34, 211, 238, 0.72)',
+        },
+        {
+          label: 'Titles containing love',
+          data: [5.3, 4.7, 3],
+          borderColor: '#f472b6',
+          backgroundColor: 'rgba(244, 114, 182, 0.72)',
+        },
+      ],
+      xAxisTitle: 'Billboard year-end era',
+      yAxisTitle: 'Share of titles',
+      yMax: 30,
+      valueSuffix: '%',
+      decimals: 1,
+      showLegend: true,
+      sourceLabel: 'Billboard Year-End Hot 100 lists',
+      sourceUrl: 'https://example.com/billboard',
+      accessibilitySummary: 'One-word titles rose while love-title share fell.',
+    });
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0].data).toEqual(blocks[0].data);
+  });
 });

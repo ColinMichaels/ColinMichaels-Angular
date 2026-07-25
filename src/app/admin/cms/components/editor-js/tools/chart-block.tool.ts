@@ -2,6 +2,7 @@ import type {BlockTool, BlockToolConstructorOptions, SanitizerConfig} from '@edi
 
 import {
   BLOG_CHART_TYPES,
+  BlogChartDataset,
   BlogChartPoint,
   BlogChartType,
 } from '../../../../../features/blog/models/blog-post.model';
@@ -19,6 +20,36 @@ export interface ChartBlockData {
   chartType?: BlogChartType;
   unit?: string;
   chartPoints?: readonly BlogChartPoint[];
+  labels?: readonly string[];
+  datasets?: readonly BlogChartDataset[];
+  xAxisTitle?: string;
+  yAxisTitle?: string;
+  yMax?: number;
+  valueSuffix?: string;
+  decimals?: number;
+  showLegend?: boolean;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  accessibilitySummary?: string;
+}
+
+interface NormalizedChartBlockData {
+  title: string;
+  caption: string;
+  chartType: BlogChartType;
+  unit: string;
+  chartPoints: readonly BlogChartPoint[];
+  labels: readonly string[];
+  datasets: readonly BlogChartDataset[];
+  xAxisTitle: string;
+  yAxisTitle: string;
+  yMax: number | undefined;
+  valueSuffix: string;
+  decimals: number | undefined;
+  showLegend: boolean | undefined;
+  sourceLabel: string;
+  sourceUrl: string;
+  accessibilitySummary: string;
 }
 
 const textFieldSanitizer: SanitizerConfig = {};
@@ -43,6 +74,17 @@ export class ChartBlockTool implements BlockTool {
       unit: textFieldSanitizer,
       chartType: textFieldSanitizer,
       chartPoints: textFieldSanitizer,
+      labels: textFieldSanitizer,
+      datasets: textFieldSanitizer,
+      xAxisTitle: textFieldSanitizer,
+      yAxisTitle: textFieldSanitizer,
+      yMax: textFieldSanitizer,
+      valueSuffix: textFieldSanitizer,
+      decimals: textFieldSanitizer,
+      showLegend: textFieldSanitizer,
+      sourceLabel: textFieldSanitizer,
+      sourceUrl: textFieldSanitizer,
+      accessibilitySummary: textFieldSanitizer,
     };
   }
 
@@ -50,7 +92,7 @@ export class ChartBlockTool implements BlockTool {
     return true;
   }
 
-  private readonly data: Required<ChartBlockData>;
+  private readonly data: NormalizedChartBlockData;
   private readonly readOnly: boolean;
 
   constructor(options: BlockToolConstructorOptions<ChartBlockData>) {
@@ -106,6 +148,7 @@ export class ChartBlockTool implements BlockTool {
     const list = document.createElement('div');
     list.dataset['chartPointList'] = 'true';
     list.style.cssText = 'display:grid;gap:10px;margin-top:12px';
+    const hasDatasets = this.data.datasets.length > 0;
 
     const addRow = (point?: BlogChartPoint): void => {
       list.append(createPointRow(point, this.readOnly));
@@ -127,24 +170,29 @@ export class ChartBlockTool implements BlockTool {
       addRow(point);
     }
 
-    if (this.data.chartPoints.length === 0) {
+    if (this.data.chartPoints.length === 0 && !hasDatasets) {
       addRow();
     }
+
+    list.hidden = hasDatasets;
 
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.textContent = 'Add point';
     addButton.disabled = this.readOnly;
+    addButton.hidden = hasDatasets;
     addButton.style.cssText = 'margin-top:12px;border:1px solid #38bdf8;background:#f0f9ff;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;color:#0c4a6e;cursor:pointer';
     addButton.addEventListener('click', () => addRow());
 
     const importPanel = createChartImportPanel(this.readOnly, replaceRows);
+    importPanel.hidden = hasDatasets;
+    const chartJsPanel = createChartJsPanel(this.data, this.readOnly);
 
     const caption = createTextArea('Caption', 'Optional chart note or data source...', this.data.caption, this.readOnly, 2);
     setFieldDataset(caption, 'chartCaption');
     caption.style.marginTop = '12px';
 
-    wrapper.append(header, meta, list, addButton, importPanel, caption);
+    wrapper.append(header, meta, list, addButton, importPanel, chartJsPanel, caption);
 
     return wrapper;
   }
@@ -155,43 +203,70 @@ export class ChartBlockTool implements BlockTool {
     const unit = getFieldValue(block, '[data-chart-unit]');
     const chartType = toChartType(block.querySelector<HTMLSelectElement>('[data-chart-type]')?.value);
     const chartPoints = [...block.querySelectorAll<HTMLElement>('[data-chart-point-row]')]
-      .map((row, index) => {
-        const rawValue = getFieldValue(row, '[data-chart-point-value]');
-        const series = getFieldValue(row, '[data-chart-point-series]');
+      .flatMap((row, index) => {
+        const value = getFieldValue(row, '[data-chart-point-value]');
 
-        return {
-          label: getFieldValue(row, '[data-chart-point-label]') || `Point ${index + 1}`,
-          value: rawValue ? Number(rawValue) : Number.NaN,
-          note: getFieldValue(row, '[data-chart-point-note]'),
-          ...(series ? {series} : {}),
-        };
-      })
-      .filter(point => Number.isFinite(point.value));
+        if (!value) {
+          return [];
+        }
+
+        const numericValue = Number(value);
+
+        return Number.isFinite(numericValue)
+          ? [{
+            label: getFieldValue(row, '[data-chart-point-label]') || `Point ${index + 1}`,
+            value: numericValue,
+            note: getFieldValue(row, '[data-chart-point-note]'),
+          }]
+          : [];
+      });
+    const chartJsConfiguration = parseChartJsConfiguration(
+      getFieldValue(block, '[data-chart-js-configuration]')
+    );
+    const labels = chartJsConfiguration?.labels ?? this.data.labels;
+    const datasets = chartJsConfiguration?.datasets ?? this.data.datasets;
+    const xAxisTitle = getFieldValue(block, '[data-chart-x-axis-title]');
+    const yAxisTitle = getFieldValue(block, '[data-chart-y-axis-title]');
+    const yMax = getOptionalNumberFieldValue(block, '[data-chart-y-max]');
+    const valueSuffix = getFieldValue(block, '[data-chart-value-suffix]');
+    const decimals = getOptionalNumberFieldValue(block, '[data-chart-decimals]');
+    const showLegend = block.querySelector<HTMLInputElement>('[data-chart-show-legend]')?.checked;
+    const sourceLabel = getFieldValue(block, '[data-chart-source-label]');
+    const sourceUrl = getFieldValue(block, '[data-chart-source-url]');
+    const accessibilitySummary = getFieldValue(block, '[data-chart-accessibility-summary]');
 
     return {
       title,
       caption,
       chartType,
       unit,
-      chartPoints,
+      ...(datasets.length > 0 ? {labels, datasets} : {chartPoints}),
+      ...(xAxisTitle ? {xAxisTitle} : {}),
+      ...(yAxisTitle ? {yAxisTitle} : {}),
+      ...(yMax !== undefined ? {yMax} : {}),
+      ...(valueSuffix ? {valueSuffix} : {}),
+      ...(decimals !== undefined ? {decimals} : {}),
+      ...(showLegend !== undefined ? {showLegend} : {}),
+      ...(sourceLabel ? {sourceLabel} : {}),
+      ...(sourceUrl ? {sourceUrl} : {}),
+      ...(accessibilitySummary ? {accessibilitySummary} : {}),
     };
   }
 
   validate(data: ChartBlockData): boolean {
-    return normalizeChartData(data).chartPoints.length > 0;
+    const normalized = normalizeChartData(data);
+    return normalized.chartPoints.length > 0
+      || (normalized.labels.length > 0 && normalized.datasets.length > 0);
   }
 }
 
 function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): HTMLElement {
   const row = document.createElement('div');
   row.dataset['chartPointRow'] = 'true';
-  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,.45fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
+  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
 
   const label = createInput('Label', 'Mustang GT', point?.label ?? '', readOnly);
   setFieldDataset(label, 'chartPointLabel');
-
-  const series = createInput('Series', 'Optional group', point?.series ?? '', readOnly);
-  setFieldDataset(series, 'chartPointSeries');
 
   const value = createInput(
     'Value',
@@ -217,9 +292,73 @@ function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): H
   setFieldDataset(note, 'chartPointNote');
   note.style.gridColumn = '1 / -1';
 
-  row.append(label, series, value, removeButton, note);
+  row.append(label, value, removeButton, note);
 
   return row;
+}
+
+function createChartJsPanel(data: NormalizedChartBlockData, readOnly: boolean): HTMLElement {
+  const panel = document.createElement('section');
+  panel.setAttribute('aria-label', 'Chart.js dataset configuration');
+  panel.style.cssText = 'margin-top:12px;border:1px solid #bae6fd;background:#f8fafc;padding:12px';
+
+  const heading = document.createElement('p');
+  heading.textContent = 'Chart.js datasets';
+  heading.style.cssText = 'margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#075985';
+
+  const helpText = document.createElement('p');
+  helpText.textContent = 'Use labels plus one or more datasets for grouped bars or multiple lines. Leave this blank to use the simple point editor above.';
+  helpText.style.cssText = 'margin:0 0 10px;font-size:12px;line-height:1.45;color:#0c4a6e';
+
+  const configuration = createTextArea(
+    'Labels and datasets JSON',
+    '{\n  "labels": ["Q1", "Q2"],\n  "datasets": [{"label": "Series", "data": [10, 12]}]\n}',
+    data.datasets.length > 0
+      ? JSON.stringify({labels: data.labels, datasets: data.datasets}, null, 2)
+      : '',
+    readOnly,
+    9
+  );
+  setFieldDataset(configuration, 'chartJsConfiguration');
+
+  const axes = document.createElement('div');
+  axes.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:10px';
+
+  const xAxisTitle = createInput('X-axis title', 'Billboard year-end era', data.xAxisTitle, readOnly);
+  setFieldDataset(xAxisTitle, 'chartXAxisTitle');
+  const yAxisTitle = createInput('Y-axis title', 'Share of titles', data.yAxisTitle, readOnly);
+  setFieldDataset(yAxisTitle, 'chartYAxisTitle');
+  const yMax = createNumberInput('Y-axis maximum', '30', data.yMax, readOnly);
+  setFieldDataset(yMax, 'chartYMax');
+  const valueSuffix = createInput('Value suffix', '%', data.valueSuffix, readOnly);
+  setFieldDataset(valueSuffix, 'chartValueSuffix');
+  const decimals = createNumberInput('Decimal places', '1', data.decimals, readOnly, 0, 6);
+  setFieldDataset(decimals, 'chartDecimals');
+  const showLegend = createCheckbox('Show dataset legend', data.showLegend ?? data.datasets.length > 1, readOnly);
+  showLegend.querySelector<HTMLInputElement>('input')!.dataset['chartShowLegend'] = 'true';
+  axes.append(xAxisTitle, yAxisTitle, yMax, valueSuffix, decimals, showLegend);
+
+  const sourceFields = document.createElement('div');
+  sourceFields.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:10px';
+  const sourceLabel = createInput('Source label', 'Billboard analysis', data.sourceLabel, readOnly);
+  setFieldDataset(sourceLabel, 'chartSourceLabel');
+  const sourceUrl = createInput('Source URL', 'https://example.com/data', data.sourceUrl, readOnly);
+  setFieldDataset(sourceUrl, 'chartSourceUrl');
+  sourceFields.append(sourceLabel, sourceUrl);
+
+  const accessibilitySummary = createTextArea(
+    'Accessibility summary',
+    'Summarize the main comparison and trend for readers who cannot see the chart.',
+    data.accessibilitySummary,
+    readOnly,
+    2
+  );
+  setFieldDataset(accessibilitySummary, 'chartAccessibilitySummary');
+  accessibilitySummary.style.marginTop = '10px';
+
+  panel.append(heading, helpText, configuration, axes, sourceFields, accessibilitySummary);
+
+  return panel;
 }
 
 function createChartImportPanel(readOnly: boolean, replaceRows: (points: readonly BlogChartPoint[]) => void): HTMLElement {
@@ -232,7 +371,7 @@ function createChartImportPanel(readOnly: boolean, replaceRows: (points: readonl
   heading.style.cssText = 'margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#075985';
 
   const helpText = document.createElement('p');
-  helpText.textContent = 'Required fields: label and numeric value. Optional fields: series and note. Paste CSV with a header row like label,value,series,note, use a chartPoints array, or paste Chart.js labels/datasets JSON.';
+  helpText.textContent = 'Required fields: label and numeric value. Optional field: note. Paste CSV with a header row like label,value,note, or use JSON with a chartPoints, points, rows, items, or data array.';
   helpText.style.cssText = 'margin:0 0 8px;font-size:12px;line-height:1.45;color:#0c4a6e';
 
   const formatText = document.createElement('p');
@@ -354,6 +493,49 @@ function createInput(labelText: string, placeholder: string, value: string, read
   return label;
 }
 
+function createNumberInput(
+  labelText: string,
+  placeholder: string,
+  value: number | undefined,
+  readOnly: boolean,
+  min?: number,
+  max?: number
+): HTMLLabelElement {
+  const label = createInput(labelText, placeholder, value === undefined ? '' : String(value), readOnly);
+  const input = label.querySelector<HTMLInputElement>('input');
+
+  if (input) {
+    input.type = 'number';
+    input.step = 'any';
+
+    if (min !== undefined) {
+      input.min = String(min);
+    }
+
+    if (max !== undefined) {
+      input.max = String(max);
+    }
+  }
+
+  return label;
+}
+
+function createCheckbox(labelText: string, checked: boolean, readOnly: boolean): HTMLLabelElement {
+  const label = document.createElement('label');
+  label.style.cssText = 'display:flex;min-height:41px;align-items:center;gap:8px;border:1px solid #d4d4d8;background:#fff;padding:9px 10px;font-size:13px;color:#3f3f46';
+
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.disabled = readOnly;
+
+  const text = document.createElement('span');
+  text.textContent = labelText;
+  label.append(input, text);
+
+  return label;
+}
+
 function createTextArea(labelText: string, placeholder: string, value: string, readOnly: boolean, rows: number): HTMLLabelElement {
   const label = document.createElement('label');
   label.style.cssText = 'display:block';
@@ -380,6 +562,17 @@ function getFieldValue(root: ParentNode, selector: string): string {
   return field?.value.trim() ?? '';
 }
 
+function getOptionalNumberFieldValue(root: ParentNode, selector: string): number | undefined {
+  const value = getFieldValue(root, selector);
+
+  if (!value) {
+    return undefined;
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
 function setFieldDataset(label: HTMLLabelElement, key: string): void {
   const field = label.querySelector<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
 
@@ -392,17 +585,21 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unable to import chart data.';
 }
 
-function normalizeChartData(data: ChartBlockData | undefined): Required<ChartBlockData> {
+function normalizeChartData(data: ChartBlockData | undefined): NormalizedChartBlockData {
   const chartPoints = Array.isArray(data?.chartPoints)
     ? data.chartPoints
       .map((point, index) => ({
         label: typeof point.label === 'string' && point.label.trim() ? point.label.trim() : `Point ${index + 1}`,
         value: typeof point.value === 'number' && Number.isFinite(point.value) ? point.value : Number.NaN,
         note: typeof point.note === 'string' ? point.note.trim() : '',
-        series: typeof point.series === 'string' ? point.series.trim() : '',
       }))
       .filter(point => Number.isFinite(point.value))
     : [];
+  const datasets = normalizeChartDatasets(data?.datasets);
+  const longestDataset = Math.max(0, ...datasets.map(dataset => dataset.data.length));
+  const labels = Array.isArray(data?.labels)
+    ? data.labels.map((label, index) => normalizeText(label) || `Label ${index + 1}`)
+    : Array.from({length: longestDataset}, (_, index) => `Label ${index + 1}`);
 
   return {
     title: typeof data?.title === 'string' ? data.title : '',
@@ -410,7 +607,88 @@ function normalizeChartData(data: ChartBlockData | undefined): Required<ChartBlo
     chartType: toChartType(data?.chartType),
     unit: typeof data?.unit === 'string' ? data.unit : '',
     chartPoints,
+    labels,
+    datasets,
+    xAxisTitle: normalizeText(data?.xAxisTitle),
+    yAxisTitle: normalizeText(data?.yAxisTitle),
+    yMax: toFiniteNumber(data?.yMax),
+    valueSuffix: typeof data?.valueSuffix === 'string' ? data.valueSuffix : '',
+    decimals: clampDecimals(data?.decimals),
+    showLegend: typeof data?.showLegend === 'boolean' ? data.showLegend : undefined,
+    sourceLabel: normalizeText(data?.sourceLabel),
+    sourceUrl: normalizeText(data?.sourceUrl),
+    accessibilitySummary: normalizeText(data?.accessibilitySummary),
   };
+}
+
+function parseChartJsConfiguration(
+  value: string
+): Pick<NormalizedChartBlockData, 'labels' | 'datasets'> | null {
+  if (!value) {
+    return {labels: [], datasets: []};
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+
+    if (typeof parsed !== 'object' || parsed === null) {
+      return null;
+    }
+
+    const record = parsed as Record<string, unknown>;
+    const normalized = normalizeChartData({
+      labels: Array.isArray(record['labels']) ? record['labels'].map(label => String(label)) : [],
+      datasets: Array.isArray(record['datasets']) ? record['datasets'] as readonly BlogChartDataset[] : [],
+    });
+
+    return normalized.datasets.length > 0
+      ? {labels: normalized.labels, datasets: normalized.datasets}
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeChartDatasets(value: readonly BlogChartDataset[] | undefined): readonly BlogChartDataset[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((dataset, index) => {
+    if (typeof dataset !== 'object' || dataset === null || !Array.isArray(dataset.data)) {
+      return [];
+    }
+
+    const values: readonly (number | null)[] = dataset.data
+      .map((item: unknown) => toFiniteNumber(item) ?? null);
+
+    if (!values.some((item: number | null) => item !== null)) {
+      return [];
+    }
+
+    const borderColor = normalizeText(dataset.borderColor);
+    const backgroundColor = normalizeText(dataset.backgroundColor);
+
+    return [{
+      label: normalizeText(dataset.label) || `Series ${index + 1}`,
+      data: values,
+      ...(borderColor ? {borderColor} : {}),
+      ...(backgroundColor ? {backgroundColor} : {}),
+    }];
+  });
+}
+
+function normalizeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function clampDecimals(value: unknown): number | undefined {
+  const number = toFiniteNumber(value);
+  return number === undefined ? undefined : Math.max(0, Math.min(6, Math.round(number)));
 }
 
 function toChartType(value: unknown): BlogChartType {
