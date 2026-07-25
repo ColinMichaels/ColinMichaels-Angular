@@ -78,4 +78,19 @@ describe('post optimization manifest adapter', () => {
     expect(candidate.createdAt).toBe(base.createdAt);
     expect(candidate.updatedAt).toBe(base.updatedAt);
   });
+
+  it('preserves taxonomy when a metadata-only manifest omits categories and tags', () => {
+    const base = createPost('post-1', 'metadata-only');
+    const row = createManifestRow('metadata-only');
+    delete row['categories'];
+    delete row['tags'];
+    const recommendation = parsePostOptimizationManifest({posts: [row]}).posts[0];
+    const candidate = applyOptimizationRecommendation(base, recommendation);
+
+    expect(recommendation.categories).toBeUndefined();
+    expect(recommendation.tags).toBeUndefined();
+    expect(candidate.categories).toEqual(base.categories);
+    expect(candidate.tags).toEqual(base.tags);
+    expect(candidate.seo.title).toBe('Recommended search title');
+  });
 });

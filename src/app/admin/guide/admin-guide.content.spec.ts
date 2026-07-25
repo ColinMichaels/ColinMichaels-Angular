@@ -27,6 +27,9 @@ describe('admin guide content', () => {
       .toEqual(['manage-user-roles']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'Open Media Library').map(entry => entry.id))
       .toContain('upload-and-reuse-media');
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'raw json').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'raw json')).toEqual([]);
   });
 
   it('never returns a role-restricted match to an unauthorized user', () => {

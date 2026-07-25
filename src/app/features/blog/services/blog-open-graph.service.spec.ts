@@ -75,4 +75,15 @@ describe('BlogOpenGraphService Cat Corner indexing', () => {
     expect(firstMetadata.robots).toBeUndefined();
     expect(secondMetadata.robots).toBeUndefined();
   });
+
+  it('uses the route canonical for structured data when stored canonical data is stale', () => {
+    const post = createPost();
+    post.seo.canonical = '/blog/legacy-slug';
+
+    service.applyBlogPost(post);
+
+    expect(seo.createBlogPostingJsonLd).toHaveBeenCalledWith(jasmine.objectContaining({
+      url: 'https://www.colinmichaels.com/blog/cat-corner-seo-post',
+    }));
+  });
 });

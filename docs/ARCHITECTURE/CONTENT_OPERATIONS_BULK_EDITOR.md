@@ -74,6 +74,8 @@ The existing `post-optimization-manifest.json` is supported as a migration input
 - Duplicate stable slugs are rejected.
 - Missing post matches and unused recommendations are surfaced to the operator.
 - Imported recommendations can only replace the four allowlisted metadata/taxonomy fields.
+- Metadata-only rows may omit `categories` and `tags`; omitted taxonomy fields are preserved exactly, while explicitly
+  supplied arrays remain reviewable taxonomy candidates.
 - `redirectRequired: true` stays visible but cannot be approved in this slice.
 
 No backfill or Firestore migration is required because the feature does not persist operation state.
@@ -103,6 +105,7 @@ Focused tests cover:
 - protected slug conflicts;
 - redirect-required blocking;
 - manifest parsing, duplicate detection, and stable-slug matching;
+- metadata-only manifest parsing with unchanged category and tag arrays;
 - preservation of canonical post fields when applying a recommendation to a candidate;
 - protected route registration and the locked page-level apply state.
 

@@ -1,7 +1,7 @@
 import {BlogPost} from '../../../features/blog/models/blog-post.model';
 
 export interface PostOptimizationRecommendation {
-  categories: readonly string[];
+  categories?: readonly string[];
   currentTitle: string;
   deployment: string;
   priority: string;
@@ -9,7 +9,7 @@ export interface PostOptimizationRecommendation {
   recommendedSeoTitle: string;
   redirectRequired: boolean;
   stableSlug: string;
-  tags: readonly string[];
+  tags?: readonly string[];
 }
 
 export interface PostOptimizationManifest {
@@ -53,6 +53,14 @@ function getStringArray(record: Record<string, unknown>, key: string, index: num
   return [...new Set(value.map(item => item.trim()).filter(Boolean))];
 }
 
+function getOptionalStringArray(
+  record: Record<string, unknown>,
+  key: string,
+  index: number
+): readonly string[] | undefined {
+  return record[key] === undefined ? undefined : getStringArray(record, key, index);
+}
+
 export function parsePostOptimizationManifest(value: unknown): PostOptimizationManifest {
   if (!isRecord(value) || !Array.isArray(value['posts'])) {
     throw new Error('Optimization manifest must contain a posts array.');
@@ -75,8 +83,8 @@ export function parsePostOptimizationManifest(value: unknown): PostOptimizationM
       currentTitle: getRequiredString(row, 'currentTitle', index),
       recommendedSeoTitle: getRequiredString(row, 'recommendedSeoTitle', index),
       recommendedMetaDescription: getRequiredString(row, 'recommendedMetaDescription', index),
-      categories: getStringArray(row, 'categories', index),
-      tags: getStringArray(row, 'tags', index),
+      categories: getOptionalStringArray(row, 'categories', index),
+      tags: getOptionalStringArray(row, 'tags', index),
       deployment: typeof row['deployment'] === 'string' ? row['deployment'] : 'unknown',
       priority: typeof row['priority'] === 'string' ? row['priority'] : 'unprioritized',
       redirectRequired: row['redirectRequired'] === true,
@@ -124,8 +132,8 @@ export function applyOptimizationRecommendation(
 ): BlogPost {
   return {
     ...post,
-    categories: [...recommendation.categories],
-    tags: [...recommendation.tags],
+    ...(recommendation.categories !== undefined ? {categories: [...recommendation.categories]} : {}),
+    ...(recommendation.tags !== undefined ? {tags: [...recommendation.tags]} : {}),
     seo: {
       ...post.seo,
       title: recommendation.recommendedSeoTitle,

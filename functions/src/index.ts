@@ -143,12 +143,23 @@ const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
 const FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800';
 const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|ogg|otf|png|svg|ttf|txt|wav|webmanifest|webp|woff2?)$/i;
-const TAXONOMY_SITEMAP_MIN_POSTS = 2;
-const TAG_SITEMAP_MIN_POSTS = 3;
+const TAXONOMY_SITEMAP_MIN_POSTS = 3;
+const TAG_SITEMAP_MIN_POSTS = 5;
 const SITEMAP_REVIEW_URL_LIMIT = 180;
 const DEFAULT_AUTHOR_ID = 'colin-michaels';
 const AUTHORS_INDEX_DESCRIPTION = `Meet the writers sharing articles, projects, and personal perspectives on ${SITE_NAME}.`;
 const DEFAULT_AUTHOR_SLUG = 'colin-michaels';
+const BLOG_FALLBACK_RELATED_ARTICLES: Readonly<Record<string, {
+  slug: string;
+  title: string;
+  description: string;
+}>> = {
+  'recovery-update-finish-line-in-sight': {
+    slug: 'from-staph-infection-to-open-heart-surgery-2',
+    title: 'From Staph Infection to Open-Heart Surgery',
+    description: 'The full story behind the endocarditis treatment, surgery, and recovery timeline.',
+  },
+};
 const OS_ROUTE_PREFIXES = ['/os', '/external'] as const;
 const OS_ROUTES = ['/login', '/boot', '/sleep'] as const;
 const ADMIN_ROUTE_PREFIXES = ['/admin'] as const;
@@ -2973,7 +2984,7 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
   const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
-  const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
+  const url = createAbsoluteUrl(`/blog/${post.slug}`);
 
   return {
     title,
@@ -3569,12 +3580,14 @@ function createBlogPostingJsonLd(options: {
   publishedAt: string | null;
   modifiedAt: string;
 }): Record<string, unknown> {
+  const url = createAbsoluteUrl(options.url);
+
   return {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: options.title,
     description: options.description,
-    url: options.url,
+    url,
     image: [options.image],
     datePublished: options.publishedAt ?? options.modifiedAt,
     dateModified: options.modifiedAt,
@@ -3590,7 +3603,7 @@ function createBlogPostingJsonLd(options: {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': options.url,
+      '@id': url,
     },
   };
 }
@@ -3750,9 +3763,18 @@ function renderBlogPostFallbackHtml(
     `<a href="${escapeHtml(createAbsoluteUrl(`/blog/tag/${createBlogTagSlug(tag)}`))}">${escapeHtml(tag)}</a>`
   )).join(' ');
   const body = post.blocks
-    .map(renderBlogContentBlockFallbackHtml)
+    .map(block => renderBlogContentBlockFallbackHtml(block, metadata.title))
     .filter(Boolean)
     .join('\n');
+  const relatedArticle = BLOG_FALLBACK_RELATED_ARTICLES[post.slug];
+  const relatedArticleHtml = relatedArticle
+    ? [
+      '  <aside aria-label="Related article">',
+      '    <h2>Related article</h2>',
+      `    <p><a href="${escapeHtml(createAbsoluteUrl(`/blog/${relatedArticle.slug}`))}">${escapeHtml(relatedArticle.title)}</a> - ${escapeHtml(relatedArticle.description)}</p>`,
+      '  </aside>',
+    ].join('\n')
+    : '';
 
   return renderFallbackShell({
     eyebrow: 'Article',
@@ -3764,6 +3786,7 @@ function renderBlogPostFallbackHtml(
       categoryLinks ? `  <nav aria-label="Article categories" class="seo-fallback-taxonomy">${categoryLinks}</nav>` : '',
       `  <img src="${escapeHtml(createAbsoluteUrl(metadata.image))}" alt="${escapeHtml(post.imageAlt || `${metadata.title} preview image`)}" loading="eager">`,
       body || `  <p>${escapeHtml(metadata.description)}</p>`,
+      relatedArticleHtml,
       tagLinks ? `  <nav aria-label="Article tags" class="seo-fallback-taxonomy">${tagLinks}</nav>` : '',
       '</article>',
     ].filter(Boolean).join('\n'),
@@ -3862,7 +3885,7 @@ function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string
   });
 }
 
-function renderBlogContentBlockFallbackHtml(block: BlogContentBlock): string {
+function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackImageAlt = ''): string {
   const data = block.data;
 
   switch (block.type) {
@@ -3920,7 +3943,9 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock): string {
 
     case 'image': {
       const url = data.url?.trim() ?? '';
-      const alt = stripHtml(data.alt ?? data.caption ?? '');
+      const alt = stripHtml(data.alt ?? '')
+        || stripHtml(data.caption ?? '')
+        || `${stripHtml(fallbackImageAlt) || 'Blog content'} article image`;
 
       return url ? `<img src="${escapeHtml(createAbsoluteUrl(url))}" alt="${escapeHtml(alt)}" loading="lazy">` : '';
     }

@@ -1,0 +1,240 @@
+{
+  "auditDate": "2026-07-19",
+  "site": "https://colinmichaels.com",
+  "posts": [
+    {
+      "stableSlug": "recovery-update-finish-line-in-sight",
+      "currentTitle": "Recovery Update: Finish Line in Sight",
+      "recommendedSeoTitle": "Recovery Update: Finish Line in Sight",
+      "recommendedMetaDescription": "An honest recovery update on finishing antibiotics, removing a PICC line, losing post-surgery swelling, and seeing the next healing milestone.",
+      "deployment": "cms-review",
+      "priority": "P0",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "new-design-branch-update-blog-cms-media-library-labs",
+      "currentTitle": "New Design Branch Update: Blog, CMS, Media Library, Labs, and Creative OS",
+      "recommendedSeoTitle": "New Design Update: Blog, CMS, Labs & Creative OS",
+      "recommendedMetaDescription": "A technical update on ColinMichaels.com covering Firestore publishing, the admin CMS, media tools, project labs, and Angular modernization.",
+      "deployment": "cms-review",
+      "priority": "P0",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "recovery-update-building-momentum",
+      "currentTitle": "Recovery Update: Building Momentum",
+      "recommendedSeoTitle": "Recovery Update: Building Momentum",
+      "recommendedMetaDescription": "A recovery update on returning to work after open-heart surgery, rebuilding stamina, and finding steady momentum through daily routines.",
+      "deployment": "cms-review",
+      "priority": "P0",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "biscuits-push-your-luck-dice-game",
+      "currentTitle": "Building Biscuits: A Push-Your-Luck Dice Game Experiment",
+      "recommendedSeoTitle": "Building Biscuits: A Push-Your-Luck Dice Game Experiment",
+      "recommendedMetaDescription": "Behind the scenes of Biscuits, a browser-based push-your-luck dice game with seeded runs, achievements, difficulty modes, and leaderboards.",
+      "deployment": "cms-review",
+      "priority": "P0",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "bounced-multi-window-routing-game",
+      "currentTitle": "Building Bounced: A Multi-Window Browser Game Concept",
+      "recommendedSeoTitle": "Building Bounced: A Multi-Window Browser Game Concept",
+      "recommendedMetaDescription": "Behind the scenes of Bounced, a browser game that turns popup windows into puzzle rooms for routing a signal ball across the screen.",
+      "deployment": "cms-review",
+      "priority": "P0",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "from-staph-infection-to-open-heart-surgery-2",
+      "currentTitle": "From Staph Infection to Open-Heart Surgery | My Endocarditis Story",
+      "recommendedSeoTitle": "From Staph Infection to Open-Heart Surgery",
+      "recommendedMetaDescription": "The story of how a seemingly simple staph infection turned into infective endocarditis, emergency heart valve surgery, and a second chance at life.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "weekly-recovery-update-still-healing-still-working-still-a-big-kid",
+      "currentTitle": "Weekly Recovery Update: Still Healing, Still Working, Still a Big Kid",
+      "recommendedSeoTitle": "Recovery Update: Healing, Working & Having Fun",
+      "recommendedMetaDescription": "A quieter recovery week with steady work, cardiac rehab, an improving shoulder, and a new RC rock crawler bringing fun back to the routine.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "recovery-update-10-back-to-normalish",
+      "currentTitle": "Recovery Update #10: Back to Normal(ish)",
+      "recommendedSeoTitle": "Recovery Update #10: Back to Normal(ish)",
+      "recommendedMetaDescription": "A weekly recovery update on cardiac rehab, better sleep, returning to work, flying drones again, and rebuilding normal life after heart surgery.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "emergency-plan-nobody-thinks-they-need",
+      "currentTitle": "The Emergency Plan Nobody Thinks They Need",
+      "recommendedSeoTitle": "The Emergency Plan Nobody Thinks They Need",
+      "recommendedMetaDescription": "A personal guide to preparing for a medical emergency, including family support, insurance, advocacy, living wills, and documents to organize.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "weekly-recovery-update-week-14-still-here-still-healing-still-tinkering",
+      "currentTitle": "Weekly Recovery Update — Week #14: Still Here, Still Healing, Still Tinkering",
+      "recommendedSeoTitle": "Recovery Week 14: Healing, Working & Tinkering",
+      "recommendedMetaDescription": "A week 14 recovery update on easing pain, difficult sleep, steady work, cardiac rehab, and continuing to improve ColinMichaels.com.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "florida-medical-planning-guide",
+      "currentTitle": "Florida Medical Planning Guide: What Every Resident Should Know",
+      "recommendedSeoTitle": "Florida Medical Planning Guide for Residents",
+      "recommendedMetaDescription": "A practical Florida guide to advance directives, health care surrogates, living wills, powers of attorney, trusts, and crisis preparation.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "forbidden-garage-babies-corvette-zr1x-concept-cars",
+      "currentTitle": "Forbidden Garage Babies: Corvette ZR1X Concept Car Mashups",
+      "recommendedSeoTitle": "Forbidden Garage Babies: Corvette ZR1X Concept Car Mashups",
+      "recommendedMetaDescription": "A playful AI concept-car experiment imagining Corvette ZR1X mashups, complete with fictional styling, outrageous specs, and garage-daydream energy.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "medical-disaster-checklist-10-things-every-adult-should-have",
+      "currentTitle": "Medical Disaster Checklist: 10 Things Every Adult Should Have",
+      "recommendedSeoTitle": "Medical Emergency Checklist: 10 Things Adults Need",
+      "recommendedMetaDescription": "A practical checklist for medical emergencies covering contacts, insurance, advance directives, medication lists, employer benefits, and savings.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "recovery-update-9-keeping-the-momentum",
+      "currentTitle": "Recovery Update #9: Keeping the Momentum",
+      "recommendedSeoTitle": "Recovery Update #9: Keeping the Momentum",
+      "recommendedMetaDescription": "A weekly recovery update on cardiac rehab, full-time work, daily walks, returning energy, drone goals, and Gretchen’s support after heart surgery.",
+      "deployment": "cms-review",
+      "priority": "P1",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "chatgpt-privacy-for-beginners-memory-temporary-chat",
+      "currentTitle": "ChatGPT Privacy for Beginners: Memory, Temporary Chat, and What To Share",
+      "recommendedSeoTitle": "ChatGPT Privacy: Memory, Temporary Chat & Safe Sharing",
+      "recommendedMetaDescription": "A plain-English guide to ChatGPT privacy habits, including when to use regular chat, memory, memory off, and Temporary Chat.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "digital-hoarding-when-saving-everything-means-finding-nothing",
+      "currentTitle": "Digital Hoarding: Stop Saving Everything & Find What Matters",
+      "recommendedSeoTitle": "Digital Hoarding: Stop Saving Everything & Find What Matters",
+      "recommendedMetaDescription": "A practical guide to reducing file clutter, email overload, old backups, and saved media while using AI carefully to organize your digital life.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "even-though-youre-wrong-you-can-still-be-right",
+      "currentTitle": "Even Though You’re Wrong, You Can Still Be Right",
+      "recommendedSeoTitle": "Even Though You’re Wrong, You Can Still Be Right",
+      "recommendedMetaDescription": "A personal reflection on recovery, accepting choices that later proved wrong, and using honest self-awareness to grow without erasing the past.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "nutrition-detour-heart-recovery-dr-rahul-aggarwal",
+      "currentTitle": "Nutrition Detour: Eating Better for Heart Recovery",
+      "recommendedSeoTitle": "Nutrition Detour: Eating Better for Heart Recovery",
+      "recommendedMetaDescription": "A personal response to Dr. Rahul Aggarwal’s Nutrition Detour and the whole-food, heart-healthy habits shaping recovery after surgery.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "what-to-check-in-google-search-console-after-you-launch-your-first-website",
+      "currentTitle": "What to Check in Google Search Console After You Launch Your First Website",
+      "recommendedSeoTitle": "Google Search Console Checks for a New Website",
+      "recommendedMetaDescription": "A beginner-friendly Google Search Console checklist for checking indexing, submitting a sitemap, inspecting one page, and reading early search data.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "10-simple-seo-fixes-beginners-should-make-before-publishing-a-website",
+      "currentTitle": "10 Simple SEO Fixes Beginners Should Make Before Publishing a Website",
+      "recommendedSeoTitle": "10 Simple SEO Fixes Before Publishing a Website",
+      "recommendedMetaDescription": "A beginner-friendly SEO launch checklist based on Google's starter guide, covering titles, page purpose, sitemaps, images, links, and Search Console.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "5-everyday-chatgpt-tasks-id-actually-use-as-a-regular-person",
+      "currentTitle": "5 Everyday ChatGPT Tasks I'd Actually Use as a Regular Person",
+      "recommendedSeoTitle": "5 Useful ChatGPT Tasks for Everyday Life",
+      "recommendedMetaDescription": "A plain-English guide to five useful ChatGPT scheduled tasks for reminders, family planning, bills, job searches, small business check-ins, and monitoring.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "how-to-set-up-copilot-for-better-ai-chats",
+      "currentTitle": "How to Set Up Copilot for Better AI Chats",
+      "recommendedSeoTitle": "How to Set Up Copilot for Better AI Chats",
+      "recommendedMetaDescription": "A practical guide to setting up Microsoft Copilot with prompts, Pages, Notebooks, agents, Microsoft 365 context, and privacy-aware workflows.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "how-to-set-up-gemini-for-better-ai-chats",
+      "currentTitle": "How to Set Up Gemini for Better AI Chats",
+      "recommendedSeoTitle": "How to Set Up Gemini for Better AI Chats",
+      "recommendedMetaDescription": "A practical guide to setting up Google Gemini with models, instructions, memory, Gems, Canvas, connected apps, research, and scheduled actions.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "how-to-use-chatgpt-study-mode-without-letting-ai-do-your-homework",
+      "currentTitle": "How to Use ChatGPT Study Mode Without Letting AI Do Your Homework",
+      "recommendedSeoTitle": "Use ChatGPT Study Mode Without Cheating",
+      "recommendedMetaDescription": "A plain-English guide for using ChatGPT Study Mode for hints, quizzes, and real learning instead of copy-paste homework answers.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "the-hardest-part-of-recovery-wasnt-physical",
+      "currentTitle": "The Hardest Part of Recovery Wasn't Physical",
+      "recommendedSeoTitle": "The Hardest Part of Recovery Wasn't Physical",
+      "recommendedMetaDescription": "A personal reflection on fear, confidence, and learning to trust yourself again while recovering physically and emotionally from major heart surgery.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    },
+    {
+      "stableSlug": "understanding-health-insurance-without-losing-your-mind",
+      "currentTitle": "Understanding Health Insurance Without Losing Your Mind",
+      "recommendedSeoTitle": "Understanding Health Insurance Without Losing Your Mind",
+      "recommendedMetaDescription": "A practical guide to deductibles, copays, coinsurance, out-of-pocket limits, provider networks, HSAs, and questions to ask before surgery.",
+      "deployment": "cms-review",
+      "priority": "P2",
+      "redirectRequired": false
+    }
+  ]
+}
