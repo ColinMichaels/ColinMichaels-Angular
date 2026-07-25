@@ -85,6 +85,13 @@ export interface BlogChartPoint {
   series?: string;
 }
 
+export interface BlogChartDataset {
+  label: string;
+  data: readonly (number | null)[];
+  borderColor?: string;
+  backgroundColor?: string;
+}
+
 export interface BlogPollOption {
   id: string;
   label: string;
@@ -151,7 +158,18 @@ export interface BlogBlockData {
   stats?: readonly BlogStatItem[];
   chartType?: BlogChartType;
   chartPoints?: readonly BlogChartPoint[];
+  labels?: readonly string[];
+  datasets?: readonly BlogChartDataset[];
   unit?: string;
+  xAxisTitle?: string;
+  yAxisTitle?: string;
+  yMax?: number;
+  valueSuffix?: string;
+  decimals?: number;
+  showLegend?: boolean;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  accessibilitySummary?: string;
   question?: string;
   description?: string;
   pollOptions?: readonly BlogPollOption[];

@@ -9,6 +9,7 @@ import {
   BlogBlockData,
   BlogBlockPlacement,
   BlogBlockType,
+  BlogChartDataset,
   BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
@@ -46,7 +47,6 @@ interface ImportedChartPoint {
   label: string;
   value: number | undefined;
   note?: string;
-  series?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -65,6 +65,11 @@ function getNestedString(record: Record<string, unknown>, parentKey: string, key
 
 function getBoolean(record: Record<string, unknown>, key: string): boolean {
   return record[key] === true;
+}
+
+function getOptionalBoolean(record: Record<string, unknown>, key: string): boolean | undefined {
+  const value = record[key];
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function getNumber(record: Record<string, unknown>, key: string): number | undefined {
@@ -329,12 +334,47 @@ function extractChartPoints(value: unknown): readonly BlogChartPoint[] {
         label: point.label || `Point ${index + 1}`,
         value: point.value,
         ...(point.note ? {note: point.note} : {}),
-        ...(point.series ? {series: point.series} : {}),
       });
     }
   }
 
   return points;
+}
+
+function extractChartLabels(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((label, index) => toStringValue(label) || `Label ${index + 1}`);
+}
+
+function extractChartDatasets(value: unknown): readonly BlogChartDataset[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item, index) => {
+    if (!isRecord(item) || !Array.isArray(item['data'])) {
+      return [];
+    }
+
+    const values = item['data'].map(value => toFiniteNumber(value) ?? null);
+
+    if (!values.some(value => value !== null)) {
+      return [];
+    }
+
+    const borderColor = getString(item, 'borderColor')?.trim();
+    const backgroundColor = getString(item, 'backgroundColor')?.trim();
+
+    return [{
+      label: getString(item, 'label')?.trim() || `Series ${index + 1}`,
+      data: values,
+      ...(borderColor ? {borderColor} : {}),
+      ...(backgroundColor ? {backgroundColor} : {}),
+    }];
+  });
 }
 
 function extractPollOptions(value: unknown): readonly BlogPollOption[] {
@@ -380,7 +420,6 @@ function toImportedChartPoint(item: unknown): ImportedChartPoint | null {
       label: toStringValue(item[0]),
       value: toFiniteNumber(item[1]),
       note: toStringValue(item[2]),
-      series: toStringValue(item[3]),
     };
   }
 
@@ -392,77 +431,7 @@ function toImportedChartPoint(item: unknown): ImportedChartPoint | null {
     label: getStringByAlias(item, ['label', 'name', 'x', 'category', 'trim', 'model']),
     value: getNumberByAlias(item, ['value', 'y', 'amount', 'score', 'number', 'metric']),
     note: getStringByAlias(item, ['note', 'notes', 'caption', 'description', 'detail', 'details']),
-    series: getStringByAlias(item, ['series', 'dataset', 'group']),
   };
-}
-
-function extractChartJsPoints(data: Record<string, unknown>): readonly BlogChartPoint[] {
-  const candidates = [
-    data,
-    isRecord(data['data']) ? data['data'] : null,
-  ];
-
-  for (const candidate of candidates) {
-    if (!candidate) {
-      continue;
-    }
-
-    const labels = candidate['labels'];
-    const datasets = candidate['datasets'];
-
-    if (!Array.isArray(labels) || !Array.isArray(datasets)) {
-      continue;
-    }
-
-    const datasetRecords = datasets.filter(isRecord);
-    const points: BlogChartPoint[] = [];
-
-    for (const [labelIndex, rawLabel] of labels.entries()) {
-      const fallbackLabel = toStringValue(rawLabel) || `Point ${labelIndex + 1}`;
-
-      for (const dataset of datasetRecords) {
-        const values = dataset['data'];
-
-        if (!Array.isArray(values)) {
-          continue;
-        }
-
-        const rawPoint = values[labelIndex];
-        const importedPoint = isRecord(rawPoint) || Array.isArray(rawPoint)
-          ? toImportedChartPoint(rawPoint)
-          : {
-            label: '',
-            value: toFiniteNumber(rawPoint),
-            note: '',
-            series: '',
-          };
-
-        if (!importedPoint || importedPoint.value === undefined) {
-          continue;
-        }
-
-        const series = getStringByAlias(dataset, ['label', 'name', 'series', 'dataset', 'group']);
-        points.push({
-          label: importedPoint.label || fallbackLabel,
-          value: importedPoint.value,
-          ...(importedPoint.note ? {note: importedPoint.note} : {}),
-          ...(importedPoint.series || series ? {series: importedPoint.series || series} : {}),
-        });
-      }
-    }
-
-    return points;
-  }
-
-  return [];
-}
-
-function extractChartPointsFromData(data: Record<string, unknown>): readonly BlogChartPoint[] {
-  const flatPoints = extractChartPoints(
-    extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items'])
-  );
-
-  return flatPoints.length > 0 ? flatPoints : extractChartJsPoints(data);
 }
 
 function extractArrayByAlias(data: Record<string, unknown>, aliases: readonly string[]): unknown {
@@ -626,14 +595,39 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         caption: getString(data, 'caption') ?? '',
         stats: extractStatItems(extractArrayByAlias(data, ['stats', 'rows', 'items', 'data'])),
       };
-    case 'chart':
+    case 'chart': {
+      const chartPoints = extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data']));
+      const labels = extractChartLabels(data['labels']);
+      const datasets = extractChartDatasets(data['datasets']);
+      const xAxisTitle = getString(data, 'xAxisTitle')?.trim();
+      const yAxisTitle = getString(data, 'yAxisTitle')?.trim();
+      const yMax = getNumber(data, 'yMax');
+      const valueSuffix = getString(data, 'valueSuffix');
+      const decimals = getNumber(data, 'decimals');
+      const showLegend = getOptionalBoolean(data, 'showLegend');
+      const sourceLabel = getString(data, 'sourceLabel')?.trim();
+      const sourceUrl = getString(data, 'sourceUrl')?.trim();
+      const accessibilitySummary = getString(data, 'accessibilitySummary')?.trim();
+
       return {
         title: getString(data, 'title') ?? '',
         caption: getString(data, 'caption') ?? '',
-        chartType: toChartType(data['chartType'] ?? data['type']),
+        chartType: toChartType(data['chartType']),
         unit: getString(data, 'unit') ?? '',
-        chartPoints: extractChartPointsFromData(data),
+        chartPoints,
+        ...(labels.length > 0 ? {labels} : {}),
+        ...(datasets.length > 0 ? {datasets} : {}),
+        ...(xAxisTitle ? {xAxisTitle} : {}),
+        ...(yAxisTitle ? {yAxisTitle} : {}),
+        ...(yMax !== undefined ? {yMax} : {}),
+        ...(valueSuffix !== undefined ? {valueSuffix} : {}),
+        ...(decimals !== undefined ? {decimals} : {}),
+        ...(showLegend !== undefined ? {showLegend} : {}),
+        ...(sourceLabel ? {sourceLabel} : {}),
+        ...(sourceUrl ? {sourceUrl} : {}),
+        ...(accessibilitySummary ? {accessibilitySummary} : {}),
       };
+    }
     case 'poll':
       return {
         question: getString(data, 'question') ?? '',

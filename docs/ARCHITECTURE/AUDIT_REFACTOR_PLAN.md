@@ -295,7 +295,7 @@ Initial implementation status:
 - `features/blog/models/blog-post.model.ts`: typed post, SEO, status, and block contracts.
 - `features/blog/services/blog-storage.service.ts`: browser-local storage for initial CMS create/edit workflows.
 - `features/blog/services/blog-repository.service.ts`: local typed repository for published/admin reads plus local CMS create/save operations.
-- `features/blog/components/block-renderer`: public read-only block renderer for stored Editor.js-shaped content, including custom Markdown, typography, stats, chart, and sanitized HTML blocks.
+- `features/blog/components/block-renderer`: public read-only dispatcher for stored Editor.js-shaped content, including custom Markdown, typography, stats, and sanitized HTML blocks; Chart.js rendering is isolated in `features/blog/components/chart`.
 - `admin/admin.routes.ts`: protected admin route boundary.
 - `guards/admin-auth.guard.ts`: Firebase Auth custom-claim guard for all admin routes.
 - `admin/cms/cms.routes.ts`: protected CMS post list, new post, and post editor routes.
