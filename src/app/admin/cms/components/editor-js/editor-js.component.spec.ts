@@ -202,6 +202,90 @@ describe('EditorJsComponent', () => {
       height: existingInlineImage.height,
     }));
   });
+
+  it('round trips raw JSON edits back into the WYSIWYG editor', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'original-paragraph',
+        type: 'paragraph',
+        data: {text: 'Original visual content.'},
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+    clickButtonByText(fixture, 'JSON');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const textarea = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLTextAreaElement>('[data-editor-json]');
+    const editedDocument = {
+      time: 1784918400000,
+      blocks: [{
+        id: 'edited-paragraph',
+        type: 'paragraph',
+        data: {text: 'Edited through raw JSON.'},
+      }],
+      version: '2.31.6',
+    };
+
+    expect(textarea).not.toBeNull();
+    expect(textarea?.value).toContain('Original visual content.');
+
+    if (textarea) {
+      textarea.value = JSON.stringify(editedDocument, null, 2);
+      textarea.dispatchEvent(new Event('input'));
+    }
+
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Valid JSON · 1 block');
+
+    clickButtonByText(fixture, 'WYSIWYG');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const document = await fixture.componentInstance.getDocument();
+    const renderedParagraph = (fixture.nativeElement as HTMLElement).querySelector('.ce-paragraph');
+
+    expect(document).toEqual(editedDocument);
+    expect(renderedParagraph?.textContent).toContain('Edited through raw JSON.');
+  });
+
+  it('keeps invalid source in JSON mode and reports the validation error', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'safe-paragraph',
+        type: 'paragraph',
+        data: {text: 'Keep this document safe.'},
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+    clickButtonByText(fixture, 'JSON');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const textarea = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLTextAreaElement>('[data-editor-json]');
+
+    if (textarea) {
+      textarea.value = '{"blocks": [';
+      textarea.dispatchEvent(new Event('input'));
+    }
+
+    fixture.detectChanges();
+    clickButtonByText(fixture, 'WYSIWYG');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('[data-editor-json]')).not.toBeNull();
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Invalid JSON:');
+    await expectAsync(fixture.componentInstance.getDocument()).toBeRejectedWithError(/Invalid JSON:/);
+  });
 });
 
 function clickButtonByText(fixture: ComponentFixture<EditorJsComponent>, text: string): void {

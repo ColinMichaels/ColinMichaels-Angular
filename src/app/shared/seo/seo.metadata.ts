@@ -40,8 +40,8 @@ export {
   createSiteTitle,
 } from './site-identity';
 
-export const TAXONOMY_INDEX_MIN_POSTS = 2;
-export const TAG_INDEX_MIN_POSTS = 3;
+export const TAXONOMY_INDEX_MIN_POSTS = 3;
+export const TAG_INDEX_MIN_POSTS = 5;
 
 export const HOME_SEO_METADATA: SeoMetadata = {
   title: HOMEPAGE_TITLE,
