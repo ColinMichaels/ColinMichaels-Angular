@@ -3,6 +3,7 @@ export interface AdminManagedUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  providerIds: readonly string[];
   disabled: boolean;
   emailVerified: boolean;
   createdAt: string | null;

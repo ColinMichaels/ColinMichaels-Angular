@@ -10,4 +10,5 @@ Current shared primitives:
 - `pwa`: install, connection, version, native-control, storage, Web Push, safe notification-routing, and app-badge services plus public install and offline/update status surfaces. Personal native, notification, and storage controls live on the protected Profile page. Cache policy remains owned by the root `ngsw-config.json` file; `pwa-worker.js` imports Angular's worker before adding badge events. Explicit saved-article snapshots, IndexedDB reading progress, favorites, and read-later management remain feature-scoped under `features/blog` and are managed from Profile.
 - `reader-preferences`: public Reader Assistance controls for text scale, spacing, contrast, motion, and the persisted site light/dark theme.
 - `theme`: `SiteThemeService`, which applies the document-level `light`/`dark` class and stores the preference in `localStorage`.
+- `user-view`: the persistent admin preview banner that identifies the effective user and roles, explains that Firebase requests retain the actor's admin identity, and provides a route-independent exit action.
 - `not-found`: shared 404 route component.

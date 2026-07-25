@@ -1088,6 +1088,7 @@ interface AdminManagedUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  providerIds: readonly string[];
   disabled: boolean;
   emailVerified: boolean;
   createdAt: string | null;
@@ -4913,6 +4914,7 @@ function toAdminManagedUser(user: UserRecord): AdminManagedUser {
     email: user.email ?? null,
     displayName: user.displayName ?? null,
     photoURL: user.photoURL ?? null,
+    providerIds: user.providerData.map(provider => provider.providerId),
     disabled: user.disabled,
     emailVerified: user.emailVerified,
     createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime).toISOString() : null,

@@ -64,6 +64,7 @@ describe('UserProfileComponent', () => {
   let fixture: ComponentFixture<UserProfileComponent>;
   let authServiceMock: {
     user$: Observable<User | null>;
+    userView$: Observable<null>;
     getCurrentUserProfile: jasmine.Spy;
     linkFacebookProvider: jasmine.Spy;
   };
@@ -71,6 +72,7 @@ describe('UserProfileComponent', () => {
   beforeEach(async () => {
     authServiceMock = {
       user$: of(authUser),
+      userView$: of(null),
       getCurrentUserProfile: jasmine.createSpy('getCurrentUserProfile').and.returnValue(of(profile)),
       linkFacebookProvider: jasmine.createSpy('linkFacebookProvider').and.returnValue(of({
         user: {

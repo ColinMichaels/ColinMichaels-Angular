@@ -244,7 +244,7 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
   {
     category: 'administration',
     id: 'manage-user-roles',
-    keywords: ['users', 'roles', 'permissions', 'claims', 'admin', 'cms admin', 'content editor', 'media manager', 'viewer'],
+    keywords: ['users', 'roles', 'permissions', 'claims', 'admin', 'cms admin', 'content editor', 'media manager', 'viewer', 'view as user', 'impersonation', 'troubleshoot', 'diagnose access'],
     links: [{label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}],
     roles: USER_MANAGEMENT_ACCESS_ROLES,
     steps: [
@@ -252,12 +252,14 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
         text: 'Open Users and search by email, display name, UID, or role.',
         link: {label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}
       },
+      {text: 'Choose View as User, review the selected identity and roles, then choose Start View to test role-aware navigation, profile details, badges, and route access.'},
+      {text: 'Keep the amber preview banner visible and choose Exit View when testing is complete. The preview does not replace Firebase authentication, so backend requests still use your admin account and must not be treated as permission-denial tests.'},
       {text: 'Open the intended account and review all current role claims before changing access.'},
       {text: 'Grant the smallest role that covers the person’s responsibilities; reserve Admin for user and role management.'},
       {text: 'Save the role update, then ask the user to refresh their token—usually by signing out and back in.'},
-      {text: 'Verify the resulting sidebar and route access with the updated account.'},
+      {text: 'Use a fresh View as session to verify the resulting sidebar and route access, then ask the real user to confirm backend behavior after their token refresh.'},
     ],
-    summary: 'Assign least-privilege custom claims and verify that account access changes take effect safely.',
+    summary: 'Preview another user’s role-aware application view, assign least-privilege custom claims, and verify account access safely.',
     title: 'Manage user roles',
   },
 ] as const;
