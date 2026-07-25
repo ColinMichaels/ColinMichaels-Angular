@@ -28,6 +28,9 @@ import {type User, type UserCredential} from 'firebase/auth';
 import {AuthProviderConflict, AuthService} from '../../../../services/auth.service';
 import {faFacebook, faGoogle} from '@fortawesome/free-brands-svg-icons';
 import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
+import {
+  BlogMembershipCampaignStateService
+} from '../../../../features/blog/services/blog-membership-campaign-state.service';
 
 @Component({
   selector: 'app-login-screen',
@@ -43,7 +46,23 @@ import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .login-input {
-      @apply text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500
+      @apply text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500;
+      font-size: 1rem;
+      scroll-margin-block: 5rem;
+    }
+
+    .login-page {
+      scroll-padding-block: 2.5rem 7rem;
+    }
+
+    .login-page-stage {
+      align-items: flex-start;
+    }
+
+    @media (min-height: 64rem) {
+      .login-page-stage {
+        align-items: center;
+      }
     }
 
     .login-button {
@@ -52,6 +71,115 @@ import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
 
     .form-group {
       @apply relative flex flex-col items-center;
+    }
+
+    .reader-preferences {
+      @apply m-0 grid w-full gap-2 border-0 p-0 text-left;
+      min-width: min(22rem, calc(100vw - 2rem));
+    }
+
+    .reader-preferences legend {
+      @apply mb-2 px-1 text-[0.7rem] font-medium uppercase tracking-[0.11em] text-white/60;
+    }
+
+    .reader-preference-list {
+      background:
+        linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.065)),
+        rgb(15 23 42 / 0.28);
+      backdrop-filter: blur(24px) saturate(135%);
+      border: 1px solid rgb(255 255 255 / 0.18);
+      border-radius: 1.15rem;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.12),
+        0 18px 50px rgb(2 6 23 / 0.28);
+      overflow: hidden;
+    }
+
+    .reader-preference {
+      @apply relative grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 text-sm;
+      min-height: 4.25rem;
+      transition: background-color 150ms ease;
+    }
+
+    .reader-preference + .reader-preference {
+      border-top: 1px solid rgb(255 255 255 / 0.11);
+    }
+
+    .reader-preference:hover {
+      background: rgb(255 255 255 / 0.055);
+    }
+
+    .reader-preference:has(.reader-preference-input:focus-visible) {
+      background: rgb(255 255 255 / 0.07);
+      outline: 2px solid rgb(96 165 250 / 0.9);
+      outline-offset: -2px;
+    }
+
+    .reader-preference-input {
+      height: 1px;
+      opacity: 0;
+      position: absolute;
+      width: 1px;
+    }
+
+    .reader-preference-copy,
+    .reader-preference-copy strong,
+    .reader-preference-copy small {
+      @apply block;
+    }
+
+    .reader-preference-copy strong {
+      @apply text-[0.9rem] font-medium leading-5 text-white/95;
+    }
+
+    .reader-preference-copy small,
+    .reader-preference-note {
+      @apply text-xs leading-[1.35rem] text-white/55;
+    }
+
+    .reader-preference-switch {
+      background: rgb(120 120 128 / 0.32);
+      border: 1px solid rgb(255 255 255 / 0.13);
+      border-radius: 9999px;
+      box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.16);
+      display: inline-flex;
+      flex: 0 0 auto;
+      height: 1.65rem;
+      padding: 0.13rem;
+      transition: background-color 180ms ease, border-color 180ms ease;
+      width: 2.8rem;
+    }
+
+    .reader-preference-switch > span {
+      background: #fff;
+      border-radius: 9999px;
+      box-shadow: 0 1px 4px rgb(0 0 0 / 0.34);
+      display: block;
+      height: 1.27rem;
+      translate: 0 0;
+      transition: translate 180ms cubic-bezier(0.25, 0.8, 0.25, 1);
+      width: 1.27rem;
+    }
+
+    .reader-preference-input:checked ~ .reader-preference-switch {
+      background: #30d158;
+      border-color: rgb(48 209 88 / 0.72);
+    }
+
+    .reader-preference-input:checked ~ .reader-preference-switch > span {
+      translate: 1.1rem 0;
+    }
+
+    .reader-preference-note {
+      @apply m-0 px-1 pt-1 text-center;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reader-preference,
+      .reader-preference-switch,
+      .reader-preference-switch > span {
+        transition: none;
+      }
     }
   `
 })
@@ -65,6 +193,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   googleLoading = false;
   facebookLoading = false;
   error = '';
+  isReaderCampaign = false;
 
   form: FormGroup;
   user?: User;
@@ -82,6 +211,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     private logger: LogService,
     private router: Router,
     private readonly route: ActivatedRoute,
+    private readonly membershipCampaign: BlogMembershipCampaignStateService,
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -92,7 +222,10 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       displayName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]]
+      confirmPassword: ['', [Validators.required]],
+      browserNotifications: [true],
+      newPostEmails: [false],
+      newsletter: [false],
     }, {validators: this.passwordMatchValidator});
 
     this.form = this.fb.group({
@@ -109,6 +242,11 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.redirectUrl = this.getSafeRedirectUrl(this.route.snapshot.queryParamMap.get('redirectUrl'));
+    this.applyCampaignQueryState(
+      this.route.snapshot.queryParamMap.get('mode'),
+      this.route.snapshot.queryParamMap.get('source')
+    );
+    this.restorePendingCommunicationChoices();
     this.debugLogin('initialized', {
       redirectUrl: this.redirectUrl,
       isLocalHost: this.isLocalHost,
@@ -119,6 +257,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         this.redirectUrl = this.getSafeRedirectUrl(params['redirectUrl']);
+        this.applyCampaignQueryState(params['mode'], params['source']);
         this.debugLogin('query params observed', {
           rawRedirectUrl: params['redirectUrl'] ?? null,
           safeRedirectUrl: this.redirectUrl,
@@ -315,6 +454,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     this.error = '';
+    if (this.isReaderCampaign) {
+      this.rememberRegistrationCommunicationChoices();
+    }
     const {email, password, displayName} = this.registerForm.value;
     this.debugLogin('registration submitted', {email, displayName});
 
@@ -362,6 +504,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   loginWithGoogle() {
+    if (this.isReaderCampaign && !this.isLoginMode) {
+      this.rememberRegistrationCommunicationChoices();
+    }
     this.loading = true;
     this.googleLoading = true;
     this.error = '';
@@ -397,6 +542,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   loginWithFacebook() {
+    if (this.isReaderCampaign && !this.isLoginMode) {
+      this.rememberRegistrationCommunicationChoices();
+    }
     this.loading = true;
     this.facebookLoading = true;
     this.error = '';
@@ -434,6 +582,42 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   private shouldFallbackToRedirect(errorCode: string): boolean {
     return errorCode === 'auth/popup-blocked'
       || errorCode === 'auth/operation-not-supported-in-this-environment';
+  }
+
+  private applyCampaignQueryState(mode: unknown, source: unknown): void {
+    if (mode === 'register') {
+      this.isLoginMode = false;
+    } else if (mode === 'login') {
+      this.isLoginMode = true;
+    }
+
+    this.isReaderCampaign = source === 'blog-membership';
+  }
+
+  private restorePendingCommunicationChoices(): void {
+    if (!this.isReaderCampaign) {
+      return;
+    }
+
+    const pending = this.membershipCampaign.getPendingPreferences();
+
+    if (!pending) {
+      return;
+    }
+
+    this.registerForm.patchValue({
+      browserNotifications: pending.browserNotifications,
+      newPostEmails: pending.newPostEmails,
+      newsletter: pending.newsletter,
+    });
+  }
+
+  private rememberRegistrationCommunicationChoices(): void {
+    this.membershipCampaign.rememberPendingPreferences({
+      browserNotifications: this.registerForm.get('browserNotifications')?.value === true,
+      newPostEmails: this.registerForm.get('newPostEmails')?.value === true,
+      newsletter: this.registerForm.get('newsletter')?.value === true,
+    });
   }
 
   private startGoogleRedirectSignIn(): void {

@@ -1,6 +1,7 @@
-<div class="h-screen w-screen bg-cover bg-center relative" [style]="`background-image: url(${backgroundImage})`">
+<div class="login-page relative h-[100dvh] w-full overflow-y-auto bg-cover bg-center" [style]="`background-image: url(${backgroundImage})`">
   <!-- Blurred overlay -->
-  <div class="absolute inset-0  backdrop-blur-md flex items-center justify-center">
+  <!-- Keep one viewport scroller so virtual keyboards reveal focused fields without clipping their siblings. -->
+  <div class="login-page-stage flex min-h-full items-start justify-center px-4 pb-28 pt-10 backdrop-blur-md">
 
     <!-- Login Box -->
     <div class="flex flex-col items-center text-white space-y-4">
@@ -13,7 +14,12 @@
       </div>
 
       <!-- Username label (optional if prefilled) -->
-      <h2 class="text-center text-lg">{{ isLoginMode ? 'Login' : 'Register' }}</h2>
+      <h2 class="text-center text-lg">
+        {{ isLoginMode ? 'Login' : (isReaderCampaign ? 'Create reader account' : 'Register') }}
+      </h2>
+      <p *ngIf="isReaderCampaign" class="max-w-sm text-center text-sm leading-6 text-white/70">
+        Sign up to comment, earn reader points, and choose how you hear about new posts.
+      </p>
 
       <!-- src/app/components/game/system/login-screen/login-screen.component.html -->
       <div class="login-container">
@@ -26,13 +32,18 @@
           </div>
 
           <!-- Login Form -->
-          <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-4">
+          <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-4" autocomplete="on">
             <div class="form-group relative flex flex-col justify-center items-center">
               <input
                 type="email"
                 id="email"
+                name="email"
                 formControlName="email"
                 class="login-input"
+                autocomplete="email"
+                inputmode="email"
+                autocapitalize="none"
+                spellcheck="false"
                 placeholder="Enter your email">
               <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -51,8 +62,10 @@
               <input
                 type="password"
                 id="password"
+                name="password"
                 formControlName="password"
                 class="login-input"
+                autocomplete="current-password"
                 placeholder="Enter your password">
               <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -73,13 +86,15 @@
           </form>
 
           <!-- Register Form -->
-          <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="space-y-4">
+          <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="space-y-4" autocomplete="on">
             <div class="form-group">
               <input
                 type="text"
                 id="displayName"
+                name="name"
                 formControlName="displayName"
                 class="login-input"
+                autocomplete="name"
                 placeholder="Enter your name">
               <div *ngIf="registerForm.get('displayName')?.invalid && registerForm.get('displayName')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -91,8 +106,13 @@
               <input
                 type="email"
                 id="registerEmail"
+                name="email"
                 formControlName="email"
                 class="login-input"
+                autocomplete="email"
+                inputmode="email"
+                autocapitalize="none"
+                spellcheck="false"
                 placeholder="Enter your email">
               <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -104,8 +124,10 @@
               <input
                 type="password"
                 id="registerPassword"
+                name="password"
                 formControlName="password"
                 class="login-input"
+                autocomplete="new-password"
                 placeholder="Create a password">
               <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -117,14 +139,47 @@
               <input
                 type="password"
                 id="confirmPassword"
+                name="password-confirmation"
                 formControlName="confirmPassword"
                 class="login-input"
+                autocomplete="new-password"
                 placeholder="Confirm password">
               <div *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched"
                    class="text-red-500 text-sm mt-1">
                 Passwords don't match
               </div>
             </div>
+
+            <fieldset *ngIf="isReaderCampaign" class="reader-preferences">
+              <legend>Notification choices</legend>
+              <div class="reader-preference-list">
+                <label class="reader-preference">
+                  <input class="reader-preference-input" type="checkbox" formControlName="browserNotifications">
+                  <span class="reader-preference-copy">
+                    <strong>Browser alerts</strong>
+                    <small>Selected by default for the quickest new-post notice.</small>
+                  </span>
+                  <span class="reader-preference-switch" aria-hidden="true"><span></span></span>
+                </label>
+                <label class="reader-preference">
+                  <input class="reader-preference-input" type="checkbox" formControlName="newPostEmails">
+                  <span class="reader-preference-copy">
+                    <strong>New-post emails</strong>
+                    <small>Join the list for new-post email delivery.</small>
+                  </span>
+                  <span class="reader-preference-switch" aria-hidden="true"><span></span></span>
+                </label>
+                <label class="reader-preference">
+                  <input class="reader-preference-input" type="checkbox" formControlName="newsletter">
+                  <span class="reader-preference-copy">
+                    <strong>Occasional newsletter</strong>
+                    <small>Send periodic highlights and updates.</small>
+                  </span>
+                  <span class="reader-preference-switch" aria-hidden="true"><span></span></span>
+                </label>
+              </div>
+              <p class="reader-preference-note">Optional. Change any choice later in your profile.</p>
+            </fieldset>
 
             <div class="form-actions">
               <button
@@ -175,7 +230,7 @@
   </div>
 </div>
 
-<div class="absolute bottom-6 inset-x-0 flex justify-center space-x-12 text-white/70 text-xs">
+<div *ngIf="!isReaderCampaign" class="fixed bottom-6 inset-x-0 flex justify-center space-x-12 text-white/70 text-xs">
   <button
     type="button"
     class="flex flex-col items-center text-white/70 hover:text-white/90 bg-transparent border-0 p-0"

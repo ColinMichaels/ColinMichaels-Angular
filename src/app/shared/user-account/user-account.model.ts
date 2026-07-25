@@ -25,6 +25,15 @@ export interface UserAccountPoints {
   approvedComments: number;
 }
 
+export type CommunicationPreferenceSource = 'signup-campaign' | 'profile';
+
+export interface UserCommunicationPreferences {
+  newPostEmails: boolean;
+  newsletter: boolean;
+  source: CommunicationPreferenceSource;
+  updatedAt: string;
+}
+
 export interface UserAccountDocument {
   uid: string;
   email: string | null;
@@ -35,6 +44,7 @@ export interface UserAccountDocument {
   roles: readonly string[];
   commentTrustStatus: UserCommentTrustStatus;
   points: UserAccountPoints;
+  communicationPreferences?: UserCommunicationPreferences;
   createdAt: string;
   updatedAt: string;
   lastSeenAt: string;
@@ -121,6 +131,33 @@ export const CAT_CORNER_ACCESS_ROLES: readonly UserRole[] = [CAT_CORNER_ADDICT_R
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+export function normalizeCommunicationPreferences(
+  value: unknown
+): UserCommunicationPreferences | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const source = value['source'];
+  const updatedAt = typeof value['updatedAt'] === 'string' ? value['updatedAt'].trim() : '';
+
+  if (
+    typeof value['newPostEmails'] !== 'boolean'
+    || typeof value['newsletter'] !== 'boolean'
+    || (source !== 'signup-campaign' && source !== 'profile')
+    || !updatedAt
+  ) {
+    return null;
+  }
+
+  return {
+    newPostEmails: value['newPostEmails'],
+    newsletter: value['newsletter'],
+    source,
+    updatedAt,
+  };
 }
 
 export function hasRoleClaim(claims: Record<string, unknown>, role: string): boolean {
