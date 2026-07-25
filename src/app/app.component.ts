@@ -17,6 +17,9 @@ import {PwaPushService} from './shared/pwa/pwa-push.service';
 import {ScreenSaverLauncherComponent} from './features/screen-saver/screen-saver-launcher.component';
 import {AuthService} from './services/auth.service';
 import {UserViewBannerComponent} from './shared/user-view/user-view-banner.component';
+import {
+  BlogMembershipCampaignComponent
+} from './features/blog/components/signup-campaign/blog-membership-campaign.component';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -56,6 +59,15 @@ export function shouldShowReaderTools(url: string): boolean {
   return READER_ROUTES.some(route => currentUrl === route || (route !== '/' && routeMatchesPrefix(currentUrl, route)));
 }
 
+export function shouldShowBlogMembershipCampaign(url: string): boolean {
+  const currentUrl = url.split('?')[0].split('#')[0];
+  const blogRoute = `/${PATH_NAMES.BLOG}`;
+  const previewRoute = `${blogRoute}/preview`;
+
+  return routeMatchesPrefix(currentUrl, blogRoute)
+    && !routeMatchesPrefix(currentUrl, previewRoute);
+}
+
 @Component({
   selector: 'app-root',
   imports: [
@@ -66,6 +78,7 @@ export function shouldShowReaderTools(url: string): boolean {
     ScreenSaverLauncherComponent,
     SiteHeaderComponent,
     UserViewBannerComponent,
+    BlogMembershipCampaignComponent,
   ],
   templateUrl: './app.component.html',
   styles: [],
@@ -98,6 +111,9 @@ export class AppComponent {
   });
   protected readonly showReaderTools = computed(() => {
     return shouldShowReaderTools(this.currentUrl());
+  });
+  protected readonly showBlogMembershipCampaign = computed(() => {
+    return shouldShowBlogMembershipCampaign(this.currentUrl());
   });
   protected readonly activeUserView = toSignal(this.authService.userView$, {initialValue: null});
 

@@ -4,6 +4,7 @@ import {
   CAT_CORNER_ADDICT_ROLE,
   getClaimRoles,
   hasAnyRoleClaim,
+  normalizeCommunicationPreferences,
   TRUSTED_COMMENT_ROLES,
   USER_ROLE_DEFINITIONS,
 } from './user-account.model';
@@ -36,5 +37,24 @@ describe('user account model', () => {
     expect(CAT_CORNER_ACCESS_ROLES).toEqual([CAT_CORNER_ADDICT_ROLE]);
     expect(getClaimRoles(claims)).toContain(CAT_CORNER_ADDICT_ROLE);
     expect(hasAnyRoleClaim(claims, CAT_CORNER_ACCESS_ROLES)).toBeTrue();
+  });
+
+  it('normalizes valid communication preferences and rejects incomplete consent data', () => {
+    expect(normalizeCommunicationPreferences({
+      newPostEmails: true,
+      newsletter: false,
+      source: 'signup-campaign',
+      updatedAt: '2026-07-25T12:00:00.000Z',
+    })).toEqual({
+      newPostEmails: true,
+      newsletter: false,
+      source: 'signup-campaign',
+      updatedAt: '2026-07-25T12:00:00.000Z',
+    });
+    expect(normalizeCommunicationPreferences({
+      newPostEmails: true,
+      source: 'profile',
+      updatedAt: '2026-07-25T12:00:00.000Z',
+    })).toBeNull();
   });
 });

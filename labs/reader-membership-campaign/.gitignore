@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore rendered exports from Git; publish selected deliverables from the main app asset tree.
+out
+output

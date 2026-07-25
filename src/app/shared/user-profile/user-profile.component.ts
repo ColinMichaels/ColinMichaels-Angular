@@ -19,6 +19,9 @@ import {
 } from '../user-account/user-account.model';
 import {UserAccountService} from '../user-account/user-account.service';
 import {writeAuthDebug} from '../debug/auth-debug';
+import {
+  CommunicationPreferencesComponent
+} from '../user-account/communication-preferences.component';
 
 function getDisplayName(profile: UserAccountProfile): string {
   return profile.displayName || profile.email || 'User';
@@ -42,6 +45,7 @@ interface LinkedProviderView {
     ArticleLibraryControlComponent,
     OfflineArticlesControlComponent,
     PwaNativeControlsComponent,
+    CommunicationPreferencesComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -118,6 +122,14 @@ interface LinkedProviderView {
               </header>
               <app-pwa-native-controls surface="profile"/>
             </section>
+          </section>
+
+          <section class="border border-zinc-800 bg-zinc-900 p-5">
+            <app-communication-preferences
+              [uid]="account.uid"
+              [preferences]="accountDocument()?.communicationPreferences ?? null"
+              [disabled]="!!userView()"
+            />
           </section>
 
           <section class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">

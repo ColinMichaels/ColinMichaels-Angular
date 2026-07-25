@@ -57,6 +57,23 @@ service cloud.firestore {
         && points.approvedComments == 0;
     }
 
+    function hasValidCommunicationPreferences(preferences) {
+      return preferences is map
+        && preferences.keys().hasOnly([
+          'newPostEmails',
+          'newsletter',
+          'source',
+          'updatedAt'
+        ])
+        && preferences.newPostEmails is bool
+        && preferences.newsletter is bool
+        && (
+          preferences.source == 'signup-campaign'
+          || preferences.source == 'profile'
+        )
+        && preferences.updatedAt is string;
+    }
+
     function isApprovedComment() {
       return resource.data.status == 'approved';
     }
@@ -199,6 +216,7 @@ service cloud.firestore {
           'roles',
           'commentTrustStatus',
           'points',
+          'communicationPreferences',
           'createdAt',
           'updatedAt',
           'lastSeenAt'
@@ -207,16 +225,25 @@ service cloud.firestore {
         && request.resource.data.roles is list
         && request.resource.data.roles.size() == 0
         && request.resource.data.commentTrustStatus == 'new'
-        && hasZeroPoints(request.resource.data.points);
+        && hasZeroPoints(request.resource.data.points)
+        && (
+          !request.resource.data.keys().hasAny(['communicationPreferences'])
+          || hasValidCommunicationPreferences(request.resource.data.communicationPreferences)
+        );
       allow update: if canManageUserAccounts()
         || (
           isOwner(userId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName',
             'photoURL',
+            'communicationPreferences',
             'lastSeenAt',
             'updatedAt'
           ])
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['communicationPreferences'])
+            || hasValidCommunicationPreferences(request.resource.data.communicationPreferences)
+          )
         );
       allow delete: if canManageUserAccounts();
     }

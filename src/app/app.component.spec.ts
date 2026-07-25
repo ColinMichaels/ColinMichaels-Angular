@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {
   AppComponent,
+  shouldShowBlogMembershipCampaign,
   shouldShowOsNotifications,
   shouldShowReaderTools,
   shouldShowSiteHeader,
@@ -36,6 +37,13 @@ describe('AppComponent', () => {
     expect(shouldShowReaderTools('/cat-corner')).toBeTrue();
     expect(shouldShowReaderTools('/cat-corner/unlock?returnUrl=%2Fblog%2Fgretchen')).toBeTrue();
     expect(shouldShowReaderTools('/admin')).toBeFalse();
+  });
+
+  it('shows the membership campaign on public blog routes only', () => {
+    expect(shouldShowBlogMembershipCampaign('/blog')).toBeTrue();
+    expect(shouldShowBlogMembershipCampaign('/blog/member-benefits?source=social')).toBeTrue();
+    expect(shouldShowBlogMembershipCampaign('/blog/preview/private-token')).toBeFalse();
+    expect(shouldShowBlogMembershipCampaign('/topics')).toBeFalse();
   });
 
 });

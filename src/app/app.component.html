@@ -22,3 +22,8 @@
 </div>
 <app-user-view-banner/>
 <app-screen-saver-launcher/>
+@if (showBlogMembershipCampaign()) {
+  @defer (when showBlogMembershipCampaign()) {
+    <app-blog-membership-campaign/>
+  }
+}
