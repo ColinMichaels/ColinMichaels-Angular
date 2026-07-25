@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
-import {firstValueFrom, of, switchMap, tap} from 'rxjs';
+import {firstValueFrom, of, shareReplay, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {ArticleLibraryControlComponent} from '../../features/blog/components/article-library-control/article-library-control.component';
@@ -145,7 +145,9 @@ interface LinkedProviderView {
                 <div>
                   <dt class="text-zinc-500">Provider Actions</dt>
                   <dd class="mt-2">
-                    @if (hasLinkedProvider('facebook.com')) {
+                    @if (userView()) {
+                      <span class="border border-amber-400/40 bg-amber-950/30 px-2 py-1 text-xs text-amber-100">Unavailable during View as preview</span>
+                    } @else if (hasLinkedProvider('facebook.com')) {
                       <span class="border border-emerald-400/40 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-100">Facebook connected</span>
                     } @else {
                       <button
@@ -278,15 +280,18 @@ export class UserProfileComponent {
   protected readonly linkStatusMessage = signal<string | null>(null);
   protected readonly linkErrorMessage = signal<string | null>(null);
   private readonly linkedProviderIdsOverride = signal<readonly string[] | null>(null);
-  protected readonly profile = toSignal(
-    this.authService.getCurrentUserProfile(true).pipe(
+  private readonly profile$ = this.authService.getCurrentUserProfile(true).pipe(
       tap(profile => this.debugProfile('profile resolved', {
         signedIn: !!profile,
         profile: profile ? this.createProfileDebugSummary(profile) : null,
-      }))
-    ),
+      })),
+    shareReplay({bufferSize: 1, refCount: true})
+  );
+  protected readonly profile = toSignal(
+    this.profile$,
     {initialValue: null}
   );
+  protected readonly userView = toSignal(this.authService.userView$, {initialValue: null});
   protected readonly displayName = computed(() => {
     const profile = this.profile();
     return profile ? getDisplayName(profile) : 'User';
@@ -302,14 +307,14 @@ export class UserProfileComponent {
     return ADMIN_CONSOLE_ROLES.some(role => roles.includes(role));
   });
   protected readonly accountDocument = toSignal(
-    this.authService.user$.pipe(
-      switchMap(user => user ? this.userAccountService.listenToUserAccount(user.uid) : of(null))
+    this.profile$.pipe(
+      switchMap(profile => profile ? this.userAccountService.listenToUserAccount(profile.uid) : of(null))
     ),
     {initialValue: null}
   );
   protected readonly pointEvents = toSignal(
-    this.authService.user$.pipe(
-      switchMap(user => user ? this.userAccountService.listenToPointEvents(user.uid) : of([]))
+    this.profile$.pipe(
+      switchMap(profile => profile ? this.userAccountService.listenToPointEvents(profile.uid) : of([]))
     ),
     {initialValue: []}
   );
@@ -405,7 +410,7 @@ export class UserProfileComponent {
   }
 
   protected async connectFacebook(): Promise<void> {
-    if (this.isLinkingFacebook()) {
+    if (this.isLinkingFacebook() || this.userView()) {
       return;
     }
 

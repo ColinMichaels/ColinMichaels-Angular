@@ -17,6 +17,7 @@ describe('AuthService', () => {
   const userAccountServiceSpy = jasmine.createSpyObj<UserAccountService>('UserAccountService', ['bootstrapUserProfile']);
 
   beforeEach(() => {
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         {provide: FIREBASE_AUTH, useValue: {} as Auth},
@@ -92,5 +93,130 @@ describe('AuthService', () => {
 
     expect(authorizations.map(authorization => authorization.isAuthorized)).toEqual([false, true]);
     expect(authUser.getIdToken).toHaveBeenCalledWith(true);
+  });
+
+  it('lets an admin apply and exit another user role view without replacing the Firebase session', async () => {
+    TestBed.resetTestingModule();
+    const createToken = (claims: Record<string, unknown>): string => {
+      const now = Math.floor(Date.now() / 1000);
+      const payload = btoa(JSON.stringify({
+        exp: now + 3600,
+        auth_time: now - 60,
+        iat: now,
+        ...claims,
+      })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+      return `e30.${payload}.signature`;
+    };
+    const adminUser = {
+      uid: 'admin-uid',
+      email: 'admin@example.com',
+      displayName: 'Admin',
+      photoURL: null,
+      emailVerified: true,
+      isAnonymous: false,
+      providerData: [],
+      getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(createToken({roles: {admin: true}})),
+    } as unknown as import('firebase/auth').User;
+    const fakeAuth = {
+      currentUser: adminUser,
+      onAuthStateChanged: (next: (user: import('firebase/auth').User | null) => void) => {
+        next(adminUser);
+        return () => undefined;
+      },
+    } as unknown as Auth;
+    const accountService = jasmine.createSpyObj<UserAccountService>('UserAccountService', ['bootstrapUserProfile']);
+    accountService.bootstrapUserProfile.and.resolveTo({
+      uid: adminUser.uid,
+      roles: ['admin']
+    } as unknown as UserAccountDocument);
+
+    TestBed.configureTestingModule({
+      providers: [
+        {provide: FIREBASE_AUTH, useValue: fakeAuth},
+        {provide: Router, useValue: routerSpy},
+        {provide: LogService, useValue: logServiceSpy},
+        {provide: UserAccountService, useValue: accountService},
+      ],
+    });
+    const viewService = TestBed.inject(AuthService);
+
+    await viewService.startViewingAsUser({
+      uid: 'viewer-uid',
+      email: 'viewer@example.com',
+      displayName: 'Viewer',
+      photoURL: null,
+      emailVerified: true,
+      providerIds: ['password'],
+      roles: ['viewer'],
+      customClaims: {roles: {viewer: true}},
+      disabled: false,
+    });
+
+    const viewedAuthorization = await firstValueFrom(viewService.getRoleAuthorization(['viewer']));
+    const viewedProfile = await firstValueFrom(viewService.getCurrentUserProfile());
+
+    expect(viewedAuthorization.uid).toBe('viewer-uid');
+    expect(viewedAuthorization.isAuthorized).toBeTrue();
+    expect(viewedAuthorization.isAdmin).toBeFalse();
+    expect(viewedProfile?.displayName).toBe('Viewer');
+    expect(fakeAuth.currentUser).toBe(adminUser);
+
+    viewService.stopViewingAsUser();
+    const restoredAuthorization = await firstValueFrom(viewService.getRoleAuthorization(['admin']));
+
+    expect(restoredAuthorization.uid).toBe('admin-uid');
+    expect(restoredAuthorization.isAuthorized).toBeTrue();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it('rejects View as activation when the real account is not an admin', async () => {
+    TestBed.resetTestingModule();
+    const now = Math.floor(Date.now() / 1000);
+    const payload = btoa(JSON.stringify({
+      exp: now + 3600,
+      auth_time: now - 60,
+      iat: now,
+      roles: {cmsAdmin: true},
+    })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const cmsUser = {
+      uid: 'cms-uid',
+      email: 'cms@example.com',
+      displayName: 'CMS Admin',
+      photoURL: null,
+      emailVerified: true,
+      isAnonymous: false,
+      providerData: [],
+      getIdToken: jasmine.createSpy('getIdToken').and.resolveTo(`e30.${payload}.signature`),
+    } as unknown as import('firebase/auth').User;
+    const fakeAuth = {
+      currentUser: cmsUser,
+      onAuthStateChanged: (next: (user: import('firebase/auth').User | null) => void) => {
+        next(cmsUser);
+        return () => undefined;
+      },
+    } as unknown as Auth;
+
+    TestBed.configureTestingModule({
+      providers: [
+        {provide: FIREBASE_AUTH, useValue: fakeAuth},
+        {provide: Router, useValue: routerSpy},
+        {provide: LogService, useValue: logServiceSpy},
+        {provide: UserAccountService, useValue: userAccountServiceSpy},
+      ],
+    });
+    const viewService = TestBed.inject(AuthService);
+
+    await expectAsync(viewService.startViewingAsUser({
+      uid: 'reader-uid',
+      email: 'reader@example.com',
+      displayName: 'Reader',
+      photoURL: null,
+      emailVerified: true,
+      providerIds: [],
+      roles: [],
+      customClaims: {},
+      disabled: false,
+    })).toBeRejectedWithError('Only an admin can view the application as another user.');
   });
 });

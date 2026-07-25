@@ -15,6 +15,8 @@ import {ShareAttributionService} from './features/blog/services/share-attributio
 import {PwaStatusComponent} from './shared/pwa/pwa-status.component';
 import {PwaPushService} from './shared/pwa/pwa-push.service';
 import {ScreenSaverLauncherComponent} from './features/screen-saver/screen-saver-launcher.component';
+import {AuthService} from './services/auth.service';
+import {UserViewBannerComponent} from './shared/user-view/user-view-banner.component';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -63,6 +65,7 @@ export function shouldShowReaderTools(url: string): boolean {
     ReaderToolsComponent,
     ScreenSaverLauncherComponent,
     SiteHeaderComponent,
+    UserViewBannerComponent,
   ],
   templateUrl: './app.component.html',
   styles: [],
@@ -77,6 +80,7 @@ export class AppComponent {
   private readonly shareAttribution = inject(ShareAttributionService);
   private readonly pushNotifications = inject(PwaPushService);
   private readonly theme = inject(SiteThemeService);
+  private readonly authService = inject(AuthService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -95,6 +99,7 @@ export class AppComponent {
   protected readonly showReaderTools = computed(() => {
     return shouldShowReaderTools(this.currentUrl());
   });
+  protected readonly activeUserView = toSignal(this.authService.userView$, {initialValue: null});
 
   constructor() {
     this.sitePreloader.start();

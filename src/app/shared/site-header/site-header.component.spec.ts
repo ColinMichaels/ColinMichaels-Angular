@@ -27,6 +27,7 @@ describe('SiteHeaderComponent', () => {
     }));
     const authService = {
       user$: of(null),
+      getCurrentUserProfile: jasmine.createSpy('getCurrentUserProfile').and.returnValue(of(null)),
       getRoleAuthorization,
     };
     const searchOpen = signal(false);
