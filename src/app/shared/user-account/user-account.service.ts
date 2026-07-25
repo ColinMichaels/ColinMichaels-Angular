@@ -8,13 +8,19 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 import {Functions, httpsCallable} from 'firebase/functions';
 import {Observable} from 'rxjs';
 
 import {FIREBASE_FIRESTORE, FIREBASE_FUNCTIONS} from '../../services/firebase/firebase.tokens';
-import {UserAccountDocument, UserPointEvent} from './user-account.model';
+import {
+  CommunicationPreferenceSource,
+  UserAccountDocument,
+  UserCommunicationPreferences,
+  UserPointEvent,
+} from './user-account.model';
 
 interface BootstrapUserProfileRequest {
   email: string | null;
@@ -83,6 +89,26 @@ export class UserAccountService {
         error => observer.error(error)
       );
     });
+  }
+
+  async updateCommunicationPreferences(
+    uid: string,
+    preferences: Pick<UserCommunicationPreferences, 'newPostEmails' | 'newsletter'>,
+    source: CommunicationPreferenceSource
+  ): Promise<UserCommunicationPreferences> {
+    const communicationPreferences: UserCommunicationPreferences = {
+      newPostEmails: preferences.newPostEmails,
+      newsletter: preferences.newsletter,
+      source,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await updateDoc(doc(this.getFirestore(), 'users', uid), {
+      communicationPreferences,
+      updatedAt: communicationPreferences.updatedAt,
+    });
+
+    return communicationPreferences;
   }
 
   private getFirestore(): Firestore {

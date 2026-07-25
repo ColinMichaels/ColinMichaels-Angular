@@ -23,6 +23,7 @@ This folder is the entry point for project documentation.
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
 - [Public Blog Shell](../ARCHITECTURE/PUBLIC_BLOG_SHELL.md)
+- [Reader Membership Campaign](../ARCHITECTURE/READER_MEMBERSHIP_CAMPAIGN.md)
 - [Privacy Policy and Public Footer](../ARCHITECTURE/PRIVACY_POLICY_AND_PUBLIC_FOOTER.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
 - [Publishing Calendar](../ARCHITECTURE/PUBLISHING_CALENDAR.md)
@@ -33,6 +34,10 @@ This folder is the entry point for project documentation.
 - [Topic Pages and Reusable Post Listing](../ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md)
 - [Authors and Bylines](../ARCHITECTURE/AUTHORS_AND_BYLINES.md)
 - [Cat Corner](../ARCHITECTURE/CAT_CORNER.md)
+
+## Campaigns
+
+- [Reader Membership Launch](../CAMPAIGNS/READER_MEMBERSHIP_LAUNCH.md)
 
 ## Planning
 

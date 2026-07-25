@@ -9,6 +9,7 @@ import {OsUserService} from '../../services/os-user.service';
 import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
 import {LogService} from '../../services/log.service';
+import {BlogMembershipCampaignStateService} from '../../../../features/blog/services/blog-membership-campaign-state.service';
 
 import { LoginScreenComponent } from './login-screen.component';
 
@@ -31,6 +32,10 @@ describe('LoginScreenComponent', () => {
   };
   let userServiceMock: {
     updateUser: jasmine.Spy;
+  };
+  let membershipCampaignMock: {
+    getPendingPreferences: jasmine.Spy;
+    rememberPendingPreferences: jasmine.Spy;
   };
 
   const firebaseUser = {
@@ -67,6 +72,10 @@ describe('LoginScreenComponent', () => {
     userServiceMock = {
       updateUser: jasmine.createSpy('updateUser').and.returnValue(Promise.resolve())
     };
+    membershipCampaignMock = {
+      getPendingPreferences: jasmine.createSpy('getPendingPreferences').and.returnValue(null),
+      rememberPendingPreferences: jasmine.createSpy('rememberPendingPreferences'),
+    };
     const soundServiceMock = jasmine.createSpyObj<SoundService>('SoundService', ['stopAll']);
     const musicServiceMock = jasmine.createSpyObj<MusicService>('MusicService', ['stopAll']);
     const loggerMock = jasmine.createSpyObj<LogService>('LogService', ['info', 'error', 'warn', 'debug']);
@@ -79,6 +88,7 @@ describe('LoginScreenComponent', () => {
         {provide: SoundService, useValue: soundServiceMock},
         {provide: MusicService, useValue: musicServiceMock},
         {provide: LogService, useValue: loggerMock},
+        {provide: BlogMembershipCampaignStateService, useValue: membershipCampaignMock},
         {
           provide: ActivatedRoute,
           useValue: {
@@ -108,6 +118,60 @@ describe('LoginScreenComponent', () => {
     expect(component.loading).toBeTrue();
     expect(component.facebookLoading).toBeTrue();
     expect(authServiceMock.loginWithFacebook).toHaveBeenCalled();
+  });
+
+  it('shows notification choices only for reader campaign registration', () => {
+    queryParams$.next({mode: 'register', source: 'blog-membership'});
+    fixture.detectChanges();
+
+    expect(component.isLoginMode).toBeFalse();
+    expect(component.isReaderCampaign).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.reader-preferences')).not.toBeNull();
+
+    queryParams$.next({mode: 'register'});
+    fixture.detectChanges();
+
+    expect(component.isReaderCampaign).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.reader-preferences')).toBeNull();
+  });
+
+  it('keeps every registration field rendered after the email value changes', () => {
+    queryParams$.next({mode: 'register', source: 'blog-membership'});
+    fixture.detectChanges();
+
+    component.registerForm.get('email')?.setValue('reader@example.com');
+    fixture.detectChanges();
+
+    const formElement = fixture.nativeElement as HTMLElement;
+    const inputs = Array.from(formElement.querySelectorAll<HTMLInputElement>('.login-input'));
+
+    expect(inputs.map(input => input.id)).toEqual([
+      'displayName',
+      'registerEmail',
+      'registerPassword',
+      'confirmPassword',
+    ]);
+    expect(inputs.find(input => input.id === 'registerEmail')?.autocomplete).toBe('email');
+    expect(inputs.find(input => input.id === 'registerPassword')?.autocomplete).toBe('new-password');
+    expect(inputs.find(input => input.id === 'confirmPassword')?.autocomplete).toBe('new-password');
+  });
+
+  it('preserves selected campaign choices before social registration', () => {
+    authServiceMock.loginWithGoogle.and.returnValue(NEVER);
+    queryParams$.next({mode: 'register', source: 'blog-membership'});
+    component.registerForm.patchValue({
+      browserNotifications: true,
+      newPostEmails: true,
+      newsletter: false,
+    });
+
+    component.loginWithGoogle();
+
+    expect(membershipCampaignMock.rememberPendingPreferences).toHaveBeenCalledWith({
+      browserNotifications: true,
+      newPostEmails: true,
+      newsletter: false,
+    });
   });
 
   it('returns email users to the public home page when no redirect was requested', () => {
