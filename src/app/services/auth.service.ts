@@ -19,7 +19,7 @@ import {
   User,
   UserCredential
 } from 'firebase/auth';
-import {combineLatest, defer, from, map, Observable, of, shareReplay, Subject, throwError} from 'rxjs';
+import {BehaviorSubject, combineLatest, defer, from, map, Observable, of, shareReplay, Subject, throwError} from 'rxjs';
 import {catchError, startWith, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
@@ -43,6 +43,24 @@ export interface AdminAuthorization {
   isAuthorized: boolean;
   claims: Record<string, unknown>;
   requiredRoles: readonly string[];
+}
+
+export interface UserViewTarget {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
+  providerIds: readonly string[];
+  roles: readonly string[];
+  customClaims: Record<string, unknown>;
+  disabled: boolean;
+}
+
+export interface UserViewSession extends UserAccountProfile {
+  actorUid: string;
+  actorEmail: string | null;
+  disabled: boolean;
 }
 
 export interface AuthProviderConflict {
@@ -75,6 +93,48 @@ function hasSuperAdminClaim(claims: Record<string, unknown>): boolean {
   return hasAnyRoleClaim(claims, USER_MANAGEMENT_ACCESS_ROLES);
 }
 
+const USER_VIEW_SESSION_STORAGE_KEY = 'admin.user-view.session.v1';
+const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+
+function getNullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function getStringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+}
+
+function parseStoredUserView(value: unknown): UserViewSession | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const uid = getNullableString(value['uid'])?.trim() ?? '';
+  const actorUid = getNullableString(value['actorUid'])?.trim() ?? '';
+  const roles = getStringList(value['roles']).filter(role => roleNamePattern.test(role));
+  const providerIds = getStringList(value['providerIds']);
+  const claims = isRecord(value['claims']) ? value['claims'] : {};
+
+  if (!uid || !actorUid) {
+    return null;
+  }
+
+  return {
+    uid,
+    actorUid,
+    actorEmail: getNullableString(value['actorEmail']),
+    email: getNullableString(value['email']),
+    displayName: getNullableString(value['displayName']),
+    photoURL: getNullableString(value['photoURL']),
+    emailVerified: value['emailVerified'] === true,
+    isAnonymous: false,
+    providerIds,
+    roles,
+    claims,
+    disabled: value['disabled'] === true,
+  };
+}
+
 export function getAuthProviderLabel(providerId: string): string {
   switch (providerId) {
     case 'facebook.com':
@@ -96,8 +156,11 @@ export function getAuthProviderLabel(providerId: string): string {
 export class AuthService {
   private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
   private readonly claimsRefresh = new Subject<void>();
+  private readonly userViewSubject = new BehaviorSubject<UserViewSession | null>(null);
+  private userViewRevision = 0;
 
   readonly user$: Observable<User | null>;
+  readonly userView$ = this.userViewSubject.asObservable();
 
   constructor(
     private router: Router,
@@ -107,6 +170,7 @@ export class AuthService {
     const auth = this.auth;
     if (!auth) {
       this.logger.warn('Auth service initialized without Firebase Auth provider.');
+      this.clearStoredUserView();
       this.user$ = of(null);
       return;
     }
@@ -121,6 +185,9 @@ export class AuthService {
           });
           if (currentUser) {
             void this.bootstrapUserProfile(currentUser);
+            void this.restoreUserView(currentUser);
+          } else {
+            this.stopViewingAsUser();
           }
           observer.next(currentUser);
         },
@@ -371,6 +438,7 @@ export class AuthService {
       return throwError(() => new Error('Firebase Auth is not initialized'));
     }
 
+    this.stopViewingAsUser();
     this.debugAuth('logout start', {
       currentUser: auth.currentUser ? this.createUserDebugSummary(auth.currentUser) : null,
     });
@@ -412,6 +480,65 @@ export class AuthService {
     return this.getRoleAuthorization(['admin', 'cmsAdmin'], forceRefresh);
   }
 
+  async startViewingAsUser(target: UserViewTarget): Promise<void> {
+    const currentUser = this.auth?.currentUser;
+
+    if (!currentUser) {
+      throw new Error('Sign in as an admin before viewing the application as another user.');
+    }
+
+    if (currentUser.uid === target.uid) {
+      throw new Error('Choose a different user to start a View as session.');
+    }
+
+    const tokenResult = await getIdTokenResult(currentUser, true);
+    const actorClaims = tokenResult.claims as Record<string, unknown>;
+
+    if (!hasSuperAdminClaim(actorClaims)) {
+      this.stopViewingAsUser();
+      throw new Error('Only an admin can view the application as another user.');
+    }
+
+    const session: UserViewSession = {
+      uid: target.uid,
+      email: target.email,
+      displayName: target.displayName,
+      photoURL: target.photoURL,
+      emailVerified: target.emailVerified,
+      isAnonymous: false,
+      providerIds: [...target.providerIds],
+      roles: [...target.roles].filter(role => roleNamePattern.test(role)),
+      claims: {...target.customClaims},
+      actorUid: currentUser.uid,
+      actorEmail: currentUser.email,
+      disabled: target.disabled,
+    };
+
+    this.userViewRevision += 1;
+    this.writeStoredUserView(session);
+    this.userViewSubject.next(session);
+    this.debugAuth('user view started', {
+      actorUid: session.actorUid,
+      targetUid: session.uid,
+      targetRoles: session.roles,
+      targetDisabled: session.disabled,
+    });
+  }
+
+  stopViewingAsUser(): void {
+    const activeSession = this.userViewSubject.value;
+    this.userViewRevision += 1;
+    this.userViewSubject.next(null);
+    this.clearStoredUserView();
+
+    if (activeSession) {
+      this.debugAuth('user view stopped', {
+        actorUid: activeSession.actorUid,
+        targetUid: activeSession.uid,
+      });
+    }
+  }
+
   refreshCurrentUserClaims(): Observable<void> {
     const currentUser = this.auth?.currentUser;
 
@@ -423,6 +550,9 @@ export class AuthService {
 
     return this.fromAuthOperation(() => getIdTokenResult(currentUser, true)).pipe(
       tap(tokenResult => {
+        if (!hasSuperAdminClaim(tokenResult.claims as Record<string, unknown>)) {
+          this.stopViewingAsUser();
+        }
         this.debugAuth('claim refresh success', {
           user: this.createUserDebugSummary(currentUser),
           claims: this.createClaimDebugSummary(tokenResult.claims as Record<string, unknown>),
@@ -442,11 +572,26 @@ export class AuthService {
     return combineLatest([
       this.user$,
       this.claimsRefresh.pipe(startWith(undefined)),
+      this.userView$,
     ]).pipe(
-      switchMap(([currentUser]) => {
+      switchMap(([currentUser, , userView]) => {
         if (!currentUser) {
           this.debugAuth('profile requested without signed-in user', {forceRefresh});
           return of(null);
+        }
+
+        if (userView?.actorUid === currentUser.uid) {
+          return of({
+            uid: userView.uid,
+            email: userView.email,
+            displayName: userView.displayName,
+            photoURL: userView.photoURL,
+            emailVerified: userView.emailVerified,
+            isAnonymous: false,
+            providerIds: userView.providerIds,
+            roles: userView.roles,
+            claims: userView.claims,
+          });
         }
 
         this.debugAuth('profile token load start', {
@@ -505,8 +650,9 @@ export class AuthService {
     return combineLatest([
       this.user$,
       this.claimsRefresh.pipe(startWith(undefined)),
+      this.userView$,
     ]).pipe(
-      switchMap(([currentUser]) => {
+      switchMap(([currentUser, , userView]) => {
         if (!currentUser) {
           this.debugAuth('role authorization without signed-in user', {
             requiredRoles,
@@ -531,10 +677,19 @@ export class AuthService {
 
         return this.fromAuthOperation(() => getIdTokenResult(currentUser, forceRefresh)).pipe(
           map(tokenResult => {
-            const claims = tokenResult.claims as Record<string, unknown>;
+            const actorClaims = tokenResult.claims as Record<string, unknown>;
+            const canUseUserView = !!userView
+              && userView.actorUid === currentUser.uid
+              && hasSuperAdminClaim(actorClaims);
+            const effectiveUser = canUseUserView ? userView : null;
+            const claims = effectiveUser?.claims ?? actorClaims;
             const isAdmin = hasAdminClaim(claims);
             const isSuperAdmin = hasSuperAdminClaim(claims);
             const isAuthorized = isSuperAdmin || hasAnyRoleClaim(claims, requiredRoles);
+
+            if (userView && !canUseUserView) {
+              this.stopViewingAsUser();
+            }
 
             this.debugAuth('role authorization result', {
               requiredRoles,
@@ -543,7 +698,12 @@ export class AuthService {
               isAdmin,
               isSuperAdmin,
               isAuthorized,
-              user: this.createUserDebugSummary(currentUser),
+              user: effectiveUser ? {
+                uid: effectiveUser.uid,
+                email: effectiveUser.email,
+                displayName: effectiveUser.displayName,
+                viewedBy: currentUser.uid,
+              } : this.createUserDebugSummary(currentUser),
               claims: this.createClaimDebugSummary(claims),
               authTime: tokenResult.authTime,
               issuedAtTime: tokenResult.issuedAtTime,
@@ -551,8 +711,8 @@ export class AuthService {
             });
 
             return {
-              uid: currentUser.uid,
-              email: currentUser.email,
+              uid: effectiveUser?.uid ?? currentUser.uid,
+              email: effectiveUser?.email ?? currentUser.email,
               isAuthenticated: true,
               isAdmin,
               isAuthorized,
@@ -561,6 +721,9 @@ export class AuthService {
             };
           }),
           catchError(error => {
+            if (userView) {
+              this.stopViewingAsUser();
+            }
             this.debugAuth('role authorization token load failed', this.createErrorDebugSummary(error));
             this.logger.error('Admin claim check failed:', error);
 
@@ -589,6 +752,67 @@ export class AuthService {
     });
 
     return provider;
+  }
+
+  private async restoreUserView(currentUser: User): Promise<void> {
+    const storedSession = this.readStoredUserView();
+    const restoreRevision = this.userViewRevision;
+
+    if (!storedSession) {
+      return;
+    }
+
+    try {
+      const tokenResult = await getIdTokenResult(currentUser);
+      const claims = tokenResult.claims as Record<string, unknown>;
+
+      if (restoreRevision !== this.userViewRevision) {
+        return;
+      }
+
+      if (storedSession.actorUid !== currentUser.uid
+        || storedSession.uid === currentUser.uid
+        || !hasSuperAdminClaim(claims)) {
+        this.stopViewingAsUser();
+        return;
+      }
+
+      this.userViewSubject.next(storedSession);
+      this.debugAuth('user view restored', {
+        actorUid: storedSession.actorUid,
+        targetUid: storedSession.uid,
+        targetRoles: storedSession.roles,
+      });
+    } catch (error) {
+      this.stopViewingAsUser();
+      this.debugAuth('user view restore failed', this.createErrorDebugSummary(error));
+    }
+  }
+
+  private readStoredUserView(): UserViewSession | null {
+    try {
+      const value = globalThis.sessionStorage?.getItem(USER_VIEW_SESSION_STORAGE_KEY);
+      return value ? parseStoredUserView(JSON.parse(value)) : null;
+    } catch {
+      this.clearStoredUserView();
+      return null;
+    }
+  }
+
+  private writeStoredUserView(session: UserViewSession): void {
+    try {
+      globalThis.sessionStorage?.setItem(USER_VIEW_SESSION_STORAGE_KEY, JSON.stringify(session));
+    } catch {
+      // Keep the in-memory preview active when session storage is unavailable.
+    }
+  }
+
+  private clearStoredUserView(): void {
+    try {
+      globalThis.sessionStorage?.removeItem(USER_VIEW_SESSION_STORAGE_KEY);
+    } catch {
+      // The in-memory state remains authoritative when storage is unavailable.
+    }
   }
 
   private createFacebookProvider(): FacebookAuthProvider {

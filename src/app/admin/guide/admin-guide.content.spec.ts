@@ -23,6 +23,8 @@ describe('admin guide content', () => {
       .toContain('schedule-a-release');
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'least privilege').map(entry => entry.id))
       .toEqual(['manage-user-roles']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'view as user').map(entry => entry.id))
+      .toEqual(['manage-user-roles']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'Open Media Library').map(entry => entry.id))
       .toContain('upload-and-reuse-media');
   });
@@ -33,5 +35,6 @@ describe('admin guide content', () => {
     expect(manageUsers).toBeDefined();
     expect(canViewAdminGuideEntry(manageUsers!, ['cmsAdmin'])).toBeFalse();
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'user roles')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'view as user')).toEqual([]);
   });
 });

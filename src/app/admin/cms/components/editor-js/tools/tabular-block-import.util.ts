@@ -19,6 +19,7 @@ const statsCaptionAliases = ['caption', 'note', 'notes', 'description', 'detail'
 const chartLabelAliases = ['label', 'name', 'x', 'category', 'trim', 'model'];
 const chartValueAliases = ['value', 'y', 'amount', 'score', 'number', 'metric'];
 const chartNoteAliases = ['note', 'notes', 'caption', 'description', 'detail', 'details'];
+const chartSeriesAliases = ['series', 'dataset', 'group'];
 const statsHeaderKeys = new Set([
   ...statsLabelAliases,
   ...statsValueAliases,
@@ -28,6 +29,7 @@ const chartHeaderKeys = new Set([
   ...chartLabelAliases,
   ...chartValueAliases,
   ...chartNoteAliases,
+  ...chartSeriesAliases,
 ].map(normalizeColumnKey));
 
 export const STATS_IMPORT_EXAMPLE_CSV = [
@@ -46,17 +48,19 @@ export const STATS_IMPORT_EXAMPLE_JSON = JSON.stringify({
 }, null, 2);
 
 export const CHART_IMPORT_EXAMPLE_CSV = [
-  'label,value,note',
-  'EcoBoost,315,Turbo four',
-  'GT,480,Manual coupe',
-  'Dark Horse,500,Track-focused trim',
+  'label,value,series,note',
+  'EcoBoost,315,Horsepower,Turbo four',
+  'GT,480,Horsepower,Manual coupe',
+  'Dark Horse,500,Horsepower,Track-focused trim',
 ].join('\n');
 
 export const CHART_IMPORT_EXAMPLE_JSON = JSON.stringify({
-  chartPoints: [
-    {label: 'EcoBoost', value: 315, note: 'Turbo four'},
-    {label: 'GT', value: 480, note: 'Manual coupe'},
-    {label: 'Dark Horse', value: 500, note: 'Track-focused trim'},
+  labels: ['EcoBoost', 'GT', 'Dark Horse'],
+  datasets: [
+    {
+      label: 'Horsepower',
+      data: [315, 480, 500],
+    },
   ],
 }, null, 2);
 
@@ -93,17 +97,19 @@ export function parseChartImport(source: string): TabularImportResult<BlogChartP
       const label = getCellValue(row, chartLabelAliases) || `Point ${index + 1}`;
       const value = parseNumericCell(getCellValue(row, chartValueAliases));
       const note = getCellValue(row, chartNoteAliases);
+      const series = getCellValue(row, chartSeriesAliases);
 
       return {
         label,
         value,
         ...(note ? {note} : {}),
+        ...(series ? {series} : {}),
       };
     })
     .filter(point => Number.isFinite(point.value));
 
   if (chartPoints.length === 0) {
-    throw new Error('No numeric chart values were found. Use label,value,note columns or JSON with chartPoints/points.');
+    throw new Error('No numeric chart values were found. Use label,value,series,note columns, chartPoints/points, or Chart.js labels/datasets.');
   }
 
   return {
@@ -163,12 +169,18 @@ function parseJsonRows(source: string, kind: 'stats' | 'chart'): readonly Parsed
     throw new Error('The pasted JSON could not be parsed.');
   }
 
+  const chartJsRows = kind === 'chart' ? getChartJsRows(value) : null;
+
+  if (chartJsRows) {
+    return chartJsRows;
+  }
+
   const collection = getJsonCollection(value, kind);
 
   if (!collection) {
     throw new Error(kind === 'stats'
       ? 'JSON imports need an array or an object with stats, rows, items, or data.'
-      : 'JSON imports need an array or an object with chartPoints, points, rows, items, or data.');
+      : 'JSON imports need chartPoints, points, rows, items, or Chart.js labels/datasets.');
   }
 
   return collection
@@ -209,6 +221,73 @@ function getJsonCollection(value: unknown, kind: 'stats' | 'chart'): readonly un
     if (Array.isArray(candidate)) {
       return candidate;
     }
+  }
+
+  return null;
+}
+
+function getChartJsRows(value: unknown): readonly ParsedRow[] | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const candidates = [
+    value,
+    isRecord(value['data']) ? value['data'] : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    const labels = candidate['labels'];
+    const datasets = candidate['datasets'];
+
+    if (!Array.isArray(labels) || !Array.isArray(datasets)) {
+      continue;
+    }
+
+    const datasetRecords = datasets.filter(isRecord);
+    const rows: ParsedRow[] = [];
+
+    for (const [labelIndex, rawLabel] of labels.entries()) {
+      const fallbackLabel = stringifyCell(rawLabel) || `Point ${labelIndex + 1}`;
+
+      for (const dataset of datasetRecords) {
+        const values = dataset['data'];
+
+        if (!Array.isArray(values)) {
+          continue;
+        }
+
+        const rawPoint = values[labelIndex];
+        const normalizedPoint = isRecord(rawPoint) || Array.isArray(rawPoint)
+          ? normalizeJsonItem(rawPoint, 'chart')
+          : null;
+        const valueCell = normalizedPoint
+          ? getCellValue(normalizedPoint, chartValueAliases)
+          : stringifyCell(rawPoint);
+
+        if (!valueCell) {
+          continue;
+        }
+
+        rows.push({
+          label: normalizedPoint
+            ? getCellValue(normalizedPoint, chartLabelAliases) || fallbackLabel
+            : fallbackLabel,
+          value: valueCell,
+          series: getCellValue(
+            normalizeJsonItem(dataset, 'chart') ?? {},
+            ['label', ...chartSeriesAliases]
+          ),
+          note: normalizedPoint ? getCellValue(normalizedPoint, chartNoteAliases) : '',
+        });
+      }
+    }
+
+    return rows;
   }
 
   return null;
@@ -260,9 +339,12 @@ function parseCsvImportRows(source: string, kind: 'stats' | 'chart'): readonly P
     }), {}));
   }
 
+  const widestRowLength = Math.max(...rows.map(row => row.length));
   const keys = kind === 'stats'
     ? ['label', 'value', 'caption']
-    : ['label', 'value', 'note'];
+    : widestRowLength >= 4
+      ? ['label', 'value', 'series', 'note']
+      : ['label', 'value', 'note'];
 
   return rows.map(row => keys.reduce<ParsedRow>((record, key, index) => ({
     ...record,

@@ -22,6 +22,8 @@ Component inventory:
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 - `AdminGuidePageComponent` provides the searchable `/admin/guide` operating manual with stable fragment links, clipboard sharing, direct protected-route actions, a desktop contents rail, and a mobile jump menu.
 - `admin-guide.content.ts` is the typed instruction source. It filters entries by the shared route-role constants before search, Common tasks, categories, and result counts are derived, so unauthorized workflows are absent rather than disabled.
+- `UserManagementPageComponent` keeps role changes and the admin-only **View as User** entry in one protected account workflow. The preview confirmation states that role/profile UI is simulated while Firebase requests retain the actor's admin identity.
+- Shared `UserViewBannerComponent` remains fixed above route content while a preview is active, identifies the target and roles, reports disabled accounts, and provides the recovery-safe **Exit View** action.
 
 The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
 
@@ -87,7 +89,7 @@ The editor calls Firebase callable functions first and falls back to the determi
 
 ## CMS Editor.js Tools
 
-The CMS editor extends the base Editor.js toolset with custom `code`, `markdown`, `typography`, `stats`, `chart`, `poll`, `sunoEmbed`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently. Markdown blocks preserve their source and are parsed through the sanitized public renderer. Editor blocks are styled with hover/focus block-type hints and preview-oriented rendering so drafts better resemble the published post while editing.
+The CMS editor extends the base Editor.js toolset with custom `code`, `markdown`, `typography`, `stats`, `chart`, `poll`, `sunoEmbed`, and `html` blocks. Structured blocks store typed data rather than presentation-only HTML, so public blog rendering and assistant prompts can consume the content consistently. Chart blocks accept flat `chartPoints` rows or standard Chart.js `labels`/`datasets` JSON, preserve optional series labels during editing, and render each line series independently on public posts. Markdown blocks preserve their source and are parsed through the sanitized public renderer. Editor blocks are styled with hover/focus block-type hints and preview-oriented rendering so drafts better resemble the published post while editing.
 
 Markdown persists as `{ type: 'markdown', data: { markdown: string } }`. The public renderer parses that source with `marked`, passes the resulting HTML through Angular's HTML sanitizer, removes unsafe link destinations, and normalizes a block-local level-one heading to `<h2>` so a post never gains a second document `<h1>`. Search, reading-time estimates, and local metadata suggestions use a lightweight plain-text projection that removes Markdown formatting and link destinations without rewriting the stored source. This is an additive block type with no data migration; rolling back the UI leaves saved Markdown data intact, but an older editor build should not resave a post containing an unsupported block type.
 
@@ -129,6 +131,8 @@ firebase deploy --only functions,firestore,database,storage
 ```
 
 ## Authentication And Roles
+
+Admins can start a tab-scoped role/profile preview from `/admin/users` with **View as User**. The preview changes Angular navigation, route guards, Profile identity, badges, account projections, and role-filtered guidance without replacing the Firebase Auth session. It is read-oriented: callable Functions and Firebase Security Rules still evaluate the real admin token, so backend denials must be verified with the real account, an emulator account, or dedicated permission tests. See `docs/ARCHITECTURE/ADMIN_USER_VIEW.md`.
 
 Enable Google sign-in in Firebase Console under Authentication > Sign-in method > Google. Make sure the deployed site domain and any local development domain are listed under Authentication > Settings > Authorized domains.
 

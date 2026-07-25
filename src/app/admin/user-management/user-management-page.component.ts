@@ -1,5 +1,8 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {toSignal} from '@angular/core/rxjs-interop';
+import {Router} from '@angular/router';
 
+import {AuthService} from '../../services/auth.service';
 import {AdminManagedUser} from './models/user-management.models';
 import {UserManagementService} from './services/user-management.service';
 import {CAT_CORNER_ADDICT_ROLE} from '../../shared/user-account/user-account.model';
@@ -47,7 +50,7 @@ function formatAccountDate(value: string | null): string {
           <div class="space-y-3">
             <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>
             <h1 class="text-4xl font-semibold text-zinc-50">User Management</h1>
-            <p class="max-w-2xl text-zinc-400">Review Firebase Auth accounts and manage custom claim roles from a protected admin-only tool.</p>
+            <p class="max-w-2xl text-zinc-400">Review Firebase Auth accounts, test the application with another user's role view, and manage custom claim roles from a protected admin-only tool.</p>
           </div>
           <button
             type="button"
@@ -161,13 +164,24 @@ function formatAccountDate(value: string | null): string {
                       </td>
                       <td class="px-4 py-4 text-zinc-300">{{ formatDate(user.lastSignInAt) }}</td>
                       <td class="px-4 py-4">
-                        <button
-                          type="button"
-                          class="border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-                          (click)="openEditor(user)"
-                        >
-                          Manage Roles
-                        </button>
+                        <div class="flex min-w-40 flex-col gap-2">
+                          <button
+                            type="button"
+                            class="border border-amber-400/70 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                            [disabled]="user.uid === currentUser()?.uid || isStartingUserView()"
+                            [attr.title]="user.uid === currentUser()?.uid ? 'You are already signed in as this user' : null"
+                            (click)="openUserViewConfirmation(user)"
+                          >
+                            View as User
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                            (click)="openEditor(user)"
+                          >
+                            Manage Roles
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   } @empty {
@@ -283,27 +297,82 @@ function formatAccountDate(value: string | null): string {
             </div>
           </section>
         }
+
+        @if (pendingUserView(); as user) {
+          <section class="fixed inset-0 z-[80] grid place-items-center bg-black/75 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="user-view-confirmation-title">
+            <div class="w-full max-w-xl border border-amber-400/50 bg-zinc-950 p-5 shadow-2xl shadow-black">
+              <header class="border-b border-zinc-800 pb-4">
+                <p class="text-sm uppercase tracking-[0.24em] text-amber-300">Admin preview</p>
+                <h2 id="user-view-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50">View the application as {{ user.displayName || user.email || user.uid }}?</h2>
+              </header>
+
+              <div class="space-y-4 py-5 text-sm leading-6 text-zinc-300">
+                <p>The application will use this user's profile and roles for navigation, badges, and route checks until you exit the preview.</p>
+                <p class="border border-amber-500/30 bg-amber-950/20 p-3 text-amber-100">
+                  This is a read-oriented role preview. Firebase still authenticates requests as your admin account, so do not use it to verify backend denials or perform user actions.
+                </p>
+                @if (user.disabled) {
+                  <p class="border border-red-500/40 bg-red-950/30 p-3 text-red-100">This account is disabled. The preview can show its stored roles, but a disabled user cannot sign in.</p>
+                }
+                <dl class="grid gap-2 border border-zinc-800 bg-zinc-900 p-3">
+                  <div class="grid gap-1 sm:grid-cols-[7rem_1fr]">
+                    <dt class="text-zinc-500">User</dt>
+                    <dd class="break-all text-zinc-200">{{ user.email || user.uid }}</dd>
+                  </div>
+                  <div class="grid gap-1 sm:grid-cols-[7rem_1fr]">
+                    <dt class="text-zinc-500">Roles</dt>
+                    <dd class="text-zinc-200">{{ user.roles.length ? user.roles.join(', ') : 'Base user only' }}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <footer class="flex flex-wrap justify-end gap-3 border-t border-zinc-800 pt-4">
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="isStartingUserView()"
+                  (click)="closeUserViewConfirmation()"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="border border-amber-400 bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
+                  [disabled]="isStartingUserView()"
+                  (click)="startUserView(user)"
+                >
+                  {{ isStartingUserView() ? 'Starting...' : 'Start View' }}
+                </button>
+              </footer>
+            </div>
+          </section>
+        }
       </section>
     </main>
   `,
 })
 export class UserManagementPageComponent {
   private readonly userManagement = inject(UserManagementService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly suggestedRoles = suggestedRoles;
   protected readonly users = signal<readonly AdminManagedUser[]>([]);
   protected readonly searchTerm = signal('');
   protected readonly isLoading = signal(false);
   protected readonly isSaving = signal(false);
+  protected readonly isStartingUserView = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly statusMessage = signal<string | null>(null);
   protected readonly nextPageToken = signal<string | null>(null);
   protected readonly currentPageToken = signal<string | null>(null);
   protected readonly pageTokenStack = signal<string[]>([]);
   protected readonly selectedUser = signal<AdminManagedUser | null>(null);
+  protected readonly pendingUserView = signal<AdminManagedUser | null>(null);
   protected readonly draftRoles = signal<readonly string[]>([]);
   protected readonly newRoleName = signal('');
   protected readonly roleInputError = signal<string | null>(null);
+  protected readonly currentUser = toSignal(this.authService.user$, {initialValue: null});
 
   protected readonly filteredUsers = computed(() => {
     const term = normalizeSearch(this.searchTerm());
@@ -369,6 +438,37 @@ export class UserManagementPageComponent {
     this.newRoleName.set('');
     this.roleInputError.set(null);
     this.statusMessage.set(null);
+  }
+
+  protected openUserViewConfirmation(user: AdminManagedUser): void {
+    this.pendingUserView.set(user);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+  }
+
+  protected closeUserViewConfirmation(): void {
+    if (!this.isStartingUserView()) {
+      this.pendingUserView.set(null);
+    }
+  }
+
+  protected async startUserView(user: AdminManagedUser): Promise<void> {
+    if (this.isStartingUserView()) {
+      return;
+    }
+
+    this.isStartingUserView.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      await this.authService.startViewingAsUser(user);
+      this.pendingUserView.set(null);
+      await this.router.navigateByUrl('/');
+    } catch (error) {
+      this.errorMessage.set(getErrorMessage(error));
+    } finally {
+      this.isStartingUserView.set(false);
+    }
   }
 
   protected closeEditor(): void {

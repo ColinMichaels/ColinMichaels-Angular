@@ -82,6 +82,7 @@ export interface BlogChartPoint {
   label: string;
   value: number;
   note?: string;
+  series?: string;
 }
 
 export interface BlogPollOption {
