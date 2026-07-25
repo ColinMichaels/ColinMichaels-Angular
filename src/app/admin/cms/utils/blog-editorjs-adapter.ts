@@ -46,6 +46,7 @@ interface ImportedChartPoint {
   label: string;
   value: number | undefined;
   note?: string;
+  series?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -328,6 +329,7 @@ function extractChartPoints(value: unknown): readonly BlogChartPoint[] {
         label: point.label || `Point ${index + 1}`,
         value: point.value,
         ...(point.note ? {note: point.note} : {}),
+        ...(point.series ? {series: point.series} : {}),
       });
     }
   }
@@ -378,6 +380,7 @@ function toImportedChartPoint(item: unknown): ImportedChartPoint | null {
       label: toStringValue(item[0]),
       value: toFiniteNumber(item[1]),
       note: toStringValue(item[2]),
+      series: toStringValue(item[3]),
     };
   }
 
@@ -389,7 +392,77 @@ function toImportedChartPoint(item: unknown): ImportedChartPoint | null {
     label: getStringByAlias(item, ['label', 'name', 'x', 'category', 'trim', 'model']),
     value: getNumberByAlias(item, ['value', 'y', 'amount', 'score', 'number', 'metric']),
     note: getStringByAlias(item, ['note', 'notes', 'caption', 'description', 'detail', 'details']),
+    series: getStringByAlias(item, ['series', 'dataset', 'group']),
   };
+}
+
+function extractChartJsPoints(data: Record<string, unknown>): readonly BlogChartPoint[] {
+  const candidates = [
+    data,
+    isRecord(data['data']) ? data['data'] : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    const labels = candidate['labels'];
+    const datasets = candidate['datasets'];
+
+    if (!Array.isArray(labels) || !Array.isArray(datasets)) {
+      continue;
+    }
+
+    const datasetRecords = datasets.filter(isRecord);
+    const points: BlogChartPoint[] = [];
+
+    for (const [labelIndex, rawLabel] of labels.entries()) {
+      const fallbackLabel = toStringValue(rawLabel) || `Point ${labelIndex + 1}`;
+
+      for (const dataset of datasetRecords) {
+        const values = dataset['data'];
+
+        if (!Array.isArray(values)) {
+          continue;
+        }
+
+        const rawPoint = values[labelIndex];
+        const importedPoint = isRecord(rawPoint) || Array.isArray(rawPoint)
+          ? toImportedChartPoint(rawPoint)
+          : {
+            label: '',
+            value: toFiniteNumber(rawPoint),
+            note: '',
+            series: '',
+          };
+
+        if (!importedPoint || importedPoint.value === undefined) {
+          continue;
+        }
+
+        const series = getStringByAlias(dataset, ['label', 'name', 'series', 'dataset', 'group']);
+        points.push({
+          label: importedPoint.label || fallbackLabel,
+          value: importedPoint.value,
+          ...(importedPoint.note ? {note: importedPoint.note} : {}),
+          ...(importedPoint.series || series ? {series: importedPoint.series || series} : {}),
+        });
+      }
+    }
+
+    return points;
+  }
+
+  return [];
+}
+
+function extractChartPointsFromData(data: Record<string, unknown>): readonly BlogChartPoint[] {
+  const flatPoints = extractChartPoints(
+    extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items'])
+  );
+
+  return flatPoints.length > 0 ? flatPoints : extractChartJsPoints(data);
 }
 
 function extractArrayByAlias(data: Record<string, unknown>, aliases: readonly string[]): unknown {
@@ -557,9 +630,9 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
       return {
         title: getString(data, 'title') ?? '',
         caption: getString(data, 'caption') ?? '',
-        chartType: toChartType(data['chartType']),
+        chartType: toChartType(data['chartType'] ?? data['type']),
         unit: getString(data, 'unit') ?? '',
-        chartPoints: extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data'])),
+        chartPoints: extractChartPointsFromData(data),
       };
     case 'poll':
       return {

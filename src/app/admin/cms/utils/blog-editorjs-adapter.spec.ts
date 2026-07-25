@@ -548,4 +548,53 @@ describe('blog-editorjs-adapter', () => {
       },
     ]);
   });
+
+  it('normalizes Chart.js labels and datasets without losing series', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'chart-series-1',
+          type: 'chart',
+          data: {
+            title: 'Title trends',
+            type: 'line',
+            data: {
+              labels: ['1995–2004', '2005–2014', '2015–2024'],
+              datasets: [
+                {
+                  label: 'One-word titles',
+                  data: [18, '22.4', 28.2],
+                },
+                {
+                  label: 'Titles using love',
+                  data: [5.3, 4.7, 3],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+
+    expect(blocks).toEqual([
+      {
+        id: 'chart-series-1',
+        type: 'chart',
+        data: {
+          title: 'Title trends',
+          caption: '',
+          chartType: 'line',
+          unit: '',
+          chartPoints: [
+            {label: '1995–2004', value: 18, series: 'One-word titles'},
+            {label: '1995–2004', value: 5.3, series: 'Titles using love'},
+            {label: '2005–2014', value: 22.4, series: 'One-word titles'},
+            {label: '2005–2014', value: 4.7, series: 'Titles using love'},
+            {label: '2015–2024', value: 28.2, series: 'One-word titles'},
+            {label: '2015–2024', value: 3, series: 'Titles using love'},
+          ],
+        },
+      },
+    ]);
+  });
 });

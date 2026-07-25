@@ -78,10 +78,24 @@ interface RenderableBlogChartPoint {
   label: string;
   value: number;
   note: string;
+  series: string;
+  color: string;
   displayValue: string;
   magnitudePercent: number;
   x: number;
   y: number;
+}
+
+interface RenderableBlogChartSeries {
+  label: string;
+  color: string;
+  points: readonly RenderableBlogChartPoint[];
+  polyline: string;
+}
+
+interface RenderableBlogChartCategory {
+  label: string;
+  points: readonly RenderableBlogChartPoint[];
 }
 
 interface RenderableBlogChart {
@@ -90,9 +104,20 @@ interface RenderableBlogChart {
   unit: string;
   caption: string;
   points: readonly RenderableBlogChartPoint[];
-  polyline: string;
+  series: readonly RenderableBlogChartSeries[];
+  categories: readonly RenderableBlogChartCategory[];
+  hasMultipleSeries: boolean;
   ariaLabel: string;
 }
+
+const BLOG_CHART_SERIES_COLORS = [
+  '#0891b2',
+  '#d97706',
+  '#7c3aed',
+  '#059669',
+  '#e11d48',
+  '#2563eb',
+] as const;
 
 interface RenderableBlogImage {
   url: string;
@@ -258,6 +283,19 @@ interface RenderableBlogImage {
                 }
                 @if (chart.type === 'line') {
                   <div class="overflow-x-auto rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
+                    @if (chart.hasMultipleSeries) {
+                      <div class="mb-3 flex min-w-[520px] flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-zinc-400"
+                           aria-label="Chart legend">
+                        @for (series of chart.series; track $index) {
+                          <span class="inline-flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full"
+                                  [style.background-color]="series.color"
+                                  aria-hidden="true"></span>
+                            {{ series.label }}
+                          </span>
+                        }
+                      </div>
+                    }
                     <svg
                       viewBox="0 0 100 64"
                       preserveAspectRatio="none"
@@ -266,27 +304,36 @@ interface RenderableBlogImage {
                       [attr.aria-label]="chart.ariaLabel"
                     >
                       <line x1="8" y1="56" x2="96" y2="56" stroke="rgba(113,113,122,.65)" stroke-width=".6"></line>
-                      <polyline
-                        [attr.points]="chart.polyline"
-                        fill="none"
-                        stroke="#22d3ee"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      ></polyline>
-                      @for (point of chart.points; track $index) {
-                        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="1.8" fill="#fef3c7" stroke="#18181b"
-                                stroke-width=".8"></circle>
+                      @for (series of chart.series; track $index) {
+                        <polyline
+                          [attr.points]="series.polyline"
+                          fill="none"
+                          [attr.stroke]="series.color"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></polyline>
+                        @for (point of series.points; track $index) {
+                          <circle [attr.cx]="point.x" [attr.cy]="point.y" r="1.8" [attr.fill]="series.color"
+                                  stroke="#18181b" stroke-width=".8"></circle>
+                        }
                       }
                     </svg>
                     <div class="mt-3 grid min-w-[520px] gap-2"
-                         [style.grid-template-columns]="'repeat(' + chart.points.length + ', minmax(0, 1fr))'">
-                      @for (point of chart.points; track $index) {
+                         [style.grid-template-columns]="'repeat(' + chart.categories.length + ', minmax(0, 1fr))'">
+                      @for (category of chart.categories; track $index) {
                         <div class="text-xs leading-5">
-                          <p class="font-semibold text-slate-900 dark:text-zinc-100">{{ point.displayValue }}</p>
-                          <p class="text-slate-500 dark:text-zinc-500">{{ point.label }}</p>
-                          @if (point.note) {
-                            <p class="text-slate-400 dark:text-zinc-600">{{ point.note }}</p>
+                          <p class="mb-1 font-semibold text-slate-700 dark:text-zinc-300">{{ category.label }}</p>
+                          @for (point of category.points; track $index) {
+                            <p class="font-medium" [style.color]="point.color">
+                              @if (chart.hasMultipleSeries) {
+                                {{ point.series }}:
+                              }
+                              {{ point.displayValue }}
+                            </p>
+                            @if (point.note) {
+                              <p class="text-slate-400 dark:text-zinc-600">{{ point.note }}</p>
+                            }
                           }
                         </div>
                       }
@@ -297,12 +344,18 @@ interface RenderableBlogImage {
                     @for (point of chart.points; track $index) {
                       <div class="space-y-2">
                         <div class="flex items-baseline justify-between gap-3">
-                          <p class="text-sm font-medium text-slate-700 dark:text-zinc-200">{{ point.label }}</p>
+                          <p class="text-sm font-medium text-slate-700 dark:text-zinc-200">
+                            {{ point.label }}
+                            @if (chart.hasMultipleSeries) {
+                              <span class="ml-1 text-xs font-semibold" [style.color]="point.color">— {{ point.series }}</span>
+                            }
+                          </p>
                           <p class="text-sm font-semibold text-slate-950 dark:text-zinc-50">{{ point.displayValue }}</p>
                         </div>
                         <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800" aria-hidden="true">
                           <span
-                            class="block h-full rounded-full bg-cyan-600 dark:bg-cyan-300"
+                            class="block h-full rounded-full"
+                            [style.background-color]="point.color"
                             [style.width.%]="point.magnitudePercent"
                           ></span>
                         </div>
@@ -1163,7 +1216,8 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     const title = block.data.title?.trim() ?? '';
     const caption = this.createPlainText(block.data.caption);
     const type = block.data.chartType ?? 'bar';
-    const polyline = points.map(point => `${point.x},${point.y}`).join(' ');
+    const series = this.createChartSeries(points);
+    const categories = this.createChartCategories(points);
 
     return {
       type,
@@ -1171,7 +1225,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       unit: block.data.unit?.trim() ?? '',
       caption,
       points,
-      polyline,
+      series,
+      categories,
+      hasMultipleSeries: series.length > 1,
       ariaLabel: this.createChartAriaLabel(title, type, points),
     };
   }
@@ -1191,16 +1247,53 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     const maxValue = Math.max(...values);
     const valueRange = maxValue - minValue || 1;
     const maxMagnitude = Math.max(...values.map(value => Math.abs(value)), 1);
-    const xStep = points.length > 1 ? 88 / (points.length - 1) : 0;
+    const categoryLabels = [...new Set(points.map((point, index) => point.label.trim() || `Point ${index + 1}`))];
+    const seriesLabels = [...new Set(points.map(point => point.series?.trim() ?? ''))];
+    const xStep = categoryLabels.length > 1 ? 88 / (categoryLabels.length - 1) : 0;
 
-    return points.map((point, index) => ({
-      label: point.label.trim() || `Point ${index + 1}`,
-      value: point.value,
-      note: point.note?.trim() ?? '',
-      displayValue: this.formatChartValue(point.value, unit),
-      magnitudePercent: this.clampPercent(Math.abs(point.value) / maxMagnitude * 100),
-      x: points.length > 1 ? 8 + xStep * index : 52,
-      y: 56 - ((point.value - minValue) / valueRange * 48),
+    return points.map((point, index) => {
+      const label = point.label.trim() || `Point ${index + 1}`;
+      const series = point.series?.trim() ?? '';
+      const categoryIndex = categoryLabels.indexOf(label);
+      const seriesIndex = Math.max(0, seriesLabels.indexOf(series));
+
+      return {
+        label,
+        value: point.value,
+        note: point.note?.trim() ?? '',
+        series,
+        color: BLOG_CHART_SERIES_COLORS[seriesIndex % BLOG_CHART_SERIES_COLORS.length],
+        displayValue: this.formatChartValue(point.value, unit),
+        magnitudePercent: this.clampPercent(Math.abs(point.value) / maxMagnitude * 100),
+        x: categoryLabels.length > 1 ? 8 + xStep * categoryIndex : 52,
+        y: 56 - ((point.value - minValue) / valueRange * 48),
+      };
+    });
+  }
+
+  private createChartSeries(
+    points: readonly RenderableBlogChartPoint[]
+  ): readonly RenderableBlogChartSeries[] {
+    const seriesKeys = [...new Set(points.map(point => point.series))];
+
+    return seriesKeys.map((seriesKey, index) => {
+      const seriesPoints = points.filter(point => point.series === seriesKey);
+
+      return {
+        label: seriesKey || `Series ${index + 1}`,
+        color: seriesPoints[0]?.color ?? BLOG_CHART_SERIES_COLORS[0],
+        points: seriesPoints,
+        polyline: seriesPoints.map(point => `${point.x},${point.y}`).join(' '),
+      };
+    });
+  }
+
+  private createChartCategories(
+    points: readonly RenderableBlogChartPoint[]
+  ): readonly RenderableBlogChartCategory[] {
+    return [...new Set(points.map(point => point.label))].map(label => ({
+      label,
+      points: points.filter(point => point.label === label),
     }));
   }
 
@@ -1220,7 +1313,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   ): string {
     const chartTitle = title || `${type === 'line' ? 'Line' : 'Bar'} chart`;
     const pointSummary = points
-      .map(point => `${point.label}: ${point.displayValue}`)
+      .map(point => `${point.series ? `${point.series}, ` : ''}${point.label}: ${point.displayValue}`)
       .join(', ');
 
     return `${chartTitle}. ${pointSummary}`;

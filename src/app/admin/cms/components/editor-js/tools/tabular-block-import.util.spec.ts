@@ -47,6 +47,25 @@ describe('tabular-block-import.util', () => {
     ]);
   });
 
+  it('imports Chart.js labels and datasets as grouped chart points', () => {
+    const result = parseChartImport(JSON.stringify({
+      data: {
+        labels: ['1995–2004', '2015–2024'],
+        datasets: [
+          {label: 'One-word titles', data: [18, 28.2]},
+          {label: 'Titles using love', data: [5.3, 3]},
+        ],
+      },
+    }));
+
+    expect(result.items).toEqual([
+      {label: '1995–2004', value: 18, series: 'One-word titles'},
+      {label: '1995–2004', value: 5.3, series: 'Titles using love'},
+      {label: '2015–2024', value: 28.2, series: 'One-word titles'},
+      {label: '2015–2024', value: 3, series: 'Titles using love'},
+    ]);
+  });
+
   it('imports stats JSON from nested data arrays', () => {
     const result = parseStatsImport(JSON.stringify({
       data: {
