@@ -47,7 +47,7 @@ Pressing `/` outside a text-editing control focuses guide search. Search has a l
 ## Component And Content Inventory
 
 - `AdminGuidePageComponent` owns role projection, search state, fragment selection, clipboard feedback, desktop contents, mobile jump navigation, and rendered instructions.
-- `admin-guide.content.ts` owns all searchable operator instructions and pure role/search functions.
+- `admin-guide.content.ts` owns all searchable operator instructions and pure role/search functions, including the CMS post editor's WYSIWYG/JSON troubleshooting workflow under the stable `#create-and-publish-a-post` entry.
 - `admin-guide.models.ts` owns the typed content contract.
 - `admin-guide.content.spec.ts` covers role projections, full-text matching, and unauthorized-search exclusion.
 - `admin-guide-page.component.spec.ts` covers rendered role filtering and interactive search.

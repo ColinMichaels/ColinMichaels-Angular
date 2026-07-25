@@ -36,4 +36,22 @@ describe('SeoService', () => {
       `${SITE_URL}${HOMEPAGE_OG_IMAGE}`
     );
   });
+
+  it('normalizes BlogPosting URLs and mainEntityOfPage to absolute URLs', () => {
+    const structuredData = service.createBlogPostingJsonLd({
+      title: 'Canonical article',
+      description: 'A canonical article description.',
+      url: '/blog/canonical-article',
+      image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
+      author: 'Colin Michaels',
+      publishedAt: '2026-07-19T12:00:00.000Z',
+      modifiedAt: '2026-07-19T12:00:00.000Z',
+    });
+
+    expect(String(structuredData['url'])).toBe(`${SITE_URL}/blog/canonical-article`);
+    expect(JSON.stringify(structuredData['mainEntityOfPage'])).toBe(JSON.stringify({
+      '@type': 'WebPage',
+      '@id': `${SITE_URL}/blog/canonical-article`,
+    }));
+  });
 });

@@ -69,6 +69,7 @@ export interface EditorImageUploadResult {
 type EditorImageInsertTab = 'library' | 'upload';
 type EditorImagePanelMode = 'insert' | 'select';
 type EditorImageLayoutMode = BlogImageLayout;
+type EditorViewMode = 'visual' | 'json';
 
 interface EditorImageLayoutOption {
   value: EditorImageLayoutMode;
@@ -166,6 +167,49 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
   };
 }
 
+function parseEditorDocument(source: string): OutputData {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(source);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'The document could not be parsed.';
+    throw new Error(`Invalid JSON: ${message}`, {cause: error});
+  }
+
+  if (!isRecord(parsed) || !Array.isArray(parsed['blocks'])) {
+    throw new Error('Editor JSON must be an object with a blocks array.');
+  }
+
+  parsed['blocks'].forEach((block, index) => {
+    if (!isRecord(block)) {
+      throw new Error(`Block ${index + 1} must be a JSON object.`);
+    }
+
+    if (typeof block['type'] !== 'string' || !block['type'].trim()) {
+      throw new Error(`Block ${index + 1} must have a non-empty type.`);
+    }
+
+    if (!isRecord(block['data'])) {
+      throw new Error(`Block ${index + 1} must have a data object.`);
+    }
+
+    if ('id' in block && typeof block['id'] !== 'string') {
+      throw new Error(`Block ${index + 1} has an invalid id.`);
+    }
+  });
+
+  if ('time' in parsed && (typeof parsed['time'] !== 'number' || !Number.isFinite(parsed['time']))) {
+    throw new Error('Editor JSON time must be a finite number.');
+  }
+
+  if ('version' in parsed && typeof parsed['version'] !== 'string') {
+    throw new Error('Editor JSON version must be a string.');
+  }
+
+  return parsed as unknown as OutputData;
+}
+
 @Component({
   selector: 'app-editor-js',
   imports: [
@@ -174,22 +218,55 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="space-y-2">
-      <div class="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
-        <h2 class="text-sm font-semibold text-zinc-100">{{ title }}</h2>
+      <div class="flex min-h-11 flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-2">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-sm font-semibold text-zinc-100">{{ title }}</h2>
+
+          <div class="flex border border-zinc-700 bg-zinc-950 p-0.5" role="tablist" aria-label="Editor view">
+            <button
+              type="button"
+              role="tab"
+              class="h-7 px-2.5 text-[11px] font-medium uppercase tracking-[0.12em]"
+              [class.bg-cyan-400]="viewMode() === 'visual'"
+              [class.text-zinc-950]="viewMode() === 'visual'"
+              [class.text-zinc-400]="viewMode() !== 'visual'"
+              [attr.aria-selected]="viewMode() === 'visual'"
+              [disabled]="isLoading() || isSaving() || isSyncingView()"
+              (click)="setViewMode('visual')"
+            >
+              WYSIWYG
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="h-7 px-2.5 text-[11px] font-medium uppercase tracking-[0.12em]"
+              [class.bg-cyan-400]="viewMode() === 'json'"
+              [class.text-zinc-950]="viewMode() === 'json'"
+              [class.text-zinc-400]="viewMode() !== 'json'"
+              [attr.aria-selected]="viewMode() === 'json'"
+              [disabled]="isLoading() || isSaving() || isSyncingView()"
+              (click)="setViewMode('json')"
+            >
+              JSON
+            </button>
+          </div>
+        </div>
 
         <div class="flex gap-2">
-          <button
-            type="button"
-            class="h-9 border border-zinc-700 px-3 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
-            [disabled]="isLoading() || isSaving()"
-            (click)="openImageInsertPanel()"
-          >
-            Insert Image
-          </button>
+          @if (viewMode() === 'visual') {
+            <button
+              type="button"
+              class="h-9 border border-zinc-700 px-3 text-xs text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
+              [disabled]="isLoading() || isSaving() || isSyncingView()"
+              (click)="openImageInsertPanel()"
+            >
+              Insert Image
+            </button>
+          }
           <button
             type="button"
             class="h-9 border border-zinc-700 px-3 text-xs text-zinc-200 hover:bg-zinc-800"
-            [disabled]="isLoading() || isSaving()"
+            [disabled]="isLoading() || isSaving() || isSyncingView()"
             (click)="reset()"
           >
             Reset
@@ -198,7 +275,7 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
             <button
               type="button"
               class="h-9 border border-cyan-400 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-              [disabled]="isLoading() || isSaving()"
+              [disabled]="isLoading() || isSaving() || isSyncingView()"
               (click)="save()"
             >
               {{ isSaving() ? 'Saving' : saveLabel }}
@@ -215,10 +292,42 @@ function createObjectUrlUploadResult(file: File): EditorImageUploadResult {
         <p class="border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">Loading editor...</p>
       }
 
+      @if (viewMode() === 'json') {
+        <section class="overflow-hidden border border-zinc-700 bg-zinc-950">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900/70 px-3 py-2">
+            <div>
+              <p class="text-xs font-medium text-zinc-200">Editor.js document</p>
+              <p class="mt-0.5 text-[11px] text-zinc-500">Changes are validated before they render or save.</p>
+            </div>
+            @if (jsonStatus(); as message) {
+              <span class="text-xs text-emerald-300" role="status">{{ message }}</span>
+            }
+          </header>
+
+          <textarea
+            data-editor-json
+            aria-label="Raw Editor.js JSON"
+            class="block min-h-[520px] w-full resize-y bg-black px-4 py-4 font-mono text-[13px] leading-6 text-cyan-100 outline-none selection:bg-cyan-400 selection:text-zinc-950 focus:ring-1 focus:ring-inset focus:ring-cyan-400"
+            [attr.aria-invalid]="jsonError() ? 'true' : null"
+            [value]="jsonSource()"
+            spellcheck="false"
+            wrap="off"
+            (input)="updateJsonSource($event)"
+          ></textarea>
+
+          @if (jsonError(); as message) {
+            <p class="border-t border-red-500/50 bg-red-950/40 px-4 py-3 font-mono text-xs leading-5 text-red-200" role="alert">
+              {{ message }}
+            </p>
+          }
+        </section>
+      }
+
       <div
         #editorHolder
         class="cms-editor-surface min-h-[420px] bg-zinc-50 px-5 py-5 text-zinc-950"
         [class.opacity-50]="isLoading()"
+        [hidden]="viewMode() !== 'visual'"
       ></div>
 
       @if (isImagePanelOpen()) {
@@ -676,7 +785,12 @@ export class EditorJsComponent implements AfterViewInit {
 
   protected readonly isLoading = signal(true);
   protected readonly isSaving = signal(false);
+  protected readonly isSyncingView = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly viewMode = signal<EditorViewMode>('visual');
+  protected readonly jsonSource = signal('');
+  protected readonly jsonError = signal<string | null>(null);
+  protected readonly jsonStatus = signal<string | null>(null);
   protected readonly isImagePanelOpen = signal(false);
   protected readonly isImageUploadInProgress = signal(false);
   protected readonly isMediaLibraryLoading = signal(false);
@@ -709,6 +823,7 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    this.setJsonDocument(this.initialData);
     void this.initializeEditor();
   }
 
@@ -720,15 +835,11 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   protected async save(): Promise<void> {
-    if (!this.editor) {
-      return;
-    }
-
     this.isSaving.set(true);
     this.error.set(null);
 
     try {
-      const data = await this.editor.save();
+      const data = await this.getDocument();
       this.saved.emit({
         data,
         savedAt: new Date().toISOString(),
@@ -743,6 +854,7 @@ export class EditorJsComponent implements AfterViewInit {
 
   protected async reset(): Promise<void> {
     this.error.set(null);
+    this.setJsonDocument(this.initialData);
 
     try {
       await this.editor?.render(this.initialData);
@@ -752,12 +864,17 @@ export class EditorJsComponent implements AfterViewInit {
   }
 
   async getDocument(): Promise<OutputData> {
+    if (this.viewMode() === 'json') {
+      return this.getJsonDocument();
+    }
+
     return this.editor ? this.editor.save() : this.initialData;
   }
 
   async renderDocument(document: OutputData): Promise<void> {
     this.initialData = document;
     this.error.set(null);
+    this.setJsonDocument(document);
 
     if (!this.editor) {
       return;
@@ -767,6 +884,56 @@ export class EditorJsComponent implements AfterViewInit {
       await this.editor.render(document);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to import editor content.');
+    }
+  }
+
+  protected async setViewMode(mode: EditorViewMode): Promise<void> {
+    if (mode === this.viewMode() || this.isLoading() || this.isSaving() || this.isSyncingView()) {
+      return;
+    }
+
+    this.isSyncingView.set(true);
+    this.error.set(null);
+
+    try {
+      if (mode === 'json') {
+        const document = this.editor ? await this.editor.save() : this.initialData;
+        this.setJsonDocument(document);
+        this.viewMode.set('json');
+        return;
+      }
+
+      const document = this.getJsonDocument();
+
+      if (this.editor) {
+        await this.editor.render(document);
+      }
+
+      this.viewMode.set('visual');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to synchronize the editor views.';
+
+      if (this.viewMode() === 'json') {
+        this.jsonError.set(message);
+        this.jsonStatus.set(null);
+      } else {
+        this.error.set(message);
+      }
+    } finally {
+      this.isSyncingView.set(false);
+    }
+  }
+
+  protected updateJsonSource(event: Event): void {
+    const source = event.target instanceof HTMLTextAreaElement ? event.target.value : '';
+    this.jsonSource.set(source);
+
+    try {
+      const document = parseEditorDocument(source);
+      this.setJsonValidationState(document);
+    } catch (error) {
+      this.jsonError.set(error instanceof Error ? error.message : 'Unable to validate editor JSON.');
+      this.jsonStatus.set(null);
     }
   }
 
@@ -1033,6 +1200,30 @@ export class EditorJsComponent implements AfterViewInit {
       this.error.set(error instanceof Error ? error.message : 'Unable to initialize Editor.js.');
       this.isLoading.set(false);
     }
+  }
+
+  private getJsonDocument(): OutputData {
+    try {
+      const document = parseEditorDocument(this.jsonSource());
+      this.setJsonValidationState(document);
+      return document;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to validate editor JSON.';
+      this.jsonError.set(message);
+      this.jsonStatus.set(null);
+      throw new Error(message, {cause: error});
+    }
+  }
+
+  private setJsonDocument(document: OutputData): void {
+    this.jsonSource.set(JSON.stringify(document, null, 2));
+    this.setJsonValidationState(document);
+  }
+
+  private setJsonValidationState(document: OutputData): void {
+    const blockLabel = document.blocks.length === 1 ? 'block' : 'blocks';
+    this.jsonError.set(null);
+    this.jsonStatus.set(`Valid JSON · ${document.blocks.length} ${blockLabel}`);
   }
 
   private uploadImageFile(file: File): Promise<EditorImageUploadResult> {

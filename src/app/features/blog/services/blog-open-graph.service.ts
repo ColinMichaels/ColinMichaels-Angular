@@ -116,7 +116,7 @@ export class BlogOpenGraphService {
       || HOMEPAGE_OG_IMAGE
     );
     const imageAlt = this.toPlainText(post.og?.imageAlt || this.findFirstImageBlockAlt(post) || `${post.title} preview image`);
-    const url = post.seo.canonical ? this.seo.toAbsoluteUrl(post.seo.canonical) : this.seo.createUrl(`/${PATH_NAMES.BLOG}/${post.slug}`);
+    const url = this.seo.createUrl(`/${PATH_NAMES.BLOG}/${post.slug}`);
     const imageWidth = post.seo.openGraphImageWidth ?? post.og?.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
     const imageHeight = post.seo.openGraphImageHeight ?? post.og?.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
 

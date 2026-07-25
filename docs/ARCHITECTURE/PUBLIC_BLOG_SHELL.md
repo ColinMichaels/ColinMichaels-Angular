@@ -148,6 +148,28 @@ preview, and an explicit detach action. Empty values are normalized away and ser
 because posts use merge writes. Existing documents need no migration. Draft previews preserve the full field, and
 offline public snapshots retain it and warm same-origin background assets alongside cover and body images.
 
+## July 19 SEO Report Remediation
+
+Article canonical ownership remains route-based. The browser and Firebase Functions renderers now build
+`BlogPosting.url` and `mainEntityOfPage.@id` from `/blog/{slug}` instead of trusting the optional stored
+`seo.canonical` value. This keeps structured data aligned with the canonical link even when a legacy post contains a
+relative or stale canonical override. Existing Firestore fields are preserved; no post migration or redirect is
+required.
+
+Crawler fallback images use stored alt text first, then a caption, then the article title as a non-empty fallback. This
+matches the existing Angular reader behavior and closes legacy empty-alt gaps in raw HTML without overwriting CMS
+content. Editors should still replace generic fallbacks with image-specific text when they can identify the image.
+The fallback for `recovery-update-finish-line-in-sight` also links to the canonical endocarditis story, matching the
+related-post discovery that hydrated article pages already provide and closing the report's isolated raw-HTML link gap.
+
+Taxonomy archive routes remain navigable. Categories now require three published posts and tags require five published
+posts before they become indexable or enter the sitemap. Lower-count archives return `noindex,follow`, so existing
+links continue working while the sitemap concentrates on stronger collections. Reverting the two shared thresholds
+restores the previous two-category/three-tag policy; no data rollback is needed.
+
+Deployment requires the Angular Hosting bundle and Firebase Functions. Post metadata proposals live in
+`docs/SEO/SEO_PERFORMANCE_2026_07_19_OPTIMIZATION_MANIFEST.json` and remain a separate CMS review step.
+
 ## Validation
 
 Relevant regression coverage includes:

@@ -130,12 +130,14 @@ export class SeoService {
     publishedAt: string | null;
     modifiedAt: string;
   }): SeoStructuredDataObject {
+    const url = this.toAbsoluteUrl(options.url);
+
     return {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       headline: options.title,
       description: options.description,
-      url: options.url,
+      url,
       image: [options.image],
       datePublished: options.publishedAt ?? options.modifiedAt,
       dateModified: options.modifiedAt,
@@ -151,7 +153,7 @@ export class SeoService {
       },
       mainEntityOfPage: {
         '@type': 'WebPage',
-        '@id': options.url,
+        '@id': url,
       },
     };
   }
