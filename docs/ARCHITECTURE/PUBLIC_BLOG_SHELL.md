@@ -104,6 +104,12 @@ On desktop, `BlogTableOfContentsComponent` owns the left reading rail and sticks
 
 The shared reading utilities treat heading-only `TLDR` variants as a presentation alias for `Quick Summary (TL;DR)`. Stored Editor.js content remains unchanged, each historical anchor remains stable (`#tldr` or `#tl-dr`), and the table of contents uses the expanded label. The block renderer adds the plain-language meaning above the heading on hover or keyboard focus through an `aria-describedby` tooltip, so the explanation does not depend on editing individual posts or on pointer input alone.
 
+## Chart Blocks
+
+`BlogChartComponent` owns public rendering for typed chart blocks and keeps Chart.js concerns out of the generic `BlogBlockRendererComponent`. It accepts both the legacy `chartPoints` single-series contract and the richer `labels` plus `datasets` contract used by imported Editor.js JSON. Multi-series charts preserve dataset labels and colors, chart type, axis titles and maximum, legend visibility, suffix/decimal formatting, source attribution, and the author-provided accessibility summary. A semantic screen-reader table carries every category and dataset value alongside the canvas.
+
+The CMS chart tool exposes the same labels/datasets object as editable formatted JSON and preserves it through Editor.js render/save cycles. Existing point-editor CSV/JSON import remains available for simple single-series charts. No Firestore migration is required for valid stored blocks, but posts previously saved after the old tool collapsed an unsupported dataset chart to `Point 1: 0` must be re-imported from their original JSON backup after this client change is deployed. Rollback restores the point-only renderer and editor; dataset-backed blocks remain stored but will not render correctly until the richer client is restored.
+
 Inline-left and inline-right image figures float only at the `sm` breakpoint and above so nearby paragraphs can wrap around them. Level-two and level-three article headings clear both float directions before starting a new section. This keeps the complete figure and caption in normal visual order and prevents the heading's opaque sticky-ready surface from painting over floated media that extends below the preceding paragraph text. Narrow viewports continue rendering inline media at the full article-column width without floats.
 
 ## Optional Post Backgrounds

@@ -231,6 +231,12 @@ function createBlogPostBodyText(post: BlogPost): string {
       ...(block.data.items ?? []),
       ...(block.data.stats ?? []).flatMap(stat => [stat.label, stat.value, stat.caption]),
       ...(block.data.chartPoints ?? []).flatMap(point => [point.label, point.note]),
+      ...(block.data.labels ?? []),
+      ...(block.data.datasets ?? []).map(dataset => dataset.label),
+      block.data.xAxisTitle,
+      block.data.yAxisTitle,
+      block.data.sourceLabel,
+      block.data.accessibilitySummary,
     ])
     .filter((value): value is string => typeof value === 'string')
     .join(' ');
