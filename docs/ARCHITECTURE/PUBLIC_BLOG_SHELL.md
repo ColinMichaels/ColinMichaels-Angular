@@ -85,11 +85,13 @@ The protected `/profile` route is the management surface for device-local reader
 
 ## Direct Article Loading
 
-`BlogDetailComponent` resolves a cold `/blog/:slug` entry through a bounded Firestore query for that published slug instead of waiting for the auth-aware full post collection. This keeps links opened from social apps, email, search, and other fresh browser sessions independent from the heavier archive/suggestion load. If the post is already in the repository cache, the detail route reuses it without issuing the additional query.
+`BlogDetailComponent` resolves a cold `/blog/:slug` entry through a bounded Firestore query for that published slug instead of waiting for the auth-aware full post collection. This keeps links opened from social apps, email, search, and other fresh browser sessions independent from the heavier archive/suggestion load. If the post is already in the repository cache, the detail route reuses it without issuing the additional query. A direct result is merged into the post cache, and the detail route remains subscribed to published collection updates so an article can appear or refresh when the auth-aware collection finishes after the initial route or social-login callback.
 
 The direct query requires both `status == published` and the exact slug so Firestore rules can prove that drafts are not exposed. Firestore merges the existing automatic equality indexes; no document migration or composite-index deployment is required. The full published collection continues loading in the background for previous/next navigation and suggestions, while its loading or error state no longer blocks the primary article and cover image.
 
-Rollback is limited to restoring the repository slug observable to the shared collection stream and restoring the detail page's shared repository loading state. No stored content or Firebase configuration changes are involved.
+Article scroll and resize work is coalesced into one animation-frame update. Active-heading changes no longer rebuild the renderer's complete Editor.js block projection, so lazy image decoding and section transitions do not compete with repeated markdown, embed, and gallery preparation on the main thread.
+
+Rollback is limited to restoring the repository slug observable to the shared collection stream, restoring the detail page's shared repository loading state, and removing the animation-frame coalescing. No stored content or Firebase configuration changes are involved.
 
 ## Sticky Post Toolbar
 

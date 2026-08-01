@@ -10,6 +10,7 @@ import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
 import {LogService} from '../../services/log.service';
 import {BlogMembershipCampaignStateService} from '../../../../features/blog/services/blog-membership-campaign-state.service';
+import {AuthReturnUrlService} from '../../../../services/auth-return-url.service';
 
 import { LoginScreenComponent } from './login-screen.component';
 
@@ -36,6 +37,8 @@ describe('LoginScreenComponent', () => {
   let membershipCampaignMock: {
     getPendingPreferences: jasmine.Spy;
     rememberPendingPreferences: jasmine.Spy;
+    clearPendingPreferences: jasmine.Spy;
+    snooze: jasmine.Spy;
   };
 
   const firebaseUser = {
@@ -56,6 +59,7 @@ describe('LoginScreenComponent', () => {
   }
 
   beforeEach(async () => {
+    sessionStorage.clear();
     queryParams$ = new BehaviorSubject<Record<string, string>>({});
     authServiceMock = {
       user$: of(null),
@@ -75,6 +79,8 @@ describe('LoginScreenComponent', () => {
     membershipCampaignMock = {
       getPendingPreferences: jasmine.createSpy('getPendingPreferences').and.returnValue(null),
       rememberPendingPreferences: jasmine.createSpy('rememberPendingPreferences'),
+      clearPendingPreferences: jasmine.createSpy('clearPendingPreferences'),
+      snooze: jasmine.createSpy('snooze'),
     };
     const soundServiceMock = jasmine.createSpyObj<SoundService>('SoundService', ['stopAll']);
     const musicServiceMock = jasmine.createSpyObj<MusicService>('MusicService', ['stopAll']);
@@ -195,6 +201,50 @@ describe('LoginScreenComponent', () => {
 
     expect(navigateByUrl).toHaveBeenCalledWith('/blog/example-post');
     expect(userServiceMock.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('restores the requested post when a provider callback returns without login query parameters', () => {
+    const navigateByUrl = spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    const authReturnUrl = TestBed.inject(AuthReturnUrlService);
+    authReturnUrl.rememberDestination('/blog/socially-shared-post?source=facebook');
+    queryParams$.next({});
+    authServiceMock.signInWithEmail.and.returnValue(of(createCredential()));
+    component.loginForm.setValue({email: firebaseUser.email, password: 'password'});
+
+    component.onLogin();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/blog/socially-shared-post?source=facebook');
+  });
+
+  it('remembers the requested post before falling back from a blocked popup to provider redirect', () => {
+    const authReturnUrl = TestBed.inject(AuthReturnUrlService);
+    queryParams$.next({redirectUrl: '/blog/socially-shared-post'});
+    authServiceMock.loginWithGoogle.and.returnValue(throwError(() => ({code: 'auth/popup-blocked'})));
+
+    component.loginWithGoogle();
+
+    expect(authServiceMock.loginWithGoogleRedirect).toHaveBeenCalled();
+    expect(authReturnUrl.resolveDestination(null)).toBe('/blog/socially-shared-post');
+  });
+
+  it('lets a reader leave the campaign login and snoozes the reminder', () => {
+    const navigateByUrl = spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    queryParams$.next({
+      mode: 'register',
+      source: 'blog-membership',
+      redirectUrl: '/blog/socially-shared-post',
+    });
+    fixture.detectChanges();
+    const continueButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')
+    ).find(button => button.textContent?.includes('Continue reading'));
+
+    continueButton?.click();
+
+    expect(continueButton).toBeDefined();
+    expect(membershipCampaignMock.clearPendingPreferences).toHaveBeenCalled();
+    expect(membershipCampaignMock.snooze).toHaveBeenCalledWith(7);
+    expect(navigateByUrl).toHaveBeenCalledWith('/blog/socially-shared-post');
   });
 
   it('syncs the OS user only when the requested destination is the OS', () => {
