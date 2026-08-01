@@ -5,6 +5,7 @@ import {
   OnDestroy,
   Input,
   OnChanges,
+  SimpleChanges,
   inject,
   ChangeDetectionStrategy,
   HostListener,
@@ -824,7 +825,11 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     'player.vimeo.com',
   ]);
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['blocks'] && !changes['fallbackAlt']) {
+      return;
+    }
+
     const headingIdMap = createBlogHeadingIdMap(this.blocks);
     const imageGallery: RenderableBlogImage[] = [];
 

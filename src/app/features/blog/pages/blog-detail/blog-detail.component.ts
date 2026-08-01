@@ -15,7 +15,7 @@ import {
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {FirebaseError} from 'firebase/app';
-import {catchError, finalize, map, of, switchMap} from 'rxjs';
+import {catchError, finalize, map, of, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
@@ -504,6 +504,7 @@ export class BlogDetailComponent {
   private readonly destroyRef = inject(DestroyRef);
   private actionFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
   private progressPersistenceTimer: ReturnType<typeof setTimeout> | undefined;
+  private readingStateFrameId: number | undefined;
   private pendingProgress: {post: BlogPostSummary; progressPercent: number} | undefined;
 
   protected readonly pathNames = PATH_NAMES;
@@ -554,11 +555,12 @@ export class BlogDetailComponent {
         }
 
         return this.blogRepository.getPublishedPostBySlug$(slug).pipe(
+          tap(() => this.publishedPostLoading.set(false)),
           catchError(error => {
+            this.publishedPostLoading.set(false);
             this.publishedPostLoadError.set(this.describePublishedPostError(error));
             return of(undefined);
-          }),
-          finalize(() => this.publishedPostLoading.set(false))
+          })
         );
       })
     ),
@@ -738,6 +740,10 @@ export class BlogDetailComponent {
         clearTimeout(this.progressPersistenceTimer);
       }
 
+      if (this.readingStateFrameId !== undefined && isPlatformBrowser(this.platformId)) {
+        window.cancelAnimationFrame(this.readingStateFrameId);
+      }
+
       if (this.pendingProgress) {
         void this.articleLibrary.updateProgress(
           this.pendingProgress.post,
@@ -852,7 +858,22 @@ export class BlogDetailComponent {
 
   @HostListener('window:scroll')
   @HostListener('window:resize')
-  protected updateReadingProgress(): void {
+  protected scheduleReadingStateRefresh(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (this.readingStateFrameId !== undefined) {
+      return;
+    }
+
+    this.readingStateFrameId = window.requestAnimationFrame(() => {
+      this.readingStateFrameId = undefined;
+      this.updateReadingState();
+    });
+  }
+
+  private updateReadingState(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -970,11 +991,7 @@ export class BlogDetailComponent {
   }
 
   private queueReadingStateRefresh(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    window.requestAnimationFrame(() => this.updateReadingProgress());
+    this.scheduleReadingStateRefresh();
   }
 
   private updateActiveContentSection(): void {

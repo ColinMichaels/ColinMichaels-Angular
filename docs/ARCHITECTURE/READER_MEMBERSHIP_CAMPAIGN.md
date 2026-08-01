@@ -13,10 +13,11 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
    - browser alerts are selected as the recommended, fastest option;
    - new-post email list is initially off;
    - occasional newsletter is initially off.
-3. **Create free account** or **I already have an account** carries the choices through the existing `/login` route in session storage.
-4. After Firebase authentication and user-account bootstrap complete, email and newsletter choices are written to `users/{uid}.communicationPreferences`.
-5. If browser alerts were selected and the current browser supports them, a separate signed-in follow-up asks the reader to explicitly enable alerts. The native browser permission prompt is only opened from that button gesture.
-6. All three choices remain editable from the protected Profile page.
+3. **Create free account** or **I already have an account** carries the choices through the existing `/login` route in session storage. The campaign login also offers **Continue reading — remind me later**, which clears the unsaved choices, returns to the requested article, and snoozes the offer for seven days.
+4. Popup sign-in remains the primary Google/Facebook path. Before a blocked-popup fallback starts redirect authentication, the app stores the validated internal return URL for at most 15 minutes. The callback restores that URL even when the provider round trip drops the `/login` query string, then clears it after successful navigation.
+5. After Firebase authentication and user-account bootstrap complete, email and newsletter choices are written to `users/{uid}.communicationPreferences`.
+6. If browser alerts were selected and the current browser supports them, a separate signed-in follow-up asks the reader to explicitly enable alerts. The native browser permission prompt is only opened from that button gesture.
+7. All three choices remain editable from the protected Profile page.
 
 Closing the first offer snoozes it for seven days; **Not now** snoozes it for 30 days. Completing or closing the signed-in follow-up suppresses the campaign for 365 days on that browser. Pending signup choices use session storage so abandoned choices do not become durable account consent.
 
@@ -25,7 +26,8 @@ Closing the first offer snoozes it for seven days; **Not now** snoozes it for 30
 - `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, focus management, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
 - `BlogMembershipCampaignStateService` owns versioned dismissal and pending-preference browser storage.
 - `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts and account-level email choices.
-- `LoginScreenComponent` recognizes `source=blog-membership`, opens the requested login/register mode, and preserves preferences for email/password and social authentication.
+- `LoginScreenComponent` recognizes `source=blog-membership`, opens the requested login/register mode, preserves preferences for email/password and social authentication, and provides a guest return path.
+- `AuthReturnUrlService` validates same-site destinations, keeps short-lived redirect state in session storage, rejects login/logout loops and external URLs, and clears state after successful navigation.
 - `UserAccountService.updateCommunicationPreferences` is the shared Firestore write boundary.
 - `UserCommunicationPreferences` and `normalizeCommunicationPreferences` define and validate the optional account document field.
 - `PwaPushService` remains the sole browser permission and per-device Web Push adapter.
@@ -68,12 +70,14 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 - Reduced-motion preferences remove entry and control transitions.
 - Desktop presentation uses a two-column editorial layout; narrow and short viewports collapse the art and make the content region scrollable.
 - The signup screen hides decorative Core OS controls during the reader campaign so consent and registration controls are not obscured. Its communication choices use the login screen's translucent Apple-style settings group and switches while retaining native checkbox semantics for forms and assistive technology.
+- The signup screen always keeps a keyboard-focusable guest continuation action visible for readers who decide not to authenticate after leaving the original offer.
 - Registration uses one viewport-height scroll container, 16px focusable inputs, scroll margins, and explicit `name`, `email`, `current-password`, and `new-password` autocomplete contracts so browser autofill and mobile virtual keyboards cannot recenter or misclassify the form and make sibling fields appear to disappear.
 - Campaign graphics keep the message in native page/video text where possible; social publishing should include the documented alt text.
 
 ## Migration And Deployment
 
 - No Firestore data migration or account backfill is required.
+- The redirect-return record is tab-scoped, expires after 15 minutes, and needs no Firebase configuration or OAuth callback-domain change.
 - Deploy Angular Hosting and Firestore Rules together.
 - Existing authentication providers, comments, points, and push Functions are reused without a Functions code change.
 - Browser-alert activation still requires the existing VAPID production configuration.
@@ -82,7 +86,7 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 
 ## Rollback
 
-Rolling back the Angular UI removes the prompt and Profile controls without deleting account data. Older builds ignore the optional `communicationPreferences` field. Firestore Rules may retain the validated field safely, or the matching rules change can be rolled back after the older client is restored.
+Rolling back the Angular UI removes the prompt, short-lived redirect-return behavior, and Profile controls without deleting account data. Older builds ignore the optional `communicationPreferences` field and any tab-scoped redirect record expires without server cleanup. Firestore Rules may retain the validated field safely, or the matching rules change can be rolled back after the older client is restored.
 
 Do not delete stored communication choices during a UI rollback. If email delivery is later activated, keep provider unsubscribe/suppression records authoritative even if the campaign UI is disabled. Existing browser push subscriptions continue to follow the PWA rollback guidance.
 
