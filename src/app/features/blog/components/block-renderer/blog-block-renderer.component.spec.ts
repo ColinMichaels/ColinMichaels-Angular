@@ -33,6 +33,29 @@ describe('BlogBlockRendererComponent', () => {
     fixture = TestBed.createComponent(BlogBlockRendererComponent);
   });
 
+  it('does not rebuild every content block when only the active heading changes during scroll', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'section-one',
+        type: 'header',
+        data: {text: 'Section one', level: 2},
+      },
+      {
+        id: 'body-copy',
+        type: 'markdown',
+        data: {markdown: '**Rendered once** while the reader scrolls.'},
+      },
+    ]);
+    fixture.detectChanges();
+    const renderer = fixture.componentInstance as unknown as { renderedBlocks: readonly unknown[] };
+    const initialBlocks = renderer.renderedBlocks;
+
+    fixture.componentRef.setInput('activeHeadingId', 'section-one');
+    fixture.detectChanges();
+
+    expect(renderer.renderedBlocks).toBe(initialBlocks);
+  });
+
   it('renders trusted video embeds in an iframe', () => {
     fixture.componentRef.setInput('blocks', [
       {

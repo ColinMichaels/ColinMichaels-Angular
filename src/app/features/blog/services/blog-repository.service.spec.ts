@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {BehaviorSubject, firstValueFrom, of} from 'rxjs';
+import {BehaviorSubject, filter, firstValueFrom, of} from 'rxjs';
 
 import {BlogPost} from '../models/blog-post.model';
 import {BlogStorageService} from './blog-storage.service';
@@ -119,7 +119,13 @@ class FakeBlogStorageService {
 
   async loadPublishedPostBySlug(slug: string): Promise<BlogPost | undefined> {
     this.loadPublishedPostBySlugCalls.push(slug);
-    return this.directPublishedPosts.get(slug);
+    const post = this.directPublishedPosts.get(slug);
+
+    if (post) {
+      this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), post]);
+    }
+
+    return post;
   }
 }
 
@@ -265,6 +271,21 @@ describe('BlogRepositoryService', () => {
 
     expect(post).toEqual(publishedPost);
     expect(storage.loadPublishedPostBySlugCalls).toEqual([]);
+  });
+
+  it('keeps a cold slug lookup subscribed until the published collection supplies the post', async () => {
+    storage.setPosts([]);
+    const postPromise = firstValueFrom(
+      service.getPublishedPostBySlug$('published-post').pipe(
+        filter((post): post is BlogPost => Boolean(post))
+      )
+    );
+
+    await Promise.resolve();
+    storage.setPosts([publishedPost]);
+
+    expect(await postPromise).toEqual(publishedPost);
+    expect(storage.loadPublishedPostBySlugCalls).toEqual(['published-post']);
   });
 
   it('keeps Firestore drafts available to the admin repository view', () => {

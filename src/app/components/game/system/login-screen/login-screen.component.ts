@@ -26,6 +26,7 @@ import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
 import {type User, type UserCredential} from 'firebase/auth';
 import {AuthProviderConflict, AuthService} from '../../../../services/auth.service';
+import {AuthReturnUrlService} from '../../../../services/auth-return-url.service';
 import {faFacebook, faGoogle} from '@fortawesome/free-brands-svg-icons';
 import {writeAuthDebug} from '../../../../shared/debug/auth-debug';
 import {
@@ -212,6 +213,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     private router: Router,
     private readonly route: ActivatedRoute,
     private readonly membershipCampaign: BlogMembershipCampaignStateService,
+    private readonly authReturnUrl: AuthReturnUrlService,
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -241,7 +243,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.redirectUrl = this.getSafeRedirectUrl(this.route.snapshot.queryParamMap.get('redirectUrl'));
+    this.redirectUrl = this.authReturnUrl.resolveDestination(
+      this.route.snapshot.queryParamMap.get('redirectUrl')
+    );
     this.applyCampaignQueryState(
       this.route.snapshot.queryParamMap.get('mode'),
       this.route.snapshot.queryParamMap.get('source')
@@ -256,7 +260,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        this.redirectUrl = this.getSafeRedirectUrl(params['redirectUrl']);
+        this.redirectUrl = this.authReturnUrl.resolveDestination(params['redirectUrl']) ?? this.redirectUrl;
         this.applyCampaignQueryState(params['mode'], params['source']);
         this.debugLogin('query params observed', {
           rawRedirectUrl: params['redirectUrl'] ?? null,
@@ -319,6 +323,9 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.debugLogin('navigation requested', {destination});
     this.router.navigateByUrl(destination)
       .then(success => {
+        if (success) {
+          this.authReturnUrl.clearDestination();
+        }
         this.debugLogin('navigation completed', {destination, success});
         this.logger.info('Navigation success:', success);
       })
@@ -334,34 +341,6 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     }
     const hostname = window.location.hostname;
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-  }
-
-  private getSafeRedirectUrl(value: unknown): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const redirectUrl = value.trim();
-
-    if (
-      !redirectUrl
-      || !redirectUrl.startsWith('/')
-      || redirectUrl.startsWith('//')
-      || redirectUrl.includes('://')
-      || this.isAuthUtilityRedirect(redirectUrl)
-    ) {
-      return null;
-    }
-
-    return redirectUrl;
-  }
-
-  private isAuthUtilityRedirect(redirectUrl: string): boolean {
-    const path = redirectUrl.split('?')[0].split('#')[0];
-    const loginPath = `/${PATH_NAMES.OS_LOGIN}`;
-    const logoutPath = `/${PATH_NAMES.LOGOUT}`;
-
-    return path === loginPath || path.startsWith(`${loginPath}/`) || path === logoutPath;
   }
 
   private getErrorCode(error: unknown): string {
@@ -622,6 +601,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   private startGoogleRedirectSignIn(): void {
     this.debugLogin('google redirect login submitted');
+    this.authReturnUrl.rememberDestination(this.getDestinationUrl());
     this.authService.loginWithGoogleRedirect()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -645,6 +625,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
   private startFacebookRedirectSignIn(): void {
     this.debugLogin('facebook redirect login submitted');
+    this.authReturnUrl.rememberDestination(this.getDestinationUrl());
     this.authService.loginWithFacebookRedirect()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -756,6 +737,13 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     const osRoot = `/${PATH_NAMES.OS_MAIN}`;
 
     return destination === osRoot || destination.startsWith(`${osRoot}/`);
+  }
+
+  protected continueReadingAsGuest(): void {
+    this.membershipCampaign.clearPendingPreferences();
+    this.membershipCampaign.snooze(7);
+    this.authReturnUrl.clearDestination();
+    this.navigateToDestination();
   }
 
   resetPassword() {

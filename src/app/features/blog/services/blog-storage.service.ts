@@ -162,9 +162,29 @@ export class BlogStorageService {
       limit(1)
     ));
 
-    return snapshot.docs
+    const post = snapshot.docs
       .map(postSnapshot => this.fromFirestorePost(postSnapshot.data()))
       .find((post): post is BlogPost => Boolean(post));
+
+    if (post) {
+      this.cachePublishedPost(post);
+    }
+
+    return post;
+  }
+
+  private cachePublishedPost(post: BlogPost): void {
+    const currentPosts = this.postsSubject.value;
+    const existingPost = currentPosts.find(candidate => candidate.id === post.id);
+
+    if (existingPost === post) {
+      return;
+    }
+
+    this.postsSubject.next([
+      ...currentPosts.filter(candidate => candidate.id !== post.id && candidate.slug !== post.slug),
+      post,
+    ]);
   }
 
   private startAuthAwareFirestoreSync(): (() => void) | undefined {

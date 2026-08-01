@@ -1,5 +1,5 @@
 import {Injectable, inject} from '@angular/core';
-import {from, map, Observable, of} from 'rxjs';
+import {defer, distinctUntilChanged, from, map, Observable, of, switchMap} from 'rxjs';
 
 import {
   BlogAdminStats,
@@ -143,11 +143,20 @@ export class BlogRepositoryService {
   }
 
   getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
-    const cachedPost = this.getPublishedPostBySlug(slug);
-
-    return cachedPost
+    const normalizedSlug = slug.trim();
+    const cachedPost = this.getPublishedPostBySlug(normalizedSlug);
+    const initialPost$ = cachedPost
       ? of(cachedPost)
-      : from(this.storage.loadPublishedPostBySlug(slug));
+      : defer(() => from(this.storage.loadPublishedPostBySlug(normalizedSlug)));
+
+    return initialPost$.pipe(
+      switchMap(() => this.storage.posts$.pipe(
+        map(posts => posts.find(post => post.slug === normalizedSlug && post.status === 'published')),
+        distinctUntilChanged((previous, current) => (
+          previous?.id === current?.id && previous?.updatedAt === current?.updatedAt
+        ))
+      ))
+    );
   }
 
   getPreviewPostByToken$(token: string): Observable<BlogPost | undefined> {
