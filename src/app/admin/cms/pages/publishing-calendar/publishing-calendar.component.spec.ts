@@ -1,9 +1,10 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPost} from '../../../../features/blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
+import {MediaLibraryService} from '../../../media-library/services/media-library.service';
 import {PublishingCalendarComponent} from './publishing-calendar.component';
 
 function createScheduledPost(): BlogPost {
@@ -100,6 +101,13 @@ describe('PublishingCalendarComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepository},
+        {
+          provide: MediaLibraryService,
+          useValue: {
+            listenToMediaItems: () => of([]),
+            uploadFiles: jasmine.createSpy('uploadFiles'),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -238,7 +246,9 @@ describe('PublishingCalendarComponent', () => {
     findButton(element, 'Regenerate starter copy').click();
     fixture.detectChanges();
 
-    const mediaInput = composer?.querySelector<HTMLInputElement>('input[type="url"]');
+    const mediaInput = composer?.querySelector<HTMLInputElement>(
+      'app-blog-media-uploader input[placeholder*="public video URL"]'
+    );
 
     if (!(mediaInput instanceof HTMLInputElement)) {
       throw new Error('LinkedIn media URL editor was not found.');

@@ -217,6 +217,9 @@ export class ChartBlockTool implements BlockTool {
             label: getFieldValue(row, '[data-chart-point-label]') || `Point ${index + 1}`,
             value: numericValue,
             note: getFieldValue(row, '[data-chart-point-note]'),
+            ...(getFieldValue(row, '[data-chart-point-series]')
+              ? {series: getFieldValue(row, '[data-chart-point-series]')}
+              : {}),
           }]
           : [];
       });
@@ -263,10 +266,13 @@ export class ChartBlockTool implements BlockTool {
 function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): HTMLElement {
   const row = document.createElement('div');
   row.dataset['chartPointRow'] = 'true';
-  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
+  row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(110px,.3fr) auto;gap:8px;align-items:end;border:1px solid #e4e4e7;background:#fff;padding:10px';
 
   const label = createInput('Label', 'Mustang GT', point?.label ?? '', readOnly);
   setFieldDataset(label, 'chartPointLabel');
+
+  const series = createInput('Series', 'Optional series name', point?.series ?? '', readOnly);
+  setFieldDataset(series, 'chartPointSeries');
 
   const value = createInput(
     'Value',
@@ -292,7 +298,7 @@ function createPointRow(point: BlogChartPoint | undefined, readOnly: boolean): H
   setFieldDataset(note, 'chartPointNote');
   note.style.gridColumn = '1 / -1';
 
-  row.append(label, value, removeButton, note);
+  row.append(label, series, value, removeButton, note);
 
   return row;
 }
@@ -586,13 +592,17 @@ function getErrorMessage(error: unknown): string {
 }
 
 function normalizeChartData(data: ChartBlockData | undefined): NormalizedChartBlockData {
-  const chartPoints = Array.isArray(data?.chartPoints)
+  const chartPoints: readonly BlogChartPoint[] = Array.isArray(data?.chartPoints)
     ? data.chartPoints
-      .map((point, index) => ({
-        label: typeof point.label === 'string' && point.label.trim() ? point.label.trim() : `Point ${index + 1}`,
-        value: typeof point.value === 'number' && Number.isFinite(point.value) ? point.value : Number.NaN,
-        note: typeof point.note === 'string' ? point.note.trim() : '',
-      }))
+      .map((point, index): BlogChartPoint => {
+        const series = typeof point.series === 'string' ? point.series.trim() : '';
+        return {
+          label: typeof point.label === 'string' && point.label.trim() ? point.label.trim() : `Point ${index + 1}`,
+          value: typeof point.value === 'number' && Number.isFinite(point.value) ? point.value : Number.NaN,
+          note: typeof point.note === 'string' ? point.note.trim() : '',
+          ...(series ? {series} : {}),
+        };
+      })
       .filter(point => Number.isFinite(point.value))
     : [];
   const datasets = normalizeChartDatasets(data?.datasets);

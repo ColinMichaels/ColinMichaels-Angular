@@ -169,4 +169,28 @@ describe('BlogPollComponent', () => {
     expect(heading.classList).toContain('text-lg');
     expect(heading.classList).not.toContain('sm:text-2xl');
   });
+
+  it('keeps production-preview polls visible but prevents result reads and vote writes', async () => {
+    authState$.next(user);
+    fixture = TestBed.createComponent(BlogPollComponent);
+    fixture.componentRef.setInput('block', pollBlock);
+    fixture.componentRef.setInput('postId', 'post-1');
+    fixture.componentRef.setInput('postSlug', 'sample-post');
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const fieldset = element.querySelector<HTMLFieldSetElement>('fieldset');
+    const form = element.querySelector<HTMLFormElement>('form');
+
+    expect(fieldset?.disabled).toBeTrue();
+    expect(element.textContent).toContain('Production preview only. Voting is disabled.');
+    form?.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
+
+    expect(pollService.getResults).not.toHaveBeenCalled();
+    expect(pollService.submitVote).not.toHaveBeenCalled();
+  });
 });

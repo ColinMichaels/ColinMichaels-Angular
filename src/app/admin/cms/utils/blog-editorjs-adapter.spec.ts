@@ -30,6 +30,17 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
 }
 
 describe('blog-editorjs-adapter', () => {
+  it('rejects non-object tune metadata instead of silently dropping it', () => {
+    expect(() => createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'paragraph-unsafe-tunes',
+        type: 'paragraph',
+        data: {text: 'Safe copy'},
+        tunes: ['alignment'],
+      }],
+    })).toThrowError(/non-object tune metadata/);
+  });
+
   it('normalizes saved youtubeEmbed blocks into trusted blog embed blocks', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [
@@ -230,7 +241,6 @@ describe('blog-editorjs-adapter', () => {
             chartPoints: [
               {label: 'EcoBoost', value: 315, note: 'Turbo four'},
               {label: 'GT', value: 480},
-              {label: 'Invalid', value: 'fast'},
             ],
           },
         },
@@ -298,6 +308,7 @@ describe('blog-editorjs-adapter', () => {
             alt: 'Inline detail',
             caption: 'Placed beside supporting copy.',
             imageLayout: 'inlineEnd',
+            imageSize: 'medium',
             withBorder: true,
             withBackground: true,
           },
@@ -319,6 +330,7 @@ describe('blog-editorjs-adapter', () => {
           withBorder: true,
           withBackground: true,
           imageLayout: 'inlineEnd',
+          imageSize: 'medium',
         },
       },
     ]);
@@ -341,8 +353,49 @@ describe('blog-editorjs-adapter', () => {
         withBackground: true,
         stretched: false,
         imageLayout: 'inlineEnd',
+        imageSize: 'medium',
       },
     });
+  });
+
+  it('does not materialize an optional image size when a legacy block has none', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'legacy-image',
+        type: 'image',
+        data: {
+          file: {url: '/assets/images/backgrounds/day.webp'},
+          imageLayout: 'contained',
+        },
+      }],
+    });
+
+    expect(blocks[0].data.imageSize).toBeUndefined();
+    expect(createEditorDocument(createPost({blocks})).blocks[0].data['imageSize']).toBeUndefined();
+  });
+
+  it('compatibility-protects an image block with an arbitrary size value', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'invalid-image-size',
+        type: 'image',
+        data: {
+          file: {url: '/assets/images/backgrounds/day.webp'},
+          imageLayout: 'contained',
+          imageSize: '960px',
+        },
+      }],
+    });
+
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].id).toBe('invalid-image-size');
+    expect(blocks[0].type).toBe('unsupported');
+    expect(blocks[0].data.unsupportedBlock?.originalType).toBe('image');
+    expect(JSON.stringify(blocks[0].data.unsupportedBlock?.originalData)).toBe(JSON.stringify({
+      file: {url: '/assets/images/backgrounds/day.webp'},
+      imageLayout: 'contained',
+      imageSize: '960px',
+    }));
   });
 
   it('preserves code block language metadata across editor conversions', () => {
@@ -412,7 +465,7 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
-  it('preserves the reusable Cat Corner unlock block without configurable image data', () => {
+  it('preserves obsolete Cat Corner configuration in an unsupported envelope instead of dropping it', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [{
         id: 'cat-corner-unlock-1',
@@ -423,11 +476,36 @@ describe('blog-editorjs-adapter', () => {
       }],
     });
 
-    expect(blocks).toEqual([{
+    expect(blocks as unknown).toEqual([{
       id: 'cat-corner-unlock-1',
-      type: 'catCornerUnlock',
-      data: {},
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'catCornerUnlock',
+          originalData: {
+            imageUrl: 'https://example.com/ignored.jpg',
+          },
+        },
+      },
     }]);
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'cat-corner-unlock-1',
+      type: 'unsupported',
+      data: {
+        originalType: 'catCornerUnlock',
+        originalData: {
+          imageUrl: 'https://example.com/ignored.jpg',
+        },
+      },
+    });
+  });
+
+  it('round-trips the canonical Cat Corner unlock block', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{id: 'cat-corner-unlock-1', type: 'catCornerUnlock', data: {}}],
+    });
+
+    expect(blocks).toEqual([{id: 'cat-corner-unlock-1', type: 'catCornerUnlock', data: {}}]);
     expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
       id: 'cat-corner-unlock-1',
       type: 'catCornerUnlock',
@@ -668,5 +746,279 @@ describe('blog-editorjs-adapter', () => {
     });
 
     expect(createEditorDocument(createPost({blocks})).blocks[0].data).toEqual(blocks[0].data);
+  });
+
+  it('keeps legacy flat string lists byte-for-byte compatible', () => {
+    const source = {
+      blocks: [{
+        id: 'legacy-list',
+        type: 'list',
+        data: {
+          style: 'ordered',
+          items: ['First item', 'Second <strong>item</strong>'],
+        },
+      }],
+    };
+
+    const blocks = createBlogBlocksFromEditorDocument(source);
+
+    expect(blocks).toEqual([{
+      id: 'legacy-list',
+      type: 'list',
+      data: {
+        ordered: true,
+        items: ['First item', 'Second <strong>item</strong>'],
+      },
+    }]);
+    expect(createEditorDocument(createPost({blocks})).blocks).toEqual(source.blocks);
+  });
+
+  it('round-trips recursive Editor.js list hierarchy and metadata without flattening', () => {
+    const source = {
+      blocks: [{
+        id: 'nested-list',
+        type: 'list',
+        data: {
+          style: 'ordered',
+          meta: {start: 3, counterType: 'upper-roman'},
+          items: [{
+            content: 'Parent',
+            meta: {start: 3},
+            items: [{
+              content: 'Child',
+              meta: {counterType: 'lower-alpha'},
+              items: [],
+            }],
+          }],
+        },
+      }],
+    };
+
+    const blocks = createBlogBlocksFromEditorDocument(source);
+
+    expect(blocks[0] as unknown).toEqual({
+      id: 'nested-list',
+      type: 'list',
+      data: {
+        ordered: true,
+        listStyle: 'ordered',
+        listMeta: {start: 3, counterType: 'upper-roman'},
+        listItems: [{
+          content: 'Parent',
+          meta: {start: 3},
+          items: [{content: 'Child', meta: {counterType: 'lower-alpha'}, items: []}],
+        }],
+      },
+    });
+    expect(createEditorDocument(createPost({blocks})).blocks).toEqual(source.blocks);
+  });
+
+  it('round-trips the bounded list presentation tune without leaking it into opaque tunes', () => {
+    const source = {
+      blocks: [{
+        id: 'steps-list',
+        type: 'list',
+        data: {
+          style: 'ordered',
+          meta: {},
+          items: [
+            {content: 'Draft', meta: {}, items: []},
+            {content: 'Review', meta: {}, items: []},
+          ],
+        },
+        tunes: {
+          listPresentation: {presentation: 'steps'},
+          alignmentTune: {alignment: 'left'},
+        },
+      }],
+    };
+
+    const blocks = createBlogBlocksFromEditorDocument(source);
+
+    expect(blocks[0].data.listPresentation).toBe('steps');
+    expect(blocks[0].editorTunes as unknown).toEqual({alignmentTune: {alignment: 'left'}});
+    expect(createEditorDocument(createPost({blocks})).blocks).toEqual(source.blocks);
+  });
+
+  it('envelopes invalid list presentation tune values instead of partially saving them', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'invalid-list-presentation',
+        type: 'list',
+        data: {style: 'ordered', items: ['Draft']},
+        tunes: {listPresentation: {presentation: 'timeline'}},
+      }],
+    });
+
+    expect(blocks[0].type).toBe('unsupported');
+    expect(blocks[0].data.unsupportedBlock?.originalTunes as unknown).toEqual({
+      listPresentation: {presentation: 'timeline'},
+    });
+  });
+
+  it('envelopes Steps on a non-ordered list instead of saving an ambiguous presentation', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'unordered-steps',
+        type: 'list',
+        data: {style: 'unordered', items: ['Draft']},
+        tunes: {listPresentation: {presentation: 'steps'}},
+      }],
+    });
+
+    expect(blocks[0].type).toBe('unsupported');
+    expect(blocks[0].data.unsupportedBlock?.originalData as unknown).toEqual({
+      style: 'unordered',
+      items: ['Draft'],
+    });
+    expect(blocks[0].data.unsupportedBlock?.originalTunes as unknown).toEqual({
+      listPresentation: {presentation: 'steps'},
+    });
+  });
+
+  it('round-trips modern and legacy checklist state without flattening it', () => {
+    const modernBlocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'modern-checklist',
+        type: 'list',
+        data: {
+          style: 'checklist',
+          meta: {},
+          items: [{
+            content: 'Ship it',
+            meta: {checked: true},
+            items: [{content: 'Tag release', meta: {checked: false}, items: []}],
+          }],
+        },
+      }],
+    });
+
+    expect(modernBlocks[0].data.listStyle).toBe('checklist');
+    expect(modernBlocks[0].data.listItems?.[0].meta['checked']).toBeTrue();
+    expect(modernBlocks[0].data.listItems?.[0].items[0].meta['checked']).toBeFalse();
+    expect(createEditorDocument(createPost({blocks: modernBlocks})).blocks[0].data).toEqual({
+      style: 'checklist',
+      meta: {},
+      items: [{
+        content: 'Ship it',
+        meta: {checked: true},
+        items: [{content: 'Tag release', meta: {checked: false}, items: []}],
+      }],
+    });
+
+    const legacyBlocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'legacy-checklist',
+        type: 'checklist',
+        data: {items: [{text: 'Reviewed', checked: true}, {text: 'Published', checked: false}]},
+      }],
+    });
+
+    expect(legacyBlocks[0] as unknown).toEqual({
+      id: 'legacy-checklist',
+      type: 'list',
+      data: {
+        ordered: false,
+        listStyle: 'checklist',
+        listMeta: {},
+        listItems: [
+          {content: 'Reviewed', meta: {checked: true}, items: []},
+          {content: 'Published', meta: {checked: false}, items: []},
+        ],
+      },
+    });
+  });
+
+  it('preserves raw unsupported block data and tunes through the registered compatibility block', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'table-1',
+        type: 'table',
+        data: {
+          withHeadings: true,
+          content: [['Name', 'Value'], ['Speed', 42]],
+          settings: {compact: false},
+        },
+        tunes: {alignmentTune: {alignment: 'center'}},
+      }],
+    });
+
+    expect(blocks as unknown).toEqual([{
+      id: 'table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          originalData: {
+            withHeadings: true,
+            content: [['Name', 'Value'], ['Speed', 42]],
+            settings: {compact: false},
+          },
+          originalTunes: {alignmentTune: {alignment: 'center'}},
+        },
+      },
+    }]);
+
+    const wrapped = createEditorDocument(createPost({blocks}));
+    expect(wrapped.blocks[0]).toEqual({
+      id: 'table-1',
+      type: 'unsupported',
+      data: {
+        originalType: 'table',
+        originalData: {
+          withHeadings: true,
+          content: [['Name', 'Value'], ['Speed', 42]],
+          settings: {compact: false},
+        },
+        originalTunes: {alignmentTune: {alignment: 'center'}},
+      },
+    });
+    expect(createBlogBlocksFromEditorDocument(wrapped) as unknown).toEqual(blocks);
+  });
+
+  it('envelopes malformed known blocks instead of partially normalizing or dropping data', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'bad-list',
+        type: 'list',
+        data: {
+          style: 'unordered',
+          items: ['Legacy', {content: 'Recursive', meta: {}, items: []}],
+        },
+      }],
+    });
+
+    expect(blocks as unknown).toEqual([{
+      id: 'bad-list',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'list',
+          originalData: {
+            style: 'unordered',
+            items: ['Legacy', {content: 'Recursive', meta: {}, items: []}],
+          },
+        },
+      },
+    }]);
+  });
+
+  it('preserves Editor.js tune metadata on supported blocks', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'paragraph-with-tunes',
+        type: 'paragraph',
+        data: {text: 'Aligned copy'},
+        tunes: {alignmentTune: {alignment: 'right'}},
+      }],
+    });
+
+    expect(blocks[0].editorTunes as unknown).toEqual({alignmentTune: {alignment: 'right'}});
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'paragraph-with-tunes',
+      type: 'paragraph',
+      data: {text: 'Aligned copy'},
+      tunes: {alignmentTune: {alignment: 'right'}},
+    });
   });
 });

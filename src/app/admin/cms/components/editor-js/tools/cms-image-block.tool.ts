@@ -2,7 +2,9 @@ import type {BlockTool, BlockToolConstructorOptions, SanitizerConfig} from '@edi
 
 import {
   BLOG_IMAGE_LAYOUTS,
+  BLOG_IMAGE_SIZES,
   BlogImageLayout,
+  BlogImageSize,
 } from '../../../../../features/blog/models/blog-post.model';
 
 interface CmsImageFileData {
@@ -23,6 +25,7 @@ export interface CmsImageBlockData {
   withBackground?: boolean;
   stretched?: boolean;
   imageLayout?: BlogImageLayout;
+  imageSize?: BlogImageSize;
 }
 
 interface CmsImageUploadResult {
@@ -40,6 +43,7 @@ export interface CmsImageLibrarySelection {
   alt: string;
   caption: string;
   imageLayout: BlogImageLayout;
+  imageSize?: BlogImageSize;
   width?: number;
   height?: number;
 }
@@ -74,6 +78,7 @@ interface NormalizedCmsImageBlockData {
   withBackground: boolean;
   stretched: boolean;
   imageLayout: BlogImageLayout;
+  imageSize?: BlogImageSize;
 }
 
 const imageLayoutConfigs: Record<BlogImageLayout, CmsImageLayoutConfig> = {
@@ -92,6 +97,25 @@ const imageLayoutConfigs: Record<BlogImageLayout, CmsImageLayoutConfig> = {
   inlineEnd: {
     label: 'Inline right',
     description: 'Float the image right on wider screens so text wraps beside it.',
+  },
+};
+
+const imageSizeConfigs: Record<BlogImageSize, CmsImageLayoutConfig> = {
+  small: {
+    label: 'Small',
+    description: 'A compact detail image that can sit beside copy.',
+  },
+  medium: {
+    label: 'Medium',
+    description: 'A balanced editorial image for most supporting visuals.',
+  },
+  large: {
+    label: 'Large',
+    description: 'A prominent image that stacks above or below the text.',
+  },
+  wide: {
+    label: 'Wide',
+    description: 'Use all safe space in the article column without overflowing it.',
   },
 };
 
@@ -131,6 +155,12 @@ function toImageLayout(value: unknown, stretched: unknown): BlogImageLayout {
   return stretched === true ? 'fullWidth' : 'contained';
 }
 
+function toImageSize(value: unknown): BlogImageSize | undefined {
+  return typeof value === 'string' && (BLOG_IMAGE_SIZES as readonly string[]).includes(value)
+    ? value as BlogImageSize
+    : undefined;
+}
+
 function normalizeImageData(data: CmsImageBlockData | undefined): NormalizedCmsImageBlockData {
   const file = isRecord(data?.file) ? data.file : {};
   const url = getString(file['url']) || getString(data?.url);
@@ -138,6 +168,7 @@ function normalizeImageData(data: CmsImageBlockData | undefined): NormalizedCmsI
   const width = getPositiveNumber(file['width']) ?? getPositiveNumber(data?.width);
   const height = getPositiveNumber(file['height']) ?? getPositiveNumber(data?.height);
   const imageLayout = toImageLayout(data?.imageLayout, data?.stretched);
+  const imageSize = toImageSize(data?.imageSize);
 
   return {
     file: {
@@ -155,6 +186,7 @@ function normalizeImageData(data: CmsImageBlockData | undefined): NormalizedCmsI
     withBackground: data?.withBackground === true,
     stretched: imageLayout === 'fullWidth',
     imageLayout,
+    ...(imageSize ? {imageSize} : {}),
   };
 }
 
@@ -190,6 +222,7 @@ export class CmsImageBlockTool implements BlockTool {
       alt: {},
       url: {},
       imageLayout: {},
+      imageSize: {},
     };
   }
 
@@ -263,6 +296,10 @@ export class CmsImageBlockTool implements BlockTool {
 
     const emptyPreview = createElement('p', '', 'Paste an image URL or upload an image.');
     emptyPreview.style.cssText = 'margin:0;padding:24px;text-align:center;font-size:13px;line-height:1.6;color:#71717a';
+
+    const unavailablePreview = createElement('p', '', 'Image preview unavailable. Check the URL or choose another image.');
+    unavailablePreview.setAttribute('role', 'status');
+    unavailablePreview.style.cssText = 'margin:0;padding:24px;text-align:center;font-size:13px;line-height:1.6;color:#b91c1c';
 
     const renderPreview = (url: string): void => {
       previewFrame.replaceChildren();
@@ -339,6 +376,36 @@ export class CmsImageBlockTool implements BlockTool {
 
     layoutGroup.append(layoutLegend, layoutSelect, layoutDescription);
 
+    const sizeGroup = createElement('fieldset');
+    sizeGroup.style.cssText = 'margin:0 0 12px;border:1px solid #e4e4e7;padding:12px';
+
+    const sizeLegend = createElement('legend', '', 'Size');
+    sizeLegend.style.cssText = 'padding:0 6px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#71717a';
+
+    const sizeSelect = createElement('select');
+    sizeSelect.dataset['imageSize'] = 'true';
+    sizeSelect.disabled = this.readOnly;
+    sizeSelect.style.cssText = 'display:block;width:100%;box-sizing:border-box;border:1px solid #a1a1aa;background:#fff;padding:9px 10px;font:inherit;font-size:14px;color:#18181b;outline:none';
+
+    const automaticSize = createElement('option');
+    automaticSize.value = '';
+    automaticSize.textContent = 'Automatic (preserve existing behavior)';
+    automaticSize.selected = this.data.imageSize === undefined;
+    sizeSelect.append(automaticSize);
+
+    for (const size of BLOG_IMAGE_SIZES) {
+      const option = createElement('option');
+      option.value = size;
+      option.textContent = imageSizeConfigs[size].label;
+      option.selected = size === this.data.imageSize;
+      sizeSelect.append(option);
+    }
+
+    const sizeDescription = createElement('p');
+    sizeDescription.style.cssText = 'margin:8px 0 0;font-size:12px;line-height:1.45;color:#52525b';
+
+    sizeGroup.append(sizeLegend, sizeSelect, sizeDescription);
+
     const optionsGroup = createElement('fieldset');
     optionsGroup.style.cssText = 'display:grid;gap:8px;margin:0;border:1px solid #e4e4e7;padding:12px';
 
@@ -359,34 +426,51 @@ export class CmsImageBlockTool implements BlockTool {
     status.setAttribute('aria-live', 'polite');
     status.style.cssText = 'margin:12px 0 0;min-height:18px;font-size:12px;color:#52525b';
 
-    const applyLayout = (layout: BlogImageLayout): void => {
-      const config = imageLayoutConfigs[layout];
-      layoutDescription.textContent = config.description;
-      previewFrame.style.maxWidth = layout === 'fullWidth'
-        ? '100%'
-        : layout === 'contained'
-          ? '620px'
-          : '360px';
+    const applyPresentation = (layout: BlogImageLayout, size: BlogImageSize | undefined): void => {
+      layoutDescription.textContent = imageLayoutConfigs[layout].description;
+      sizeDescription.textContent = size
+        ? imageSizeConfigs[size].description
+        : 'Uses the existing responsive layout without writing a new size value.';
+      previewFrame.style.maxWidth = size === 'small'
+        ? '320px'
+        : size === 'medium'
+          ? '520px'
+          : size === 'large'
+            ? '720px'
+            : size === 'wide' || layout === 'fullWidth'
+              ? '100%'
+              : layout === 'contained'
+                ? '620px'
+                : '360px';
       previewFrame.style.marginLeft = layout === 'inlineEnd' ? 'auto' : '0';
     };
 
     renderPreview(this.data.url);
-    applyLayout(this.data.imageLayout);
+    applyPresentation(this.data.imageLayout, this.data.imageSize);
 
     urlInput.addEventListener('input', () => renderPreview(urlInput.value));
     altInput.addEventListener('input', () => {
       previewImage.alt = altInput.value || 'Selected image preview';
     });
-    layoutSelect.addEventListener('change', () => applyLayout(toImageLayout(layoutSelect.value, false)));
+    previewImage.addEventListener('error', () => previewFrame.replaceChildren(unavailablePreview));
+    layoutSelect.addEventListener('change', () => applyPresentation(
+      toImageLayout(layoutSelect.value, false),
+      toImageSize(sizeSelect.value)
+    ));
+    sizeSelect.addEventListener('change', () => applyPresentation(
+      toImageLayout(layoutSelect.value, false),
+      toImageSize(sizeSelect.value)
+    ));
     mediaLibraryButton.addEventListener('click', () => {
       void this.chooseExistingImage(
         urlInput,
         altInput,
         captionInput,
         layoutSelect,
+        sizeSelect,
         previewImage,
         renderPreview,
-        applyLayout,
+        applyPresentation,
         status,
         mediaLibraryButton
       );
@@ -408,6 +492,7 @@ export class CmsImageBlockTool implements BlockTool {
       altGroup,
       captionGroup,
       layoutGroup,
+      sizeGroup,
       optionsGroup,
       status
     );
@@ -423,6 +508,7 @@ export class CmsImageBlockTool implements BlockTool {
       block.querySelector<HTMLSelectElement>('[data-image-layout]')?.value,
       false
     );
+    const imageSize = toImageSize(block.querySelector<HTMLSelectElement>('[data-image-size]')?.value);
     const withBorder = block.querySelector<HTMLInputElement>('[data-image-with-border]')?.checked === true;
     const withBackground = block.querySelector<HTMLInputElement>('[data-image-with-background]')?.checked === true;
     const width = this.data.file.width;
@@ -442,6 +528,7 @@ export class CmsImageBlockTool implements BlockTool {
       withBackground,
       imageLayout,
       stretched: imageLayout === 'fullWidth',
+      ...(imageSize ? {imageSize} : {}),
       ...(width ? {width} : {}),
       ...(height ? {height} : {}),
     };
@@ -456,9 +543,10 @@ export class CmsImageBlockTool implements BlockTool {
     altInput: HTMLInputElement,
     captionInput: HTMLTextAreaElement,
     layoutSelect: HTMLSelectElement,
+    sizeSelect: HTMLSelectElement,
     previewImage: HTMLImageElement,
     renderPreview: (url: string) => void,
-    applyLayout: (layout: BlogImageLayout) => void,
+    applyPresentation: (layout: BlogImageLayout, size: BlogImageSize | undefined) => void,
     status: HTMLElement,
     mediaLibraryButton: HTMLButtonElement
   ): Promise<void> {
@@ -473,11 +561,13 @@ export class CmsImageBlockTool implements BlockTool {
     status.textContent = 'Choose an existing image from the media library.';
 
     try {
+      const imageSize = toImageSize(sizeSelect.value);
       const selection = await selectImage({
         url: urlInput.value.trim(),
         alt: altInput.value.trim(),
         caption: captionInput.value.trim(),
         imageLayout: toImageLayout(layoutSelect.value, false),
+        ...(imageSize ? {imageSize} : {}),
         ...(this.data.file.width ? {width: this.data.file.width} : {}),
         ...(this.data.file.height ? {height: this.data.file.height} : {}),
       });
@@ -491,11 +581,12 @@ export class CmsImageBlockTool implements BlockTool {
       altInput.value = selection.alt;
       captionInput.value = selection.caption;
       layoutSelect.value = selection.imageLayout;
+      sizeSelect.value = selection.imageSize ?? '';
       this.data.file.width = selection.width;
       this.data.file.height = selection.height;
       previewImage.alt = selection.alt || 'Selected image preview';
       renderPreview(selection.url);
-      applyLayout(selection.imageLayout);
+      applyPresentation(selection.imageLayout, selection.imageSize);
       status.textContent = 'Selected an existing media library image.';
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Unable to select a media library image.';

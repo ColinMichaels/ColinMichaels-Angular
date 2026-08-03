@@ -39,6 +39,7 @@ describe('CmsImageBlockTool media library selection', () => {
       alt: 'A mountain trail at sunrise',
       caption: 'Morning in the mountains.',
       imageLayout: 'inlineEnd',
+      imageSize: 'medium',
       width: 2400,
       height: 1600,
     };
@@ -64,6 +65,7 @@ describe('CmsImageBlockTool media library selection', () => {
       alt: selection.alt,
       caption: selection.caption,
       imageLayout: 'inlineEnd',
+      imageSize: 'medium',
       stretched: false,
       width: 2400,
       height: 1600,
@@ -97,6 +99,37 @@ describe('CmsImageBlockTool media library selection', () => {
       imageLayout: 'contained',
       withBorder: true,
     }));
+  });
+
+  it('keeps the optional size absent for legacy image data until an author chooses one', () => {
+    const tool = createTool({
+      url: 'https://cdn.example.com/legacy.webp',
+      imageLayout: 'contained',
+    });
+    const block = tool.render();
+
+    expect(block.querySelector<HTMLSelectElement>('[data-image-size]')?.value).toBe('');
+    expect(tool.save(block).imageSize).toBeUndefined();
+
+    const sizeSelect = block.querySelector<HTMLSelectElement>('[data-image-size]');
+
+    if (sizeSelect) {
+      sizeSelect.value = 'wide';
+      sizeSelect.dispatchEvent(new Event('change'));
+    }
+
+    expect(tool.save(block).imageSize).toBe('wide');
+  });
+
+  it('shows a recoverable message when the editor preview URL is broken', () => {
+    const tool = createTool({url: 'https://cdn.example.com/missing.webp'});
+    const block = tool.render();
+
+    block.querySelector('figure img')?.dispatchEvent(new Event('error'));
+
+    expect(block.querySelector('figure [role="status"]')?.textContent)
+      .toContain('Image preview unavailable');
+    expect(tool.save(block).url).toBe('https://cdn.example.com/missing.webp');
   });
 
   it('shows picker errors without discarding the current image', async () => {

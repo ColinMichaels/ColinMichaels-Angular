@@ -9,7 +9,9 @@ import {
   inject,
   ChangeDetectionStrategy,
   HostListener,
+  ViewChild,
 } from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
 import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {
@@ -26,9 +28,14 @@ import {marked} from 'marked';
 import {CatCornerEasterEggComponent} from '../../../cat-corner/components/cat-corner-easter-egg.component';
 import {
   BLOG_IMAGE_LAYOUTS,
+  BLOG_IMAGE_SIZES,
   BlogBlockData,
   BlogContentBlock,
   BlogImageLayout,
+  BlogImageSize,
+  BlogListItem,
+  BlogListPresentation,
+  BlogListStyle,
   BlogStatItem,
 } from '../../models/blog-post.model';
 import {
@@ -62,10 +69,27 @@ interface RenderableBlogBlock {
   attributionHtml: string;
   blockHtml: string;
   itemHtml: readonly string[];
+  hasStructuredList: boolean;
+  listItems: readonly RenderableBlogListItem[];
+  listStyle: BlogListStyle;
+  listPresentation: BlogListPresentation;
+  listStart: number;
+  listCounterType: BlogListCounterType;
   stats: readonly RenderableBlogStat[];
   imageAlt: string;
   galleryIndex: number | null;
+  imageLoadFailed: boolean;
 }
+
+interface RenderableBlogListItem {
+  contentHtml: string;
+  checked: boolean;
+  start: number;
+  counterType: BlogListCounterType;
+  items: readonly RenderableBlogListItem[];
+}
+
+type BlogListCounterType = 'numeric' | 'lower-roman' | 'upper-roman' | 'lower-alpha' | 'upper-alpha';
 
 interface RenderableBlogStat {
   label: string;
@@ -79,11 +103,19 @@ interface RenderableBlogImage {
   captionHtml: string;
   captionText: string;
   downloadName: string;
+  loadFailed: boolean;
+}
+
+interface LightboxBodyStyleState {
+  overflow: string;
+  overscrollBehavior: string;
+  paddingRight: string;
 }
 
 @Component({
   selector: 'app-blog-block-renderer',
   imports: [
+    NgTemplateOutlet,
     FaIconComponent,
     CatCornerEasterEggComponent,
     BlogChartComponent,
@@ -92,24 +124,142 @@ interface RenderableBlogImage {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300">
+    <ng-template
+      #recursiveList
+      let-items
+      let-style="style"
+      let-depth="depth"
+      let-presentation="presentation"
+      let-start="start"
+      let-counterType="counterType"
+    >
+      @if (style === 'ordered') {
+        <ol
+          class="blog-list blog-list-ordered"
+          [class.blog-list-nested]="depth > 0"
+          [class.blog-list-steps]="depth === 0 && presentation === 'steps'"
+          [class.blog-list-counter-lower-roman]="counterType === 'lower-roman'"
+          [class.blog-list-counter-upper-roman]="counterType === 'upper-roman'"
+          [class.blog-list-counter-lower-alpha]="counterType === 'lower-alpha'"
+          [class.blog-list-counter-upper-alpha]="counterType === 'upper-alpha'"
+          [attr.data-list-depth]="depth"
+          [attr.data-list-presentation]="depth === 0 ? presentation : null"
+          [attr.start]="start !== 1 ? start : null"
+          [attr.type]="listCounterTypeAttribute(counterType)"
+          [attr.aria-label]="depth === 0 && presentation === 'steps' ? 'Steps' : null"
+          [style.--blog-list-counter-start]="start - 1"
+          role="list"
+        >
+          @for (item of items; track $index) {
+            <li
+              class="blog-list-item blog-list-item-ordered"
+              [class.blog-list-item-steps]="depth === 0 && presentation === 'steps'"
+            >
+              <app-blog-rich-text [html]="item.contentHtml"></app-blog-rich-text>
+              @if (item.items.length > 0) {
+                <ng-container
+                  [ngTemplateOutlet]="recursiveList"
+                  [ngTemplateOutletContext]="{
+                    $implicit: item.items,
+                    style: style,
+                    depth: depth + 1,
+                    presentation: 'standard',
+                    start: item.start,
+                    counterType: item.counterType
+                  }"
+                ></ng-container>
+              }
+            </li>
+          }
+        </ol>
+      } @else if (style === 'checklist') {
+        <ul
+          class="blog-list blog-list-checklist"
+          [class.blog-list-nested]="depth > 0"
+          [attr.data-list-depth]="depth"
+          [attr.data-list-presentation]="depth === 0 ? 'standard' : null"
+          [attr.aria-label]="depth === 0 ? 'Checklist' : null"
+          role="list"
+        >
+          @for (item of items; track $index) {
+            <li class="blog-list-item blog-list-item-checklist">
+              <span class="blog-list-checkline">
+                <input
+                  type="checkbox"
+                  class="blog-list-checkbox"
+                  [checked]="item.checked"
+                  [attr.aria-label]="item.checked ? 'Completed checklist item' : 'Incomplete checklist item'"
+                  disabled
+                >
+                <app-blog-rich-text [html]="item.contentHtml"></app-blog-rich-text>
+              </span>
+              @if (item.items.length > 0) {
+                <ng-container
+                  [ngTemplateOutlet]="recursiveList"
+                  [ngTemplateOutletContext]="{
+                    $implicit: item.items,
+                    style: style,
+                    depth: depth + 1,
+                    presentation: 'standard',
+                    start: item.start,
+                    counterType: item.counterType
+                  }"
+                ></ng-container>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <ul
+          class="blog-list blog-list-unordered"
+          [class.blog-list-nested]="depth > 0"
+          [attr.data-list-depth]="depth"
+          [attr.data-list-presentation]="depth === 0 ? 'standard' : null"
+          role="list"
+        >
+          @for (item of items; track $index) {
+            <li class="blog-list-item blog-list-item-unordered">
+              <app-blog-rich-text [html]="item.contentHtml"></app-blog-rich-text>
+              @if (item.items.length > 0) {
+                <ng-container
+                  [ngTemplateOutlet]="recursiveList"
+                  [ngTemplateOutletContext]="{
+                    $implicit: item.items,
+                    style: style,
+                    depth: depth + 1,
+                    presentation: 'standard',
+                    start: item.start,
+                    counterType: item.counterType
+                  }"
+                ></ng-container>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+
+    <section
+      class="blog-content space-y-6 text-base leading-8 text-slate-700 dark:text-zinc-300"
+      [attr.inert]="activeImage ? '' : null"
+      [attr.aria-hidden]="activeImage ? 'true' : null"
+    >
       @for (row of renderedBlocks; track row.block.id) {
         @switch (row.block.type) {
           @case ('header') {
             @if (row.block.data.level === 3) {
               <h3
                 [id]="row.headingId"
-                class="blog-anchored-subheading relative clear-both group pt-4 text-xl font-semibold text-slate-950 dark:text-zinc-50"
+                class="blog-article-heading blog-anchored-subheading relative clear-both group"
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="blog-heading-anchor inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  class="blog-heading-anchor hover:text-cyan-800 dark:hover:text-cyan-200"
                   [attr.aria-describedby]="row.quickSummaryTooltipId"
                 >
                   <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
-                    <span aria-hidden="true"
-                          class="text-sm text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
+                    <span aria-hidden="true" class="blog-heading-hash">#</span>
                   }
                 </a>
                 @if (row.quickSummaryTooltipId) {
@@ -123,20 +273,19 @@ interface RenderableBlogImage {
             } @else {
               <h2
                 [id]="row.headingId"
-                class="blog-section-heading relative clear-both group z-30 -mx-2 isolate border-b border-slate-200 bg-white px-2 py-2 text-xl font-semibold leading-tight text-slate-950 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-neutral-950 dark:text-zinc-50 dark:shadow-black/20 sm:pb-2 sm:pt-3 sm:text-2xl"
+                class="blog-article-heading blog-section-heading relative clear-both group z-30 isolate"
                 [class.blog-sticky-section-heading]="row.headingId === activeHeadingId"
                 [attr.data-sticky-active]="row.headingId === activeHeadingId ? '' : null"
                 data-sticky-section-heading
               >
                 <a
                   [href]="row.headingId ? createAnchorHref(row.headingId) : null"
-                  class="blog-heading-anchor inline-flex items-baseline gap-2 hover:text-cyan-800 dark:hover:text-cyan-200"
+                  class="blog-heading-anchor hover:text-cyan-800 dark:hover:text-cyan-200"
                   [attr.aria-describedby]="row.quickSummaryTooltipId"
                 >
                   <app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text>
                   @if (row.headingId) {
-                    <span aria-hidden="true"
-                          class="text-base text-slate-400 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 dark:text-zinc-600">#</span>
+                    <span aria-hidden="true" class="blog-heading-hash">#</span>
                   }
                 </a>
                 @if (row.quickSummaryTooltipId) {
@@ -163,25 +312,25 @@ interface RenderableBlogImage {
           @case ('typography') {
             @switch (row.block.data.variant) {
               @case ('eyebrow') {
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
+                <p class="blog-type-eyebrow font-semibold uppercase text-cyan-700 dark:text-cyan-300"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @case ('sectionIntro') {
-                <p class="border-l border-sky-600/70 pl-5 text-lg leading-8 text-slate-800 dark:border-sky-300/60 dark:text-sky-50"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
+                <p class="blog-type-section-intro border-l border-sky-600/70 pl-5 text-slate-800 dark:border-sky-300/60 dark:text-sky-50"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @case ('pullQuote') {
-                <blockquote class="my-10 border-y border-amber-500/50 py-7 text-slate-950 dark:border-amber-300/40 dark:text-zinc-100">
-                  <p class="text-2xl font-semibold leading-10 sm:text-3xl"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
+                <blockquote class="blog-type-pull-quote my-10 border-y border-amber-500/50 py-7 text-slate-950 dark:border-amber-300/40 dark:text-zinc-100">
+                  <p class="blog-type-pull-quote-copy font-semibold"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
                   @if (row.block.data.attribution) {
-                    <cite class="mt-4 block text-sm not-italic uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></cite>
+                    <cite class="blog-type-attribution mt-4 block not-italic uppercase text-amber-700 dark:text-amber-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></cite>
                   }
                 </blockquote>
               }
               @case ('keyTakeaway') {
                 <aside class="border border-teal-600/35 bg-teal-50 p-5 text-teal-950 dark:border-teal-300/35 dark:bg-teal-950/30 dark:text-teal-50">
                   @if (row.block.data.attribution) {
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 dark:text-teal-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></p>
+                    <p class="blog-type-attribution mb-2 font-semibold uppercase text-teal-700 dark:text-teal-200"><app-blog-rich-text [html]="row.attributionHtml"></app-blog-rich-text></p>
                   }
-                  <div class="text-lg font-medium leading-8"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></div>
+                  <div class="blog-type-key-takeaway font-medium"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></div>
                 </aside>
               }
               @case ('callout') {
@@ -201,13 +350,13 @@ interface RenderableBlogImage {
                 </aside>
               }
               @case ('aside') {
-                <aside class="border-l border-slate-300 pl-5 text-sm leading-7 text-slate-600 dark:border-zinc-600 dark:text-zinc-400"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></aside>
+                <aside class="blog-type-aside border-l border-slate-300 pl-5 text-slate-600 dark:border-zinc-600 dark:text-zinc-400"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></aside>
               }
               @case ('caption') {
-                <p class="text-sm leading-6 text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
+                <p class="blog-type-caption text-slate-500 dark:text-zinc-500"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
               @default {
-                <p class="text-xl leading-9 text-slate-900 dark:text-zinc-100"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
+                <p class="blog-type-lead text-slate-900 dark:text-zinc-100"><app-blog-rich-text [html]="row.textHtml"></app-blog-rich-text></p>
               }
             }
           }
@@ -244,6 +393,7 @@ interface RenderableBlogImage {
               [postId]="postId"
               [postSlug]="postSlug"
               [compact]="displayMode === 'rail'"
+              [readOnly]="previewMode"
             ></app-blog-poll>
           }
           @case ('html') {
@@ -260,14 +410,36 @@ interface RenderableBlogImage {
             }
           }
           @case ('list') {
-            @if (row.block.data.ordered) {
-              <ol class="blog-list blog-list-ordered">
+            @if (row.hasStructuredList) {
+              <ng-container
+                [ngTemplateOutlet]="recursiveList"
+                [ngTemplateOutletContext]="{
+                  $implicit: row.listItems,
+                  style: row.listStyle,
+                  depth: 0,
+                  presentation: row.listPresentation,
+                  start: row.listStart,
+                  counterType: row.listCounterType
+                }"
+              ></ng-container>
+            } @else if (row.block.data.ordered) {
+              <ol
+                class="blog-list blog-list-ordered"
+                [class.blog-list-steps]="row.listPresentation === 'steps'"
+                [attr.data-list-presentation]="row.listPresentation"
+                [attr.aria-label]="row.listPresentation === 'steps' ? 'Steps' : null"
+                [style.--blog-list-counter-start]="0"
+                role="list"
+              >
                 @for (item of row.itemHtml; track $index) {
-                  <li class="blog-list-item blog-list-item-ordered"><app-blog-rich-text [html]="item"></app-blog-rich-text></li>
+                  <li
+                    class="blog-list-item blog-list-item-ordered"
+                    [class.blog-list-item-steps]="row.listPresentation === 'steps'"
+                  ><app-blog-rich-text [html]="item"></app-blog-rich-text></li>
                 }
               </ol>
             } @else {
-              <ul class="blog-list blog-list-unordered">
+              <ul class="blog-list blog-list-unordered" data-list-presentation="standard" role="list">
                 @for (item of row.itemHtml; track $index) {
                   <li class="blog-list-item blog-list-item-unordered"><app-blog-rich-text [html]="item"></app-blog-rich-text></li>
                 }
@@ -278,32 +450,46 @@ interface RenderableBlogImage {
             @if (row.block.data.url) {
               <figure
                 [class]="imageFigureClass(row)"
+                [attr.data-image-layout]="imageLayout(row)"
+                [attr.data-image-size]="imageSize(row) || 'automatic'"
               >
-                <button
-                  type="button"
-                  [class]="imageButtonClass(row)"
-                  [attr.aria-label]="'View image full screen: ' + row.imageAlt"
-                  title="View image full screen"
-                  (click)="openImageLightbox(row.galleryIndex)"
-                >
-                  <img
-                    [src]="row.block.data.url"
-                    [alt]="row.imageAlt"
-                    [attr.width]="row.block.data.width || null"
-                    [attr.height]="row.block.data.height || null"
-                    [class]="imageClass(row)"
-                    loading="lazy"
-                    decoding="async"
+                @if (row.imageLoadFailed) {
+                  <div
+                    class="blog-image-unavailable"
+                    role="status"
+                    data-testid="blog-image-unavailable"
                   >
-                  <span
-                    aria-hidden="true"
-                    class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/70 text-sm text-zinc-50 opacity-0 shadow-lg shadow-black/30 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+                    <span class="font-semibold">Image unavailable</span>
+                    <span>{{ row.imageAlt }}</span>
+                  </div>
+                } @else {
+                  <button
+                    type="button"
+                    [class]="imageButtonClass(row)"
+                    [attr.aria-label]="'View image full screen: ' + row.imageAlt"
+                    title="View image full screen"
+                    (click)="openImageLightbox(row.galleryIndex)"
                   >
-                    <fa-icon [icon]="faMagnifyingGlassPlus"></fa-icon>
-                  </span>
-                </button>
+                    <img
+                      [src]="row.block.data.url"
+                      [alt]="row.imageAlt"
+                      [attr.width]="positiveImageDimension(row.block.data.width)"
+                      [attr.height]="positiveImageDimension(row.block.data.height)"
+                      [class]="imageClass(row)"
+                      loading="lazy"
+                      decoding="async"
+                      (error)="handleImageLoadError(row)"
+                    >
+                    <span
+                      aria-hidden="true"
+                      class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/70 text-sm text-zinc-50 opacity-0 shadow-lg shadow-black/30 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+                    >
+                      <fa-icon [icon]="faMagnifyingGlassPlus"></fa-icon>
+                    </span>
+                  </button>
+                }
                 @if (row.block.data.caption) {
-                  <figcaption [class]="imageCaptionClass(row)"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
+                  <figcaption [class]="imageCaptionClass()"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
                 }
               </figure>
             }
@@ -420,10 +606,14 @@ interface RenderableBlogImage {
 
     @if (activeImage; as image) {
       <div
+        #lightboxDialog
         class="fixed inset-0 z-[100] bg-black/92 p-4 text-zinc-100 backdrop-blur-sm sm:p-6"
         role="dialog"
         aria-modal="true"
-        aria-label="Blog image gallery"
+        aria-labelledby="blog-lightbox-title"
+        [attr.aria-describedby]="image.captionText ? 'blog-lightbox-caption' : null"
+        tabindex="-1"
+        data-testid="blog-lightbox-dialog"
       >
         <button
           type="button"
@@ -435,7 +625,9 @@ interface RenderableBlogImage {
         ></button>
         <div class="pointer-events-none relative z-10 grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-4">
           <header class="pointer-events-auto flex items-center justify-between gap-3">
-            <p class="text-sm font-medium text-zinc-300" aria-live="polite">{{ activeImagePositionLabel }}</p>
+            <p id="blog-lightbox-title" class="text-sm font-medium text-zinc-300" aria-live="polite">
+              Image {{ activeImagePositionLabel }}
+            </p>
             <div class="flex items-center gap-2">
               <a
                 [href]="image.url"
@@ -485,18 +677,26 @@ interface RenderableBlogImage {
                 <fa-icon [icon]="faChevronRight"></fa-icon>
               </button>
             }
-            <img
-              [src]="image.url"
-              [alt]="image.alt"
-              class="pointer-events-auto h-auto max-h-[calc(100vh-8rem)] w-auto max-w-full rounded object-contain shadow-2xl shadow-black/50"
-              decoding="async"
-              data-testid="blog-lightbox-image"
-            >
+            @if (image.loadFailed) {
+              <div class="blog-lightbox-unavailable" role="status" data-testid="blog-lightbox-unavailable">
+                <span class="font-semibold">Image unavailable</span>
+                <span>{{ image.alt }}</span>
+              </div>
+            } @else {
+              <img
+                [src]="image.url"
+                [alt]="image.alt"
+                class="pointer-events-auto h-auto max-h-[calc(100vh-8rem)] w-auto max-w-full rounded object-contain shadow-2xl shadow-black/50"
+                decoding="async"
+                (error)="handleLightboxImageLoadError(image)"
+                data-testid="blog-lightbox-image"
+              >
+            }
           </div>
 
           <footer class="pointer-events-auto mx-auto max-w-4xl text-center">
             @if (image.captionText) {
-              <p class="text-sm leading-6 text-zinc-300"><app-blog-rich-text [html]="image.captionHtml"></app-blog-rich-text></p>
+              <p id="blog-lightbox-caption" class="text-sm leading-6 text-zinc-300"><app-blog-rich-text [html]="image.captionHtml"></app-blog-rich-text></p>
             } @else {
               <p class="sr-only">{{ image.alt }}</p>
             }
@@ -506,9 +706,205 @@ interface RenderableBlogImage {
     }
   `,
   styles: [`
+    .blog-image-figure {
+      --blog-image-target-width: 100%;
+      box-sizing: border-box;
+      max-inline-size: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .blog-image-size-small {
+      --blog-image-target-width: clamp(12rem, 30vi, 24rem);
+    }
+
+    .blog-image-size-medium {
+      --blog-image-target-width: clamp(18rem, 48vi, 36rem);
+    }
+
+    .blog-image-size-large {
+      --blog-image-target-width: clamp(24rem, 72vi, 52rem);
+    }
+
+    .blog-image-size-wide {
+      --blog-image-target-width: 100%;
+    }
+
+    .blog-image-layout-fullWidth,
+    .blog-image-layout-contained:not(.blog-image-size-automatic),
+    .blog-image-layout-inlineStart,
+    .blog-image-layout-inlineEnd {
+      inline-size: min(100%, var(--blog-image-target-width));
+    }
+
+    .blog-image-layout-fullWidth,
+    .blog-image-size-wide {
+      inline-size: 100%;
+    }
+
+    .blog-image-layout-contained {
+      margin-inline: auto;
+    }
+
+    .blog-image-layout-contained.blog-image-size-automatic {
+      inline-size: fit-content;
+    }
+
+    .blog-image-layout-inlineStart.blog-image-size-automatic,
+    .blog-image-layout-inlineEnd.blog-image-size-automatic {
+      --blog-image-target-width: clamp(16rem, 32vi, 20rem);
+    }
+
+    .blog-image-button {
+      inline-size: 100%;
+      max-inline-size: 100%;
+    }
+
+    .blog-image-layout-contained.blog-image-size-automatic .blog-image-button {
+      inline-size: fit-content;
+    }
+
+    .blog-image-media {
+      display: block;
+      block-size: auto;
+      inline-size: 100%;
+      max-block-size: 72vh;
+      max-inline-size: 100%;
+      object-fit: contain;
+    }
+
+    .blog-image-layout-contained.blog-image-size-automatic .blog-image-media {
+      inline-size: auto;
+    }
+
+    .blog-image-caption {
+      box-sizing: border-box;
+      inline-size: 100%;
+      max-inline-size: 100%;
+    }
+
+    .blog-image-unavailable,
+    .blog-lightbox-unavailable {
+      display: grid;
+      gap: .35rem;
+      place-content: center;
+      min-block-size: clamp(10rem, 28vi, 18rem);
+      inline-size: 100%;
+      border: 1px dashed currentColor;
+      border-radius: .5rem;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .blog-image-unavailable {
+      background: var(--site-panel);
+      color: var(--site-muted);
+    }
+
+    .blog-lightbox-unavailable {
+      max-inline-size: 42rem;
+      color: #d4d4d8;
+    }
+
+    @media (min-width: 800px) {
+      .blog-image-layout-inlineStart:not(.blog-image-size-large, .blog-image-size-wide) {
+        float: left;
+        float: inline-start;
+        clear: inline-start;
+        margin-block: .25rem 1rem;
+        margin-inline: 0 1.5rem;
+      }
+
+      .blog-image-layout-inlineEnd:not(.blog-image-size-large, .blog-image-size-wide) {
+        float: right;
+        float: inline-end;
+        clear: inline-end;
+        margin-block: .25rem 1rem;
+        margin-inline: 1.5rem 0;
+      }
+    }
+
+    @media (max-width: 799px) {
+      .blog-image-layout-inlineStart,
+      .blog-image-layout-inlineEnd {
+        clear: both;
+        margin-inline: auto;
+      }
+    }
+
+    :host-context(.reader-font-150) .blog-image-layout-inlineStart,
+    :host-context(.reader-font-150) .blog-image-layout-inlineEnd,
+    :host-context(.reader-font-175) .blog-image-layout-inlineStart,
+    :host-context(.reader-font-175) .blog-image-layout-inlineEnd,
+    :host-context(.reader-font-200) .blog-image-layout-inlineStart,
+    :host-context(.reader-font-200) .blog-image-layout-inlineEnd {
+      float: none;
+      clear: both;
+      margin-inline: auto;
+    }
+
     .blog-anchored-subheading,
     .blog-section-heading {
       scroll-margin-top: calc(var(--blog-sticky-stack-height) + env(safe-area-inset-top));
+    }
+
+    .blog-article-heading {
+      color: var(--site-heading);
+      font-family: var(--font-heading);
+      font-weight: 650;
+      letter-spacing: var(--blog-heading-letter-spacing);
+      text-wrap: balance;
+    }
+
+    .blog-section-heading {
+      padding-block: var(--blog-h2-padding-block);
+      border-top: 1px solid var(--blog-heading-rule);
+      background: var(--site-bg);
+      font-size: var(--blog-h2-size) !important;
+      line-height: var(--blog-h2-line-height) !important;
+    }
+
+    .blog-section-heading::before {
+      position: absolute;
+      top: -1px;
+      left: 0;
+      width: min(5rem, 24%);
+      height: 2px;
+      background: var(--site-accent);
+      content: '';
+    }
+
+    .blog-anchored-subheading {
+      padding-top: var(--blog-h3-padding-top);
+      font-family: var(--font-subheading);
+      font-size: var(--blog-h3-size) !important;
+      line-height: var(--blog-h3-line-height) !important;
+    }
+
+    .blog-heading-anchor {
+      color: inherit;
+      display: inline-block;
+      text-decoration: none;
+    }
+
+    .blog-section-heading .blog-heading-anchor {
+      max-width: var(--blog-heading-measure);
+    }
+
+    .blog-anchored-subheading .blog-heading-anchor {
+      max-width: var(--blog-subheading-measure);
+    }
+
+    .blog-heading-hash {
+      margin-left: .4em;
+      color: var(--site-subtle);
+      font-size: .62em;
+      opacity: 0;
+      transition: opacity 140ms ease;
+    }
+
+    .blog-article-heading:hover .blog-heading-hash,
+    .blog-article-heading:focus-within .blog-heading-hash {
+      opacity: 1;
     }
 
     .blog-quick-summary-tooltip {
@@ -555,24 +951,16 @@ interface RenderableBlogImage {
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .blog-heading-hash,
       .blog-quick-summary-tooltip {
         transition: none;
       }
     }
 
     .blog-section-heading.blog-sticky-section-heading {
-      font-size: clamp(.95rem, calc(1rem * var(--reader-font-scale)), 1.35rem) !important;
-      line-height: 1.3 !important;
-      padding-bottom: .375rem;
-      padding-top: .375rem;
       position: sticky;
       top: calc(var(--blog-sticky-stack-height) + env(safe-area-inset-top));
-    }
-
-    @media (min-width: 640px) {
-      .blog-section-heading.blog-sticky-section-heading {
-        font-size: clamp(1rem, calc(1.125rem * var(--reader-font-scale)), 1.5rem) !important;
-      }
+      box-shadow: 0 .5rem 1rem color-mix(in srgb, var(--site-bg) 82%, transparent);
     }
 
     :host ::ng-deep .blog-inline-link {
@@ -610,10 +998,15 @@ interface RenderableBlogImage {
       --blog-list-number-bg: rgba(8, 145, 178, 0.22);
       --blog-list-number-border: rgba(103, 232, 249, 0.38);
       --blog-list-number-color: #67e8f9;
+      --blog-list-step-bg: rgba(8, 145, 178, 0.08);
+      --blog-list-step-border: rgba(103, 232, 249, 0.22);
+      --blog-list-marker-size: clamp(2rem, calc(1.8rem * var(--reader-font-scale, 1)), 2.75rem);
+      --blog-list-item-indent: clamp(3rem, calc(2.6rem * var(--reader-font-scale, 1)), 4.15rem);
       display: grid;
-      gap: .85rem;
+      gap: clamp(.7rem, calc(.72rem * var(--reader-font-scale, 1)), 1.25rem);
       list-style: none;
       margin: 0;
+      min-width: 0;
       padding: 0;
     }
 
@@ -623,23 +1016,28 @@ interface RenderableBlogImage {
       --blog-list-number-bg: rgba(8, 145, 178, 0.12);
       --blog-list-number-border: rgba(8, 145, 178, 0.28);
       --blog-list-number-color: #0e7490;
+      --blog-list-step-bg: rgba(8, 145, 178, 0.055);
+      --blog-list-step-border: rgba(8, 145, 178, 0.2);
     }
 
     .blog-list-ordered {
-      counter-reset: blog-list-item;
+      counter-reset: blog-list-item var(--blog-list-counter-start, 0);
     }
 
     .blog-list-item {
       line-height: 1.85;
-      padding-left: 3rem;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      padding-inline-start: var(--blog-list-item-indent);
       position: relative;
+      word-break: normal;
     }
 
     .blog-list-item-ordered {
       counter-increment: blog-list-item;
     }
 
-    .blog-list-item-ordered::before {
+    .blog-list-ordered > .blog-list-item-ordered::before {
       align-items: center;
       background: var(--blog-list-number-bg);
       border: 1px solid var(--blog-list-number-border);
@@ -647,33 +1045,97 @@ interface RenderableBlogImage {
       color: var(--blog-list-number-color);
       content: counter(blog-list-item);
       display: inline-flex;
-      font-size: 1.05rem;
+      font-size: clamp(.95rem, calc(.92rem * var(--reader-font-scale, 1)), 1.35rem);
+      font-variant-numeric: tabular-nums;
       font-weight: 800;
-      height: 2rem;
+      height: var(--blog-list-marker-size);
       justify-content: center;
-      left: 0;
+      inset-inline-start: 0;
       line-height: 1;
-      min-width: 2rem;
+      min-width: var(--blog-list-marker-size);
       padding: 0 .45rem;
       position: absolute;
       top: .15rem;
     }
 
-    .blog-list-item-unordered::before {
+    .blog-list-counter-lower-roman > .blog-list-item-ordered::before {
+      content: counter(blog-list-item, lower-roman);
+    }
+
+    .blog-list-counter-upper-roman > .blog-list-item-ordered::before {
+      content: counter(blog-list-item, upper-roman);
+    }
+
+    .blog-list-counter-lower-alpha > .blog-list-item-ordered::before {
+      content: counter(blog-list-item, lower-alpha);
+    }
+
+    .blog-list-counter-upper-alpha > .blog-list-item-ordered::before {
+      content: counter(blog-list-item, upper-alpha);
+    }
+
+    .blog-list-unordered > .blog-list-item-unordered::before {
       background: var(--blog-list-bullet-color);
       border-radius: 999px;
       box-shadow: 0 0 0 .3rem var(--blog-list-bullet-ring);
       content: '';
       height: .72rem;
-      left: .65rem;
+      inset-inline-start: clamp(.55rem, calc(.5rem * var(--reader-font-scale, 1)), .9rem);
       position: absolute;
-      top: .82rem;
+      top: calc((var(--reader-line-height, 1.75) * 1em - .72rem) / 2);
       width: .72rem;
     }
 
-    @media (min-width: 640px) {
-      .blog-list-item {
-        padding-left: 3.35rem;
+    .blog-list-nested {
+      margin-top: clamp(.6rem, calc(.62rem * var(--reader-font-scale, 1)), 1rem);
+      padding-inline-start: clamp(.5rem, 3vw, 1.15rem);
+    }
+
+    .blog-list-steps {
+      gap: clamp(.85rem, calc(.8rem * var(--reader-font-scale, 1)), 1.35rem);
+    }
+
+    .blog-list-steps > .blog-list-item-steps {
+      background: var(--blog-list-step-bg);
+      border: 1px solid var(--blog-list-step-border);
+      border-radius: clamp(.85rem, calc(.72rem * var(--reader-font-scale, 1)), 1.25rem);
+      padding-block: clamp(.8rem, calc(.7rem * var(--reader-font-scale, 1)), 1.15rem);
+      padding-inline-end: clamp(.85rem, calc(.75rem * var(--reader-font-scale, 1)), 1.25rem);
+      padding-inline-start: calc(var(--blog-list-marker-size) + clamp(1rem, 3vw, 1.35rem));
+    }
+
+    .blog-list-steps > .blog-list-item-steps::before {
+      inset-inline-start: clamp(.7rem, 2.5vw, 1rem);
+      top: clamp(.8rem, calc(.7rem * var(--reader-font-scale, 1)), 1.15rem);
+    }
+
+    .blog-list-item-checklist {
+      padding-inline-start: 0;
+    }
+
+    .blog-list-checkline {
+      align-items: start;
+      display: grid;
+      gap: clamp(.65rem, calc(.62rem * var(--reader-font-scale, 1)), 1rem);
+      grid-template-columns: auto minmax(0, 1fr);
+      min-width: 0;
+    }
+
+    .blog-list-checkbox {
+      accent-color: #0891b2;
+      height: clamp(1.15rem, calc(1.05rem * var(--reader-font-scale, 1)), 1.75rem);
+      margin: .42rem 0 0;
+      opacity: 1;
+      width: clamp(1.15rem, calc(1.05rem * var(--reader-font-scale, 1)), 1.75rem);
+    }
+
+    :host-context(.dark) .blog-list-checkbox {
+      accent-color: #67e8f9;
+    }
+
+    @media (max-width: 639px) {
+      .blog-list-nested {
+        padding-inline-start: .55rem;
       }
     }
 
@@ -793,8 +1255,11 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   @Input() postId = '';
   @Input() postSlug = '';
   @Input() displayMode: 'article' | 'rail' = 'article';
+  @Input() previewMode = false;
   @Input() anchorPath = '';
   @Input() activeHeadingId: string | null = null;
+
+  @ViewChild('lightboxDialog') private lightboxDialog?: ElementRef<HTMLElement>;
 
   protected renderedBlocks: readonly RenderableBlogBlock[] = [];
   protected imageGallery: readonly RenderableBlogImage[] = [];
@@ -813,9 +1278,14 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly imageLayoutSet = new Set<string>(BLOG_IMAGE_LAYOUTS);
+  private readonly imageSizeSet = new Set<string>(BLOG_IMAGE_SIZES);
   private readonly copiedCodeBlockIds = new Set<string>();
   private readonly codeCopyTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly copyFeedbackDurationMs = 2000;
+  private readonly inertAttributeStates = new Map<HTMLElement, string | null>();
+  private lightboxBodyStyleState: LightboxBodyStyleState | null = null;
+  private lightboxFocusTimer: ReturnType<typeof setTimeout> | undefined;
+  private lightboxReturnFocus: HTMLElement | null = null;
   private readonly trustedEmbedHosts = new Set([
     'www.youtube.com',
     'youtube.com',
@@ -830,16 +1300,18 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    const headingIdMap = createBlogHeadingIdMap(this.blocks);
+    const publicBlocks = this.blocks.filter(block => block.type !== 'unsupported');
+    const headingIdMap = createBlogHeadingIdMap(publicBlocks);
     const imageGallery: RenderableBlogImage[] = [];
 
-    this.renderedBlocks = this.blocks.map(block => {
+    this.renderedBlocks = publicBlocks.map(block => {
       const captionHtml = block.data.caption ?? '';
       const imageAlt = this.createImageAlt(block);
       const sunoUrls = getBlogSunoEmbedUrls(block.data.embedUrl ?? block.data.url);
       const headingId = headingIdMap.get(block.id) ?? null;
       const isQuickSummary = block.type === 'header'
         && isBlogQuickSummaryHeading(this.createPlainText(block.data.text));
+      const listStyle = this.createListStyle(block.data);
       let galleryIndex: number | null = null;
 
       if (block.type === 'image' && block.data.url) {
@@ -850,6 +1322,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
           captionHtml,
           captionText: this.createPlainText(block.data.caption),
           downloadName: this.createDownloadFileName(block),
+          loadFailed: false,
         });
       }
 
@@ -869,9 +1342,16 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
           ? marked.parse(block.data.markdown ?? '', {async: false})
           : block.data.html ?? '',
         itemHtml: block.data.items ?? [],
+        hasStructuredList: block.data.listItems !== undefined,
+        listItems: this.createListItems(block.data.listItems),
+        listStyle,
+        listPresentation: this.createListPresentation(block.data, listStyle),
+        listStart: this.createListStart(block.data.listMeta?.['start']),
+        listCounterType: this.createListCounterType(block.data.listMeta?.['counterType']),
         stats: this.createStats(block.data.stats),
         imageAlt,
         galleryIndex,
+        imageLoadFailed: false,
       };
     });
     this.imageGallery = imageGallery;
@@ -887,10 +1367,70 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     }
 
     this.codeCopyTimers.clear();
+
+    if (this.lightboxFocusTimer) {
+      clearTimeout(this.lightboxFocusTimer);
+    }
+
+    this.restorePageAfterLightbox();
   }
 
   protected get activeImage(): RenderableBlogImage | null {
     return this.activeImageIndex === null ? null : this.imageGallery[this.activeImageIndex] ?? null;
+  }
+
+  private createListItems(items: readonly BlogListItem[] | undefined): readonly RenderableBlogListItem[] {
+    return (items ?? []).map(item => ({
+      contentHtml: item.content,
+      checked: item.meta['checked'] === true,
+      start: this.createListStart(item.meta['start']),
+      counterType: this.createListCounterType(item.meta['counterType']),
+      items: this.createListItems(item.items),
+    }));
+  }
+
+  private createListStyle(data: BlogBlockData): BlogListStyle {
+    if (data.listStyle === 'ordered' || data.listStyle === 'checklist') {
+      return data.listStyle;
+    }
+
+    if (data.listStyle === 'unordered') {
+      return 'unordered';
+    }
+
+    return data.ordered ? 'ordered' : 'unordered';
+  }
+
+  private createListPresentation(data: BlogBlockData, style: BlogListStyle): BlogListPresentation {
+    return style === 'ordered' && data.listPresentation === 'steps' ? 'steps' : 'standard';
+  }
+
+  private createListStart(value: unknown): number {
+    return typeof value === 'number' && Number.isSafeInteger(value) ? value : 1;
+  }
+
+  private createListCounterType(value: unknown): BlogListCounterType {
+    return value === 'lower-roman'
+      || value === 'upper-roman'
+      || value === 'lower-alpha'
+      || value === 'upper-alpha'
+      ? value
+      : 'numeric';
+  }
+
+  protected listCounterTypeAttribute(counterType: BlogListCounterType): string | null {
+    switch (counterType) {
+      case 'lower-roman':
+        return 'i';
+      case 'upper-roman':
+        return 'I';
+      case 'lower-alpha':
+        return 'a';
+      case 'upper-alpha':
+        return 'A';
+      default:
+        return null;
+    }
   }
 
   protected get activeImagePositionLabel(): string {
@@ -942,56 +1482,86 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return;
     }
 
+    const document = this.host.nativeElement.ownerDocument;
+    this.lightboxReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.activeImageIndex = galleryIndex;
+    this.preparePageForLightbox();
+    this.scheduleLightboxFocus();
+  }
+
+  protected imageLayout(row: RenderableBlogBlock): BlogImageLayout {
+    return this.getImageLayout(row.block.data);
+  }
+
+  protected imageSize(row: RenderableBlogBlock): BlogImageSize | undefined {
+    return this.getImageSize(row.block.data);
   }
 
   protected imageFigureClass(row: RenderableBlogBlock): string {
     const layout = this.getImageLayout(row.block.data);
+    const size = this.getImageSize(row.block.data) ?? 'automatic';
     const frameClass = row.block.data.withBackground ? ' rounded bg-slate-100 p-4 dark:bg-zinc-900' : '';
 
-    switch (layout) {
-      case 'inlineStart':
-        return `blog-image-reveal space-y-2 sm:float-left sm:clear-left sm:mb-4 sm:mr-6 sm:mt-1 sm:w-72${frameClass}`;
-      case 'inlineEnd':
-        return `blog-image-reveal space-y-2 sm:float-right sm:clear-right sm:mb-4 sm:ml-6 sm:mt-1 sm:w-72${frameClass}`;
-      case 'contained':
-        return `blog-image-reveal clear-both space-y-2${frameClass}`;
-      case 'fullWidth':
-        return `blog-image-reveal clear-both space-y-2${frameClass}`;
-    }
+    return `blog-image-reveal blog-image-figure blog-image-layout-${layout} blog-image-size-${size} space-y-2${frameClass}`;
   }
 
   protected imageButtonClass(row: RenderableBlogBlock): string {
     const layout = this.getImageLayout(row.block.data);
-    const baseClass = 'group relative block cursor-zoom-in overflow-hidden rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300';
+    const baseClass = 'blog-image-button group relative block cursor-zoom-in overflow-hidden rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300';
 
-    switch (layout) {
-      case 'inlineStart':
-      case 'inlineEnd':
-      case 'fullWidth':
-        return `${baseClass} w-full`;
-      case 'contained':
-        return `${baseClass} mx-auto w-fit max-w-full`;
-    }
+    return layout === 'contained' ? `${baseClass} mx-auto` : baseClass;
   }
 
   protected imageClass(row: RenderableBlogBlock): string {
-    const layout = this.getImageLayout(row.block.data);
     const borderClass = row.block.data.withBorder ? ' border border-slate-300 dark:border-zinc-700' : '';
-    const layoutClass = layout === 'contained' ? ' mx-auto max-w-full' : ' w-full';
 
-    return `h-auto max-h-[72vh] rounded object-contain transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${layoutClass}${borderClass}`;
+    return `blog-image-media rounded transition duration-200 group-hover:scale-[1.01] group-focus-visible:scale-[1.01]${borderClass}`;
   }
 
-  protected imageCaptionClass(row: RenderableBlogBlock): string {
-    const layout = this.getImageLayout(row.block.data);
-    const widthClass = layout === 'contained' ? ' mx-auto max-w-full' : '';
-
-    return `text-sm leading-6 text-slate-500 dark:text-zinc-500${widthClass}`;
+  protected imageCaptionClass(): string {
+    return 'blog-image-caption text-sm leading-6 text-slate-500 dark:text-zinc-500';
   }
 
   protected closeImageLightbox(): void {
+    if (this.activeImageIndex === null) {
+      return;
+    }
+
     this.activeImageIndex = null;
+    this.restorePageAfterLightbox();
+    this.cdr.markForCheck();
+
+    if (this.lightboxFocusTimer) {
+      clearTimeout(this.lightboxFocusTimer);
+    }
+
+    const returnFocus = this.lightboxReturnFocus;
+    this.lightboxReturnFocus = null;
+    this.lightboxFocusTimer = setTimeout(() => {
+      if (returnFocus?.isConnected) {
+        returnFocus.focus();
+      }
+      this.lightboxFocusTimer = undefined;
+    });
+  }
+
+  protected positiveImageDimension(value: number | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+  }
+
+  protected handleImageLoadError(row: RenderableBlogBlock): void {
+    row.imageLoadFailed = true;
+
+    if (row.galleryIndex !== null && this.imageGallery[row.galleryIndex]) {
+      this.imageGallery[row.galleryIndex].loadFailed = true;
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  protected handleLightboxImageLoadError(image: RenderableBlogImage): void {
+    image.loadFailed = true;
+    this.cdr.markForCheck();
   }
 
   protected showPreviousImage(event?: Event): void {
@@ -1014,9 +1584,48 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     this.activeImageIndex = (this.activeImageIndex + 1) % this.imageGallery.length;
   }
 
-  @HostListener('document:keydown.escape')
-  protected handleEscapeKey(): void {
+  @HostListener('document:keydown.escape', ['$event'])
+  protected handleEscapeKey(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || !this.activeImage) {
+      return;
+    }
+
+    event.preventDefault();
     this.closeImageLightbox();
+  }
+
+  @HostListener('document:keydown.tab', ['$event'])
+  protected handleLightboxTabKey(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || !this.activeImage) {
+      return;
+    }
+
+    const dialog = this.lightboxDialog?.nativeElement;
+
+    if (!dialog) {
+      return;
+    }
+
+    const focusableElements = this.getLightboxFocusableElements(dialog);
+
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    const document = this.host.nativeElement.ownerDocument;
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && (activeElement === first || !dialog.contains(activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (activeElement === last || !dialog.contains(activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   @HostListener('window:message', ['$event'])
@@ -1085,6 +1694,92 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     }
 
     return data.stretched ? 'fullWidth' : 'contained';
+  }
+
+  private getImageSize(data: BlogBlockData): BlogImageSize | undefined {
+    return data.imageSize && this.imageSizeSet.has(data.imageSize) ? data.imageSize : undefined;
+  }
+
+  private scheduleLightboxFocus(): void {
+    if (this.lightboxFocusTimer) {
+      clearTimeout(this.lightboxFocusTimer);
+    }
+
+    this.lightboxFocusTimer = setTimeout(() => {
+      const dialog = this.lightboxDialog?.nativeElement;
+      const closeButton = dialog?.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-close"]');
+      (closeButton ?? dialog)?.focus();
+      this.lightboxFocusTimer = undefined;
+    });
+  }
+
+  private preparePageForLightbox(): void {
+    const document = this.host.nativeElement.ownerDocument;
+    let branch = this.host.nativeElement;
+
+    while (branch.parentElement) {
+      const parent = branch.parentElement;
+
+      for (const sibling of Array.from(parent.children)) {
+        if (!(sibling instanceof HTMLElement) || sibling === branch || this.inertAttributeStates.has(sibling)) {
+          continue;
+        }
+
+        this.inertAttributeStates.set(sibling, sibling.getAttribute('inert'));
+        sibling.setAttribute('inert', '');
+      }
+
+      branch = parent;
+
+      if (branch === document.body) {
+        break;
+      }
+    }
+
+    const body = document.body;
+    const window = document.defaultView;
+    this.lightboxBodyStyleState = {
+      overflow: body.style.overflow,
+      overscrollBehavior: body.style.overscrollBehavior,
+      paddingRight: body.style.paddingRight,
+    };
+
+    const documentWidth = document.documentElement.clientWidth;
+    const scrollbarWidth = window && documentWidth > 0 ? Math.max(0, window.innerWidth - documentWidth) : 0;
+
+    if (scrollbarWidth > 0 && window) {
+      const currentPadding = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0;
+      body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
+    }
+
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'contain';
+  }
+
+  private restorePageAfterLightbox(): void {
+    for (const [element, previousValue] of this.inertAttributeStates) {
+      if (previousValue === null) {
+        element.removeAttribute('inert');
+      } else {
+        element.setAttribute('inert', previousValue);
+      }
+    }
+
+    this.inertAttributeStates.clear();
+
+    if (this.lightboxBodyStyleState) {
+      const body = this.host.nativeElement.ownerDocument.body;
+      body.style.overflow = this.lightboxBodyStyleState.overflow;
+      body.style.overscrollBehavior = this.lightboxBodyStyleState.overscrollBehavior;
+      body.style.paddingRight = this.lightboxBodyStyleState.paddingRight;
+      this.lightboxBodyStyleState = null;
+    }
+  }
+
+  private getLightboxFocusableElements(dialog: HTMLElement): readonly HTMLElement[] {
+    return Array.from(dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(element => element.getAttribute('aria-hidden') !== 'true');
   }
 
   private createDownloadFileName(block: BlogContentBlock): string {

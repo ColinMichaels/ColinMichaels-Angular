@@ -1,4 +1,20 @@
-import {BlogPost, BlogPostStatus} from '../models/blog-post.model';
+import {
+  BLOG_BLOCK_PLACEMENTS,
+  BLOG_CHART_TYPES,
+  BLOG_IMAGE_LAYOUTS,
+  BLOG_IMAGE_SIZES,
+  BLOG_LIST_PRESENTATIONS,
+  BLOG_LIST_STYLES,
+  BLOG_POLL_RESULTS_VISIBILITIES,
+  BLOG_TYPOGRAPHY_VARIANTS,
+  BlogBlockType,
+  BlogContentBlock,
+  BlogJsonObject,
+  BlogJsonValue,
+  BlogListItem,
+  BlogPost,
+  BlogPostStatus,
+} from '../models/blog-post.model';
 import {
   BLOG_SOCIAL_CHANNELS,
   BLOG_SOCIAL_CONTENT_ANGLES,
@@ -10,9 +26,35 @@ import {
   BlogSocialPostFormat,
 } from '../models/blog-social-promotion.model';
 import {isSocialPostFormatAllowed} from './blog-social-promotion.util';
+import {
+  hasDisallowedInlineUrlProtocol,
+  isBlogHttpUrl,
+  isBlogMediaUrl,
+  isOptionalBlogHttpUrl,
+  isOptionalBlogMediaUrl,
+  isOptionalBlogNavigationUrl,
+} from './blog-url-policy.util';
 
 export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const blogPostStatusSet = new Set<string>(BLOG_POST_STATUSES);
+const blogBlockTypeSet = new Set<BlogBlockType>([
+  'paragraph',
+  'header',
+  'image',
+  'embed',
+  'list',
+  'quote',
+  'code',
+  'markdown',
+  'delimiter',
+  'typography',
+  'stats',
+  'chart',
+  'poll',
+  'catCornerUnlock',
+  'html',
+  'unsupported',
+]);
 const blogSocialChannelSet = new Set<string>(BLOG_SOCIAL_CHANNELS);
 const blogSocialContentAngleSet = new Set<string>(BLOG_SOCIAL_CONTENT_ANGLES);
 const blogSocialLinkPlacementSet = new Set<string>(BLOG_SOCIAL_LINK_PLACEMENTS);
@@ -37,6 +79,147 @@ export function isStringArray(value: unknown): value is readonly string[] {
 
 export function isBlogPostStatus(value: unknown): value is BlogPostStatus {
   return typeof value === 'string' && blogPostStatusSet.has(value);
+}
+
+export function isBlogContentBlock(value: unknown): value is BlogContentBlock {
+  if (!isRecord(value) || typeof value['id'] !== 'string' || !blogBlockTypeSet.has(value['type'] as BlogBlockType)) {
+    return false;
+  }
+
+  const type = value['type'] as BlogBlockType;
+  const data = value['data'];
+
+  return isBlogBlockData(type, data)
+    && (value['editorTunes'] === undefined || isBlogJsonObject(value['editorTunes']));
+}
+
+function isBlogBlockData(type: BlogBlockType, value: unknown): boolean {
+  if (!isRecord(value) || Array.isArray(value) || !isBlogBlockDataShape(value)) {
+    return false;
+  }
+
+  if (type === 'list') {
+    return (value['items'] === undefined || isStringArray(value['items']))
+      && (value['listItems'] === undefined || (
+        Array.isArray(value['listItems'])
+        && value['listItems'].every(isBlogListItem)
+      ));
+  }
+
+  if (type === 'image') {
+    return (value['width'] === undefined || isPositiveFiniteNumber(value['width']))
+      && (value['height'] === undefined || isPositiveFiniteNumber(value['height']))
+      && value['unsupportedBlock'] === undefined;
+  }
+
+  if (type === 'unsupported') {
+    const envelope = value['unsupportedBlock'];
+    return isRecord(envelope)
+      && typeof envelope['originalType'] === 'string'
+      && envelope['originalType'].trim().length > 0
+      && isBlogJsonObject(envelope['originalData'])
+      && (envelope['originalTunes'] === undefined || isBlogJsonObject(envelope['originalTunes']));
+  }
+
+  return value['unsupportedBlock'] === undefined;
+}
+
+function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
+  const stringFields = [
+    'title', 'text', 'url', 'alt', 'caption', 'provider', 'embedUrl', 'language', 'code', 'markdown',
+    'attribution', 'unit', 'xAxisTitle', 'yAxisTitle', 'valueSuffix', 'sourceLabel', 'sourceUrl',
+    'accessibilitySummary', 'question', 'description', 'html',
+  ];
+  const numberFields = ['width', 'height', 'yMax', 'decimals'];
+  const booleanFields = ['ordered', 'stretched', 'withBorder', 'withBackground', 'showLegend'];
+
+  return stringFields.every(field => value[field] === undefined || typeof value[field] === 'string')
+    && numberFields.every(field => value[field] === undefined
+      || (typeof value[field] === 'number' && Number.isFinite(value[field])))
+    && booleanFields.every(field => value[field] === undefined || typeof value[field] === 'boolean')
+    && (value['placement'] === undefined || (BLOG_BLOCK_PLACEMENTS as readonly unknown[]).includes(value['placement']))
+    && (value['level'] === undefined || value['level'] === 2 || value['level'] === 3)
+    && (value['imageLayout'] === undefined || (BLOG_IMAGE_LAYOUTS as readonly unknown[]).includes(value['imageLayout']))
+    && (value['imageSize'] === undefined || (BLOG_IMAGE_SIZES as readonly unknown[]).includes(value['imageSize']))
+    && (value['listStyle'] === undefined || (BLOG_LIST_STYLES as readonly unknown[]).includes(value['listStyle']))
+    && (value['listPresentation'] === undefined
+      || (BLOG_LIST_PRESENTATIONS as readonly unknown[]).includes(value['listPresentation']))
+    && (value['listPresentation'] !== 'steps'
+      || value['listStyle'] === 'ordered'
+      || (value['listStyle'] === undefined && value['ordered'] === true))
+    && (value['listMeta'] === undefined || isBlogJsonObject(value['listMeta']))
+    && (value['variant'] === undefined || (BLOG_TYPOGRAPHY_VARIANTS as readonly unknown[]).includes(value['variant']))
+    && (value['chartType'] === undefined || (BLOG_CHART_TYPES as readonly unknown[]).includes(value['chartType']))
+    && (value['pollResultsVisibility'] === undefined
+      || (BLOG_POLL_RESULTS_VISIBILITIES as readonly unknown[]).includes(value['pollResultsVisibility']))
+    && (value['stats'] === undefined || isBlogStats(value['stats']))
+    && (value['chartPoints'] === undefined || isBlogChartPoints(value['chartPoints']))
+    && (value['labels'] === undefined || isStringArray(value['labels']))
+    && (value['datasets'] === undefined || isBlogChartDatasets(value['datasets']))
+    && (value['pollOptions'] === undefined || isBlogPollOptions(value['pollOptions']));
+}
+
+function isPositiveFiniteNumber(value: unknown): boolean {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function isBlogListItem(value: unknown): value is BlogListItem {
+  return isRecord(value)
+    && typeof value['content'] === 'string'
+    && isBlogJsonObject(value['meta'])
+    && Array.isArray(value['items'])
+    && value['items'].every(isBlogListItem);
+}
+
+function isBlogStats(value: unknown): boolean {
+  return Array.isArray(value) && value.every(item => isRecord(item)
+    && typeof item['label'] === 'string'
+    && typeof item['value'] === 'string'
+    && (item['caption'] === undefined || typeof item['caption'] === 'string'));
+}
+
+function isBlogChartPoints(value: unknown): boolean {
+  return Array.isArray(value) && value.every(point => isRecord(point)
+    && typeof point['label'] === 'string'
+    && typeof point['value'] === 'number'
+    && Number.isFinite(point['value'])
+    && (point['note'] === undefined || typeof point['note'] === 'string')
+    && (point['series'] === undefined || typeof point['series'] === 'string'));
+}
+
+function isBlogChartDatasets(value: unknown): boolean {
+  return Array.isArray(value) && value.every(dataset => isRecord(dataset)
+    && typeof dataset['label'] === 'string'
+    && Array.isArray(dataset['data'])
+    && dataset['data'].every(item => item === null || (typeof item === 'number' && Number.isFinite(item)))
+    && (dataset['borderColor'] === undefined || typeof dataset['borderColor'] === 'string')
+    && (dataset['backgroundColor'] === undefined || typeof dataset['backgroundColor'] === 'string'));
+}
+
+function isBlogPollOptions(value: unknown): boolean {
+  return Array.isArray(value) && value.every(option => isRecord(option)
+    && typeof option['id'] === 'string'
+    && typeof option['label'] === 'string');
+}
+
+function isBlogJsonObject(value: unknown): value is BlogJsonObject {
+  return isRecord(value) && !Array.isArray(value) && Object.values(value).every(isBlogJsonValue);
+}
+
+function isBlogJsonValue(value: unknown): value is BlogJsonValue {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return true;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isBlogJsonValue);
+  }
+
+  return isBlogJsonObject(value);
 }
 
 function isOptionalPositiveInteger(value: unknown): boolean {
@@ -167,6 +350,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
   }
 
   return typeof value['id'] === 'string'
+    && (value['revision'] === undefined || (Number.isInteger(value['revision']) && Number(value['revision']) >= 0))
     && typeof value['slug'] === 'string'
     && typeof value['title'] === 'string'
     && typeof value['excerpt'] === 'string'
@@ -184,10 +368,52 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && isBlogOpenGraphMetadata(value['og'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
+    && value['blocks'].every(isBlogContentBlock)
     && isBlogSocialPromotion(value['socialPromotion'])
     && isBlogCatCornerSettings(value['catCorner'])
     && isBlogPostPreview(value['preview'])
     && typeof value['createdAt'] === 'string'
     && typeof value['updatedAt'] === 'string'
     && (typeof value['publishedAt'] === 'string' || value['publishedAt'] === null);
+}
+
+/**
+ * Write-time URL policy. Read-time structural validation remains permissive so
+ * legacy posts can still render through the renderer's safe URL fallbacks.
+ */
+export function hasTrustedBlogPostUrls(post: BlogPost): boolean {
+  if (!isBlogMediaUrl(post.coverImage)
+    || !isOptionalBlogMediaUrl(post.backgroundImage)
+    || !isOptionalBlogMediaUrl(post.thumbnailImage)
+    || !isOptionalBlogMediaUrl(post.author.avatarUrl)
+    || !isOptionalBlogNavigationUrl(post.author.profileUrl)
+    || !isOptionalBlogHttpUrl(post.seo.canonical)
+    || !isOptionalBlogMediaUrl(post.seo.openGraphImage)
+    || !isOptionalBlogMediaUrl(post.og?.image)) {
+    return false;
+  }
+
+  for (const announcement of post.socialPromotion?.announcements ?? []) {
+    if (!isOptionalBlogHttpUrl(announcement.linkUrl) || !isOptionalBlogMediaUrl(announcement.mediaUrl)) {
+      return false;
+    }
+  }
+
+  return post.blocks.every(block => {
+    const data = block.data;
+    if (block.type === 'image' && !isBlogMediaUrl(data.url ?? '')) {
+      return false;
+    }
+    if (block.type === 'embed' && !isBlogHttpUrl(data.embedUrl?.trim() || data.url?.trim() || '')) {
+      return false;
+    }
+    if (!isOptionalBlogHttpUrl(data.sourceUrl)) {
+      return false;
+    }
+    if (block.type !== 'code' && ['text', 'html', 'caption', 'description']
+      .some(field => hasDisallowedInlineUrlProtocol(data[field as keyof typeof data]))) {
+      return false;
+    }
+    return true;
+  });
 }

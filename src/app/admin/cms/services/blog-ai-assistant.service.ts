@@ -1,6 +1,10 @@
 import {Injectable} from '@angular/core';
 
-import {BlogBlockData, BlogBlockType} from '../../../features/blog/models/blog-post.model';
+import {
+  BlogBlockData,
+  BlogBlockType,
+  getBlogListItemTexts,
+} from '../../../features/blog/models/blog-post.model';
 import {createBlogMarkdownPlainText} from '../../../features/blog/utils/blog-markdown.util';
 import {
   BlogAssistantContext,
@@ -143,7 +147,7 @@ export class BlogAiAssistantService {
       case 'quote':
         return [data.text, data.caption].filter(Boolean).join(' ');
       case 'list':
-        return data.items?.join(' ') ?? '';
+        return getBlogListItemTexts(data).join(' ');
       case 'image':
       case 'embed':
         return [data.caption, data.alt, data.provider].filter(Boolean).join(' ');
@@ -183,6 +187,7 @@ export class BlogAiAssistantService {
         return [data.title, data.html].filter(Boolean).join(' ');
       case 'delimiter':
       case 'catCornerUnlock':
+      case 'unsupported':
         return '';
     }
   }

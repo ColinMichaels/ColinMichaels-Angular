@@ -1,5 +1,5 @@
-import {BlogPost} from '../models/blog-post.model';
-import {isBlogPost} from './blog-validation.util';
+import {BlogPost, getBlogListItemTexts} from '../models/blog-post.model';
+import {hasTrustedBlogPostUrls, isBlogContentBlock, isBlogPost} from './blog-validation.util';
 
 function createPost(): BlogPost {
   return {
@@ -25,8 +25,163 @@ function createPost(): BlogPost {
 }
 
 describe('blog post validation', () => {
+  it('validates legacy and recursive list block contracts', () => {
+    expect(isBlogContentBlock({
+      id: 'legacy-list',
+      type: 'list',
+      data: {ordered: false, items: ['One', 'Two']},
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'recursive-list',
+      type: 'list',
+      data: {
+        ordered: false,
+        listStyle: 'checklist',
+        listPresentation: 'standard',
+        listMeta: {},
+        listItems: [{
+          content: 'Parent',
+          meta: {checked: true},
+          items: [{content: 'Child', meta: {checked: false}, items: []}],
+        }],
+      },
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'step-list',
+      type: 'list',
+      data: {
+        ordered: true,
+        listStyle: 'ordered',
+        listPresentation: 'steps',
+        listMeta: {},
+        listItems: [{content: 'Prepare', meta: {}, items: []}],
+      },
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'invalid-presentation',
+      type: 'list',
+      data: {ordered: true, items: ['One'], listPresentation: 'timeline'},
+    })).toBeFalse();
+    expect(isBlogContentBlock({
+      id: 'invalid-steps-style',
+      type: 'list',
+      data: {ordered: false, listStyle: 'unordered', items: ['One'], listPresentation: 'steps'},
+    })).toBeFalse();
+    expect(isBlogContentBlock({
+      id: 'invalid-recursive-list',
+      type: 'list',
+      data: {
+        listStyle: 'checklist',
+        listItems: [{content: 'Missing child collection', meta: {checked: false}}],
+      },
+    })).toBeFalse();
+  });
+
+  it('flattens legacy and recursive list text in visual reading order', () => {
+    expect(getBlogListItemTexts({items: ['One', 'Two']})).toEqual(['One', 'Two']);
+    expect(getBlogListItemTexts({
+      listItems: [{
+        content: 'Parent',
+        meta: {},
+        items: [
+          {content: 'First child', meta: {}, items: []},
+          {content: 'Second child', meta: {}, items: [{content: 'Grandchild', meta: {}, items: []}]},
+        ],
+      }],
+    })).toEqual(['Parent', 'First child', 'Second child', 'Grandchild']);
+  });
+
+  it('validates optional bounded image sizes and positive intrinsic dimensions', () => {
+    expect(isBlogContentBlock({
+      id: 'legacy-image',
+      type: 'image',
+      data: {url: '/assets/images/backgrounds/day.webp'},
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'wide-image',
+      type: 'image',
+      data: {
+        url: '/assets/images/backgrounds/day.webp',
+        imageLayout: 'fullWidth',
+        imageSize: 'wide',
+        width: 2400,
+        height: 1200,
+      },
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'pixel-image',
+      type: 'image',
+      data: {url: '/assets/images/backgrounds/day.webp', imageSize: '960px'},
+    })).toBeFalse();
+    expect(isBlogContentBlock({
+      id: 'invalid-dimensions',
+      type: 'image',
+      data: {url: '/assets/images/backgrounds/day.webp', width: -1, height: 0},
+    })).toBeFalse();
+  });
+
+  it('validates unsupported compatibility envelopes and JSON tune metadata', () => {
+    expect(isBlogContentBlock({
+      id: 'table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          originalData: {content: [['A', 'B']]},
+          originalTunes: {alignmentTune: {alignment: 'center'}},
+        },
+      },
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'table-1',
+      type: 'unsupported',
+      data: {unsupportedBlock: {originalType: 'table'}},
+    })).toBeFalse();
+    expect(isBlogContentBlock({
+      id: 'paragraph-1',
+      type: 'paragraph',
+      data: {text: 'Copy'},
+      editorTunes: {alignmentTune: {alignment: Number.NaN}},
+    })).toBeFalse();
+  });
+
+  it('rejects posts containing malformed block contracts', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      blocks: [{id: 'bad-chart', type: 'chart', data: {chartPoints: [{label: 'A', value: 'many'}]}}],
+    })).toBeFalse();
+  });
+
   it('keeps legacy posts valid when no background image is present', () => {
     expect(isBlogPost(createPost())).toBeTrue();
+  });
+
+  it('keeps URL validation write-only so legacy posts remain readable', () => {
+    const legacyPost = {
+      ...createPost(),
+      coverImage: '//legacy.example.com/cover.jpg',
+    };
+
+    expect(isBlogPost(legacyPost)).toBeTrue();
+    expect(hasTrustedBlogPostUrls(legacyPost)).toBeFalse();
+  });
+
+  it('accepts safe internal author links and rejects active author URLs on writes', () => {
+    expect(hasTrustedBlogPostUrls({
+      ...createPost(),
+      author: {name: 'Colin Michaels', profileUrl: '/authors/colin-michaels'},
+    })).toBeTrue();
+    expect(hasTrustedBlogPostUrls({
+      ...createPost(),
+      author: {name: 'Colin Michaels', profileUrl: 'javascript:alert(1)'},
+    })).toBeFalse();
+  });
+
+  it('accepts migration-safe revisions and rejects invalid revision values', () => {
+    expect(isBlogPost({...createPost(), revision: 0})).toBeTrue();
+    expect(isBlogPost({...createPost(), revision: 4})).toBeTrue();
+    expect(isBlogPost({...createPost(), revision: -1})).toBeFalse();
+    expect(isBlogPost({...createPost(), revision: 1.5})).toBeFalse();
   });
 
   it('accepts an optional post background image URL', () => {

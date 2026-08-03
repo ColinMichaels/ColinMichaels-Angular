@@ -1,5 +1,6 @@
 import {BlogPost} from '../models/blog-post.model';
 import {
+  createBlogArticleGridLayout,
   createBlogHeadingIdMap,
   createBlogReadingStats,
   createBlogTableOfContents,
@@ -35,6 +36,13 @@ function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
 }
 
 describe('blog reading utilities', () => {
+  it('selects article grid tracks from the rails that actually exist', () => {
+    expect(createBlogArticleGridLayout(false, false)).toBe('article-only');
+    expect(createBlogArticleGridLayout(true, false)).toBe('contents-and-article');
+    expect(createBlogArticleGridLayout(false, true)).toBe('article-and-related');
+    expect(createBlogArticleGridLayout(true, true)).toBe('three-column');
+  });
+
   it('creates stable table-of-contents IDs from header blocks', () => {
     const blocks: BlogPost['blocks'] = [
       {id: 'intro', type: 'header', data: {text: 'Intro & Setup', level: 2}},

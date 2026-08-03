@@ -1,4 +1,5 @@
 import {BlogPostSummary} from '../models/blog-post.model';
+import {isBlogHttpUrl, isBlogSitePath} from './blog-url-policy.util';
 
 export interface BlogImageFields {
   coverImage: string;
@@ -12,15 +13,19 @@ export function isLocalAssetImageUrl(value: string): boolean {
     return true;
   }
 
-  try {
-    return new URL(trimmedValue).pathname.startsWith('/assets/');
-  } catch {
-    return false;
+  if (isBlogSitePath(trimmedValue)) {
+    return /^\/?assets\//i.test(trimmedValue);
   }
+
+  if (isBlogHttpUrl(trimmedValue)) {
+    return /^\/assets\//i.test(new URL(trimmedValue).pathname);
+  }
+
+  return false;
 }
 
 export function isRemoteImageUrl(value: string): boolean {
-  return /^(https?:)?\/\//i.test(value.trim());
+  return isBlogHttpUrl(value);
 }
 
 export function normalizeBlogImageFields(fields: BlogImageFields): BlogImageFields {

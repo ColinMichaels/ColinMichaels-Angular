@@ -1,4 +1,4 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 
 import {BlogBlockRendererComponent} from './blog-block-renderer.component';
@@ -306,6 +306,27 @@ describe('BlogBlockRendererComponent', () => {
     expect(heading?.hasAttribute('data-sticky-section-heading')).toBeTrue();
   });
 
+  it('keeps long inline-formatted headings complete with their backward-compatible anchor', () => {
+    fixture.componentRef.setInput('anchorPath', '/blog/long-heading');
+    fixture.componentRef.setInput('blocks', [{
+      id: 'long-heading',
+      type: 'header',
+      data: {
+        text: 'A <strong>Long Editorial Heading</strong> That Still Wraps Without Losing Its Existing Anchor',
+        level: 2,
+      },
+    }]);
+    fixture.detectChanges();
+
+    const heading = (fixture.nativeElement as HTMLElement).querySelector<HTMLHeadingElement>('h2');
+
+    expect(heading?.id).toBe('a-long-editorial-heading-that-still-wraps-without-losing-its-existing-anchor');
+    expect(heading?.textContent).toContain('A Long Editorial Heading That Still Wraps Without Losing Its Existing Anchor');
+    expect(heading?.querySelector('strong')?.textContent).toBe('Long Editorial Heading');
+    expect(heading?.querySelector('a')?.getAttribute('href'))
+      .toBe('/blog/long-heading#a-long-editorial-heading-that-still-wraps-without-losing-its-existing-anchor');
+  });
+
   it('expands TLDR headings and adds an accessible top tooltip', () => {
     fixture.componentRef.setInput('anchorPath', '/blog/test-post');
     fixture.componentRef.setInput('blocks', [{
@@ -365,6 +386,31 @@ describe('BlogBlockRendererComponent', () => {
     expect(headings[0].classList).not.toContain('blog-sticky-section-heading');
     expect(headings[1].classList).toContain('blog-sticky-section-heading');
     expect(headings.filter(heading => heading.hasAttribute('data-sticky-active')).length).toBe(1);
+
+    const flowingStyle = getComputedStyle(headings[0]);
+    const stickyStyle = getComputedStyle(headings[1]);
+
+    expect(stickyStyle.fontSize).toBe(flowingStyle.fontSize);
+    expect(stickyStyle.lineHeight).toBe(flowingStyle.lineHeight);
+    expect(stickyStyle.paddingTop).toBe(flowingStyle.paddingTop);
+    expect(stickyStyle.paddingBottom).toBe(flowingStyle.paddingBottom);
+  });
+
+  it('retains intentional typography variant classes for Reader scaling', () => {
+    fixture.componentRef.setInput('blocks', [
+      {id: 'lead', type: 'typography', data: {variant: 'lead', text: 'Lead copy'}},
+      {id: 'pull', type: 'typography', data: {variant: 'pullQuote', text: 'Pull quote'}},
+      {id: 'aside', type: 'typography', data: {variant: 'aside', text: 'Aside copy'}},
+      {id: 'caption', type: 'typography', data: {variant: 'caption', text: 'Caption copy'}},
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.blog-type-lead')?.textContent).toContain('Lead copy');
+    expect(element.querySelector('.blog-type-pull-quote-copy')?.textContent).toContain('Pull quote');
+    expect(element.querySelector('.blog-type-aside')?.textContent).toContain('Aside copy');
+    expect(element.querySelector('.blog-type-caption')?.textContent).toContain('Caption copy');
   });
 
   it('opens rich text links in a new tab by default', () => {
@@ -419,6 +465,235 @@ describe('BlogBlockRendererComponent', () => {
     expect(unorderedList?.classList).toContain('blog-list-unordered');
     expect(orderedList?.querySelectorAll('.blog-list-item-ordered').length).toBe(2);
     expect(unorderedList?.querySelectorAll('.blog-list-item-unordered').length).toBe(2);
+    expect(orderedList?.hasAttribute('data-list-depth')).toBeFalse();
+    expect(unorderedList?.hasAttribute('data-list-depth')).toBeFalse();
+    expect(orderedList?.getAttribute('data-list-presentation')).toBe('standard');
+    expect(orderedList?.getAttribute('role')).toBe('list');
+    expect(unorderedList?.getAttribute('role')).toBe('list');
+  });
+
+  it('renders the optional Steps presentation only for ordered lists', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'steps-list',
+        type: 'list',
+        data: {
+          ordered: true,
+          listPresentation: 'steps',
+          items: ['Draft the article', 'Review the preview'],
+        },
+      },
+      {
+        id: 'unordered-steps',
+        type: 'list',
+        data: {
+          ordered: false,
+          listPresentation: 'steps',
+          items: ['This remains a standard unordered list'],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const orderedList = element.querySelector<HTMLOListElement>('ol');
+    const unorderedList = element.querySelector<HTMLUListElement>('ul');
+
+    expect(orderedList?.classList).toContain('blog-list-steps');
+    expect(orderedList?.getAttribute('data-list-presentation')).toBe('steps');
+    expect(orderedList?.getAttribute('aria-label')).toBe('Steps');
+    expect(orderedList?.querySelectorAll('.blog-list-item-steps').length).toBe(2);
+    expect(unorderedList?.classList).not.toContain('blog-list-steps');
+    expect(unorderedList?.getAttribute('data-list-presentation')).toBe('standard');
+  });
+
+  it('preserves ordered start and counter metadata in semantic and styled output', () => {
+    fixture.componentRef.setInput('blocks', [{
+      id: 'roman-list',
+      type: 'list',
+      data: {
+        listStyle: 'ordered',
+        listMeta: {start: 3, counterType: 'upper-roman'},
+        listItems: [{content: 'Third stage', meta: {}, items: []}],
+      },
+    }]);
+    fixture.detectChanges();
+
+    const list = (fixture.nativeElement as HTMLElement).querySelector<HTMLOListElement>('ol');
+
+    expect(list?.start).toBe(3);
+    expect(list?.type).toBe('I');
+    expect(list?.classList).toContain('blog-list-counter-upper-roman');
+    expect(list?.style.getPropertyValue('--blog-list-counter-start')).toBe('2');
+  });
+
+  it('renders recursive ordered list items as nested semantic lists', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'nested-ordered-list',
+        type: 'list',
+        data: {
+          listStyle: 'ordered',
+          listItems: [
+            {
+              content: 'Prepare the release',
+              meta: {},
+              items: [
+                {content: 'Confirm the final copy', meta: {}, items: []},
+                {content: 'Confirm the artwork', meta: {}, items: []},
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const rootList = element.querySelector<HTMLOListElement>('ol.blog-list-ordered:not(.blog-list-nested)');
+    const nestedList = rootList?.querySelector<HTMLOListElement>(':scope > li > ol.blog-list-ordered.blog-list-nested');
+
+    expect(rootList?.getAttribute('data-list-depth')).toBe('0');
+    expect(nestedList?.getAttribute('data-list-depth')).toBe('1');
+    expect(rootList?.querySelectorAll('li.blog-list-item-ordered').length).toBe(3);
+    expect(nestedList?.querySelectorAll(':scope > li').length).toBe(2);
+    expect(element.textContent).toContain('Confirm the final copy');
+  });
+
+  it('renders recursive unordered list items as nested semantic lists', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'nested-unordered-list',
+        type: 'list',
+        data: {
+          listStyle: 'unordered',
+          listItems: [
+            {
+              content: 'Accessibility checks',
+              meta: {},
+              items: [
+                {content: 'Keyboard navigation', meta: {}, items: []},
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const rootList = element.querySelector<HTMLUListElement>('ul.blog-list-unordered:not(.blog-list-nested)');
+    const nestedList = rootList?.querySelector<HTMLUListElement>(':scope > li > ul.blog-list-unordered.blog-list-nested');
+
+    expect(rootList?.getAttribute('data-list-depth')).toBe('0');
+    expect(nestedList?.getAttribute('data-list-depth')).toBe('1');
+    expect(rootList?.querySelectorAll('li.blog-list-item-unordered').length).toBe(2);
+    expect(nestedList?.querySelectorAll(':scope > li').length).toBe(1);
+    expect(element.textContent).toContain('Keyboard navigation');
+  });
+
+  it('renders deep bounded nesting and long rich links without flattening content', () => {
+    fixture.componentRef.setInput('blocks', [{
+      id: 'deep-list',
+      type: 'list',
+      data: {
+        listStyle: 'unordered',
+        listItems: [{
+          content: 'Level one',
+          meta: {},
+          items: [{
+            content: 'Level two',
+            meta: {},
+            items: [{
+              content: 'Level three',
+              meta: {},
+              items: [{
+                content: 'Read the <a href="https://example.com/a-very-long-production-readiness-reference">production readiness reference</a>',
+                meta: {},
+                items: [],
+              }],
+            }],
+          }],
+        }],
+      },
+    }]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const deepestList = element.querySelector('[data-list-depth="3"]');
+    const link = element.querySelector<HTMLAnchorElement>('a');
+
+    expect(deepestList).not.toBeNull();
+    expect(element.querySelectorAll('ul[role="list"]').length).toBe(4);
+    expect(link?.textContent).toBe('production readiness reference');
+    expect(link?.getAttribute('href')).toBe('https://example.com/a-very-long-production-readiness-reference');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('renders recursive checklist items with inert checked state', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'nested-checklist',
+        type: 'list',
+        data: {
+          listStyle: 'checklist',
+          listItems: [
+            {
+              content: 'Draft complete',
+              meta: {checked: true},
+              items: [
+                {content: 'Editorial review pending', meta: {checked: false}, items: []},
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const rootList = element.querySelector<HTMLUListElement>('ul.blog-list-checklist:not(.blog-list-nested)');
+    const nestedList = rootList?.querySelector<HTMLUListElement>(':scope > li > ul.blog-list-checklist.blog-list-nested');
+    const checkboxes = Array.from(element.querySelectorAll<HTMLInputElement>('input.blog-list-checkbox'));
+
+    expect(rootList?.getAttribute('data-list-depth')).toBe('0');
+    expect(nestedList?.getAttribute('data-list-depth')).toBe('1');
+    expect(checkboxes.length).toBe(2);
+    expect(checkboxes[0].checked).toBeTrue();
+    expect(checkboxes[1].checked).toBeFalse();
+    expect(checkboxes.every(checkbox => checkbox.disabled)).toBeTrue();
+    expect(element.textContent).toContain('Editorial review pending');
+  });
+
+  it('omits unsupported block envelopes without exposing their raw data', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'unsupported-private-widget',
+        type: 'unsupported',
+        data: {
+          unsupportedBlock: {
+            originalType: 'privateWidget',
+            originalData: {
+              html: '<img src="https://example.com/tracker.gif">Do not expose this payload',
+              accessToken: 'private-token-value',
+            },
+          },
+        },
+      },
+      {
+        id: 'safe-paragraph',
+        type: 'paragraph',
+        data: {text: 'Public content remains visible.'},
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('Public content remains visible.');
+    expect(element.textContent).not.toContain('Do not expose this payload');
+    expect(element.textContent).not.toContain('private-token-value');
+    expect(element.querySelector('img[src*="tracker.gif"]')).toBeNull();
   });
 
   it('keeps same-page rich text anchors in the current tab', () => {
@@ -550,14 +825,14 @@ describe('BlogBlockRendererComponent', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    const legend = element.querySelector<HTMLElement>('[aria-label="Chart legend"]');
-    const chart = element.querySelector<SVGElement>('svg[role="img"]');
+    const chart = element.querySelector<HTMLElement>('[data-testid="blog-chart"]');
+    const canvas = element.querySelector<HTMLCanvasElement>('[data-testid="blog-chart-canvas"]');
 
-    expect(legend?.textContent).toContain('One-word titles');
-    expect(legend?.textContent).toContain('Titles using love');
-    expect(chart?.querySelectorAll('polyline').length).toBe(2);
-    expect(chart?.querySelectorAll('circle').length).toBe(4);
-    expect(chart?.getAttribute('aria-label')).toContain('One-word titles, 1995–2004: 18 %');
+    expect(chart?.textContent).toContain('One-word titles');
+    expect(chart?.textContent).toContain('Titles using love');
+    expect(chart?.querySelectorAll('thead th').length).toBe(3);
+    expect(chart?.querySelectorAll('tbody tr').length).toBe(2);
+    expect(canvas?.getAttribute('aria-label')).toContain('One-word titles: 1995–2004: 18.00 %');
   });
 
   it('renders sanitized custom HTML blocks', () => {
@@ -683,11 +958,79 @@ describe('BlogBlockRendererComponent', () => {
     const figure = element.querySelector('figure');
     const image = figure?.querySelector('img');
 
-    expect(figure?.classList).toContain('sm:float-left');
-    expect(figure?.classList).toContain('sm:mr-6');
-    expect(image?.classList).toContain('w-full');
+    expect(figure?.classList).toContain('blog-image-layout-inlineStart');
+    expect(figure?.classList).toContain('blog-image-size-automatic');
+    expect(image?.classList).toContain('blog-image-media');
     expect(image?.classList).toContain('border');
     expect(figure?.querySelector('figcaption')?.textContent).toContain('Inline image caption');
+  });
+
+  it('renders every bounded image size without arbitrary inline widths', () => {
+    fixture.componentRef.setInput('blocks', ['small', 'medium', 'large', 'wide'].map((imageSize, index) => ({
+      id: `image-${imageSize}`,
+      type: 'image' as const,
+      data: {
+        url: `/assets/images/backgrounds/${index % 2 === 0 ? 'day' : 'night'}.webp`,
+        alt: `${imageSize} image`,
+        imageLayout: imageSize === 'wide' ? 'fullWidth' as const : 'contained' as const,
+        imageSize: imageSize as 'small' | 'medium' | 'large' | 'wide',
+        width: 1600,
+        height: index === 0 ? 2400 : 900,
+      },
+    })));
+    fixture.detectChanges();
+
+    const figures = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('figure[data-image-size]'));
+
+    expect(figures.map(figure => figure.dataset['imageSize'])).toEqual(['small', 'medium', 'large', 'wide']);
+    expect(figures.every(figure => figure.style.width === '')).toBeTrue();
+    expect(figures[3].classList).toContain('blog-image-size-wide');
+    expect(figures[3].classList).toContain('blog-image-layout-fullWidth');
+    expect(figures[0].querySelector('img')?.getAttribute('width')).toBe('1600');
+    expect(figures[0].querySelector('img')?.getAttribute('height')).toBe('2400');
+  });
+
+  it('keeps legacy missing size and dimensions valid without emitting invalid attributes', () => {
+    fixture.componentRef.setInput('blocks', [{
+      id: 'legacy-image',
+      type: 'image',
+      data: {
+        url: '/assets/images/backgrounds/day.webp',
+        alt: 'Legacy image',
+      },
+    }]);
+    fixture.detectChanges();
+
+    const figure = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('figure');
+    const image = figure?.querySelector('img');
+
+    expect(figure?.dataset['imageSize']).toBe('automatic');
+    expect(image?.hasAttribute('width')).toBeFalse();
+    expect(image?.hasAttribute('height')).toBeFalse();
+  });
+
+  it('replaces a broken body image with an accessible non-interactive fallback', () => {
+    fixture.componentRef.setInput('blocks', [{
+      id: 'broken-image',
+      type: 'image',
+      data: {
+        url: 'https://images.example.com/missing.jpg',
+        alt: 'A missing editorial diagram',
+        caption: 'The caption remains available.',
+        imageSize: 'medium',
+      },
+    }]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector('img')?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    const fallback = element.querySelector<HTMLElement>('[data-testid="blog-image-unavailable"]');
+    expect(fallback?.textContent).toContain('Image unavailable');
+    expect(fallback?.textContent).toContain('A missing editorial diagram');
+    expect(element.querySelector('figure button')).toBeNull();
+    expect(element.querySelector('figcaption')?.textContent).toContain('The caption remains available.');
   });
 
   it('navigates image galleries with controls and keyboard shortcuts', () => {
@@ -762,4 +1105,46 @@ describe('BlogBlockRendererComponent', () => {
 
     expect(element.querySelector('[role="dialog"]')).toBeNull();
   });
+
+  it('traps focus, makes article content inert, locks scrolling, and restores focus on close', fakeAsync(() => {
+    const originalOverflow = document.body.style.overflow;
+    fixture.componentRef.setInput('blocks', [{
+      id: 'accessible-image',
+      type: 'image',
+      data: {
+        url: '/assets/images/backgrounds/day.webp',
+        alt: 'Accessible gallery image',
+        caption: 'Accessible gallery caption',
+      },
+    }]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const trigger = element.querySelector<HTMLButtonElement>('figure button');
+    trigger?.focus();
+    trigger?.click();
+    fixture.detectChanges();
+    tick();
+
+    const content = element.querySelector<HTMLElement>('.blog-content');
+    const close = element.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-close"]');
+    const backdrop = element.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-backdrop"]');
+
+    expect(content?.hasAttribute('inert')).toBeTrue();
+    expect(content?.getAttribute('aria-hidden')).toBe('true');
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.activeElement).toBe(close);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true, cancelable: true}));
+    expect(document.activeElement).toBe(backdrop);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
+    fixture.detectChanges();
+    tick();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+    expect(content?.hasAttribute('inert')).toBeFalse();
+    expect(document.body.style.overflow).toBe(originalOverflow);
+    expect(document.activeElement).toBe(trigger);
+  }));
 });

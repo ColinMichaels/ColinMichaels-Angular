@@ -1,14 +1,26 @@
-import {Component, ViewChild, computed, effect, inject, ChangeDetectionStrategy, signal} from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  HostListener,
+  ViewChild,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import type {OutputData} from '@editorjs/editorjs';
-import {lastValueFrom} from 'rxjs';
+import {Subject, debounceTime, lastValueFrom} from 'rxjs';
 
 import {DEFAULT_AUTHOR_ID} from '../../../../features/authors/authors.constants';
 import {AuthorProfile} from '../../../../features/authors/models/author.model';
 import {AuthorRepositoryService} from '../../../../features/authors/services/author-repository.service';
 import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
+import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../../../../features/blog/models/blog-post-revision.model';
 import {
   BLOG_SOCIAL_CHANNELS,
   BlogSocialChannel,
@@ -37,11 +49,13 @@ import {
   BlogThumbnailSuggestion,
 } from '../../models/blog-ai-assistant.model';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {CmsPostRecoverySnapshot, CmsPostRecoveryWrite} from '../../models/post-recovery.model';
 import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog-media-upload.service';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
+import {CmsPostRecoveryService} from '../../services/post-recovery.service';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from '../../utils/blog-editorjs-adapter';
 import {
   createCmsCatCornerFormValue,
@@ -50,6 +64,7 @@ import {
 } from '../../utils/blog-cat-corner-metadata.util';
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
+import {getRemotePostDisposition} from '../../utils/post-editor-reliability.util';
 import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
 
@@ -683,7 +698,13 @@ function getErrorMessage(error: unknown): string {
                 [showSaveAction]="false"
                 [initialData]="initialData"
                 [imageUploader]="uploadEditorImage"
+                [previewTitle]="editorTitle"
+                [previewExcerpt]="editorExcerpt"
+                [previewCoverImage]="postForm.controls.coverImage.value"
+                [previewPostId]="post.id"
+                [previewPostSlug]="postForm.controls.slug.value"
                 (saved)="onSaved($event)"
+                (contentChanged)="onEditorContentChanged()"
               ></app-editor-js>
             </section>
 
@@ -734,6 +755,65 @@ function getErrorMessage(error: unknown): string {
                     Open Calendar
                   </button>
                 }
+              </app-admin-control-module>
+
+              <app-admin-control-module
+                title="Recovery & Conflicts"
+                [summary]="recoverySummary"
+                description="Recovery copies are private to your account and never publish or replace the canonical post automatically."
+              >
+                <div class="space-y-3 text-xs">
+                  <p class="text-zinc-500">{{ recoveryRevisionSummary }}</p>
+
+                  @if (recoveryStatus() === 'error') {
+                    <p class="border border-red-500/50 bg-red-950/30 px-3 py-2 leading-5 text-red-200" role="alert">
+                      {{ recoveryError() }}
+                    </p>
+                  }
+
+                  @if (saveConflict(); as conflict) {
+                    <div class="space-y-2 border border-amber-500/60 bg-amber-950/20 p-3" role="alert">
+                      <p class="font-semibold text-amber-200">Canonical save conflict</p>
+                      <p class="leading-5 text-amber-100/80">{{ conflict.message }}</p>
+                      <div class="flex flex-wrap gap-2">
+                        @if (conflict.remotePost) {
+                          <button type="button" class="border border-amber-500/70 px-2.5 py-1.5 font-medium text-amber-100 hover:bg-amber-900/50" (click)="reloadRemotePost()">
+                            Reload remote
+                          </button>
+                        }
+                        <button type="button" class="border border-cyan-500/70 px-2.5 py-1.5 font-medium text-cyan-100 hover:bg-cyan-900/40" (click)="saveConflictAsCopy()">
+                          Save as new draft
+                        </button>
+                      </div>
+                    </div>
+                  }
+
+                  @if (recoveryDraft(); as recovery) {
+                    <div class="space-y-2 border border-zinc-700 bg-zinc-950/70 p-3">
+                      <p class="font-medium text-zinc-200">Recovery available from {{ formatRecoveryDate(recovery.savedAt) }}</p>
+                      <p class="break-all text-zinc-600">{{ recovery.contentHash }}</p>
+                      <div class="flex flex-wrap gap-2">
+                        <button type="button" class="border border-cyan-500/70 px-2.5 py-1.5 font-medium text-cyan-100 hover:bg-cyan-900/40" (click)="restoreRecoveryDraft()">
+                          Restore recovery
+                        </button>
+                        <button type="button" class="border border-zinc-600 px-2.5 py-1.5 font-medium text-zinc-200 hover:bg-zinc-800" (click)="showRecoveryComparison.set(!showRecoveryComparison())">
+                          {{ showRecoveryComparison() ? 'Hide compare' : 'Compare' }}
+                        </button>
+                        <button type="button" class="border border-red-500/60 px-2.5 py-1.5 font-medium text-red-200 hover:bg-red-950/40" (click)="discardRecoveryDraft()">
+                          Discard
+                        </button>
+                      </div>
+                      @if (showRecoveryComparison()) {
+                        <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 border-t border-zinc-800 pt-2 text-zinc-400">
+                          <dt>Title</dt><dd class="truncate text-zinc-200">{{ recovery.form.title }}</dd>
+                          <dt>Status</dt><dd class="text-zinc-200">{{ recovery.form.status }}</dd>
+                          <dt>Blocks</dt><dd class="text-zinc-200">{{ recoveryEditorBlockCount(recovery) }}</dd>
+                          <dt>Base</dt><dd class="text-zinc-200">r{{ recovery.baseRevision }} · {{ formatRecoveryDate(recovery.baseUpdatedAt) }}</dd>
+                        </dl>
+                      }
+                    </div>
+                  }
+                </div>
               </app-admin-control-module>
 
               <app-cms-assistant-panel
@@ -993,7 +1073,7 @@ function getErrorMessage(error: unknown): string {
     <app-cms-toast-container></app-cms-toast-container>
   `,
 })
-export class CmsPostEditorComponent {
+export class CmsPostEditorComponent implements AfterViewInit {
   @ViewChild(EditorJsComponent) private editorComponent?: EditorJsComponent;
   @ViewChild(CmsDraftPreviewPanelComponent) private draftPreviewPanel?: CmsDraftPreviewPanelComponent;
 
@@ -1005,12 +1085,18 @@ export class CmsPostEditorComponent {
   private readonly blogAiFunctions = inject(BlogAiFunctionsService);
   private readonly blogMediaUpload = inject(BlogMediaUploadService);
   private readonly toast = inject(CmsToastService);
+  private readonly recoveryService = inject(CmsPostRecoveryService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
   private readonly firestorePost = this.slug
     ? toSignal(this.blogRepository.getAdminPostBySlug$(this.slug), {initialValue: undefined})
     : null;
   private hasHydratedFirestorePost = false;
   private hasCreatedPost = false;
+  private isApplyingEditorState = false;
+  private hasLoadedRecoveryDraft = false;
+  private readonly recoveryRequests = new Subject<void>();
+  private recoveryWritePromise: Promise<void> | null = null;
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
@@ -1031,6 +1117,12 @@ export class CmsPostEditorComponent {
   protected socialPromotionDraft: BlogSocialPromotion = this.currentPost?.socialPromotion ?? {announcements: []};
   protected socialWorkspacePost = this.createSocialWorkspacePost();
   protected hasUnsavedSocialChanges = false;
+  protected readonly hasUnsavedEditorChanges = signal(false);
+  protected readonly recoveryDraft = signal<CmsPostRecoverySnapshot | null>(null);
+  protected readonly recoveryStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  protected readonly recoveryError = signal('');
+  protected readonly showRecoveryComparison = signal(false);
+  protected readonly saveConflict = signal<BlogPostRevisionConflictError | null>(null);
   protected readonly newAuthor = signal<AuthorProfile | null>(null);
   protected readonly selectedAuthor = computed(() => (
     this.authors().find(author => author.id === this.postForm.controls.authorId.value)
@@ -1073,19 +1165,65 @@ export class CmsPostEditorComponent {
   };
 
   constructor() {
-    if (!this.firestorePost) {
-      return;
-    }
+    this.postForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.requestRecoverySave());
+
+    this.recoveryRequests
+      .pipe(
+        debounceTime(1500),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => void this.persistRecovery());
+
+    if (!this.firestorePost) return;
 
     effect(() => {
       const post = this.firestorePost?.();
+      const disposition = getRemotePostDisposition({
+        localPost: this.currentPost,
+        remotePost: post,
+        hasHydrated: this.hasHydratedFirestorePost,
+        hasUnsavedChanges: this.hasUnsavedChanges,
+        isLoading: this.isPostLoading(),
+      });
 
-      if (!post || (this.hasHydratedFirestorePost && (this.postForm.dirty || this.hasUnsavedSocialChanges))) {
+      if (disposition === 'deleted') {
+          this.saveConflict.set(new BlogPostRevisionConflictError(
+            this.currentPost?.id ?? this.slug ?? 'unknown-post',
+            normalizeBlogPostRevision(this.currentPost?.revision),
+            null
+          ));
         return;
       }
 
-      void this.applyFirestorePost(post);
+      if (disposition === 'conflict' && post) {
+        const currentRevision = normalizeBlogPostRevision(this.currentPost?.revision);
+        const remoteRevision = normalizeBlogPostRevision(post.revision);
+        this.saveConflict.set(new BlogPostRevisionConflictError(post.id, currentRevision, remoteRevision, post));
+        return;
+      }
+
+      if (disposition === 'hydrate' && post) {
+        void this.applyFirestorePost(post);
+      }
     });
+  }
+
+  ngAfterViewInit(): void {
+    queueMicrotask(() => void this.loadRecoveryDraft());
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  protected protectBrowserUnload(event: BeforeUnloadEvent): void {
+    if (!this.hasUnsavedChanges) return;
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
+  canDeactivate(): boolean {
+    return !this.hasUnsavedChanges
+      || window.confirm('You have unsaved post changes. A recovery copy may exist, but leaving now can still lose the latest keystrokes. Leave this editor?');
   }
 
   protected get hasActiveDraftPreview(): boolean {
@@ -1196,7 +1334,23 @@ export class CmsPostEditorComponent {
   }
 
   protected get hasUnsavedChanges(): boolean {
-    return this.postForm.dirty || this.hasUnsavedSocialChanges;
+    return this.postForm.dirty || this.hasUnsavedSocialChanges || this.hasUnsavedEditorChanges();
+  }
+
+  protected get recoverySummary(): string {
+    const draft = this.recoveryDraft();
+
+    if (this.recoveryStatus() === 'saving') return 'Saving recovery copy…';
+    if (this.recoveryStatus() === 'error') return 'Recovery needs attention';
+    if (draft) return `Recovery saved ${this.formatRecoveryDate(draft.savedAt)}`;
+    return 'No recovery copy stored';
+  }
+
+  protected get recoveryRevisionSummary(): string {
+    const draft = this.recoveryDraft();
+    return draft
+      ? `Recovery base r${draft.baseRevision} · Current r${normalizeBlogPostRevision(this.currentPost?.revision)}`
+      : `Current revision r${normalizeBlogPostRevision(this.currentPost?.revision)}`;
   }
 
   protected workspaceTabClass(workspace: PostEditorWorkspace): string {
@@ -1228,11 +1382,120 @@ export class CmsPostEditorComponent {
   protected onSocialPromotionChange(promotion: BlogSocialPromotion): void {
     this.socialPromotionDraft = promotion;
     this.hasUnsavedSocialChanges = true;
+    this.requestRecoverySave();
+  }
+
+  protected onEditorContentChanged(): void {
+    if (this.isApplyingEditorState) return;
+    this.hasUnsavedEditorChanges.set(true);
+    this.requestRecoverySave();
   }
 
   protected async saveSocialPromotion(promotion: BlogSocialPromotion): Promise<void> {
     this.onSocialPromotionChange(promotion);
     await this.savePost();
+  }
+
+  protected formatRecoveryDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'unknown time' : date.toLocaleString();
+  }
+
+  protected recoveryEditorBlockCount(recovery: CmsPostRecoverySnapshot): string {
+    if (recovery.editor.mode === 'json') {
+      try {
+        const parsed = JSON.parse(recovery.editor.source) as {blocks?: unknown};
+        return Array.isArray(parsed.blocks) ? String(parsed.blocks.length) : 'Invalid JSON';
+      } catch {
+        return 'Invalid JSON';
+      }
+    }
+
+    return String(recovery.editor.document.blocks.length);
+  }
+
+  protected async restoreRecoveryDraft(): Promise<void> {
+    const recovery = this.recoveryDraft();
+    if (!recovery) return;
+
+    this.isApplyingEditorState = true;
+
+    try {
+      this.postForm.setValue(recovery.form, {emitEvent: false});
+      this.syncCatCornerDiscoveryControl();
+      this.socialPromotionDraft = recovery.socialPromotion;
+      this.socialWorkspacePost = this.createSocialWorkspacePost();
+      await this.editorComponent?.restoreRecoverySnapshot(recovery.editor);
+      this.postForm.markAsDirty();
+      this.hasUnsavedEditorChanges.set(true);
+      this.hasUnsavedSocialChanges = true;
+      this.saveConflict.set(null);
+      this.toast.success('Restored the private recovery copy. Review it, then explicitly save when ready.');
+    } finally {
+      this.isApplyingEditorState = false;
+      this.requestRecoverySave();
+    }
+  }
+
+  protected async discardRecoveryDraft(): Promise<void> {
+    const recovery = this.recoveryDraft();
+    if (!recovery) return;
+
+    const confirmed = window.confirm('Discard this private recovery copy? The canonical post will not be changed.');
+    if (!confirmed) return;
+
+    await this.deleteRecoveryBestEffort(recovery.postId);
+  }
+
+  protected async reloadRemotePost(): Promise<void> {
+    const remotePost = this.saveConflict()?.remotePost;
+    if (!remotePost) {
+      this.toast.error('The canonical post no longer exists. Save your work as a new draft instead.');
+      return;
+    }
+
+    const recoverySaved = await this.persistRecovery(true);
+    if (!recoverySaved) {
+      this.toast.error('Reload was cancelled because the latest local work could not be written to Recovery.');
+      return;
+    }
+    await this.applyFirestorePost(remotePost);
+    this.toast.success('Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
+  }
+
+  protected async saveConflictAsCopy(): Promise<void> {
+    if (this.isSaveInProgress) return;
+    this.isSaveInProgress = true;
+
+    try {
+      const backup = await this.createCurrentBackupPost();
+      const template = this.blogRepository.createNewPostTemplate();
+      const now = new Date().toISOString();
+      const copy = await this.blogRepository.savePost({
+        ...backup,
+        id: template.id,
+        revision: 0,
+        title: `${backup.title} (Recovered Copy)`,
+        slug: this.blogRepository.createUniqueSlug(`${backup.slug}-recovered`, template.id),
+        status: 'draft',
+        preview: undefined,
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: null,
+      });
+
+      this.postForm.markAsPristine();
+      this.hasUnsavedEditorChanges.set(false);
+      this.hasUnsavedSocialChanges = false;
+      this.saveConflict.set(null);
+      await this.deleteRecoveryBestEffort(this.currentPost?.id);
+      this.toast.success(`Saved local work as the new draft “${copy.title}”.`);
+      await this.router.navigate(['/admin/cms', copy.slug, 'edit'], {replaceUrl: true});
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : 'Unable to save the recovered copy.');
+    } finally {
+      this.isSaveInProgress = false;
+    }
   }
 
   protected async openDistributionCalendar(): Promise<void> {
@@ -1541,6 +1804,10 @@ export class CmsPostEditorComponent {
         return;
       }
 
+      this.postForm.markAsPristine();
+      this.hasUnsavedEditorChanges.set(false);
+      this.hasUnsavedSocialChanges = false;
+      await this.deleteRecoveryBestEffort(post.id);
       await this.router.navigate(['/admin/cms']);
     } catch (error) {
       this.toast.error(error instanceof Error ? error.message : 'Unable to delete post from Firestore.');
@@ -1571,6 +1838,10 @@ export class CmsPostEditorComponent {
       this.toast.success('Saved the draft and refreshed its public preview link.');
       this.draftPreviewPanel?.onPreviewGenerated(result.post);
     } catch (error) {
+      if (error instanceof BlogPostRevisionConflictError) {
+        this.saveConflict.set(error);
+        this.requestRecoverySave();
+      }
       this.draftPreviewPanel?.onPreviewError(error instanceof Error ? error.message : 'Unable to create a preview link.');
     }
   }
@@ -1670,15 +1941,20 @@ export class CmsPostEditorComponent {
       this.postForm.controls.canonical.setValue(savedPost.seo.canonical ?? this.createCanonicalUrl(savedPost.slug), {emitEvent: false});
       this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(savedPost.publishedAt), {emitEvent: false});
       this.postForm.markAsPristine();
+      this.hasUnsavedEditorChanges.set(false);
       this.socialPromotionDraft = savedPost.socialPromotion ?? {announcements: []};
       this.socialWorkspacePost = this.createSocialWorkspacePost();
       this.hasUnsavedSocialChanges = false;
+      this.saveConflict.set(null);
       this.lastSaved = saved;
       this.lastSavedBackupJson = this.createPostBackupJson(savedPost);
       this.toast.success(`Saved "${savedPost.title}" to Firestore.`);
 
+      await this.deleteRecoveryBestEffort(savedPost.id);
+
       if (this.isNewPost && !this.hasCreatedPost) {
         this.hasCreatedPost = true;
+        this.recoveryService.clearNewPostId();
         void this.router.navigate(['/admin/cms', savedPost.slug, 'edit'], {
           replaceUrl: true,
           queryParamsHandling: 'preserve',
@@ -1687,28 +1963,47 @@ export class CmsPostEditorComponent {
 
       return true;
     } catch (error) {
+      if (error instanceof BlogPostRevisionConflictError) {
+        this.saveConflict.set(error);
+        this.requestRecoverySave();
+      }
       this.toast.error(error instanceof Error ? error.message : 'Unable to save post to Firestore.');
       return false;
     }
   }
 
   private resolvePost(): BlogPost | undefined {
-    return this.slug
-      ? this.blogRepository.getAdminPostBySlug(this.slug)
-      : this.blogRepository.createNewPostTemplate();
+    if (this.slug) {
+      return this.blogRepository.getAdminPostBySlug(this.slug);
+    }
+
+    const template = this.blogRepository.createNewPostTemplate();
+    return {
+      ...template,
+      id: this.recoveryService.getOrCreateNewPostId(template.id),
+    };
   }
 
   private async applyFirestorePost(post: BlogPost): Promise<void> {
-    this.currentPost = post;
-    this.initialData = createEditorDocument(post);
-    this.setFormFromPost(post);
-    this.socialPromotionDraft = post.socialPromotion ?? {announcements: []};
-    this.socialWorkspacePost = this.createSocialWorkspacePost();
-    this.hasUnsavedSocialChanges = false;
-    this.postForm.markAsPristine();
-    this.hasHydratedFirestorePost = true;
+    this.isApplyingEditorState = true;
 
-    await this.editorComponent?.renderDocument(this.initialData);
+    try {
+      this.currentPost = post;
+      this.initialData = createEditorDocument(post);
+      this.setFormFromPost(post);
+      this.socialPromotionDraft = post.socialPromotion ?? {announcements: []};
+      this.socialWorkspacePost = this.createSocialWorkspacePost();
+      this.hasUnsavedSocialChanges = false;
+      this.hasUnsavedEditorChanges.set(false);
+      this.postForm.markAsPristine();
+      this.hasHydratedFirestorePost = true;
+      this.saveConflict.set(null);
+
+      await this.editorComponent?.renderDocument(this.initialData);
+      await this.loadRecoveryDraft();
+    } finally {
+      this.isApplyingEditorState = false;
+    }
   }
 
   private createImportedPostDocument(value: unknown): ImportedPostDocument {
@@ -1834,10 +2129,101 @@ export class CmsPostEditorComponent {
     this.socialPromotionDraft = nextPost.socialPromotion ?? {announcements: []};
     this.socialWorkspacePost = this.createSocialWorkspacePost();
     this.hasUnsavedSocialChanges = true;
+    this.hasUnsavedEditorChanges.set(true);
     this.postForm.markAsDirty();
     this.lastSaved = null;
     this.lastSavedBackupJson = '';
     await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
+    this.requestRecoverySave();
+  }
+
+  private requestRecoverySave(): void {
+    if (this.isApplyingEditorState) return;
+    this.recoveryRequests.next();
+  }
+
+  private async loadRecoveryDraft(): Promise<void> {
+    if (!this.currentPost || this.hasLoadedRecoveryDraft) return;
+    this.hasLoadedRecoveryDraft = true;
+
+    try {
+      const recovery = await this.recoveryService.load(this.currentPost.id);
+      this.recoveryDraft.set(recovery ?? null);
+      this.recoveryStatus.set(recovery ? 'saved' : 'idle');
+      this.recoveryError.set('');
+    } catch (error) {
+      this.hasLoadedRecoveryDraft = false;
+      this.setRecoveryError(error);
+    }
+  }
+
+  private async persistRecovery(force = false): Promise<boolean> {
+    if (!this.currentPost || !this.editorComponent) return false;
+    if (!force && (!this.hasUnsavedChanges || this.isSaveInProgress || this.isDeleteInProgress)) return false;
+
+    if (this.recoveryWritePromise) {
+      await this.recoveryWritePromise.catch(() => undefined);
+    }
+
+    if (!this.currentPost || !this.editorComponent) return false;
+    if (!force && (!this.hasUnsavedChanges || this.isSaveInProgress || this.isDeleteInProgress)) return false;
+
+    this.recoveryStatus.set('saving');
+    this.recoveryError.set('');
+
+    const writePromise = this.writeRecoverySnapshot();
+    this.recoveryWritePromise = writePromise;
+
+    try {
+      await writePromise;
+      return true;
+    } catch (error) {
+      this.setRecoveryError(error);
+      return false;
+    } finally {
+      if (this.recoveryWritePromise === writePromise) {
+        this.recoveryWritePromise = null;
+      }
+    }
+  }
+
+  private async writeRecoverySnapshot(): Promise<void> {
+    if (!this.currentPost || !this.editorComponent) return;
+
+    const editor = await this.editorComponent.getRecoverySnapshot();
+    const write: CmsPostRecoveryWrite = {
+      postId: this.currentPost.id,
+      postSlug: this.postForm.controls.slug.value,
+      isNewPost: this.isNewPost && !this.hasCreatedPost,
+      baseRevision: normalizeBlogPostRevision(this.currentPost.revision),
+      baseUpdatedAt: this.currentPost.updatedAt,
+      form: this.postForm.getRawValue(),
+      editor,
+      socialPromotion: this.socialPromotionDraft,
+    };
+    const recovery = await this.recoveryService.save(write);
+    this.recoveryDraft.set(recovery);
+    this.recoveryStatus.set('saved');
+  }
+
+  private async deleteRecoveryBestEffort(postId: string | undefined): Promise<void> {
+    if (!postId) return;
+
+    try {
+      await this.recoveryWritePromise?.catch(() => undefined);
+      await this.recoveryService.delete(postId);
+      this.recoveryDraft.set(null);
+      this.showRecoveryComparison.set(false);
+      this.recoveryStatus.set('idle');
+      this.recoveryError.set('');
+    } catch (error) {
+      this.setRecoveryError(error);
+    }
+  }
+
+  private setRecoveryError(error: unknown): void {
+    this.recoveryStatus.set('error');
+    this.recoveryError.set(error instanceof Error ? error.message : 'Unable to access the private recovery draft.');
   }
 
   private createSocialWorkspacePost(): BlogPost {
