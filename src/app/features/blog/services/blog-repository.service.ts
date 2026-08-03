@@ -14,7 +14,8 @@ import {
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
 import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
-import {DEFAULT_COVER_IMAGE, BLOG_PREVIEW_DURATION_MS, BLOG_PREVIEW_TOKEN_BYTE_LENGTH} from '../blog.constants';
+import {normalizeBlogPostRevision} from '../models/blog-post-revision.model';
+import {DEFAULT_COVER_IMAGE} from '../blog.constants';
 import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 
 export interface BlogPostPreviewResult {
@@ -87,20 +88,6 @@ function createPostId(): string {
   }
 
   return `post-${Date.now().toString(36)}`;
-}
-
-function createPreviewToken(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    const bytes = new Uint8Array(BLOG_PREVIEW_TOKEN_BYTE_LENGTH);
-    crypto.getRandomValues(bytes);
-
-    return btoa(String.fromCharCode(...bytes))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/g, '');
-  }
-
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
 }
 
 function isActivePreview(post: BlogPost): boolean {
@@ -228,6 +215,7 @@ export class BlogRepositoryService {
 
     return {
       id: createPostId(),
+      revision: 0,
       slug: this.createUniqueSlug('untitled-post'),
       title: 'Untitled Post',
       excerpt: '',
@@ -258,7 +246,7 @@ export class BlogRepositoryService {
 
   async savePost(post: BlogPost): Promise<BlogPost> {
     const now = new Date().toISOString();
-    const existingPost = this.getPosts().find(savedPost => savedPost.id === post.id);
+    const expectedRevision = normalizeBlogPostRevision(post.revision);
     const slug = this.createUniqueSlug(post.slug || post.title, post.id);
     const imageFields = normalizeBlogImageFields(post);
     const authorFields = normalizeBlogAuthor(post.author, post.authorId);
@@ -267,6 +255,7 @@ export class BlogRepositoryService {
       : post.publishedAt;
     const savedPost: BlogPost = {
       ...post,
+      revision: expectedRevision + 1,
       ...authorFields,
       slug,
       coverImage: imageFields.coverImage,
@@ -284,13 +273,7 @@ export class BlogRepositoryService {
       publishedAt,
     };
 
-    await this.storage.savePost(savedPost);
-
-    if (existingPost?.preview && !savedPost.preview) {
-      await this.storage.deletePostPreview(existingPost.preview.token);
-    }
-
-    return savedPost;
+    return this.storage.savePost(savedPost, expectedRevision);
   }
 
   async createPreviewForPost(post: BlogPost): Promise<BlogPostPreviewResult> {
@@ -298,46 +281,22 @@ export class BlogRepositoryService {
       throw new Error('Preview links can only be generated for draft posts.');
     }
 
-    const now = new Date();
-    const preview = {
-      token: createPreviewToken(),
-      createdAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + BLOG_PREVIEW_DURATION_MS).toISOString(),
-    };
-    const previousPreview = post.preview;
-    const savedPost: BlogPost = {
-      ...post,
-      preview,
-      updatedAt: now.toISOString(),
-    };
+    const expectedRevision = normalizeBlogPostRevision(post.revision);
+    const savedPost = await this.storage.savePostPreview(post, expectedRevision);
 
-    await this.storage.savePostPreview(savedPost);
-
-    if (previousPreview && previousPreview.token !== preview.token) {
-      await this.storage.deletePostPreview(previousPreview.token);
+    if (!savedPost.preview) {
+      throw new Error('Trusted publishing did not return preview metadata.');
     }
 
     return {
       post: savedPost,
-      url: this.createPreviewUrl(preview.token),
+      url: this.createPreviewUrl(savedPost.preview.token),
     };
   }
 
   async revokePreviewForPost(post: BlogPost): Promise<BlogPost> {
-    const preview = post.preview;
-    const savedPost: BlogPost = {
-      ...post,
-      preview: undefined,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await this.storage.savePost(savedPost);
-
-    if (preview) {
-      await this.storage.deletePostPreview(preview.token);
-    }
-
-    return savedPost;
+    const expectedRevision = normalizeBlogPostRevision(post.revision);
+    return this.storage.revokePostPreview(post.id, expectedRevision);
   }
 
   createPreviewUrl(token: string): string {
@@ -374,11 +333,7 @@ export class BlogRepositoryService {
       return 'not-found';
     }
 
-    await this.storage.deletePost(postId);
-
-    if (firestorePost.preview) {
-      await this.storage.deletePostPreview(firestorePost.preview.token);
-    }
+    await this.storage.deletePost(postId, normalizeBlogPostRevision(firestorePost.revision));
 
     return 'deleted-cms-post';
   }
@@ -388,7 +343,6 @@ export class BlogRepositoryService {
     const postsById = new Map(this.storage.getPosts().map(post => [post.id, post]));
     const now = new Date().toISOString();
     const updatedPosts: BlogPost[] = [];
-    const previewTokensToDelete: string[] = [];
     const notFoundIds: string[] = [];
 
     for (const postId of uniquePostIds) {
@@ -401,12 +355,9 @@ export class BlogRepositoryService {
 
       const preview = status === 'draft' && isActivePreview(post) ? post.preview : undefined;
 
-      if (post.preview && !preview) {
-        previewTokensToDelete.push(post.preview.token);
-      }
-
       updatedPosts.push({
         ...post,
+        revision: normalizeBlogPostRevision(post.revision) + 1,
         status,
         preview,
         updatedAt: now,
@@ -416,10 +367,6 @@ export class BlogRepositoryService {
 
     if (updatedPosts.length > 0) {
       await this.storage.savePosts(updatedPosts);
-    }
-
-    if (previewTokensToDelete.length > 0) {
-      await this.storage.deletePostPreviews(previewTokensToDelete);
     }
 
     return {
@@ -446,15 +393,7 @@ export class BlogRepositoryService {
     }
 
     if (postsToDelete.length > 0) {
-      await this.storage.deletePosts(postsToDelete.map(post => post.id));
-    }
-
-    const previewTokens = postsToDelete
-      .map(post => post.preview?.token)
-      .filter((token): token is string => Boolean(token));
-
-    if (previewTokens.length > 0) {
-      await this.storage.deletePostPreviews(previewTokens);
+      await this.storage.deletePosts(postsToDelete);
     }
 
     return {

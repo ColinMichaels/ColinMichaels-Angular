@@ -1,8 +1,11 @@
 import {Injectable, inject} from '@angular/core';
-import {Observable, defer, from, throwError} from 'rxjs';
-import {map, switchMap} from 'rxjs/operators';
+import {Observable, defer, from, of, throwError} from 'rxjs';
+import {concatMap, map, switchMap} from 'rxjs/operators';
+import {Auth} from 'firebase/auth';
 
 import {FirestoreService} from '../../../services/firebase/firestore.service';
+import {FIREBASE_AUTH} from '../../../services/firebase/firebase.tokens';
+import {BlogMediaFunctionsService, BlogMediaVariant} from './blog-media-functions.service';
 
 export type BlogMediaAssetRole =
   | 'cover'
@@ -43,6 +46,9 @@ export interface BlogMediaUploadProgress {
   optimizationSavingsPercent: number;
   width?: number;
   height?: number;
+  mediaId?: string;
+  checksum?: string;
+  variants?: readonly BlogMediaVariant[];
   downloadUrl?: string;
 }
 
@@ -58,6 +64,9 @@ export interface BlogMediaUploadResult {
   optimizationSavingsPercent: number;
   width?: number;
   height?: number;
+  mediaId?: string;
+  checksum?: string;
+  variants?: readonly BlogMediaVariant[];
 }
 
 interface UploadMetadata {
@@ -104,6 +113,8 @@ const OPTIMIZABLE_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/web
 })
 export class BlogMediaUploadService {
   private readonly firestore = inject(FirestoreService);
+  private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
+  private readonly mediaFunctions = inject(BlogMediaFunctionsService);
 
   uploadImage(file: File, options: BlogMediaUploadOptions): Observable<BlogMediaUploadProgress> {
     const validationError = this.getImageTypeValidationError(file);
@@ -121,7 +132,11 @@ export class BlogMediaUploadService {
           return throwError(() => new Error(sizeValidationError));
         }
 
-        const storagePath = this.createStoragePath(preparedFile.file, options);
+        const actorUid = this.requireActorUid();
+        const mediaId = this.createUniqueId();
+        const storagePath = this.createStoragePath(preparedFile.file, actorUid, mediaId);
+        const slug = this.toSafePathSegment(options.slug || DEFAULT_SLUG);
+        const role = this.toSafePathSegment(options.role || 'inline-image');
         const metadata: UploadMetadata = {
           contentType: preparedFile.file.type,
           customMetadata: {
@@ -135,7 +150,8 @@ export class BlogMediaUploadService {
         };
 
         return this.firestore.uploadFileWithProgress(storagePath, preparedFile.file, metadata).pipe(
-          map(event => ({
+          concatMap(event => {
+            const progress: BlogMediaUploadProgress = {
             progress: event.progress,
             storagePath,
             originalName: preparedFile.originalName,
@@ -147,16 +163,44 @@ export class BlogMediaUploadService {
             optimizationSavingsPercent: preparedFile.optimizationSavingsPercent,
             width: preparedFile.width,
             height: preparedFile.height,
-            downloadUrl: event.downloadUrl,
-          }))
+            };
+
+            if (!event.downloadUrl) {
+              return of(progress);
+            }
+
+            return from(this.mediaFunctions.finalizeUpload({
+              mediaId,
+              stagingPath: storagePath,
+              originalName: preparedFile.originalName,
+              declaredContentType: preparedFile.file.type,
+              slug,
+              role,
+              altText: options.altText ?? '',
+            })).pipe(
+              map(finalized => ({
+                ...progress,
+                progress: 100,
+                storagePath: finalized.storagePath,
+                contentType: finalized.contentType,
+                size: finalized.size,
+                width: finalized.width,
+                height: finalized.height,
+                mediaId: finalized.mediaId,
+                checksum: finalized.checksum,
+                variants: finalized.variants,
+                downloadUrl: finalized.downloadUrl,
+              }))
+            );
+          })
         );
       })
     );
   }
 
   private getImageTypeValidationError(file: File): string | null {
-    if (!file.type.startsWith('image/')) {
-      return 'Only image files can be uploaded.';
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'].includes(file.type.toLowerCase())) {
+      return 'Choose a JPEG, PNG, WebP, AVIF, or GIF image.';
     }
 
     return null;
@@ -322,13 +366,10 @@ export class BlogMediaUploadService {
     });
   }
 
-  private createStoragePath(file: File, options: BlogMediaUploadOptions): string {
-    const safeSlug = this.toSafePathSegment(options.slug || DEFAULT_SLUG);
-    const safeRole = this.toSafePathSegment(options.role || 'inline-image');
+  private createStoragePath(file: File, actorUid: string, mediaId: string): string {
     const extension = this.getFileExtension(file);
-    const uniqueId = this.createUniqueId();
 
-    return `cms/blog-media/${safeSlug}/${safeRole}/${Date.now()}-${uniqueId}.${extension}`;
+    return `cms/blog-media-staging/${actorUid}/${mediaId}/source.${extension}`;
   }
 
   private getFileExtension(file: File): string {
@@ -385,6 +426,14 @@ export class BlogMediaUploadService {
     }
 
     return Math.random().toString(36).slice(2, 12);
+  }
+
+  private requireActorUid(): string {
+    const uid = this.auth?.currentUser?.uid;
+    if (!uid) {
+      throw new Error('Sign in before uploading CMS media.');
+    }
+    return uid;
   }
 
   private formatBytes(value: number): string {

@@ -4,7 +4,6 @@ import {Auth, getIdTokenResult, onAuthStateChanged, User} from 'firebase/auth';
 import {
   collection,
   deleteField,
-  deleteDoc,
   doc,
   Firestore,
   getDoc,
@@ -12,35 +11,25 @@ import {
   limit,
   query,
   serverTimestamp,
-  setDoc,
-  Timestamp,
   where,
-  writeBatch,
 } from 'firebase/firestore';
 import {BehaviorSubject} from 'rxjs';
 
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
 import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
-import {removeUndefinedFirestoreFields} from '../../../services/firebase/firestore-data.util';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
 import {BlogPost, normalizeBlogAuthor} from '../models/blog-post.model';
+import {normalizeBlogPostRevision} from '../models/blog-post-revision.model';
 import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
+import {BlogPublishingService} from './blog-publishing.service';
 
 export const BLOG_POSTS_COLLECTION = 'posts';
 export const BLOG_POST_PREVIEWS_COLLECTION = 'postPreviews';
-const FIRESTORE_BATCH_LIMIT = 450;
-
-type FirestoreWriteBatch = ReturnType<typeof writeBatch>;
-
 function isPreviewDocument(value: unknown): value is { post: BlogPost; expiresAtMillis: number } {
   return isRecord(value)
     && isBlogPost(value['post'])
     && typeof value['expiresAtMillis'] === 'number';
-}
-
-function getUniqueValues(values: readonly string[]): readonly string[] {
-  return [...new Set(values.filter(Boolean))];
 }
 
 @Injectable({
@@ -49,6 +38,7 @@ function getUniqueValues(values: readonly string[]): readonly string[] {
 export class BlogStorageService {
   private readonly firestore: Firestore | null = inject(FIREBASE_FIRESTORE, {optional: true});
   private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
+  private readonly publishing = inject(BlogPublishingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(Boolean(this.firestore));
@@ -77,47 +67,48 @@ export class BlogStorageService {
     return this.postsSubject.value;
   }
 
-  async savePost(post: BlogPost): Promise<void> {
-    await this.savePostToFirestore(post);
+  async savePost(post: BlogPost, expectedRevision = normalizeBlogPostRevision(post.revision) - 1): Promise<BlogPost> {
+    return this.publishing.savePost(post, Math.max(0, expectedRevision));
   }
 
-  async savePosts(posts: readonly BlogPost[]): Promise<void> {
-    await this.savePostsToFirestore(posts);
+  async savePosts(posts: readonly BlogPost[]): Promise<readonly BlogPost[]> {
+    const savedPosts: BlogPost[] = [];
+    for (const post of posts) {
+      savedPosts.push(await this.savePost(post));
+    }
+    return savedPosts;
   }
 
-  async savePostPreview(post: BlogPost): Promise<void> {
-    await this.savePostPreviewToFirestore(post);
+  async savePostPreview(post: BlogPost, expectedRevision = normalizeBlogPostRevision(post.revision) - 1): Promise<BlogPost> {
+    return this.publishing.issuePreview(post.id, Math.max(0, expectedRevision));
+  }
+
+  async revokePostPreview(postId: string, expectedRevision: number): Promise<BlogPost> {
+    return this.publishing.revokePreview(postId, Math.max(0, expectedRevision));
   }
 
   async loadPostPreview(token: string): Promise<BlogPost | undefined> {
     return this.loadPostPreviewFromFirestore(token);
   }
 
-  async deletePostPreview(token: string): Promise<void> {
-    await this.deletePostPreviewFromFirestore(token);
+  async deletePost(postId: string, expectedRevision: number): Promise<boolean> {
+    return this.publishing.deletePost(postId, Math.max(0, expectedRevision));
   }
 
-  async deletePostPreviews(tokens: readonly string[]): Promise<void> {
-    await this.deletePostPreviewsFromFirestore(tokens);
-  }
-
-  async deletePost(postId: string): Promise<void> {
-    await this.deletePostFromFirestore(postId);
-  }
-
-  async deletePosts(postIds: readonly string[]): Promise<void> {
-    await this.deletePostsFromFirestore(postIds);
+  async deletePosts(posts: readonly BlogPost[]): Promise<number> {
+    let deletedCount = 0;
+    for (const post of posts) {
+      if (await this.deletePost(post.id, normalizeBlogPostRevision(post.revision))) {
+        deletedCount += 1;
+      }
+    }
+    return deletedCount;
   }
 
   async backupPostsToFirestore(posts: readonly BlogPost[]): Promise<number> {
-    const firestore = this.requireFirestore();
-    const batch = writeBatch(firestore);
-
     for (const post of posts) {
-      batch.set(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
+      await this.publishing.savePost(post, normalizeBlogPostRevision(post.revision));
     }
-
-    await batch.commit();
 
     return posts.length;
   }
@@ -273,36 +264,6 @@ export class BlogStorageService {
     return error instanceof Error ? error.message : 'Unable to load posts.';
   }
 
-  private async savePostToFirestore(post: BlogPost): Promise<void> {
-    const firestore = this.requireFirestore();
-    await setDoc(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
-  }
-
-  private async savePostsToFirestore(posts: readonly BlogPost[]): Promise<void> {
-    const firestore = this.requireFirestore();
-    await this.commitInBatches(firestore, posts, (batch, post) => {
-      batch.set(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
-    });
-  }
-
-  private async savePostPreviewToFirestore(post: BlogPost): Promise<void> {
-    const firestore = this.requireFirestore();
-
-    if (!post.preview) {
-      throw new Error('Preview metadata is required before saving a preview document.');
-    }
-
-    const batch = writeBatch(firestore);
-
-    batch.set(doc(firestore, BLOG_POSTS_COLLECTION, post.id), this.toFirestorePost(post), {merge: true});
-    batch.set(
-      doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, post.preview.token),
-      this.toFirestorePreviewDocument(post)
-    );
-
-    await batch.commit();
-  }
-
   private async loadPostPreviewFromFirestore(token: string): Promise<BlogPost | undefined> {
     const firestore = this.requireFirestore();
     const snapshot = await getDoc(doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, token));
@@ -313,47 +274,6 @@ export class BlogStorageService {
 
     const preview = this.fromFirestorePreviewDocument(snapshot.data());
     return preview?.token === token ? preview.post : undefined;
-  }
-
-  private async deletePostPreviewFromFirestore(token: string): Promise<void> {
-    const firestore = this.requireFirestore();
-    await deleteDoc(doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, token));
-  }
-
-  private async deletePostPreviewsFromFirestore(tokens: readonly string[]): Promise<void> {
-    const firestore = this.requireFirestore();
-    await this.commitInBatches(firestore, getUniqueValues(tokens), (batch, token) => {
-      batch.delete(doc(firestore, BLOG_POST_PREVIEWS_COLLECTION, token));
-    });
-  }
-
-  private async deletePostFromFirestore(postId: string): Promise<void> {
-    const firestore = this.requireFirestore();
-    await deleteDoc(doc(firestore, BLOG_POSTS_COLLECTION, postId));
-  }
-
-  private async deletePostsFromFirestore(postIds: readonly string[]): Promise<void> {
-    const firestore = this.requireFirestore();
-    await this.commitInBatches(firestore, getUniqueValues(postIds), (batch, postId) => {
-      batch.delete(doc(firestore, BLOG_POSTS_COLLECTION, postId));
-    });
-  }
-
-  private async commitInBatches<T>(
-    firestore: Firestore,
-    items: readonly T[],
-    enqueue: (batch: FirestoreWriteBatch, item: T) => void
-  ): Promise<void> {
-    for (let index = 0; index < items.length; index += FIRESTORE_BATCH_LIMIT) {
-      const batch = writeBatch(firestore);
-      const chunk = items.slice(index, index + FIRESTORE_BATCH_LIMIT);
-
-      for (const item of chunk) {
-        enqueue(batch, item);
-      }
-
-      await batch.commit();
-    }
   }
 
   private toFirestorePost(post: BlogPost): Record<string, unknown> {
@@ -370,23 +290,6 @@ export class BlogStorageService {
       preview: post.preview ?? deleteField(),
       socialPromotion: post.socialPromotion ?? deleteField(),
       syncedAt: serverTimestamp(),
-      storageVersion: 1,
-    };
-  }
-
-  private toFirestorePreviewDocument(post: BlogPost): Record<string, unknown> {
-    if (!post.preview) {
-      throw new Error('Preview metadata is required before saving a preview document.');
-    }
-
-    return {
-      token: post.preview.token,
-      postId: post.id,
-      createdAt: post.preview.createdAt,
-      expiresAt: post.preview.expiresAt,
-      expiresAtTimestamp: Timestamp.fromDate(new Date(post.preview.expiresAt)),
-      expiresAtMillis: new Date(post.preview.expiresAt).getTime(),
-      post: removeUndefinedFirestoreFields(post),
       storageVersion: 1,
     };
   }

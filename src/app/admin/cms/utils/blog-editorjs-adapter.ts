@@ -4,6 +4,9 @@ import {
   BLOG_BLOCK_PLACEMENTS,
   BLOG_CHART_TYPES,
   BLOG_IMAGE_LAYOUTS,
+  BLOG_IMAGE_SIZES,
+  BLOG_LIST_PRESENTATIONS,
+  BLOG_LIST_STYLES,
   BLOG_POLL_RESULTS_VISIBILITIES,
   BLOG_TYPOGRAPHY_VARIANTS,
   BlogBlockData,
@@ -14,13 +17,24 @@ import {
   BlogChartType,
   BlogContentBlock,
   BlogImageLayout,
+  BlogImageSize,
+  BlogJsonObject,
+  BlogListItem,
+  BlogListPresentation,
+  BlogListStyle,
   BlogPollOption,
   BlogPollResultsVisibility,
   BlogPost,
   BlogStatItem,
   BlogTypographyVariant,
+  BlogUnsupportedBlockEnvelope,
 } from '../../../features/blog/models/blog-post.model';
 import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../../features/blog/utils/blog-suno-embed.util';
+import {
+  BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE,
+  isJsonObject,
+  validateEditorDocumentForBlog,
+} from './blog-editor-document-validation.util';
 
 const supportedBlockTypes = new Set<BlogBlockType>([
   'paragraph',
@@ -38,10 +52,13 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'poll',
   'catCornerUnlock',
   'html',
+  'unsupported',
 ]);
 const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
 const SUNO_EDITOR_BLOCK_TYPE = 'sunoEmbed';
 const APP_EMBED_EDITOR_BLOCK_TYPE = 'appEmbed';
+const LEGACY_CHECKLIST_EDITOR_BLOCK_TYPE = 'checklist';
+const LIST_PRESENTATION_TUNE_NAME = 'listPresentation';
 
 interface ImportedChartPoint {
   label: string;
@@ -101,6 +118,12 @@ function toImageLayout(value: unknown, stretched: unknown): BlogImageLayout {
   return stretched === true ? 'fullWidth' : 'contained';
 }
 
+function toImageSize(value: unknown): BlogImageSize | undefined {
+  return typeof value === 'string' && (BLOG_IMAGE_SIZES as readonly string[]).includes(value)
+    ? value as BlogImageSize
+    : undefined;
+}
+
 function toChartType(value: unknown): BlogChartType {
   return typeof value === 'string' && (BLOG_CHART_TYPES as readonly string[]).includes(value)
     ? value as BlogChartType
@@ -120,9 +143,25 @@ function toBlockPlacement(value: unknown, fallback?: BlogBlockPlacement): BlogBl
 }
 
 function toListData(blockData: BlogBlockData): Record<string, unknown> {
+  if (blockData.listItems) {
+    return {
+      style: blockData.listStyle ?? (blockData.ordered ? 'ordered' : 'unordered'),
+      meta: blockData.listMeta ?? {},
+      items: blockData.listItems.map(toEditorListItem),
+    };
+  }
+
   return {
     style: blockData.ordered ? 'ordered' : 'unordered',
     items: blockData.items ?? [],
+  };
+}
+
+function toEditorListItem(item: BlogListItem): Record<string, unknown> {
+  return {
+    content: item.content,
+    meta: item.meta,
+    items: item.items.map(toEditorListItem),
   };
 }
 
@@ -178,7 +217,7 @@ function isYouTubeUrl(value: string | undefined): boolean {
   return getYouTubeVideoId(value).length > 0;
 }
 
-function toEditorBlock(block: BlogContentBlock): OutputBlockData {
+function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
   switch (block.type) {
     case 'list':
       return {
@@ -203,6 +242,7 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
           withBackground: block.data.withBackground ?? false,
           stretched: block.data.stretched ?? false,
           imageLayout: block.data.imageLayout ?? (block.data.stretched ? 'fullWidth' : 'contained'),
+          ...(block.data.imageSize ? {imageSize: block.data.imageSize} : {}),
         },
       };
     case 'embed':
@@ -259,6 +299,22 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
         type: block.type,
         data: {},
       };
+    case 'unsupported': {
+      const envelope = block.data.unsupportedBlock;
+
+      return {
+        id: block.id,
+        type: BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE,
+        data: envelope ? {
+          originalType: envelope.originalType,
+          originalData: envelope.originalData,
+          ...(envelope.originalTunes ? {originalTunes: envelope.originalTunes} : {}),
+        } : {
+          originalType: 'unknown',
+          originalData: {},
+        },
+      };
+    }
     default:
       return {
         id: block.id,
@@ -268,25 +324,115 @@ function toEditorBlock(block: BlogContentBlock): OutputBlockData {
   }
 }
 
-function extractListItems(value: unknown): readonly string[] {
+function toEditorBlock(block: BlogContentBlock): OutputBlockData {
+  const editorBlock = toEditorBlockWithoutTunes(block);
+  const editorTunes = createEditorTunes(block);
+
+  return editorTunes
+    ? {...editorBlock, tunes: editorTunes}
+    : editorBlock;
+}
+
+function createEditorTunes(block: BlogContentBlock): BlogJsonObject | undefined {
+  if (block.type !== 'list') {
+    return block.editorTunes;
+  }
+
+  const tunes: Record<string, BlogJsonObject[keyof BlogJsonObject]> = {...(block.editorTunes ?? {})};
+  delete tunes[LIST_PRESENTATION_TUNE_NAME];
+
+  if (block.data.listPresentation) {
+    tunes[LIST_PRESENTATION_TUNE_NAME] = {presentation: block.data.listPresentation};
+  }
+
+  return Object.keys(tunes).length > 0 ? tunes as BlogJsonObject : undefined;
+}
+
+function extractLegacyListItems(value: unknown): readonly string[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value
-    .map(item => {
-      if (typeof item === 'string') {
-        return item;
-      }
-
-      if (isRecord(item)) {
-        return getString(item, 'content') ?? getString(item, 'text') ?? '';
-      }
-
-      return '';
-    })
+    .filter((item): item is string => typeof item === 'string')
     .map(item => item.trim())
     .filter(item => item.length > 0);
+}
+
+function extractRecursiveListItems(value: unknown, legacyChecklist = false): readonly BlogListItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap(item => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const content = getString(item, 'content') ?? getString(item, 'text') ?? '';
+    const sourceMeta = isJsonObject(item['meta']) ? item['meta'] : {};
+    const checked = getOptionalBoolean(item, 'checked');
+    const meta: BlogJsonObject = legacyChecklist && checked !== undefined
+      ? {...sourceMeta, checked}
+      : sourceMeta;
+
+    return [{
+      content,
+      meta,
+      items: extractRecursiveListItems(item['items'], legacyChecklist),
+    }];
+  });
+}
+
+function toListStyle(value: unknown, fallback: BlogListStyle = 'unordered'): BlogListStyle {
+  return typeof value === 'string' && (BLOG_LIST_STYLES as readonly string[]).includes(value)
+    ? value as BlogListStyle
+    : fallback;
+}
+
+function toListPresentation(value: unknown): BlogListPresentation | undefined {
+  return typeof value === 'string' && (BLOG_LIST_PRESENTATIONS as readonly string[]).includes(value)
+    ? value as BlogListPresentation
+    : undefined;
+}
+
+function getListPresentationFromTunes(tunes: BlogJsonObject | undefined): BlogListPresentation | undefined {
+  const tune = tunes?.[LIST_PRESENTATION_TUNE_NAME];
+  return isRecord(tune) ? toListPresentation(tune['presentation']) : undefined;
+}
+
+function omitListPresentationTune(tunes: BlogJsonObject | undefined): BlogJsonObject | undefined {
+  if (!tunes || !(LIST_PRESENTATION_TUNE_NAME in tunes)) {
+    return tunes;
+  }
+
+  const retainedTunes = Object.fromEntries(
+    Object.entries(tunes).filter(([name]) => name !== LIST_PRESENTATION_TUNE_NAME)
+  ) as BlogJsonObject;
+
+  return Object.keys(retainedTunes).length > 0 ? retainedTunes : undefined;
+}
+
+function createListBlockData(data: Record<string, unknown>, legacyChecklist = false): BlogBlockData {
+  const rawItems = data['items'];
+
+  if (Array.isArray(rawItems) && rawItems.every(item => typeof item === 'string')) {
+    const ordered = data['style'] === 'ordered';
+
+    return {
+      ordered,
+      items: extractLegacyListItems(rawItems),
+    };
+  }
+
+  const listStyle = legacyChecklist ? 'checklist' : toListStyle(data['style']);
+
+  return {
+    ordered: listStyle === 'ordered',
+    listStyle,
+    listMeta: isJsonObject(data['meta']) ? data['meta'] : {},
+    listItems: extractRecursiveListItems(rawItems, legacyChecklist),
+  };
 }
 
 function extractStatItems(value: unknown): readonly BlogStatItem[] {
@@ -532,6 +678,35 @@ function normalizeImportKey(value: string): string {
   return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 }
 
+function createUnsupportedEnvelope(data: Record<string, unknown>): BlogUnsupportedBlockEnvelope {
+  return {
+    originalType: getString(data, 'originalType') ?? 'unknown',
+    originalData: isJsonObject(data['originalData']) ? data['originalData'] : {},
+    ...(isJsonObject(data['originalTunes']) ? {originalTunes: data['originalTunes']} : {}),
+  };
+}
+
+function extractLegacyChartJsPoints(data: Record<string, unknown>): readonly BlogChartPoint[] {
+  const nestedData = data['data'];
+
+  if (!isRecord(nestedData)) {
+    return [];
+  }
+
+  const labels = extractChartLabels(nestedData['labels']);
+  const datasets = extractChartDatasets(nestedData['datasets']);
+
+  return labels.flatMap((label, labelIndex) => datasets.flatMap(dataset => {
+    const value = dataset.data[labelIndex];
+
+    return typeof value === 'number' ? [{
+      label,
+      value,
+      series: dataset.label,
+    }] : [];
+  }));
+}
+
 function createBlockData(type: BlogBlockType, data: Record<string, unknown>): BlogBlockData {
   switch (type) {
     case 'header':
@@ -549,11 +724,10 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         caption: getString(data, 'caption') ?? '',
       };
     case 'list':
-      return {
-        ordered: data['style'] === 'ordered',
-        items: extractListItems(data['items']),
-      };
-    case 'image':
+      return createListBlockData(data);
+    case 'image': {
+      const imageSize = toImageSize(data['imageSize']);
+
       return {
         url: getNestedString(data, 'file', 'url') ?? getString(data, 'url') ?? '',
         alt: getString(data, 'alt') ?? getNestedString(data, 'file', 'alt') ?? '',
@@ -564,7 +738,9 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         withBorder: getBoolean(data, 'withBorder'),
         withBackground: getBoolean(data, 'withBackground'),
         imageLayout: toImageLayout(data['imageLayout'], data['stretched']),
+        ...(imageSize ? {imageSize} : {}),
       };
+    }
     case 'embed':
       return {
         provider: getString(data, 'service') ?? '',
@@ -596,7 +772,8 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         stats: extractStatItems(extractArrayByAlias(data, ['stats', 'rows', 'items', 'data'])),
       };
     case 'chart': {
-      const chartPoints = extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data']));
+      const importedPoints = extractChartPoints(extractArrayByAlias(data, ['chartPoints', 'points', 'rows', 'items', 'data']));
+      const chartPoints = importedPoints.length > 0 ? importedPoints : extractLegacyChartJsPoints(data);
       const labels = extractChartLabels(data['labels']);
       const datasets = extractChartDatasets(data['datasets']);
       const xAxisTitle = getString(data, 'xAxisTitle')?.trim();
@@ -612,7 +789,7 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
       return {
         title: getString(data, 'title') ?? '',
         caption: getString(data, 'caption') ?? '',
-        chartType: toChartType(data['chartType']),
+        chartType: toChartType(data['chartType'] ?? data['type']),
         unit: getString(data, 'unit') ?? '',
         chartPoints,
         ...(labels.length > 0 ? {labels} : {}),
@@ -642,6 +819,10 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         title: getString(data, 'title') ?? '',
         html: getString(data, 'html') ?? '',
       };
+    case 'unsupported':
+      return {
+        unsupportedBlock: createUnsupportedEnvelope(data),
+      };
   }
 }
 
@@ -653,16 +834,53 @@ export function createEditorDocument(post: BlogPost): OutputData {
 }
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
-  return document.blocks.flatMap((block, index) => {
+  return document.blocks.map((block, index) => {
+    const id = block.id ?? `block-${Date.now().toString(36)}-${index}`;
+    const data = block.data;
+
+    if (!isJsonObject(data)) {
+      throw new Error(`Editor.js block ${index + 1} (${block.type || 'missing type'}) has non-JSON data and cannot be saved safely.`);
+    }
+
+    if (block.tunes !== undefined && !isJsonObject(block.tunes)) {
+      throw new Error(`Editor.js block ${index + 1} (${block.type || 'missing type'}) has non-object tune metadata and cannot be saved safely.`);
+    }
+
+    const originalTunes = isJsonObject(block.tunes) ? block.tunes : undefined;
+    const validation = validateEditorDocumentForBlog({blocks: [block]});
+    const hasValidationError = validation.diagnostics.some(diagnostic => diagnostic.severity === 'error');
+
+    if (!supportedBlockTypes.has(block.type as BlogBlockType)
+      && block.type !== SUNO_EDITOR_BLOCK_TYPE
+      && block.type !== APP_EMBED_EDITOR_BLOCK_TYPE
+      && block.type !== YOUTUBE_EDITOR_BLOCK_TYPE
+      && block.type !== LEGACY_CHECKLIST_EDITOR_BLOCK_TYPE) {
+      return createUnsupportedBlogBlock(id, block.type, data, originalTunes);
+    }
+
+    if (hasValidationError) {
+      return createUnsupportedBlogBlock(id, block.type, data, originalTunes);
+    }
+
+    if (block.type === BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE) {
+      const envelope = createUnsupportedEnvelope(data);
+
+      return {
+        id,
+        type: 'unsupported',
+        data: {unsupportedBlock: envelope},
+      };
+    }
+
     if (block.type === SUNO_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
       const urls = getBlogSunoEmbedUrls(getString(block.data, 'url'));
 
       if (!urls) {
-        return [];
+        return createUnsupportedBlogBlock(id, block.type, data, originalTunes);
       }
 
-      return {
-        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+      return withEditorTunes({
+        id,
         type: 'embed',
         data: {
           provider: 'suno',
@@ -671,14 +889,14 @@ export function createBlogBlocksFromEditorDocument(document: OutputData): readon
           caption: getString(block.data, 'caption') ?? '',
           height: SUNO_EMBED_HEIGHT,
         },
-      };
+      }, originalTunes);
     }
 
     if (block.type === APP_EMBED_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
       const url = getString(block.data, 'url') ?? '';
 
-      return {
-        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+      return withEditorTunes({
+        id,
         type: 'embed',
         data: {
           provider: 'app',
@@ -687,37 +905,72 @@ export function createBlogBlocksFromEditorDocument(document: OutputData): readon
           caption: getString(block.data, 'caption') ?? '',
           height: getNumber(block.data, 'height'),
         },
-      };
+      }, originalTunes);
     }
 
     if (block.type === YOUTUBE_EDITOR_BLOCK_TYPE && isRecord(block.data)) {
       const url = getString(block.data, 'url') ?? '';
 
-      return {
-        id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+      return withEditorTunes({
+        id,
         type: 'embed',
         data: {
           provider: 'youtube',
           url,
           embedUrl: createYouTubeEmbedUrl(url),
         },
-      };
+      }, originalTunes);
     }
 
-    if (!supportedBlockTypes.has(block.type as BlogBlockType) || !isRecord(block.data)) {
-      return [];
+    if (block.type === LEGACY_CHECKLIST_EDITOR_BLOCK_TYPE) {
+      const listPresentation = getListPresentationFromTunes(originalTunes);
+
+      return withEditorTunes({
+        id,
+        type: 'list',
+        data: {
+          ...createListBlockData(data, true),
+          ...(listPresentation ? {listPresentation} : {}),
+        },
+      }, omitListPresentationTune(originalTunes));
     }
 
     const type = block.type as BlogBlockType;
     const placement = toBlockPlacement(block.data['placement'], type === 'poll' ? 'rail' : undefined);
+    const listPresentation = type === 'list' ? getListPresentationFromTunes(originalTunes) : undefined;
+    const editorTunes = type === 'list' ? omitListPresentationTune(originalTunes) : originalTunes;
 
-    return {
-      id: block.id ?? `block-${Date.now().toString(36)}-${index}`,
+    return withEditorTunes({
+      id,
       type,
       data: {
         ...createBlockData(type, block.data),
         ...(placement ? {placement} : {}),
+        ...(listPresentation ? {listPresentation} : {}),
       },
-    };
+    }, editorTunes);
   });
+}
+
+function createUnsupportedBlogBlock(
+  id: string,
+  originalType: string,
+  originalData: BlogJsonObject,
+  originalTunes?: BlogJsonObject
+): BlogContentBlock {
+  return {
+    id,
+    type: 'unsupported',
+    data: {
+      unsupportedBlock: {
+        originalType,
+        originalData,
+        ...(originalTunes ? {originalTunes} : {}),
+      },
+    },
+  };
+}
+
+function withEditorTunes(block: BlogContentBlock, editorTunes?: BlogJsonObject): BlogContentBlock {
+  return editorTunes ? {...block, editorTunes} : block;
 }

@@ -7,6 +7,7 @@ describe('BlogTableOfContentsComponent', () => {
   let fixture: ComponentFixture<BlogTableOfContentsComponent>;
 
   beforeEach(async () => {
+    document.documentElement.classList.remove('reader-motion-reduce');
     window.matchMedia = jasmine.createSpy('matchMedia').and.returnValue({
       matches: false,
       media: '(prefers-reduced-motion: reduce)',
@@ -26,7 +27,29 @@ describe('BlogTableOfContentsComponent', () => {
   });
 
   afterEach(() => {
+    document.documentElement.classList.remove('reader-motion-reduce');
     window.matchMedia = originalMatchMedia;
+  });
+
+  it('keeps mobile contents collapsed by default and exposes an accessible disclosure control', () => {
+    fixture.componentRef.setInput('items', [
+      {blockId: 'heading-1', id: 'first-heading', level: 2, text: 'First Heading'},
+      {blockId: 'heading-2', id: 'second-heading', level: 2, text: 'Second Heading'},
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector<HTMLButtonElement>('button[aria-controls="blog-table-of-contents-links"]');
+    const nav = element.querySelector<HTMLElement>('#blog-table-of-contents-links');
+
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(nav?.classList).toContain('contents-collapsed');
+
+    toggle?.click();
+    fixture.detectChanges();
+
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(nav?.classList).not.toContain('contents-collapsed');
   });
 
   it('renders post-scoped section links with active section state', () => {
@@ -106,10 +129,8 @@ describe('BlogTableOfContentsComponent', () => {
 
     expect(clickEvent.defaultPrevented).toBeTrue();
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    const reduceMotion = document.defaultView
-      ?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
     expect(scrollTo.calls.mostRecent().args[0] as unknown as ScrollToOptions)
-      .toEqual({top: 480, behavior: reduceMotion ? 'auto' : 'smooth'});
+      .toEqual({top: 480, behavior: 'smooth'});
     expect(headingSelected).toHaveBeenCalledOnceWith('smooth-heading');
     expect(heading.style.position).toBe('sticky');
 

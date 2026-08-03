@@ -2,6 +2,7 @@ import {TestBed} from '@angular/core/testing';
 import {BehaviorSubject, filter, firstValueFrom, of} from 'rxjs';
 
 import {BlogPost} from '../models/blog-post.model';
+import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../models/blog-post-revision.model';
 import {BlogStorageService} from './blog-storage.service';
 import {BlogRepositoryService} from './blog-repository.service';
 
@@ -42,6 +43,7 @@ class FakeBlogStorageService {
   private readonly directPublishedPosts = new Map<string, BlogPost>();
 
   readonly loadPublishedPostBySlugCalls: string[] = [];
+  private nextSaveError: Error | null = null;
 
   readonly posts$ = this.postsSubject.asObservable();
   readonly loading$ = of(false);
@@ -55,23 +57,58 @@ class FakeBlogStorageService {
     return this.postsSubject.value;
   }
 
-  async savePost(post: BlogPost): Promise<void> {
-    this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), post]);
+  failNextSave(error: Error): void {
+    this.nextSaveError = error;
   }
 
-  async savePosts(posts: readonly BlogPost[]): Promise<void> {
+  async savePost(post: BlogPost, expectedRevision = Math.max(0, normalizeBlogPostRevision(post.revision) - 1)): Promise<BlogPost> {
+    if (this.nextSaveError) {
+      const error = this.nextSaveError;
+      this.nextSaveError = null;
+      throw error;
+    }
+
+    const existingPost = this.getPosts().find(savedPost => savedPost.id === post.id);
+    const actualRevision = existingPost ? normalizeBlogPostRevision(existingPost.revision) : null;
+
+    if ((actualRevision ?? 0) !== expectedRevision || (!existingPost && expectedRevision > 0)) {
+      throw new BlogPostRevisionConflictError(post.id, expectedRevision, actualRevision, existingPost);
+    }
+
+    const nextPost = {...post, revision: expectedRevision + 1};
+    this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), nextPost]);
+    return nextPost;
+  }
+
+  async savePosts(posts: readonly BlogPost[]): Promise<readonly BlogPost[]> {
     const updatedPostsById = new Map(posts.map(post => [post.id, post]));
     const unchangedPosts = this.getPosts().filter(post => !updatedPostsById.has(post.id));
 
     this.setPosts([...unchangedPosts, ...posts]);
+    return posts;
   }
 
-  async savePostPreview(post: BlogPost): Promise<void> {
-    await this.savePost(post);
+  async savePostPreview(post: BlogPost, expectedRevision = normalizeBlogPostRevision(post.revision)): Promise<BlogPost> {
+    const now = new Date();
+    const preview = {
+      token: `preview-${post.id}-${expectedRevision + 1}`,
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + 60_000).toISOString(),
+    };
+    const saved = await this.savePost({...post, preview, revision: expectedRevision + 1}, expectedRevision);
+    this.previews.set(preview.token, saved);
+    return saved;
+  }
 
-    if (post.preview) {
-      this.previews.set(post.preview.token, post);
+  async revokePostPreview(postId: string, expectedRevision: number): Promise<BlogPost> {
+    const post = this.getPosts().find(candidate => candidate.id === postId);
+    if (!post) {
+      throw new Error('Post not found.');
     }
+    if (post.preview) {
+      this.previews.delete(post.preview.token);
+    }
+    return this.savePost({...post, preview: undefined, revision: expectedRevision + 1}, expectedRevision);
   }
 
   async loadPostPreview(token: string): Promise<BlogPost | undefined> {
@@ -91,13 +128,21 @@ class FakeBlogStorageService {
     }
   }
 
-  async deletePost(postId: string): Promise<void> {
+  async deletePost(postId: string, expectedRevision = normalizeBlogPostRevision(
+    this.getPosts().find(post => post.id === postId)?.revision
+  )): Promise<boolean> {
+    const post = this.getPosts().find(candidate => candidate.id === postId);
+    if (!post || normalizeBlogPostRevision(post.revision) !== expectedRevision) {
+      return false;
+    }
     this.setPosts(this.getPosts().filter(post => post.id !== postId));
+    return true;
   }
 
-  async deletePosts(postIds: readonly string[]): Promise<void> {
-    const postIdsToDelete = new Set(postIds);
+  async deletePosts(posts: readonly BlogPost[]): Promise<number> {
+    const postIdsToDelete = new Set(posts.map(post => post.id));
     this.setPosts(this.getPosts().filter(post => !postIdsToDelete.has(post.id)));
+    return postIdsToDelete.size;
   }
 
   async backupPostsToFirestore(posts: readonly BlogPost[]): Promise<number> {
@@ -335,6 +380,57 @@ describe('BlogRepositoryService', () => {
     expect(service.getAdminPostBySlug(savedPost.slug)?.title).toBe('Firestore CMS Draft');
     expect(service.getAdminStats().total).toBe(3);
     expect(storage.getPosts().some(post => post.id === savedPost.id)).toBeTrue();
+    expect(savedPost.revision).toBe(1);
+  });
+
+  it('rejects a stale canonical save without overwriting the newer revision', async () => {
+    const staleCopy = {...draftPost};
+    const firstSave = await service.savePost({...staleCopy, title: 'First writer'});
+
+    await expectAsync(service.savePost({...staleCopy, title: 'Stale writer'}))
+      .toBeRejectedWith(jasmine.any(BlogPostRevisionConflictError));
+
+    expect(storage.getPosts().find(post => post.id === draftPost.id)).toEqual(firstSave);
+    expect(firstSave.revision).toBe(1);
+  });
+
+  it('supports repeat saves only when the caller carries the committed revision forward', async () => {
+    const firstSave = await service.savePost({...draftPost, title: 'Revision one'});
+    const secondSave = await service.savePost({...firstSave, title: 'Revision two'});
+
+    expect(firstSave.revision).toBe(1);
+    expect(secondSave.revision).toBe(2);
+    expect(storage.getPosts().find(post => post.id === draftPost.id)?.title).toBe('Revision two');
+  });
+
+  it('allows only one simultaneous writer to commit from the same base revision', async () => {
+    const [first, second] = await Promise.allSettled([
+      service.savePost({...draftPost, title: 'Writer one'}),
+      service.savePost({...draftPost, title: 'Writer two'}),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual(['fulfilled', 'rejected']);
+    const rejection = first.status === 'rejected' ? first.reason : second.status === 'rejected' ? second.reason : null;
+    expect(rejection).toEqual(jasmine.any(BlogPostRevisionConflictError));
+  });
+
+  it('treats remote deletion as a conflict and retains the local caller copy', async () => {
+    const saved = await service.savePost({...draftPost, title: 'Saved before deletion'});
+    await storage.deletePost(saved.id);
+
+    await expectAsync(service.savePost({...saved, title: 'Local after deletion'}))
+      .toBeRejectedWith(jasmine.any(BlogPostRevisionConflictError));
+    expect(saved.title).toBe('Saved before deletion');
+    expect(storage.getPosts().some(post => post.id === saved.id)).toBeFalse();
+  });
+
+  it('does not mutate canonical state when the storage write fails', async () => {
+    const before = storage.getPosts().find(post => post.id === draftPost.id);
+    storage.failNextSave(new Error('network unavailable'));
+
+    await expectAsync(service.savePost({...draftPost, title: 'Unsaved network edit'}))
+      .toBeRejectedWithError('network unavailable');
+    expect(storage.getPosts().find(post => post.id === draftPost.id)).toEqual(before);
   });
 
   it('updates Firestore posts by id without duplicating the admin list', async () => {

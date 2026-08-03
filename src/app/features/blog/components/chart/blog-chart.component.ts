@@ -10,6 +10,7 @@ import {BaseChartDirective} from 'ng2-charts';
 import {
   BlogBlockData,
   BlogChartDataset,
+  BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
 } from '../../models/blog-post.model';
@@ -129,9 +130,15 @@ export class BlogChartComponent implements OnChanges {
     const legacyPoints = (block.data.chartPoints ?? [])
       .filter(point => Number.isFinite(point.value));
     const sourceDatasets = this.normalizeChartDatasets(block.data.datasets);
+    const namedLegacySeries = legacyPoints.some(point => Boolean(point.series?.trim()));
+    const legacyLabels = namedLegacySeries
+      ? [...new Set(legacyPoints.map((point, index) => point.label.trim() || `Point ${index + 1}`))]
+      : legacyPoints.map((point, index) => point.label.trim() || `Point ${index + 1}`);
     const datasets = sourceDatasets.length > 0
       ? sourceDatasets
-      : legacyPoints.length > 0
+      : namedLegacySeries
+        ? this.createLegacySeriesDatasets(legacyPoints, legacyLabels, block.data.title)
+        : legacyPoints.length > 0
         ? [{
           label: block.data.title?.trim() || 'Values',
           data: legacyPoints.map(point => point.value),
@@ -146,7 +153,7 @@ export class BlogChartComponent implements OnChanges {
     const labels = block.data.labels?.length
       ? block.data.labels.map((label, index) => label.trim() || `Label ${index + 1}`)
       : legacyPoints.length > 0
-        ? legacyPoints.map((point, index) => point.label.trim() || `Point ${index + 1}`)
+        ? legacyLabels
         : Array.from({length: longestDataset}, (_, index) => `Label ${index + 1}`);
     const normalizedDatasets = datasets.map(dataset => ({
       ...dataset,
@@ -154,7 +161,7 @@ export class BlogChartComponent implements OnChanges {
     }));
     const title = block.data.title?.trim() ?? '';
     const accessibilitySummary = block.data.accessibilitySummary?.trim()
-      || this.createChartSummary(labels, normalizedDatasets, block.data, legacyPoints);
+      || this.createChartSummary(labels, normalizedDatasets, block.data, legacyPoints, namedLegacySeries);
 
     return {
       type,
@@ -195,6 +202,25 @@ export class BlogChartComponent implements OnChanges {
         ...(dataset.backgroundColor?.trim() ? {backgroundColor: dataset.backgroundColor.trim()} : {}),
       }];
     });
+  }
+
+  private createLegacySeriesDatasets(
+    points: readonly BlogChartPoint[],
+    labels: readonly string[],
+    fallbackTitle: string | undefined
+  ): readonly BlogChartDataset[] {
+    const seriesNames = [...new Set(points.map(point => point.series?.trim() || fallbackTitle?.trim() || 'Values'))];
+
+    return seriesNames.map(series => ({
+      label: series,
+      data: labels.map(label => {
+        const point = points.find(candidate => (
+          (candidate.series?.trim() || fallbackTitle?.trim() || 'Values') === series
+          && candidate.label.trim() === label
+        ));
+        return point?.value ?? null;
+      }),
+    }));
   }
 
   private createChartData(
@@ -325,9 +351,10 @@ export class BlogChartComponent implements OnChanges {
     labels: readonly string[],
     datasets: readonly BlogChartDataset[],
     data: BlogBlockData,
-    legacyPoints: readonly { label: string; value: number; note?: string }[]
+    legacyPoints: readonly BlogChartPoint[],
+    namedLegacySeries: boolean
   ): string {
-    if (legacyPoints.length > 0 && !data.datasets?.length) {
+    if (legacyPoints.length > 0 && !data.datasets?.length && !namedLegacySeries) {
       return legacyPoints.map(point => {
         const note = point.note?.trim() ? ` (${point.note.trim()})` : '';
         return `${point.label}: ${this.formatChartValue(point.value, data)}${note}`;

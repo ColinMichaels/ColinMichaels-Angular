@@ -41,6 +41,7 @@ import {COLIN_AUTHOR_PROFILE} from '../../../../shared/author/author-profile.dat
 import {DEFAULT_AUTHOR_ID} from '../../../authors/authors.constants';
 import {AuthorRepositoryService} from '../../../authors/services/author-repository.service';
 import {
+  createBlogArticleGridLayout,
   createBlogReadingStats,
   createBlogTableOfContents,
   hasMeaningfulPostUpdate
@@ -106,15 +107,16 @@ function normalizeHealthTerm(value: string): string {
         @if (post(); as currentPost) {
           <div
             class="blog-detail-reading-grid mx-auto grid max-w-4xl gap-6 xl:max-w-[90rem] xl:items-start"
+            [attr.data-article-grid-layout]="articleGridLayout()"
           >
-            <div class="min-w-0 xl:col-start-2 xl:row-start-1">
+            <div class="blog-detail-main-column min-w-0 xl:row-start-1">
               <header
                 id="blog-post-top"
                 class="blog-section-rule blog-page-header mb-0 scroll-mt-20 space-y-5 pb-5 focus:outline-none"
                 tabindex="-1"
               >
                 <h1
-                  class="text-4xl font-semibold leading-tight text-slate-950 dark:text-zinc-50 sm:text-5xl">{{ currentPost.title }}</h1>
+                  class="blog-article-title font-semibold text-slate-950 dark:text-zinc-50">{{ currentPost.title }}</h1>
                 <div class="blog-post-meta-row">
                   <span>
                     By
@@ -192,7 +194,7 @@ function normalizeHealthTerm(value: string): string {
 
             @if (shareMetadata(); as share) {
               <app-blog-sticky-post-toolbar
-                class="xl:col-start-2 xl:row-start-2"
+                class="blog-detail-main-column xl:row-start-2"
                 [title]="currentPost.title"
                 [imageUrl]="currentPost.coverImage"
                 [excerpt]="share.description"
@@ -219,7 +221,7 @@ function normalizeHealthTerm(value: string): string {
 
             @if (hasTableOfContents()) {
               @defer (when hasTableOfContents()) {
-                <aside class="min-w-0 xl:col-start-1 xl:row-span-4 xl:row-start-1 xl:self-stretch">
+                <aside class="blog-detail-left-rail min-w-0 xl:row-span-4 xl:row-start-1 xl:self-stretch">
                   <app-blog-table-of-contents
                     [items]="tableOfContents()"
                     [postPath]="createCurrentPostPath(currentPost.slug)"
@@ -230,7 +232,7 @@ function normalizeHealthTerm(value: string): string {
               }
             }
 
-            <div class="min-w-0 xl:col-start-2 xl:row-start-3">
+            <div class="blog-detail-main-column min-w-0 xl:row-start-3">
               <div #readingContent data-reading-content>
                 <app-blog-block-renderer
                   [blocks]="contentBlocks()"
@@ -244,7 +246,7 @@ function normalizeHealthTerm(value: string): string {
             </div>
 
             @if (hasRightRail()) {
-              <aside class="blog-detail-right-rail min-w-0 xl:col-start-3 xl:row-span-4 xl:row-start-1">
+              <aside class="blog-detail-right-rail min-w-0 xl:row-span-4 xl:row-start-1">
                 <app-blog-post-rail
                   [blocks]="railBlocks()"
                   [suggestedPosts]="suggestedPosts()"
@@ -256,7 +258,7 @@ function normalizeHealthTerm(value: string): string {
               </aside>
             }
 
-            <footer class="blog-section-rule min-w-0 mt-14 xl:col-start-2 xl:row-start-4">
+            <footer class="blog-detail-main-column blog-section-rule min-w-0 mt-14 xl:row-start-4">
                 @if (previousPost() || nextPost()) {
                   <nav aria-label="Post navigation" class="grid gap-4 sm:grid-cols-2">
                     @if (previousPost(); as previous) {
@@ -465,9 +467,49 @@ function normalizeHealthTerm(value: string): string {
       }
 
       .blog-detail-reading-grid {
-        grid-template-columns: minmax(0, 18%) minmax(0, 54%) minmax(0, 24%);
-        column-gap: 2%;
+        grid-template-columns: minmax(0, 1fr);
         row-gap: 1.5rem;
+      }
+
+      .blog-detail-main-column {
+        grid-column: 1;
+        justify-self: center;
+        width: 100%;
+        max-width: 54rem;
+      }
+
+      .blog-detail-reading-grid[data-article-grid-layout='contents-and-article'] {
+        grid-template-columns: minmax(13rem, 22%) minmax(0, 75%);
+        column-gap: 3%;
+      }
+
+      .blog-detail-reading-grid[data-article-grid-layout='article-and-related'] {
+        grid-template-columns: minmax(0, 72%) minmax(15rem, 25%);
+        column-gap: 3%;
+      }
+
+      .blog-detail-reading-grid[data-article-grid-layout='three-column'] {
+        grid-template-columns: minmax(13rem, 18%) minmax(0, 54%) minmax(15rem, 24%);
+        column-gap: 2%;
+      }
+
+      .blog-detail-reading-grid:is(
+        [data-article-grid-layout='contents-and-article'],
+        [data-article-grid-layout='three-column']
+      ) .blog-detail-main-column {
+        grid-column: 2;
+      }
+
+      .blog-detail-left-rail {
+        grid-column: 1;
+      }
+
+      .blog-detail-reading-grid[data-article-grid-layout='article-and-related'] .blog-detail-right-rail {
+        grid-column: 2;
+      }
+
+      .blog-detail-reading-grid[data-article-grid-layout='three-column'] .blog-detail-right-rail {
+        grid-column: 3;
       }
 
       .blog-detail-right-rail {
@@ -728,6 +770,10 @@ export class BlogDetailComponent {
   });
   protected readonly hasRightRail = computed(() => (
     this.railBlocks().length > 0 || this.suggestedPosts().length > 0
+  ));
+  protected readonly articleGridLayout = computed(() => createBlogArticleGridLayout(
+    this.hasTableOfContents(),
+    this.hasRightRail()
   ));
 
   constructor() {

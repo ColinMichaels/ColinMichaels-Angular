@@ -14,8 +14,20 @@ test.describe('blog sticky toolbar', () => {
 
     await page.goto('/blog');
 
-    const firstPostLink = page.locator('app-blog-post-card h2 a').first();
-    await expect(firstPostLink).toBeVisible();
+    const dismissMembershipCampaign = page.getByRole('button', {name: 'Not now'});
+
+    try {
+      await dismissMembershipCampaign.waitFor({state: 'visible', timeout: 5_000});
+      await dismissMembershipCampaign.click();
+    } catch {
+      // The campaign is intentionally frequency-capped and may already be dismissed.
+    }
+
+    const firstPostLink = page
+      .getByRole('region', {name: 'Published blog posts'})
+      .locator('h2 a')
+      .first();
+    await expect(firstPostLink).toBeVisible({timeout: 20_000});
     const firstPostHref = await firstPostLink.getAttribute('href');
 
     expect(firstPostHref).toMatch(/^\/blog\/[^/]+$/);
@@ -62,7 +74,7 @@ test.describe('blog sticky toolbar', () => {
     await expect(shareTrigger).toHaveAttribute('aria-expanded', 'false');
     await expect(shareProviders.first()).toBeHidden();
 
-    await page.locator('app-blog-block-renderer').evaluate(element => {
+    await readingContent.locator('app-blog-block-renderer').evaluate(element => {
       const top = element.getBoundingClientRect().top + window.scrollY;
       window.scrollTo(0, top + 320);
     });
@@ -84,10 +96,11 @@ test.describe('blog sticky toolbar', () => {
     const expectedSectionHeadingTop = (page.viewportSize()?.width ?? 1280) < 640 ? 108 : 124;
 
     expect(sectionHeadingCount).toBeGreaterThan(1);
-    await firstSectionHeading.evaluate(element => {
+    await firstSectionHeading.evaluate((element, stickyTop) => {
       const top = element.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo(0, top + 220);
-    });
+      window.scrollTo(0, top - stickyTop + 1);
+    }, expectedSectionHeadingTop);
+    await expect(firstSectionHeading).toHaveAttribute('data-sticky-active', '');
     await expect.poll(async () => Math.round((await firstSectionHeading.boundingBox())?.y ?? -1))
       .toBe(expectedSectionHeadingTop);
     await expect.poll(async () => {
@@ -99,15 +112,19 @@ test.describe('blog sticky toolbar', () => {
 
     const secondSectionHeading = sectionHeadings.nth(1);
     const secondHeadingId = (await secondSectionHeading.getAttribute('id')) ?? '';
-    await secondSectionHeading.evaluate(element => {
+    await secondSectionHeading.evaluate((element, stickyTop) => {
       const top = element.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo(0, top + 220);
-    });
+      window.scrollTo(0, top - stickyTop + 1);
+    }, expectedSectionHeadingTop);
     await expect(secondSectionHeading).toHaveAttribute('data-sticky-active', '');
     await expect(page.locator('[data-sticky-active]')).toHaveCount(1);
-    const visibleStickyHeading = await page.evaluate(y => (
-      document.elementFromPoint(200, y)?.closest('[data-sticky-section-heading]')?.textContent?.trim()
-    ), expectedSectionHeadingTop + 20);
+    const secondHeadingBox = await secondSectionHeading.boundingBox();
+    const visibleStickyHeading = await page.evaluate(({x, y}) => (
+      document.elementFromPoint(x, y)?.closest('[data-sticky-section-heading]')?.textContent?.trim()
+    ), {
+      x: (secondHeadingBox?.x ?? 0) + Math.min(24, Math.max(1, (secondHeadingBox?.width ?? 2) / 2)),
+      y: expectedSectionHeadingTop + 20,
+    });
 
     expect(visibleStickyHeading).toBe((await secondSectionHeading.textContent())?.trim());
 
@@ -134,6 +151,10 @@ test.describe('blog sticky toolbar', () => {
     const scrollTopBeforeBackwardJump = await page.evaluate(() => window.scrollY);
 
     expect(firstHeadingId).toBeTruthy();
+    if ((page.viewportSize()?.width ?? 0) < 1280) {
+      await tableOfContents.getByRole('button', {name: /Contents/}).click();
+      await expect(firstContentsLink).toBeVisible();
+    }
     await firstContentsLink.click();
     await expect(page).toHaveURL(new RegExp(`#${firstHeadingId}$`));
     await expect.poll(async () => page.evaluate(() => window.scrollY))

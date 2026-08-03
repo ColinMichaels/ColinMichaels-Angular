@@ -120,6 +120,7 @@ describe('BlogPostListingComponent', () => {
     expect(firstPost?.querySelector('a[href="/blog/tag/angular"]')).not.toBeNull();
     expect(firstPost?.querySelector('time')?.getAttribute('datetime')).toBe('2026-07-05T12:00:00.000Z');
     expect(firstPost?.querySelector('img')?.getAttribute('src')).toBe('/assets/images/blog/first-thumbnail.webp');
+    expect(firstPost?.querySelector('.post-listing__media')?.classList).toContain('blog-image-reveal');
 
     const secondPost = element.querySelector<HTMLElement>('[data-post-id="post-two"]');
     expect(secondPost?.querySelector('img')?.getAttribute('src')).toBe('/assets/images/blog/second-cover.webp');

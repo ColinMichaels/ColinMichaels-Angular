@@ -18,6 +18,19 @@
   --site-header-sticky-height: 3.5rem;
   --blog-sticky-toolbar-height: 3.25rem;
   --blog-sticky-stack-height: calc(var(--site-header-sticky-height) + var(--blog-sticky-toolbar-height));
+  --blog-title-size: clamp(2.35rem, calc(2.75rem * var(--reader-font-scale, 1)), 5.5rem);
+  --blog-title-line-height: 1.04;
+  --blog-title-measure: 23ch;
+  --blog-h2-size: clamp(1.55rem, calc(1.75rem * var(--reader-font-scale, 1)), 3.35rem);
+  --blog-h2-line-height: 1.17;
+  --blog-h2-padding-block: clamp(.8rem, calc(.9rem * var(--reader-font-scale, 1)), 1.35rem);
+  --blog-h3-size: clamp(1.22rem, calc(1.35rem * var(--reader-font-scale, 1)), 2.55rem);
+  --blog-h3-line-height: 1.24;
+  --blog-h3-padding-top: clamp(.4rem, calc(.55rem * var(--reader-font-scale, 1)), .95rem);
+  --blog-heading-letter-spacing: -.018em;
+  --blog-heading-measure: 30ch;
+  --blog-subheading-measure: 36ch;
+  --blog-heading-rule: rgba(255, 255, 255, .16);
   --site-bg: #09090b;
   --site-panel: #18181b;
   --site-panel-soft: rgba(24, 24, 27, 0.72);
@@ -54,6 +67,7 @@
   .dark {
     --site-header-sticky-height: 4rem;
     --blog-sticky-toolbar-height: 3.75rem;
+    --blog-title-size: clamp(2.75rem, calc(3.25rem * var(--reader-font-scale, 1)), 5.75rem);
   }
 }
 
@@ -71,6 +85,7 @@
   --site-text: #1e293b;
   --site-muted: #475569;
   --site-subtle: #64748b;
+  --blog-heading-rule: rgba(15, 23, 42, .16);
 }
 
 .topic-theme-ai {
@@ -366,6 +381,15 @@ app-site-header :is(h1, a, button),
   line-height: 1.08 !important;
 }
 
+.public-reader-scope .blog-article-title {
+  max-width: var(--blog-title-measure);
+  font-family: var(--font-heading);
+  font-size: var(--blog-title-size) !important;
+  letter-spacing: var(--blog-heading-letter-spacing);
+  line-height: var(--blog-title-line-height) !important;
+  text-wrap: balance;
+}
+
 .public-reader-scope .blog-category-page-title {
   font-size: clamp(1.75rem, calc(2.1rem * var(--reader-font-scale)), 3.5rem) !important;
   line-height: 1.1 !important;
@@ -394,7 +418,7 @@ app-site-header :is(h1, a, button),
   .heading-subsection,
   .blog-state-title,
   .topic-hub-page h2,
-  .blog-content h2
+  .blog-markdown h2
 ) {
   font-size: clamp(1.35rem, calc(1.6rem * var(--reader-font-scale)), 3rem) !important;
   line-height: 1.22 !important;
@@ -404,10 +428,55 @@ app-site-header :is(h1, a, button),
   .heading-card,
   .home-hero-post-title,
   .topic-hub-page h3,
-  .blog-content h3
+  .blog-markdown h3
 ) {
   font-size: clamp(1.12rem, calc(1.25rem * var(--reader-font-scale)), 2.35rem) !important;
   line-height: 1.28 !important;
+}
+
+.public-reader-scope .blog-content > :not([hidden]) ~ .blog-section-heading {
+  margin-top: clamp(2rem, calc(2.35rem * var(--reader-font-scale)), 4.5rem) !important;
+}
+
+.public-reader-scope .blog-content > :not([hidden]) ~ .blog-anchored-subheading {
+  margin-top: clamp(1.5rem, calc(1.8rem * var(--reader-font-scale)), 3.4rem) !important;
+}
+
+.public-reader-scope .blog-content .blog-type-lead {
+  font-size: clamp(1.18rem, calc(1.28rem * var(--reader-font-scale)), 2.55rem) !important;
+  line-height: 1.62 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-section-intro {
+  font-size: clamp(1.08rem, calc(1.16rem * var(--reader-font-scale)), 2.3rem) !important;
+  line-height: 1.68 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-pull-quote-copy {
+  font-size: clamp(1.55rem, calc(1.85rem * var(--reader-font-scale)), 3.7rem) !important;
+  line-height: 1.32 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-key-takeaway {
+  font-size: clamp(1.08rem, calc(1.16rem * var(--reader-font-scale)), 2.3rem) !important;
+  line-height: 1.62 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-eyebrow,
+.public-reader-scope .blog-content .blog-type-attribution {
+  font-size: clamp(.76rem, calc(.8rem * var(--reader-font-scale)), 1.25rem) !important;
+  letter-spacing: .2em !important;
+  line-height: 1.5 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-aside {
+  font-size: clamp(.9rem, calc(.94rem * var(--reader-font-scale)), 1.85rem) !important;
+  line-height: 1.7 !important;
+}
+
+.public-reader-scope .blog-content .blog-type-caption {
+  font-size: clamp(.82rem, calc(.86rem * var(--reader-font-scale)), 1.7rem) !important;
+  line-height: 1.58 !important;
 }
 
 .public-reader-scope :is(

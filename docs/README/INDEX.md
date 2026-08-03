@@ -21,6 +21,7 @@ This folder is the entry point for project documentation.
 - [Role-Aware Admin Guide](../ARCHITECTURE/ADMIN_GUIDE.md)
 - [Admin User View](../ARCHITECTURE/ADMIN_USER_VIEW.md)
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
+- [Blog Editor Production-Readiness Roadmap](../ARCHITECTURE/BLOG_EDITOR_PRODUCTION_READINESS.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
 - [Public Blog Shell](../ARCHITECTURE/PUBLIC_BLOG_SHELL.md)
 - [Reader Membership Campaign](../ARCHITECTURE/READER_MEMBERSHIP_CAMPAIGN.md)

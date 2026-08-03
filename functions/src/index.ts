@@ -80,6 +80,14 @@ import {
   parseBlogSocialAiOutput,
   parseBlogSocialAiRequest,
 } from './blog-social-ai';
+import {
+  mutateBlogPost as mutateBlogPostTransaction,
+  publishDueScheduledPosts,
+} from './blog-publishing';
+import {
+  finalizeBlogMediaUpload,
+  inspectOrDeleteBlogMedia,
+} from './blog-media';
 
 export {
   beginSocialConnection,
@@ -108,6 +116,8 @@ const FIRESTORE_WRITE_BATCH_LIMIT = 450;
 const ROLE_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const BASE_USER_ROLE = 'user';
 const CMS_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor'] as const;
+const CMS_OR_MEDIA_ACCESS_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'mediaManager'] as const;
+const MEDIA_MANAGEMENT_ACCESS_ROLES = ['admin', 'cmsAdmin', 'mediaManager'] as const;
 const USER_MANAGEMENT_ACCESS_ROLES = ['admin'] as const;
 const TRUSTED_COMMENT_ROLES = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'] as const;
 const BLOG_POSTS_COLLECTION = 'posts';
@@ -612,6 +622,7 @@ async function cancelPendingSocialDeliveriesForHiddenCatCornerPost(postId: strin
 
       transaction.update(postRef, {
         'socialPromotion.announcements': nextAnnouncements,
+        revision: FieldValue.increment(1),
         updatedAt,
         syncedAt: FieldValue.serverTimestamp(),
       });
@@ -639,45 +650,19 @@ export const publishScheduledPosts = onSchedule(
   async () => {
     const firestore = getFirestore();
     const now = new Date();
-    const nowIso = now.toISOString();
-    const scheduledPostsSnapshot = await firestore
-      .collection(BLOG_POSTS_COLLECTION)
-      .where('status', '==', 'scheduled')
-      .get();
-    const duePosts = scheduledPostsSnapshot.docs.filter(postSnapshot => {
-      const publishedAt = postSnapshot.get('publishedAt');
+    const publishingResult = await publishDueScheduledPosts(firestore, now);
 
-      if (typeof publishedAt !== 'string') {
-        return false;
-      }
-
-      const publishTime = new Date(publishedAt).getTime();
-      return Number.isFinite(publishTime) && publishTime <= now.getTime();
-    });
-
-    if (duePosts.length === 0) {
+    if (publishingResult.dueCount === 0) {
       logger.info('No scheduled posts are ready to publish.', {
-        scheduledCount: scheduledPostsSnapshot.size,
+        dueCount: 0,
       });
     } else {
-      for (let index = 0; index < duePosts.length; index += FIRESTORE_WRITE_BATCH_LIMIT) {
-        const batch = firestore.batch();
-        const chunk = duePosts.slice(index, index + FIRESTORE_WRITE_BATCH_LIMIT);
-
-        for (const postSnapshot of chunk) {
-          batch.update(postSnapshot.ref, {
-            status: 'published',
-            updatedAt: nowIso,
-            syncedAt: FieldValue.serverTimestamp(),
-          });
-        }
-
-        await batch.commit();
-      }
-
       logger.info('Published scheduled blog posts.', {
-        publishedCount: duePosts.length,
-        postIds: duePosts.map(postSnapshot => postSnapshot.id),
+        dueCount: publishingResult.dueCount,
+        publishedCount: publishingResult.publishedCount,
+        postIds: publishingResult.publishedPostIds,
+        failedPostIds: publishingResult.failedPostIds,
+        failures: publishingResult.failures,
       });
     }
 
@@ -908,6 +893,8 @@ interface BlogBlockData {
   embedUrl?: string;
   items?: readonly string[];
   ordered?: boolean;
+  listStyle?: 'unordered' | 'ordered' | 'checklist';
+  listItems?: readonly BlogListItem[];
   language?: string;
   code?: string;
   variant?: string;
@@ -918,6 +905,12 @@ interface BlogBlockData {
     id: string;
     label: string;
   }[];
+}
+
+interface BlogListItem {
+  content: string;
+  meta: Readonly<Record<string, unknown>>;
+  items: readonly BlogListItem[];
 }
 
 interface BlogContentBlock {
@@ -1439,6 +1432,50 @@ export const generateBlogMetadata = onCall(
       suggestions: parsed.suggestions,
       thumbnailSuggestions: parsed.thumbnailSuggestions,
     } satisfies BlogAssistantResult;
+  }
+);
+
+export const mutateBlogPost = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 60,
+    memory: '512MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireCmsAccess(request.auth);
+    return mutateBlogPostTransaction(getFirestore(), request.data, actorUid);
+  }
+);
+
+export const finalizeBlogMedia = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 300,
+    memory: '1GiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireCmsOrMediaAccess(request.auth);
+    return finalizeBlogMediaUpload(getFirestore(), getStorage().bucket(), request.data, actorUid);
+  }
+);
+
+export const deleteBlogMedia = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 300,
+    memory: '512MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    // Destructive media operations require the dedicated media-management
+    // boundary; content editors retain actor-owned upload/finalize access only.
+    const actorUid = requireMediaManagementAccess(request.auth);
+    return inspectOrDeleteBlogMedia(getFirestore(), getStorage().bucket(), request.data, actorUid);
   }
 );
 
@@ -3446,16 +3483,21 @@ function decodeSlugSegment(value: string): string {
 }
 
 function createAbsoluteUrl(value: string): string {
+  return createOptionalAbsoluteHttpUrl(value) || SITE_URL;
+}
+
+function createOptionalAbsoluteHttpUrl(value: string): string {
   const trimmedValue = value.trim();
 
   if (!trimmedValue) {
-    return SITE_URL;
+    return '';
   }
 
   try {
-    return new URL(trimmedValue, SITE_URL).toString();
+    const url = new URL(trimmedValue, SITE_URL);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : '';
   } catch {
-    return trimmedValue;
+    return '';
   }
 }
 
@@ -3909,17 +3951,18 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
     }
 
     case 'list': {
-      const items = (data.items ?? [])
-        .map(item => stripHtml(item))
-        .filter(Boolean)
-        .map(item => `  <li>${escapeHtml(item)}</li>`)
-        .join('\n');
-
-      if (!items) {
-        return '';
+      if (data.listItems !== undefined) {
+        const style = data.listStyle ?? (data.ordered ? 'ordered' : 'unordered');
+        return renderRecursiveBlogListFallbackHtml(data.listItems, style);
       }
 
-      return data.ordered ? `<ol>\n${items}\n</ol>` : `<ul>\n${items}\n</ul>`;
+      const legacyItems = (data.items ?? [])
+        .map(content => ({content, meta: {}, items: []}));
+
+      return renderRecursiveBlogListFallbackHtml(
+        legacyItems,
+        data.ordered ? 'ordered' : 'unordered',
+      );
     }
 
     case 'quote': {
@@ -3943,19 +3986,21 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
 
     case 'image': {
       const url = data.url?.trim() ?? '';
+      const safeUrl = createOptionalAbsoluteHttpUrl(url);
       const alt = stripHtml(data.alt ?? '')
         || stripHtml(data.caption ?? '')
         || `${stripHtml(fallbackImageAlt) || 'Blog content'} article image`;
 
-      return url ? `<img src="${escapeHtml(createAbsoluteUrl(url))}" alt="${escapeHtml(alt)}" loading="lazy">` : '';
+      return safeUrl ? `<img src="${escapeHtml(safeUrl)}" alt="${escapeHtml(alt)}" loading="lazy">` : '';
     }
 
     case 'embed': {
       const caption = stripHtml(data.caption ?? data.provider ?? '');
       const url = data.embedUrl?.trim() || data.url?.trim() || '';
+      const safeUrl = createOptionalAbsoluteHttpUrl(url);
 
-      return url
-        ? `<p><a href="${escapeHtml(createAbsoluteUrl(url))}">${escapeHtml(caption || url)}</a></p>`
+      return safeUrl
+        ? `<p><a href="${escapeHtml(safeUrl)}">${escapeHtml(caption || url)}</a></p>`
         : '';
     }
 
@@ -3984,12 +4029,45 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
       ].filter(Boolean).join('\n');
     }
 
+    case 'unsupported':
+      return '';
+
     default: {
       const text = stripHtml(data.text ?? data.caption ?? '');
 
       return text ? `<p>${escapeHtml(text)}</p>` : '';
     }
   }
+}
+
+function renderRecursiveBlogListFallbackHtml(
+  items: readonly BlogListItem[],
+  style: 'unordered' | 'ordered' | 'checklist',
+): string {
+  const renderedItems = items
+    .map(item => {
+      const content = stripHtml(item.content);
+      const children = renderRecursiveBlogListFallbackHtml(item.items, style);
+
+      if (!content && !children) {
+        return '';
+      }
+
+      const checklistControl = style === 'checklist'
+        ? `<input type="checkbox" disabled${item.meta['checked'] === true ? ' checked' : ''} aria-label="${item.meta['checked'] === true ? 'Completed checklist item' : 'Incomplete checklist item'}"> `
+        : '';
+
+      return `  <li>${checklistControl}${escapeHtml(content)}${children}</li>`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  if (!renderedItems) {
+    return '';
+  }
+
+  const tagName = style === 'ordered' ? 'ol' : 'ul';
+  return `<${tagName}>\n${renderedItems}\n</${tagName}>`;
 }
 
 function renderFallbackShell(options: {
@@ -4304,6 +4382,30 @@ function requireCmsAccess(auth: AdminCallableAuth | undefined): string {
 
   if (!hasAnyRoleClaim(auth.token, CMS_ACCESS_ROLES)) {
     throw new HttpsError('permission-denied', 'You must have CMS access to use CMS AI functions.');
+  }
+
+  return auth.uid;
+}
+
+function requireCmsOrMediaAccess(auth: AdminCallableAuth | undefined): string {
+  if (!auth?.uid) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to manage CMS media.');
+  }
+
+  if (!hasAnyRoleClaim(auth.token, CMS_OR_MEDIA_ACCESS_ROLES)) {
+    throw new HttpsError('permission-denied', 'You must have CMS or media access to manage CMS media.');
+  }
+
+  return auth.uid;
+}
+
+function requireMediaManagementAccess(auth: AdminCallableAuth | undefined): string {
+  if (!auth?.uid) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to manage CMS media.');
+  }
+
+  if (!hasAnyRoleClaim(auth.token, MEDIA_MANAGEMENT_ACCESS_ROLES)) {
+    throw new HttpsError('permission-denied', 'You must have media management access to delete CMS media.');
   }
 
   return auth.uid;

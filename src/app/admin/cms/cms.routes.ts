@@ -3,6 +3,7 @@ import {Routes} from '@angular/router';
 import {PATH_NAMES} from '../../app-route-paths';
 import {HOMEPAGE_CMS_SEO_METADATA, MEDIA_LIBRARY_SEO_METADATA} from '../../shared/seo/seo.metadata';
 import {CMS_ACCESS_ROLES, MEDIA_LIBRARY_ACCESS_ROLES} from '../../shared/user-account/user-account.model';
+import {pendingPostChangesGuard} from './guards/pending-post-changes.guard';
 
 export const cmsRoutes: Routes = [
   {
@@ -52,11 +53,13 @@ export const cmsRoutes: Routes = [
   },
   {
     path: `${PATH_NAMES.ADMIN_CMS}/new`,
+    canDeactivate: [pendingPostChangesGuard],
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/post-editor/post-editor.component').then(m => m.CmsPostEditorComponent),
   },
   {
     path: `${PATH_NAMES.ADMIN_CMS}/:slug/edit`,
+    canDeactivate: [pendingPostChangesGuard],
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/post-editor/post-editor.component').then(m => m.CmsPostEditorComponent),
   },
