@@ -78,9 +78,27 @@ the embedded third-party player remains subject to Suno's availability, privacy/
 ## 7) Storage Trust
 
 - App/session state read from local storage without robust schema validation.
+- CMS recovery documents use a schema-versioned runtime validator, exact owner/post identity checks, deterministic `/postDrafts/{ownerUid}/recoveries/{encodedPostId}` paths, and a 30-day expiry. Firestore Rules require both a CMS content role and path-owner equality for create/get/update/delete; collection listing is denied.
+- The only local-storage value used by recovery is an opaque generated new-post ID. It grants no data access; Firestore owner checks remain authoritative.
+- New blog image uploads use an actor-owned create-only staging path. Storage Rules enforce role, owner UID, declared image type, and size before upload. The trusted finalizer then compares stored metadata with the byte signature, bounds decoded pixels, generates immutable AVIF/WebP/JPEG variants, records checksums and object identity, and removes staging/partial outputs on failure.
+- Final blog variants are public-read because published posts are public, but browser writes are denied. Existing legacy blog-media paths remain public-read/backend-write to avoid breaking stored posts. The recursive Storage fallback explicitly excludes the complete `cms` subtree, so overlapping matches cannot grant private staging reads or browser mutation of final and legacy blog media.
+- Physical canonical deletion is restricted to `admin`, `cmsAdmin`, and `mediaManager`; `contentEditor` can upload/finalize actor-owned staging objects but cannot destroy canonical media. Deletion requires a reference-report dry run and explicit confirmation. The reference scan and transition to a ten-minute `deleting` lease occur in one transaction; referenced assets and partial deletion failures retain their durable records.
 
 Risk:
-tampered storage payloads can produce runtime errors or unintended behavior.
+other local/session storage rehydration paths still need schema guards. Public blog media is not confidential and must not contain private information.
+
+## 8) CMS Canonical Write Concurrency
+
+- Missing legacy post revisions normalize to 0. Angular sends canonical post save/delete and Draft Preview issue/revoke operations through one CMS-role-gated callable; direct browser writes to canonical post/preview documents are denied.
+- The Function validates the complete post/block schema and safe URL policy, compares the expected revision, reserves the slug, advances one revision, and writes an audit record inside one transaction. Actor/request receipts make retries idempotent for seven days.
+- Recovery writes are isolated under `/postDrafts` and cannot publish or mutate `/posts`.
+- Scheduled publishing reuses the same post validator, revision behavior, slug reservation, and audit contract so manual and timed releases cannot drift. Backend Cat Corner announcement reconciliation continues to advance revisions so open editors detect those changes.
+- Draft Preview tokens are backend-generated and issue/revoke is atomic with the canonical post revision and preview snapshot.
+- Canonical post writes inspect every trusted Phase 7 media identity inside the post transaction and accept only existing `ready` records. Deletion writes the same record to `deleting` inside its reference-scan transaction, closing the attach/delete time-of-check/time-of-use window.
+- The recursive Firestore administrator fallback explicitly excludes every backend-owned post, recovery, preview, poll, comment, slug, receipt, audit, media, social-delivery, connection, share, push-subscription, and point-event top-level collection. Specific collection matches therefore remain authoritative under Firestore Rules' overlapping-match semantics, including owner-only recovery access and records that deny all browser reads.
+
+Residual risk:
+coordinated deployment must install Functions and the new Hosting client before restrictive Rules. Authenticated deployed-environment create/edit/conflict/preview/schedule/publish tests, callable monitoring, TTL enablement, and operator sign-off remain required before release approval.
 
 ## Mitigation Status
 
@@ -90,8 +108,11 @@ tampered storage payloads can produce runtime errors or unintended behavior.
 4. Complete for connection-only scope: protect social OAuth state and encrypt provider tokens; delivery-worker authorization and retry hardening remain open.
 5. Complete for the initial poll scope: keep votes backend-only and result visibility server-enforced; high-assurance abuse/privacy controls remain deferred.
 6. Complete for the initial Suno scope: validate one exact provider contract and retain a link fallback; broader music providers remain untrusted.
-7. In progress: retain schema guards and fail-safe defaults across storage rehydration paths.
-8. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
+7. Complete for trusted blog-image ingestion and destruction; retain schema guards and fail-safe defaults across unrelated local/session storage rehydration paths.
+8. Complete in code and emulator for trusted canonical blog publishing; coordinated deployment, authenticated environment proof, monitoring, and the final production audit remain open release gates.
+9. Open: reduce `bypassSecurityTrust*` usage to controlled, immutable asset paths only.
+
+The bounded Phase 7 security regression set passes dependency audits, 6/6 Firestore/Storage Rules cases, and the publishing/media emulator race and readiness cases. The separately started exhaustive Codex Security diff scan was paused during discovery at the user's direction and must not be represented as complete; a fresh snapshot is required if that scan resumes after these remediations.
 
 ## Operational Notes
 

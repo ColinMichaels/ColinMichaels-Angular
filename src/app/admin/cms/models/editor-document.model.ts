@@ -5,3 +5,11 @@ export interface EditorSavedDocument {
   savedAt: string;
   blockCount: number;
 }
+
+/**
+ * Recovery preserves the editor surface exactly. Invalid JSON is intentionally
+ * retained as source instead of being coerced into a publishable document.
+ */
+export type EditorRecoverySnapshot =
+  | {mode: 'visual'; document: OutputData}
+  | {mode: 'json'; source: string};

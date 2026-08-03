@@ -8,8 +8,10 @@ import {
   HostListener,
   Inject,
   Input,
+  OnChanges,
   Output,
   PLATFORM_ID,
+  SimpleChanges,
   ViewChild,
   inject,
   signal,
@@ -21,24 +23,37 @@ import type {BlockToolData, EditorConfig, OutputData, ToolConstructable} from '@
 
 import {MediaLibraryItem} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
-import {BlogImageLayout} from '../../../../features/blog/models/blog-post.model';
-import {EditorSavedDocument} from '../../models/editor-document.model';
+import {
+  BlogContentBlock,
+  BlogImageLayout,
+  BlogImageSize,
+} from '../../../../features/blog/models/blog-post.model';
+import {EditorRecoverySnapshot, EditorSavedDocument} from '../../models/editor-document.model';
+import {createBlogBlocksFromEditorDocument} from '../../utils/blog-editorjs-adapter';
+import {
+  normalizeEditorDocumentForBlogEditor,
+  validateEditorDocumentForBlog,
+} from '../../utils/blog-editor-document-validation.util';
 import {AppEmbedBlockTool} from './tools/app-embed-block.tool';
 import {ChartBlockTool} from './tools/chart-block.tool';
 import {CatCornerUnlockBlockTool} from './tools/cat-corner-unlock-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
 import {CmsImageBlockTool, CmsImageLibrarySelection} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
+import {ListPresentationTune} from './tools/list-presentation.tune';
 import {CmsMarkdownBlockTool} from './tools/markdown-block.tool';
 import {PollBlockTool} from './tools/poll-block.tool';
 import {StatsBlockTool} from './tools/stats-block.tool';
 import {SunoEmbedBlockTool} from './tools/suno-embed-block.tool';
 import {TypographyBlockTool} from './tools/typography-block.tool';
+import {UnsupportedBlockTool} from './tools/unsupported-block.tool';
 import {YouTubeEmbedBlockTool} from './tools/youtube-embed-block.tool';
+import {CmsProductionPreviewComponent} from '../production-preview/cms-production-preview.component';
 
 interface EditorToolModules {
   Header: ToolConstructable;
   List: ToolConstructable;
+  ListPresentationTune: ToolConstructable;
   Quote: ToolConstructable;
   Delimiter: ToolConstructable;
   Embed: ToolConstructable;
@@ -54,6 +69,7 @@ interface EditorToolModules {
   AppEmbedBlock: ToolConstructable;
   CatCornerUnlockBlock: ToolConstructable;
   HtmlBlock: ToolConstructable;
+  UnsupportedBlock: ToolConstructable;
 }
 
 export interface EditorImageUploadResult {
@@ -69,12 +85,18 @@ export interface EditorImageUploadResult {
 type EditorImageInsertTab = 'library' | 'upload';
 type EditorImagePanelMode = 'insert' | 'select';
 type EditorImageLayoutMode = BlogImageLayout;
-type EditorViewMode = 'visual' | 'json';
+type EditorImageSizeMode = BlogImageSize | '';
+type EditorViewMode = 'visual' | 'preview' | 'json';
 
 interface EditorImageLayoutOption {
   value: EditorImageLayoutMode;
   label: string;
   description: string;
+}
+
+interface EditorImageSizeOption {
+  value: BlogImageSize;
+  label: string;
 }
 
 const imageLayoutOptions: readonly EditorImageLayoutOption[] = [
@@ -98,6 +120,13 @@ const imageLayoutOptions: readonly EditorImageLayoutOption[] = [
     label: 'Inline right',
     description: 'Float beside following copy on desktop.',
   },
+];
+
+const imageSizeOptions: readonly EditorImageSizeOption[] = [
+  {value: 'small', label: 'Small'},
+  {value: 'medium', label: 'Medium'},
+  {value: 'large', label: 'Large'},
+  {value: 'wide', label: 'Wide'},
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -140,6 +169,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
   return {
     Header: getToolConstructable(headerModule, 'Header'),
     List: getToolConstructable(listModule, 'List'),
+    ListPresentationTune: ListPresentationTune as unknown as ToolConstructable,
     Quote: getToolConstructable(quoteModule, 'Quote'),
     Delimiter: getToolConstructable(delimiterModule, 'Delimiter'),
     Embed: getToolConstructable(embedModule, 'Embed'),
@@ -155,6 +185,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     AppEmbedBlock: AppEmbedBlockTool as unknown as ToolConstructable,
     CatCornerUnlockBlock: CatCornerUnlockBlockTool as unknown as ToolConstructable,
     HtmlBlock: HtmlBlockTool as unknown as ToolConstructable,
+    UnsupportedBlock: UnsupportedBlockTool as unknown as ToolConstructable,
   };
 }
 
@@ -214,6 +245,7 @@ function parseEditorDocument(source: string): OutputData {
   selector: 'app-editor-js',
   imports: [
     CommonModule,
+    CmsProductionPreviewComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -226,26 +258,51 @@ function parseEditorDocument(source: string): OutputData {
             <button
               type="button"
               role="tab"
+              id="editor-view-tab-visual"
+              aria-controls="editor-view-panel-visual"
               class="h-7 px-2.5 text-[11px] font-medium uppercase tracking-[0.12em]"
               [class.bg-cyan-400]="viewMode() === 'visual'"
               [class.text-zinc-950]="viewMode() === 'visual'"
               [class.text-zinc-400]="viewMode() !== 'visual'"
               [attr.aria-selected]="viewMode() === 'visual'"
+              [attr.tabindex]="viewMode() === 'visual' ? 0 : -1"
               [disabled]="isLoading() || isSaving() || isSyncingView()"
               (click)="setViewMode('visual')"
+              (keydown)="handleViewTabKeydown($event, 0)"
             >
               WYSIWYG
             </button>
             <button
               type="button"
               role="tab"
+              id="editor-view-tab-preview"
+              aria-controls="editor-view-panel-preview"
+              class="h-7 px-2.5 text-[11px] font-medium uppercase tracking-[0.12em]"
+              [class.bg-cyan-400]="viewMode() === 'preview'"
+              [class.text-zinc-950]="viewMode() === 'preview'"
+              [class.text-zinc-400]="viewMode() !== 'preview'"
+              [attr.aria-selected]="viewMode() === 'preview'"
+              [attr.tabindex]="viewMode() === 'preview' ? 0 : -1"
+              [disabled]="isLoading() || isSaving() || isSyncingView()"
+              (click)="setViewMode('preview')"
+              (keydown)="handleViewTabKeydown($event, 1)"
+            >
+              Production Preview
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="editor-view-tab-json"
+              aria-controls="editor-view-panel-json"
               class="h-7 px-2.5 text-[11px] font-medium uppercase tracking-[0.12em]"
               [class.bg-cyan-400]="viewMode() === 'json'"
               [class.text-zinc-950]="viewMode() === 'json'"
               [class.text-zinc-400]="viewMode() !== 'json'"
               [attr.aria-selected]="viewMode() === 'json'"
+              [attr.tabindex]="viewMode() === 'json' ? 0 : -1"
               [disabled]="isLoading() || isSaving() || isSyncingView()"
               (click)="setViewMode('json')"
+              (keydown)="handleViewTabKeydown($event, 2)"
             >
               JSON
             </button>
@@ -288,12 +345,40 @@ function parseEditorDocument(source: string): OutputData {
         <p class="border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">{{ message }}</p>
       }
 
+      @if (viewMode() !== 'json' && jsonWarning(); as message) {
+        <p class="border border-amber-500/50 bg-amber-950/30 px-4 py-3 text-sm leading-6 text-amber-100" role="status">
+          {{ message }}
+        </p>
+      }
+
       @if (isLoading()) {
         <p class="border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">Loading editor...</p>
       }
 
+      @if (viewMode() === 'preview') {
+        <div id="editor-view-panel-preview" role="tabpanel" aria-labelledby="editor-view-tab-preview">
+          @defer (on immediate) {
+            <app-cms-production-preview
+              [blocks]="previewBlocks()"
+              [title]="previewTitle"
+              [excerpt]="previewExcerpt"
+              [coverImage]="previewCoverImage"
+              [postId]="previewPostId"
+              [postSlug]="previewPostSlug"
+            ></app-cms-production-preview>
+          } @placeholder {
+            <p class="border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400" role="status">Loading production renderer...</p>
+          }
+        </div>
+      }
+
       @if (viewMode() === 'json') {
-        <section class="overflow-hidden border border-zinc-700 bg-zinc-950">
+        <section
+          id="editor-view-panel-json"
+          role="tabpanel"
+          aria-labelledby="editor-view-tab-json"
+          class="overflow-hidden border border-zinc-700 bg-zinc-950"
+        >
           <header class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900/70 px-3 py-2">
             <div>
               <p class="text-xs font-medium text-zinc-200">Editor.js document</p>
@@ -320,11 +405,20 @@ function parseEditorDocument(source: string): OutputData {
               {{ message }}
             </p>
           }
+
+          @if (jsonWarning(); as message) {
+            <p class="border-t border-amber-500/50 bg-amber-950/30 px-4 py-3 font-mono text-xs leading-5 text-amber-200" role="status">
+              {{ message }}
+            </p>
+          }
         </section>
       }
 
       <div
         #editorHolder
+        id="editor-view-panel-visual"
+        role="tabpanel"
+        aria-labelledby="editor-view-tab-visual"
         class="cms-editor-surface min-h-[420px] bg-zinc-50 px-5 py-5 text-zinc-950"
         [class.opacity-50]="isLoading()"
         [hidden]="viewMode() !== 'visual'"
@@ -540,6 +634,24 @@ function parseEditorDocument(source: string): OutputData {
                 }
               </fieldset>
 
+              <label class="block space-y-2">
+                <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Size</span>
+                <select
+                  [value]="imageSizeMode"
+                  data-testid="cms-image-size"
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                  (change)="setImageSizeMode($event)"
+                >
+                  <option value="">Automatic (preserve existing behavior)</option>
+                  @for (option of imageSizeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                <span class="block text-xs leading-5 text-zinc-500">
+                  Wide uses the safe article width. Inline images stack automatically when the viewport or Reader text scale is too narrow.
+                </span>
+              </label>
+
               @if (imageInsertMessage(); as message) {
                 <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200" role="status">{{ message }}</p>
               }
@@ -652,6 +764,36 @@ function parseEditorDocument(source: string): OutputData {
       content: 'List';
     }
 
+    :host ::ng-deep .cms-editor-surface .cms-list-presentation {
+      min-width: 0;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cdx-list__item-content {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cms-list-presentation[data-list-presentation='steps']
+      > .cdx-list-ordered {
+      gap: .75rem;
+    }
+
+    :host ::ng-deep .cms-editor-surface .cms-list-presentation[data-list-presentation='steps']
+      > .cdx-list-ordered
+      > .cdx-list__item {
+      background: rgb(8 145 178 / 8%);
+      border: 1px solid rgb(8 145 178 / 22%);
+      border-radius: .85rem;
+      padding: .75rem .85rem;
+    }
+
+    :host-context(.dark) ::ng-deep .cms-editor-surface .cms-list-presentation[data-list-presentation='steps']
+      > .cdx-list-ordered
+      > .cdx-list__item {
+      background: rgb(34 211 238 / 7%);
+      border-color: rgb(103 232 249 / 20%);
+    }
+
     :host ::ng-deep .cms-editor-surface .ce-block__content:has(.cdx-quote)::after {
       content: 'Quote';
     }
@@ -691,17 +833,24 @@ function parseEditorDocument(source: string): OutputData {
 
     :host ::ng-deep .cms-editor-surface .ce-header {
       color: #0f172a;
-      font-weight: 700;
-      line-height: 1.25;
+      font-family: var(--font-heading);
+      font-weight: 650;
+      letter-spacing: var(--blog-heading-letter-spacing);
       padding: 0;
+      text-wrap: balance;
     }
 
     :host ::ng-deep .cms-editor-surface h2.ce-header {
-      font-size: 28px;
+      max-width: var(--blog-heading-measure);
+      font-size: var(--blog-h2-size);
+      line-height: var(--blog-h2-line-height);
     }
 
     :host ::ng-deep .cms-editor-surface h3.ce-header {
-      font-size: 24px;
+      max-width: var(--blog-subheading-measure);
+      font-family: var(--font-subheading);
+      font-size: var(--blog-h3-size);
+      line-height: var(--blog-h3-line-height);
     }
 
     :host ::ng-deep .cms-editor-surface .cdx-list {
@@ -773,13 +922,19 @@ function parseEditorDocument(source: string): OutputData {
     }
   `],
 })
-export class EditorJsComponent implements AfterViewInit {
+export class EditorJsComponent implements AfterViewInit, OnChanges {
   @Input({required: true}) initialData!: OutputData;
   @Input() title = 'Post Editor';
   @Input() saveLabel = 'Save Draft';
   @Input() showSaveAction = true;
   @Input() imageUploader: ((file: File) => Promise<EditorImageUploadResult>) | null = null;
+  @Input() previewTitle = '';
+  @Input() previewExcerpt = '';
+  @Input() previewCoverImage = '';
+  @Input() previewPostId = '';
+  @Input() previewPostSlug = '';
   @Output() saved = new EventEmitter<EditorSavedDocument>();
+  @Output() contentChanged = new EventEmitter<void>();
 
   @ViewChild('editorHolder', {static: true}) private readonly editorHolder!: ElementRef<HTMLElement>;
 
@@ -788,9 +943,11 @@ export class EditorJsComponent implements AfterViewInit {
   protected readonly isSyncingView = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly viewMode = signal<EditorViewMode>('visual');
+  protected readonly previewBlocks = signal<readonly BlogContentBlock[]>([]);
   protected readonly jsonSource = signal('');
   protected readonly jsonError = signal<string | null>(null);
   protected readonly jsonStatus = signal<string | null>(null);
+  protected readonly jsonWarning = signal<string | null>(null);
   protected readonly isImagePanelOpen = signal(false);
   protected readonly isImageUploadInProgress = signal(false);
   protected readonly isMediaLibraryLoading = signal(false);
@@ -800,6 +957,7 @@ export class EditorJsComponent implements AfterViewInit {
   protected readonly activeImageTabClass = 'border border-cyan-300 bg-cyan-400 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-950';
   protected readonly inactiveImageTabClass = 'border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-300 hover:border-cyan-300 hover:text-cyan-200';
   protected readonly imageLayoutOptions = imageLayoutOptions;
+  protected readonly imageSizeOptions = imageSizeOptions;
   protected imagePanelMode: EditorImagePanelMode = 'insert';
   protected imageInsertTab: EditorImageInsertTab = 'library';
   protected imageLibrarySearch = '';
@@ -807,19 +965,32 @@ export class EditorJsComponent implements AfterViewInit {
   protected imageCaption = '';
   protected imageAltText = '';
   protected imageLayoutMode: EditorImageLayoutMode = 'fullWidth';
+  protected imageSizeMode: EditorImageSizeMode = '';
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly mediaLibrary = inject(MediaLibraryService);
   private editor: EditorJS | null = null;
   private hasLoadedMediaLibrary = false;
   private pendingImageSelectionResolver: ((selection: CmsImageLibrarySelection | null) => void) | null = null;
+  private suppressContentChanges = false;
+  private previewDocument: OutputData | null = null;
+  private diagnosticsTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(@Inject(PLATFORM_ID) private readonly platformId: object) {
     this.destroyRef.onDestroy(() => {
+      if (this.diagnosticsTimer) {
+        clearTimeout(this.diagnosticsTimer);
+      }
       this.resolvePendingImageSelection(null);
       this.editor?.destroy();
       this.editor = null;
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['previewTitle'] && !changes['previewTitle'].firstChange) {
+      this.scheduleDocumentDiagnostics();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -854,10 +1025,13 @@ export class EditorJsComponent implements AfterViewInit {
 
   protected async reset(): Promise<void> {
     this.error.set(null);
-    this.setJsonDocument(this.initialData);
 
     try {
-      await this.editor?.render(this.initialData);
+      const document = this.requireValidEditorDocument(this.initialData);
+      this.setJsonDocument(document);
+      this.setProductionPreviewDocument(document);
+      await this.renderEditorDocument(document);
+      this.contentChanged.emit();
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to reset editor content.');
     }
@@ -868,23 +1042,68 @@ export class EditorJsComponent implements AfterViewInit {
       return this.getJsonDocument();
     }
 
-    return this.editor ? this.editor.save() : this.initialData;
+    if (this.viewMode() === 'preview' && this.previewDocument) {
+      return this.requireValidEditorDocument(this.previewDocument);
+    }
+
+    return this.editor ? this.getVisualDocument() : this.requireValidEditorDocument(this.initialData);
   }
 
   async renderDocument(document: OutputData): Promise<void> {
-    this.initialData = document;
     this.error.set(null);
-    this.setJsonDocument(document);
-
-    if (!this.editor) {
-      return;
-    }
 
     try {
-      await this.editor.render(document);
+      const normalizedDocument = this.requireValidEditorDocument(document);
+      this.initialData = normalizedDocument;
+      this.setJsonDocument(normalizedDocument);
+      this.setProductionPreviewDocument(normalizedDocument);
+
+      if (this.editor) {
+        await this.renderEditorDocument(normalizedDocument);
+      }
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to import editor content.');
     }
+  }
+
+  async getRecoverySnapshot(): Promise<EditorRecoverySnapshot> {
+    if (this.viewMode() === 'json') {
+      return {mode: 'json', source: this.jsonSource()};
+    }
+
+    const document = this.viewMode() === 'preview' && this.previewDocument
+      ? this.requireValidEditorDocument(this.previewDocument)
+      : this.editor
+        ? await this.getVisualDocument()
+        : this.requireValidEditorDocument(this.initialData);
+
+    return {mode: 'visual', document};
+  }
+
+  async restoreRecoverySnapshot(snapshot: EditorRecoverySnapshot): Promise<void> {
+    this.error.set(null);
+
+    if (snapshot.mode === 'json') {
+      this.viewMode.set('json');
+      this.jsonSource.set(snapshot.source);
+
+      try {
+        this.setJsonValidationState(parseEditorDocument(snapshot.source));
+      } catch (error) {
+        this.jsonError.set(error instanceof Error ? error.message : 'Unable to validate editor JSON.');
+        this.jsonStatus.set(null);
+        this.jsonWarning.set(null);
+      }
+
+      return;
+    }
+
+    const document = this.requireValidEditorDocument(snapshot.document);
+    this.initialData = document;
+    this.setJsonDocument(document);
+    this.setProductionPreviewDocument(document);
+    this.viewMode.set('visual');
+    await this.renderEditorDocument(document);
   }
 
   protected async setViewMode(mode: EditorViewMode): Promise<void> {
@@ -897,18 +1116,38 @@ export class EditorJsComponent implements AfterViewInit {
 
     try {
       if (mode === 'json') {
-        const document = this.editor ? await this.editor.save() : this.initialData;
+        const document = this.viewMode() === 'preview' && this.previewDocument
+          ? this.requireValidEditorDocument(this.previewDocument)
+          : this.editor
+            ? await this.getVisualDocument()
+            : this.requireValidEditorDocument(this.initialData);
         this.setJsonDocument(document);
         this.viewMode.set('json');
         return;
       }
 
-      const document = this.getJsonDocument();
+      const document = this.viewMode() === 'json'
+        ? this.getJsonDocument()
+        : this.viewMode() === 'preview' && this.previewDocument
+          ? this.previewDocument
+          : this.editor
+            ? await this.getVisualDocument()
+            : this.initialData;
+      const normalizedDocument = normalizeEditorDocumentForBlogEditor(document);
 
-      if (this.editor) {
-        await this.editor.render(document);
+      if (mode === 'preview') {
+        this.setJsonDocument(normalizedDocument);
+        this.setProductionPreviewDocument(normalizedDocument);
+        this.viewMode.set('preview');
+        return;
       }
 
+      if (this.editor) {
+        await this.renderEditorDocument(normalizedDocument);
+      }
+
+      this.setJsonDocument(normalizedDocument);
+      this.setProductionPreviewDocument(normalizedDocument);
       this.viewMode.set('visual');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to synchronize the editor views.';
@@ -916,6 +1155,7 @@ export class EditorJsComponent implements AfterViewInit {
       if (this.viewMode() === 'json') {
         this.jsonError.set(message);
         this.jsonStatus.set(null);
+        this.jsonWarning.set(null);
       } else {
         this.error.set(message);
       }
@@ -924,9 +1164,36 @@ export class EditorJsComponent implements AfterViewInit {
     }
   }
 
+  protected handleViewTabKeydown(event: KeyboardEvent, currentIndex: number): void {
+    const keyOffsets: Partial<Record<string, number>> = {
+      ArrowLeft: -1,
+      ArrowRight: 1,
+    };
+    const tabList = event.currentTarget instanceof HTMLElement ? event.currentTarget.parentElement : null;
+    const tabs = tabList ? Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]')) : [];
+    let nextIndex: number | null = null;
+
+    if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    } else if (keyOffsets[event.key] !== undefined && tabs.length > 0) {
+      nextIndex = (currentIndex + (keyOffsets[event.key] ?? 0) + tabs.length) % tabs.length;
+    }
+
+    if (nextIndex === null || !tabs[nextIndex]) {
+      return;
+    }
+
+    event.preventDefault();
+    tabs[nextIndex].focus();
+    tabs[nextIndex].click();
+  }
+
   protected updateJsonSource(event: Event): void {
     const source = event.target instanceof HTMLTextAreaElement ? event.target.value : '';
     this.jsonSource.set(source);
+    this.contentChanged.emit();
 
     try {
       const document = parseEditorDocument(source);
@@ -934,6 +1201,7 @@ export class EditorJsComponent implements AfterViewInit {
     } catch (error) {
       this.jsonError.set(error instanceof Error ? error.message : 'Unable to validate editor JSON.');
       this.jsonStatus.set(null);
+      this.jsonWarning.set(null);
     }
   }
 
@@ -1022,6 +1290,13 @@ export class EditorJsComponent implements AfterViewInit {
     this.imageLayoutMode = mode;
   }
 
+  protected setImageSizeMode(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement ? event.target.value : '';
+    this.imageSizeMode = value === 'small' || value === 'medium' || value === 'large' || value === 'wide'
+      ? value
+      : '';
+  }
+
   protected async insertSelectedMediaImage(): Promise<void> {
     const item = this.selectedMediaItem;
     const url = item ? this.getMediaSourceUrl(item) : '';
@@ -1036,6 +1311,7 @@ export class EditorJsComponent implements AfterViewInit {
       alt: this.imageAltText.trim() || item.altText || item.displayName,
       caption: this.imageCaption.trim(),
       imageLayout: this.imageLayoutMode,
+      ...(this.imageSizeMode ? {imageSize: this.imageSizeMode} : {}),
       ...(item.width ? {width: item.width} : {}),
       ...(item.height ? {height: item.height} : {}),
     };
@@ -1105,10 +1381,16 @@ export class EditorJsComponent implements AfterViewInit {
 
       const config: EditorConfig = {
         holder: this.editorHolder.nativeElement,
-        data: this.initialData,
+        data: this.requireValidEditorDocument(this.initialData),
         autofocus: false,
         inlineToolbar: true,
         placeholder: 'Start writing...',
+        onChange: () => {
+          if (!this.suppressContentChanges) {
+            this.contentChanged.emit();
+            this.scheduleDocumentDiagnostics();
+          }
+        },
         sanitizer: {
           a: {
             href: true,
@@ -1120,6 +1402,9 @@ export class EditorJsComponent implements AfterViewInit {
           mark: true,
         },
         tools: {
+          listPresentation: {
+            class: tools.ListPresentationTune,
+          },
           header: {
             class: tools.Header,
             inlineToolbar: true,
@@ -1131,9 +1416,10 @@ export class EditorJsComponent implements AfterViewInit {
           list: {
             class: tools.List,
             inlineToolbar: true,
+            tunes: ['listPresentation'],
             config: {
               defaultStyle: 'unordered',
-              maxLevel: 2,
+              maxLevel: 3,
             },
           },
           quote: {
@@ -1163,6 +1449,9 @@ export class EditorJsComponent implements AfterViewInit {
           },
           html: {
             class: tools.HtmlBlock,
+          },
+          unsupported: {
+            class: tools.UnsupportedBlock,
           },
           code: {
             class: tools.CmsCodeBlock,
@@ -1202,15 +1491,43 @@ export class EditorJsComponent implements AfterViewInit {
     }
   }
 
+  private setProductionPreviewDocument(document: OutputData): void {
+    this.previewDocument = document;
+    this.previewBlocks.set(createBlogBlocksFromEditorDocument(document));
+  }
+
+  private async renderEditorDocument(document: OutputData): Promise<void> {
+    if (!this.editor) {
+      return;
+    }
+
+    this.suppressContentChanges = true;
+
+    try {
+      await this.editor.render(document);
+    } finally {
+      this.suppressContentChanges = false;
+    }
+  }
+
   private getJsonDocument(): OutputData {
     try {
       const document = parseEditorDocument(this.jsonSource());
-      this.setJsonValidationState(document);
+      const validation = this.setJsonValidationState(document);
+
+      if (!validation.isValid) {
+        const errors = validation.diagnostics
+          .filter(diagnostic => diagnostic.severity === 'error')
+          .map(diagnostic => diagnostic.message);
+        throw new Error(errors.join(' '));
+      }
+
       return document;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to validate editor JSON.';
       this.jsonError.set(message);
       this.jsonStatus.set(null);
+      this.jsonWarning.set(null);
       throw new Error(message, {cause: error});
     }
   }
@@ -1220,10 +1537,82 @@ export class EditorJsComponent implements AfterViewInit {
     this.setJsonValidationState(document);
   }
 
-  private setJsonValidationState(document: OutputData): void {
+  private setJsonValidationState(document: OutputData): ReturnType<typeof validateEditorDocumentForBlog> {
+    const validation = validateEditorDocumentForBlog(document, {postTitle: this.previewTitle});
+    const errors = validation.diagnostics.filter(diagnostic => diagnostic.severity === 'error');
+    const warnings = validation.diagnostics.filter(diagnostic => diagnostic.severity === 'warning');
     const blockLabel = document.blocks.length === 1 ? 'block' : 'blocks';
-    this.jsonError.set(null);
-    this.jsonStatus.set(`Valid JSON · ${document.blocks.length} ${blockLabel}`);
+    const onlyPreservedBlocks = warnings.every(diagnostic => diagnostic.code === 'preserved-unsupported-block');
+    const warningLabel = onlyPreservedBlocks
+      ? warnings.length === 1 ? 'preserved block' : 'preserved blocks'
+      : warnings.length === 1 ? 'warning' : 'warnings';
+
+    this.jsonError.set(errors.length > 0 ? errors.map(diagnostic => diagnostic.message).join(' ') : null);
+    this.jsonWarning.set(warnings.length > 0 ? warnings.map(diagnostic => diagnostic.message).join(' ') : null);
+    this.jsonStatus.set(errors.length === 0
+      ? `Valid JSON · ${document.blocks.length} ${blockLabel}${warnings.length > 0 ? ` · ${warnings.length} ${warningLabel}` : ''}`
+      : null);
+
+    return validation;
+  }
+
+  private requireValidEditorDocument(document: OutputData): OutputData {
+    const validation = this.setJsonValidationState(document);
+
+    if (!validation.isValid) {
+      const message = validation.diagnostics
+        .filter(diagnostic => diagnostic.severity === 'error')
+        .map(diagnostic => diagnostic.message)
+        .join(' ');
+      throw new Error(message);
+    }
+
+    return normalizeEditorDocumentForBlogEditor(document);
+  }
+
+  private async getVisualDocument(): Promise<OutputData> {
+    if (!this.editor) {
+      return this.requireValidEditorDocument(this.initialData);
+    }
+
+    const blockCountBeforeSave = this.editor.blocks.getBlocksCount();
+    const document = await this.editor.save();
+
+    if (document.blocks.length !== blockCountBeforeSave) {
+      throw new Error(
+        `Editor.js returned ${document.blocks.length} of ${blockCountBeforeSave} blocks. Saving is blocked to prevent content loss.`
+      );
+    }
+
+    return this.requireValidEditorDocument(document);
+  }
+
+  private scheduleDocumentDiagnostics(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (this.diagnosticsTimer) {
+      clearTimeout(this.diagnosticsTimer);
+    }
+
+    this.diagnosticsTimer = setTimeout(() => {
+      this.diagnosticsTimer = undefined;
+      void this.refreshDocumentDiagnostics();
+    }, 300);
+  }
+
+  private async refreshDocumentDiagnostics(): Promise<void> {
+    try {
+      const document = this.viewMode() === 'json'
+        ? parseEditorDocument(this.jsonSource())
+        : this.editor
+          ? await this.editor.save()
+          : this.previewDocument ?? this.initialData;
+      this.setJsonValidationState(document);
+    } catch {
+      // JSON parsing and save validation retain their existing actionable errors.
+    }
   }
 
   private uploadImageFile(file: File): Promise<EditorImageUploadResult> {
@@ -1238,6 +1627,7 @@ export class EditorJsComponent implements AfterViewInit {
     this.imageCaption = current.caption;
     this.imageAltText = current.alt;
     this.imageLayoutMode = current.imageLayout;
+    this.imageSizeMode = current.imageSize ?? '';
     this.imageLibrarySearch = '';
     this.imageInsertMessage.set(null);
     this.mediaLibraryError.set(null);
@@ -1325,6 +1715,7 @@ export class EditorJsComponent implements AfterViewInit {
       withBackground: false,
       imageLayout: this.imageLayoutMode,
       stretched: this.imageLayoutMode === 'fullWidth',
+      ...(this.imageSizeMode ? {imageSize: this.imageSizeMode} : {}),
     };
   }
 
@@ -1334,6 +1725,7 @@ export class EditorJsComponent implements AfterViewInit {
     this.imageCaption = '';
     this.imageAltText = '';
     this.imageLayoutMode = 'fullWidth';
+    this.imageSizeMode = '';
   }
 
   private getMediaSourceUrl(item: MediaLibraryItem): string {

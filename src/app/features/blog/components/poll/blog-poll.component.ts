@@ -79,7 +79,7 @@ import {BlogPollService} from '../../services/blog-poll.service';
           <p class="mt-5 text-center text-sm text-slate-500 dark:text-zinc-500">Results update after each verified vote.</p>
         } @else {
           <form class="mt-6" (submit)="submitVote($event)">
-            <fieldset class="space-y-3" [disabled]="submitting">
+            <fieldset class="space-y-3" [disabled]="submitting || readOnly">
               <legend class="sr-only">{{ block.data.question }}</legend>
               @for (option of pollOptions; track option.id) {
                 <label
@@ -98,7 +98,11 @@ import {BlogPollService} from '../../services/blog-poll.service';
               }
             </fieldset>
 
-            @if (currentUser) {
+            @if (readOnly) {
+              <p class="mt-5 border border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-zinc-800 dark:text-zinc-400" role="status">
+                Production preview only. Voting is disabled.
+              </p>
+            } @else if (currentUser) {
               <div class="mt-5 flex flex-wrap gap-3">
                 <button
                   type="submit"
@@ -145,6 +149,7 @@ export class BlogPollComponent implements OnChanges {
   @Input({required: true}) postId = '';
   @Input({required: true}) postSlug = '';
   @Input() compact = false;
+  @Input() readOnly = false;
 
   protected currentUser: User | null = null;
   protected selectedOptionId: string | null = null;
@@ -222,7 +227,7 @@ export class BlogPollComponent implements OnChanges {
   protected async submitVote(event: Event): Promise<void> {
     event.preventDefault();
 
-    if (!this.currentUser || !this.selectedOptionId || this.submitting) {
+    if (this.readOnly || !this.currentUser || !this.selectedOptionId || this.submitting) {
       return;
     }
 
@@ -265,7 +270,7 @@ export class BlogPollComponent implements OnChanges {
   }
 
   private async loadResultsIfNeeded(): Promise<void> {
-    if (!this.block || !this.postId || !this.postSlug) {
+    if (this.readOnly || !this.block || !this.postId || !this.postSlug) {
       return;
     }
 

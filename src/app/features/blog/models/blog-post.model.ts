@@ -40,6 +40,50 @@ export const BLOG_IMAGE_LAYOUTS = [
 
 export type BlogImageLayout = typeof BLOG_IMAGE_LAYOUTS[number];
 
+export const BLOG_IMAGE_SIZES = [
+  'small',
+  'medium',
+  'large',
+  'wide',
+] as const;
+
+export type BlogImageSize = typeof BLOG_IMAGE_SIZES[number];
+
+export type BlogJsonPrimitive = string | number | boolean | null;
+
+export type BlogJsonValue = BlogJsonPrimitive | BlogJsonObject | readonly BlogJsonValue[];
+
+export interface BlogJsonObject {
+  readonly [key: string]: BlogJsonValue;
+}
+
+export const BLOG_LIST_STYLES = [
+  'unordered',
+  'ordered',
+  'checklist',
+] as const;
+
+export type BlogListStyle = typeof BLOG_LIST_STYLES[number];
+
+export const BLOG_LIST_PRESENTATIONS = [
+  'standard',
+  'steps',
+] as const;
+
+export type BlogListPresentation = typeof BLOG_LIST_PRESENTATIONS[number];
+
+export interface BlogListItem {
+  content: string;
+  meta: BlogJsonObject;
+  items: readonly BlogListItem[];
+}
+
+export interface BlogUnsupportedBlockEnvelope {
+  originalType: string;
+  originalData: BlogJsonObject;
+  originalTunes?: BlogJsonObject;
+}
+
 export const BLOG_CHART_TYPES = [
   'bar',
   'line',
@@ -70,7 +114,8 @@ export type BlogBlockType =
   | 'chart'
   | 'poll'
   | 'catCornerUnlock'
-  | 'html';
+  | 'html'
+  | 'unsupported';
 
 export interface BlogStatItem {
   label: string;
@@ -146,6 +191,10 @@ export interface BlogBlockData {
   embedUrl?: string;
   items?: readonly string[];
   ordered?: boolean;
+  listStyle?: BlogListStyle;
+  listPresentation?: BlogListPresentation;
+  listMeta?: BlogJsonObject;
+  listItems?: readonly BlogListItem[];
   language?: string;
   code?: string;
   markdown?: string;
@@ -153,6 +202,7 @@ export interface BlogBlockData {
   withBorder?: boolean;
   withBackground?: boolean;
   imageLayout?: BlogImageLayout;
+  imageSize?: BlogImageSize;
   variant?: BlogTypographyVariant;
   attribution?: string;
   stats?: readonly BlogStatItem[];
@@ -175,16 +225,43 @@ export interface BlogBlockData {
   pollOptions?: readonly BlogPollOption[];
   pollResultsVisibility?: BlogPollResultsVisibility;
   html?: string;
+  unsupportedBlock?: BlogUnsupportedBlockEnvelope;
 }
 
 export interface BlogContentBlock {
   id: string;
   type: BlogBlockType;
   data: BlogBlockData;
+  editorTunes?: BlogJsonObject;
+}
+
+/**
+ * Returns list item text in visual reading order for both legacy flat lists and
+ * recursive Editor.js list/checklist data.
+ */
+export function getBlogListItemTexts(data: BlogBlockData): readonly string[] {
+  if (data.listItems) {
+    const texts: string[] = [];
+
+    const appendItems = (items: readonly BlogListItem[]): void => {
+      for (const item of items) {
+        texts.push(item.content);
+        appendItems(item.items);
+      }
+    };
+
+    appendItems(data.listItems);
+
+    return texts;
+  }
+
+  return data.items ?? [];
 }
 
 export interface BlogPost {
   id: string;
+  /** Monotonic Firestore write revision. Missing legacy values are treated as revision 0. */
+  revision?: number;
   slug: string;
   title: string;
   excerpt: string;

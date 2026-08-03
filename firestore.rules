@@ -9,8 +9,12 @@ service cloud.firestore {
     function hasRole(role) {
       return isSignedIn()
         && (
-          request.auth.token[role] == true
-          || request.auth.token.roles[role] == true
+          (request.auth.token.keys().hasAny([role]) && request.auth.token[role] == true)
+          || (
+            request.auth.token.roles is map
+            && request.auth.token.roles.keys().hasAny([role])
+            && request.auth.token.roles[role] == true
+          )
         );
     }
 
@@ -38,10 +42,25 @@ service cloud.firestore {
       return hasRole('admin');
     }
 
-    function isBackendOnlyPath(documentPath) {
-      return documentPath.matches('socialConnectionSecrets/.*')
-        || documentPath.matches('socialOAuthStates/.*')
-        || documentPath.matches('postPolls/.*');
+    function isBackendOnlyCollection(collectionId) {
+      return collectionId == 'socialConnectionSecrets'
+        || collectionId == 'socialOAuthStates'
+        || collectionId == 'socialOutbox'
+        || collectionId == 'socialConnections'
+        || collectionId == 'shareLinks'
+        || collectionId == 'shareLandingEvents'
+        || collectionId == 'pushSubscriptions'
+        || collectionId == 'postComments'
+        || collectionId == 'postPolls'
+        || collectionId == 'userPointEvents'
+        || collectionId == 'posts'
+        || collectionId == 'postPreviews'
+        || collectionId == 'postDrafts'
+        || collectionId == 'blogSlugs'
+        || collectionId == 'blogMutationReceipts'
+        || collectionId == 'blogPublishingAudit'
+        || collectionId == 'blogMediaAssets'
+        || collectionId == 'blogMediaAudit';
     }
 
     function isOwner(userId) {
@@ -110,7 +129,9 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow get, list: if canManageCmsContent() || isPublishedPost();
-      allow create, update, delete: if canManageCmsContent();
+      // Phase 7: every canonical post mutation is validated, revision-checked,
+      // slug-reserved, audited, and applied by the trusted Functions boundary.
+      allow create, update, delete: if false;
     }
 
     match /authors/{authorId} {
@@ -121,11 +142,44 @@ service cloud.firestore {
     match /postPreviews/{previewId} {
       allow get: if canManageCmsContent() || isActiveDraftPreview();
       allow list: if canManageCmsContent();
-      allow create, update, delete: if canManageCmsContent();
+      allow create, update, delete: if false;
     }
 
-    match /postDrafts/{draftId} {
-      allow read, write: if canManageCmsContent();
+    match /blogSlugs/{slug} {
+      allow read: if canManageCmsContent();
+      allow write: if false;
+    }
+
+    match /blogMutationReceipts/{receiptId} {
+      allow read, write: if false;
+    }
+
+    match /blogPublishingAudit/{eventId} {
+      allow read: if canManageCmsContent();
+      allow write: if false;
+    }
+
+    match /blogMediaAssets/{mediaId} {
+      allow read: if canManageCmsContent() || canManageMediaLibrary();
+      allow write: if false;
+    }
+
+    match /blogMediaAudit/{eventId} {
+      allow read: if canManageCmsContent() || canManageMediaLibrary();
+      allow write: if false;
+    }
+
+    match /postDrafts/{ownerUid}/recoveries/{postId} {
+      allow create: if canManageCmsContent()
+        && request.auth.uid == ownerUid
+        && request.resource.data.ownerUid == ownerUid;
+      allow get, delete: if canManageCmsContent()
+        && request.auth.uid == ownerUid;
+      allow list: if false;
+      allow update: if canManageCmsContent()
+        && request.auth.uid == ownerUid
+        && resource.data.ownerUid == ownerUid
+        && request.resource.data.ownerUid == ownerUid;
     }
 
     match /socialOutbox/{deliveryId} {
@@ -266,9 +320,9 @@ service cloud.firestore {
       allow read, write: if canManageUserAccounts();
     }
 
-    match /{document=**} {
+    match /{collectionId}/{document=**} {
       allow read, write: if canManageUserAccounts()
-        && !isBackendOnlyPath(document);
+        && !isBackendOnlyCollection(collectionId);
     }
   }
 }

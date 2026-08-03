@@ -9,6 +9,7 @@ import {
   Output,
   PLATFORM_ID,
   inject,
+  signal,
 } from '@angular/core';
 
 import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
@@ -21,14 +22,28 @@ import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
     class: 'block xl:sticky',
   },
   template: `
+    <button
+      type="button"
+      class="flex min-h-11 w-full items-center justify-between gap-3 rounded border border-slate-200 bg-white/95 px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-cyan-800 shadow-sm shadow-slate-950/10 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-cyan-200 xl:hidden"
+      aria-controls="blog-table-of-contents-links"
+      [attr.aria-expanded]="mobileExpanded()"
+      (click)="mobileExpanded.set(!mobileExpanded())"
+    >
+      <span>Contents</span>
+      <span class="text-xs normal-case tracking-normal text-slate-500 dark:text-zinc-400" aria-hidden="true">
+        {{ mobileExpanded() ? 'Hide' : 'Show' }}
+      </span>
+    </button>
     <nav
+      id="blog-table-of-contents-links"
       data-toc-scroller
-      aria-labelledby="table-of-contents-heading"
+      aria-label="Article contents"
       class="contents-scroller rounded border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-950/10 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-black/20"
+      [class.contents-collapsed]="!mobileExpanded()"
     >
       <h2
         id="table-of-contents-heading"
-        class="sticky top-0 z-10 border-b border-slate-200 bg-white/95 pb-3 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-cyan-300"
+        class="hidden sticky top-0 z-10 border-b border-slate-200 bg-white/95 pb-3 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-cyan-300 xl:block"
       >
         Contents
       </h2>
@@ -50,12 +65,17 @@ import {BlogTableOfContentsItem} from '../../utils/blog-reading.util';
     </nav>
   `,
   styles: `
+    .contents-collapsed {
+      display: none;
+    }
+
     @media (min-width: 1280px) {
       :host {
         top: calc(var(--site-header-sticky-height) + 1rem);
       }
 
       .contents-scroller {
+        display: block;
         max-height: calc(100dvh - var(--site-header-sticky-height) - 2rem);
         overflow-y: auto;
         scrollbar-gutter: stable;
@@ -84,6 +104,7 @@ export class BlogTableOfContentsComponent implements OnDestroy {
   private currentActiveHeadingId: string | null = null;
   private activeLinkFrame: number | undefined;
   private headingScrollFrame: number | undefined;
+  protected readonly mobileExpanded = signal(false);
   protected readonly activeLinkClass = 'border-cyan-600 bg-cyan-50 text-cyan-800 font-medium dark:border-cyan-300 dark:bg-cyan-300/10 dark:text-cyan-100';
   protected readonly inactiveLinkClass = 'border-slate-200 dark:border-zinc-800';
 
@@ -125,6 +146,7 @@ export class BlogTableOfContentsComponent implements OnDestroy {
 
     view.history.pushState(null, '', this.createAnchorHref(headingId));
     this.headingSelected.emit(headingId);
+    this.mobileExpanded.set(false);
 
     if (this.headingScrollFrame !== undefined) {
       view.cancelAnimationFrame(this.headingScrollFrame);

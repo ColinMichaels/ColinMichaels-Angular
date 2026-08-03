@@ -44,5 +44,6 @@ describe('blog-image-url util', () => {
     expect(isLocalAssetImageUrl('/assets/images/backgrounds/day.webp')).toBeTrue();
     expect(isLocalAssetImageUrl('assets/images/backgrounds/day.webp')).toBeTrue();
     expect(isLocalAssetImageUrl('https://colinmichaels.com/assets/images/backgrounds/day.webp')).toBeTrue();
+    expect(isLocalAssetImageUrl('//colinmichaels.com/assets/images/backgrounds/day.webp')).toBeFalse();
   });
 });

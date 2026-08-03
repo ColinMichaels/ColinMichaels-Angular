@@ -84,6 +84,7 @@ interface UploadedFileMetadata {
   optimized?: boolean;
   width?: number;
   height?: number;
+  mediaId?: string;
 }
 
 export interface MediaLibraryUploadOptions {
@@ -385,6 +386,9 @@ export class MediaLibraryService {
       optimizationSavingsPercent: progress.optimizationSavingsPercent,
       width: progress.width,
       height: progress.height,
+      mediaId: progress.mediaId,
+      checksum: progress.checksum,
+      variants: progress.variants,
     };
 
     return this.createUploadedMediaItem(file, folder, {
@@ -397,6 +401,7 @@ export class MediaLibraryService {
       optimized: result.optimized,
       width: result.width,
       height: result.height,
+      mediaId: result.mediaId,
     }).pipe(
       map(item => ({fileName: result.originalName, progress: 100, status: 'complete' as const, item})),
       startWith(uploadEvent)
@@ -414,7 +419,7 @@ export class MediaLibraryService {
     const mediaType = inferMediaType(metadata.contentType, fileName);
     const width = metadata.width;
     const height = metadata.height;
-    const id = this.createId('media');
+    const id = metadata.mediaId ?? this.createId('media');
     const item: MediaLibraryItem = {
       id,
       displayName: fileName,

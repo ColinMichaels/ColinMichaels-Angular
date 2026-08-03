@@ -2,7 +2,7 @@ import {Injectable, inject} from '@angular/core';
 import {combineLatest, map, Observable} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
-import {BlogPost} from '../../blog/models/blog-post.model';
+import {BlogPost, getBlogListItemTexts} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
@@ -228,7 +228,7 @@ function createBlogPostBodyText(post: BlogPost): string {
       block.data.code,
       block.data.html,
       block.type === 'markdown' ? createBlogMarkdownPlainText(block.data.markdown) : block.data.markdown,
-      ...(block.data.items ?? []),
+      ...getBlogListItemTexts(block.data),
       ...(block.data.stats ?? []).flatMap(stat => [stat.label, stat.value, stat.caption]),
       ...(block.data.chartPoints ?? []).flatMap(point => [point.label, point.note]),
       ...(block.data.labels ?? []),

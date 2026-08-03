@@ -85,7 +85,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
             >
               <article class="post-listing__article">
                 <a
-                  class="post-listing__media"
+                  class="blog-image-reveal post-listing__media"
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
                   [attr.aria-label]="'Read ' + post.title"
                 >

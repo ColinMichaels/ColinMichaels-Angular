@@ -1,20 +1,9 @@
 import {expect, Page, test} from '@playwright/test';
 
 async function openSearchDrawer(page: Page): Promise<void> {
-  const desktopSearch = page
-    .getByRole('navigation', {name: 'Primary navigation'})
-    .getByRole('button', {name: 'Search'});
-
-  if (await desktopSearch.isVisible()) {
-    await desktopSearch.click();
-    return;
-  }
-
-  await page.getByRole('button', {name: 'Toggle navigation menu'}).click();
-  await page
-    .locator('#site-mobile-menu')
-    .getByRole('button', {name: 'Search'})
-    .click();
+  // The compact header uses one always-visible search trigger at every width.
+  // Focusing it opens the same drawer without coupling the test to menu layout.
+  await page.getByRole('searchbox', {name: 'Search posts'}).focus();
 }
 
 test.describe('site search drawer', () => {
@@ -25,16 +14,17 @@ test.describe('site search drawer', () => {
 
     const dialog = page.getByRole('dialog', {name: 'Find posts and pages'});
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('aside')).toHaveCSS('position', 'absolute');
+    const expectedPosition = (page.viewportSize()?.width ?? 0) >= 640 ? 'absolute' : 'fixed';
+    await expect(dialog).toHaveCSS('position', expectedPosition);
 
-    await dialog.getByRole('searchbox', {name: 'Search query'}).fill('architecture');
+    await page.getByRole('searchbox', {name: 'Search posts'}).fill('architecture');
 
     const quickResults = dialog.locator('a.site-search-quick-result');
     await expect(quickResults.first()).toBeVisible();
     await expect(dialog.locator('.site-search-result-media').first()).toBeVisible();
     await expect(dialog.locator('.site-search-topic-label').first()).toBeVisible();
 
-    await dialog.locator('aside').getByRole('button', {name: 'Close search'}).click();
+    await dialog.getByRole('button', {name: 'Close search'}).click();
     await expect(dialog).toBeHidden();
   });
 });

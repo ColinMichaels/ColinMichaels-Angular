@@ -5,8 +5,12 @@ service firebase.storage {
     function hasRole(role) {
       return request.auth != null
         && (
-          request.auth.token[role] == true
-          || request.auth.token.roles[role] == true
+          (request.auth.token.keys().hasAny([role]) && request.auth.token[role] == true)
+          || (
+            request.auth.token.roles is map
+            && request.auth.token.roles.keys().hasAny([role])
+            && request.auth.token.roles[role] == true
+          )
         );
     }
 
@@ -27,6 +31,18 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    function isValidTrustedCmsImage() {
+      return request.resource.size > 0
+        && request.resource.size < 8 * 1024 * 1024
+        && (
+          request.resource.contentType == 'image/jpeg'
+          || request.resource.contentType == 'image/png'
+          || request.resource.contentType == 'image/webp'
+          || request.resource.contentType == 'image/avif'
+          || request.resource.contentType == 'image/gif'
+        );
+    }
+
     function isValidMediaLibraryFile() {
       return request.resource.size < 25 * 1024 * 1024
         && (
@@ -42,9 +58,23 @@ service firebase.storage {
       allow write: if canManageCmsContent() && isValidCmsImage();
     }
 
+    match /cms/blog-media-staging/{userId}/{mediaId}/{fileName} {
+      allow read: if false;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && (canManageCmsContent() || canManageMediaLibrary())
+        && isValidTrustedCmsImage();
+      allow update, delete: if false;
+    }
+
+    match /cms/blog-media/{postSlug}/{assetRole}/{mediaId}/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /cms/blog-media/{postSlug}/{assetRole}/{fileName} {
       allow read: if true;
-      allow write: if (canManageCmsContent() || canManageMediaLibrary()) && isValidCmsImage();
+      allow write: if false;
     }
 
     match /media-library/{allPaths=**} {
@@ -52,9 +82,14 @@ service firebase.storage {
       allow write: if canManageMediaLibrary() && isValidMediaLibraryFile();
     }
 
-    match /{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if hasRole('admin');
+    match /{topLevel}/{allPaths=**} {
+      // Specific blog-media rules remain authoritative. Without this exclusion,
+      // the legacy fallback would re-open private staging reads and admin writes.
+      // All CMS paths have explicit rules, so the generic fallback excludes them.
+      allow read: if request.auth != null
+        && topLevel != 'cms';
+      allow write: if hasRole('admin')
+        && topLevel != 'cms';
     }
   }
 }
