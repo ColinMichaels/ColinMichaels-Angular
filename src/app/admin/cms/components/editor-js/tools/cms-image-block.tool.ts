@@ -38,6 +38,8 @@ interface CmsImageUploadResult {
   };
 }
 
+type CmsImageUploadProgressCallback = (progress: number) => void;
+
 export interface CmsImageLibrarySelection {
   url: string;
   alt: string;
@@ -53,7 +55,10 @@ interface CmsImageToolConfig {
     selectImage?: (current: CmsImageLibrarySelection) => Promise<CmsImageLibrarySelection | null>;
   };
   uploader?: {
-    uploadByFile?: (file: File) => Promise<CmsImageUploadResult>;
+    uploadByFile?: (
+      file: File,
+      onProgress?: CmsImageUploadProgressCallback
+    ) => Promise<CmsImageUploadResult>;
   };
 }
 
@@ -426,6 +431,20 @@ export class CmsImageBlockTool implements BlockTool {
     status.setAttribute('aria-live', 'polite');
     status.style.cssText = 'margin:12px 0 0;min-height:18px;font-size:12px;color:#52525b';
 
+    const uploadProgress = createElement('div');
+    uploadProgress.hidden = true;
+    uploadProgress.dataset['imageUploadProgress'] = 'true';
+    uploadProgress.setAttribute('role', 'progressbar');
+    uploadProgress.setAttribute('aria-label', 'Image upload progress');
+    uploadProgress.setAttribute('aria-valuemin', '0');
+    uploadProgress.setAttribute('aria-valuemax', '100');
+    uploadProgress.setAttribute('aria-valuenow', '0');
+    uploadProgress.style.cssText = 'height:8px;margin-top:12px;overflow:hidden;background:#e4e4e7';
+
+    const uploadProgressBar = createElement('div');
+    uploadProgressBar.style.cssText = 'height:100%;width:0;background:#22d3ee;transition:width 160ms ease';
+    uploadProgress.append(uploadProgressBar);
+
     const applyPresentation = (layout: BlogImageLayout, size: BlogImageSize | undefined): void => {
       layoutDescription.textContent = imageLayoutConfigs[layout].description;
       sizeDescription.textContent = size
@@ -481,7 +500,17 @@ export class CmsImageBlockTool implements BlockTool {
       uploadInput.value = '';
 
       if (file) {
-        void this.uploadImage(file, urlInput, altInput, previewImage, renderPreview, status, uploadButton);
+        void this.uploadImage(
+          file,
+          urlInput,
+          altInput,
+          previewImage,
+          renderPreview,
+          status,
+          uploadProgress,
+          uploadProgressBar,
+          uploadButton
+        );
       }
     });
 
@@ -494,6 +523,7 @@ export class CmsImageBlockTool implements BlockTool {
       layoutGroup,
       sizeGroup,
       optionsGroup,
+      uploadProgress,
       status
     );
 
@@ -602,6 +632,8 @@ export class CmsImageBlockTool implements BlockTool {
     previewImage: HTMLImageElement,
     renderPreview: (url: string) => void,
     status: HTMLElement,
+    uploadProgress: HTMLDivElement,
+    uploadProgressBar: HTMLDivElement,
     uploadButton: HTMLButtonElement
   ): Promise<void> {
     const upload = this.config.uploader?.uploadByFile;
@@ -612,10 +644,25 @@ export class CmsImageBlockTool implements BlockTool {
     }
 
     uploadButton.disabled = true;
-    status.textContent = 'Uploading image...';
+    uploadButton.textContent = 'Uploading...';
+    uploadProgress.hidden = false;
+    uploadProgress.setAttribute('aria-valuenow', '0');
+    uploadProgressBar.style.width = '18%';
+    status.textContent = `Preparing ${file.name} for upload...`;
 
     try {
-      const result = await upload(file);
+      const result = await upload(file, progress => {
+        const normalizedProgress = Math.round(Math.min(
+          100,
+          Math.max(0, Number.isFinite(progress) ? progress : 0)
+        ));
+
+        uploadProgress.setAttribute('aria-valuenow', String(normalizedProgress));
+        uploadProgressBar.style.width = `${normalizedProgress === 0 ? 18 : normalizedProgress}%`;
+        status.textContent = normalizedProgress >= 100
+          ? 'Upload complete. Processing image and creating web-ready versions...'
+          : `Uploading ${file.name}... ${normalizedProgress}%`;
+      });
 
       if (!result.file.url) {
         throw new Error('Upload completed without an image URL.');
@@ -635,6 +682,8 @@ export class CmsImageBlockTool implements BlockTool {
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Unable to upload image.';
     } finally {
+      uploadProgress.hidden = true;
+      uploadButton.textContent = 'Upload New';
       uploadButton.disabled = this.readOnly || !upload;
     }
   }

@@ -370,6 +370,71 @@ describe('EditorJsComponent', () => {
     expect((await fixture.componentInstance.getDocument()).blocks[0].id).toBe('json-preview');
   });
 
+  it('keeps authors informed while a newly inserted image uploads and is processed', async () => {
+    let reportProgress: ((progress: number) => void) | undefined;
+    let resolveUpload: ((result: {
+      success: 1;
+      file: { url: string; width: number; height: number };
+    }) => void) | undefined;
+    const imageUploader = jasmine.createSpy('imageUploader').and.callFake((
+      _file: File,
+      onProgress?: (progress: number) => void
+    ) => {
+      reportProgress = onProgress;
+      return new Promise<{
+        success: 1;
+        file: { url: string; width: number; height: number };
+      }>(resolve => {
+        resolveUpload = resolve;
+      });
+    });
+
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{id: 'existing-copy', type: 'paragraph', data: {text: 'Existing post copy.'}}],
+    });
+    fixture.componentRef.setInput('imageUploader', imageUploader);
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+
+    clickButtonByText(fixture, 'Insert Image');
+    fixture.detectChanges();
+    clickButtonByText(fixture, 'Upload New');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const fileInput = element.querySelector<HTMLInputElement>('input[type="file"][accept="image/*"]');
+    const file = new File(['image'], 'slow-inline.jpg', {type: 'image/jpeg'});
+
+    Object.defineProperty(fileInput, 'files', {value: [file]});
+    fileInput?.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    let progress = element.querySelector<HTMLElement>('[data-testid="cms-image-upload-progress"]');
+    expect(progress?.textContent).toContain('Preparing image for upload');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('0');
+
+    reportProgress?.(58);
+    fixture.detectChanges();
+    progress = element.querySelector<HTMLElement>('[data-testid="cms-image-upload-progress"]');
+    expect(progress?.textContent).toContain('Uploading image... 58%');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('58');
+
+    reportProgress?.(100);
+    fixture.detectChanges();
+    progress = element.querySelector<HTMLElement>('[data-testid="cms-image-upload-progress"]');
+    expect(progress?.textContent).toContain('Upload complete. Processing image');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('100');
+
+    resolveUpload?.({
+      success: 1,
+      file: {url: 'https://cdn.example.com/slow-inline.webp', width: 1600, height: 900},
+    });
+    await waitForSelectorState(fixture, '[data-testid="cms-image-upload-progress"]', false);
+
+    const document = await fixture.componentInstance.getDocument();
+    expect(document.blocks.some(block => block.type === 'image')).toBeTrue();
+  });
+
   it('refuses Production Preview when the current JSON source is invalid', async () => {
     fixture.componentRef.setInput('initialData', {
       blocks: [{id: 'safe', type: 'paragraph', data: {text: 'Safe content.'}}],

@@ -266,12 +266,16 @@ The publishing Calendar is available at `/admin/cms/calendar` for CMS content ro
 
 Component inventory:
 
-- `PublishingCalendarComponent` provides month navigation, scheduled/published/social filters, day agendas, post lookup, inline post rescheduling, an upcoming queue, and social announcement create/edit/cancel controls.
+- `PublishingCalendarComponent` provides the full scheduling workspace: month navigation, scheduled/published/social filters, day agendas, post lookup, inline post rescheduling, an upcoming queue, and social announcement create/edit/cancel controls.
+- `PublishingCalendarMonthComponent` is the shared Monday-first month grid used by both the full Calendar and the post editor. `publishing-calendar.utils.ts` owns the shared event and day projection so both surfaces show the same post schedule.
+- `PostScheduleCalendarComponent` embeds that month grid under the post editor's Publish Date field, excludes the post being edited, shows other scheduled posts on the selected day, and offers open 9:00 AM, noon, 3:00 PM, and 6:00 PM suggestions without leaving the draft.
 - `BlogSocialPromotion` stores provider-specific messages and delivery times without changing the public blog post rendering contract.
 - `publishScheduledPosts` queues due announcements in the protected `socialOutbox` collection after their source article is published.
 
 Migration notes:
 
+- The editor calendar uses the existing `status` and `publishedAt` fields and the existing `BlogRepositoryService` stream. It requires no post backfill, Rules change, Function change, or deployment ordering beyond the normal Hosting release.
+- Suggested slots are editorial guidance, not a new backend uniqueness rule. Editors can still type another future time when closely spaced publishing is intentional.
 - Existing posts require no backfill because `socialPromotion` is optional.
 - Editors can attach multiple later announcements to a post that is already published.
 - This release creates durable outbox work but does not call social-provider APIs. Provider OAuth, Secret Manager credentials, media preparation, retries, and delivery workers are the next integration phase.

@@ -56,6 +56,8 @@ The source article URL is retained separately from the visible message even when
 
 The post route remains `/admin/cms/:slug/edit`; workspace state is represented with query parameters rather than new routes. Calendar and other CMS surfaces can deep-link to `?tab=social&channel=facebook&announcement=<id>`. Editor.js stays mounted while workspaces are hidden so changing tabs cannot discard an unsaved article document.
 
+Focusing the Publish Date field or choosing **View calendar** opens an embedded scheduling surface beneath the field. It reuses `PublishingCalendarMonthComponent`, the same Monday-first month grid rendered by `/admin/cms/calendar`, and the same pure event/day projection utilities. The editor filters that shared projection to other scheduled posts, keeps the current post out of its own availability check, and lets the editor apply an open suggested time directly to the existing reactive form. The suggestions at 9:00 AM, noon, 3:00 PM, and 6:00 PM are convenience choices; they do not introduce a uniqueness constraint or replace the existing future-date validation.
+
 The shared social editor is a controlled component. It owns channel selection, platform formats, native-media planning, copy, approximate previews, AI suggestions, and local dirty state, but it does not inject `BlogRepositoryService`. The post editor merges social changes into its normal whole-post save. Calendar remains a separate persistence host for schedule operations. This prevents a child component from overwriting unsaved article fields with a stale post snapshot.
 
 Calendar opens the shared editor in a full-width scheduling workspace. Unsaved Calendar composition is cached per post for the lifetime of the page, so closing the workspace, changing days, or receiving a live repository update does not silently replace in-progress copy. A successful save clears that cached draft.
@@ -79,6 +81,9 @@ Social-provider account connections and delivery workers are a separate boundary
 ## Component Inventory
 
 - `PublishingCalendarComponent` owns month navigation, content filters, day selection, the upcoming queue, inline rescheduling, and host-level persistence for scheduled social plans.
+- `PublishingCalendarMonthComponent` owns the reusable visual month grid, day/event selection, filter controls, and scheduled/published/social event presentation shared by the full Calendar and post editor.
+- `publishing-calendar.utils.ts` owns the reusable local-date keys, event projection, filtering, and fixed six-week Monday-first day grid.
+- `PostScheduleCalendarComponent` adapts the shared month grid for post-date selection, showing only other scheduled posts and emitting an explicitly selected open suggested time without writing to the repository directly.
 - `SocialPromotionEditorComponent` is the controlled, reusable composition surface shared by the post editor and Calendar. It owns channel drafts, format/media/link choices, approximate previews, explicit AI suggestion application, and schedule fields without directly writing a post.
 - `blog-social-promotion.util.ts` owns migration-safe channel defaults and deterministic native-first starter copy so the Calendar component does not duplicate copy rules.
 - `SocialConnectionsPageComponent` owns sanitized Facebook, Instagram, and Threads connection health, explicit Facebook Page selection, direct Instagram connection status, reconnect, and disconnect actions. It never reads provider tokens.
@@ -207,6 +212,9 @@ Cloud Tasks is a reasonable next execution layer when volume or retry needs outg
 
 ## Migration Notes
 
+- The embedded post-editor calendar reads the existing `BlogPost.status` and `BlogPost.publishedAt` fields and emits the existing `datetime-local` form value. It adds no stored field, Firestore index, Rules, Function, dependency, or backfill requirement.
+- Rollback is UI-only: remove `PostScheduleCalendarComponent` from the post editor and restore the full Calendar's inlined month view if the shared component extraction is reverted. Existing scheduled posts and typed Publish Date values remain valid.
+- Suggested slots indicate exact-hour occupancy among scheduled posts; they are not a server-enforced publishing policy. Manually entered future times continue through the existing validation and save path.
 - No backfill is required. Posts without `socialPromotion` behave exactly as before.
 - Existing announcements without `deliveryTiming` retain their fixed `scheduledAt` behavior. Only new or explicitly changed `at-publish` announcements follow article reschedules.
 - Existing announcements without `contentAngle`, `mediaType`, or `linkPlacement` require no backfill. They render as custom copy, infer image media from any existing `mediaUrl`, and retain in-post link behavior.
