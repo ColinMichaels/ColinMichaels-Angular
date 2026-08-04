@@ -17,8 +17,10 @@ describe('PrivacyPolicyComponent', () => {
   });
 
   it('states the no-sale and deletion commitments', () => {
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const element = fixture.nativeElement as HTMLElement;
+    const text = element.textContent ?? '';
 
+    expect(element.querySelector('.site-layout.site-layout-prose')).not.toBeNull();
     expect(text).toContain('We do not sell, rent, or trade your personal information.');
     expect(text).toContain('You may ask at any time to have personal information associated with you removed.');
   });

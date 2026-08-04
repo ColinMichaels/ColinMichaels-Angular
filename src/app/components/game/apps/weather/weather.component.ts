@@ -13,8 +13,10 @@ import {TooltipDirective} from '../../directives/tooltip.directive';
   imports: [CommonModule, FaIconComponent, TooltipDirective],
 })
 export class WeatherComponent implements OnInit {
-  private settingsService = inject(SettingsService);
+  private readonly settingsService = inject(SettingsService);
   private readonly weatherService = inject(WeatherService);
+
+  readonly isDemoMode = this.weatherService.isDemoMode;
   isDarkMode = signal(false);
   currentWeather?: WeatherBundle;
   fiveDayForecast: DailyForecast[] = [];
@@ -23,9 +25,9 @@ export class WeatherComponent implements OnInit {
   ngOnInit() {
     // Check if dark mode is enabled in settings or use system preference
     this.loadWeather();
-    const savedTheme = this.settingsService.getSettingValue$('weather-app', 'theme');
-    if (savedTheme) {
-      this.isDarkMode.set(true);
+    const savedTheme = this.settingsService.getSettingValue$<'dark' | 'light'>('weather-app', 'theme').value;
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      this.isDarkMode.set(savedTheme === 'dark');
     } else {
       // Default to browser preference if available
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -76,7 +78,7 @@ export class WeatherComponent implements OnInit {
   }
 
   setUnits(fahrenheit: boolean) {
-    console.warn(fahrenheit);
     this.weatherService.setUnit(fahrenheit);
+    this.loadWeather();
   }
 }

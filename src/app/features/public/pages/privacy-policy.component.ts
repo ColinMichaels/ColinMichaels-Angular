@@ -7,7 +7,7 @@ import {RouterLink} from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <article class="mx-auto max-w-4xl">
+      <article class="site-layout site-layout-prose">
         <header class="blog-page-header">
           <nav class="blog-breadcrumb" aria-label="Privacy policy navigation">
             <a routerLink="/" class="font-medium hover:text-cyan-800 dark:hover:text-cyan-200">Home</a>

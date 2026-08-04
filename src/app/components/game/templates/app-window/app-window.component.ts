@@ -59,6 +59,10 @@ const isParamsAwareComponent = (instance: unknown): instance is ParamsAwareCompo
       transition: width 0.05s ease-out, height 0.05s ease-out;
     }
 
+    .app-window-header {
+      @apply rounded-t-lg bg-black/30 backdrop-blur-md backdrop-saturate-150;
+    }
+
     .app-window.resizing {
       transition: none;
     }

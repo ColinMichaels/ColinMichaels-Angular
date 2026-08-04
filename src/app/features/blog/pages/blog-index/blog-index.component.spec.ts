@@ -74,6 +74,7 @@ describe('BlogIndexComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
 
+    expect(element.querySelector('.site-layout.site-layout-reading')).not.toBeNull();
     expect(element.textContent).not.toContain('Notes on frontend engineering');
     expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE);
     expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');

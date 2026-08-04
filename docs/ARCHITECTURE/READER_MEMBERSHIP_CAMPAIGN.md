@@ -25,7 +25,7 @@ The delayed offer rechecks auth and campaign eligibility immediately before open
 
 ## Component Inventory
 
-- `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, focus management, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
+- `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, CDK-backed modal focus containment/restoration, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
 - `BlogMembershipCampaignStateService` owns versioned dismissal and pending-preference browser storage.
 - `AuthService.authState$` distinguishes initialization, authenticated, unauthenticated, and unavailable states. Campaign eligibility uses this state; existing `user$` consumers receive only resolved identity results.
 - `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts and account-level email choices.
@@ -69,7 +69,8 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 
 ## Accessibility And Responsive Behavior
 
-- The popup is a labelled modal dialog with focus on open, Escape dismissal, a named close button, semantic fieldset controls, visible focus states, and live status feedback.
+- The popup is a labelled modal dialog with focus containment on open, restoration to the prior control on close, Escape dismissal, a named 44px close button, semantic fieldset controls, visible focus states, and live status feedback.
+- Secondary actions retain 44px targets, and consent/dismissal copy uses the campaign's muted token instead of the lower-contrast legacy gray.
 - Reduced-motion preferences remove entry and control transitions.
 - Desktop presentation uses a two-column editorial layout; narrow and short viewports collapse the art and make the content region scrollable.
 - The signup screen hides decorative Core OS controls during the reader campaign so consent and registration controls are not obscured. Its communication choices use the login screen's translucent Apple-style settings group and switches while retaining native checkbox semantics for forms and assistive technology.
@@ -81,6 +82,7 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 
 - No Firestore data migration or account backfill is required.
 - Auth-readiness, route-guard consolidation, and local logging require an Angular Hosting deployment only; they do not change Functions, Firestore Rules, or stored documents.
+- Focus containment, target sizing, and contrast hardening are Angular/CSS-only changes with no account, consent, route, Rules, or Functions migration.
 - The redirect-return record is tab-scoped, expires after 15 minutes, and needs no Firebase configuration or OAuth callback-domain change.
 - Deploy Angular Hosting and Firestore Rules together.
 - Existing authentication providers, comments, points, and push Functions are reused without a Functions code change.
@@ -128,3 +130,10 @@ Auth-readiness hardening validation on August 3, 2026:
 - `npm run lint` and `npm run build` passed on Node.js 24.15.0; the production initial bundle remained `1.47 MB` raw and `334.38 kB` estimated transfer.
 - The repository Playwright suite passed on desktop and mobile Chromium (`6/6`).
 - A signed-out local-live article remained readable at the default desktop viewport and a 390×844 mobile override, with no horizontal overflow and no browser console warnings or errors. The browser already held a valid campaign dismissal, so the rendered offer itself was intentionally covered by deterministic component tests rather than by clearing user storage.
+
+Accessibility hardening validation on August 4, 2026:
+
+- Focused header, membership, and homepage-hero coverage passed (`34/34`), including initial campaign focus, dismissal restoration, search restoration, logo heading ownership, and the semantic featured title. The complete Angular suite passed (`763/763`).
+- The live homepage and search dialog retain one route-owned H1, a visible featured H2, 44px primary controls, no horizontal overflow, and no console warnings or errors at 1280×720 and 390×844.
+- The current browser's campaign dismissal was preserved. Modal containment/restoration for the membership offer was verified through the real CDK focus trap in headless Chromium rather than by altering reader storage.
+- Repository lint and the production build passed on Node.js 24.15.0; the initial bundle is `1.48 MB` raw and `336.97 kB` estimated transfer. The content-backed Playwright suite passed on desktop and mobile Chromium (`6/6`); unrelated browser cases seed only their isolated test context with a one-day campaign frequency cap so the marketing prompt cannot cover the surface under test.

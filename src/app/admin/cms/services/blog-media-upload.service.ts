@@ -149,23 +149,28 @@ export class BlogMediaUploadService {
           },
         };
 
-        return this.firestore.uploadFileWithProgress(storagePath, preparedFile.file, metadata).pipe(
+        return this.firestore.uploadFileWithProgress(
+          storagePath,
+          preparedFile.file,
+          metadata,
+          {resolveDownloadUrl: false}
+        ).pipe(
           concatMap(event => {
             const progress: BlogMediaUploadProgress = {
-            progress: event.progress,
-            storagePath,
-            originalName: preparedFile.originalName,
-            contentType: preparedFile.file.type,
-            size: preparedFile.file.size,
-            originalSize: preparedFile.originalSize,
-            optimized: preparedFile.optimized,
-            optimizationSavings: preparedFile.optimizationSavings,
-            optimizationSavingsPercent: preparedFile.optimizationSavingsPercent,
-            width: preparedFile.width,
-            height: preparedFile.height,
+              progress: event.progress,
+              storagePath,
+              originalName: preparedFile.originalName,
+              contentType: preparedFile.file.type,
+              size: preparedFile.file.size,
+              originalSize: preparedFile.originalSize,
+              optimized: preparedFile.optimized,
+              optimizationSavings: preparedFile.optimizationSavings,
+              optimizationSavingsPercent: preparedFile.optimizationSavingsPercent,
+              width: preparedFile.width,
+              height: preparedFile.height,
             };
 
-            if (!event.downloadUrl) {
+            if (!event.uploadComplete) {
               return of(progress);
             }
 

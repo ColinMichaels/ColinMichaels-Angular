@@ -20,7 +20,7 @@ import {createBlogCategoryTitle, createBlogTagSlug} from '../../utils/blog-categ
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <section class="mx-auto max-w-5xl">
+      <section class="site-layout site-layout-reading">
         <header class="blog-section-rule blog-page-header">
           <nav class="blog-breadcrumb" aria-label="Blog navigation">
             <a [routerLink]="['/', pathNames.BLOG]" class="font-medium hover:text-cyan-800 dark:hover:text-cyan-200">Blog</a>

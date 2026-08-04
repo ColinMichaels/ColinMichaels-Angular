@@ -1,4 +1,5 @@
 import {DOCUMENT} from '@angular/common';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -27,7 +28,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
 
 @Component({
   selector: 'app-blog-membership-campaign',
-  imports: [RouterLink],
+  imports: [CdkTrapFocus, RouterLink],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -42,6 +43,8 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
         class="membership-campaign-dialog"
         role="dialog"
         aria-modal="true"
+        cdkTrapFocus
+        cdkTrapFocusAutoCapture
         [attr.aria-labelledby]="stage() === 'offer' ? 'membership-campaign-title' : 'membership-followup-title'"
         [attr.aria-describedby]="stage() === 'offer' ? 'membership-campaign-description' : 'membership-followup-description'"
         tabindex="-1"
@@ -49,6 +52,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
       >
         <button
           type="button"
+          cdkFocusInitial
           class="membership-close"
           aria-label="Close account benefits"
           (click)="closeCampaign(7)"
@@ -284,13 +288,13 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
       border-radius: 9999px;
       color: var(--campaign-text);
       display: inline-flex;
-      height: 2.5rem;
+      height: 2.75rem;
       justify-content: center;
       position: absolute;
       right: 1rem;
       top: 1rem;
       transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
-      width: 2.5rem;
+      width: 2.75rem;
       z-index: 4;
     }
 
@@ -511,7 +515,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
     }
 
     .membership-consent-note {
-      color: #71717a;
+      color: var(--campaign-muted);
       font-size: 0.73rem;
       line-height: 1.45;
       margin: 0;
@@ -563,7 +567,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
       border: 0;
       font-family: var(--font-accent);
       font-size: 0.82rem;
-      min-height: 2rem;
+      min-height: 2.75rem;
     }
 
     .membership-link-action {
@@ -572,7 +576,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
     }
 
     .membership-muted-action {
-      color: #71717a;
+      color: var(--campaign-muted);
     }
 
     .membership-link-action:hover,
@@ -938,7 +942,6 @@ export class BlogMembershipCampaignComponent {
 
   private openDialog(): void {
     this.isOpen.set(true);
-    this.focusDialog();
   }
 
   private cancelPendingPrompt(): void {

@@ -1,27 +1,40 @@
-/* Optional: Add custom styles for dark mode input autofill */
+/*
+ * Core OS framework globals.
+ *
+ * Every selector is rooted in the route-owned `.core-os-scope` so macOS/game
+ * controls cannot restyle public-site forms or components.
+ */
+.core-os-scope {
+  color-scheme: dark;
+  display: block;
+  font-family: var(--font-body);
+  min-height: 100dvh;
+}
+
 @layer base {
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
+  .core-os-scope input:-webkit-autofill,
+  .core-os-scope input:-webkit-autofill:hover,
+  .core-os-scope input:-webkit-autofill:focus {
     -webkit-text-fill-color: theme('colors.gray.900');
     -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.50');
   }
 
-  .dark input:-webkit-autofill,
-  .dark input:-webkit-autofill:hover,
-  .dark input:-webkit-autofill:focus {
+  .dark .core-os-scope input:-webkit-autofill,
+  .dark .core-os-scope input:-webkit-autofill:hover,
+  .dark .core-os-scope input:-webkit-autofill:focus {
     -webkit-text-fill-color: theme('colors.gray.100');
     -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.800');
   }
 }
 
-
 /* Hazy glass style */
-.menu-dropdown {
+.core-os-scope .menu-dropdown {
   @apply bg-zinc-800/70 z-50 backdrop-blur-md backdrop-saturate-150 border border-white/20 shadow-xl shadow-black/50 rounded-md text-white p-0.5 text-xs;
   @apply min-w-[8rem] max-w-[16rem] overflow-hidden whitespace-nowrap text-ellipsis transition space-y-1;
+
   .menu-item {
     @apply hover:bg-blue-500/50 rounded px-4 py-1 truncate;
+
     &:hover {
       @apply bg-blue-500/50;
     }
@@ -34,23 +47,20 @@
 
   .menu-item {
     @apply relative;
+
     &.disabled {
       @apply opacity-50 cursor-not-allowed;
     }
   }
 }
 
-/* Apply same style to app-window and dock borders */
-.app-window {
+/* App-window chrome that is shared by all registered OS applications. */
+.core-os-scope .app-window {
   @apply bg-zinc-800/50 backdrop-blur-md backdrop-saturate-150 border border-white/50 shadow-xl rounded-xl;
 }
 
-.app-window-header, .dock-back {
-  @apply bg-black/30 backdrop-blur-md backdrop-saturate-150  rounded-t-lg;
-}
-
 /* Style for buttons and inputs with macOS glass feel */
-.mac-button {
+.core-os-scope .mac-button {
   @apply px-3 py-1 w-fit text-xs text-white bg-white/10
   backdrop-blur-md backdrop-saturate-150 shadow-lg active:bg-white/40
   focus:outline-none focus:ring-2 focus:ring-white/30
@@ -61,8 +71,6 @@
   }
 }
 
-.mac-input {
+.core-os-scope .mac-input {
   @apply px-3 py-1 text-sm text-white placeholder-white/60 bg-white/10 backdrop-blur-md backdrop-saturate-150 border border-white/20 rounded focus:outline-none focus:ring-2 focus:ring-white/30;
 }
-
-

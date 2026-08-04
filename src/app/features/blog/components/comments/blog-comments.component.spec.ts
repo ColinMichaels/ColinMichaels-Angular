@@ -127,7 +127,20 @@ describe('BlogCommentsComponent', () => {
 
     expect(element.textContent).toContain('Sign in to join the discussion');
     expect(element.textContent).toContain('No comments yet');
+    expect(element.querySelector('a.btn-primary')?.textContent).toContain('Sign in');
+    expect(element.querySelector('.site-card')).not.toBeNull();
+    expect(element.querySelector('.site-empty-panel')).not.toBeNull();
     expect(commentService.listenToApprovedComments).toHaveBeenCalledWith('sample-post', BLOG_COMMENT_PAGE_SIZE);
+  });
+
+  it('uses the shared public form and control primitives for signed-in readers', () => {
+    authState$.next(mockUser);
+    fixture = createComponent();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('form.site-card')).not.toBeNull();
+    expect(element.querySelector('textarea.site-input')).not.toBeNull();
+    expect(element.querySelector('button[type="submit"]')?.classList).toContain('btn-primary');
   });
 
   it('blocks links and markup before submitting a signed-in comment', async () => {
@@ -220,6 +233,7 @@ describe('BlogCommentsComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('waiting for admin review');
+    expect(fixture.nativeElement.querySelector('.site-success-panel')).not.toBeNull();
   });
 
   it('does not show raw permission errors when approved comments cannot be read', () => {

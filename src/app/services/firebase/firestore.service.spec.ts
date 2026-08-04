@@ -1,5 +1,10 @@
 import {TestBed} from '@angular/core/testing';
-import {FirestoreService, FirestoreDocument, FirestoreFilter} from './firestore.service';
+import {
+  FirestoreService,
+  FirestoreDocument,
+  FirestoreFilter,
+  StorageUploadProgress,
+} from './firestore.service';
 import {of} from 'rxjs';
 import {FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
 
@@ -456,6 +461,52 @@ describe('FirestoreService', () => {
             expect(error.message).toContain('Failed to upload file');
             done();
           }
+        });
+      });
+    });
+
+    describe('uploadFileWithProgress', () => {
+      it('should resolve the download URL for public uploads by default', (done) => {
+        const events: StorageUploadProgress[] = [];
+        const mockFile = new File(['test content'], 'test.txt', {type: 'text/plain'});
+
+        service.uploadFileWithProgress('public/test.txt', mockFile).subscribe({
+          next: event => events.push(event),
+          complete: () => {
+            expect(events[events.length - 1]).toEqual({
+              progress: 100,
+              uploadComplete: true,
+              downloadUrl: 'https://example.com/file.txt',
+            });
+            expect(harness.getDownloadURL).toHaveBeenCalledOnceWith(
+              jasmine.objectContaining({})
+            );
+            done();
+          },
+          error: done.fail,
+        });
+      });
+
+      it('should complete a private upload without reading the object back', (done) => {
+        const events: StorageUploadProgress[] = [];
+        const mockFile = new File(['test content'], 'source.webp', {type: 'image/webp'});
+
+        service.uploadFileWithProgress(
+          'cms/blog-media-staging/user/media/source.webp',
+          mockFile,
+          undefined,
+          {resolveDownloadUrl: false}
+        ).subscribe({
+          next: event => events.push(event),
+          complete: () => {
+            expect(events[events.length - 1]).toEqual({
+              progress: 100,
+              uploadComplete: true,
+            });
+            expect(harness.getDownloadURL).not.toHaveBeenCalled();
+            done();
+          },
+          error: done.fail,
         });
       });
     });

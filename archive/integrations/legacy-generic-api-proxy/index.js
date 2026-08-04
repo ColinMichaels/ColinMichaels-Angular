@@ -1,3 +1,4 @@
+// Archived prototype. This file is intentionally outside the deployable Functions source directory.
 const {onRequest} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');

@@ -60,7 +60,6 @@ jobs:
     environment: production
     env:
       APP_TITLE: ${{ vars.APP_TITLE || secrets.APP_TITLE }}
-      APP_API_URL: ${{ vars.APP_API_URL || vars.API_URL || secrets.APP_API_URL || secrets.API_URL }}
       FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
       FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || secrets.FIREBASE_AUTH_DOMAIN }}
       FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || secrets.FIREBASE_DATABASE_URL }}
@@ -91,7 +90,6 @@ jobs:
           missing=()
           required=(
             APP_TITLE
-            APP_API_URL
             FIREBASE_API_KEY
             FIREBASE_AUTH_DOMAIN
             FIREBASE_DATABASE_URL

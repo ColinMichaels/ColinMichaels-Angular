@@ -46,6 +46,11 @@ import {ADMIN_CONSOLE_ROLES, USER_MANAGEMENT_ACCESS_ROLES} from '../../../../sha
       pointer-events: auto;
       z-index: 99;
     }
+
+    .dock-back {
+      @apply rounded-t-lg bg-black/30 backdrop-blur-md backdrop-saturate-150;
+    }
+
     .dock-animation {
       @apply
         /* Transitions and Animations */

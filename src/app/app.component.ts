@@ -49,9 +49,13 @@ export function shouldShowSiteHeader(url: string): boolean {
   return !SITE_HEADER_EXCLUDED_ROUTES.some(route => routeMatchesPrefix(currentUrl, route));
 }
 
-export function shouldShowOsNotifications(url: string): boolean {
+export function shouldUseCoreOsTheme(url: string): boolean {
   const currentUrl = url.split('?')[0].split('#')[0];
   return OS_ROUTES.some(route => routeMatchesPrefix(currentUrl, route));
+}
+
+export function shouldShowOsNotifications(url: string): boolean {
+  return shouldUseCoreOsTheme(url);
 }
 
 export function shouldShowReaderTools(url: string): boolean {
@@ -82,6 +86,10 @@ export function shouldShowBlogMembershipCampaign(url: string): boolean {
   ],
   templateUrl: './app.component.html',
   styles: [],
+  host: {
+    '[class.site-theme-scope]': 'showSiteHeader()',
+    '[class.core-os-scope]': 'useCoreOsTheme()',
+  },
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -106,9 +114,10 @@ export class AppComponent {
   protected readonly showSiteHeader = computed(() => {
     return shouldShowSiteHeader(this.currentUrl());
   });
-  protected readonly showOsNotifications = computed(() => {
-    return shouldShowOsNotifications(this.currentUrl());
+  protected readonly useCoreOsTheme = computed(() => {
+    return shouldUseCoreOsTheme(this.currentUrl());
   });
+  protected readonly showOsNotifications = this.useCoreOsTheme;
   protected readonly showReaderTools = computed(() => {
     return shouldShowReaderTools(this.currentUrl());
   });

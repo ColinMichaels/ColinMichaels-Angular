@@ -96,6 +96,39 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).not.toBeNull();
   }));
 
+  it('captures focus inside the modal and restores the previous control after dismissal', fakeAsync(() => {
+    const previousControl = document.createElement('button');
+    previousControl.type = 'button';
+    document.body.append(previousControl);
+    previousControl.focus();
+
+    fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
+    fixture.detectChanges();
+    authState.next({status: 'unauthenticated', user: null});
+    fixture.detectChanges();
+    tick(3200);
+    fixture.detectChanges();
+    tick();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const dialog = element.querySelector<HTMLElement>('[data-testid="blog-membership-campaign"]');
+    const closeButton = element.querySelector<HTMLButtonElement>(
+      'button[aria-label="Close account benefits"]'
+    );
+
+    expect(dialog?.hasAttribute('cdktrapfocus')).toBeTrue();
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(document.activeElement).toBe(closeButton);
+
+    closeButton?.click();
+    fixture.detectChanges();
+    tick();
+
+    expect(campaignState.snooze).toHaveBeenCalledWith(7);
+    expect(document.activeElement).toBe(previousControl);
+    previousControl.remove();
+  }));
+
   it('cancels an anonymous offer when a delayed signed-in session resolves', fakeAsync(() => {
     fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
     fixture.detectChanges();

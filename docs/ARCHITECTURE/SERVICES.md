@@ -96,6 +96,32 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   keep timing values centralized in the service and add route-level visual regression coverage if startup loader behavior changes again.
 
+## `ai-chat.service.ts`
+
+- Responsibility:
+  preserve the Core OS terminal's `aichat` command contract with an explicit local archived-relay response.
+- Dependencies:
+  RxJS only; it has no Angular HTTP, environment URL, vendor SDK, credential, or Firebase dependency.
+- Called by:
+  `CliGameComponent` after the existing command parser recognizes `aichat`.
+- Security boundary:
+  the service never sends the prompt, command list, or user input off-device. Active CMS OpenAI callables are a separate authenticated server-side feature.
+- Planned cleanup:
+  keep the local response until a separately approved terminal product requirement justifies a new abuse-resistant backend boundary.
+
+## `weather.service.ts`
+
+- Responsibility:
+  provide deterministic local sample data, unit conversion, icon selection, and five-day grouping for the preserved Weather OS/lab prototype.
+- Dependencies:
+  RxJS and local Font Awesome icons only; it has no geolocation, HTTP, environment URL, provider SDK, credential, or Firebase dependency.
+- Called by:
+  the Weather app registered in the Core OS catalog and retained in the Labs component inventory.
+- Presentation contract:
+  the component identifies the source as sample data, exposes Demo mode in its status bar, and refreshes locally when units change.
+- Planned cleanup:
+  move the component/service pair into a lab-owned feature boundary when the broader feature/lab file migration resumes; do not reactivate OpenWeather without a reviewed provider requirement and backend design.
+
 ## `sound.service.ts`
 
 - Responsibility:
