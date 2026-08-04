@@ -61,6 +61,16 @@ export interface BatchOperation {
   data?: FirestoreDocument;
 }
 
+export interface StorageUploadProgress {
+  progress: number;
+  uploadComplete: boolean;
+  downloadUrl?: string;
+}
+
+export interface StorageUploadOptions {
+  resolveDownloadUrl?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -442,30 +452,39 @@ export class FirestoreService {
    * @param path - Storage path
    * @param file - File to upload
    * @param metadata - Optional metadata
-   * @returns Observable that emits upload progress and final URL
+   * @param options - Completion behavior for public or private objects
+   * @returns Observable that emits upload progress and an explicit completion event
    */
-  uploadFileWithProgress(path: string, file: File | Blob, metadata?: UploadMetadata): Observable<{
-    progress: number,
-    downloadUrl?: string
-  }> {
+  uploadFileWithProgress(
+    path: string,
+    file: File | Blob,
+    metadata?: UploadMetadata,
+    options: StorageUploadOptions = {}
+  ): Observable<StorageUploadProgress> {
     const storageRef = this.ref(this.storage, path);
     const uploadTask = this.uploadBytesResumable(storageRef, file, metadata);
 
-    return new Observable<{ progress: number, downloadUrl?: string }>(observer => {
+    return new Observable<StorageUploadProgress>(observer => {
       uploadTask.on(
         'state_changed',
         (snapshot: { bytesTransferred: number; totalBytes: number }) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          observer.next({progress});
+          observer.next({progress, uploadComplete: false});
         },
         (error: unknown) => {
           console.error(`Error uploading file to ${path}:`, error);
           observer.error(error);
         },
         async () => {
+          if (options.resolveDownloadUrl === false) {
+            observer.next({progress: 100, uploadComplete: true});
+            observer.complete();
+            return;
+          }
+
           try {
             const downloadUrl = await this.getDownloadURL(uploadTask.snapshot.ref);
-            observer.next({progress: 100, downloadUrl});
+            observer.next({progress: 100, uploadComplete: true, downloadUrl});
             observer.complete();
           } catch (error) {
             observer.error(error);

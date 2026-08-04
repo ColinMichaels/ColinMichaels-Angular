@@ -14,7 +14,7 @@ describe('BlogMediaUploadService trusted finalization', () => {
   beforeEach(() => {
     firestore = jasmine.createSpyObj<FirestoreService>('FirestoreService', ['uploadFileWithProgress']);
     mediaFunctions = jasmine.createSpyObj<BlogMediaFunctionsService>('BlogMediaFunctionsService', ['finalizeUpload']);
-    firestore.uploadFileWithProgress.and.returnValue(of({progress: 100, downloadUrl: 'staging-only'}));
+    firestore.uploadFileWithProgress.and.returnValue(of({progress: 100, uploadComplete: true}));
     mediaFunctions.finalizeUpload.and.resolveTo({
       mediaId: '019fc788-730b-7982-91c8-055dcdb1a8bf',
       checksum: 'abc123',
@@ -59,6 +59,7 @@ describe('BlogMediaUploadService trusted finalization', () => {
 
     const stagingPath = firestore.uploadFileWithProgress.calls.mostRecent().args[0] as string;
     expect(stagingPath).toMatch(/^cms\/blog-media-staging\/editor-user\/.+\/source\.png$/);
+    expect(firestore.uploadFileWithProgress.calls.mostRecent().args[3]).toEqual({resolveDownloadUrl: false});
     expect(mediaFunctions.finalizeUpload).toHaveBeenCalledOnceWith(jasmine.objectContaining({
       stagingPath,
       declaredContentType: 'image/png',

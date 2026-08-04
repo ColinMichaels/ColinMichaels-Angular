@@ -8,7 +8,7 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
 
 ## Reader Flow
 
-1. An eligible anonymous blog visitor sees the campaign after a 3.2-second delay.
+1. Firebase Auth first resolves the reader as signed out. Only then does an eligible anonymous blog visitor enter the 3.2-second campaign delay; initialization and auth-listener failures never count as anonymous identity.
 2. The visitor can review three optional choices before continuing:
    - browser alerts are selected as the recommended, fastest option;
    - new-post email list is initially off;
@@ -21,10 +21,13 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
 
 Closing the first offer snoozes it for seven days; **Not now** snoozes it for 30 days. Completing or closing the signed-in follow-up suppresses the campaign for 365 days on that browser. Pending signup choices use session storage so abandoned choices do not become durable account consent.
 
+The delayed offer rechecks auth and campaign eligibility immediately before opening. If Firebase restores a signed-in session while the timer is pending or while the anonymous offer is visible, the timer is cancelled and the offer closes without recording a dismissal. This keeps a returning member's account state authoritative without blocking article reading.
+
 ## Component Inventory
 
-- `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, focus management, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
+- `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, CDK-backed modal focus containment/restoration, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
 - `BlogMembershipCampaignStateService` owns versioned dismissal and pending-preference browser storage.
+- `AuthService.authState$` distinguishes initialization, authenticated, unauthenticated, and unavailable states. Campaign eligibility uses this state; existing `user$` consumers receive only resolved identity results.
 - `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts and account-level email choices.
 - `LoginScreenComponent` recognizes `source=blog-membership`, opens the requested login/register mode, preserves preferences for email/password and social authentication, and provides a guest return path.
 - `AuthReturnUrlService` validates same-site destinations, keeps short-lived redirect state in session storage, rejects login/logout loops and external URLs, and clears state after successful navigation.
@@ -66,7 +69,8 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 
 ## Accessibility And Responsive Behavior
 
-- The popup is a labelled modal dialog with focus on open, Escape dismissal, a named close button, semantic fieldset controls, visible focus states, and live status feedback.
+- The popup is a labelled modal dialog with focus containment on open, restoration to the prior control on close, Escape dismissal, a named 44px close button, semantic fieldset controls, visible focus states, and live status feedback.
+- Secondary actions retain 44px targets, and consent/dismissal copy uses the campaign's muted token instead of the lower-contrast legacy gray.
 - Reduced-motion preferences remove entry and control transitions.
 - Desktop presentation uses a two-column editorial layout; narrow and short viewports collapse the art and make the content region scrollable.
 - The signup screen hides decorative Core OS controls during the reader campaign so consent and registration controls are not obscured. Its communication choices use the login screen's translucent Apple-style settings group and switches while retaining native checkbox semantics for forms and assistive technology.
@@ -77,6 +81,8 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 ## Migration And Deployment
 
 - No Firestore data migration or account backfill is required.
+- Auth-readiness, route-guard consolidation, and local logging require an Angular Hosting deployment only; they do not change Functions, Firestore Rules, or stored documents.
+- Focus containment, target sizing, and contrast hardening are Angular/CSS-only changes with no account, consent, route, Rules, or Functions migration.
 - The redirect-return record is tab-scoped, expires after 15 minutes, and needs no Firebase configuration or OAuth callback-domain change.
 - Deploy Angular Hosting and Firestore Rules together.
 - Existing authentication providers, comments, points, and push Functions are reused without a Functions code change.
@@ -87,6 +93,8 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 ## Rollback
 
 Rolling back the Angular UI removes the prompt, short-lived redirect-return behavior, and Profile controls without deleting account data. Older builds ignore the optional `communicationPreferences` field and any tab-scoped redirect record expires without server cleanup. Firestore Rules may retain the validated field safely, or the matching rules change can be rolled back after the older client is restored.
+
+Rolling back only the auth-readiness hardening restores the former ambiguous initial `null` state and anonymous remote-log attempts, so use a full Hosting rollback only if the corresponding regression is understood. The `FirebaseAuthGuard` compatibility export can remain during rollback because it delegates to the same route contract.
 
 Do not delete stored communication choices during a UI rollback. If email delivery is later activated, keep provider unsubscribe/suppression records authoritative even if the campaign UI is disabled. Existing browser push subscriptions continue to follow the PWA rollback guidance.
 
@@ -114,3 +122,18 @@ Final validation on July 25, 2026:
 - The app-shell, registration, campaign-state, and account-model specs passed (`20/20`).
 - The repository-wide suite completed with `645/655` passing. The 10 unchanged failures are one admin route-inventory expectation, three existing chart-path expectations, and six publishing-calendar expectations; none are in the membership campaign's changed implementation or focused specs.
 - Desktop (1280×720), mobile (390×844), and short keyboard-like (390×320) registration checks kept all four fields rendered after email entry with no horizontal overflow or console errors.
+
+Auth-readiness hardening validation on August 3, 2026:
+
+- The focused auth-state, membership-campaign, authentication-guard, Cat Corner route, and local-logging set passed (`14/14`).
+- The complete Angular suite passed (`761/761`) on supported Node.js 24.15.0, including deterministic coverage that initialization does not prompt and that a delayed or open anonymous offer is cancelled when a signed-in session resolves.
+- `npm run lint` and `npm run build` passed on Node.js 24.15.0; the production initial bundle remained `1.47 MB` raw and `334.38 kB` estimated transfer.
+- The repository Playwright suite passed on desktop and mobile Chromium (`6/6`).
+- A signed-out local-live article remained readable at the default desktop viewport and a 390×844 mobile override, with no horizontal overflow and no browser console warnings or errors. The browser already held a valid campaign dismissal, so the rendered offer itself was intentionally covered by deterministic component tests rather than by clearing user storage.
+
+Accessibility hardening validation on August 4, 2026:
+
+- Focused header, membership, and homepage-hero coverage passed (`34/34`), including initial campaign focus, dismissal restoration, search restoration, logo heading ownership, and the semantic featured title. The complete Angular suite passed (`763/763`).
+- The live homepage and search dialog retain one route-owned H1, a visible featured H2, 44px primary controls, no horizontal overflow, and no console warnings or errors at 1280×720 and 390×844.
+- The current browser's campaign dismissal was preserved. Modal containment/restoration for the membership offer was verified through the real CDK focus trap in headless Chromium rather than by altering reader storage.
+- Repository lint and the production build passed on Node.js 24.15.0; the initial bundle is `1.48 MB` raw and `336.97 kB` estimated transfer. The content-backed Playwright suite passed on desktop and mobile Chromium (`6/6`); unrelated browser cases seed only their isolated test context with a one-day campaign frequency cap so the marketing prompt cannot cover the surface under test.

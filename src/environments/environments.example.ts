@@ -1,7 +1,6 @@
 export const environment = {
   production: false,
   title: '<APP_TITLE>',
-  apiUrl: '<APP_API_URL>', // backend proxy base URL
   webPushPublicKey: '',
   firebaseConfig: {
     apiKey: "<FIREBASE_API_KEY>",

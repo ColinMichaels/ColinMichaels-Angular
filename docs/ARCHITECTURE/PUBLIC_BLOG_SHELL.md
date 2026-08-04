@@ -4,15 +4,51 @@
 
 The public shell treats the blog as the primary content destination while keeping the portfolio homepage available at `/`. It removes repeated text navigation and gives search, reading preferences, and account utilities clear ownership.
 
+## Public Visual System
+
+`src/styles/_public-design-tokens.scss` owns the public route frame's structural tokens: maximum content widths, responsive gutters, section rhythm, surface/control/overlay radii, and light/dark elevation. The variables are scoped to `.site-theme-scope`, so `/os`, boot, login, sleep, and other Core OS routes retain their independent geometry and theme. `tailwind.config.js` exposes the same contract through `site` colors, `site-*` widths, radii, and shadows without requiring runtime-generated class names.
+
+`src/styles/ui-components.scss` remains the semantic component layer. Its public inventory now includes:
+
+- `.site-page`, `.site-section`, `.site-section-inner`, and the section-band variants for route and homepage rhythm;
+- `.site-layout` with reading, wide, and prose width modifiers for archive, search, author, and policy shells;
+- `.site-card`, `.site-card-dark`, `.site-card-interactive`, `.site-resource-link`, `.site-empty-panel`, `.site-error-panel`, `.site-success-panel`, and skeleton cards for one surface/radius/elevation contract;
+- `.site-input`, `.site-header-search-input`, shared button variants, blog action controls, and `.blog-media-frame` for consistent control and media geometry;
+- `.site-icon-control` and its size/state modifiers for circular header, search, account, and auth actions;
+- `.site-menu-link` with success, accent, and danger modifiers for the responsive utility menu and install/account entries; and
+- Tailwind-backed `rounded-site-overlay` and `shadow-site-overlay` utilities for the header menu and search overlay.
+
+Utilities on an individual template can still override spacing when a feature needs deliberate art direction, but public components should prefer these primitives for base geometry. The homepage hero, topic map, recovery boards, article body, and Reader Tools retain their specialized visual systems.
+
+`SiteHeaderComponent`, `SiteSearchDrawerComponent`, `SiteAuthControlsComponent`, and `PwaInstallControlComponent` now compose the same search, icon, and menu-link primitives. `BlogCommentsComponent` composes the shared card, field, button, success, error, and empty-state primitives while keeping threading and reply presentation local. This completes the generic public utility-cluster migration; feature-specific archive filters, article blocks, recovery panels, topic-map graphics, and Core OS controls remain deliberately component-owned.
+
+This is an Angular/Tailwind presentation migration only. It changes no route, content model, Firestore document, Storage object, Function, Security Rule, theme preference, or Core OS state. Existing elements incrementally opt into semantic classes; rollback consists of reverting the template class substitutions, shared component declarations, token import, and Tailwind mappings. No data migration or cache invalidation is required beyond the normal Hosting asset refresh.
+
+## Style Ownership Boundary
+
+`src/styles.scss` is the global-style ownership manifest rather than a mixed rule file. It loads only three explicit layers:
+
+- shared foundations: fonts, scrollbars, and route transitions used by every shell;
+- Core OS: `_core-os-globals.scss`, `_core-os-motion.scss`, and `_core-os-gradients.scss`; and
+- public website: `_public-globals.scss`, `_public-motion.scss`, `_public-design-tokens.scss`, and `ui-components.scss`.
+
+`AppComponent` assigns the owning scope on the `app-root` host. Public routes receive `.site-theme-scope`; `/os`, `/login`, `/boot`, `/sleep`, and `/external` receive `.core-os-scope`; admin receives neither because it owns a dedicated shell. These classes are mutually exclusive, so header, membership, notification, and other route-level siblings inherit the same boundary as the routed page instead of relying on a class attached only to the route frame.
+
+Core OS autofill, menus, app windows, macOS controls, gradients, and motion utilities are descendants of `.core-os-scope`. Public blog media motion is a descendant of `.site-theme-scope`. Window-header and dock glass chrome now live in `WindowHeaderComponent`, `AppWindowComponent`, and `DockComponent`, allowing deliberate embedded OS chrome without reopening global selectors. Public templates must use the `.btn-*`, `.site-*`, and `.blog-*` primitives instead of `.mac-*` classes.
+
+The boundary changes presentation ownership only. It requires no route, Firebase, content, preference, or local-storage migration. Rollback restores the former stylesheet imports and route-frame site class, removes the host scope bindings, and restores the global OS selectors; no stored data changes are involved.
+
 ## Header Contract
 
 `SiteHeaderComponent` renders three responsive regions:
 
-- the Colin Michaels logo, which always routes to `/`
+- the Colin Michaels logo, which always routes to `/` without claiming the page-level `h1`
 - a rounded `Search` field that opens and filters the existing live-results drawer
 - compact utilities: an optional post-list shortcut and one site/account menu
 
-The utility menu owns links to All Posts and OS, install discovery, the Cat Corner link for `catCornerAddict`/full-admin accounts, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. Personal reading-library, saved-offline, notification, native-device, and storage settings live on the protected Profile page instead of expanding the global menu. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
+The utility menu owns links to All Posts and OS, install discovery, the Cat Corner link for `catCornerAddict`/full-admin accounts, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. Its rows use `.site-menu-link` plus purpose modifiers, while the header shortcut, menu trigger, search close action, and desktop account buttons use `.site-icon-control`. Personal reading-library, saved-offline, notification, native-device, and storage settings live on the protected Profile page instead of expanding the global menu. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
+
+The public shell places a keyboard-revealed **Skip to main content** link before the sticky header and gives the shared route frame a stable focus target. Page components retain ownership of their one meaningful `h1`; the homepage featured article exposes its previously hidden title as a visible, two-line `h2`. Header search, logo, post-list, and menu controls retain at least a 44px target at narrow and desktop widths.
 
 ## Cat Corner Discovery
 
@@ -27,9 +63,13 @@ The header field is the single search input for the live-results experience. `Si
 - streams recent content before a query is entered
 - filters quick results directly from the header query without rendering a duplicate field
 - links to the full `/search` page with the current query
-- preserves Escape, backdrop, and close-button dismissal
+- exposes the field and result panel as one labelled modal search surface
+- keeps keyboard focus inside that surface while open and announces the number of available results without reading the full list on every update
+- preserves Escape, backdrop, and close-button dismissal, returning focus to the header field unless a result navigation has begun
 
 The Blog index no longer renders a duplicate Search action because the global launcher remains visible in the sticky header.
+
+The focus boundary uses Angular CDK's maintained `CdkTrapFocus` primitive rather than a feature-specific key loop. Global `:focus-visible` styling provides a three-pixel, theme-aware outline; pointer focus is not globally suppressed. These changes require no route, content, Firebase, or stored-data migration. Rolling back the shell restores the earlier search and heading presentation without changing public URLs or documents.
 
 ## Reusable Post Presentation
 
@@ -188,7 +228,7 @@ Deployment requires the Angular Hosting bundle and Firebase Functions. Post meta
 
 Relevant regression coverage includes:
 
-- `site-header.component.spec.ts` for logo/search/menu ownership and the single-input search contract
+- `site-header.component.spec.ts` for logo/search/menu ownership, the single-input dialog contract, and dismissal focus restoration
 - `app.routes.spec.ts` for the temporary Labs redirect
 - `reader-tools.component.spec.ts` for stable panel dimensions
 - `offline-blog-post.service.spec.ts` for public snapshot validation and Cache Storage lifecycle
@@ -203,4 +243,4 @@ Relevant regression coverage includes:
 - `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
 - `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
 - `blog-repository.service.spec.ts` for cached and cold direct-slug article loading without a full-collection dependency
-- browser checks for live result filtering, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect
+- browser checks for live result filtering, contained search focus, Escape restoration, skip navigation, heading hierarchy, 44px targets, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect

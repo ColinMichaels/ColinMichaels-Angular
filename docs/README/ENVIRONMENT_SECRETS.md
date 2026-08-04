@@ -9,7 +9,6 @@ Add these under `Settings -> Secrets and variables -> Actions -> Variables` for 
 | Name | Description | Example Value |
 | --- | --- | --- |
 | `APP_TITLE` | App title shown in the UI. | `Colin Michaels - Production` |
-| `APP_API_URL` | Backend API base URL used by the frontend. | `https://api.example.com` |
 | `FIREBASE_API_KEY` | Firebase Web API key from Firebase project settings. | `example_firebase_web_api_key` |
 | `FIREBASE_AUTH_DOMAIN` | Firebase Auth domain for the project. | `your-project.firebaseapp.com` |
 | `FIREBASE_DATABASE_URL` | Firebase Realtime Database URL. | `https://your-project-default-rtdb.firebaseio.com/` |
@@ -31,8 +30,7 @@ Add these under `Settings -> Secrets and variables -> Actions -> Secrets` for re
 
 Workflows support fallbacks for legacy names:
 
-- `API_URL` (legacy fallback for `APP_API_URL`)
-- `APP_TITLE`/`APP_API_URL` can be provided as either Variables or Secrets
+- `APP_TITLE` can be provided as either a Variable or Secret
 - `FIREBASE_SERVICE_ACCOUNT` can be used as fallback for Firebase Hosting deploy workflows
 
 ## Firebase Hosting Workflows
@@ -72,7 +70,7 @@ This script writes:
 
 Both are generated from CI environment values before `npm run build`.
 
-Vendor API secrets are not Angular build inputs. The frontend receives only `APP_API_URL`; OpenAI and weather credentials must remain behind the backend boundary and must not be added to `src/environments/.env.example` or GitHub Actions build environments.
+Vendor API URLs and secrets are not Angular build inputs. The archived terminal AI and Weather prototypes now respond from local deterministic data and do not request location or vendor APIs. Remove obsolete `apiUrl`, `openAiApiKey`, and `openWeatherMapApiKey` fields from ignored local environment files; rotate any credential that was previously stored directly in one of those files. Active CMS AI credentials remain server-side in Firebase Secret Manager and must not be added to `src/environments/.env.example` or GitHub Actions build environments.
 
 ## Firebase Functions Secrets
 

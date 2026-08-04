@@ -4,7 +4,6 @@ import {dirname, resolve} from 'node:path';
 const readEnv = (name) => (process.env[name] ?? '').trim();
 
 const appTitle = readEnv('APP_TITLE');
-const apiUrl = readEnv('APP_API_URL') || readEnv('API_URL');
 const webPushPublicKey = readEnv('WEB_PUSH_PUBLIC_KEY');
 const firebaseApiKey = readEnv('FIREBASE_API_KEY');
 const firebaseAuthDomain = readEnv('FIREBASE_AUTH_DOMAIN');
@@ -17,7 +16,6 @@ const firebaseMeasurementId = readEnv('FIREBASE_MEASUREMENT_ID');
 
 const missing = [];
 if (!appTitle) missing.push('APP_TITLE');
-if (!apiUrl) missing.push('APP_API_URL (or API_URL)');
 if (!firebaseApiKey) missing.push('FIREBASE_API_KEY');
 if (!firebaseAuthDomain) missing.push('FIREBASE_AUTH_DOMAIN');
 if (!firebaseDatabaseUrl) missing.push('FIREBASE_DATABASE_URL');
@@ -36,7 +34,6 @@ if (missing.length > 0) {
 const environmentConfig = {
   production: true,
   title: appTitle,
-  apiUrl,
   webPushPublicKey,
   firebaseConfig: {
     apiKey: firebaseApiKey,

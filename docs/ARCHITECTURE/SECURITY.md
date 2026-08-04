@@ -33,14 +33,15 @@ The CMS custom HTML block deliberately excludes `iframe` and `script` markup at 
 Residual risk:
 new external destinations must be added deliberately and covered by allowed/blocked URL tests rather than weakening the guard.
 
-## 3) Secrets in Client (Browser Exposure Resolved; Backend Delivery Open)
+## 3) Secrets in Client (Resolved)
 
-- Angular environment generation exposes only `APP_API_URL`; OpenAI and weather vendor keys are no longer browser build inputs or preview-workflow requirements.
-- CMS OpenAI helpers use a Firebase Functions secret.
-- The legacy generic OpenAI/weather proxy in `functions/index.js` is not the TypeScript Functions deploy entry and must not be treated as the production boundary. A deployable, authenticated, validated, rate-limited weather/chat boundary or an explicitly documented external API remains required before the proxy TODO can close.
+- Angular environment generation no longer accepts a generic API base URL or OpenAI/weather vendor keys.
+- The terminal AI and Weather OS/lab prototypes preserve their visible contracts through deterministic local responses; they make no location request and no vendor-network request.
+- The undeployed anonymous proxy is preserved outside the Functions build at `archive/integrations/legacy-generic-api-proxy/` with explicit restoration requirements.
+- Active CMS OpenAI helpers remain authenticated, role-gated Firebase callable Functions with `OPENAI_API_KEY` bound through Secret Manager.
 
-Risk:
-an incorrectly deployed public proxy could protect vendor keys while still allowing anonymous quota abuse or caller-controlled upstream requests.
+Residual risk:
+ignored developer environment files from older checkouts may still contain obsolete vendor credentials. Those values are no longer read by the application and should be removed and rotated. Any future remote terminal or weather provider requires a new reviewed TypeScript Functions boundary with abuse controls; the archived proxy must not be copied back into the deploy tree.
 
 ## 4) Social Provider Credentials and OAuth
 

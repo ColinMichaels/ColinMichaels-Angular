@@ -1,4 +1,4 @@
-import {FirebaseAuthGuard} from '../../guards/firebase-auth.guard';
+import {AuthGuard} from '../../guards/auth.guard';
 import {
   CAT_CORNER_SEO_METADATA,
   CAT_CORNER_UNLOCK_SEO_METADATA,
@@ -14,7 +14,7 @@ describe('catCornerRoutes', () => {
     const notFound = root.children?.find(route => route.path === '**');
 
     expect(root.path).toBe('cat-corner');
-    expect(unlock?.canActivate).toContain(FirebaseAuthGuard);
+    expect(unlock?.canActivate).toContain(AuthGuard);
     expect(hub?.canMatch).toContain(CatCornerAccessGuard);
     expect(notFound?.loadComponent).toBeDefined();
   });

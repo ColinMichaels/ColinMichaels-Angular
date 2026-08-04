@@ -8,6 +8,30 @@ Status legend:
 
 ## Quick Wins (Do First)
 
+- [x] Isolate public-site and Core OS global CSS ownership.
+  - Impact: High
+  - Effort: M
+  - Progress: reduced `styles.scss` to an explicit shared/Core OS/public entry manifest; moved public theme and Reader Assistance rules into `_public-globals.scss`; split public and OS motion; moved OS gradients and macOS/game globals behind `.core-os-scope`; assigned mutually exclusive route scopes on `app-root`; and returned window-header/dock chrome to component ownership.
+  - Validation: focused shell, dock, and app-window specs (`7/7`); desktop and Pixel 7 visual, search, motion, and scope-boundary Playwright coverage (`8/8`) proving Core OS controls are inert on public routes and active on OS routes; repository lint and production build; full Angular suite (`764/764`); and rendered homepage/blog/login checks.
+
+- [x] Consolidate the public layout and surface system without changing Core OS styling.
+  - Impact: High
+  - Effort: M
+  - Progress: added public-route-scoped width, gutter, spacing, radius, and elevation tokens; exposed matching Tailwind theme values; normalized semantic page/layout, card, field, button, media, overlay, header-search, icon-control, menu-link, and feedback primitives; adopted shared reading/wide/prose shells across blog, search, privacy, and author routes; and moved the public comments stack onto the same card/field/button/state contracts.
+  - Validation: semantic layout assertions across homepage, archive, privacy, author, header, search-drawer, and comments specs (`14/14` focused for the final header/comments slice); desktop rendered checks for homepage rhythm, archive width, light/dark parity, overlays, 44px controls, focus restoration, and horizontal overflow; repository lint and production build; the full Angular suite (`765/765`); and desktop/Pixel 7 Playwright coverage for the visual system, search overlay, motion, and style ownership (`8/8`).
+
+- [x] Harden public-shell keyboard navigation, focus visibility, and compact-layout targets.
+  - Impact: High
+  - Effort: M
+  - Progress: added skip navigation, removed the logo's route-independent H1, exposed the featured-post title as an H2, contained and restored focus for search and membership dialogs, announced live search-result counts, replaced the global focus-outline reset, corrected muted campaign contrast, and raised header/dialog controls to 44px targets.
+  - Validation: focused header, membership, and hero specs (`34/34`); desktop and 390x844 live browser checks for headings, focus, Escape restoration, touch metrics, overflow, and console health; repository lint and build; full Angular suite (`763/763`); and content-backed desktop/mobile Playwright suite (`6/6`).
+
+- [x] Resolve the reader-membership auth race and anonymous client-log writes.
+  - Impact: High
+  - Effort: M
+  - Progress: added explicit initializing/authenticated/unauthenticated/unavailable auth states, made membership prompting wait for resolved anonymous identity and cancel on sign-in, consolidated duplicate authentication guards, and moved the shared/Core OS logger to local buffer and console output without Firestore persistence.
+  - Validation: focused auth, campaign, guard, route-inventory, and logging specs; repository lint, build, full unit suite, and rendered signed-out blog checks.
+
 - [x] Fix lint gate wiring (`npm run lint` currently non-functional).
   - Impact: High
   - Effort: S
@@ -135,12 +159,12 @@ Status legend:
 
 ## De-scoped / Removal Review
 
-- [ ] Review the inactive OpenAI and weather integrations for archival or removal.
+- [x] Review the inactive OpenAI and weather integrations for archival or removal.
   - Impact: Medium
   - Effort: M
   - Decision: Do not build or deploy a new OpenAI/weather API boundary. These integrations are not active product requirements.
-  - Safety: Preserve the existing prototypes until a focused reference, configuration, secret, and migration review confirms they can be removed without affecting CMS, OS, or deployment workflows.
-  - Validation: no frontend vendor keys, no active route regression, no orphaned Functions secrets/configuration, and documented rollback/removal notes.
+  - Progress: preserved active role-gated CMS OpenAI callables; moved the undeployed anonymous generic proxy to `archive/integrations/legacy-generic-api-proxy`; converted the referenced terminal AI and Weather prototypes to deterministic local behavior; removed browser `APP_API_URL` generation, examples, and workflow requirements; and documented restoration and credential-rotation requirements without changing Firebase configuration.
+  - Validation: no Angular HTTP, location, generic API URL, or vendor-key dependency remains in the two prototypes; focused terminal/Weather/CLI coverage (`8/8`), the full Angular suite (`771/771`), repository lint, app and Functions builds, environment generation without `APP_API_URL`, public visual regression on desktop/mobile (`2/2`), retired-endpoint and OS-guard coverage on desktop/mobile (`2/2`), and rendered route/console inspection.
 
 ## Larger Changes (Riskier, Stage Later)
 

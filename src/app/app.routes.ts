@@ -5,7 +5,7 @@ import {PATH_NAMES} from './app-route-paths';
 import {osRoutes} from './core-os/os.routes';
 import {publicRoutes} from './features/public/public.routes';
 import {labRoutes} from './labs/lab.routes';
-import {FirebaseAuthGuard} from './guards/firebase-auth.guard';
+import {AuthGuard} from './guards/auth.guard';
 import {LOGOUT_SEO_METADATA, PROFILE_SEO_METADATA} from './shared/seo/seo.metadata';
 
 export const routes: Routes = [
@@ -14,7 +14,7 @@ export const routes: Routes = [
   ...adminRoutes,
   {
     path: PATH_NAMES.PROFILE,
-    canActivate: [FirebaseAuthGuard],
+    canActivate: [AuthGuard],
     data: {seo: PROFILE_SEO_METADATA},
     loadComponent: () => import('./shared/user-profile/user-profile.component').then(m => m.UserProfileComponent),
   },

@@ -84,7 +84,7 @@ export class Transformer {
         [appTooltip]="tooltips[2].message"
         [href]="this.contact['link']"
         target="_self" download
-        class="mac-button animate hover:bg-red-500 hover:animate-ping cursor-no-drop">
+        class="btn-secondary mt-3 cursor-no-drop">
         Decode
       </a>
     </div>

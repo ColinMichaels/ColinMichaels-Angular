@@ -211,6 +211,7 @@ describe('MainComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
 
+    expect(element.querySelector('.site-page')).not.toBeNull();
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#about')).not.toBeNull();
     expect(element.querySelector('#home-article-hero')).not.toBeNull();

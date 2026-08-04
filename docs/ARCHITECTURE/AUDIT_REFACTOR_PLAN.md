@@ -591,16 +591,37 @@ Exit criteria:
 
 ### Phase 6: Design System and Bundle Reduction
 
-- Add tokenized Tailwind theme extension.
-- Reduce broad Tailwind safelist patterns.
-- Split OS global styles from public global styles.
-- Replace repeated button/card/form utility clusters with shared primitives.
-- Review CommonJS warnings and bundle budget after lazy route boundaries are cleaner.
+- [x] Add tokenized Tailwind theme extension.
+  - Progress: public colors, widths, radii, and elevation now map to scoped CSS variables; structural tokens live in `_public-design-tokens.scss` and do not alter Core OS routes.
+- [x] Reduce broad Tailwind safelist patterns.
+  - Progress: generated preview classes remain behind the existing explicit development flag instead of entering normal production CSS.
+- [x] Split OS global styles from public global styles.
+  - Progress: `styles.scss` is now an ownership manifest for shared foundations, Core OS globals, and public globals. `app-root` receives exactly one `.site-theme-scope` or `.core-os-scope` on public/OS routes; admin retains its dedicated shell. OS controls, gradients, and motion are route-scoped, public media motion is site-scoped, and reusable window/dock chrome is component-owned.
+- [x] Replace repeated button/card/form utility clusters with shared primitives.
+  - Progress: homepage, archive, search, privacy, and author shells use semantic width primitives; shared cards, fields, buttons, media frames, state panels, and overlays consume the same geometry/elevation tokens; header search/icon/menu/auth controls share purpose-based primitives; and public comments compose the shared card, field, button, success, error, and empty-state contracts. Specialized article, recovery, topic-map, archive-filter, and Core OS treatments remain intentionally separate.
+- [x] Review CommonJS warnings and bundle budget after lazy route boundaries are cleaner.
+  - Progress: the dependency program removed all CommonJS exemptions and warnings; the visual-system slice reduced the local development stylesheet from 253.52 kB to 250.45 kB before the explicit scope and semantic-control layers were completed. The current production stylesheet is 216.74 kB raw / 25.03 kB estimated transfer and the initial bundle is 1.48 MB raw / 337.33 kB estimated transfer, still within budget.
 
 Exit criteria:
 
 - Initial CSS size decreases.
 - Public website route has minimal OS/lab code in its lazy chunk.
+
+### Phase 7: Quality and Inactive Integration Cleanup
+
+- [x] Review the dormant generic OpenAI/weather boundary without removing active CMS AI features.
+  - Progress: verified `functions/package.json` deploys `lib/index.js` compiled from `functions/src/index.ts`; preserved its authenticated CMS OpenAI callables; and archived the unrelated anonymous `functions/index.js` proxy with restoration requirements.
+- [x] Preserve referenced OS/lab prototypes without remote vendor or location access.
+  - Progress: the terminal `aichat` command returns an explicit local archived-relay response, while Weather uses labelled deterministic sample data, local unit conversion, and Demo status.
+- [x] Remove obsolete frontend API configuration.
+  - Progress: Angular environment generation, examples, and preview/production workflow validation no longer require `APP_API_URL` or its legacy fallback.
+
+Exit criteria:
+
+- No active public, admin, or Core OS route depends on the archived proxy.
+- No OpenAI/weather credential or generic vendor API URL is an Angular build input.
+- Active CMS OpenAI callables retain their existing Secret Manager boundary.
+- Archived code has explicit non-deployment and restoration notes.
 
 ## Risk Assessment
 
