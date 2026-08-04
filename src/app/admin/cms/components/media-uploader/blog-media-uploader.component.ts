@@ -86,11 +86,22 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
       </label>
 
       @if (isUploading) {
-        <div class="space-y-2">
-          <div class="h-2 overflow-hidden bg-zinc-800">
-            <div class="h-full bg-cyan-300 transition-all" [style.width.%]="uploadProgress"></div>
+        <div class="space-y-2" role="status" aria-live="polite" data-testid="media-upload-progress">
+          <div
+            class="h-2 overflow-hidden bg-zinc-800"
+            role="progressbar"
+            [attr.aria-label]="mediaKindLabel + ' upload progress'"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="roundedUploadProgress"
+          >
+            <div
+              class="h-full bg-cyan-300 transition-all"
+              [class.animate-pulse]="roundedUploadProgress === 0 || roundedUploadProgress === 100"
+              [style.width.%]="roundedUploadProgress === 0 ? 18 : roundedUploadProgress"
+            ></div>
           </div>
-          <p class="text-xs text-zinc-500">{{ uploadProgress | number: '1.0-0' }}% uploaded</p>
+          <p class="text-xs leading-5 text-zinc-500">{{ uploadStatusMessage }}</p>
         </div>
       }
 
@@ -419,11 +430,27 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
               </div>
 
               @if (isUploading) {
-                <div class="space-y-2 border border-cyan-500/40 bg-cyan-950/20 p-3">
-                  <div class="h-2 overflow-hidden bg-zinc-800">
-                    <div class="h-full bg-cyan-300 transition-all" [style.width.%]="uploadProgress"></div>
+                <div
+                  class="space-y-2 border border-cyan-500/40 bg-cyan-950/20 p-3"
+                  role="status"
+                  aria-live="polite"
+                  data-testid="media-picker-upload-progress"
+                >
+                  <div
+                    class="h-2 overflow-hidden bg-zinc-800"
+                    role="progressbar"
+                    [attr.aria-label]="mediaKindLabel + ' upload progress'"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    [attr.aria-valuenow]="roundedUploadProgress"
+                  >
+                    <div
+                      class="h-full bg-cyan-300 transition-all"
+                      [class.animate-pulse]="roundedUploadProgress === 0 || roundedUploadProgress === 100"
+                      [style.width.%]="roundedUploadProgress === 0 ? 18 : roundedUploadProgress"
+                    ></div>
                   </div>
-                  <p class="text-xs text-cyan-100">{{ uploadProgress | number: '1.0-0' }}% uploaded</p>
+                  <p class="text-xs leading-5 text-cyan-100">{{ uploadStatusMessage }}</p>
                 </div>
               }
 
@@ -549,6 +576,22 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
 
   protected get uploadDescription(): string {
     return `${this.mediaKindLabelPlural} are uploaded into the media library and applied to this field when complete.`;
+  }
+
+  protected get roundedUploadProgress(): number {
+    return Math.round(Math.min(100, Math.max(0, this.uploadProgress)));
+  }
+
+  protected get uploadStatusMessage(): string {
+    if (this.roundedUploadProgress <= 0) {
+      return `Preparing ${this.mediaKindLabel.toLowerCase()} for upload...`;
+    }
+
+    if (this.roundedUploadProgress < 100) {
+      return `Uploading ${this.uploadFileName || this.mediaKindLabel.toLowerCase()}... ${this.roundedUploadProgress}%`;
+    }
+
+    return `Upload complete. Processing ${this.mediaKindLabel.toLowerCase()}...`;
   }
 
   protected get currentMediaType(): MediaType {

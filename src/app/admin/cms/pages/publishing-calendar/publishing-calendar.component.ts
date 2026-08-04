@@ -3,11 +3,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faFacebookF, faInstagram, faLinkedinIn, faThreads, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
-import {faBell, faChevronLeft, faChevronRight} from '@fortawesome/free-solid-svg-icons';
+import {faBell} from '@fortawesome/free-solid-svg-icons';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 
 import {
-  BLOG_SOCIAL_CHANNELS,
   BlogSocialAnnouncement,
   BlogSocialChannel,
   BlogSocialContentAngle,
@@ -26,26 +25,17 @@ import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
-
-type PublishingCalendarFilter = 'all' | 'scheduled' | 'published' | 'social';
-
-interface PublishingCalendarEvent {
-  id: string;
-  type: 'post' | 'social';
-  timestamp: number;
-  dateKey: string;
-  post: BlogPost;
-  announcement?: BlogSocialAnnouncement;
-}
-
-interface PublishingCalendarDay {
-  date: Date;
-  dateKey: string;
-  dayNumber: number;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-  events: readonly PublishingCalendarEvent[];
-}
+import {PublishingCalendarMonthComponent} from './publishing-calendar-month.component';
+import {
+  PublishingCalendarDay,
+  PublishingCalendarEvent,
+  PublishingCalendarFilter,
+  createPublishingCalendarDays,
+  createPublishingCalendarEvents,
+  publishingCalendarEventMatchesFilter,
+  startOfPublishingMonth,
+  toPublishingDateKey,
+} from './publishing-calendar.utils';
 
 interface SocialChannelOption {
   id: BlogSocialChannel;
@@ -57,12 +47,6 @@ interface SocialChannelOption {
   icon: IconDefinition;
 }
 
-const calendarFilters: readonly {value: PublishingCalendarFilter; label: string}[] = [
-  {value: 'all', label: 'All content'},
-  {value: 'scheduled', label: 'Scheduled'},
-  {value: 'published', label: 'Published'},
-  {value: 'social', label: 'Social'},
-];
 const socialContentAngleOptions: readonly {value: BlogSocialContentAngle; label: string; description: string}[] = [
   {
     value: 'personal-story',
@@ -96,7 +80,6 @@ const socialMediaTypeOptions: readonly {value: BlogSocialMediaType | 'none'; lab
   {value: 'video', label: 'Video'},
   {value: 'none', label: 'No native media'},
 ];
-const weekdayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 const socialChannelOptions: readonly SocialChannelOption[] = [
   {
     id: 'notify',
@@ -173,23 +156,6 @@ const longDateFormatter = new Intl.DateTimeFormat('en-US', {
 const shortDateFormatter = new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric'});
 const timeFormatter = new Intl.DateTimeFormat('en-US', {hour: 'numeric', minute: '2-digit'});
 
-function startOfMonth(value: Date): Date {
-  return new Date(value.getFullYear(), value.getMonth(), 1);
-}
-
-function addDays(value: Date, dayCount: number): Date {
-  const nextDate = new Date(value);
-  nextDate.setDate(nextDate.getDate() + dayCount);
-  return nextDate;
-}
-
-function toLocalDateKey(value: Date): string {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function toDateTimeLocalValue(value: string | null): string {
   if (!value) {
     return '';
@@ -236,6 +202,7 @@ function getErrorMessage(error: unknown): string {
   imports: [
     CmsToastContainerComponent,
     FaIconComponent,
+    PublishingCalendarMonthComponent,
     RouterLink,
     SocialPromotionEditorComponent,
   ],
@@ -251,115 +218,21 @@ function getErrorMessage(error: unknown): string {
         </header>
 
         <section [class]="calendarShellClass">
-          <section
+          <app-publishing-calendar-month
             class="min-w-0 border-zinc-800 xl:border-r"
             [hidden]="socialComposerOpen"
-            aria-label="Monthly publishing calendar"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 sm:px-5">
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-500 hover:bg-zinc-900"
-                  (click)="goToToday()"
-                >
-                  Today
-                </button>
-                <button
-                  type="button"
-                  class="grid h-10 w-10 place-items-center border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
-                  aria-label="Previous month"
-                  (click)="goToPreviousMonth()"
-                >
-                  <fa-icon [icon]="faChevronLeft" aria-hidden="true"></fa-icon>
-                </button>
-                <h2 class="min-w-40 px-2 text-xl font-semibold text-zinc-50 sm:text-2xl">{{ monthLabel() }}</h2>
-                <button
-                  type="button"
-                  class="grid h-10 w-10 place-items-center border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900"
-                  aria-label="Next month"
-                  (click)="goToNextMonth()"
-                >
-                  <fa-icon [icon]="faChevronRight" aria-hidden="true"></fa-icon>
-                </button>
-              </div>
-
-              <div class="flex overflow-x-auto border border-zinc-700" aria-label="Calendar filters">
-                @for (filterOption of calendarFilters; track filterOption.value) {
-                  <button
-                    type="button"
-                    [class]="filterButtonClass(filterOption.value)"
-                    [attr.aria-pressed]="activeFilter() === filterOption.value"
-                    (click)="setFilter(filterOption.value)"
-                  >
-                    {{ filterOption.label }}
-                  </button>
-                }
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <div class="min-w-[780px]">
-                <div class="grid grid-cols-7 border-b border-zinc-800 bg-zinc-900/60">
-                  @for (weekday of weekdayLabels; track weekday) {
-                    <div class="border-r border-zinc-800 px-3 py-3 text-center text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 last:border-r-0">
-                      {{ weekday }}
-                    </div>
-                  }
-                </div>
-
-                <div class="grid grid-cols-7">
-                  @for (day of calendarDays(); track day.dateKey) {
-                    <div
-                      [class]="dayCellClass(day)"
-                    >
-                      <button
-                        type="button"
-                        [class]="dayNumberClass(day)"
-                        [attr.aria-label]="dayAriaLabel(day)"
-                        (click)="selectDay(day)"
-                      >
-                        {{ day.dayNumber }}
-                      </button>
-
-                      <span class="mt-2 grid gap-1.5 text-left">
-                        @for (calendarEvent of day.events.slice(0, 3); track calendarEvent.id) {
-                          <button
-                            type="button"
-                            [class]="eventClass(calendarEvent)"
-                            (click)="selectEvent(calendarEvent, $event)"
-                          >
-                            <span class="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide">
-                              <span [class]="eventDotClass(calendarEvent)"></span>
-                              {{ eventTime(calendarEvent) }}
-                            </span>
-                            <span class="mt-1 block truncate text-xs font-medium text-zinc-100">
-                              {{ eventTitle(calendarEvent) }}
-                            </span>
-                            @if (calendarEvent.type === 'post') {
-                              <span class="mt-1 flex min-h-4 items-center gap-1.5 text-[10px] text-zinc-500">
-                                @for (channel of postChannels(calendarEvent.post).slice(0, 4); track channel.id) {
-                                  <fa-icon [icon]="channel.icon" [title]="channel.label"></fa-icon>
-                                }
-                              </span>
-                            } @else if (calendarEvent.announcement; as announcement) {
-                              <span class="mt-1 flex items-center gap-1.5 text-[10px] text-zinc-500">
-                                <fa-icon [icon]="channelOption(announcement.channel).icon" aria-hidden="true"></fa-icon>
-                                {{ channelOption(announcement.channel).label }}
-                              </span>
-                            }
-                          </button>
-                        }
-                        @if (day.events.length > 3) {
-                          <span class="px-1 text-[10px] font-medium text-cyan-300">+{{ day.events.length - 3 }} more</span>
-                        }
-                      </span>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          </section>
+            [monthLabel]="monthLabel()"
+            [days]="calendarDays()"
+            [selectedDateKey]="selectedDateKey()"
+            [selectedEventId]="selectedEvent()?.id ?? null"
+            [activeFilter]="activeFilter()"
+            (todaySelected)="goToToday()"
+            (previousMonthSelected)="goToPreviousMonth()"
+            (nextMonthSelected)="goToNextMonth()"
+            (filterSelected)="setFilter($event)"
+            (daySelected)="selectDay($event)"
+            (eventSelected)="selectEvent($event)"
+          ></app-publishing-calendar-month>
 
           <aside class="min-w-0 bg-zinc-950" aria-label="Selected publishing day">
             <div class="border-b border-zinc-800 p-5">
@@ -753,25 +626,27 @@ export class PublishingCalendarComponent {
   private readonly calendarPromotionDrafts = new Map<string, BlogSocialPromotion>();
   private hasAppliedRouteSelection = false;
 
-  protected readonly faChevronLeft = faChevronLeft;
-  protected readonly faChevronRight = faChevronRight;
-  protected readonly calendarFilters = calendarFilters;
-  protected readonly weekdayLabels = weekdayLabels;
   protected readonly socialContentAngleOptions = socialContentAngleOptions;
   protected readonly socialLinkPlacementOptions = socialLinkPlacementOptions;
   protected readonly socialMediaTypeOptions = socialMediaTypeOptions;
   protected readonly activeFilter = signal<PublishingCalendarFilter>('all');
-  protected readonly viewMonth = signal(startOfMonth(this.today));
-  protected readonly selectedDateKey = signal(toLocalDateKey(this.today));
+  protected readonly viewMonth = signal(startOfPublishingMonth(this.today));
+  protected readonly selectedDateKey = signal(toPublishingDateKey(this.today));
   protected readonly selectedEventId = signal<string | null>(null);
   protected readonly posts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
   protected readonly schedulablePosts = computed(() => this.posts()
     .filter(post => (post.status === 'scheduled' || post.status === 'published') && Boolean(post.publishedAt))
     .sort((left, right) => (right.publishedAt ?? '').localeCompare(left.publishedAt ?? '')));
-  protected readonly allEvents = computed(() => this.createCalendarEvents(this.posts()));
-  protected readonly visibleEvents = computed(() => this.allEvents().filter(calendarEvent => this.eventMatchesFilter(calendarEvent)));
+  protected readonly allEvents = computed(() => createPublishingCalendarEvents(this.posts()));
+  protected readonly visibleEvents = computed(() => this.allEvents().filter(calendarEvent => (
+    publishingCalendarEventMatchesFilter(calendarEvent, this.activeFilter())
+  )));
   protected readonly monthLabel = computed(() => monthFormatter.format(this.viewMonth()));
-  protected readonly calendarDays = computed(() => this.createCalendarDays(this.viewMonth(), this.visibleEvents()));
+  protected readonly calendarDays = computed(() => createPublishingCalendarDays(
+    this.viewMonth(),
+    this.visibleEvents(),
+    this.today
+  ));
   protected readonly selectedDayEvents = computed(() => this.visibleEvents()
     .filter(calendarEvent => calendarEvent.dateKey === this.selectedDateKey())
     .sort((left, right) => left.timestamp - right.timestamp));
@@ -839,16 +714,9 @@ export class PublishingCalendarComponent {
       : 'grid border border-zinc-800 xl:grid-cols-[minmax(0,1fr)_410px]';
   }
 
-  protected filterButtonClass(filter: PublishingCalendarFilter): string {
-    const base = 'whitespace-nowrap border-r border-zinc-700 px-3 py-2 text-xs font-medium last:border-r-0';
-    return this.activeFilter() === filter
-      ? `${base} bg-cyan-400 text-zinc-950`
-      : `${base} text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100`;
-  }
-
   protected goToToday(): void {
-    this.viewMonth.set(startOfMonth(this.today));
-    this.selectedDateKey.set(toLocalDateKey(this.today));
+    this.viewMonth.set(startOfPublishingMonth(this.today));
+    this.selectedDateKey.set(toPublishingDateKey(this.today));
     this.selectedEventId.set(null);
     this.closeEditors();
   }
@@ -857,7 +725,7 @@ export class PublishingCalendarComponent {
     const current = this.viewMonth();
     const previous = new Date(current.getFullYear(), current.getMonth() - 1, 1);
     this.viewMonth.set(previous);
-    this.selectedDateKey.set(toLocalDateKey(previous));
+    this.selectedDateKey.set(toPublishingDateKey(previous));
     this.selectedEventId.set(null);
     this.closeEditors();
   }
@@ -866,7 +734,7 @@ export class PublishingCalendarComponent {
     const current = this.viewMonth();
     const next = new Date(current.getFullYear(), current.getMonth() + 1, 1);
     this.viewMonth.set(next);
-    this.selectedDateKey.set(toLocalDateKey(next));
+    this.selectedDateKey.set(toPublishingDateKey(next));
     this.selectedEventId.set(null);
     this.closeEditors();
   }
@@ -877,15 +745,14 @@ export class PublishingCalendarComponent {
     this.closeEditors();
   }
 
-  protected selectEvent(calendarEvent: PublishingCalendarEvent, domEvent?: Event): void {
-    domEvent?.stopPropagation();
+  protected selectEvent(calendarEvent: PublishingCalendarEvent): void {
     this.selectedDateKey.set(calendarEvent.dateKey);
     this.selectedEventId.set(calendarEvent.id);
     this.closeEditors();
   }
 
   protected jumpToEvent(calendarEvent: PublishingCalendarEvent): void {
-    this.viewMonth.set(startOfMonth(new Date(calendarEvent.timestamp)));
+    this.viewMonth.set(startOfPublishingMonth(new Date(calendarEvent.timestamp)));
     this.selectEvent(calendarEvent);
   }
 
@@ -896,36 +763,6 @@ export class PublishingCalendarComponent {
     if (calendarEvent) {
       this.jumpToEvent(calendarEvent);
     }
-  }
-
-  protected dayCellClass(day: PublishingCalendarDay): string {
-    const selected = day.dateKey === this.selectedDateKey();
-    const base = 'min-h-36 border-b border-r border-zinc-800 p-2 text-left align-top transition last:border-r-0 hover:bg-zinc-900/70';
-    const currentMonth = day.isCurrentMonth ? 'bg-zinc-950' : 'bg-zinc-950/40 text-zinc-700';
-    return selected ? `${base} ${currentMonth} ring-1 ring-inset ring-cyan-400` : `${base} ${currentMonth}`;
-  }
-
-  protected dayNumberClass(day: PublishingCalendarDay): string {
-    if (day.isToday) {
-      return 'inline-grid h-6 w-6 place-items-center bg-cyan-400 text-xs font-semibold text-zinc-950';
-    }
-
-    return day.isCurrentMonth ? 'text-xs font-medium text-zinc-300' : 'text-xs text-zinc-700';
-  }
-
-  protected dayAriaLabel(day: PublishingCalendarDay): string {
-    return `${longDateFormatter.format(day.date)}, ${day.events.length} calendar item${day.events.length === 1 ? '' : 's'}`;
-  }
-
-  protected eventClass(calendarEvent: PublishingCalendarEvent): string {
-    const selected = calendarEvent.id === this.selectedEvent()?.id;
-    const base = 'block w-full overflow-hidden border px-2 py-1.5 text-left transition';
-    const palette = calendarEvent.type === 'social'
-      ? 'border-violet-500/40 bg-violet-500/10 hover:border-violet-400'
-      : calendarEvent.post.status === 'published'
-        ? 'border-emerald-500/35 bg-emerald-500/10 hover:border-emerald-400'
-        : 'border-cyan-500/40 bg-cyan-500/10 hover:border-cyan-400';
-    return selected ? `${base} ${palette} ring-1 ring-cyan-300` : `${base} ${palette}`;
   }
 
   protected eventDotClass(calendarEvent: PublishingCalendarEvent): string {
@@ -1052,15 +889,6 @@ export class PublishingCalendarComponent {
       case 'notify':
         return `${base} border-zinc-600 bg-zinc-800 text-zinc-300`;
     }
-  }
-
-  protected postChannels(post: BlogPost): readonly SocialChannelOption[] {
-    const channels = new Set(
-      (post.socialPromotion?.announcements ?? [])
-        .filter(announcement => announcement.status !== 'cancelled')
-        .map(announcement => announcement.channel)
-    );
-    return BLOG_SOCIAL_CHANNELS.filter(channel => channels.has(channel)).map(channel => this.channelOption(channel));
   }
 
   protected openScheduleEditor(post: BlogPost): void {
@@ -1390,93 +1218,6 @@ export class PublishingCalendarComponent {
     this.announcementDeliveryTiming = 'scheduled';
     this.announcementMediaType = 'none';
     this.announcementMediaUrl = '';
-  }
-
-  private createCalendarEvents(posts: readonly BlogPost[]): readonly PublishingCalendarEvent[] {
-    const events: PublishingCalendarEvent[] = [];
-
-    for (const post of posts) {
-      if (post.publishedAt && (post.status === 'scheduled' || post.status === 'published')) {
-        const timestamp = new Date(post.publishedAt).getTime();
-
-        if (Number.isFinite(timestamp)) {
-          events.push({
-            id: `post:${post.id}`,
-            type: 'post',
-            timestamp,
-            dateKey: toLocalDateKey(new Date(timestamp)),
-            post,
-          });
-        }
-      }
-
-      for (const announcement of post.socialPromotion?.announcements ?? []) {
-        if (announcement.status === 'cancelled') {
-          continue;
-        }
-
-        const timestamp = new Date(announcement.scheduledAt ?? '').getTime();
-
-        if (Number.isFinite(timestamp)) {
-          events.push({
-            id: `social:${post.id}:${announcement.id}`,
-            type: 'social',
-            timestamp,
-            dateKey: toLocalDateKey(new Date(timestamp)),
-            post,
-            announcement,
-          });
-        }
-      }
-    }
-
-    return events.sort((left, right) => left.timestamp - right.timestamp);
-  }
-
-  private eventMatchesFilter(calendarEvent: PublishingCalendarEvent): boolean {
-    switch (this.activeFilter()) {
-      case 'all':
-        if (calendarEvent.type !== 'social' || !calendarEvent.post.publishedAt) {
-          return true;
-        }
-
-        return calendarEvent.dateKey !== toLocalDateKey(new Date(calendarEvent.post.publishedAt));
-      case 'social':
-        return calendarEvent.type === 'social';
-      case 'published':
-        return calendarEvent.type === 'post' && calendarEvent.post.status === 'published';
-      case 'scheduled':
-        return calendarEvent.type === 'post' && calendarEvent.post.status === 'scheduled';
-    }
-  }
-
-  private createCalendarDays(
-    month: Date,
-    events: readonly PublishingCalendarEvent[]
-  ): readonly PublishingCalendarDay[] {
-    const firstDayOffset = (month.getDay() + 6) % 7;
-    const firstGridDate = addDays(month, -firstDayOffset);
-    const todayKey = toLocalDateKey(this.today);
-    const eventsByDate = new Map<string, PublishingCalendarEvent[]>();
-
-    for (const calendarEvent of events) {
-      const dateEvents = eventsByDate.get(calendarEvent.dateKey) ?? [];
-      dateEvents.push(calendarEvent);
-      eventsByDate.set(calendarEvent.dateKey, dateEvents);
-    }
-
-    return Array.from({length: 42}, (_, index) => {
-      const date = addDays(firstGridDate, index);
-      const dateKey = toLocalDateKey(date);
-      return {
-        date,
-        dateKey,
-        dayNumber: date.getDate(),
-        isCurrentMonth: date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear(),
-        isToday: dateKey === todayKey,
-        events: eventsByDate.get(dateKey) ?? [],
-      };
-    });
   }
 
 }

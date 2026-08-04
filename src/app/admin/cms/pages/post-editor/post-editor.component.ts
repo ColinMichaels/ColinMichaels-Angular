@@ -14,7 +14,7 @@ import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import type {OutputData} from '@editorjs/editorjs';
-import {Subject, debounceTime, lastValueFrom} from 'rxjs';
+import {Subject, debounceTime, lastValueFrom, tap} from 'rxjs';
 
 import {DEFAULT_AUTHOR_ID} from '../../../../features/authors/authors.constants';
 import {AuthorProfile} from '../../../../features/authors/models/author.model';
@@ -36,7 +36,11 @@ import {
 } from '../../../../features/blog/utils/blog-validation.util';
 import {SITE_URL} from '../../../../shared/seo/seo.metadata';
 import {AdminControlModuleComponent} from '../../../shared/admin-control-module.component';
-import {EditorImageUploadResult, EditorJsComponent} from '../../components/editor-js/editor-js.component';
+import {
+  EditorImageUploadProgressCallback,
+  EditorImageUploadResult,
+  EditorJsComponent,
+} from '../../components/editor-js/editor-js.component';
 import {BlogMediaUploaderComponent} from '../../components/media-uploader/blog-media-uploader.component';
 import {CmsAssistantPanelComponent} from '../../components/assistant-panel/cms-assistant-panel.component';
 import {CmsDraftPreviewPanelComponent} from '../../components/draft-preview-panel/cms-draft-preview-panel.component';
@@ -67,6 +71,7 @@ import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
 import {getRemotePostDisposition} from '../../utils/post-editor-reliability.util';
 import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
+import {PostScheduleCalendarComponent} from './post-schedule-calendar.component';
 
 type PostEditorWorkspace = 'post' | 'social' | 'preview';
 
@@ -395,6 +400,7 @@ function getErrorMessage(error: unknown): string {
     CmsToastContainerComponent,
     AdminControlModuleComponent,
     CmsAuthorFormComponent,
+    PostScheduleCalendarComponent,
     SocialPromotionEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -524,15 +530,37 @@ function getErrorMessage(error: unknown): string {
                     <label class="space-y-1.5 md:col-span-2">
                       <span class="flex items-center justify-between gap-3">
                         <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Publish Date</span>
-                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="setPublishedAtNow()">Use current time</button>
+                        <span class="flex items-center gap-3">
+                          <button
+                            type="button"
+                            class="text-xs font-medium text-cyan-300 hover:text-cyan-100"
+                            (click)="scheduleCalendarOpen.set(!scheduleCalendarOpen())"
+                          >
+                            {{ scheduleCalendarOpen() ? 'Hide calendar' : 'View calendar' }}
+                          </button>
+                          <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100"
+                                  (click)="setPublishedAtNow()">Use current time</button>
+                        </span>
                       </span>
                       <input
                         type="datetime-local"
                         formControlName="publishedAt"
                         class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                        (focus)="scheduleCalendarOpen.set(true)"
+                        (input)="scheduleCalendarOpen.set(true)"
                       >
                       <span class="block text-xs leading-5 text-zinc-600">Scheduled posts require a future time.</span>
                     </label>
+                    @if (scheduleCalendarOpen()) {
+                      <div class="md:col-span-2">
+                        <app-post-schedule-calendar
+                          [posts]="calendarPosts()"
+                          [currentPostId]="post.id"
+                          [value]="postForm.controls.publishedAt.value"
+                          (valueChange)="applyScheduleCalendarValue($event)"
+                        ></app-post-schedule-calendar>
+                      </div>
+                    }
                     <label class="space-y-1.5">
                       <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Categories</span>
                       <input type="text" formControlName="categories" placeholder="CMS, Angular" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
@@ -1111,6 +1139,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
     : 'facebook';
   protected readonly initialSocialAnnouncementId = this.route.snapshot.queryParamMap.get('announcement') ?? undefined;
   protected readonly authors = toSignal(this.authorRepository.getAuthors$(), {initialValue: []});
+  protected readonly calendarPosts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
   protected currentPost = this.resolvePost();
   protected initialData: OutputData = this.currentPost ? createEditorDocument(this.currentPost) : {blocks: []};
   protected readonly postForm = this.createForm(this.currentPost ?? this.blogRepository.createNewPostTemplate());
@@ -1129,6 +1158,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   ));
   protected readonly postDetailsOpen = signal(true);
   protected readonly publishingSettingsOpen = signal(false);
+  protected readonly scheduleCalendarOpen = signal(false);
   protected readonly mediaSettingsOpen = signal(false);
   protected readonly seoSettingsOpen = signal(false);
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
@@ -1144,11 +1174,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected thumbnailError = '';
   protected lastGeneratedThumbnail: BlogStoredThumbnail | null = null;
   protected readonly socialAssistantContextProvider = (): Promise<BlogAssistantContext> => this.createAssistantContext();
-  protected readonly uploadEditorImage = async (file: File): Promise<EditorImageUploadResult> => {
-    const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
-      slug: this.mediaUploadSlug,
-      role: 'editor-image',
-    }));
+  protected readonly uploadEditorImage = async (
+    file: File,
+    onProgress?: EditorImageUploadProgressCallback
+  ): Promise<EditorImageUploadResult> => {
+    const upload = await lastValueFrom(
+      this.blogMediaUpload.uploadImage(file, {
+        slug: this.mediaUploadSlug,
+        role: 'editor-image',
+      }).pipe(
+        tap(progress => onProgress?.(progress.progress))
+      )
+    );
 
     if (!upload.downloadUrl) {
       throw new Error('Editor image upload completed without a download URL.');
@@ -1547,6 +1584,14 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected setPublishedAtNow(): void {
     this.postForm.controls.publishedAt.setValue(toDateTimeLocalValue(new Date().toISOString()));
     this.postForm.controls.publishedAt.markAsDirty();
+  }
+
+  protected applyScheduleCalendarValue(value: string): void {
+    const control = this.postForm.controls.publishedAt;
+    control.setValue(value);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.postForm.markAsDirty();
   }
 
   protected startAddingAuthor(): void {
