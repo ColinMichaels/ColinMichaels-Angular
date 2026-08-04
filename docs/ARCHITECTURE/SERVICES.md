@@ -3,17 +3,32 @@
 ## `auth.service.ts`
 
 - Responsibility:
-  Firebase sign-in/provider flows, claim refresh, current-profile projection, role authorization, and the admin-only tab-scoped **View as User** effective profile.
+  Firebase sign-in/provider flows, explicit auth-readiness state, claim refresh, current-profile projection, role authorization, and the admin-only tab-scoped **View as User** effective profile.
 - Dependencies:
-  Firebase Auth, `UserAccountService`, Angular Router, and session storage for the recoverable preview projection.
+  Firebase Auth, `UserAccountService`, Angular Router, shared local `LogService`, and session storage for the recoverable preview projection.
 - Called by:
   route guards, site account controls, Profile, Cat Corner, admin navigation, the Admin Guide, and User Management.
+- Identity state:
+  `authState$` emits `initializing`, `authenticated`, `unauthenticated`, or `unavailable`. `user$` deliberately suppresses the initializing state so route guards and account consumers cannot mistake startup latency for a signed-out result.
 - Security boundary:
   View as activation force-refreshes the real actor token and requires `admin`; the target profile changes Angular role and identity presentation only. Firebase requests retain the real actor token.
 - Current risks:
   the preview cannot validate backend denials and must stay read-oriented; any new role consumer should use `getRoleAuthorization` or `getCurrentUserProfile` when it is expected to honor the effective view.
 - Planned cleanup:
   add emulator-backed permission-matrix tests if diagnosis needs authoritative callable, Firestore, Storage, or Realtime Database enforcement for a target account.
+
+## `shared/logging/log.service.ts`
+
+- Responsibility:
+  shared in-memory log buffering, level filtering, pagination, muting, and browser-console output for public authentication and Core OS consumers.
+- Dependencies:
+  RxJS only; the service has no Firebase, Firestore, authentication, or consent dependency.
+- Compatibility:
+  the legacy `components/game/services/log.service.ts` path re-exports the shared implementation so existing Core OS consumers retain one service instance and their current API.
+- Privacy boundary:
+  browser clients do not persist logs to Firestore. Any future remote telemetry must be introduced behind a separately authorized, consent-aware sink with retention and redaction rules.
+- Migration:
+  no stored data or Firestore Rules change is required. Existing `logs` documents are left untouched.
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 

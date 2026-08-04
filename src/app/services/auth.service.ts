@@ -19,10 +19,23 @@ import {
   User,
   UserCredential
 } from 'firebase/auth';
-import {BehaviorSubject, combineLatest, defer, from, map, Observable, of, shareReplay, Subject, throwError} from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  defer,
+  distinctUntilChanged,
+  filter,
+  from,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  Subject,
+  throwError,
+} from 'rxjs';
 import {catchError, startWith, switchMap, tap} from 'rxjs/operators';
 import {Router} from '@angular/router';
-import {LogService} from '../components/game/services/log.service';
+import {LogService} from '../shared/logging/log.service';
 import {FIREBASE_AUTH} from './firebase/firebase.tokens';
 import {PATH_NAMES} from '../app-route-paths';
 import {
@@ -44,6 +57,14 @@ export interface AdminAuthorization {
   claims: Record<string, unknown>;
   requiredRoles: readonly string[];
 }
+
+export type AuthState =
+  | { status: 'initializing'; user: null }
+  | { status: 'authenticated'; user: User }
+  | { status: 'unauthenticated'; user: null }
+  | { status: 'unavailable'; user: null };
+
+export const INITIAL_AUTH_STATE: AuthState = {status: 'initializing', user: null};
 
 export interface UserViewTarget {
   uid: string;
@@ -159,6 +180,7 @@ export class AuthService {
   private readonly userViewSubject = new BehaviorSubject<UserViewSession | null>(null);
   private userViewRevision = 0;
 
+  readonly authState$: Observable<AuthState>;
   readonly user$: Observable<User | null>;
   readonly userView$ = this.userViewSubject.asObservable();
 
@@ -171,11 +193,12 @@ export class AuthService {
     if (!auth) {
       this.logger.warn('Auth service initialized without Firebase Auth provider.');
       this.clearStoredUserView();
+      this.authState$ = of({status: 'unavailable', user: null});
       this.user$ = of(null);
       return;
     }
 
-    this.user$ = new Observable<User | null>(observer => {
+    this.authState$ = new Observable<AuthState>(observer => {
       return onAuthStateChanged(
         auth,
         currentUser => {
@@ -189,15 +212,29 @@ export class AuthService {
           } else {
             this.stopViewingAsUser();
           }
-          observer.next(currentUser);
+          observer.next(currentUser
+            ? {status: 'authenticated', user: currentUser}
+            : {status: 'unauthenticated', user: null});
         },
         error => {
           this.debugAuth('auth state listener error', this.createErrorDebugSummary(error));
-          observer.error(error);
+          this.logger.error('Firebase Auth state listener failed:', error);
+          observer.next({status: 'unavailable', user: null});
+          observer.complete();
         }
       );
     })
-      .pipe(shareReplay({bufferSize: 1, refCount: true}));
+      .pipe(
+        startWith(INITIAL_AUTH_STATE),
+        shareReplay({bufferSize: 1, refCount: false})
+      );
+
+    this.user$ = this.authState$.pipe(
+      filter(state => state.status !== 'initializing'),
+      map(state => state.user),
+      distinctUntilChanged(),
+      shareReplay({bufferSize: 1, refCount: true})
+    );
   }
 
   // Email & Password Sign In

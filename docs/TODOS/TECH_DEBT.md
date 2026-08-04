@@ -8,6 +8,12 @@ Status legend:
 
 ## Quick Wins (Do First)
 
+- [x] Resolve the reader-membership auth race and anonymous client-log writes.
+  - Impact: High
+  - Effort: M
+  - Progress: added explicit initializing/authenticated/unauthenticated/unavailable auth states, made membership prompting wait for resolved anonymous identity and cancel on sign-in, consolidated duplicate authentication guards, and moved the shared/Core OS logger to local buffer and console output without Firestore persistence.
+  - Validation: focused auth, campaign, guard, route-inventory, and logging specs; repository lint, build, full unit suite, and rendered signed-out blog checks.
+
 - [x] Fix lint gate wiring (`npm run lint` currently non-functional).
   - Impact: High
   - Effort: S

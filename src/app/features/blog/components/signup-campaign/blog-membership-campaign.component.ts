@@ -15,7 +15,7 @@ import {Router, RouterLink} from '@angular/router';
 import {of, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
-import {AuthService} from '../../../../services/auth.service';
+import {AuthService, INITIAL_AUTH_STATE} from '../../../../services/auth.service';
 import {PwaPushService} from '../../../../shared/pwa/pwa-push.service';
 import {UserAccountService} from '../../../../shared/user-account/user-account.service';
 import {
@@ -755,7 +755,7 @@ export class BlogMembershipCampaignComponent {
   private readonly pending = signal<PendingBlogMembershipPreferences | null>(
     this.campaignState.getPendingPreferences()
   );
-  private readonly user = toSignal(this.auth.user$, {initialValue: null});
+  private readonly authState = toSignal(this.auth.authState$, {initialValue: INITIAL_AUTH_STATE});
   private readonly account = toSignal(
     this.auth.user$.pipe(
       switchMap(user => user ? this.userAccounts.listenToUserAccount(user.uid) : of(null)),
@@ -770,18 +770,44 @@ export class BlogMembershipCampaignComponent {
 
   constructor() {
     effect(() => {
-      const user = this.user();
+      const authState = this.authState();
       const account = this.account();
       const pending = this.pending();
 
-      if (user && account && pending && this.completionUid !== user.uid) {
-        void this.completeAccountPreferences(user.uid, pending);
+      if (authState.status !== 'unauthenticated') {
+        this.cancelPendingPrompt();
+      }
+
+      if (authState.status === 'authenticated') {
+        if (this.isOpen() && this.stage() === 'offer') {
+          this.isOpen.set(false);
+        }
+
+        if (account && pending && this.completionUid !== authState.user.uid) {
+          void this.completeAccountPreferences(authState.user.uid, pending);
+        }
+
         return;
       }
 
-      if (!user && !pending && !this.promptScheduled && this.campaignState.shouldPromptAnonymousReader()) {
+      if (authState.status !== 'unauthenticated') {
+        return;
+      }
+
+      if (!pending && !this.promptScheduled && this.campaignState.shouldPromptAnonymousReader()) {
         this.promptScheduled = true;
         this.promptTimer = setTimeout(() => {
+          this.promptTimer = undefined;
+
+          if (
+            this.authState().status !== 'unauthenticated'
+            || this.pending()
+            || !this.campaignState.shouldPromptAnonymousReader()
+          ) {
+            this.promptScheduled = false;
+            return;
+          }
+
           this.stage.set('offer');
           this.openDialog();
         }, 3200);
@@ -798,9 +824,7 @@ export class BlogMembershipCampaignComponent {
     });
 
     this.destroyRef.onDestroy(() => {
-      if (this.promptTimer) {
-        clearTimeout(this.promptTimer);
-      }
+      this.cancelPendingPrompt();
       this.document.body.style.overflow = this.originalBodyOverflow;
     });
   }
@@ -915,6 +939,15 @@ export class BlogMembershipCampaignComponent {
   private openDialog(): void {
     this.isOpen.set(true);
     this.focusDialog();
+  }
+
+  private cancelPendingPrompt(): void {
+    if (this.promptTimer) {
+      clearTimeout(this.promptTimer);
+      this.promptTimer = undefined;
+    }
+
+    this.promptScheduled = false;
   }
 
   private focusDialog(): void {
