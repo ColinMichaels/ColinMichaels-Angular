@@ -13,6 +13,7 @@ import {
   PLATFORM_ID,
   SimpleChanges,
   ViewChild,
+  computed,
   inject,
   signal,
   ChangeDetectionStrategy
@@ -81,6 +82,12 @@ export interface EditorImageUploadResult {
     alt?: string;
   };
 }
+
+export type EditorImageUploadProgressCallback = (progress: number) => void;
+export type EditorImageUploader = (
+  file: File,
+  onProgress?: EditorImageUploadProgressCallback
+) => Promise<EditorImageUploadResult>;
 
 type EditorImageInsertTab = 'library' | 'upload';
 type EditorImagePanelMode = 'insert' | 'select';
@@ -556,6 +563,31 @@ function parseEditorDocument(source: string): OutputData {
                       {{ isImageUploadInProgress() ? 'Uploading image' : 'Choose Image' }}
                     </button>
 
+                    @if (isImageUploadInProgress()) {
+                      <div
+                        class="space-y-2 border border-cyan-500/40 bg-cyan-950/20 p-3 text-left"
+                        role="status"
+                        aria-live="polite"
+                        data-testid="cms-image-upload-progress"
+                      >
+                        <div
+                          class="h-2 overflow-hidden bg-zinc-800"
+                          role="progressbar"
+                          aria-label="Image upload progress"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          [attr.aria-valuenow]="imageUploadProgress()"
+                        >
+                          <div
+                            class="h-full bg-cyan-300 transition-all"
+                            [class.animate-pulse]="imageUploadProgress() === 0 || imageUploadProgress() === 100"
+                            [style.width.%]="imageUploadProgress() === 0 ? 18 : imageUploadProgress()"
+                          ></div>
+                        </div>
+                        <p class="text-xs leading-5 text-cyan-100">{{ imageUploadStatus() }}</p>
+                      </div>
+                    }
+
                     @if (imageInsertMessage(); as message) {
                       <p class="border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-300" role="status">{{ message }}</p>
                     }
@@ -927,7 +959,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   @Input() title = 'Post Editor';
   @Input() saveLabel = 'Save Draft';
   @Input() showSaveAction = true;
-  @Input() imageUploader: ((file: File) => Promise<EditorImageUploadResult>) | null = null;
+  @Input() imageUploader: EditorImageUploader | null = null;
   @Input() previewTitle = '';
   @Input() previewExcerpt = '';
   @Input() previewCoverImage = '';
@@ -950,6 +982,20 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   protected readonly jsonWarning = signal<string | null>(null);
   protected readonly isImagePanelOpen = signal(false);
   protected readonly isImageUploadInProgress = signal(false);
+  protected readonly imageUploadProgress = signal(0);
+  protected readonly imageUploadStatus = computed(() => {
+    const progress = this.imageUploadProgress();
+
+    if (progress <= 0) {
+      return 'Preparing image for upload...';
+    }
+
+    if (progress < 100) {
+      return `Uploading image... ${progress}%`;
+    }
+
+    return 'Upload complete. Processing image and creating web-ready versions...';
+  });
   protected readonly isMediaLibraryLoading = signal(false);
   protected readonly mediaLibraryError = signal<string | null>(null);
   protected readonly imageInsertMessage = signal<string | null>(null);
@@ -1338,10 +1384,13 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     }
 
     this.isImageUploadInProgress.set(true);
+    this.imageUploadProgress.set(0);
     this.imageInsertMessage.set(null);
 
     try {
-      const result = await this.uploadImageFile(file);
+      const result = await this.uploadImageFile(file, progress => {
+        this.imageUploadProgress.set(this.normalizeUploadProgress(progress));
+      });
       await this.insertImageBlock({
         url: result.file.url,
         alt: this.imageAltText.trim() || result.file.alt || file.name,
@@ -1475,7 +1524,9 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
                 selectImage: (current: CmsImageLibrarySelection) => this.selectExistingImage(current),
               },
               uploader: {
-                uploadByFile: async (file: File) => this.uploadImageFile(file),
+                uploadByFile: async (file: File, onProgress?: EditorImageUploadProgressCallback) => (
+                  this.uploadImageFile(file, onProgress)
+                ),
               },
             },
           },
@@ -1615,8 +1666,20 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     }
   }
 
-  private uploadImageFile(file: File): Promise<EditorImageUploadResult> {
-    return this.imageUploader ? this.imageUploader(file) : Promise.resolve(createObjectUrlUploadResult(file));
+  private uploadImageFile(
+    file: File,
+    onProgress?: EditorImageUploadProgressCallback
+  ): Promise<EditorImageUploadResult> {
+    if (!this.imageUploader) {
+      onProgress?.(100);
+      return Promise.resolve(createObjectUrlUploadResult(file));
+    }
+
+    return this.imageUploader(file, onProgress);
+  }
+
+  private normalizeUploadProgress(progress: number): number {
+    return Math.round(Math.min(100, Math.max(0, Number.isFinite(progress) ? progress : 0)));
   }
 
   private selectExistingImage(current: CmsImageLibrarySelection): Promise<CmsImageLibrarySelection | null> {

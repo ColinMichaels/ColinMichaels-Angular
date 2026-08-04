@@ -1,5 +1,5 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {BehaviorSubject, of} from 'rxjs';
+import {BehaviorSubject, Subject, of} from 'rxjs';
 
 import {MediaLibraryItem, MediaUploadEvent} from '../../../media-library/models/media-library.models';
 import {MediaLibraryService} from '../../../media-library/services/media-library.service';
@@ -151,6 +151,44 @@ describe('BlogMediaUploaderComponent', () => {
     expect(onChange).toHaveBeenCalledWith('/assets/images/backgrounds/night.jpg');
     expect(queryInputValue('input[type="text"]')).toBe('/assets/images/backgrounds/night.jpg');
     expect(queryText()).toContain('Uploaded uploaded-social.jpg to the media library.');
+  });
+
+  it('distinguishes upload progress from server-side image processing', () => {
+    const uploadEvents = new Subject<MediaUploadEvent>();
+    mediaLibrary.uploadFiles.and.returnValue(uploadEvents.asObservable());
+
+    clickButtonByText('Choose Cover');
+    fixture.detectChanges();
+    clickButtonByText('Upload');
+    fixture.detectChanges();
+
+    const fileInput = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="file"]');
+    const file = new File(['image'], 'slow-cover.jpg', {type: 'image/jpeg'});
+
+    Object.defineProperty(fileInput, 'files', {value: [file]});
+    fileInput?.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    let progress = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('[data-testid="media-picker-upload-progress"]');
+    expect(progress?.textContent).toContain('Preparing image for upload');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('0');
+
+    uploadEvents.next({fileName: file.name, progress: 42, status: 'uploading'});
+    fixture.detectChanges();
+    progress = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('[data-testid="media-picker-upload-progress"]');
+    expect(progress?.textContent).toContain('Uploading slow-cover.jpg... 42%');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('42');
+
+    uploadEvents.next({fileName: file.name, progress: 100, status: 'uploading'});
+    fixture.detectChanges();
+    progress = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('[data-testid="media-picker-upload-progress"]');
+    expect(progress?.textContent).toContain('Upload complete. Processing image');
+    expect(progress?.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('100');
+
+    uploadEvents.complete();
   });
 
   it('filters the picker to allowed videos and applies an existing video', () => {

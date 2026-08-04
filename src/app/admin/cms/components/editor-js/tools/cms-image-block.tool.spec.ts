@@ -144,6 +144,48 @@ describe('CmsImageBlockTool media library selection', () => {
     expect(tool.save(block).url).toBe('https://cdn.example.com/current.webp');
   });
 
+  it('shows upload percentage and the server-processing phase while an image is pending', async () => {
+    let reportProgress: ((progress: number) => void) | undefined;
+    let resolveUpload: ((result: unknown) => void) | undefined;
+    const uploadByFile = jasmine.createSpy('uploadByFile').and.callFake((
+      _file: File,
+      onProgress?: (progress: number) => void
+    ) => {
+      reportProgress = onProgress;
+      return new Promise<unknown>(resolve => {
+        resolveUpload = resolve;
+      });
+    });
+    const tool = createTool({}, {uploader: {uploadByFile}});
+    const block = tool.render();
+    const input = block.querySelector<HTMLInputElement>('input[type="file"]');
+    const file = new File(['image'], 'slow-upload.jpg', {type: 'image/jpeg'});
+
+    Object.defineProperty(input, 'files', {value: [file]});
+    input?.dispatchEvent(new Event('change'));
+
+    const status = block.querySelector<HTMLElement>('[role="status"]');
+    const progress = block.querySelector<HTMLElement>('[data-image-upload-progress]');
+
+    expect(status?.textContent).toContain('Preparing slow-upload.jpg');
+    expect(progress?.hidden).toBeFalse();
+    expect(progress?.getAttribute('aria-valuenow')).toBe('0');
+
+    reportProgress?.(47);
+    expect(status?.textContent).toContain('Uploading slow-upload.jpg... 47%');
+    expect(progress?.getAttribute('aria-valuenow')).toBe('47');
+
+    reportProgress?.(100);
+    expect(status?.textContent).toContain('Upload complete. Processing image');
+    expect(progress?.getAttribute('aria-valuenow')).toBe('100');
+
+    resolveUpload?.({success: 1, file: {url: 'https://cdn.example.com/slow-upload.webp'}});
+    await settleSelection();
+
+    expect(status?.textContent).toBe('Uploaded image.');
+    expect(progress?.hidden).toBeTrue();
+  });
+
   it('disables library and upload actions when the editor is read only', () => {
     const tool = createTool({}, {
       mediaLibrary: {selectImage: async () => null},
