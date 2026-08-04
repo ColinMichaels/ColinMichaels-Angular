@@ -146,6 +146,7 @@ describe('HomeArticleHeroComponent', () => {
 
     expect(element.textContent).toContain('Post 4 title');
     expect(element.textContent).not.toContain('Post 1 title');
+    expect(element.querySelector('.home-hero-post-title')?.tagName).toBe('H2');
     expect(olderFeatured.featured).toBeTrue();
 
     element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();

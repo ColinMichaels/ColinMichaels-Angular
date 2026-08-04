@@ -37,15 +37,15 @@ import {
         <button
           type="button"
           class="fixed inset-x-0 bottom-0 top-16 z-40 cursor-default bg-slate-950/45 backdrop-blur-sm dark:bg-black/65"
-          aria-label="Close search"
+          aria-hidden="true"
+          tabindex="-1"
           (click)="requestClose()"
         ></button>
 
-        <aside
+        <div
           id="site-search-results-panel"
-          role="dialog"
-          aria-labelledby="site-search-drawer-title"
-          class="fixed left-3 right-3 top-[4.25rem] z-[110] flex max-h-[calc(100dvh-5rem)] w-auto translate-x-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-950 shadow-2xl shadow-slate-950/30 dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 dark:shadow-black/50 sm:absolute sm:left-1/2 sm:right-auto sm:top-[calc(100%+0.5rem)] sm:w-[min(36rem,calc(100vw-3rem))] sm:-translate-x-1/2"
+          [attr.aria-busy]="isLoading()"
+          class="fixed left-3 right-3 top-[4.25rem] z-[110] flex max-h-[calc(100dvh-5rem)] w-auto translate-x-0 flex-col overflow-hidden rounded-site-overlay border border-slate-200 bg-white text-slate-950 shadow-site-overlay dark:border-white/10 dark:bg-neutral-950 dark:text-zinc-100 sm:absolute sm:left-1/2 sm:right-auto sm:top-[calc(100%+0.5rem)] sm:w-[min(36rem,calc(100vw-3rem))] sm:-translate-x-1/2"
         >
           <header class="border-b border-slate-200 p-5 dark:border-zinc-800">
             <div class="flex items-start justify-between gap-4">
@@ -55,7 +55,7 @@ import {
               </div>
               <button
                 type="button"
-                class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+                class="site-icon-control"
                 aria-label="Close search"
                 (click)="requestClose()"
               >
@@ -80,13 +80,16 @@ import {
                 <div class="site-skeleton-card h-24"></div>
               </div>
             } @else {
+              <p class="sr-only" role="status" aria-live="polite">
+                {{ quickResults().length }} {{ quickResults().length === 1 ? 'result' : 'results' }} available.
+              </p>
               <div class="mb-3 flex items-center justify-between gap-3">
                 <p class="site-meta">{{ resultLabel() }}</p>
                 <a
                   [routerLink]="['/', pathNames.SEARCH]"
                   [queryParams]="advancedSearchQueryParams()"
-                  class="site-inline-link text-sm"
-                  (click)="requestClose()"
+                  class="site-inline-link inline-flex min-h-11 items-center text-sm"
+                  (click)="requestClose(false)"
                 >
                   Advanced search
                 </a>
@@ -99,7 +102,7 @@ import {
                     class="site-card-interactive site-search-quick-result grid grid-cols-[4.25rem_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[5.25rem_minmax(0,1fr)] sm:p-4"
                     [class.site-search-quick-result-topic]="!!result.topic"
                     [ngStyle]="resultTopicStyle(result)"
-                    (click)="requestClose()"
+                    (click)="requestClose(false)"
                   >
                     <span class="site-search-result-media" aria-hidden="true">
                       @if (result.image) {
@@ -161,12 +164,12 @@ import {
               [routerLink]="['/', pathNames.SEARCH]"
               [queryParams]="advancedSearchQueryParams()"
               class="blog-action-primary w-full justify-center"
-              (click)="requestClose()"
+              (click)="requestClose(false)"
             >
               Open full search
             </a>
           </footer>
-        </aside>
+        </div>
       </section>
     }
   `,
@@ -262,7 +265,7 @@ import {
 })
 export class SiteSearchDrawerComponent {
   @Input() isOpen = false;
-  @Output() closeSearch = new EventEmitter<void>();
+  @Output() closeSearch = new EventEmitter<boolean>();
   readonly query = input('');
 
   private readonly search = inject(SiteSearchService);
@@ -303,8 +306,8 @@ export class SiteSearchDrawerComponent {
     return query ? {q: query} : {};
   }
 
-  protected requestClose(): void {
-    this.closeSearch.emit();
+  protected requestClose(restoreFocus = true): void {
+    this.closeSearch.emit(restoreFocus);
   }
 
   protected trackResult(index: number, result: SiteSearchResult): string {

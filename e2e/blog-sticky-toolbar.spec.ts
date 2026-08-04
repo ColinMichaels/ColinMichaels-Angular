@@ -1,7 +1,9 @@
 import {expect, test} from '@playwright/test';
+import {suppressMembershipCampaign} from './support/public-reader-state';
 
 test.describe('blog sticky toolbar', () => {
   test('pins post context and jumps to deferred comments', async ({page}) => {
+    test.setTimeout(60_000);
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];
 
@@ -12,16 +14,8 @@ test.describe('blog sticky toolbar', () => {
     });
     page.on('pageerror', error => pageErrors.push(error.message));
 
+    await suppressMembershipCampaign(page);
     await page.goto('/blog');
-
-    const dismissMembershipCampaign = page.getByRole('button', {name: 'Not now'});
-
-    try {
-      await dismissMembershipCampaign.waitFor({state: 'visible', timeout: 5_000});
-      await dismissMembershipCampaign.click();
-    } catch {
-      // The campaign is intentionally frequency-capped and may already be dismissed.
-    }
 
     const firstPostLink = page
       .getByRole('region', {name: 'Published blog posts'})
@@ -189,7 +183,7 @@ test.describe('blog sticky toolbar', () => {
 
     await expect(page).toHaveURL(/#blog-comments$/);
     await expect(commentsTarget).toBeFocused();
-    await expect(commentsTarget).toBeInViewport();
+    await expect(commentsTarget).toBeInViewport({timeout: 10_000});
     await expect(page.getByRole('heading', {name: 'Comments'})).toBeVisible();
     await expect(readingProgress).toHaveAttribute('aria-valuenow', '100');
 

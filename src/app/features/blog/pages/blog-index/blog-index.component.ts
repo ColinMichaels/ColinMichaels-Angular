@@ -43,7 +43,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <section class="mx-auto max-w-5xl">
+      <section class="site-layout site-layout-reading">
         <header class="blog-section-rule blog-page-header">
           <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>

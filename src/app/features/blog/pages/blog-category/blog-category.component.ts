@@ -38,7 +38,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <section class="mx-auto max-w-5xl">
+      <section class="site-layout site-layout-reading">
         <header class="blog-section-rule blog-page-header blog-category-page-header">
           <h1 class="blog-page-title blog-category-page-title">{{ categoryTitle() }}</h1>
 

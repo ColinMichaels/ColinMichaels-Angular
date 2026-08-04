@@ -32,7 +32,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <section class="mx-auto max-w-6xl">
+      <section class="site-layout site-layout-wide">
         <header class="blog-section-rule blog-page-header">
           <nav class="blog-breadcrumb" aria-label="Search navigation">
             <a routerLink="/" class="font-medium hover:text-cyan-800 dark:hover:text-cyan-200">Home</a>
@@ -48,7 +48,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
               </p>
             </div>
 
-            <div class="site-card-body border border-slate-200 bg-white text-sm leading-6 text-slate-600 shadow-sm shadow-slate-950/5 dark:border-white/10 dark:bg-zinc-900/70 dark:text-zinc-400">
+            <div class="site-card site-card-body text-sm leading-6 text-slate-600 dark:text-zinc-400">
               <p class="site-meta">Indexed content</p>
               <p class="mt-2">
                 {{ blogItemCount() }} blog post{{ blogItemCount() === 1 ? '' : 's' }} and

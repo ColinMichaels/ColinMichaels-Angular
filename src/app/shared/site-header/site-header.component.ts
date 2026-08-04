@@ -1,4 +1,13 @@
-import {ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal} from '@angular/core';
+import {CdkTrapFocus} from '@angular/cdk/a11y';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
 import {RouterLink, RouterLinkActive} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
@@ -13,6 +22,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
   imports: [
     RouterLink,
     RouterLinkActive,
+    CdkTrapFocus,
     SiteAuthControlsComponent,
     SiteLogoComponent,
     SiteSearchDrawerComponent,
@@ -25,21 +35,25 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
       [class.site-header-overlay-open]="searchOverlay.isOpen() || isMenuOpen()"
     >
       <div
-        class="site-header-row mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8">
+        class="site-header-row mx-auto grid max-w-site grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8">
         <a
           routerLink="/"
-          class="group w-24 min-w-0 min-[400px]:w-28 sm:w-48 lg:w-56"
+          class="group inline-flex min-h-11 w-24 min-w-0 items-center min-[400px]:w-28 sm:w-48 lg:w-56"
           aria-label="Go to homepage"
           (click)="closeMenu()"
         >
-          <h1 class="block w-full">
+          <span class="block w-full">
             <app-site-logo/>
-          </h1>
+          </span>
         </a>
 
         <form
           class="relative mx-auto w-full min-w-0 max-w-xl"
-          role="search"
+          [attr.role]="searchOverlay.isOpen() ? 'dialog' : 'search'"
+          [attr.aria-modal]="searchOverlay.isOpen() ? 'true' : null"
+          [attr.aria-labelledby]="searchOverlay.isOpen() ? 'site-search-drawer-title' : null"
+          [cdkTrapFocus]="searchOverlay.isOpen()"
+          [cdkTrapFocusAutoCapture]="searchOverlay.isOpen()"
           (submit)="handleSearchSubmit($event)"
         >
           <label for="site-header-search" class="sr-only">Search posts</label>
@@ -59,14 +73,15 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
             #headerSearchInput
             id="site-header-search"
             type="search"
+            cdkFocusInitial
             placeholder="Search"
             autocomplete="off"
             [value]="searchQuery()"
-            class="h-10 w-full rounded-full border border-slate-300 bg-slate-50/90 pl-9 pr-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-500 hover:border-cyan-400 focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/25 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-cyan-400 dark:focus:border-cyan-300 dark:focus:bg-zinc-900 dark:focus:ring-cyan-300/20"
+            class="site-header-search-input"
             aria-haspopup="dialog"
             aria-controls="site-search-results-panel"
             [attr.aria-expanded]="searchOverlay.isOpen()"
-            (focus)="openSearch()"
+            (focus)="handleSearchFocus()"
             (click)="openSearch()"
             (input)="updateSearchQuery(headerSearchInput.value)"
           >
@@ -76,17 +91,17 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
               <app-site-search-drawer
                 [isOpen]="true"
                 [query]="searchQuery()"
-                (closeSearch)="closeSearch()"
+                (closeSearch)="closeSearch($event)"
               />
             }
           }
         </form>
 
-        <nav class="flex h-10 shrink-0 items-center justify-end gap-1.5" aria-label="Site utilities">
+        <nav class="flex h-11 shrink-0 items-center justify-end gap-1.5" aria-label="Site utilities">
           <a
             [routerLink]="['/', pathNames.BLOG]"
-            routerLinkActive="border-cyan-600 bg-cyan-50 text-cyan-800 dark:border-cyan-300 dark:bg-cyan-400/15 dark:text-cyan-200"
-            class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:text-cyan-200 min-[400px]:inline-flex"
+            routerLinkActive="site-icon-control-active"
+            class="site-icon-control hidden min-[400px]:inline-flex"
             aria-label="Browse all posts"
             title="All posts"
           >
@@ -100,7 +115,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
 
           <button
             type="button"
-            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+            class="site-icon-control"
             [attr.aria-expanded]="isMenuOpen()"
             aria-controls="site-utility-menu"
             [attr.aria-label]="isMenuOpen() ? 'Close site menu' : 'Open site menu'"
@@ -123,12 +138,12 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
       @if (isMenuOpen()) {
         <nav
           id="site-utility-menu"
-          class="absolute right-3 top-full z-[60] mt-2 grid max-h-[calc(100dvh-var(--site-header-sticky-height)-env(safe-area-inset-top)-1rem)] w-[min(20rem,calc(100vw-1.5rem))] gap-1.5 overflow-y-auto overscroll-contain border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-950/20 dark:border-zinc-700 dark:bg-neutral-950 dark:shadow-black/50 sm:right-6 lg:right-8"
+          class="absolute right-3 top-full z-[60] mt-2 grid max-h-[calc(100dvh-var(--site-header-sticky-height)-env(safe-area-inset-top)-1rem)] w-[min(20rem,calc(100vw-1.5rem))] gap-1.5 overflow-y-auto overscroll-contain rounded-site-overlay border border-slate-200 bg-white p-2 shadow-site-overlay dark:border-zinc-700 dark:bg-neutral-950 sm:right-6 lg:right-8"
           aria-label="Account and site menu"
         >
           <a
             [routerLink]="['/', pathNames.BLOG]"
-            class="inline-flex h-11 items-center gap-3 rounded-lg border border-transparent px-3 text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 dark:text-zinc-200 dark:hover:border-cyan-300/60 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
+            class="site-menu-link"
             (click)="closeMenu()"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -141,7 +156,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
           </a>
           <a
             [routerLink]="['/', pathNames.OS_MAIN]"
-            class="inline-flex h-11 items-center gap-3 rounded-lg border border-transparent px-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 dark:text-zinc-200 dark:hover:border-emerald-400/60 dark:hover:bg-zinc-900 dark:hover:text-emerald-200"
+            class="site-menu-link site-menu-link-success"
             (click)="closeMenu()"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -174,6 +189,8 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
   `,
 })
 export class SiteHeaderComponent {
+  @ViewChild('headerSearchInput') private headerSearchInput?: ElementRef<HTMLInputElement>;
+
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly searchOverlay = inject(SiteSearchOverlayService);
   protected readonly pathNames = PATH_NAMES;
@@ -185,8 +202,34 @@ export class SiteHeaderComponent {
     this.searchOverlay.open();
   }
 
-  protected closeSearch(): void {
+  private suppressNextSearchFocusOpen = false;
+
+  protected handleSearchFocus(): void {
+    if (this.suppressNextSearchFocusOpen) {
+      this.suppressNextSearchFocusOpen = false;
+      return;
+    }
+
+    this.openSearch();
+  }
+
+  protected closeSearch(restoreFocus = true): void {
     this.searchOverlay.close();
+
+    if (restoreFocus) {
+      queueMicrotask(() => {
+        const searchInput = this.headerSearchInput?.nativeElement;
+
+        if (!searchInput || searchInput.ownerDocument.activeElement === searchInput) {
+          this.suppressNextSearchFocusOpen = false;
+          return;
+        }
+
+        this.suppressNextSearchFocusOpen = true;
+        searchInput.focus();
+        this.suppressNextSearchFocusOpen = false;
+      });
+    }
   }
 
   protected updateSearchQuery(value: string): void {

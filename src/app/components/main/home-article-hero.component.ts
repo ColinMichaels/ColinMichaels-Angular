@@ -138,7 +138,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
                   </span>
                   <div class="home-hero-panel-body">
 
-                    <span class="home-hero-post-title">{{ post.title }}</span>
+                    <h2 class="home-hero-post-title">{{ post.title }}</h2>
                     <span class="home-hero-post-excerpt">{{ postExcerpt(post) }}</span>
                     <span class="home-hero-meta-row">
                       <span class="home-hero-meta">
@@ -559,14 +559,18 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
     }
 
     .home-hero-post-title {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: -1px;
+      display: -webkit-box;
+      margin: 0 0 0.55rem;
       overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      clip-path: inset(50%);
-      white-space: nowrap;
+      color: #ffffff;
+      font-family: var(--font-heading);
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-wrap: balance;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     .home-hero-post-excerpt {
@@ -577,7 +581,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       font-size: 0.95rem;
       line-height: 1.45;
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 4;
+      -webkit-line-clamp: 3;
     }
 
     .home-hero-meta-row {

@@ -6,6 +6,7 @@ import {
   shouldShowOsNotifications,
   shouldShowReaderTools,
   shouldShowSiteHeader,
+  shouldUseCoreOsTheme,
 } from './app.component';
 import {PwaPushService} from './shared/pwa/pwa-push.service';
 
@@ -22,8 +23,11 @@ describe('AppComponent', () => {
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
+    expect(fixture.nativeElement.classList).toContain('site-theme-scope');
+    expect(fixture.nativeElement.classList).not.toContain('core-os-scope');
   });
 
   it('uses the dedicated shell for admin routes without enabling OS notifications', () => {
@@ -31,6 +35,17 @@ describe('AppComponent', () => {
     expect(shouldShowSiteHeader('/admin/cms/calendar?month=2026-07')).toBeFalse();
     expect(shouldShowOsNotifications('/admin/cms')).toBeFalse();
     expect(shouldShowSiteHeader('/blog')).toBeTrue();
+  });
+
+  it('assigns Core OS styling only to OS-owned routes', () => {
+    expect(shouldUseCoreOsTheme('/os')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/os/terminal?source=site')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/login?redirectUrl=%2Fos')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/boot')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/sleep')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/external/https%3A%2F%2Fexample.com')).toBeTrue();
+    expect(shouldUseCoreOsTheme('/admin')).toBeFalse();
+    expect(shouldUseCoreOsTheme('/blog')).toBeFalse();
   });
 
   it('shows reading assistance throughout Cat Corner but not on unrelated routes', () => {

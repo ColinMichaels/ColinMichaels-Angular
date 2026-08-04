@@ -27,7 +27,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         @if (canViewAdminLinks()) {
           <a
             [routerLink]="['/', pathNames.ADMIN]"
-            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-700/60 bg-cyan-50 text-cyan-800 transition hover:bg-cyan-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+            class="site-icon-control site-icon-control-sm site-icon-control-accent"
             aria-label="Open admin"
             title="Admin"
           >
@@ -39,7 +39,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
           </a>
           <a
             [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS]"
-            class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-700/60 bg-cyan-50 text-cyan-800 transition hover:bg-cyan-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950 lg:inline-flex"
+            class="site-icon-control site-icon-control-sm site-icon-control-accent hidden lg:inline-flex"
             aria-label="Open CMS"
             title="CMS"
           >
@@ -55,7 +55,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         @if (currentUser(); as user) {
           <a
             [routerLink]="['/', pathNames.PROFILE]"
-            class="inline-grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
+            class="site-icon-control site-icon-control-sm site-icon-control-profile"
             [attr.aria-label]="'Open profile for ' + (user.displayName || user.email || user.uid)"
             title="Profile"
           >
@@ -76,7 +76,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
           </a>
           <a
             [routerLink]="['/', pathNames.LOGOUT]"
-            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rose-600/60 bg-rose-50 text-rose-800 transition hover:bg-rose-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 dark:border-rose-400/70 dark:bg-transparent dark:text-rose-200 dark:hover:bg-rose-300 dark:hover:text-neutral-950"
+            class="site-icon-control site-icon-control-sm site-icon-control-danger"
             aria-label="Sign out"
             title="Sign out"
           >
@@ -91,7 +91,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
           <a
             [routerLink]="['/', pathNames.OS_LOGIN]"
             [queryParams]="loginQueryParams()"
-            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-600 hover:bg-cyan-50 hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-cyan-300 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
+            class="site-icon-control site-icon-control-sm"
             aria-label="Sign in"
             title="Sign in"
           >
@@ -109,7 +109,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
       @if (canViewCatCorner()) {
         <a
           [routerLink]="['/', pathNames.CAT_CORNER]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-transparent px-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 dark:text-zinc-200 dark:hover:border-emerald-400/60 dark:hover:bg-zinc-900 dark:hover:text-emerald-200"
+          class="site-menu-link site-menu-link-success"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 32 32" class="h-5 w-5 shrink-0 fill-current">
@@ -126,7 +126,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
       @if (canViewAdminLinks()) {
         <a
           [routerLink]="['/', pathNames.ADMIN]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-accent"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
@@ -138,7 +138,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         </a>
         <a
           [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-accent"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
@@ -151,7 +151,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         </a>
         <a
           [routerLink]="['/', pathNames.ADMIN, pathNames.ADMIN_CMS, pathNames.ADMIN_MEDIA_LIBRARY]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-accent"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
@@ -167,7 +167,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
       @if (isSignedIn()) {
         <a
           [routerLink]="['/', pathNames.PROFILE]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-accent"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
@@ -179,7 +179,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         </a>
         <a
           [routerLink]="['/', pathNames.LOGOUT]"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-rose-600/60 bg-rose-50 px-3 text-sm font-semibold text-rose-800 transition hover:bg-rose-600 hover:text-white dark:border-rose-400/70 dark:bg-transparent dark:text-rose-200 dark:hover:bg-rose-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-danger"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"
@@ -194,7 +194,7 @@ type AuthControlsVariant = 'desktop' | 'mobile';
         <a
           [routerLink]="['/', pathNames.OS_LOGIN]"
           [queryParams]="loginQueryParams()"
-          class="inline-flex h-11 items-center gap-3 rounded-lg border border-cyan-700/60 bg-cyan-50 px-3 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-600 hover:text-white dark:border-cyan-400/70 dark:bg-transparent dark:text-cyan-200 dark:hover:bg-cyan-300 dark:hover:text-neutral-950"
+          class="site-menu-link site-menu-link-accent"
           (click)="navigate.emit()"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor"

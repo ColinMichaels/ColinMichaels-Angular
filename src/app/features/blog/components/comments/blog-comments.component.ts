@@ -125,7 +125,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
 
       <div class="mt-6 grid gap-6">
         @if (currentUser()) {
-          <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="grid gap-3 border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+          <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="site-card grid gap-3 p-4">
             @if (replyingToComment(); as replyTarget) {
               <div class="flex flex-wrap items-center justify-between gap-3 border border-cyan-500/30 bg-cyan-50 px-3 py-2 text-sm text-cyan-950 dark:bg-cyan-950/30 dark:text-cyan-100">
                 <span>Replying to {{ getCommentAuthorName(replyTarget) }}</span>
@@ -145,7 +145,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
                 formControlName="body"
                 rows="4"
                 [attr.maxlength]="commentMaxLength"
-                class="min-h-32 w-full resize-y rounded-none border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-cyan-300"
+                class="site-input min-h-32 w-full resize-y"
                 [placeholder]="replyingToComment() ? 'Write a plain-text reply.' : 'Share a plain-text thought, question, or note about this post.'"
               ></textarea>
             </label>
@@ -160,19 +160,19 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
               <button
                 type="submit"
                 [disabled]="commentForm.invalid || isSubmitting()"
-                class="inline-flex border border-cyan-600 px-4 py-2 font-semibold text-cyan-800 hover:bg-cyan-600 hover:text-white disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-zinc-950 dark:disabled:border-zinc-700 dark:disabled:text-zinc-600"
+                class="btn-primary disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent dark:disabled:border-zinc-700 dark:disabled:text-zinc-600"
               >
                 {{ isSubmitting() ? 'Submitting...' : (replyingToComment() ? 'Post Reply' : 'Post Comment') }}
               </button>
             </div>
           </form>
         } @else {
-          <div class="border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+          <div class="site-card p-4">
             <p class="text-sm leading-6 text-slate-600 dark:text-zinc-400">Sign in to join the discussion and earn points for approved comments.</p>
             <a
               [routerLink]="['/', pathNames.OS_LOGIN]"
               [queryParams]="loginQueryParams"
-              class="mt-4 inline-flex border border-cyan-600 px-4 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-600 hover:text-white dark:border-cyan-300 dark:text-cyan-100 dark:hover:bg-cyan-300 dark:hover:text-zinc-950"
+              class="btn-primary mt-4"
             >
               Sign in
             </a>
@@ -180,11 +180,11 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
         }
 
         @if (statusMessage()) {
-          <p class="border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-100">{{ statusMessage() }}</p>
+          <p class="site-success-panel">{{ statusMessage() }}</p>
         }
 
         @if (errorMessage()) {
-          <p class="border border-red-500/40 bg-red-50 px-4 py-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-100">{{ errorMessage() }}</p>
+          <p class="site-error-panel">{{ errorMessage() }}</p>
         }
 
         <div class="grid gap-4">
@@ -197,7 +197,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
           @for (item of commentThreadItems(); track item.comment.id) {
             @let comment = item.comment;
             <article
-              class="border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
+              class="site-card p-4"
               [class.border-l-4]="item.depth > 0"
               [class.border-l-cyan-500]="item.depth > 0"
               [style.margin-left.rem]="getThreadIndentRem(item.depth)"
@@ -235,7 +235,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
               }
             </article>
           } @empty {
-            <p class="border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
+            <p class="site-empty-panel">
               No comments yet. Start the conversation.
             </p>
           }
@@ -243,7 +243,7 @@ function createCommentThreadItems(comments: readonly BlogComment[]): readonly Bl
           @if (hasMoreComments()) {
             <button
               type="button"
-              class="justify-self-start border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-600 hover:text-cyan-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-cyan-300 dark:hover:text-cyan-100"
+              class="btn-ghost justify-self-start"
               (click)="loadMoreComments()"
             >
               View more comments

@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing';
 
-import {AuthService} from './auth.service';
+import {AuthService, AuthState, INITIAL_AUTH_STATE} from './auth.service';
 import {Auth} from 'firebase/auth';
 import {Router} from '@angular/router';
 import {LogService} from '../components/game/services/log.service';
@@ -31,6 +31,46 @@ describe('AuthService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('separates auth initialization from a resolved signed-out session', async () => {
+    TestBed.resetTestingModule();
+    let authStateChanged: ((user: import('firebase/auth').User | null) => void) | undefined;
+    const fakeAuth = {
+      currentUser: null,
+      onAuthStateChanged: (next: (user: import('firebase/auth').User | null) => void) => {
+        authStateChanged = next;
+        return () => undefined;
+      },
+    } as unknown as Auth;
+
+    TestBed.configureTestingModule({
+      providers: [
+        {provide: FIREBASE_AUTH, useValue: fakeAuth},
+        {provide: Router, useValue: routerSpy},
+        {provide: LogService, useValue: logServiceSpy},
+        {provide: UserAccountService, useValue: userAccountServiceSpy},
+      ],
+    });
+    const delayedService = TestBed.inject(AuthService);
+    const states: AuthState[] = [];
+    const users: Array<import('firebase/auth').User | null> = [];
+    const stateSubscription = delayedService.authState$.subscribe(state => states.push(state));
+    const userSubscription = delayedService.user$.subscribe(user => users.push(user));
+
+    expect(states).toEqual([INITIAL_AUTH_STATE]);
+    expect(users).toEqual([]);
+
+    authStateChanged?.(null);
+
+    expect(states).toEqual([
+      INITIAL_AUTH_STATE,
+      {status: 'unauthenticated', user: null},
+    ]);
+    expect(users).toEqual([null]);
+
+    stateSubscription.unsubscribe();
+    userSubscription.unsubscribe();
   });
 
   it('reactively re-evaluates role authorization after an explicit claim refresh', async () => {

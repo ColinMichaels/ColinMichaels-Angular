@@ -11,7 +11,7 @@ import {PwaInstallService} from './pwa-install.service';
       <div class="border-t border-slate-200 pt-1.5 dark:border-zinc-800">
         <button
           type="button"
-          class="flex min-h-11 w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-zinc-200 dark:hover:border-cyan-300/60 dark:hover:bg-zinc-900 dark:hover:text-cyan-200"
+          class="site-menu-link w-full text-left"
           [attr.aria-expanded]="install.manualInstructionsVisible()"
           aria-controls="pwa-install-instructions"
           (click)="requestInstall()"

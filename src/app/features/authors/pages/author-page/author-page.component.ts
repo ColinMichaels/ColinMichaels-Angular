@@ -47,7 +47,7 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page author-resume-page">
-      <section class="mx-auto max-w-6xl">
+      <section class="site-layout site-layout-wide">
         @if (author(); as profile) {
           <nav class="blog-breadcrumb author-breadcrumb" aria-label="Author navigation">
             <a routerLink="/" class="font-medium">Home</a>

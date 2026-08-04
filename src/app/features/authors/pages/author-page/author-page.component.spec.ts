@@ -89,6 +89,7 @@ describe('AuthorPageComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
 
+    expect(element.querySelector('.site-layout.site-layout-wide')).not.toBeNull();
     expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE);
     expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');
     expect(renderedPosts[DEFAULT_PAGINATION_PAGE_SIZE - 1].getAttribute('data-post-id')).toBe('post-10');

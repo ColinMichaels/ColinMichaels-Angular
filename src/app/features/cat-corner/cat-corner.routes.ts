@@ -1,7 +1,7 @@
 import {Routes} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {FirebaseAuthGuard} from '../../guards/firebase-auth.guard';
+import {AuthGuard} from '../../guards/auth.guard';
 import {
   CAT_CORNER_SEO_METADATA,
   CAT_CORNER_UNLOCK_SEO_METADATA,
@@ -14,7 +14,7 @@ export const catCornerRoutes: Routes = [
     children: [
       {
         path: PATH_NAMES.CAT_CORNER_UNLOCK,
-        canActivate: [FirebaseAuthGuard],
+        canActivate: [AuthGuard],
         data: {seo: CAT_CORNER_UNLOCK_SEO_METADATA},
         loadComponent: () => import('./pages/cat-corner-unlock.component').then(m => m.CatCornerUnlockComponent),
       },

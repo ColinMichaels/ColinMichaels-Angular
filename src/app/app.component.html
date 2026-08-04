@@ -4,12 +4,14 @@
   }
 }
 @if (showSiteHeader()) {
+  <a class="site-skip-link" href="#main-content">Skip to main content</a>
   <app-site-header/>
   <app-pwa-status/>
 }
 <div
+  id="main-content"
+  tabindex="-1"
   class="app-route-frame min-h-[100dvh] bg-zinc-800/70"
-  [class.site-theme-scope]="showSiteHeader()"
   [class.public-reader-scope]="showReaderTools()"
   [class.pb-28]="activeUserView()"
 >
