@@ -89,6 +89,7 @@ import {
   inspectOrDeleteBlogMedia,
 } from './blog-media';
 import {storePublicSubmission} from './public-submissions';
+import {isQualifiedPostReadProgress} from './post-reading';
 
 export {
   beginSocialConnection,
@@ -2006,7 +2007,7 @@ export const recordPostRead = onCall(
   },
   async request => {
     const auth = requireSignedIn(request.auth, 'You must be signed in to record post reads.');
-    const data = parsePostEngagementRequest(request.data);
+    const data = parsePostReadRequest(request.data);
 
     await requirePublishedPostTarget(data.postId, data.postSlug);
     await ensureUserAccountForAuth(auth);
@@ -4661,6 +4662,18 @@ function parsePostEngagementRequest(value: unknown): { postId: string; postSlug:
   }
 
   return {postId, postSlug};
+}
+
+function parsePostReadRequest(value: unknown): { postId: string; postSlug: string; progressPercent: number } {
+  const engagement = parsePostEngagementRequest(value);
+  const record = requireRecord(value, 'Post read must be an object.');
+  const progressPercent = record['progressPercent'];
+
+  if (!isQualifiedPostReadProgress(progressPercent)) {
+    throw new HttpsError('failed-precondition', 'Read points require at least 95% article progress.');
+  }
+
+  return {...engagement, progressPercent};
 }
 
 function parsePostShareRequest(value: unknown): { postId: string; postSlug: string; provider: string; shareId?: string } {

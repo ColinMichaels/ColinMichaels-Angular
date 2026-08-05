@@ -2,6 +2,8 @@
   <main class="pb-32 sm:pb-28 lg:pb-24">
     <app-home-article-hero/>
 
+    <app-continue-reading-shelf surface="home" [maxRecords]="3"/>
+
     @defer (on viewport) {
       <app-home-latest-writing-section
         heading="More writing"

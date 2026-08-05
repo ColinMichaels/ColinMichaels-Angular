@@ -23,6 +23,9 @@ import {
 import {AuthService} from '../../services/auth.service';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogShareEvent, BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
+import {
+  ContinueReadingShelfComponent
+} from '../../features/blog/components/continue-reading-shelf.component';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {HomepageSocialPreviewService} from '../../features/homepage/services/homepage-social-preview.service';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
@@ -36,6 +39,7 @@ import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
     AuthorBioComponent,
     BlogShareActionsComponent,
     BlogPostCardSkeletonComponent,
+    ContinueReadingShelfComponent,
     FaIconComponent,
     HomeArticleHeroComponent,
     HomeLatestWritingSectionComponent,

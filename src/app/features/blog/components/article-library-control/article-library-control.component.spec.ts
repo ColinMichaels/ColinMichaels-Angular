@@ -7,7 +7,7 @@ import {ArticleLibraryControlComponent} from './article-library-control.componen
 
 function createRecord(overrides: Partial<BlogArticleLibraryRecord> = {}): BlogArticleLibraryRecord {
   return {
-    version: 1,
+    version: 2,
     post: overrides.post ?? {
       id: 'library-post',
       slug: 'library-post',
@@ -21,6 +21,8 @@ function createRecord(overrides: Partial<BlogArticleLibraryRecord> = {}): BlogAr
     readLater: overrides.readLater ?? true,
     progressPercent: overrides.progressPercent ?? 56,
     lastReadAt: overrides.lastReadAt ?? '2026-07-10T13:00:00.000Z',
+    lastHeadingId: overrides.lastHeadingId ?? 'reader-section',
+    lastHeadingText: overrides.lastHeadingText ?? 'Reader section',
     completedAt: overrides.completedAt ?? null,
     modifiedAt: overrides.modifiedAt ?? '2026-07-10T13:00:00.000Z',
   };

@@ -6,6 +6,7 @@ import {BehaviorSubject, of} from 'rxjs';
 
 import {BlogPost, BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
+import {BlogArticleLibraryService} from '../../features/blog/services/blog-article-library.service';
 import {BlogRepositoryService} from '../../features/blog/services/blog-repository.service';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
@@ -194,6 +195,7 @@ describe('MainComponent', () => {
       ],
       providers: [
         {provide: BlogRepositoryService, useValue: blogRepositoryService},
+        {provide: BlogArticleLibraryService, useValue: {inProgress: signal([]).asReadonly()}},
         {provide: AuthService, useValue: authService},
         {provide: BlogEngagementService, useValue: blogEngagementService},
         {provide: HomepageHeroRepositoryService, useValue: homepageHeroRepositoryService},
