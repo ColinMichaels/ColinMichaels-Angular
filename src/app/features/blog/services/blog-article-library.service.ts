@@ -5,6 +5,7 @@ import {BlogPostSummary} from '../models/blog-post.model';
 
 export const BLOG_ARTICLE_LIBRARY_DATABASE = 'colinmichaels-reader-library';
 export const BLOG_ARTICLE_LIBRARY_STORE = 'article-state';
+export const BLOG_ARTICLE_LIBRARY_DATABASE_VERSION = 2;
 export const BLOG_ARTICLE_COMPLETION_PERCENT = 95;
 
 export interface BlogArticleLibrarySummary {
@@ -23,14 +24,21 @@ export type BlogArticleLibrarySource = Pick<
 >;
 
 export interface BlogArticleLibraryRecord {
-  version: 1;
+  version: 2;
   post: BlogArticleLibrarySummary;
   favorite: boolean;
   readLater: boolean;
   progressPercent: number;
   lastReadAt: string | null;
+  lastHeadingId: string | null;
+  lastHeadingText: string | null;
   completedAt: string | null;
   modifiedAt: string;
+}
+
+export interface BlogArticleResumeLocation {
+  headingId: string | null;
+  headingText: string | null;
 }
 
 @Injectable({
@@ -86,12 +94,20 @@ export class BlogArticleLibraryService {
 
   async updateProgress(
     post: BlogArticleLibrarySource,
-    progressPercent: number
+    progressPercent: number,
+    resumeLocation?: BlogArticleResumeLocation
   ): Promise<BlogArticleLibraryRecord | undefined> {
     const normalizedProgress = normalizeProgress(progressPercent);
     const existing = this.getRecord(post.slug);
+    const normalizedHeadingId = normalizeResumeValue(resumeLocation?.headingId);
+    const normalizedHeadingText = normalizeResumeValue(resumeLocation?.headingText);
+    const hasProgressUpdate = normalizedProgress > (existing?.progressPercent ?? 0);
+    const hasResumeUpdate = resumeLocation !== undefined && (
+      normalizedHeadingId !== (existing?.lastHeadingId ?? null)
+      || normalizedHeadingText !== (existing?.lastHeadingText ?? null)
+    );
 
-    if (normalizedProgress <= (existing?.progressPercent ?? 0)) {
+    if (!hasProgressUpdate && !hasResumeUpdate) {
       return existing;
     }
 
@@ -106,6 +122,8 @@ export class BlogArticleLibraryService {
         ...record,
         progressPercent: nextProgress,
         lastReadAt: now,
+        lastHeadingId: resumeLocation === undefined ? record.lastHeadingId : normalizedHeadingId,
+        lastHeadingText: resumeLocation === undefined ? record.lastHeadingText : normalizedHeadingText,
         completedAt,
       };
     });
@@ -136,6 +154,8 @@ export class BlogArticleLibraryService {
         ...existing,
         progressPercent: 0,
         lastReadAt: null,
+        lastHeadingId: null,
+        lastHeadingText: null,
         completedAt: null,
         modifiedAt: new Date().toISOString(),
       };
@@ -192,7 +212,8 @@ export class BlogArticleLibraryService {
       await transactionDone(transaction);
 
       this.recordsState.set(values
-        .filter(isBlogArticleLibraryRecord)
+        .map(normalizeStoredArticleLibraryRecord)
+        .filter((record): record is BlogArticleLibraryRecord => Boolean(record))
         .sort((left, right) => right.modifiedAt.localeCompare(left.modifiedAt)));
       this.errorState.set(null);
     } catch {
@@ -245,7 +266,7 @@ export class BlogArticleLibraryService {
     const transaction = database.transaction(BLOG_ARTICLE_LIBRARY_STORE, 'readonly');
     const value = await requestResult<unknown>(transaction.objectStore(BLOG_ARTICLE_LIBRARY_STORE).get(slug));
     await transactionDone(transaction);
-    return isBlogArticleLibraryRecord(value) ? value : undefined;
+    return normalizeStoredArticleLibraryRecord(value) ?? undefined;
   }
 
   private async putRecord(record: BlogArticleLibraryRecord): Promise<void> {
@@ -261,13 +282,21 @@ export class BlogArticleLibraryService {
     }
 
     this.databasePromise ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const request = this.indexedDb!.open(BLOG_ARTICLE_LIBRARY_DATABASE, 1);
+      const request = this.indexedDb!.open(
+        BLOG_ARTICLE_LIBRARY_DATABASE,
+        BLOG_ARTICLE_LIBRARY_DATABASE_VERSION
+      );
 
-      request.onupgradeneeded = () => {
+      request.onupgradeneeded = event => {
         const database = request.result;
+        const transaction = request.transaction;
 
         if (!database.objectStoreNames.contains(BLOG_ARTICLE_LIBRARY_STORE)) {
           database.createObjectStore(BLOG_ARTICLE_LIBRARY_STORE, {keyPath: 'post.slug'});
+        }
+
+        if ((event as IDBVersionChangeEvent).oldVersion < 2 && transaction) {
+          migrateArticleLibraryRecords(transaction.objectStore(BLOG_ARTICLE_LIBRARY_STORE));
         }
       };
       request.onsuccess = () => {
@@ -290,15 +319,19 @@ export function normalizeProgress(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
 
-export function isBlogArticleLibraryRecord(value: unknown): value is BlogArticleLibraryRecord {
+export function isBlogArticleLibraryRecord(value: unknown): boolean {
+  return normalizeStoredArticleLibraryRecord(value) !== null;
+}
+
+function normalizeStoredArticleLibraryRecord(value: unknown): BlogArticleLibraryRecord | null {
   if (!value || typeof value !== 'object') {
-    return false;
+    return null;
   }
 
-  const record = value as Partial<BlogArticleLibraryRecord>;
+  const record = value as Partial<Omit<BlogArticleLibraryRecord, 'version'>> & {version?: 1 | 2};
   const post = record.post as Partial<BlogArticleLibrarySummary> | undefined;
 
-  return record.version === 1
+  const valid = (record.version === 1 || record.version === 2)
     && Boolean(post)
     && typeof post?.id === 'string'
     && typeof post.slug === 'string'
@@ -312,21 +345,72 @@ export function isBlogArticleLibraryRecord(value: unknown): value is BlogArticle
     && typeof record.progressPercent === 'number'
     && normalizeProgress(record.progressPercent) === record.progressPercent
     && (record.lastReadAt === null || typeof record.lastReadAt === 'string')
+    && (record.version === 1 || record.lastHeadingId === null || typeof record.lastHeadingId === 'string')
+    && (record.version === 1 || record.lastHeadingText === null || typeof record.lastHeadingText === 'string')
     && (record.completedAt === null || typeof record.completedAt === 'string')
     && typeof record.modifiedAt === 'string';
+
+  if (!valid) {
+    return null;
+  }
+
+  return {
+    version: 2,
+    post: {
+      id: post!.id!,
+      slug: post!.slug!,
+      title: post!.title!,
+      excerpt: post!.excerpt!,
+      coverImage: post!.coverImage!,
+      publishedAt: post!.publishedAt!,
+      updatedAt: post!.updatedAt!,
+    },
+    favorite: record.favorite!,
+    readLater: record.readLater!,
+    progressPercent: record.progressPercent!,
+    lastReadAt: record.lastReadAt!,
+    lastHeadingId: record.version === 2 ? normalizeResumeValue(record.lastHeadingId) : null,
+    lastHeadingText: record.version === 2 ? normalizeResumeValue(record.lastHeadingText) : null,
+    completedAt: record.completedAt!,
+    modifiedAt: record.modifiedAt!,
+  };
 }
 
 function createArticleLibraryRecord(post: BlogArticleLibrarySource, now: string): BlogArticleLibraryRecord {
   return {
-    version: 1,
+    version: 2,
     post: createArticleSummary(post),
     favorite: false,
     readLater: false,
     progressPercent: 0,
     lastReadAt: null,
+    lastHeadingId: null,
+    lastHeadingText: null,
     completedAt: null,
     modifiedAt: now,
   };
+}
+
+function migrateArticleLibraryRecords(store: IDBObjectStore): void {
+  const cursorRequest = store.openCursor();
+
+  cursorRequest.onsuccess = () => {
+    const cursor = cursorRequest.result;
+    if (!cursor) {
+      return;
+    }
+
+    const normalized = normalizeStoredArticleLibraryRecord(cursor.value);
+    if (normalized) {
+      cursor.update(normalized);
+    }
+    cursor.continue();
+  };
+}
+
+function normalizeResumeValue(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? '';
+  return normalized || null;
 }
 
 function createArticleSummary(post: BlogArticleLibrarySource): BlogArticleLibrarySummary {

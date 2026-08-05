@@ -20,7 +20,7 @@ import {RouterLink} from '@angular/router';
             A plain-language summary of how ColinMichaels.com handles your information and deletion requests.
           </p>
           <p class="mt-4 text-sm text-slate-500 dark:text-zinc-500">
-            Effective July 13, 2026
+            Effective August 4, 2026
           </p>
         </header>
 
@@ -39,7 +39,8 @@ import {RouterLink} from '@angular/router';
             <p class="mt-3 max-w-3xl leading-7">
               Depending on the features you use, this may include account details supplied through Firebase sign-in,
               profile information, comments, notification settings, and other content you submit. The site and its
-              service providers may also process limited technical information needed for hosting, security, error
+              service providers may also process contact messages, article proposals, prospective author-profile
+              details, and limited technical information needed for hosting, security, abuse prevention, error
               diagnosis, and reliable delivery. Some preferences, saved articles, and offline data are stored only on
               your device.
             </p>
@@ -49,7 +50,9 @@ import {RouterLink} from '@angular/router';
             <h2 id="information-use" class="heading-subsection">How information is used</h2>
             <p class="mt-3 max-w-3xl leading-7">
               Information is used to provide the feature you requested, maintain your account and preferences,
-              moderate submitted content, protect the site from misuse, and keep the service working. Trusted service
+              moderate submitted content, review contact messages and author proposals, protect the site from misuse,
+              and keep the service working. Prospective author details are not published or used to create publishing
+              access automatically. Trusted service
               providers such as Firebase and Google may process information only as needed to deliver these functions.
               External websites and embedded services have their own privacy practices.
             </p>

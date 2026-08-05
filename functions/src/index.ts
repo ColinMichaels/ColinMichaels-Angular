@@ -88,6 +88,8 @@ import {
   finalizeBlogMediaUpload,
   inspectOrDeleteBlogMedia,
 } from './blog-media';
+import {storePublicSubmission} from './public-submissions';
+import {isQualifiedPostReadProgress} from './post-reading';
 
 export {
   beginSocialConnection,
@@ -1385,6 +1387,24 @@ export const getLatestYouTubeVideos = onCall(
   }
 );
 
+export const submitPublicSubmission = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => await storePublicSubmission(
+    getFirestore(),
+    request.data,
+    {
+      actorUid: request.auth?.uid ?? null,
+      ipAddress: request.rawRequest.ip ?? 'unknown',
+    }
+  )
+);
+
 export const getLatestYouTubeVideosHttp = onRequest(
   {
     region: FUNCTION_REGION,
@@ -1987,7 +2007,7 @@ export const recordPostRead = onCall(
   },
   async request => {
     const auth = requireSignedIn(request.auth, 'You must be signed in to record post reads.');
-    const data = parsePostEngagementRequest(request.data);
+    const data = parsePostReadRequest(request.data);
 
     await requirePublishedPostTarget(data.postId, data.postSlug);
     await ensureUserAccountForAuth(auth);
@@ -2220,6 +2240,24 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
       description: `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`,
       path: '/privacy',
       imageAlt: createPreviewImageAlt('privacy policy'),
+    });
+  }
+
+  if (normalizedPath === '/contact') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Contact'),
+      description: `Contact ${PERSON_NAME} with a question, project note, correction, media request, or privacy request.`,
+      path: '/contact',
+      imageAlt: createPreviewImageAlt('contact form'),
+    });
+  }
+
+  if (normalizedPath === '/write-for-us') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Write for Us'),
+      description: `Propose an article and submit prospective author-profile details for editorial review on ${SITE_NAME}.`,
+      path: '/write-for-us',
+      imageAlt: createPreviewImageAlt('author and post proposal form'),
     });
   }
 
@@ -2460,6 +2498,12 @@ function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string):
     },
     {
       path: '/privacy',
+    },
+    {
+      path: '/contact',
+    },
+    {
+      path: '/write-for-us',
     },
     {
       path: '/authors',
@@ -4618,6 +4662,18 @@ function parsePostEngagementRequest(value: unknown): { postId: string; postSlug:
   }
 
   return {postId, postSlug};
+}
+
+function parsePostReadRequest(value: unknown): { postId: string; postSlug: string; progressPercent: number } {
+  const engagement = parsePostEngagementRequest(value);
+  const record = requireRecord(value, 'Post read must be an object.');
+  const progressPercent = record['progressPercent'];
+
+  if (!isQualifiedPostReadProgress(progressPercent)) {
+    throw new HttpsError('failed-precondition', 'Read points require at least 95% article progress.');
+  }
+
+  return {...engagement, progressPercent};
 }
 
 function parsePostShareRequest(value: unknown): { postId: string; postSlug: string; provider: string; shareId?: string } {

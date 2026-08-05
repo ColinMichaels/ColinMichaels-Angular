@@ -28,6 +28,9 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
           <div>
             <h1>Authors</h1>
             <p>Meet the writers behind the articles, projects, and personal stories published here.</p>
+            <a [routerLink]="['/', pathNames.WRITE_FOR_US]" class="btn-primary authors-index-hero__action">
+              Become an author
+            </a>
           </div>
           @if (!isLoading() || authors().length > 0) {
             <p class="authors-index-count" aria-live="polite">{{ authorCountLabel() }}</p>
@@ -150,6 +153,10 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
       font-weight: 720;
       letter-spacing: -0.055em;
       line-height: 0.9;
+    }
+
+    .authors-index-hero__action {
+      margin-top: 1.5rem;
     }
 
     .authors-index-hero div > p {

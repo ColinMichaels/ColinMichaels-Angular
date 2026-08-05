@@ -31,7 +31,11 @@ import {BlogTableOfContentsComponent} from '../../components/table-of-contents/b
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
 import {BlogPost, BlogPostSummary} from '../../models/blog-post.model';
 import {BlogEngagementService, BlogShareEvent} from '../../services/blog-engagement.service';
-import {BlogArticleLibraryService} from '../../services/blog-article-library.service';
+import {
+  BLOG_ARTICLE_COMPLETION_PERCENT,
+  BlogArticleLibraryService,
+  BlogArticleResumeLocation,
+} from '../../services/blog-article-library.service';
 import {BlogOpenGraphService, BlogShareMetadata} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {OfflineBlogPostService, selectReadableBlogPost} from '../../services/offline-blog-post.service';
@@ -547,7 +551,13 @@ export class BlogDetailComponent {
   private actionFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
   private progressPersistenceTimer: ReturnType<typeof setTimeout> | undefined;
   private readingStateFrameId: number | undefined;
-  private pendingProgress: {post: BlogPostSummary; progressPercent: number} | undefined;
+  private resumeScrollFrameId: number | undefined;
+  private queuedResumeKey = '';
+  private pendingProgress: {
+    post: BlogPostSummary;
+    progressPercent: number;
+    resumeLocation: BlogArticleResumeLocation;
+  } | undefined;
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly authorProfile = COLIN_AUTHOR_PROFILE;
@@ -560,6 +570,9 @@ export class BlogDetailComponent {
     this.route.paramMap.pipe(map(params => params.get('previewToken') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('previewToken') ?? ''}
   );
+  private readonly requestedFragment = toSignal(this.route.fragment, {
+    initialValue: this.route.snapshot.fragment,
+  });
   protected readonly isPreviewRoute = computed(() => this.previewToken().length > 0);
   protected readonly previewLoading = signal(false);
   protected readonly previewLoadError = signal<string | null>(null);
@@ -790,10 +803,15 @@ export class BlogDetailComponent {
         window.cancelAnimationFrame(this.readingStateFrameId);
       }
 
+      if (this.resumeScrollFrameId !== undefined && isPlatformBrowser(this.platformId)) {
+        window.cancelAnimationFrame(this.resumeScrollFrameId);
+      }
+
       if (this.pendingProgress) {
         void this.articleLibrary.updateProgress(
           this.pendingProgress.post,
-          this.pendingProgress.progressPercent
+          this.pendingProgress.progressPercent,
+          this.pendingProgress.resumeLocation
         );
       }
     });
@@ -806,9 +824,6 @@ export class BlogDetailComponent {
         this.readingProgress.set(0);
         this.activeContentSectionId.set(this.tableOfContents()[0]?.id ?? null);
         this.queueReadingStateRefresh();
-        if (!this.isPreviewRoute() && !this.isOfflineCopy()) {
-          void this.recordPostRead(post);
-        }
         return;
       }
 
@@ -817,6 +832,30 @@ export class BlogDetailComponent {
 
       if (!this.isLoading() && !this.loadError() && this.offlinePosts.ready()) {
         this.openGraph.applyMissingBlogPost(this.slug() || 'preview');
+      }
+    });
+
+    effect(() => {
+      const post = this.post();
+      const record = this.articleLibraryRecord();
+
+      if (
+        post
+        && record?.completedAt
+        && this.isSignedIn()
+        && !this.isPreviewRoute()
+        && !this.isOfflineCopy()
+      ) {
+        void this.recordPostRead(post, record.progressPercent);
+      }
+    });
+
+    effect(() => {
+      const post = this.post();
+      const fragment = this.requestedFragment();
+
+      if (post && fragment && this.tableOfContents().some(item => item.id === fragment)) {
+        this.queueResumeScroll(`${post.slug}:${fragment}`, fragment);
       }
     });
   }
@@ -939,9 +978,9 @@ export class BlogDetailComponent {
     const readDistance = Math.min(readableDistance, Math.max(0, stickyStackHeight - rect.top));
 
     const progressPercent = Math.round((readDistance / readableDistance) * 100);
+    this.updateActiveContentSection();
     this.readingProgress.set(progressPercent);
     this.scheduleProgressPersistence(progressPercent);
-    this.updateActiveContentSection();
   }
 
   private scheduleProgressPersistence(progressPercent: number): void {
@@ -951,21 +990,34 @@ export class BlogDetailComponent {
       return;
     }
 
-    if (progressPercent <= (this.articleLibraryRecord()?.progressPercent ?? 0)) {
+    const resumeLocation = this.createResumeLocation();
+    const record = this.articleLibraryRecord();
+    const hasProgressUpdate = progressPercent > (record?.progressPercent ?? 0);
+    const hasResumeUpdate = resumeLocation.headingId !== (record?.lastHeadingId ?? null)
+      || resumeLocation.headingText !== (record?.lastHeadingText ?? null);
+
+    if (!hasProgressUpdate && !hasResumeUpdate) {
       return;
     }
 
-    this.pendingProgress = {post, progressPercent};
+    this.pendingProgress = {post, progressPercent, resumeLocation};
 
     if (this.progressPersistenceTimer) {
       clearTimeout(this.progressPersistenceTimer);
     }
 
-    if (progressPercent >= 95) {
+    if (progressPercent >= BLOG_ARTICLE_COMPLETION_PERCENT) {
       this.progressPersistenceTimer = undefined;
       const pending = this.pendingProgress;
       this.pendingProgress = undefined;
-      void this.articleLibrary.updateProgress(pending.post, pending.progressPercent);
+      void this.articleLibrary.updateProgress(
+        pending.post,
+        pending.progressPercent,
+        pending.resumeLocation
+      );
+      if (this.isSignedIn() && !this.isOfflineCopy()) {
+        void this.recordPostRead(post, progressPercent);
+      }
       return;
     }
 
@@ -975,7 +1027,11 @@ export class BlogDetailComponent {
       this.progressPersistenceTimer = undefined;
 
       if (pending) {
-        void this.articleLibrary.updateProgress(pending.post, pending.progressPercent);
+        void this.articleLibrary.updateProgress(
+          pending.post,
+          pending.progressPercent,
+          pending.resumeLocation
+        );
       }
     }, 650);
   }
@@ -1019,7 +1075,7 @@ export class BlogDetailComponent {
     });
   }
 
-  private async recordPostRead(post: BlogPostSummary): Promise<void> {
+  private async recordPostRead(post: BlogPostSummary, progressPercent: number): Promise<void> {
     if (this.recordedReadPostIds.has(post.id)) {
       return;
     }
@@ -1030,10 +1086,50 @@ export class BlogDetailComponent {
       await this.engagementService.recordPostRead({
         postId: post.id,
         postSlug: post.slug,
+        progressPercent,
       });
     } catch {
+      this.recordedReadPostIds.delete(post.id);
       // Anonymous readers and transient Function failures should not affect reading.
     }
+  }
+
+  private createResumeLocation(): BlogArticleResumeLocation {
+    const headingId = this.activeContentSectionId();
+    const item = headingId
+      ? this.tableOfContents().find(candidate => candidate.id === headingId)
+      : undefined;
+
+    return {
+      headingId: item?.id ?? null,
+      headingText: item?.text ?? null,
+    };
+  }
+
+  private queueResumeScroll(resumeKey: string, fragment: string): void {
+    if (!isPlatformBrowser(this.platformId) || this.queuedResumeKey === resumeKey) {
+      return;
+    }
+
+    this.queuedResumeKey = resumeKey;
+    this.scrollToResumeFragment(fragment, 0);
+  }
+
+  private scrollToResumeFragment(fragment: string, attempt: number): void {
+    this.resumeScrollFrameId = window.requestAnimationFrame(() => {
+      this.resumeScrollFrameId = undefined;
+      const target = document.getElementById(fragment);
+
+      if (target) {
+        target.scrollIntoView({behavior: 'auto', block: 'start'});
+        target.querySelector<HTMLElement>('a')?.focus({preventScroll: true});
+        return;
+      }
+
+      if (attempt < 5) {
+        this.scrollToResumeFragment(fragment, attempt + 1);
+      }
+    });
   }
 
   private queueReadingStateRefresh(): void {
