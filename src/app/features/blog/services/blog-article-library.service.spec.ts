@@ -82,6 +82,25 @@ describe('BlogArticleLibraryService', () => {
     expect(service.completed().length).toBe(1);
   });
 
+  it('updates the resume section without lowering the reading high-water mark', async () => {
+    const post = createPost();
+
+    await service.updateProgress(post, 62, {
+      headingId: 'later-section',
+      headingText: 'Later section',
+    });
+    await service.updateProgress(post, 41, {
+      headingId: 'earlier-section',
+      headingText: 'Earlier section',
+    });
+
+    const record = service.getRecord(post.slug);
+    expect(record?.version).toBe(2);
+    expect(record?.progressPercent).toBe(62);
+    expect(record?.lastHeadingId).toBe('earlier-section');
+    expect(record?.lastHeadingText).toBe('Earlier section');
+  });
+
   it('does not lose the high-water mark when progress writes are queued together', async () => {
     const post = createPost();
 
@@ -105,6 +124,8 @@ describe('BlogArticleLibraryService', () => {
     const reset = service.getRecord(post.slug);
     expect(reset?.progressPercent).toBe(0);
     expect(reset?.completedAt).toBeNull();
+    expect(reset?.lastHeadingId).toBeNull();
+    expect(reset?.lastHeadingText).toBeNull();
     expect(reset?.favorite).toBeTrue();
   });
 

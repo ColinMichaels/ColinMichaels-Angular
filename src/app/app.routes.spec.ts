@@ -13,6 +13,8 @@ describe('routes', () => {
       '',
       PATH_NAMES.SEARCH,
       PATH_NAMES.PRIVACY,
+      PATH_NAMES.CONTACT,
+      PATH_NAMES.WRITE_FOR_US,
       PATH_NAMES.CAT_CORNER,
       PATH_NAMES.AUTHORS,
       `${PATH_NAMES.AUTHORS}/:slug`,

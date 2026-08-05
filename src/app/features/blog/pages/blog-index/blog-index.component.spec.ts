@@ -1,3 +1,4 @@
+import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ActivatedRoute, convertToParamMap, provideRouter} from '@angular/router';
 import {BehaviorSubject, of} from 'rxjs';
@@ -6,6 +7,7 @@ import {DEFAULT_PAGINATION_PAGE_SIZE} from '../../../../shared/pagination/pagina
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
 import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
+import {BlogArticleLibraryService} from '../../services/blog-article-library.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {BlogIndexComponent} from './blog-index.component';
 
@@ -62,6 +64,10 @@ describe('BlogIndexComponent', () => {
         {
           provide: BlogOpenGraphService,
           useValue: jasmine.createSpyObj<BlogOpenGraphService>('BlogOpenGraphService', ['applyBlogIndex']),
+        },
+        {
+          provide: BlogArticleLibraryService,
+          useValue: {inProgress: signal([]).asReadonly()},
         },
       ],
     }).compileComponents();

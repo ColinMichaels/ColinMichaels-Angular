@@ -24,9 +24,10 @@ Shared browser and service-worker lifecycle code lives under `src/app/shared/pwa
 Feature-specific offline article behavior remains under `src/app/features/blog`:
 
 - `OfflineBlogPostService` stores explicitly selected published-post snapshots in a dedicated Cache Storage namespace, validates every restored record, warms same-origin article images through the Angular worker, and never stores previews or social-promotion planning data.
-- `BlogArticleLibraryService` stores structured device-local reading state in IndexedDB: a public article summary, high-water progress, read completion, favorites, and read-later membership. It never stores article bodies, previews, comments, or authentication data.
+- `BlogArticleLibraryService` stores structured device-local reading state in IndexedDB: a public article summary, high-water progress, the most recent section anchor, read completion, favorites, and read-later membership. It never stores article bodies, previews, comments, or authentication data.
 - `BlogStickyPostToolbarComponent` keeps favorites, read later, and offline download as separate actions without expanding the sticky stack vertically.
 - `ArticleLibraryControlComponent` shows recent reading state and allows favorites/read-later management from the protected Profile page.
+- `ContinueReadingShelfComponent` exposes up to three unfinished articles on the homepage and blog archive, stays absent when there is nothing to resume, and links to the last saved section without requiring authentication.
 - `OfflineArticlesControlComponent` lists saved articles on the Profile page and supports individual removal or clearing every saved article.
 - `BlogDetailComponent` uses a saved snapshot only when the browser is offline or the public Firestore load fails. An online missing/deleted post never silently falls back to stale content.
 
@@ -56,7 +57,11 @@ Draft previews are rejected by the storage service. Cached records are runtime-v
 
 ## Personal Reading Library
 
-The `colinmichaels-reader-library` IndexedDB database stores one versioned record per public post slug. Reading progress is recorded only after the reader enters the article-body container, uses the greatest percentage reached, and never decreases when the reader scrolls backward. Reaching 95% marks the article as read. Reopening the post restores the high-water percentage in the sticky reading rail without automatically changing scroll position.
+The `colinmichaels-reader-library` IndexedDB database stores one versioned record per public post slug. Reading progress is recorded only after the reader enters the article-body container, uses the greatest percentage reached, and never decreases when the reader scrolls backward. The separate resume location follows the reader's most recently active generated heading even when they revisit an earlier section. Reaching 95% marks the article as read.
+
+The homepage and blog archive render a Continue Reading shelf only when unfinished records exist. Each card reports its saved percentage and, when available, its last section label. Navigation carries the stable generated heading id as a URL fragment. `BlogDetailComponent` retries the fragment after asynchronous post rendering, scrolls it below the existing sticky offsets, and focuses the heading's own anchor so keyboard and assistive-technology users receive the same resume context.
+
+Signed-in read points use the same 95% completion boundary. The public client no longer calls `recordPostRead` when a route resolves; it calls only after local completion or when a previously completed local record is reopened online. The callable requires a bounded `progressPercent` from 95 through 100 before its existing idempotent per-user/per-post point event can be created. This is an integrity boundary for the supported client flow, not proof against a fully modified client, and no reading telemetry is written for anonymous readers.
 
 Favorites and read later are independent booleans. Neither choice downloads the article; the separate offline action remains the only control that stores a complete article snapshot. This distinction keeps list organization lightweight and prevents readers from unintentionally consuming offline-storage quota.
 
@@ -123,7 +128,9 @@ Every PWA change should validate:
 - public desktop and mobile rendering
 - an offline production reload after the worker controls the page
 - save, update, remove, clear-all, and direct offline article reload behavior
-- IndexedDB progress persistence, high-water behavior, 95% completion, favorites, and read-later independence
+- IndexedDB version-1 to version-2 migration, progress persistence, high-water behavior, latest-section resume, 95% completion, favorites, and read-later independence
+- homepage/blog Continue Reading visibility, responsive cards, fragment resume after cold article loading, keyboard focus, and an empty state that adds no page surface
+- Functions rejection below 95% and idempotent read-point award at or above the completion threshold
 - explicit notification permission, authenticated subscribe/unsubscribe, public deep links, badge set/clear, stale-endpoint removal, and publish-transition-only delivery
 - no cached navigation fallback for admin, preview, auth, or protected OS routes
 
@@ -135,7 +142,9 @@ Web Share, fullscreen, wake-lock release/reacquisition, and persistent-storage d
 
 If worker behavior causes a production regression, deploy Angular's safety worker at the same worker URL or temporarily disable the production `serviceWorker` build option, preserve no-cache headers, and verify that existing registrations unregister on the next controlled visit. Do not delete cached application versions without a documented migration because future offline content will depend on user-managed storage.
 
-The reader library creates its version-1 object store on first use and requires no migration from the existing offline Cache Storage namespace. Rolling back the UI is non-destructive: an older application ignores the IndexedDB database and a later compatible release can restore it. Do not automatically delete personal reading state during rollback. A future schema change must upgrade the database version and migrate valid records in `onupgradeneeded`.
+The reader library opens database version 2. Its `onupgradeneeded` migration preserves valid version-1 records while adding nullable `lastHeadingId` and `lastHeadingText` fields; the object-store key and the separate offline Cache Storage namespace do not change. Rolling back the shelf is non-destructive, but a client that only opens database version 1 cannot open an already-upgraded version-2 database. Prefer reverting the shelf and resume behavior while leaving the version-2 library reader in place. Never delete personal reading state as part of rollback.
+
+Deploy the updated `recordPostRead` Function before Hosting. During that safe transition, the old client omits `progressPercent` and receives a caught no-award response instead of issuing premature points. The new client remains compatible with the older callable because its additional field is ignored, but strict server-side completion enforcement begins only after the Function deploy. Rolling back Hosting while retaining the updated Function safely pauses awards from an old route-load client.
 
 Push deployment requires a matching VAPID key pair. Supply `WEB_PUSH_PUBLIC_KEY` to the Angular environment generator and Firebase string parameter, set `WEB_PUSH_PRIVATE_KEY` with Firebase Secret Manager, and optionally set `WEB_PUSH_SUBJECT` to a valid `mailto:` or HTTPS contact. Deploy Hosting, Functions, and Firestore rules together. VAPID private keys never belong in Angular environment files, Hosting assets, source control, or notification payloads.
 

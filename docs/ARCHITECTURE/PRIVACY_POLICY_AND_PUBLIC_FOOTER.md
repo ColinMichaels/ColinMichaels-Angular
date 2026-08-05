@@ -10,13 +10,16 @@ This work supports external platform review, including Meta app approval, by pro
 
 - `src/app/features/public/pages/privacy-policy.component.ts`
   - Standalone public policy page.
-  - States the no-sale commitment, limited information handling, service-provider use, deletion-request process, and policy update behavior.
+  - States the no-sale commitment, account/contact/author-application information handling, service-provider use, deletion-request process, and policy update behavior.
   - Uses `colin@colinmichaels.com` for verified deletion requests.
 - `src/app/features/public/public.routes.ts`
   - Lazy-loads the `/privacy` page inside the existing public route boundary.
 - `src/app/components/main/main.component.html`
   - Owns the homepage `#site-footer` information surface.
   - Provides Home, Blog, Topics, About, Open OS, Privacy Policy, Contact, copyright, sharing, and bug-report links.
+- `src/app/features/submissions/**`
+  - Owns the public `/contact` and `/write-for-us` forms documented in `PUBLIC_SUBMISSIONS.md`.
+  - Routes both forms through a trusted callable instead of allowing direct client database writes.
 - `src/app/components/main/socials/socials.component.*`
   - Retains only the fixed social icon bar.
   - Does not own primary navigation, legal links, contact links, or copyright content.
@@ -29,30 +32,31 @@ This work supports external platform review, including Meta app approval, by pro
 - `PRIVACY_SEO_METADATA` supplies the client-rendered title, description, canonical path, Open Graph image, and indexable website type.
 - The Firebase `renderSeoHtml` Function mirrors the `/privacy` metadata so crawlers and platform-review tools receive the correct canonical page before Angular starts.
 - The generated `sitemap.xml` includes `/privacy` in both normal and fallback sitemap output.
+- The sitemap and browser/server metadata also classify `/contact` and `/write-for-us` as indexable public routes.
 - Unknown paths continue to use the existing 404/noindex policy; this change does not broaden route matching.
 
 ## Information and Data Boundaries
 
-- The policy does not claim that the site handles no information. It describes account, profile, comment, notification, hosting, security, and device-local information at a high level.
+- The policy does not claim that the site handles no information. It describes account, profile, comment, notification, contact-message, prospective-author, hosting, security, abuse-prevention, and device-local information at a high level.
 - The site commits not to collect personal information for sale and not to sell, rent, or trade it.
 - Visitors may request removal at any time through the published email address. Verification and limited security, legal, fraud-prevention, and backup-retention exceptions remain explicit.
-- No new database collection, Firebase rule, authentication claim, secret, cookie, analytics provider, or third-party data transfer is introduced by this feature.
+- Contact messages and author applications are stored in a private backend-owned collection for review and response. Proposed author credit is not published without separate editorial action and contributor approval.
+- The submission feature adds explicit Firestore Rules and a callable Function. It adds no authentication claim, provider secret, cookie, analytics provider, or automatic third-party delivery.
 
-## Contact Path and Deferred Form
+## Contact And Author Submission Paths
 
-The homepage Contact link currently opens `mailto:colin@colinmichaels.com`. It is intentionally a working email path rather than a dead `/contact` route.
+The homepage Contact link opens `/contact`, and public navigation exposes `/write-for-us` for prospective contributors. Both forms keep answers intact after a delivery error and link directly to the privacy policy before consent.
 
-A future site contact form remains deferred until it includes:
+The shipped trusted boundary includes:
 
-- a dedicated public route and accessible form states;
-- CAPTCHA or an equivalent abuse-control provider;
-- server-side token verification before message delivery;
-- request size, field, origin, and rate-limit validation;
-- safe logging that excludes message bodies and unnecessary personal data;
-- explicit retention, deletion, and delivery-failure behavior;
-- corresponding privacy-policy and deployment documentation updates.
+- dedicated public routes and accessible invalid, pending, error, and success states;
+- bounded server-side field and origin validation;
+- an inert honeypot and opaque per-connection hourly rate limit;
+- backend-only submission and rate-limit collections;
+- no automatic publication, role assignment, CMS access, or provider delivery;
+- removal through the same verified deletion-request process as other submitted information.
 
-Do not ship a client-only CAPTCHA check or expose provider secrets in Angular environment files.
+CAPTCHA, email acknowledgements, an admin review inbox, and contributor provisioning remain deferred. Do not add a client-only CAPTCHA check or expose provider secrets in Angular environment files.
 
 ## Responsive and Accessibility Behavior
 
@@ -64,25 +68,26 @@ Do not ship a client-only CAPTCHA check or expose provider secrets in Angular en
 
 ## Migration and Compatibility
 
-- No content or data migration is required.
+- No existing content or data migration is required; the submission collections and routes are additive.
 - Existing public routes are preserved; `/privacy` is additive.
 - The Labs redirect, OS guards, admin boundaries, and blog URL contracts are unchanged.
-- The email Contact path is compatible with the future contact form: replace only the footer link destination when the protected form route is ready.
+- The previous email contact remains available inside the privacy policy for verified deletion requests.
 
 ## Deployment
 
-Deploy Hosting and Functions together:
+Deploy Hosting, Functions, and Firestore Rules together:
 
-1. Hosting publishes the Angular route, footer UI, and policy component.
-2. Functions publishes crawler metadata and the updated sitemap output.
-3. Verify `/privacy`, `/sitemap.xml`, the homepage footer, and an article footer in the deployed preview.
-4. Use the canonical production URL `https://colinmichaels.com/privacy` for external app-review configuration after approval of the preview.
+1. Rules deny direct submission writes while allowing CMS-capable roles read-only review.
+2. Functions publishes the callable, crawler metadata, and updated sitemap output.
+3. Hosting publishes the Angular routes, footer UI, and policy component.
+4. Verify `/privacy`, `/contact`, `/write-for-us`, `/sitemap.xml`, the homepage footer, and an article footer in the deployed preview.
+5. Use the canonical production URL `https://colinmichaels.com/privacy` for external app-review configuration after approval of the preview.
 
-No new environment value, Firebase secret, Firestore index, or security-rule deployment is required.
+No new environment value, Firebase secret, provider account, or Firestore composite index is required.
 
 ## Rollback
 
-Revert the feature commit and redeploy Hosting and Functions together. This removes the additive Angular route, policy page, footer links, server-rendered metadata classification, and sitemap entry without changing stored data. If an external app configuration already references the production privacy URL, update or pause that review configuration before rolling the route back.
+Revert the feature commit and redeploy Hosting, Functions, and Rules together. This removes the additive form routes, callable, navigation, metadata classification, and sitemap entries without deleting existing private submissions. If an external app configuration already references the production privacy URL, update or pause that review configuration before rolling that route back.
 
 ## Validation Contract
 

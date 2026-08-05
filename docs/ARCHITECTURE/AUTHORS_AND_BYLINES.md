@@ -80,6 +80,7 @@ Public post rendering resolves the canonical profile when available and falls ba
 | --- | --- | --- |
 | `/authors` | `AuthorsIndexComponent` | Public, indexable directory of every published canonical author profile. |
 | `/authors/:slug` | `AuthorPageComponent` | Public, indexable profile and published-post archive for one published author. Missing and draft authors resolve to the normal not-found/noindex behavior. |
+| `/write-for-us` | `PublicSubmissionPageComponent` | Public prospective-author questionnaire. Stores a private review record only; it never creates an author, post, role, or CMS session. |
 | `/admin/cms/authors` | CMS author manager | Protected list/create/edit surface for canonical profiles. |
 | `/admin/cms/new` | CMS post editor | Starts with Colin selected. |
 | `/admin/cms/:slug/edit` | CMS post editor | Loads the assigned author, supports selecting another profile, and can open the inline add-author workflow. |

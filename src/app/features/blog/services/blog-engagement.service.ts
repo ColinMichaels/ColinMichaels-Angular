@@ -16,6 +16,10 @@ interface PostEngagementRequest {
   postSlug: string;
 }
 
+interface PostReadRequest extends PostEngagementRequest {
+  progressPercent: number;
+}
+
 interface PostShareRequest extends PostEngagementRequest {
   provider: BlogShareProvider;
   shareId?: string;
@@ -47,8 +51,8 @@ export interface PointAwardResult {
 export class BlogEngagementService {
   private readonly functions = inject(FIREBASE_FUNCTIONS, {optional: true});
 
-  async recordPostRead(request: PostEngagementRequest): Promise<PointAwardResult> {
-    const callable = httpsCallable<PostEngagementRequest, PointAwardResult>(
+  async recordPostRead(request: PostReadRequest): Promise<PointAwardResult> {
+    const callable = httpsCallable<PostReadRequest, PointAwardResult>(
       this.getFunctions(),
       'recordPostRead'
     );

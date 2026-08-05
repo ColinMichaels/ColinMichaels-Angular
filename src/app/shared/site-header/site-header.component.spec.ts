@@ -146,6 +146,8 @@ describe('SiteHeaderComponent', () => {
     const menuText = utilityMenu?.textContent ?? '';
 
     expect(menuText).toContain('All Posts');
+    expect(menuText).toContain('Write for Us');
+    expect(menuText).toContain('Contact');
     expect(menuText).toContain('Open OS');
     expect(menuText).toContain('Install app');
     expect(menuText).toContain('Sign In');

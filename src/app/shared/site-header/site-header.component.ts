@@ -155,6 +155,28 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
             <span>All Posts</span>
           </a>
           <a
+            [routerLink]="['/', pathNames.WRITE_FOR_US]"
+            class="site-menu-link"
+            (click)="closeMenu()"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20h4l10.5-10.5a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
+              <path d="m13.5 6.5 4 4"></path>
+            </svg>
+            <span>Write for Us</span>
+          </a>
+          <a
+            [routerLink]="['/', pathNames.CONTACT]"
+            class="site-menu-link"
+            (click)="closeMenu()"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3.5" y="5" width="17" height="14" rx="2"></rect>
+              <path d="m5 7 7 5 7-5"></path>
+            </svg>
+            <span>Contact</span>
+          </a>
+          <a
             [routerLink]="['/', pathNames.OS_MAIN]"
             class="site-menu-link site-menu-link-success"
             (click)="closeMenu()"

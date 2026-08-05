@@ -7,6 +7,7 @@ import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
+import {ContinueReadingShelfComponent} from '../../components/continue-reading-shelf.component';
 import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -37,6 +38,7 @@ import {
     RouterLink,
     FontAwesomeModule,
     BlogCategoryNavComponent,
+    ContinueReadingShelfComponent,
     BlogPostListingComponent,
     SitePaginationComponent,
   ],
@@ -85,6 +87,8 @@ import {
             ></app-site-pagination>
           </div>
         </header>
+
+        <app-continue-reading-shelf surface="blog" [maxRecords]="3"></app-continue-reading-shelf>
 
         <section id="blog-post-list">
           @if (!isLoading() && !loadError() && activeTopic(); as topic) {

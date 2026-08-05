@@ -123,6 +123,12 @@ Reader Tools remains available on public reading routes and owns the persisted l
 
 The protected `/profile` route is the management surface for device-local reader data and capability-gated app preferences. It groups reading history, favorites, read later, offline article removal, Web Push opt-in, native share/fullscreen/wake-lock actions, and storage protection without changing the underlying browser-local storage boundaries. Empty reading and offline lists remain visible there so users can discover where future saved items will be managed.
 
+## Continue Reading Shelf
+
+`ContinueReadingShelfComponent` is a reusable, non-modal reader-assistance surface shared by the homepage and `/blog`. It renders only when the device-local library contains unfinished articles, limits itself to three recent records, and introduces no empty placeholder, prompt, account gate, notification permission request, or automatic interruption. Each card exposes the saved percentage, last section label when available, an accessible progress bar, and one article link.
+
+Resume links use the existing canonical `/blog/:slug#heading-id` route. The heading id comes from the same stable Editor.js heading projection used by the table of contents. Because a cold Firestore post can resolve after Router anchor scrolling has already run, `BlogDetailComponent` performs a bounded post-render retry and focuses the heading's existing anchor after it is found. The high-water completion percentage and latest resume section remain separate: rereading an earlier section updates the resume destination without lowering completion.
+
 ## Direct Article Loading
 
 `BlogDetailComponent` resolves a cold `/blog/:slug` entry through a bounded Firestore query for that published slug instead of waiting for the auth-aware full post collection. This keeps links opened from social apps, email, search, and other fresh browser sessions independent from the heavier archive/suggestion load. If the post is already in the repository cache, the detail route reuses it without issuing the additional query. A direct result is merged into the post cache, and the detail route remains subscribed to published collection updates so an article can appear or refresh when the auth-aware collection finishes after the initial route or social-login callback.
