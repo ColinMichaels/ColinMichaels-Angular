@@ -88,6 +88,7 @@ import {
   finalizeBlogMediaUpload,
   inspectOrDeleteBlogMedia,
 } from './blog-media';
+import {storePublicSubmission} from './public-submissions';
 
 export {
   beginSocialConnection,
@@ -1385,6 +1386,24 @@ export const getLatestYouTubeVideos = onCall(
   }
 );
 
+export const submitPublicSubmission = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => await storePublicSubmission(
+    getFirestore(),
+    request.data,
+    {
+      actorUid: request.auth?.uid ?? null,
+      ipAddress: request.rawRequest.ip ?? 'unknown',
+    }
+  )
+);
+
 export const getLatestYouTubeVideosHttp = onRequest(
   {
     region: FUNCTION_REGION,
@@ -2223,6 +2242,24 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     });
   }
 
+  if (normalizedPath === '/contact') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Contact'),
+      description: `Contact ${PERSON_NAME} with a question, project note, correction, media request, or privacy request.`,
+      path: '/contact',
+      imageAlt: createPreviewImageAlt('contact form'),
+    });
+  }
+
+  if (normalizedPath === '/write-for-us') {
+    return createStaticSeoMetadata({
+      title: createSiteTitle('Write for Us'),
+      description: `Propose an article and submit prospective author-profile details for editorial review on ${SITE_NAME}.`,
+      path: '/write-for-us',
+      imageAlt: createPreviewImageAlt('author and post proposal form'),
+    });
+  }
+
   if (normalizedPath === '/cat-corner') {
     return createNoindexRouteSeoMetadata({
       title: createSiteTitle('Cat Corner'),
@@ -2460,6 +2497,12 @@ function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string):
     },
     {
       path: '/privacy',
+    },
+    {
+      path: '/contact',
+    },
+    {
+      path: '/write-for-us',
     },
     {
       path: '/authors',

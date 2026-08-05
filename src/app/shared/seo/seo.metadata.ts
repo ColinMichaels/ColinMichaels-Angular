@@ -100,6 +100,24 @@ export const PRIVACY_SEO_METADATA: SeoMetadata = {
   type: 'website',
 };
 
+export const CONTACT_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Contact'),
+  description: `Contact ${PERSON_NAME} with a question, project note, correction, media request, or privacy request.`,
+  path: '/contact',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('contact form'),
+  type: 'website',
+};
+
+export const WRITE_FOR_US_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Write for Us'),
+  description: `Propose an article and submit prospective author-profile details for editorial review on ${SITE_NAME}.`,
+  path: '/write-for-us',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('author and post proposal form'),
+  type: 'website',
+};
+
 export const CAT_CORNER_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Cat Corner'),
   description: 'Dispatches, photographs, and household intelligence from Gretchen, Cat Corner Editor-in-Chief.',

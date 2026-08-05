@@ -6,6 +6,7 @@ import {blogRoutes} from '../blog/blog.routes';
 import {catCornerRoutes} from '../cat-corner/cat-corner.routes';
 import {topicRoutes} from '../topics/topic.routes';
 import {authorRoutes} from '../authors/author.routes';
+import {submissionRoutes} from '../submissions/submission.routes';
 
 export const publicRoutes: Routes = [
   {
@@ -24,6 +25,7 @@ export const publicRoutes: Routes = [
     data: {seo: PRIVACY_SEO_METADATA},
     loadComponent: () => import('./pages/privacy-policy.component').then(m => m.PrivacyPolicyComponent),
   },
+  ...submissionRoutes,
   ...catCornerRoutes,
   ...authorRoutes,
   ...blogRoutes,

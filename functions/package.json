@@ -19,6 +19,7 @@
     "test:social-connections": "npm run build && node --test test/social-connections.test.cjs",
     "test:social-delivery": "npm run build && node --test test/social-delivery.test.cjs",
     "test:phase7": "npm run build && node --test test/blog-publishing.test.cjs test/blog-media.test.cjs",
+    "test:public-submissions": "npm run build && node --test test/public-submissions.test.cjs",
     "serve": "npm run build && cd .. && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",

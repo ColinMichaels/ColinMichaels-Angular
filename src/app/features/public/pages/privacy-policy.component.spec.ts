@@ -23,6 +23,7 @@ describe('PrivacyPolicyComponent', () => {
     expect(element.querySelector('.site-layout.site-layout-prose')).not.toBeNull();
     expect(text).toContain('We do not sell, rent, or trade your personal information.');
     expect(text).toContain('You may ask at any time to have personal information associated with you removed.');
+    expect(text).toContain('Prospective author details are not published');
   });
 
   it('provides a direct contact for removal requests', () => {

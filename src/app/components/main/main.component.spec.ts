@@ -233,11 +233,12 @@ describe('MainComponent', () => {
 
     expect(footer?.querySelector('nav[aria-label="Footer navigation"]')).not.toBeNull();
     expect(footer?.querySelector('a[href="/privacy"]')?.textContent?.trim()).toBe('Privacy Policy');
-    expect(footer?.querySelector('a[href="mailto:colin@colinmichaels.com"]')?.textContent?.trim()).toBe('Contact');
+    expect(footer?.querySelector('a[href="/contact"]')?.textContent?.trim()).toBe('Contact');
     expect(footerText).toContain(`© ${new Date().getFullYear()} Colin Michaels. All rights reserved.`);
     expect(footerText).toContain('Home');
     expect(footerText).toContain('Blog');
     expect(footer?.querySelector('a[href="/authors"]')?.textContent?.trim()).toBe('Authors');
+    expect(footer?.querySelector('a[href="/write-for-us"]')?.textContent?.trim()).toBe('Write for Us');
     expect(footerText).toContain('Topics');
     expect(footerText).toContain('About');
     expect(footerText).toContain('Open OS');

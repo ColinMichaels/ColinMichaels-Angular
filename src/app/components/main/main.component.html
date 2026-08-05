@@ -242,6 +242,7 @@
               <a routerLink="/" class="site-inline-link">Home</a>
               <a [routerLink]="['/', pathNames.BLOG]" class="site-inline-link">Blog</a>
               <a [routerLink]="['/', pathNames.AUTHORS]" class="site-inline-link">Authors</a>
+              <a [routerLink]="['/', pathNames.WRITE_FOR_US]" class="site-inline-link">Write for Us</a>
               <a routerLink="/" fragment="topic-guides" class="site-inline-link">Topics</a>
               <a routerLink="/" fragment="about" class="site-inline-link">About</a>
               <a [routerLink]="['/', pathNames.OS_MAIN]" class="site-inline-link">Open OS</a>
@@ -252,7 +253,7 @@
             <h3 class="site-meta">Information</h3>
             <div class="mt-3 grid gap-2 text-sm">
               <a [routerLink]="['/', pathNames.PRIVACY]" class="site-inline-link">Privacy Policy</a>
-              <a href="mailto:colin@colinmichaels.com" class="site-inline-link">Contact</a>
+              <a [routerLink]="['/', pathNames.CONTACT]" class="site-inline-link">Contact</a>
             </div>
           </div>
         </nav>

@@ -52,6 +52,10 @@ beforeEach(async () => {
     await setDoc(doc(context.firestore(), 'shareLinks', 'opaque-share'), {
       postId: 'published-post',
     });
+    await setDoc(doc(context.firestore(), 'publicSubmissions', 'submission'), {
+      type: 'contact',
+      status: 'new',
+    });
     await uploadBytes(
       ref(context.storage(), 'cms/blog-media/legacy-post/editor-image/legacy.webp'),
       new Uint8Array([1, 2, 3]),
@@ -105,11 +109,25 @@ test('the recursive admin fallback cannot bypass backend-only publishing records
     ['pushSubscriptions', 'subscription'],
     ['postComments', 'comment'],
     ['userPointEvents', 'point-event'],
+    ['publicSubmissions', 'submission'],
+    ['publicSubmissionRateLimits', 'limit'],
   ]) {
     await assertFails(setDoc(doc(adminDb, collectionName, documentId), {directClientWrite: true}));
   }
   await assertFails(getDoc(doc(adminDb, 'shareLinks', 'opaque-share')));
   await assertFails(getDoc(doc(adminDb, 'postDrafts', 'owner-user', 'recoveries', 'draft-post')));
+});
+
+test('public submission records are private and writable only by the backend', async () => {
+  const publicDb = testEnvironment.unauthenticatedContext().firestore();
+  const editorDb = testEnvironment.authenticatedContext('editor-user', editorClaims).firestore();
+  const submissionRef = doc(editorDb, 'publicSubmissions', 'submission');
+
+  await assertFails(getDoc(doc(publicDb, 'publicSubmissions', 'submission')));
+  await assertFails(setDoc(doc(publicDb, 'publicSubmissions', 'new-submission'), {type: 'contact'}));
+  await assertSucceeds(getDoc(submissionRef));
+  await assertFails(updateDoc(submissionRef, {status: 'reviewed'}));
+  await assertFails(getDoc(doc(editorDb, 'publicSubmissionRateLimits', 'limit')));
 });
 
 test('an editor can create only a supported image in their own staging path', async () => {

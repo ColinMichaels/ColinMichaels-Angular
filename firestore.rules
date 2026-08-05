@@ -60,7 +60,9 @@ service cloud.firestore {
         || collectionId == 'blogMutationReceipts'
         || collectionId == 'blogPublishingAudit'
         || collectionId == 'blogMediaAssets'
-        || collectionId == 'blogMediaAudit';
+        || collectionId == 'blogMediaAudit'
+        || collectionId == 'publicSubmissions'
+        || collectionId == 'publicSubmissionRateLimits';
     }
 
     function isOwner(userId) {
@@ -167,6 +169,15 @@ service cloud.firestore {
     match /blogMediaAudit/{eventId} {
       allow read: if canManageCmsContent() || canManageMediaLibrary();
       allow write: if false;
+    }
+
+    match /publicSubmissions/{submissionId} {
+      allow read: if canManageCmsContent();
+      allow create, update, delete: if false;
+    }
+
+    match /publicSubmissionRateLimits/{limitId} {
+      allow read, write: if false;
     }
 
     match /postDrafts/{ownerUid}/recoveries/{postId} {
