@@ -13,6 +13,7 @@ describe('admin guide content', () => {
 
     expect(viewerEntries.map(entry => entry.id)).toEqual(['find-your-way-around']);
     expect(editorEntries.some(entry => entry.id === 'create-and-publish-a-post')).toBeTrue();
+    expect(editorEntries.some(entry => entry.id === 'review-public-submissions')).toBeTrue();
     expect(editorEntries.some(entry => entry.id === 'upload-and-reuse-media')).toBeFalse();
     expect(mediaEntries.map(entry => entry.id)).toEqual(['find-your-way-around', 'upload-and-reuse-media']);
     expect(adminEntries.length).toBe(ADMIN_GUIDE_ENTRIES.length);
@@ -24,6 +25,10 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'least privilege').map(entry => entry.id))
       .toEqual(['manage-user-roles']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'view as user').map(entry => entry.id))
+      .toEqual(['manage-user-roles']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'fake email disable').map(entry => entry.id))
+      .toEqual(['manage-user-roles']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'delete auth user').map(entry => entry.id))
       .toEqual(['manage-user-roles']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'Open Media Library').map(entry => entry.id))
       .toContain('upload-and-reuse-media');
@@ -61,6 +66,9 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'canonical media deletion')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'trusted publishing')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'image signature')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'contact author inbox').map(entry => entry.id))
+      .toEqual(['review-public-submissions']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'email alert smtp')).toEqual([]);
   });
 
   it('never returns a role-restricted match to an unauthorized user', () => {
@@ -70,5 +78,6 @@ describe('admin guide content', () => {
     expect(canViewAdminGuideEntry(manageUsers!, ['cmsAdmin'])).toBeFalse();
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'user roles')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'view as user')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'delete auth user')).toEqual([]);
   });
 });

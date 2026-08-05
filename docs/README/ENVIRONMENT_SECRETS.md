@@ -87,6 +87,15 @@ The public homepage YouTube feed also runs through Firebase Functions so the You
 firebase functions:secrets:set YOUTUBE_API_KEY
 ```
 
+Public contact and author submissions use an authenticated server-side SMTP account for owner alerts and intentional admin replies. Set both secrets before deploying `notifyPublicSubmissionCreated` or `respondToPublicSubmission`:
+
+```bash
+firebase functions:secrets:set PUBLIC_SUBMISSION_SMTP_USERNAME
+firebase functions:secrets:set PUBLIC_SUBMISSION_SMTP_PASSWORD
+```
+
+For Google Workspace SMTP, the username is the full mailbox address and the password must be an approved app password or relay credential; never store an ordinary account password. The sender mailbox and domain must pass the provider's SPF and DKIM checks before this workflow is treated as live. Keep the existing DMARC policy in monitored rollout until owner alerts and admin replies both align. These credentials belong only in Firebase Secret Manager and ignored local emulator secrets—not Angular environments, GitHub build variables, Firestore, or source control.
+
 Social provider authorization uses separate server-only publishing credentials. These names are bound by the TypeScript Functions entry point:
 
 ```bash
@@ -113,6 +122,12 @@ Firebase Functions also requires these non-secret runtime params. Production kee
 SOCIAL_OAUTH_BASE_URL=https://colinmichaels.com
 META_GRAPH_API_VERSION=v23.0
 META_FACEBOOK_LOGIN_CONFIG_ID=<facebook-login-for-business-configuration-id>
+PUBLIC_SUBMISSION_SMTP_HOST=smtp.gmail.com
+PUBLIC_SUBMISSION_SMTP_PORT=465
+PUBLIC_SUBMISSION_SMTP_SECURE=true
+PUBLIC_SUBMISSION_EMAIL_FROM="ColinMichaels.com <colin@colinmichaels.com>"
+PUBLIC_SUBMISSION_ALERT_TO=colin@colinmichaels.com
+PUBLIC_SUBMISSION_ADMIN_URL=https://colinmichaels.com/admin/submissions
 ```
 
 Use `functions/.env.<project-id>` for another Firebase project and set the OAuth base URL to
@@ -167,6 +182,12 @@ Optional runtime params:
 - `OPENAI_TEXT_MODEL`, default `gpt-5.5`
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
 - `YOUTUBE_CHANNEL_ID`, required for the homepage latest videos feed
+- `PUBLIC_SUBMISSION_SMTP_HOST`, default `smtp.gmail.com`
+- `PUBLIC_SUBMISSION_SMTP_PORT`, default `465`
+- `PUBLIC_SUBMISSION_SMTP_SECURE`, default `true`
+- `PUBLIC_SUBMISSION_EMAIL_FROM`, default `ColinMichaels.com <colin@colinmichaels.com>`
+- `PUBLIC_SUBMISSION_ALERT_TO`, default `colin@colinmichaels.com`
+- `PUBLIC_SUBMISSION_ADMIN_URL`, default `https://colinmichaels.com/admin/submissions`
 
 ## First Gen 2 Functions Deploy
 

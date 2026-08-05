@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   canAcquireUserRoleMutationLease,
+  matchesUserDeletionConfirmation,
   ownsUserRoleMutationLease,
   replaceManagedUserRoleClaims,
 } = require('../lib/user-role-mutation');
@@ -51,4 +52,12 @@ test('admin replacement remains intentional while a later fixed Cat grant preser
       catCornerAddict: true,
     },
   });
+});
+
+test('user deletion confirmation accepts only the exact uid or case-insensitive email', () => {
+  assert.equal(matchesUserDeletionConfirmation('reader-uid', 'Reader@Example.com', 'reader-uid'), true);
+  assert.equal(matchesUserDeletionConfirmation('reader-uid', 'Reader@Example.com', 'reader@example.com'), true);
+  assert.equal(matchesUserDeletionConfirmation('reader-uid', 'Reader@Example.com', ' Reader@Example.com '), true);
+  assert.equal(matchesUserDeletionConfirmation('reader-uid', 'Reader@Example.com', 'reader'), false);
+  assert.equal(matchesUserDeletionConfirmation('reader-uid', null, 'reader@example.com'), false);
 });

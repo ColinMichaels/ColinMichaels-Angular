@@ -102,6 +102,7 @@ describe('AdminOverviewComponent', () => {
     expect(element.textContent).toContain('Homepage');
     expect(element.textContent).toContain('Topics');
     expect(element.textContent).toContain('Recommended Links');
+    expect(element.textContent).toContain('Submissions');
     expect(element.textContent).toContain('Media Library');
     expect(element.textContent).toContain('Users');
     expect(links.length).toBe(1);
