@@ -17,6 +17,12 @@ const suggestedRoles = [
   CAT_CORNER_ADDICT_ROLE,
 ] as const;
 const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+type UserAccessAction = 'disable' | 'enable' | 'delete';
+
+interface PendingUserAccessAction {
+  action: UserAccessAction;
+  user: AdminManagedUser;
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
@@ -50,7 +56,7 @@ function formatAccountDate(value: string | null): string {
           <div class="space-y-3">
             <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>
             <h1 class="text-4xl font-semibold text-zinc-50">User Management</h1>
-            <p class="max-w-2xl text-zinc-400">Review Firebase Auth accounts, test the application with another user's role view, and manage custom claim roles from a protected admin-only tool.</p>
+            <p class="max-w-2xl text-zinc-400">Review Firebase Auth accounts, disable suspicious sign-ins, remove Auth records, test the application with another user's role view, and manage custom claim roles from a protected admin-only tool.</p>
           </div>
           <button
             type="button"
@@ -109,11 +115,11 @@ function formatAccountDate(value: string | null): string {
         </section>
 
         @if (statusMessage()) {
-          <p class="border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-100">{{ statusMessage() }}</p>
+          <p class="border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-100" role="status" aria-live="polite">{{ statusMessage() }}</p>
         }
 
-        @if (errorMessage()) {
-          <p class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100">{{ errorMessage() }}</p>
+        @if (errorMessage() && !pendingAccessAction()) {
+          <p class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100" role="alert">{{ errorMessage() }}</p>
         }
 
         <section class="overflow-hidden border border-zinc-800">
@@ -180,6 +186,24 @@ function formatAccountDate(value: string | null): string {
                             (click)="openEditor(user)"
                           >
                             Manage Roles
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-orange-400/70 px-3 py-2 text-sm font-medium text-orange-100 hover:bg-orange-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                            [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
+                            [attr.title]="user.uid === currentUser()?.uid ? 'You cannot change sign-in access for your own admin account' : null"
+                            (click)="openAccessConfirmation(user, user.disabled ? 'enable' : 'disable')"
+                          >
+                            {{ user.disabled ? 'Restore Sign-In' : 'Disable Sign-In' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="border border-red-500/70 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                            [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
+                            [attr.title]="user.uid === currentUser()?.uid ? 'You cannot delete your own admin account' : null"
+                            (click)="openAccessConfirmation(user, 'delete')"
+                          >
+                            Delete Auth User
                           </button>
                         </div>
                       </td>
@@ -298,6 +322,85 @@ function formatAccountDate(value: string | null): string {
           </section>
         }
 
+        @if (pendingAccessAction(); as pending) {
+          <section class="fixed inset-0 z-[90] grid place-items-center bg-black/75 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="user-access-confirmation-title">
+            <div class="w-full max-w-xl border bg-zinc-950 p-5 shadow-2xl shadow-black" [class.border-red-500]="pending.action === 'delete'" [class.border-orange-400]="pending.action !== 'delete'">
+              <header class="border-b border-zinc-800 pb-4">
+                <p class="text-sm uppercase tracking-[0.24em]" [class.text-red-300]="pending.action === 'delete'" [class.text-orange-300]="pending.action !== 'delete'">Firebase Auth access</p>
+                <h2 id="user-access-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50">
+                  @switch (pending.action) {
+                    @case ('disable') { Disable sign-in? }
+                    @case ('enable') { Restore sign-in? }
+                    @case ('delete') { Delete this Auth user? }
+                  }
+                </h2>
+                <p class="mt-2 break-all text-sm text-zinc-400">{{ pending.user.email || pending.user.uid }}</p>
+              </header>
+
+              <div class="space-y-4 py-5 text-sm leading-6 text-zinc-300">
+                @switch (pending.action) {
+                  @case ('disable') {
+                    <p>Firebase Auth will reject future sign-ins and token refreshes for this account. Existing ID tokens can remain usable until they expire.</p>
+                    <p class="border border-orange-500/30 bg-orange-950/20 p-3 text-orange-100">The account and its email stay registered, which prevents the same address from simply signing up again. Roles and stored site data are preserved.</p>
+                  }
+                  @case ('enable') {
+                    <p>This account will be allowed to sign in again with its existing providers and roles.</p>
+                  }
+                  @case ('delete') {
+                    <p>Only the Firebase Auth record will be deleted. Existing profile data, comments, points, and authored content are intentionally preserved.</p>
+                    <p class="border border-red-500/40 bg-red-950/30 p-3 text-red-100">Deletion does not block this email from registering again. Disable the account instead when the goal is to deny access.</p>
+                    <label class="grid gap-2 text-zinc-200">
+                      Type <strong class="break-all text-zinc-50">{{ pending.user.email || pending.user.uid }}</strong> to confirm
+                      <input
+                        type="text"
+                        class="w-full border border-red-500/50 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-red-300"
+                        autocomplete="off"
+                        [value]="accessConfirmation()"
+                        (input)="updateAccessConfirmation($event)"
+                      >
+                    </label>
+                  }
+                }
+              </div>
+
+              @if (errorMessage()) {
+                <p class="mb-5 border border-red-500/40 bg-red-950/30 p-3 text-sm text-red-100" role="alert">{{ errorMessage() }}</p>
+              }
+
+              <footer class="flex flex-wrap justify-end gap-3 border-t border-zinc-800 pt-4">
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="isMutatingAccess()"
+                  (click)="closeAccessConfirmation()"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="border px-4 py-2 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
+                  [class.border-red-500]="pending.action === 'delete'"
+                  [class.bg-red-500]="pending.action === 'delete'"
+                  [class.border-orange-400]="pending.action !== 'delete'"
+                  [class.bg-orange-400]="pending.action !== 'delete'"
+                  [disabled]="isMutatingAccess() || !canConfirmAccessAction()"
+                  (click)="confirmAccessAction()"
+                >
+                  @if (isMutatingAccess()) {
+                    Updating...
+                  } @else {
+                    @switch (pending.action) {
+                      @case ('disable') { Disable Sign-In }
+                      @case ('enable') { Restore Sign-In }
+                      @case ('delete') { Delete Auth User }
+                    }
+                  }
+                </button>
+              </footer>
+            </div>
+          </section>
+        }
+
         @if (pendingUserView(); as user) {
           <section class="fixed inset-0 z-[80] grid place-items-center bg-black/75 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="user-view-confirmation-title">
             <div class="w-full max-w-xl border border-amber-400/50 bg-zinc-950 p-5 shadow-2xl shadow-black">
@@ -362,6 +465,7 @@ export class UserManagementPageComponent {
   protected readonly isLoading = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly isStartingUserView = signal(false);
+  protected readonly isMutatingAccess = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly statusMessage = signal<string | null>(null);
   protected readonly nextPageToken = signal<string | null>(null);
@@ -369,6 +473,8 @@ export class UserManagementPageComponent {
   protected readonly pageTokenStack = signal<string[]>([]);
   protected readonly selectedUser = signal<AdminManagedUser | null>(null);
   protected readonly pendingUserView = signal<AdminManagedUser | null>(null);
+  protected readonly pendingAccessAction = signal<PendingUserAccessAction | null>(null);
+  protected readonly accessConfirmation = signal('');
   protected readonly draftRoles = signal<readonly string[]>([]);
   protected readonly newRoleName = signal('');
   protected readonly roleInputError = signal<string | null>(null);
@@ -438,6 +544,86 @@ export class UserManagementPageComponent {
     this.newRoleName.set('');
     this.roleInputError.set(null);
     this.statusMessage.set(null);
+  }
+
+  protected openAccessConfirmation(user: AdminManagedUser, action: UserAccessAction): void {
+    if (user.uid === this.currentUser()?.uid) {
+      return;
+    }
+
+    this.pendingAccessAction.set({action, user});
+    this.accessConfirmation.set('');
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+  }
+
+  protected closeAccessConfirmation(): void {
+    if (!this.isMutatingAccess()) {
+      this.pendingAccessAction.set(null);
+      this.accessConfirmation.set('');
+    }
+  }
+
+  protected updateAccessConfirmation(event: Event): void {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+    this.accessConfirmation.set(input?.value ?? '');
+  }
+
+  protected canConfirmAccessAction(): boolean {
+    const pending = this.pendingAccessAction();
+
+    if (!pending || pending.user.uid === this.currentUser()?.uid) {
+      return false;
+    }
+
+    if (pending.action !== 'delete') {
+      return true;
+    }
+
+    const confirmation = this.accessConfirmation().trim();
+    return confirmation === pending.user.uid
+      || (!!pending.user.email && confirmation.toLowerCase() === pending.user.email.toLowerCase());
+  }
+
+  protected async confirmAccessAction(): Promise<void> {
+    const pending = this.pendingAccessAction();
+
+    if (!pending || !this.canConfirmAccessAction() || this.isMutatingAccess()) {
+      return;
+    }
+
+    this.isMutatingAccess.set(true);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+
+    try {
+      const accountLabel = pending.user.email ?? pending.user.uid;
+
+      if (pending.action === 'delete') {
+        const result = await this.userManagement.deleteUser({
+          uid: pending.user.uid,
+          confirmation: this.accessConfirmation().trim(),
+        });
+        this.users.update(users => users.filter(user => user.uid !== result.uid));
+        this.statusMessage.set(`Deleted the Firebase Auth record for ${accountLabel}. Stored site data was preserved.`);
+      } else {
+        const result = await this.userManagement.setUserDisabled({
+          uid: pending.user.uid,
+          disabled: pending.action === 'disable',
+        });
+        this.users.update(users => users.map(user => user.uid === result.user.uid ? result.user : user));
+        this.statusMessage.set(result.user.disabled
+          ? `Disabled Firebase Auth sign-in for ${accountLabel}.`
+          : `Restored Firebase Auth sign-in for ${accountLabel}.`);
+      }
+
+      this.pendingAccessAction.set(null);
+      this.accessConfirmation.set('');
+    } catch (error) {
+      this.errorMessage.set(getErrorMessage(error));
+    } finally {
+      this.isMutatingAccess.set(false);
+    }
   }
 
   protected openUserViewConfirmation(user: AdminManagedUser): void {

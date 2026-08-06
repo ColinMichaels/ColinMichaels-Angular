@@ -56,6 +56,10 @@ beforeEach(async () => {
       type: 'contact',
       status: 'new',
     });
+    await setDoc(doc(context.firestore(), 'publicSubmissions', 'submission', 'responses', 'response'), {
+      status: 'sent',
+      message: 'A protected response record.',
+    });
     await uploadBytes(
       ref(context.storage(), 'cms/blog-media/legacy-post/editor-image/legacy.webp'),
       new Uint8Array([1, 2, 3]),
@@ -127,6 +131,11 @@ test('public submission records are private and writable only by the backend', a
   await assertFails(setDoc(doc(publicDb, 'publicSubmissions', 'new-submission'), {type: 'contact'}));
   await assertSucceeds(getDoc(submissionRef));
   await assertFails(updateDoc(submissionRef, {status: 'reviewed'}));
+  await assertSucceeds(getDoc(doc(editorDb, 'publicSubmissions', 'submission', 'responses', 'response')));
+  await assertFails(getDoc(doc(publicDb, 'publicSubmissions', 'submission', 'responses', 'response')));
+  await assertFails(setDoc(doc(editorDb, 'publicSubmissions', 'submission', 'responses', 'client-response'), {
+    status: 'sent',
+  }));
   await assertFails(getDoc(doc(editorDb, 'publicSubmissionRateLimits', 'limit')));
 });
 

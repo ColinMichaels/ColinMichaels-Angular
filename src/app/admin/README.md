@@ -23,11 +23,13 @@ Component inventory:
 - `AdminGuidePageComponent` provides the searchable `/admin/guide` operating manual with stable fragment links, clipboard sharing, direct protected-route actions, a desktop contents rail, and a mobile jump menu.
 - `admin-guide.content.ts` is the typed instruction source. It filters entries by the shared route-role constants before search, Common tasks, categories, and result counts are derived, so unauthorized workflows are absent rather than disabled.
 - `UserManagementPageComponent` keeps role changes and the admin-only **View as User** entry in one protected account workflow. The preview confirmation states that role/profile UI is simulated while Firebase requests retain the actor's admin identity.
+- `PublicSubmissionsPageComponent` provides the CMS-role-gated `/admin/submissions` master-detail inbox with status counts, full-text local filtering, private contact/proposal detail, alert health, reversible review actions, and a real response composer.
+- `PublicSubmissionService` listens to the read-only Firestore review collection and routes status changes plus email responses through trusted callable Functions.
 - Shared `UserViewBannerComponent` remains fixed above route content while a preview is active, identifies the target and roles, reports disabled accounts, and provides the recovery-safe **Exit View** action.
 
 The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
 
-The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk Editor, Social Connections, Authors, Homepage, Topics, Recommended Links, Media Library, Comments, and Users. The checked-in `agents/skills/update-admin-guide` skill and its local `$update-admin-guide` installation define the required source, permission, test, documentation, and rendered-validation workflow after future blog or admin features change. See `docs/ARCHITECTURE/ADMIN_GUIDE.md` for the complete contract and rollback notes.
+The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk Editor, Social Connections, Authors, Homepage, Topics, Recommended Links, Media Library, Submissions, Comments, and Users. The checked-in `agents/skills/update-admin-guide` skill and its local `$update-admin-guide` installation define the required source, permission, test, documentation, and rendered-validation workflow after future blog or admin features change. See `docs/ARCHITECTURE/ADMIN_GUIDE.md` for the complete contract and rollback notes.
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, Recovery & Conflicts, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 
@@ -313,13 +315,37 @@ It calls Firebase callable functions:
 
 - `listAdminUsers`
 - `updateAdminUserRoles`
+- `setAdminUserDisabled`
+- `deleteAdminUser`
 
-Both functions require an authenticated Firebase user with `admin: true` or `roles.admin: true`. Role updates preserve unrelated custom claims, store future permissions under the `roles` custom-claim map, and mirror `admin` / `cmsAdmin` at the top level for compatibility with existing rules. Users must refresh their Firebase ID token, usually by signing out and back in, before new role claims affect their session.
+All four functions require an authenticated Firebase user with `admin: true` or `roles.admin: true`. Role updates preserve unrelated custom claims, store future permissions under the `roles` custom-claim map, and mirror `admin` / `cmsAdmin` at the top level for compatibility with existing rules. Users must refresh their Firebase ID token, usually by signing out and back in, before new role claims affect their session.
+
+Sign-in disable/restore and deletion are serialized against role changes for the same UID. Administrators cannot disable, restore, or delete their own account from User Management. Disabling preserves the Auth record, providers, roles, and site data while rejecting future sign-ins and refreshes; the callable also explicitly revokes refresh tokens. Deletion requires the exact email or UID as server-validated confirmation and removes only the Firebase Auth record. It deliberately preserves `/users/{uid}`, comments, points, authored content, and other site data, and it does not prevent the deleted email from registering again. Structured Functions logs record the actor UID, target UID, action result, and timestamp without logging the target email.
 
 Component inventory:
 
-- `UserManagementPageComponent` lists Firebase Auth users, filters loaded rows, pages through Auth results, and edits role claims.
+- `UserManagementPageComponent` lists Firebase Auth users, filters loaded rows, pages through Auth results, edits role claims, and presents explicit disable, restore, and typed-delete confirmations.
 - `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables.
+
+## Public Submission Inbox
+
+The submission inbox is available at `/admin/submissions` for `admin`, `cmsAdmin`, and `contentEditor` roles. It reads protected `/publicSubmissions` records and never grants the browser direct mutation access.
+
+Component inventory:
+
+- `PublicSubmissionsPageComponent` provides status counts and filters for New, In review, Responded, Archived, and Rejected records; local text search; selected submission detail; alert-delivery health; reversible review actions; and the email response composer.
+- `PublicSubmissionService` owns the Firestore listener plus `reviewPublicSubmission` and `respondToPublicSubmission` callable clients.
+- `public-submission.models.ts` normalizes stored contact/proposal and alert state, preserves legacy `new` defaults, and owns the search/summary projections.
+- `functions/src/public-submission-email.ts` builds privacy-minimized owner alerts, escaped reply messages, deterministic message IDs, bounded review requests, and authenticated SMTP delivery.
+
+Safety and migration notes:
+
+- New accepted submissions trigger a server-side owner alert only after Firestore creation. Alert failure is visible in the inbox and never changes the visitor's successful form result.
+- Owner alerts contain a summary and protected inbox link, not the full private message or proposal.
+- Start review, Archive, Reject, Restore to review, and successful response transitions are backend-owned. Archive and Reject retain the record and do not delete submitted information.
+- Responses are stored in the submission's protected `responses` subcollection. A failed SMTP delivery remains failed and does not mark the submission Responded.
+- Email requires the two `PUBLIC_SUBMISSION_SMTP_*` secrets plus authenticated SPF/DKIM sender configuration. No credential belongs in Angular, Firestore, or tracked environment files.
+- Existing submission documents require no migration. The inbox treats any missing or unknown status as New.
 
 ## Comment Moderation And Engagement
 

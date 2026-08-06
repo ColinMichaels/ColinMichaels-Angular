@@ -53,10 +53,10 @@ The shipped trusted boundary includes:
 - bounded server-side field and origin validation;
 - an inert honeypot and opaque per-connection hourly rate limit;
 - backend-only submission and rate-limit collections;
-- no automatic publication, role assignment, CMS access, or provider delivery;
+- no automatic publication, role assignment, or CMS access; accepted records can produce a minimal owner alert and an intentional admin-authored email reply through the server-only mail transport;
 - removal through the same verified deletion-request process as other submitted information.
 
-CAPTCHA, email acknowledgements, an admin review inbox, and contributor provisioning remain deferred. Do not add a client-only CAPTCHA check or expose provider secrets in Angular environment files.
+CAPTCHA, automatic submitter acknowledgements, and contributor provisioning remain deferred. The protected `/admin/submissions` inbox owns review status and replies; do not add a client-only CAPTCHA check or expose provider secrets in Angular environment files.
 
 ## Responsive and Accessibility Behavior
 

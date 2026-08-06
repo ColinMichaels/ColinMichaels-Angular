@@ -200,6 +200,16 @@ export const COMMENT_MODERATION_SEO_METADATA: SeoMetadata = {
   robots: 'noindex,nofollow',
 };
 
+export const PUBLIC_SUBMISSIONS_ADMIN_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Submission Inbox'),
+  description: 'Protected admin review and response workflow for contact messages and prospective-author proposals.',
+  path: '/admin/submissions',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('admin submission inbox'),
+  type: 'website',
+  robots: 'noindex,nofollow',
+};
+
 export const LOGOUT_SEO_METADATA: SeoMetadata = {
   title: createSiteTitle('Sign Out'),
   description: `End the current ${SITE_NAME} authenticated session.`,

@@ -27,3 +27,23 @@ export interface UpdateAdminUserRolesResponse {
   user: AdminManagedUser;
   updatedAt: string;
 }
+
+export interface SetAdminUserDisabledRequest {
+  uid: string;
+  disabled: boolean;
+}
+
+export interface SetAdminUserDisabledResponse {
+  user: AdminManagedUser;
+  updatedAt: string;
+}
+
+export interface DeleteAdminUserRequest {
+  uid: string;
+  confirmation: string;
+}
+
+export interface DeleteAdminUserResponse {
+  uid: string;
+  deletedAt: string;
+}

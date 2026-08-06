@@ -26,16 +26,27 @@ describe('UserManagementPageComponent', () => {
   let fixture: ComponentFixture<UserManagementPageComponent>;
   let startViewingAsUser: jasmine.Spy;
   let router: jasmine.SpyObj<Router>;
+  let userManagement: jasmine.SpyObj<UserManagementService>;
 
   beforeEach(async () => {
-    const userManagement = jasmine.createSpyObj<UserManagementService>('UserManagementService', [
+    userManagement = jasmine.createSpyObj<UserManagementService>('UserManagementService', [
+      'deleteUser',
       'listUsers',
+      'setUserDisabled',
       'updateUserRoles',
     ]);
     userManagement.listUsers.and.resolveTo({
       users: [managedUser],
       nextPageToken: null,
       fetchedAt: '2026-07-17T12:00:00.000Z',
+    });
+    userManagement.setUserDisabled.and.callFake(async request => ({
+      user: {...managedUser, disabled: request.disabled},
+      updatedAt: '2026-08-05T12:00:00.000Z',
+    }));
+    userManagement.deleteUser.and.resolveTo({
+      uid: managedUser.uid,
+      deletedAt: '2026-08-05T12:00:00.000Z',
     });
     startViewingAsUser = jasmine.createSpy('startViewingAsUser').and.resolveTo();
     const authService = {
@@ -79,4 +90,62 @@ describe('UserManagementPageComponent', () => {
     expect(startViewingAsUser).toHaveBeenCalledOnceWith(managedUser);
     expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/');
   });
+
+  it('confirms and disables Firebase Auth sign-in without deleting the user', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    findButton(element, 'Disable Sign-In')?.click();
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('Disable sign-in?');
+    expect(element.textContent).toContain('prevents the same address from simply signing up again');
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    findButton(dialog, 'Disable Sign-In')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(userManagement.setUserDisabled).toHaveBeenCalledOnceWith({
+      uid: managedUser.uid,
+      disabled: true,
+    });
+    expect(userManagement.deleteUser).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Disabled Firebase Auth sign-in for reader@example.com.');
+    expect(element.textContent).toContain('Disabled');
+  });
+
+  it('requires the exact email or uid before deleting only the Auth record', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    findButton(element, 'Delete Auth User')?.click();
+    fixture.detectChanges();
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    const confirmButton = findButton(dialog, 'Delete Auth User');
+    const confirmationInput = dialog?.querySelector<HTMLInputElement>('input');
+
+    expect(dialog?.textContent).toContain('Existing profile data, comments, points, and authored content are intentionally preserved.');
+    expect(confirmButton?.disabled).toBeTrue();
+
+    if (confirmationInput) {
+      confirmationInput.value = managedUser.email ?? '';
+      confirmationInput.dispatchEvent(new Event('input'));
+    }
+    fixture.detectChanges();
+
+    expect(confirmButton?.disabled).toBeFalse();
+    confirmButton?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(userManagement.deleteUser).toHaveBeenCalledOnceWith({
+      uid: managedUser.uid,
+      confirmation: managedUser.email ?? '',
+    });
+    expect(element.textContent).toContain('Deleted the Firebase Auth record for reader@example.com.');
+    expect(element.textContent).not.toContain('Reader Example');
+  });
 });
+
+function findButton(root: ParentNode | null, label: string): HTMLButtonElement | undefined {
+  return Array.from(root?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+    .find(button => button.textContent?.trim() === label);
+}

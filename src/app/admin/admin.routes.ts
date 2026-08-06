@@ -2,7 +2,11 @@ import {Routes} from '@angular/router';
 
 import {PATH_NAMES} from '../app-route-paths';
 import {AdminAuthGuard} from '../guards/admin-auth.guard';
-import {COMMENT_MODERATION_SEO_METADATA, USER_MANAGEMENT_SEO_METADATA} from '../shared/seo/seo.metadata';
+import {
+  COMMENT_MODERATION_SEO_METADATA,
+  PUBLIC_SUBMISSIONS_ADMIN_SEO_METADATA,
+  USER_MANAGEMENT_SEO_METADATA,
+} from '../shared/seo/seo.metadata';
 import {ADMIN_CONSOLE_ROLES, CMS_ACCESS_ROLES, USER_MANAGEMENT_ACCESS_ROLES} from '../shared/user-account/user-account.model';
 import {cmsRoutes} from './cms/cms.routes';
 
@@ -20,6 +24,12 @@ export const adminRoutes: Routes = [
         canActivate: [AdminAuthGuard],
         data: {roles: USER_MANAGEMENT_ACCESS_ROLES, seo: USER_MANAGEMENT_SEO_METADATA},
         loadComponent: () => import('./user-management/user-management-page.component').then(m => m.UserManagementPageComponent),
+      },
+      {
+        path: PATH_NAMES.ADMIN_SUBMISSIONS,
+        canActivate: [AdminAuthGuard],
+        data: {roles: CMS_ACCESS_ROLES, seo: PUBLIC_SUBMISSIONS_ADMIN_SEO_METADATA},
+        loadComponent: () => import('./submissions/public-submissions-page.component').then(m => m.PublicSubmissionsPageComponent),
       },
       {
         path: PATH_NAMES.ADMIN_COMMENTS,
