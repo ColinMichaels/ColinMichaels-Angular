@@ -6,6 +6,7 @@ import {
   faGaugeHigh,
   faHouse,
   faImages,
+  faInbox,
   faLink,
   faListCheck,
   faNewspaper,
@@ -58,6 +59,13 @@ export const ADMIN_NAVIGATION_GROUPS: readonly AdminNavigationGroup[] = [
   {
     label: 'Publishing',
     items: [
+      {
+        access: 'cms',
+        exact: false,
+        icon: faInbox,
+        label: 'Submissions',
+        route: `${adminRoute}/${PATH_NAMES.ADMIN_SUBMISSIONS}`,
+      },
       {
         access: 'cms',
         exact: true,

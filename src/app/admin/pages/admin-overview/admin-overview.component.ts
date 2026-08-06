@@ -7,6 +7,7 @@ import {
   faComments,
   faHouse,
   faImages,
+  faInbox,
   faLink,
   faTags,
   faUserGear,
@@ -249,6 +250,13 @@ export class AdminOverviewComponent {
     {initialValue: false}
   );
   private readonly dashboardLinks: readonly DashboardLink[] = [
+    {
+      access: 'cms',
+      description: 'Contact messages and author proposals',
+      icon: faInbox,
+      label: 'Submissions',
+      route: `${adminRoute}/${PATH_NAMES.ADMIN_SUBMISSIONS}`,
+    },
     {
       access: 'cms',
       description: 'Hero copy, slides, and featured article',

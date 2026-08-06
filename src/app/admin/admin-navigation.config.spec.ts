@@ -10,6 +10,7 @@ describe('getAdminPageTitle', () => {
     expect(getAdminPageTitle('/admin/cms/calendar')).toBe('Calendar');
     expect(getAdminPageTitle('/admin/cms/social-connections')).toBe('Social Connections');
     expect(getAdminPageTitle('/admin/cms/media-library')).toBe('Media Library');
+    expect(getAdminPageTitle('/admin/submissions')).toBe('Submissions');
     expect(getAdminPageTitle('/admin/users')).toBe('Users');
   });
 

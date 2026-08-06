@@ -11,6 +11,7 @@ export const PATH_NAMES = {
   ADMIN_CMS_HOMEPAGE: 'homepage',
   ADMIN_CMS_TOPICS: 'topics',
   ADMIN_CMS_RECOMMENDED_LINKS: 'recommended-links',
+  ADMIN_SUBMISSIONS: 'submissions',
   ADMIN_COMMENTS: 'comments',
   ADMIN_USERS: 'users',
   BLOG: 'blog',

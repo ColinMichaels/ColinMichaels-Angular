@@ -8,7 +8,7 @@ import {FieldValue, getFirestore, Timestamp} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
-import {onDocumentWritten} from 'firebase-functions/v2/firestore';
+import {onDocumentCreated, onDocumentWritten} from 'firebase-functions/v2/firestore';
 import {HttpsError, onCall, onRequest} from 'firebase-functions/v2/https';
 import {onSchedule} from 'firebase-functions/v2/scheduler';
 import webPush = require('web-push');
@@ -60,6 +60,7 @@ import {
 } from './cat-corner';
 import {
   canAcquireUserRoleMutationLease,
+  matchesUserDeletionConfirmation,
   ownsUserRoleMutationLease,
   replaceManagedUserRoleClaims,
 } from './user-role-mutation';
@@ -89,6 +90,17 @@ import {
   inspectOrDeleteBlogMedia,
 } from './blog-media';
 import {storePublicSubmission} from './public-submissions';
+import {
+  PublicSubmissionSmtpConfig,
+  createPublicSubmissionAlertEmail,
+  createPublicSubmissionResponseEmail,
+  getNextPublicSubmissionStatus,
+  parsePublicSubmissionResponseRequest,
+  parsePublicSubmissionReviewRequest,
+  parseStoredPublicSubmission,
+  parseSubmissionStatus,
+  sendPublicSubmissionEmail,
+} from './public-submission-email';
 import {isQualifiedPostReadProgress} from './post-reading';
 
 export {
@@ -289,6 +301,20 @@ const youtubeChannelId = defineString('YOUTUBE_CHANNEL_ID', {default: ''});
 const webPushPublicKey = defineString('WEB_PUSH_PUBLIC_KEY', {default: ''});
 const webPushSubject = defineString('WEB_PUSH_SUBJECT', {default: 'mailto:hello@colinmichaels.com'});
 const webPushPrivateKey = defineSecret('WEB_PUSH_PRIVATE_KEY');
+const publicSubmissionSmtpHost = defineString('PUBLIC_SUBMISSION_SMTP_HOST', {default: 'smtp.gmail.com'});
+const publicSubmissionSmtpPort = defineString('PUBLIC_SUBMISSION_SMTP_PORT', {default: '465'});
+const publicSubmissionSmtpSecure = defineString('PUBLIC_SUBMISSION_SMTP_SECURE', {default: 'true'});
+const publicSubmissionSmtpUsername = defineSecret('PUBLIC_SUBMISSION_SMTP_USERNAME');
+const publicSubmissionSmtpPassword = defineSecret('PUBLIC_SUBMISSION_SMTP_PASSWORD');
+const publicSubmissionEmailFrom = defineString('PUBLIC_SUBMISSION_EMAIL_FROM', {
+  default: 'ColinMichaels.com <colin@colinmichaels.com>',
+});
+const publicSubmissionAlertTo = defineString('PUBLIC_SUBMISSION_ALERT_TO', {
+  default: 'colin@colinmichaels.com',
+});
+const publicSubmissionAdminUrl = defineString('PUBLIC_SUBMISSION_ADMIN_URL', {
+  default: 'https://colinmichaels.com/admin/submissions',
+});
 const SITE_CALLABLE_CORS_ORIGINS = [
   'http://localhost:4200',
   'http://127.0.0.1:4200',
@@ -1166,6 +1192,16 @@ interface UpdateAdminUserRolesResponse {
   updatedAt: string;
 }
 
+interface SetAdminUserDisabledResponse {
+  user: AdminManagedUser;
+  updatedAt: string;
+}
+
+interface DeleteAdminUserResponse {
+  uid: string;
+  deletedAt: string;
+}
+
 interface CatCornerAccessClaimResponse {
   role: typeof CAT_CORNER_ADDICT_ROLE;
   alreadyMember: boolean;
@@ -1405,6 +1441,264 @@ export const submitPublicSubmission = onCall(
   )
 );
 
+export const notifyPublicSubmissionCreated = onDocumentCreated(
+  {
+    document: 'publicSubmissions/{submissionId}',
+    region: FUNCTION_REGION,
+    timeoutSeconds: 60,
+    memory: '256MiB',
+    retry: true,
+    secrets: [publicSubmissionSmtpUsername, publicSubmissionSmtpPassword],
+  },
+  async event => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      return;
+    }
+
+    const currentSnapshot = await snapshot.ref.get();
+    if (!currentSnapshot.exists) {
+      return;
+    }
+
+    const existingDelivery = currentSnapshot.get('alertDelivery');
+    if (isRecord(existingDelivery) && existingDelivery['status'] === 'sent') {
+      return;
+    }
+
+    const previousAttemptCount = isRecord(existingDelivery)
+    && typeof existingDelivery['attemptCount'] === 'number'
+    && Number.isInteger(existingDelivery['attemptCount'])
+      ? existingDelivery['attemptCount'] as number
+      : 0;
+    if (previousAttemptCount >= 5) {
+      logger.error('Public-submission alert exhausted its delivery attempts.', {
+        submissionId: event.params['submissionId'],
+        attemptCount: previousAttemptCount,
+      });
+      return;
+    }
+
+    const submissionId = event.params['submissionId'];
+    const attemptCount = previousAttemptCount + 1;
+    const attemptedAt = new Date().toISOString();
+    await snapshot.ref.set({
+      alertDelivery: {
+        status: 'sending',
+        attemptCount,
+        eventId: event.id,
+        attemptedAt,
+        attemptedAtTimestamp: FieldValue.serverTimestamp(),
+      },
+    }, {merge: true});
+
+    try {
+      const submission = parseStoredPublicSubmission(submissionId, currentSnapshot.data());
+      const message = createPublicSubmissionAlertEmail({
+        submission,
+        adminUrl: publicSubmissionAdminUrl.value(),
+        alertTo: publicSubmissionAlertTo.value(),
+        from: publicSubmissionEmailFrom.value(),
+        eventId: event.id,
+      });
+      const delivery = await sendPublicSubmissionEmail(getPublicSubmissionSmtpConfig(), message);
+      const sentAt = new Date().toISOString();
+
+      await snapshot.ref.set({
+        alertDelivery: {
+          status: 'sent',
+          attemptCount,
+          eventId: event.id,
+          attemptedAt,
+          sentAt,
+          messageId: delivery.messageId,
+          sentAtTimestamp: FieldValue.serverTimestamp(),
+        },
+      }, {merge: true});
+
+      logger.info('Sent public-submission alert.', {
+        submissionId,
+        type: submission.type,
+        messageId: delivery.messageId,
+      });
+    } catch (error) {
+      const failedAt = new Date().toISOString();
+      await snapshot.ref.set({
+        alertDelivery: {
+          status: 'failed',
+          attemptCount,
+          eventId: event.id,
+          attemptedAt,
+          failedAt,
+          errorCode: 'delivery-failed',
+          failedAtTimestamp: FieldValue.serverTimestamp(),
+        },
+      }, {merge: true});
+      logger.error('Unable to send public-submission alert.', {submissionId, attemptCount, error});
+      if (attemptCount < 5) {
+        throw error;
+      }
+    }
+  }
+);
+
+export const reviewPublicSubmission = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireCmsAccess(request.auth);
+    const parsed = parsePublicSubmissionReviewRequestOrThrow(request.data);
+    const firestore = getFirestore();
+    const submissionRef = firestore.collection('publicSubmissions').doc(parsed.submissionId);
+    const now = new Date().toISOString();
+
+    const status = await firestore.runTransaction(async transaction => {
+      const snapshot = await transaction.get(submissionRef);
+      if (!snapshot.exists) {
+        throw new HttpsError('not-found', 'Submission not found.');
+      }
+
+      const currentStatus = parseSubmissionStatus(snapshot.get('status'));
+      let nextStatus;
+      try {
+        nextStatus = getNextPublicSubmissionStatus(currentStatus, parsed.action);
+      } catch (error) {
+        throw new HttpsError('failed-precondition', getErrorMessage(error, 'Submission status cannot be changed.'));
+      }
+
+      const statusAudit: Record<string, unknown> = {
+        status: nextStatus,
+        updatedAt: now,
+        updatedAtTimestamp: FieldValue.serverTimestamp(),
+        lastReviewedBy: actorUid,
+        lastReviewAction: parsed.action,
+      };
+
+      if (parsed.action === 'start-review') {
+        statusAudit['reviewedAt'] = now;
+        statusAudit['reviewedBy'] = actorUid;
+      } else if (parsed.action === 'archive') {
+        statusAudit['archivedAt'] = now;
+        statusAudit['archivedBy'] = actorUid;
+      } else if (parsed.action === 'reject') {
+        statusAudit['rejectedAt'] = now;
+        statusAudit['rejectedBy'] = actorUid;
+      } else {
+        statusAudit['restoredAt'] = now;
+        statusAudit['restoredBy'] = actorUid;
+      }
+
+      transaction.set(submissionRef, statusAudit, {merge: true});
+      return nextStatus;
+    });
+
+    return {submissionId: parsed.submissionId, status, updatedAt: now};
+  }
+);
+
+export const respondToPublicSubmission = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 60,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+    secrets: [publicSubmissionSmtpUsername, publicSubmissionSmtpPassword],
+  },
+  async request => {
+    const actorUid = requireCmsAccess(request.auth);
+    const parsed = parsePublicSubmissionResponseRequestOrThrow(request.data);
+    const firestore = getFirestore();
+    const submissionRef = firestore.collection('publicSubmissions').doc(parsed.submissionId);
+    const responseRef = submissionRef.collection('responses').doc(parsed.requestId);
+    const snapshot = await submissionRef.get();
+
+    if (!snapshot.exists) {
+      throw new HttpsError('not-found', 'Submission not found.');
+    }
+
+    const submission = parseStoredPublicSubmission(parsed.submissionId, snapshot.data());
+    if (submission.status === 'archived' || submission.status === 'rejected') {
+      throw new HttpsError('failed-precondition', 'Restore this submission before sending a response.');
+    }
+
+    const existingResponse = await responseRef.get();
+    if (existingResponse.exists && existingResponse.get('status') === 'sent') {
+      return {
+        submissionId: parsed.submissionId,
+        status: 'responded' as const,
+        responseId: responseRef.id,
+        messageId: getTrimmedString(existingResponse.get('messageId')),
+      };
+    }
+
+    const createdAt = new Date().toISOString();
+    await responseRef.set({
+      id: responseRef.id,
+      submissionId: parsed.submissionId,
+      status: 'sending',
+      actorUid,
+      recipient: submission.contact.email,
+      subject: parsed.subject,
+      message: parsed.message,
+      createdAt,
+      createdAtTimestamp: FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    try {
+      const email = createPublicSubmissionResponseEmail({
+        submission,
+        request: parsed,
+        from: publicSubmissionEmailFrom.value(),
+      });
+      const delivery = await sendPublicSubmissionEmail(getPublicSubmissionSmtpConfig(), email);
+      const sentAt = new Date().toISOString();
+      const batch = firestore.batch();
+
+      batch.set(responseRef, {
+        status: 'sent',
+        messageId: delivery.messageId,
+        sentAt,
+        sentAtTimestamp: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      batch.set(submissionRef, {
+        status: 'responded',
+        updatedAt: sentAt,
+        updatedAtTimestamp: FieldValue.serverTimestamp(),
+        respondedAt: sentAt,
+        respondedBy: actorUid,
+        lastResponseId: responseRef.id,
+      }, {merge: true});
+      await batch.commit();
+
+      return {
+        submissionId: parsed.submissionId,
+        status: 'responded' as const,
+        responseId: responseRef.id,
+        messageId: delivery.messageId,
+      };
+    } catch (error) {
+      await responseRef.set({
+        status: 'failed',
+        failedAt: new Date().toISOString(),
+        errorCode: 'delivery-failed',
+        failedAtTimestamp: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      logger.error('Unable to send public-submission response.', {
+        submissionId: parsed.submissionId,
+        responseId: responseRef.id,
+        error,
+      });
+      throw new HttpsError('internal', 'The response could not be sent. The submission was not marked responded.');
+    }
+  }
+);
+
 export const getLatestYouTubeVideosHttp = onRequest(
   {
     region: FUNCTION_REGION,
@@ -1599,6 +1893,86 @@ export const updateAdminUserRoles = onCall(
         user: toAdminManagedUser(updatedUser),
         updatedAt,
       } satisfies UpdateAdminUserRolesResponse;
+    });
+  }
+);
+
+export const setAdminUserDisabled = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireUserManagementAdmin(request.auth);
+    const {uid, disabled} = parseSetAdminUserDisabledRequest(request.data);
+
+    if (actorUid === uid) {
+      throw new HttpsError('failed-precondition', 'You cannot change sign-in access for your own admin account.');
+    }
+
+    return await withUserRoleMutationLease(uid, async () => {
+      const auth = getAuth();
+      await auth.updateUser(uid, {disabled});
+
+      if (disabled) {
+        await auth.revokeRefreshTokens(uid);
+      }
+
+      const updatedAt = new Date().toISOString();
+      const updatedUser = await auth.getUser(uid);
+      logger.info('Updated managed user sign-in access.', {
+        actorUid,
+        targetUid: uid,
+        disabled,
+        updatedAt,
+      });
+
+      return {
+        user: toAdminManagedUser(updatedUser),
+        updatedAt,
+      } satisfies SetAdminUserDisabledResponse;
+    });
+  }
+);
+
+export const deleteAdminUser = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireUserManagementAdmin(request.auth);
+    const {uid, confirmation} = parseDeleteAdminUserRequest(request.data);
+
+    if (actorUid === uid) {
+      throw new HttpsError('failed-precondition', 'You cannot delete your own admin account.');
+    }
+
+    return await withUserRoleMutationLease(uid, async () => {
+      const auth = getAuth();
+      const user = await auth.getUser(uid);
+
+      if (!matchesUserDeletionConfirmation(uid, user.email, confirmation)) {
+        throw new HttpsError('failed-precondition', 'Type the user email or uid exactly to confirm deletion.');
+      }
+
+      await auth.revokeRefreshTokens(uid);
+      await auth.deleteUser(uid);
+
+      const deletedAt = new Date().toISOString();
+      logger.info('Deleted managed Firebase Auth user.', {
+        actorUid,
+        targetUid: uid,
+        deletedAt,
+      });
+
+      return {uid, deletedAt} satisfies DeleteAdminUserResponse;
     });
   }
 );
@@ -4431,6 +4805,46 @@ function requireCmsAccess(auth: AdminCallableAuth | undefined): string {
   return auth.uid;
 }
 
+function getPublicSubmissionSmtpConfig(): PublicSubmissionSmtpConfig {
+  const port = Number(publicSubmissionSmtpPort.value());
+  const secureValue = publicSubmissionSmtpSecure.value().trim().toLowerCase();
+
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error('PUBLIC_SUBMISSION_SMTP_PORT must be a valid TCP port.');
+  }
+  if (secureValue !== 'true' && secureValue !== 'false') {
+    throw new Error('PUBLIC_SUBMISSION_SMTP_SECURE must be true or false.');
+  }
+
+  return {
+    host: publicSubmissionSmtpHost.value().trim(),
+    port,
+    secure: secureValue === 'true',
+    username: publicSubmissionSmtpUsername.value(),
+    password: publicSubmissionSmtpPassword.value(),
+  };
+}
+
+function parsePublicSubmissionReviewRequestOrThrow(value: unknown) {
+  try {
+    return parsePublicSubmissionReviewRequest(value);
+  } catch (error) {
+    throw new HttpsError('invalid-argument', getErrorMessage(error, 'Submission review request is invalid.'));
+  }
+}
+
+function parsePublicSubmissionResponseRequestOrThrow(value: unknown) {
+  try {
+    return parsePublicSubmissionResponseRequest(value);
+  } catch (error) {
+    throw new HttpsError('invalid-argument', getErrorMessage(error, 'Submission response request is invalid.'));
+  }
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 function requireCmsOrMediaAccess(auth: AdminCallableAuth | undefined): string {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'You must be signed in to manage CMS media.');
@@ -5087,6 +5501,38 @@ function parseUpdateUserRolesRequest(value: unknown): { uid: string; roles: stri
   }
 
   return {uid, roles};
+}
+
+function parseSetAdminUserDisabledRequest(value: unknown): { uid: string; disabled: boolean } {
+  const record = requireRecord(value, 'User access update must be an object.');
+  const uid = getTrimmedString(record['uid']);
+  const disabled = record['disabled'];
+
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'User uid is required.');
+  }
+
+  if (typeof disabled !== 'boolean') {
+    throw new HttpsError('invalid-argument', 'Disabled must be a boolean.');
+  }
+
+  return {uid, disabled};
+}
+
+function parseDeleteAdminUserRequest(value: unknown): { uid: string; confirmation: string } {
+  const record = requireRecord(value, 'User deletion must be an object.');
+  const uid = getTrimmedString(record['uid']);
+  const confirmation = getTrimmedString(record['confirmation']);
+
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'User uid is required.');
+  }
+
+  if (!confirmation || confirmation.length > 320) {
+    throw new HttpsError('invalid-argument', 'A valid user email or uid confirmation is required.');
+  }
+
+  return {uid, confirmation};
 }
 
 function toAdminManagedUser(user: UserRecord): AdminManagedUser {

@@ -46,3 +46,14 @@ export function canAcquireUserRoleMutationLease(
 export function ownsUserRoleMutationLease(value: unknown, ownerId: string): boolean {
   return isRecord(value) && value['ownerId'] === ownerId;
 }
+
+export function matchesUserDeletionConfirmation(
+  uid: string,
+  email: string | null | undefined,
+  confirmation: string
+): boolean {
+  const normalizedConfirmation = confirmation.trim();
+
+  return normalizedConfirmation === uid
+    || (!!email && normalizedConfirmation.toLowerCase() === email.toLowerCase());
+}

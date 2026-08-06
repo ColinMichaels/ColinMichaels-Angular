@@ -4,6 +4,10 @@ import {Functions, httpsCallable} from 'firebase/functions';
 import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
 import {
   AdminUsersResponse,
+  DeleteAdminUserRequest,
+  DeleteAdminUserResponse,
+  SetAdminUserDisabledRequest,
+  SetAdminUserDisabledResponse,
   UpdateAdminUserRolesRequest,
   UpdateAdminUserRolesResponse,
 } from '../models/user-management.models';
@@ -36,6 +40,26 @@ export class UserManagementService {
     const callable = httpsCallable<UpdateAdminUserRolesRequest, UpdateAdminUserRolesResponse>(
       this.getFunctions(),
       'updateAdminUserRoles'
+    );
+    const result = await callable(request);
+
+    return result.data;
+  }
+
+  async setUserDisabled(request: SetAdminUserDisabledRequest): Promise<SetAdminUserDisabledResponse> {
+    const callable = httpsCallable<SetAdminUserDisabledRequest, SetAdminUserDisabledResponse>(
+      this.getFunctions(),
+      'setAdminUserDisabled'
+    );
+    const result = await callable(request);
+
+    return result.data;
+  }
+
+  async deleteUser(request: DeleteAdminUserRequest): Promise<DeleteAdminUserResponse> {
+    const callable = httpsCallable<DeleteAdminUserRequest, DeleteAdminUserResponse>(
+      this.getFunctions(),
+      'deleteAdminUser'
     );
     const result = await callable(request);
 
