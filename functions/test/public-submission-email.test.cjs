@@ -71,8 +71,10 @@ test('escapes admin-authored response HTML and uses a deterministic message id',
   });
 
   assert.equal(email.to, 'reader@example.com');
-  assert.match(email.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.doesNotMatch(email.html, /<script>/);
+  assert.equal(email.html, [
+    '<p>Hello Reader,</p>',
+    '<p>Thanks for the note. &lt;script&gt;alert(1)&lt;/script&gt;</p>',
+  ].join(''));
   assert.equal(email.messageId, '<submission-response-submission-1-request-1@colinmichaels.com>');
 });
 
