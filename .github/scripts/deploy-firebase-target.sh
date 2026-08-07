@@ -46,8 +46,29 @@ trap 'rm -f "$config_path"' EXIT
 
 node .github/scripts/create-firebase-deploy-config.mjs "$target" "$config_path"
 
-env -u FIREBASE_TOKEN npx --yes firebase-tools@14.27.0 deploy \
-  --only "$only" \
-  --config "$config_path" \
-  --project "$FIREBASE_PROJECT_ID" \
+deploy_args=(
+  deploy
+  --only "$only"
+  --config "$config_path"
+  --project "$FIREBASE_PROJECT_ID"
   --non-interactive
+)
+
+case "${FIREBASE_FUNCTIONS_FORCE:-false}" in
+  true)
+    if [ "$target" != "functions" ]; then
+      echo "FIREBASE_FUNCTIONS_FORCE can only be used for Functions deploys." >&2
+      exit 1
+    fi
+    echo "Firebase Functions force confirmation is enabled for this deploy."
+    deploy_args+=(--force)
+    ;;
+  false|'')
+    ;;
+  *)
+    echo "FIREBASE_FUNCTIONS_FORCE must be true or false." >&2
+    exit 1
+    ;;
+esac
+
+env -u FIREBASE_TOKEN npx --yes firebase-tools@14.27.0 "${deploy_args[@]}"

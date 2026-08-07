@@ -2,6 +2,7 @@
 set -euo pipefail
 
 event_name="${GITHUB_EVENT_NAME:-}"
+force_functions=false
 
 to_bool() {
   case "${1:-false}" in
@@ -17,6 +18,7 @@ to_bool() {
 if [ "$event_name" = "workflow_dispatch" ]; then
   deploy_hosting="$(to_bool "${INPUT_DEPLOY_SITE:-false}")"
   deploy_functions="$(to_bool "${INPUT_DEPLOY_FUNCTIONS:-false}")"
+  force_functions="$(to_bool "${INPUT_FORCE_FUNCTIONS:-false}")"
   deploy_rules="$(to_bool "${INPUT_DEPLOY_RULES:-false}")"
 
   if [ "$deploy_hosting" = true ]; then
@@ -43,6 +45,11 @@ if [ "$deploy_functions" = true ]; then
   deploy_hosting=true
 fi
 
+if [ "$force_functions" = true ] && [ "$deploy_functions" != true ]; then
+  echo "force_functions requires a Functions deployment." >&2
+  exit 1
+fi
+
 deploy_site_build=false
 if [ "$deploy_hosting" = true ] || [ "$deploy_functions" = true ]; then
   deploy_site_build=true
@@ -51,6 +58,7 @@ fi
 {
   echo "deploy_hosting=$deploy_hosting"
   echo "deploy_functions=$deploy_functions"
+  echo "force_functions=$force_functions"
   echo "deploy_rules=$deploy_rules"
   echo "deploy_site_build=$deploy_site_build"
 } >> "$GITHUB_OUTPUT"
@@ -60,6 +68,7 @@ fi
   echo ""
   echo "- Deploy Hosting: \`$deploy_hosting\`"
   echo "- Deploy Functions: \`$deploy_functions\`"
+  echo "- Force-confirm Functions policy change: \`$force_functions\`"
   echo "- Deploy security rules: \`$deploy_rules\`"
   echo "- Build site assets: \`$deploy_site_build\`"
   echo ""
