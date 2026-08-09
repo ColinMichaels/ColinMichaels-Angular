@@ -3,6 +3,7 @@ export interface DailyDiscoveryProgress {
   longestStreak: number;
   totalCompleted: number;
   lastCompletedDate: string | null;
+  completedChallengeIds: readonly string[];
 }
 
 export interface DailyDiscoveryChallenge {
@@ -11,6 +12,10 @@ export interface DailyDiscoveryChallenge {
   question: string;
   points: number;
   completedToday: boolean;
+  challengeNumber: number;
+  totalQuestions: number;
+  completedCount: number;
+  dailyComplete: boolean;
   progress: DailyDiscoveryProgress | null;
 }
 
@@ -18,6 +23,7 @@ export interface DailyDiscoveryAnswerRequest {
   challengeId: string;
   dateKey: string;
   answer: string;
+  completedChallengeIds: readonly string[];
 }
 
 export interface DailyDiscoverySource {
@@ -33,4 +39,7 @@ export interface DailyDiscoveryAnswerResult {
   points?: number;
   total?: number | null;
   progress?: DailyDiscoveryProgress | null;
+  totalQuestions?: number;
+  completedCount?: number;
+  dailyComplete?: boolean;
 }

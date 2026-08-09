@@ -15,22 +15,23 @@ interface FirebaseEnvironmentBadgeViewModel {
 export function createFirebaseEnvironmentBadge(
   emulators: FirebaseServiceEmulatorConfig | undefined
 ): FirebaseEnvironmentBadgeViewModel {
+  const usesAuthEmulator = Boolean(emulators?.auth);
   const usesFirestoreEmulator = Boolean(emulators?.firestore);
   const usesFunctionsEmulator = Boolean(emulators?.functions);
 
-  if (usesFirestoreEmulator && usesFunctionsEmulator) {
+  if (usesAuthEmulator && usesFirestoreEmulator && usesFunctionsEmulator) {
     return {
       description: 'Local emulator data is active.',
-      detail: `Firestore ${emulators?.firestore?.host}:${emulators?.firestore?.port} / Functions ${emulators?.functions?.host}:${emulators?.functions?.port}`,
+      detail: `Auth ${emulators?.auth?.host}:${emulators?.auth?.port} / Firestore ${emulators?.firestore?.host}:${emulators?.firestore?.port} / Functions ${emulators?.functions?.host}:${emulators?.functions?.port}`,
       label: 'Emulator Data',
       mode: 'emulator',
     };
   }
 
-  if (usesFirestoreEmulator || usesFunctionsEmulator) {
+  if (usesAuthEmulator || usesFirestoreEmulator || usesFunctionsEmulator) {
     return {
-      description: 'Firestore and Functions are split between local and live services.',
-      detail: `Firestore ${usesFirestoreEmulator ? 'emulator' : 'live'} / Functions ${usesFunctionsEmulator ? 'emulator' : 'live'}`,
+      description: 'Firebase services are split between local and live environments.',
+      detail: `Auth ${usesAuthEmulator ? 'emulator' : 'live'} / Firestore ${usesFirestoreEmulator ? 'emulator' : 'live'} / Functions ${usesFunctionsEmulator ? 'emulator' : 'live'}`,
       label: 'Mixed Firebase',
       mode: 'mixed',
     };
@@ -38,7 +39,7 @@ export function createFirebaseEnvironmentBadge(
 
   return {
     description: 'Live Firebase data is active.',
-    detail: 'Firestore live / Functions live',
+    detail: 'Auth live / Firestore live / Functions live',
     label: 'Live Firebase',
     mode: 'live',
   };

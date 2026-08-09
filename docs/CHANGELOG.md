@@ -1,5 +1,8 @@
 # Changelog
 
+- Removed the redundant Today at ColinMichaels.com and date block from the Daily Discovery rail so the prompt receives the full leading width and compact layouts use less vertical space.
+- Added a fully isolated Auth emulator and repeatable local reader fixture so signed-in Daily Discovery points and streaks can be tested without production credentials or data.
+- Expanded Daily Discovery to ten daily interactions generated on demand from searchable published-post titles without an AI provider, added private transactional question-set storage, sequential guest and account progress, per-question five-point awards up to 50 points daily, a next-question flow, responsive progress feedback, backend-only Rules coverage, and migration/deployment documentation.
 - Fixed homepage featured-post artwork framing so embedded labels remain visible in compact desktop crops while tablet and mobile layouts preserve the full 16:9 image.
 - Added a guest-accessible Daily Discovery rail to the homepage hero with seven Eastern-time rotating questions, reuse of the single header search, inline answer checking, device-local guest completion, signed-in five-point awards and streaks, Profile summaries, server-private accepted answers, idempotent reward events, responsive states, and deployment/rollback documentation.
 - Added an explicit manual-production `force_functions` confirmation that permits Firebase `--force` only for reviewed Functions policy changes while keeping automatic push, Hosting, and Rules deployments on their existing non-forced safety path.

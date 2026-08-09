@@ -103,13 +103,22 @@ import {
 } from './public-submission-email';
 import {isQualifiedPostReadProgress} from './post-reading';
 import {
+  DAILY_DISCOVERY_CHALLENGES,
   DAILY_DISCOVERY_POINTS,
+  DailyDiscoveryChallengeDefinition,
   DailyDiscoveryProgress,
-  getDailyDiscoveryChallenge as selectDailyDiscoveryChallenge,
+  getEffectiveDailyDiscoveryCompletedChallengeIds,
   getDailyDiscoveryDateKey,
   getNextDailyDiscoveryProgress,
   isDailyDiscoveryAnswerCorrect,
+  selectNextDailyDiscoveryChallenge,
 } from './daily-discovery';
+import {
+  DAILY_DISCOVERY_GENERATION_VERSION,
+  DailyDiscoveryGenerationSource,
+  generateDailyDiscoveryQuestions,
+  parseStoredDailyDiscoveryQuestionSet,
+} from './daily-discovery-generation';
 
 export {
   beginSocialConnection,
@@ -150,6 +159,7 @@ const USER_ROLE_MUTATION_LOCKS_COLLECTION = 'userRoleMutationLocks';
 const POST_COMMENTS_COLLECTION = 'postComments';
 const POST_POLLS_COLLECTION = 'postPolls';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
+const DAILY_DISCOVERY_QUESTION_SETS_COLLECTION = 'dailyDiscoveryQuestionSets';
 const SHARE_LINKS_COLLECTION = 'shareLinks';
 const SHARE_LANDING_EVENTS_COLLECTION = 'shareLandingEvents';
 const PUSH_SUBSCRIPTIONS_COLLECTION = 'pushSubscriptions';
@@ -2417,8 +2427,9 @@ export const getDailyDiscoveryChallenge = onCall(
     invoker: 'public',
   },
   async request => {
+    const data = parseDailyDiscoveryChallengeRequest(request.data);
     const dateKey = getDailyDiscoveryDateKey();
-    const challenge = selectDailyDiscoveryChallenge(dateKey);
+    const challenges = await getOrCreateDailyDiscoveryQuestionSet(dateKey);
     let progress: DailyDiscoveryProgress | null = null;
 
     if (request.auth) {
@@ -2426,12 +2437,21 @@ export const getDailyDiscoveryChallenge = onCall(
       progress = getDailyDiscoveryProgress(account.dailyDiscovery);
     }
 
+    const completedChallengeIds = progress
+      ? getEffectiveDailyDiscoveryCompletedChallengeIds(progress, dateKey, challenges)
+      : data.completedChallengeIds;
+    const selection = selectNextDailyDiscoveryChallenge(challenges, completedChallengeIds);
+
     return {
-      id: challenge.id,
+      id: selection.challenge.id,
       dateKey,
-      question: challenge.question,
+      question: selection.challenge.question,
       points: DAILY_DISCOVERY_POINTS,
-      completedToday: progress?.lastCompletedDate === dateKey,
+      completedToday: selection.dailyComplete,
+      challengeNumber: selection.challengeNumber,
+      totalQuestions: selection.totalQuestions,
+      completedCount: selection.completedCount,
+      dailyComplete: selection.dailyComplete,
       progress,
     };
   }
@@ -2448,16 +2468,22 @@ export const submitDailyDiscoveryAnswer = onCall(
   async request => {
     const data = parseDailyDiscoveryAnswerRequest(request.data);
     const currentDateKey = getDailyDiscoveryDateKey();
-    const challenge = selectDailyDiscoveryChallenge(currentDateKey);
+    const challenges = await getOrCreateDailyDiscoveryQuestionSet(currentDateKey);
+    const challenge = challenges.find(candidate => candidate.id === data.challengeId);
 
-    if (data.dateKey !== currentDateKey || data.challengeId !== challenge.id) {
+    if (data.dateKey !== currentDateKey || !challenge) {
       throw new HttpsError('failed-precondition', 'This Daily Discovery has expired. Load today\'s question and try again.');
     }
 
     if (!isDailyDiscoveryAnswerCorrect(challenge, data.answer)) {
       return {
         correct: false,
-        message: 'Not quite. Search the post again and look for the specific rule or phrase.',
+        message: 'Not quite. Search the blog and compare the complete post title.',
+        totalQuestions: challenges.length,
+        completedCount: new Set(
+          data.completedChallengeIds.filter(id => challenges.some(candidate => candidate.id === id))
+        ).size,
+        dailyComplete: false,
       };
     }
 
@@ -2473,12 +2499,20 @@ export const submitDailyDiscoveryAnswer = onCall(
     const auth = request.auth;
 
     if (!auth) {
+      const guestSelection = selectNextDailyDiscoveryChallenge(
+        challenges,
+        [...data.completedChallengeIds, challenge.id]
+      );
+
       return {
         ...solvedResult,
         awarded: false,
         points: 0,
         total: null,
         progress: null,
+        totalQuestions: guestSelection.totalQuestions,
+        completedCount: guestSelection.completedCount,
+        dailyComplete: guestSelection.dailyComplete,
       };
     }
 
@@ -2486,8 +2520,8 @@ export const submitDailyDiscoveryAnswer = onCall(
 
     const firestore = getFirestore();
     const userRef = firestore.collection(USERS_COLLECTION).doc(auth.uid);
-    // One deterministic event per user and Eastern date is the retry/device idempotency boundary.
-    const eventId = createPointEventId('daily_discovery', auth.uid, currentDateKey);
+    // One deterministic event per user, Eastern date, and challenge is the retry/device idempotency boundary.
+    const eventId = createPointEventId('daily_discovery', auth.uid, `${currentDateKey}_${challenge.id}`);
     const eventRef = firestore.collection(USER_POINT_EVENTS_COLLECTION).doc(eventId);
     const now = new Date().toISOString();
 
@@ -2499,18 +2533,35 @@ export const submitDailyDiscoveryAnswer = onCall(
       const userData = userSnapshot.data() ?? {};
       const points = getUserAccountPoints(userData['points']);
       const currentProgress = getDailyDiscoveryProgress(userData['dailyDiscovery']);
+      const effectiveCompletedChallengeIds = getEffectiveDailyDiscoveryCompletedChallengeIds(
+        currentProgress,
+        currentDateKey,
+        challenges
+      );
+      const effectiveProgress = effectiveCompletedChallengeIds === currentProgress.completedChallengeIds
+        ? currentProgress
+        : {...currentProgress, completedChallengeIds: effectiveCompletedChallengeIds};
 
-      if (eventSnapshot.exists) {
+      if (eventSnapshot.exists || effectiveCompletedChallengeIds.includes(challenge.id)) {
+        const existingSelection = selectNextDailyDiscoveryChallenge(
+          challenges,
+          effectiveCompletedChallengeIds
+        );
+
         return {
           ...solvedResult,
           awarded: false,
           points: 0,
           total: points.total,
-          progress: currentProgress,
+          progress: effectiveProgress,
+          totalQuestions: existingSelection.totalQuestions,
+          completedCount: existingSelection.completedCount,
+          dailyComplete: existingSelection.dailyComplete,
         };
       }
 
-      const nextProgress = getNextDailyDiscoveryProgress(currentProgress, currentDateKey);
+      const nextProgress = getNextDailyDiscoveryProgress(effectiveProgress, currentDateKey, challenge.id);
+      const nextSelection = selectNextDailyDiscoveryChallenge(challenges, nextProgress.completedChallengeIds);
 
       transaction.set(eventRef, {
         id: eventId,
@@ -2539,10 +2590,116 @@ export const submitDailyDiscoveryAnswer = onCall(
         points: DAILY_DISCOVERY_POINTS,
         total: points.total + DAILY_DISCOVERY_POINTS,
         progress: nextProgress,
+        totalQuestions: nextSelection.totalQuestions,
+        completedCount: nextSelection.completedCount,
+        dailyComplete: nextSelection.dailyComplete,
       };
     });
   }
 );
+
+async function getOrCreateDailyDiscoveryQuestionSet(
+  dateKey: string
+): Promise<readonly DailyDiscoveryChallengeDefinition[]> {
+  const firestore = getFirestore();
+  const questionSetRef = firestore.collection(DAILY_DISCOVERY_QUESTION_SETS_COLLECTION).doc(dateKey);
+  const existingSnapshot = await questionSetRef.get();
+  const existingQuestions = existingSnapshot.exists
+    ? parseStoredDailyDiscoveryQuestionSet(existingSnapshot.data(), dateKey)
+    : null;
+
+  if (existingQuestions) {
+    return existingQuestions;
+  }
+
+  try {
+    const postsSnapshot = await firestore.collection(BLOG_POSTS_COLLECTION)
+      .where('status', '==', 'published')
+      .limit(250)
+      .get();
+    const sources = postsSnapshot.docs
+      .filter(postSnapshot => !isHiddenCatCornerPost(postSnapshot.data()))
+      .map(postSnapshot => {
+        const post = postSnapshot.data();
+
+        return {
+          id: postSnapshot.id,
+          slug: getTrimmedString(post['slug']),
+          title: getTrimmedString(post['title']),
+          publishedAt: getTrimmedString(post['publishedAt']) || getTrimmedString(post['updatedAt']),
+        } satisfies DailyDiscoveryGenerationSource;
+      });
+    const generatedQuestions = generateDailyDiscoveryQuestions(sources, dateKey);
+    const now = new Date().toISOString();
+
+    return await firestore.runTransaction(async transaction => {
+      const currentSnapshot = await transaction.get(questionSetRef);
+      const currentQuestions = currentSnapshot.exists
+        ? parseStoredDailyDiscoveryQuestionSet(currentSnapshot.data(), dateKey)
+        : null;
+
+      if (currentQuestions) {
+        return currentQuestions;
+      }
+
+      transaction.set(questionSetRef, {
+        dateKey,
+        status: 'ready',
+        generationVersion: DAILY_DISCOVERY_GENERATION_VERSION,
+        generatedAt: now,
+        generatedAtTimestamp: FieldValue.serverTimestamp(),
+        sourcePostIds: sources
+          .filter(source => generatedQuestions.some(question => question.sourceSlug === source.slug))
+          .map(source => source.id),
+        questions: generatedQuestions,
+      });
+
+      return generatedQuestions;
+    });
+  } catch (error) {
+    logger.error('Daily Discovery title-question generation failed; using the reviewed fallback set.', {
+      event: 'daily_discovery_generation_failed',
+      dateKey,
+      errorType: error instanceof Error ? error.name : 'unknown',
+      errorMessage: error instanceof Error ? error.message : 'Unknown Daily Discovery generation error.',
+    });
+
+    try {
+      const now = new Date().toISOString();
+
+      return await firestore.runTransaction(async transaction => {
+        const currentSnapshot = await transaction.get(questionSetRef);
+        const currentQuestions = currentSnapshot.exists
+          ? parseStoredDailyDiscoveryQuestionSet(currentSnapshot.data(), dateKey)
+          : null;
+
+        if (currentQuestions) {
+          return currentQuestions;
+        }
+
+        transaction.set(questionSetRef, {
+          dateKey,
+          status: 'ready',
+          generationVersion: DAILY_DISCOVERY_GENERATION_VERSION,
+          generationMode: 'reviewed-fallback',
+          generatedAt: now,
+          generatedAtTimestamp: FieldValue.serverTimestamp(),
+          sourcePostIds: [],
+          questions: DAILY_DISCOVERY_CHALLENGES,
+        });
+
+        return DAILY_DISCOVERY_CHALLENGES;
+      });
+    } catch (fallbackError) {
+      logger.warn('Daily Discovery fallback set could not be materialized.', {
+        event: 'daily_discovery_fallback_write_failed',
+        dateKey,
+        errorType: fallbackError instanceof Error ? fallbackError.name : 'unknown',
+      });
+      return DAILY_DISCOVERY_CHALLENGES;
+    }
+  }
+}
 
 export const recordPostShare = onCall(
   {
@@ -5588,12 +5745,16 @@ function getUserAccountPoints(value: unknown): UserAccountPoints {
 function getDailyDiscoveryProgress(value: unknown): DailyDiscoveryProgress {
   const record = isRecord(value) ? value : {};
   const lastCompletedDate = getTrimmedString(record['lastCompletedDate']);
+  const completedChallengeIds = [...new Set(getStringArrayValue(record['completedChallengeIds']))]
+    .filter(id => id.length <= 100)
+    .slice(0, 10);
 
   return {
     currentStreak: getNumberValue(record['currentStreak']),
     longestStreak: getNumberValue(record['longestStreak']),
     totalCompleted: getNumberValue(record['totalCompleted']),
     lastCompletedDate: /^\d{4}-\d{2}-\d{2}$/.test(lastCompletedDate) ? lastCompletedDate : null,
+    completedChallengeIds,
   };
 }
 
@@ -5621,10 +5782,19 @@ function toUserAccountDocument(uid: string, value: Record<string, unknown>, clai
   };
 }
 
+function parseDailyDiscoveryChallengeRequest(value: unknown): {
+  completedChallengeIds: readonly string[];
+} {
+  const record = isRecord(value) ? value : {};
+
+  return {completedChallengeIds: parseDailyDiscoveryCompletedChallengeIds(record['completedChallengeIds'])};
+}
+
 function parseDailyDiscoveryAnswerRequest(value: unknown): {
   challengeId: string;
   dateKey: string;
   answer: string;
+  completedChallengeIds: readonly string[];
 } {
   const record = requireRecord(value, 'Daily Discovery answer must be an object.');
   const challengeId = getTrimmedString(record['challengeId']);
@@ -5643,7 +5813,23 @@ function parseDailyDiscoveryAnswerRequest(value: unknown): {
     throw new HttpsError('invalid-argument', 'Enter an answer between 1 and 160 characters.');
   }
 
-  return {challengeId, dateKey, answer};
+  return {
+    challengeId,
+    dateKey,
+    answer,
+    completedChallengeIds: parseDailyDiscoveryCompletedChallengeIds(record['completedChallengeIds']),
+  };
+}
+
+function parseDailyDiscoveryCompletedChallengeIds(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value
+    .map(id => getTrimmedString(id))
+    .filter(id => id.length > 0 && id.length <= 100))]
+    .slice(0, 10);
 }
 
 function removeUndefinedValues(value: Record<string, unknown>): Record<string, unknown> {

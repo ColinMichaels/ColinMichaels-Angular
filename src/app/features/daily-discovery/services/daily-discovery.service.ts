@@ -14,12 +14,12 @@ import {
 export class DailyDiscoveryService {
   private readonly functions = inject(FIREBASE_FUNCTIONS, {optional: true});
 
-  async getChallenge(): Promise<DailyDiscoveryChallenge> {
-    const callable = httpsCallable<Record<string, never>, DailyDiscoveryChallenge>(
+  async getChallenge(completedChallengeIds: readonly string[] = []): Promise<DailyDiscoveryChallenge> {
+    const callable = httpsCallable<{completedChallengeIds: readonly string[]}, DailyDiscoveryChallenge>(
       this.getFunctions(),
       'getDailyDiscoveryChallenge'
     );
-    const result = await callable({});
+    const result = await callable({completedChallengeIds});
 
     return result.data;
   }

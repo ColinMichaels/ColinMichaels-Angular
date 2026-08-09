@@ -53,6 +53,7 @@ service cloud.firestore {
         || collectionId == 'postComments'
         || collectionId == 'postPolls'
         || collectionId == 'userPointEvents'
+        || collectionId == 'dailyDiscoveryQuestionSets'
         || collectionId == 'posts'
         || collectionId == 'postPreviews'
         || collectionId == 'postDrafts'

@@ -16,6 +16,15 @@ export interface DailyDiscoveryProgress {
   longestStreak: number;
   totalCompleted: number;
   lastCompletedDate: string | null;
+  completedChallengeIds: readonly string[];
+}
+
+export interface DailyDiscoveryChallengeSelection {
+  challenge: DailyDiscoveryChallengeDefinition;
+  challengeNumber: number;
+  totalQuestions: number;
+  completedCount: number;
+  dailyComplete: boolean;
 }
 
 export const DAILY_DISCOVERY_CHALLENGES: readonly DailyDiscoveryChallengeDefinition[] = [
@@ -119,6 +128,47 @@ export function isDailyDiscoveryAnswerCorrect(
     && challenge.acceptedAnswers.some(candidate => normalizeDailyDiscoveryAnswer(candidate) === normalizedAnswer);
 }
 
+export function selectNextDailyDiscoveryChallenge(
+  challenges: readonly DailyDiscoveryChallengeDefinition[],
+  completedChallengeIds: readonly string[]
+): DailyDiscoveryChallengeSelection {
+  if (challenges.length === 0) {
+    throw new Error('At least one Daily Discovery challenge is required.');
+  }
+
+  const validIds = new Set(challenges.map(challenge => challenge.id));
+  const completedIds = new Set(completedChallengeIds.filter(id => validIds.has(id)));
+  const nextIndex = challenges.findIndex(challenge => !completedIds.has(challenge.id));
+  const dailyComplete = nextIndex === -1;
+  const selectedIndex = dailyComplete ? challenges.length - 1 : nextIndex;
+
+  return {
+    challenge: challenges[selectedIndex],
+    challengeNumber: selectedIndex + 1,
+    totalQuestions: challenges.length,
+    completedCount: completedIds.size,
+    dailyComplete,
+  };
+}
+
+export function getEffectiveDailyDiscoveryCompletedChallengeIds(
+  progress: DailyDiscoveryProgress,
+  dateKey: string,
+  challenges: readonly DailyDiscoveryChallengeDefinition[]
+): readonly string[] {
+  if (progress.lastCompletedDate !== dateKey) {
+    return [];
+  }
+
+  if (progress.completedChallengeIds.length > 0) {
+    return progress.completedChallengeIds;
+  }
+
+  // A same-day completion from the original one-question release had no id list.
+  // Treat it as question one so an in-place rollout keeps the 50-point daily ceiling.
+  return challenges.length > 0 ? [challenges[0].id] : [];
+}
+
 export function normalizeDailyDiscoveryAnswer(value: string): string {
   return value
     .normalize('NFKD')
@@ -131,21 +181,32 @@ export function normalizeDailyDiscoveryAnswer(value: string): string {
 
 export function getNextDailyDiscoveryProgress(
   current: DailyDiscoveryProgress,
-  completedDate: string
+  completedDate: string,
+  challengeId: string
 ): DailyDiscoveryProgress {
-  if (current.lastCompletedDate === completedDate) {
+  if (
+    current.lastCompletedDate === completedDate
+    && current.completedChallengeIds.includes(challengeId)
+  ) {
     return current;
   }
 
-  const currentStreak = current.lastCompletedDate === getPreviousDateKey(completedDate)
-    ? current.currentStreak + 1
-    : 1;
+  const isSameDay = current.lastCompletedDate === completedDate;
+  const currentStreak = isSameDay
+    ? Math.max(1, current.currentStreak)
+    : current.lastCompletedDate === getPreviousDateKey(completedDate)
+      ? current.currentStreak + 1
+      : 1;
+  const completedChallengeIds = isSameDay
+    ? [...current.completedChallengeIds, challengeId]
+    : [challengeId];
 
   return {
     currentStreak,
     longestStreak: Math.max(current.longestStreak, currentStreak),
     totalCompleted: current.totalCompleted + 1,
     lastCompletedDate: completedDate,
+    completedChallengeIds,
   };
 }
 

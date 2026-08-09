@@ -54,6 +54,7 @@ describe('UserProfileComponent', () => {
       longestStreak: 1,
       totalCompleted: 1,
       lastCompletedDate: '2026-08-09',
+      completedChallengeIds: ['family-ai-voice-safe-word'],
     },
     createdAt: '2026-07-07T12:00:00.000Z',
     updatedAt: '2026-07-07T12:00:00.000Z',

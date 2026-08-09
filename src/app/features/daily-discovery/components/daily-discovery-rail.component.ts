@@ -21,15 +21,13 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       aria-labelledby="daily-discovery-heading"
     >
       <div class="daily-discovery-shell">
-        <div class="daily-discovery-kicker">
-          <span>Today at</span>
-          <strong>ColinMichaels.com</strong>
-        </div>
-
-        <p class="daily-discovery-date" aria-label="Today's date">{{ displayDate() }}</p>
-
         <div class="daily-discovery-prompt">
-          <p class="daily-discovery-label">Daily Discovery</p>
+          <p class="daily-discovery-label">
+            Daily Discovery
+            @if (challenge(); as dailyChallenge) {
+              <span>· {{ dailyChallenge.challengeNumber }} / {{ dailyChallenge.totalQuestions }}</span>
+            }
+          </p>
           @if (challenge(); as dailyChallenge) {
             <button
               type="button"
@@ -51,16 +49,22 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
         </div>
 
         <div class="daily-discovery-points">
-          @if (isCompleted()) {
-            <strong>Complete</strong>
+          @if (dailyComplete()) {
+            <strong>All {{ totalQuestions() }} complete</strong>
             @if (challenge()?.progress?.currentStreak; as streak) {
               <span>{{ streak }} day streak</span>
             } @else {
               <span>Come back tomorrow</span>
             }
+          } @else if (isCompleted()) {
+            <strong>{{ completedCount() }} / {{ totalQuestions() }} complete</strong>
+            <span>Next question ready</span>
           } @else {
             <strong>{{ challenge()?.points ?? 5 }} points</strong>
-            <span>{{ currentUser() ? 'Sign in streak active' : 'Sign in to earn' }}</span>
+            <span>
+              {{ completedCount() }} / {{ totalQuestions() }} complete ·
+              {{ currentUser() ? 'Streak active' : 'Sign in to earn' }}
+            </span>
           }
         </div>
 
@@ -101,8 +105,16 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
                   <p class="daily-discovery-account-note">
                     Solved on this device.
                     <a [routerLink]="['/', pathNames.OS_LOGIN]" [queryParams]="{redirectUrl: '/'}">Sign in</a>
-                    before tomorrow's challenge to earn points and build a streak.
+                    to earn points and build a streak across all of today's questions.
                   </p>
+                }
+                @if (!dailyComplete()) {
+                  <button type="button" class="daily-discovery-next" (click)="loadNextChallenge()">
+                    <span>Next question</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="m9 5 7 7-7 7"></path>
+                    </svg>
+                  </button>
                 }
               </div>
             </div>
@@ -111,7 +123,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
               <span class="daily-discovery-result-mark" aria-hidden="true">✓</span>
               <div>
                 <p class="daily-discovery-answer-label">Discovery complete</p>
-                <p class="daily-discovery-result-message">You've already solved today's question. A new one arrives tomorrow.</p>
+                <p class="daily-discovery-result-message">You've completed all {{ totalQuestions() }} of today's questions. A new set arrives tomorrow.</p>
               </div>
             </div>
           } @else {
@@ -188,14 +200,13 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     .daily-discovery-shell {
       display: grid;
-      grid-template-columns: minmax(8.7rem, 0.72fr) auto minmax(20rem, 2.25fr) minmax(7rem, 0.62fr) auto;
+      grid-template-columns: minmax(20rem, 2.25fr) minmax(7rem, 0.62fr) auto;
       gap: clamp(1rem, 2vw, 2.25rem);
       align-items: center;
       min-height: 7.25rem;
       padding-block: 1.1rem;
     }
 
-    .daily-discovery-kicker,
     .daily-discovery-points {
       display: grid;
       gap: 0.18rem;
@@ -203,7 +214,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       text-transform: uppercase;
     }
 
-    .daily-discovery-kicker span,
     .daily-discovery-points span {
       color: #94a3b8;
       font-size: 0.62rem;
@@ -211,25 +221,11 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       letter-spacing: 0.14em;
     }
 
-    .daily-discovery-kicker strong,
     .daily-discovery-points strong {
       color: #ecfeff;
       font-size: 0.72rem;
       font-weight: 850;
       letter-spacing: 0.08em;
-    }
-
-    .daily-discovery-date {
-      margin: 0;
-      border-inline: 1px solid rgba(148, 163, 184, 0.2);
-      padding-inline: clamp(0.8rem, 1.5vw, 1.5rem);
-      color: #67e8f9;
-      font-family: var(--font-accent);
-      font-size: 0.74rem;
-      font-weight: 850;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      white-space: nowrap;
     }
 
     .daily-discovery-prompt {
@@ -273,6 +269,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
     .daily-discovery-question:focus-visible,
     .daily-discovery-search:focus-visible,
     .daily-discovery-check:focus-visible,
+    .daily-discovery-next:focus-visible,
     .daily-discovery-dismiss:focus-visible,
     .daily-discovery-answer-field input:focus-visible {
       outline: 2px solid #67e8f9;
@@ -280,7 +277,8 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
     }
 
     .daily-discovery-question svg,
-    .daily-discovery-search svg {
+    .daily-discovery-search svg,
+    .daily-discovery-next svg {
       width: 1.15rem;
       height: 1.15rem;
       flex: 0 0 auto;
@@ -349,6 +347,10 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       background: #334155;
       color: #94a3b8;
       cursor: not-allowed;
+    }
+
+    .daily-discovery.is-answer-open > .daily-discovery-shell > .daily-discovery-search {
+      display: none;
     }
 
     .daily-discovery-answer-panel {
@@ -458,6 +460,33 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       line-height: 1.5;
     }
 
+    .daily-discovery-next {
+      display: inline-flex;
+      min-height: 2.5rem;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+      border: 1px solid #67e8f9;
+      background: transparent;
+      padding: 0.55rem 0.8rem;
+      color: #cffafe;
+      cursor: pointer;
+      font-family: var(--font-accent);
+      font-size: 0.68rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .daily-discovery-next:hover {
+      background: rgba(103, 232, 249, 0.12);
+    }
+
+    .daily-discovery-next svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
     .daily-discovery-result a,
     .daily-discovery-account-note a {
       color: #67e8f9;
@@ -473,16 +502,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     @media (max-width: 1040px) {
       .daily-discovery-shell {
-        grid-template-columns: auto minmax(0, 1fr) auto;
-      }
-
-      .daily-discovery-kicker {
-        display: none;
-      }
-
-      .daily-discovery-date {
-        border-left: 0;
-        padding-left: 0;
+        grid-template-columns: minmax(0, 1fr) auto;
       }
 
       .daily-discovery-points {
@@ -492,30 +512,14 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     @media (max-width: 720px) {
       .daily-discovery-shell {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: 1fr;
         gap: 0.7rem 1rem;
         padding-block: 0.9rem 1rem;
       }
 
-      .daily-discovery-date {
-        grid-row: 1;
-        align-self: start;
-        border-right: 0;
-        padding-right: 0;
-      }
-
-      .daily-discovery-prompt {
-        grid-column: 2;
-        grid-row: 1 / span 2;
-      }
-
       .daily-discovery-search {
-        grid-column: 1 / -1;
+        grid-column: 1;
         width: 100%;
-      }
-
-      .daily-discovery.is-answer-open > .daily-discovery-shell > .daily-discovery-search {
-        display: none;
       }
 
       .daily-discovery-answer-form {
@@ -540,7 +544,8 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
     @media (prefers-reduced-motion: reduce) {
       .daily-discovery-question svg,
       .daily-discovery-search,
-      .daily-discovery-check {
+      .daily-discovery-check,
+      .daily-discovery-next {
         transition: none;
       }
     }
@@ -562,19 +567,15 @@ export class DailyDiscoveryRailComponent {
   protected readonly submitting = signal(false);
   protected readonly currentUser = toSignal(this.authService.user$, {initialValue: null});
   protected readonly isCompleted = signal(false);
-  protected readonly displayDate = computed(() => {
-    const dateKey = this.challenge()?.dateKey;
-
-    if (!dateKey) {
-      return 'Today';
-    }
-
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC',
-    }).format(new Date(`${dateKey}T12:00:00.000Z`));
-  });
+  protected readonly completedCount = computed(() => (
+    this.answerResult()?.completedCount ?? this.challenge()?.completedCount ?? 0
+  ));
+  protected readonly totalQuestions = computed(() => (
+    this.answerResult()?.totalQuestions ?? this.challenge()?.totalQuestions ?? 10
+  ));
+  protected readonly dailyComplete = computed(() => (
+    this.answerResult()?.dailyComplete ?? this.challenge()?.dailyComplete ?? false
+  ));
 
   constructor() {
     void this.loadChallenge();
@@ -622,6 +623,7 @@ export class DailyDiscoveryRailComponent {
         challengeId: challenge.id,
         dateKey: challenge.dateKey,
         answer,
+        completedChallengeIds: this.localState.getCompletedChallengeIds(challenge.dateKey),
       });
 
       this.answerResult.set(result);
@@ -640,12 +642,29 @@ export class DailyDiscoveryRailComponent {
     }
   }
 
+  protected async loadNextChallenge(): Promise<void> {
+    this.answer.set('');
+    this.answerResult.set(null);
+    this.isCompleted.set(false);
+    await this.loadChallenge();
+    this.isExpanded.set(true);
+    queueMicrotask(() => this.answerInput()?.nativeElement.focus());
+  }
+
   private async loadChallenge(): Promise<void> {
+    this.loadError.set(false);
+
     try {
-      const challenge = await this.dailyDiscoveryService.getChallenge();
+      const challenge = await this.dailyDiscoveryService.getChallenge(
+        this.localState.getCompletedChallengeIdsForToday()
+      );
       this.challenge.set(challenge);
+      // Account progress is authoritative after sign-in; guest-only device history must not
+      // hide an unfinished account question when both states exist in the same browser.
       this.isCompleted.set(
-        challenge.completedToday || this.localState.hasCompleted(challenge.dateKey, challenge.id)
+        challenge.dailyComplete
+        || challenge.completedToday
+        || (challenge.progress === null && this.localState.hasCompleted(challenge.dateKey, challenge.id))
       );
     } catch {
       this.loadError.set(true);

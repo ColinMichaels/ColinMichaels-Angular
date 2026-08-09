@@ -31,6 +31,7 @@ export interface UserDailyDiscoveryProgress {
   longestStreak: number;
   totalCompleted: number;
   lastCompletedDate: string | null;
+  completedChallengeIds: readonly string[];
 }
 
 export type CommunicationPreferenceSource = 'signup-campaign' | 'profile';

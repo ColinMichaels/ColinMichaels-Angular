@@ -13,7 +13,7 @@ interface StoredDailyDiscoveryState {
 }
 
 const STORAGE_KEY = 'cm.daily-discovery.v1';
-const MAX_STORED_COMPLETIONS = 14;
+const MAX_STORED_COMPLETIONS = 140;
 
 @Injectable({
   providedIn: 'root',
@@ -25,6 +25,24 @@ export class DailyDiscoveryStateService {
     return this.readState().completions.some(completion => (
       completion.dateKey === dateKey && completion.challengeId === challengeId
     ));
+  }
+
+  getCompletedChallengeIds(dateKey: string): readonly string[] {
+    return this.readState().completions
+      .filter(completion => completion.dateKey === dateKey)
+      .map(completion => completion.challengeId);
+  }
+
+  getCompletedChallengeIdsForToday(date = new Date()): readonly string[] {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+
+    return this.getCompletedChallengeIds(`${values['year']}-${values['month']}-${values['day']}`);
   }
 
   markCompleted(dateKey: string, challengeId: string): void {

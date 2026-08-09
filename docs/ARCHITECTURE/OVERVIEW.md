@@ -36,7 +36,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 - Homepage CMS:
   protected `/admin/cms/homepage` controls for the public hero headline, summary, background slideshow, timing, and featured article selection through the Firestore `homepageSettings/home` document, with static fallback behavior preserved for anonymous visitors and missing config.
 - Daily Discovery:
-  a guest-accessible daily homepage question drawn from a reviewed seven-post catalog, attached to the hero as an inline rail and routed through the existing header search. Public callable Functions keep accepted answers private, while authenticated correct answers receive one idempotent five-point award per Eastern calendar day plus account streak progress; guest completion remains device-local. See `docs/ARCHITECTURE/DAILY_DISCOVERY.md`.
+  a guest-accessible set of up to ten daily homepage title-gap questions, attached to the hero as an inline rail and routed through the existing header search. The first request each Eastern date deterministically materializes one private set from published post titles without an AI provider or scheduled job. Public callable Functions keep accepted answers private, while authenticated correct answers receive an idempotent five-point award per challenge plus once-per-day streak progress; guest completion remains device-local. See `docs/ARCHITECTURE/DAILY_DISCOVERY.md`.
 - Screen saver overlay:
   lightweight app-shell launcher mounted outside the route frame and toggled with unmodified `S`. It dynamically loads
   the full media viewer on first activation, backed by the same published homepage hero slides plus an IndexedDB-backed
