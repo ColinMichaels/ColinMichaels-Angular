@@ -16,6 +16,11 @@ on:
         required: true
         type: boolean
         default: false
+      force_functions:
+        description: Confirm Firebase --force for an approved Functions policy change
+        required: true
+        type: boolean
+        default: false
       deploy_rules:
         description: Deploy Firestore, Realtime Database, and Storage rules
         required: true
@@ -35,6 +40,7 @@ jobs:
     outputs:
       deploy_hosting: ${{ steps.scope.outputs.deploy_hosting }}
       deploy_functions: ${{ steps.scope.outputs.deploy_functions }}
+      force_functions: ${{ steps.scope.outputs.force_functions }}
       deploy_rules: ${{ steps.scope.outputs.deploy_rules }}
       deploy_site_build: ${{ steps.scope.outputs.deploy_site_build }}
     steps:
@@ -50,6 +56,7 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           INPUT_DEPLOY_SITE: ${{ inputs.deploy_site || false }}
           INPUT_DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions || false }}
+          INPUT_FORCE_FUNCTIONS: ${{ inputs.force_functions || false }}
           INPUT_DEPLOY_RULES: ${{ inputs.deploy_rules || false }}
         run: .github/scripts/resolve-firebase-production-deploy-scope.sh
 
@@ -194,6 +201,7 @@ jobs:
       - name: Deploy Firebase Functions
         if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
         env:
+          FIREBASE_FUNCTIONS_FORCE: ${{ needs.plan_deploy.outputs.force_functions }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
         run: .github/scripts/deploy-firebase-target.sh functions functions
 
