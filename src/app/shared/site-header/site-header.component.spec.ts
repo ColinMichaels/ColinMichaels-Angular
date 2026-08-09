@@ -13,6 +13,7 @@ describe('SiteHeaderComponent', () => {
   let fixture: ComponentFixture<SiteHeaderComponent>;
   let nativeElement: HTMLElement;
   let openSearch: jasmine.Spy;
+  let openAndFocusSearch: jasmine.Spy;
   let closeSearch: jasmine.Spy;
   let getRoleAuthorization: jasmine.Spy;
 
@@ -32,11 +33,18 @@ describe('SiteHeaderComponent', () => {
       getRoleAuthorization,
     };
     const searchOpen = signal(false);
+    const focusRequest = signal(0);
     openSearch = jasmine.createSpy('openSearch').and.callFake(() => searchOpen.set(true));
+    openAndFocusSearch = jasmine.createSpy('openAndFocusSearch').and.callFake(() => {
+      searchOpen.set(true);
+      focusRequest.update(value => value + 1);
+    });
     closeSearch = jasmine.createSpy('closeSearch').and.callFake(() => searchOpen.set(false));
     const searchOverlayService = {
       isOpen: searchOpen.asReadonly(),
+      focusRequest: focusRequest.asReadonly(),
       open: openSearch,
+      openAndFocus: openAndFocusSearch,
       close: closeSearch,
     };
     const siteSearchService = {
@@ -86,6 +94,19 @@ describe('SiteHeaderComponent', () => {
     searchInput?.click();
 
     expect(openSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('focuses the existing header search when another page control requests search', async () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
+
+    menuButton?.focus();
+    openAndFocusSearch();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(document.activeElement).toBe(searchInput);
+    expect(nativeElement.querySelectorAll('input[type="search"]')).toHaveSize(1);
   });
 
   it('uses the header field as the only search input in the open results panel', async () => {

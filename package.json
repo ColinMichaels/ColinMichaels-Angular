@@ -21,7 +21,9 @@
     "test:media:phase7:emulator": "npm run build:functions && firebase emulators:exec --only firestore,storage \"node --test functions/test/blog-media-emulator.test.cjs\"",
     "lint": "ng lint",
     "serve:functions": "npm run build:functions && firebase emulators:start --only functions",
-    "serve:emulators": "npm run build:functions && firebase emulators:start --only functions,firestore,database,storage"
+    "serve:daily-discovery:local": "npm run build:functions && firebase emulators:start --only auth,functions,firestore",
+    "seed:daily-discovery:local": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=colinmichaels node functions/scripts/seed-daily-discovery-emulator.mjs",
+    "serve:emulators": "npm run build:functions && firebase emulators:start --only auth,functions,firestore,database,storage"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"

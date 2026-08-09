@@ -160,7 +160,7 @@ printf '\nYOUTUBE_API_KEY=your_youtube_data_api_key\n' >> functions/.secret.loca
 npm run serve:functions
 ```
 
-`npm start` uses `src/environments/environment.local.ts`, which points callable Functions to `127.0.0.1:5001`. Keep the Functions emulator running beside Angular during local development. If Angular calls `https://us-east1-colinmichaels.cloudfunctions.net/...` from `http://localhost:4200`, it is using deployed production Functions instead of the local emulator.
+`npm start` uses the ignored `src/environments/environment.local.ts`. For isolated signed-in testing, configure `firebaseEmulators` with Auth at `127.0.0.1:9099`, callable Functions at `127.0.0.1:5001`, and Firestore at `127.0.0.1:8080`, then keep those emulators running beside Angular. This prevents a production Auth session from reaching local Functions or Firestore with mismatched credentials. If Angular calls `https://us-east1-colinmichaels.cloudfunctions.net/...` from `http://localhost:4200`, it is using deployed production Functions instead of the local emulator.
 
 For local YouTube feed testing, do not run bare `firebase emulators:start`. That starts the Hosting emulator too, which triggers Firebase Hosting's Angular framework preview path. This app is on Angular 22, while that preview path currently reports support for Angular 16-19 and may shut down with only `Error: An unexpected error has occurred.` in `firebase-debug.log`.
 
@@ -170,6 +170,16 @@ Use one of these instead:
 npm run serve:functions
 npm run serve:emulators
 ```
+
+For the provider-free Daily Discovery flow, use the smaller isolated stack and fixture seed:
+
+```bash
+npm run serve:daily-discovery:local
+npm run seed:daily-discovery:local
+npm start
+```
+
+The seed script is loopback-guarded and creates only emulator data, including the documented local reader account in `docs/ARCHITECTURE/DAILY_DISCOVERY.md`.
 
 `getLatestYouTubeVideos` is a Firebase callable Function, so loading it directly in a browser sends `GET` and will log `Request has invalid method. GET`. Use the Angular app or the browser-test HTTP wrapper instead:
 

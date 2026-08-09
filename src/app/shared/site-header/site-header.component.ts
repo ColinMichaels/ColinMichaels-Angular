@@ -5,6 +5,7 @@ import {
   ElementRef,
   HostListener,
   ViewChild,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -218,6 +219,18 @@ export class SiteHeaderComponent {
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
   protected readonly searchQuery = signal('');
+  private lastFocusRequest = 0;
+  // A monotonic request can refocus the one shared search field even when it is already open.
+  private readonly externalSearchFocusEffect = effect(() => {
+    const request = this.searchOverlay.focusRequest();
+
+    if (request <= this.lastFocusRequest) {
+      return;
+    }
+
+    this.lastFocusRequest = request;
+    setTimeout(() => this.headerSearchInput?.nativeElement.focus(), 0);
+  });
 
   protected openSearch(): void {
     this.closeMenu();

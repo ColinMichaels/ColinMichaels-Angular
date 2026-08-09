@@ -19,6 +19,7 @@ import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
 import {TypewriterService} from '../game/services/typewriter.service';
 import {MainComponent} from './main.component';
 import {AuthService} from '../../services/auth.service';
+import {DailyDiscoveryService} from '../../features/daily-discovery/services/daily-discovery.service';
 
 const MOCK_FULL_POSTS: readonly BlogPost[] = [
   {
@@ -177,7 +178,23 @@ describe('MainComponent', () => {
     } satisfies Pick<HomepageHeroRepositoryService, 'settings'>;
     const authService = {
       isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(of(false)),
-    } satisfies Pick<AuthService, 'isAuthenticated'>;
+      user$: of(null),
+    } satisfies Pick<AuthService, 'isAuthenticated' | 'user$'>;
+    const dailyDiscoveryService = {
+      getChallenge: jasmine.createSpy('getChallenge').and.resolveTo({
+        id: 'family-ai-voice-safe-word',
+        dateKey: '2026-08-09',
+        question: 'What family rule can help stop an AI voice scam?',
+        points: 5,
+        completedToday: false,
+        challengeNumber: 1,
+        totalQuestions: 10,
+        completedCount: 0,
+        dailyComplete: false,
+        progress: null,
+      }),
+      submitAnswer: jasmine.createSpy('submitAnswer'),
+    } satisfies Pick<DailyDiscoveryService, 'getChallenge' | 'submitAnswer'>;
     const blogEngagementService = {
       recordSiteShare: jasmine.createSpy('recordSiteShare').and.resolveTo({awarded: false, points: 0, total: 0}),
     } satisfies Pick<BlogEngagementService, 'recordSiteShare'>;
@@ -198,6 +215,7 @@ describe('MainComponent', () => {
         {provide: BlogArticleLibraryService, useValue: {inProgress: signal([]).asReadonly()}},
         {provide: AuthService, useValue: authService},
         {provide: BlogEngagementService, useValue: blogEngagementService},
+        {provide: DailyDiscoveryService, useValue: dailyDiscoveryService},
         {provide: HomepageHeroRepositoryService, useValue: homepageHeroRepositoryService},
         {provide: RecommendedLinkRepositoryService, useValue: recommendedLinkRepositoryService},
         {provide: TypewriterService, useValue: typewriterService},
@@ -217,6 +235,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#about')).not.toBeNull();
     expect(element.querySelector('#home-article-hero')).not.toBeNull();
+    expect(element.querySelector('app-daily-discovery-rail')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
     expect(element.querySelector('#topic-guides')).not.toBeNull();
     expect(element.querySelector('#health-recovery')).not.toBeNull();
