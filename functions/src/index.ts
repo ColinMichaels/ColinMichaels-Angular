@@ -102,6 +102,14 @@ import {
   sendPublicSubmissionEmail,
 } from './public-submission-email';
 import {isQualifiedPostReadProgress} from './post-reading';
+import {
+  DAILY_DISCOVERY_POINTS,
+  DailyDiscoveryProgress,
+  getDailyDiscoveryChallenge as selectDailyDiscoveryChallenge,
+  getDailyDiscoveryDateKey,
+  getNextDailyDiscoveryProgress,
+  isDailyDiscoveryAnswerCorrect,
+} from './daily-discovery';
 
 export {
   beginSocialConnection,
@@ -1131,7 +1139,7 @@ interface AdminManagedUser {
 
 type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 type BlogCommentStatus = 'pending' | 'approved' | 'hidden' | 'deleted';
-type PointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved';
+type PointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved' | 'daily_discovery';
 type CommentModerationAction = 'approve' | 'hide' | 'restore' | 'delete';
 
 interface UserAccountPoints {
@@ -1139,6 +1147,7 @@ interface UserAccountPoints {
   postReads: number;
   shares: number;
   approvedComments: number;
+  dailyDiscoveries: number;
 }
 
 interface UserAccountDocument {
@@ -1151,6 +1160,7 @@ interface UserAccountDocument {
   roles: readonly string[];
   commentTrustStatus: UserCommentTrustStatus;
   points: UserAccountPoints;
+  dailyDiscovery?: DailyDiscoveryProgress;
   createdAt: string;
   updatedAt: string;
   lastSeenAt: string;
@@ -2394,6 +2404,142 @@ export const recordPostRead = onCall(
       counterField: 'postReads',
       postId: data.postId,
       postSlug: data.postSlug,
+    });
+  }
+);
+
+export const getDailyDiscoveryChallenge = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const dateKey = getDailyDiscoveryDateKey();
+    const challenge = selectDailyDiscoveryChallenge(dateKey);
+    let progress: DailyDiscoveryProgress | null = null;
+
+    if (request.auth) {
+      const account = await ensureUserAccountForAuth(request.auth);
+      progress = getDailyDiscoveryProgress(account.dailyDiscovery);
+    }
+
+    return {
+      id: challenge.id,
+      dateKey,
+      question: challenge.question,
+      points: DAILY_DISCOVERY_POINTS,
+      completedToday: progress?.lastCompletedDate === dateKey,
+      progress,
+    };
+  }
+);
+
+export const submitDailyDiscoveryAnswer = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const data = parseDailyDiscoveryAnswerRequest(request.data);
+    const currentDateKey = getDailyDiscoveryDateKey();
+    const challenge = selectDailyDiscoveryChallenge(currentDateKey);
+
+    if (data.dateKey !== currentDateKey || data.challengeId !== challenge.id) {
+      throw new HttpsError('failed-precondition', 'This Daily Discovery has expired. Load today\'s question and try again.');
+    }
+
+    if (!isDailyDiscoveryAnswerCorrect(challenge, data.answer)) {
+      return {
+        correct: false,
+        message: 'Not quite. Search the post again and look for the specific rule or phrase.',
+      };
+    }
+
+    const solvedResult = {
+      correct: true,
+      message: challenge.answerSummary,
+      source: {
+        slug: challenge.sourceSlug,
+        title: challenge.sourceTitle,
+      },
+    } as const;
+
+    const auth = request.auth;
+
+    if (!auth) {
+      return {
+        ...solvedResult,
+        awarded: false,
+        points: 0,
+        total: null,
+        progress: null,
+      };
+    }
+
+    await ensureUserAccountForAuth(auth);
+
+    const firestore = getFirestore();
+    const userRef = firestore.collection(USERS_COLLECTION).doc(auth.uid);
+    // One deterministic event per user and Eastern date is the retry/device idempotency boundary.
+    const eventId = createPointEventId('daily_discovery', auth.uid, currentDateKey);
+    const eventRef = firestore.collection(USER_POINT_EVENTS_COLLECTION).doc(eventId);
+    const now = new Date().toISOString();
+
+    return await firestore.runTransaction(async transaction => {
+      const [userSnapshot, eventSnapshot] = await Promise.all([
+        transaction.get(userRef),
+        transaction.get(eventRef),
+      ]);
+      const userData = userSnapshot.data() ?? {};
+      const points = getUserAccountPoints(userData['points']);
+      const currentProgress = getDailyDiscoveryProgress(userData['dailyDiscovery']);
+
+      if (eventSnapshot.exists) {
+        return {
+          ...solvedResult,
+          awarded: false,
+          points: 0,
+          total: points.total,
+          progress: currentProgress,
+        };
+      }
+
+      const nextProgress = getNextDailyDiscoveryProgress(currentProgress, currentDateKey);
+
+      transaction.set(eventRef, {
+        id: eventId,
+        uid: auth.uid,
+        type: 'daily_discovery',
+        points: DAILY_DISCOVERY_POINTS,
+        challengeId: challenge.id,
+        challengeDate: currentDateKey,
+        postSlug: challenge.sourceSlug,
+        createdAt: now,
+        createdAtTimestamp: FieldValue.serverTimestamp(),
+      });
+      transaction.set(userRef, {
+        uid: auth.uid,
+        points: {
+          total: FieldValue.increment(DAILY_DISCOVERY_POINTS),
+          dailyDiscoveries: FieldValue.increment(DAILY_DISCOVERY_POINTS),
+        },
+        dailyDiscovery: nextProgress,
+        updatedAt: now,
+      }, {merge: true});
+
+      return {
+        ...solvedResult,
+        awarded: true,
+        points: DAILY_DISCOVERY_POINTS,
+        total: points.total + DAILY_DISCOVERY_POINTS,
+        progress: nextProgress,
+      };
     });
   }
 );
@@ -5271,6 +5417,7 @@ async function upsertUserAccount(
     roles,
     commentTrustStatus,
     points: getUserAccountPoints(existing['points']),
+    dailyDiscovery: getDailyDiscoveryProgress(existing['dailyDiscovery']),
     createdAt: getTrimmedString(existing['createdAt']) || now,
     updatedAt: now,
     lastSeenAt: now,
@@ -5434,6 +5581,19 @@ function getUserAccountPoints(value: unknown): UserAccountPoints {
     postReads: getNumberValue(record['postReads']),
     shares: getNumberValue(record['shares']),
     approvedComments: getNumberValue(record['approvedComments']),
+    dailyDiscoveries: getNumberValue(record['dailyDiscoveries']),
+  };
+}
+
+function getDailyDiscoveryProgress(value: unknown): DailyDiscoveryProgress {
+  const record = isRecord(value) ? value : {};
+  const lastCompletedDate = getTrimmedString(record['lastCompletedDate']);
+
+  return {
+    currentStreak: getNumberValue(record['currentStreak']),
+    longestStreak: getNumberValue(record['longestStreak']),
+    totalCompleted: getNumberValue(record['totalCompleted']),
+    lastCompletedDate: /^\d{4}-\d{2}-\d{2}$/.test(lastCompletedDate) ? lastCompletedDate : null,
   };
 }
 
@@ -5454,10 +5614,36 @@ function toUserAccountDocument(uid: string, value: Record<string, unknown>, clai
     roles: getUserAccountRoles(claims),
     commentTrustStatus: getCommentTrustStatus(value['commentTrustStatus']),
     points: getUserAccountPoints(value['points']),
+    dailyDiscovery: getDailyDiscoveryProgress(value['dailyDiscovery']),
     createdAt: getTrimmedString(value['createdAt']) || now,
     updatedAt: getTrimmedString(value['updatedAt']) || now,
     lastSeenAt: getTrimmedString(value['lastSeenAt']) || now,
   };
+}
+
+function parseDailyDiscoveryAnswerRequest(value: unknown): {
+  challengeId: string;
+  dateKey: string;
+  answer: string;
+} {
+  const record = requireRecord(value, 'Daily Discovery answer must be an object.');
+  const challengeId = getTrimmedString(record['challengeId']);
+  const dateKey = getTrimmedString(record['dateKey']);
+  const answer = getTrimmedString(record['answer']);
+
+  if (!challengeId || challengeId.length > 100) {
+    throw new HttpsError('invalid-argument', 'A valid Daily Discovery challenge id is required.');
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new HttpsError('invalid-argument', 'A valid Daily Discovery date is required.');
+  }
+
+  if (!answer || answer.length > 160) {
+    throw new HttpsError('invalid-argument', 'Enter an answer between 1 and 160 characters.');
+  }
+
+  return {challengeId, dateKey, answer};
 }
 
 function removeUndefinedValues(value: Record<string, unknown>): Record<string, unknown> {

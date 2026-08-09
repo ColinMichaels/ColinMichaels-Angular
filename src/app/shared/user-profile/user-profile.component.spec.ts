@@ -47,6 +47,13 @@ describe('UserProfileComponent', () => {
       postReads: 0,
       shares: 0,
       approvedComments: 0,
+      dailyDiscoveries: 5,
+    },
+    dailyDiscovery: {
+      currentStreak: 1,
+      longestStreak: 1,
+      totalCompleted: 1,
+      lastCompletedDate: '2026-08-09',
     },
     createdAt: '2026-07-07T12:00:00.000Z',
     updatedAt: '2026-07-07T12:00:00.000Z',
@@ -210,6 +217,8 @@ describe('UserProfileComponent', () => {
     expect(textContent).toContain('App controls');
     expect(textContent).toContain('Share page');
     expect(textContent).toContain('Full screen');
+    expect(textContent).toContain('Daily Discovery');
+    expect(textContent).toContain('Discovery Streak');
   });
 
   it('renders the Cat Corner Addict role as a profile badge', () => {

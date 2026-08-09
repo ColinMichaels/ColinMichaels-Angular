@@ -139,6 +139,42 @@ test('public submission records are private and writable only by the backend', a
   await assertFails(getDoc(doc(editorDb, 'publicSubmissionRateLimits', 'limit')));
 });
 
+test('new user profiles accept legacy or zero Daily Discovery points but never client-awarded points', async () => {
+  const createUserProfile = (uid, points) => ({
+    uid,
+    email: `${uid}@example.com`,
+    displayName: 'Reader',
+    photoURL: null,
+    providerIds: ['password'],
+    emailVerified: false,
+    roles: [],
+    commentTrustStatus: 'new',
+    points,
+    createdAt: '2026-08-09T12:00:00.000Z',
+    updatedAt: '2026-08-09T12:00:00.000Z',
+    lastSeenAt: '2026-08-09T12:00:00.000Z',
+  });
+  const legacyPoints = {total: 0, postReads: 0, shares: 0, approvedComments: 0};
+
+  const legacyDb = testEnvironment.authenticatedContext('legacy-reader').firestore();
+  await assertSucceeds(setDoc(
+    doc(legacyDb, 'users', 'legacy-reader'),
+    createUserProfile('legacy-reader', legacyPoints)
+  ));
+
+  const zeroDailyDb = testEnvironment.authenticatedContext('zero-daily-reader').firestore();
+  await assertSucceeds(setDoc(
+    doc(zeroDailyDb, 'users', 'zero-daily-reader'),
+    createUserProfile('zero-daily-reader', {...legacyPoints, dailyDiscoveries: 0})
+  ));
+
+  const forgedDailyDb = testEnvironment.authenticatedContext('forged-daily-reader').firestore();
+  await assertFails(setDoc(
+    doc(forgedDailyDb, 'users', 'forged-daily-reader'),
+    createUserProfile('forged-daily-reader', {...legacyPoints, total: 5, dailyDiscoveries: 5})
+  ));
+});
+
 test('an editor can create only a supported image in their own staging path', async () => {
   const editorStorage = testEnvironment.authenticatedContext('editor-user', editorClaims).storage();
   const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);

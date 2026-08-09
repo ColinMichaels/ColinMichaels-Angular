@@ -24,6 +24,7 @@ import {getPublishedHomepageHeroSlides} from '../../features/homepage/utils/home
 import {selectHomepageHeroPosts} from '../../features/homepage/utils/homepage-post-selection.util';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
+import {DailyDiscoveryRailComponent} from '../../features/daily-discovery/components/daily-discovery-rail.component';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postImage, postMatchesHubTerms} from './home-blog-section.utils';
 
@@ -39,6 +40,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
     NgOptimizedImage,
     NgStyle,
     RouterLink,
+    DailyDiscoveryRailComponent,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,6 +108,8 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
             </a>
           </div>
         </div>
+
+        <app-daily-discovery-rail/>
 
         <div class="home-hero-post-column">
           <p class="home-hero-posts-label">Latest from the journey</p>
@@ -239,7 +243,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       position: relative;
       isolation: isolate;
       overflow: hidden;
-      min-height: clamp(40rem, 82svh, 52rem);
+      min-height: calc(100svh - var(--site-header-sticky-height));
       background: #020617;
       color: #f8fafc;
     }
@@ -295,17 +299,27 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       z-index: 3;
       display: grid;
       grid-template-columns: minmax(0, 0.92fr) minmax(35rem, 1.28fr);
-      gap: clamp(2rem, 4vw, 4.5rem);
+      grid-template-rows: minmax(0, 1fr) auto;
+      column-gap: clamp(2rem, 4vw, 4.5rem);
+      row-gap: 0;
       align-items: center;
       width: min(100%, 96rem);
-      min-height: clamp(40rem, 82svh, 52rem);
+      min-height: max(40rem, calc(100svh - var(--site-header-sticky-height)));
       margin-inline: auto;
-      padding: clamp(3rem, 6vw, 5.75rem) clamp(1rem, 4vw, 3rem) clamp(3rem, 5vw, 4.75rem);
+      padding: clamp(3rem, 6vw, 5.75rem) clamp(1rem, 4vw, 3rem) 0;
     }
 
     .home-hero-copy {
+      grid-column: 1;
+      grid-row: 1;
       max-width: 42rem;
       padding-top: clamp(1rem, 4vw, 3rem);
+    }
+
+    app-daily-discovery-rail {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      align-self: end;
     }
 
     .home-hero-title {
@@ -410,6 +424,8 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
     }
 
     .home-hero-post-column {
+      grid-column: 2;
+      grid-row: 1;
       min-width: 0;
     }
 
@@ -537,7 +553,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      height: clamp(15rem, 31svh, 19rem);
       margin-bottom: 1rem;
       overflow: hidden;
     }
@@ -547,7 +563,9 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
+      /* Keep headings baked into cover art visible when the desktop frame becomes short and wide. */
+      object-position: center top;
+      transform-origin: center top;
       filter: saturate(0.95) contrast(1.04) brightness(0.86);
       transition: filter 300ms ease,
       transform 300ms ease;
@@ -719,7 +737,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
     @media (max-width: 1180px) {
       .home-hero-shell {
         grid-template-columns: minmax(0, 0.9fr) minmax(30rem, 1.25fr);
-        gap: 1.75rem;
+        column-gap: 1.75rem;
       }
 
       .home-hero-post-excerpt {
@@ -735,7 +753,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 
       .home-hero-shell {
         display: block;
-        padding-block: 1rem 2rem;
+        padding-block: 1rem 0;
       }
 
       .home-hero-copy {
@@ -745,6 +763,7 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 
       .home-hero-post-column {
         margin-top: 3rem;
+        padding-bottom: 2rem;
       }
 
       .home-hero-posts-label {
@@ -759,6 +778,11 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
         padding: 0.25rem 0 0;
         scroll-snap-type: none;
         transform: none;
+      }
+
+      .home-hero-panel-thumbnail {
+        height: auto;
+        aspect-ratio: 16 / 9;
       }
 
       .home-hero-panel {

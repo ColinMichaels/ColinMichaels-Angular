@@ -16,13 +16,21 @@ export type UserRole =
 
 export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 
-export type UserPointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved';
+export type UserPointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved' | 'daily_discovery';
 
 export interface UserAccountPoints {
   total: number;
   postReads: number;
   shares: number;
   approvedComments: number;
+  dailyDiscoveries: number;
+}
+
+export interface UserDailyDiscoveryProgress {
+  currentStreak: number;
+  longestStreak: number;
+  totalCompleted: number;
+  lastCompletedDate: string | null;
 }
 
 export type CommunicationPreferenceSource = 'signup-campaign' | 'profile';
@@ -44,6 +52,7 @@ export interface UserAccountDocument {
   roles: readonly string[];
   commentTrustStatus: UserCommentTrustStatus;
   points: UserAccountPoints;
+  dailyDiscovery?: UserDailyDiscoveryProgress;
   communicationPreferences?: UserCommunicationPreferences;
   createdAt: string;
   updatedAt: string;
@@ -61,6 +70,8 @@ export interface UserPointEvent {
   shareId?: string;
   targetPath?: string;
   commentId?: string;
+  challengeId?: string;
+  challengeDate?: string;
   createdAt: string;
 }
 
