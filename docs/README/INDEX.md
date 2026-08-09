@@ -33,6 +33,7 @@ This folder is the entry point for project documentation.
 - [Social Preview and Share Attribution](../ARCHITECTURE/SOCIAL_PREVIEW_AND_SHARE_ATTRIBUTION.md)
 - [Mobile PWA Foundation](../ARCHITECTURE/MOBILE_PWA.md)
 - [Homepage Hero CMS](../ARCHITECTURE/HOMEPAGE_HERO_CMS.md)
+- [Daily Discovery](../ARCHITECTURE/DAILY_DISCOVERY.md)
 - [Topic Pages and Reusable Post Listing](../ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md)
 - [Authors and Bylines](../ARCHITECTURE/AUTHORS_AND_BYLINES.md)
 - [Cat Corner](../ARCHITECTURE/CAT_CORNER.md)

@@ -230,7 +230,7 @@ interface LinkedProviderView {
                   <dt class="text-zinc-500">Total</dt>
                   <dd class="mt-1 text-3xl font-semibold text-cyan-100">{{ accountDocument()?.points?.total ?? 0 }}</dd>
                 </div>
-                <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   <div>
                     <dt class="text-zinc-500">Reads</dt>
                     <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.postReads ?? 0 }}</dd>
@@ -242,6 +242,14 @@ interface LinkedProviderView {
                   <div>
                     <dt class="text-zinc-500">Approved Comments</dt>
                     <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.approvedComments ?? 0 }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-zinc-500">Daily Discovery</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.dailyDiscoveries ?? 0 }} points</dd>
+                  </div>
+                  <div>
+                    <dt class="text-zinc-500">Discovery Streak</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.dailyDiscovery?.currentStreak ?? 0 }} days</dd>
                   </div>
                 </div>
               </dl>
@@ -412,6 +420,8 @@ export class UserProfileComponent {
         return `Shared ColinMichaels.com${event.provider ? ` via ${event.provider}` : ''}`;
       case 'comment_approved':
         return `Approved comment${event.postSlug ? ` on /blog/${event.postSlug}` : ''}`;
+      case 'daily_discovery':
+        return `Solved Daily Discovery${event.challengeDate ? ` for ${event.challengeDate}` : ''}`;
       default:
         return 'Point activity';
     }

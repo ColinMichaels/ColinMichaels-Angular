@@ -53,6 +53,7 @@ service cloud.firestore {
         || collectionId == 'postComments'
         || collectionId == 'postPolls'
         || collectionId == 'userPointEvents'
+        || collectionId == 'dailyDiscoveryQuestionSets'
         || collectionId == 'posts'
         || collectionId == 'postPreviews'
         || collectionId == 'postDrafts'
@@ -71,11 +72,16 @@ service cloud.firestore {
 
     function hasZeroPoints(points) {
       return points is map
-        && points.keys().hasOnly(['total', 'postReads', 'shares', 'approvedComments'])
+        && points.keys().hasAll(['total', 'postReads', 'shares', 'approvedComments'])
+        && points.keys().hasOnly(['total', 'postReads', 'shares', 'approvedComments', 'dailyDiscoveries'])
         && points.total == 0
         && points.postReads == 0
         && points.shares == 0
-        && points.approvedComments == 0;
+        && points.approvedComments == 0
+        && (
+          !points.keys().hasAny(['dailyDiscoveries'])
+          || points.dailyDiscoveries == 0
+        );
     }
 
     function hasValidCommunicationPreferences(preferences) {
