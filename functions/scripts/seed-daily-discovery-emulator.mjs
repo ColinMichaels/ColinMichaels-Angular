@@ -115,21 +115,38 @@ const localReader = {
   displayName: 'Daily Discovery Local Reader',
 };
 
-try {
-  await auth.getUser(localReader.uid);
-  await auth.updateUser(localReader.uid, {
-    email: localReader.email,
-    password: localReader.password,
-    displayName: localReader.displayName,
-    emailVerified: true,
-  });
-} catch (error) {
-  if (error?.code !== 'auth/user-not-found') {
-    throw error;
-  }
+const localEditor = {
+  uid: 'local-daily-discovery-editor',
+  email: 'daily-discovery-editor@example.test',
+  password: 'daily-discovery-editor-local-only',
+  displayName: 'Daily Discovery Local Editor',
+};
 
-  await auth.createUser({...localReader, emailVerified: true});
+async function upsertLocalUser(user) {
+  try {
+    await auth.getUser(user.uid);
+    await auth.updateUser(user.uid, {
+      email: user.email,
+      password: user.password,
+      displayName: user.displayName,
+      emailVerified: true,
+    });
+  } catch (error) {
+    if (error?.code !== 'auth/user-not-found') {
+      throw error;
+    }
+
+    await auth.createUser({...user, emailVerified: true});
+  }
 }
+
+await upsertLocalUser(localReader);
+await upsertLocalUser(localEditor);
+await auth.setCustomUserClaims(localEditor.uid, {
+  contentEditor: true,
+  roles: {contentEditor: true},
+});
 
 console.log(`Seeded ${titles.length} local posts and reset the ${easternDate} Daily Discovery question set.`);
 console.log(`Local reader: ${localReader.email} / ${localReader.password}`);
+console.log(`Local CMS editor: ${localEditor.email} / ${localEditor.password}`);

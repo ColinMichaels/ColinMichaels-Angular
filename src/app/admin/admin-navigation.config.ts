@@ -3,6 +3,7 @@ import {
   faCalendarDays,
   faBookOpen,
   faComments,
+  faCircleQuestion,
   faGaugeHigh,
   faHouse,
   faImages,
@@ -119,6 +120,13 @@ export const ADMIN_NAVIGATION_GROUPS: readonly AdminNavigationGroup[] = [
         icon: faHouse,
         label: 'Homepage',
         route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_HOMEPAGE}`,
+      },
+      {
+        access: 'cms',
+        exact: false,
+        icon: faCircleQuestion,
+        label: 'Daily Discovery',
+        route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`,
       },
       {
         access: 'cms',

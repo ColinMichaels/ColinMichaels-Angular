@@ -9,6 +9,7 @@ export const PATH_NAMES = {
   ADMIN_CMS_AUTHORS: 'authors',
   ADMIN_MEDIA_LIBRARY: 'media-library',
   ADMIN_CMS_HOMEPAGE: 'homepage',
+  ADMIN_CMS_DAILY_DISCOVERY: 'daily-discovery',
   ADMIN_CMS_TOPICS: 'topics',
   ADMIN_CMS_RECOMMENDED_LINKS: 'recommended-links',
   ADMIN_SUBMISSIONS: 'submissions',

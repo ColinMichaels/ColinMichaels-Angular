@@ -54,6 +54,8 @@ service cloud.firestore {
         || collectionId == 'postPolls'
         || collectionId == 'userPointEvents'
         || collectionId == 'dailyDiscoveryQuestionSets'
+        || collectionId == 'dailyDiscoveryAdminReceipts'
+        || collectionId == 'dailyDiscoveryAdminAudit'
         || collectionId == 'posts'
         || collectionId == 'postPreviews'
         || collectionId == 'postDrafts'

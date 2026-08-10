@@ -2,6 +2,16 @@ export const DAILY_DISCOVERY_TIME_ZONE = 'America/New_York';
 export const DAILY_DISCOVERY_POINTS = 5;
 export const DAILY_DISCOVERY_LAUNCH_DATE = '2026-08-09';
 
+export interface DailyDiscoveryChoice {
+  id: string;
+  text: string;
+}
+
+export interface DailyDiscoverySourceArticle {
+  slug: string;
+  title: string;
+}
+
 export interface DailyDiscoveryChallengeDefinition {
   id: string;
   question: string;
@@ -9,6 +19,13 @@ export interface DailyDiscoveryChallengeDefinition {
   sourceTitle: string;
   acceptedAnswers: readonly string[];
   answerSummary: string;
+  interactionType?: 'multiple_choice';
+  questionType?: string;
+  difficulty?: 'easy' | 'medium' | 'challenge';
+  hint?: string;
+  choices?: readonly DailyDiscoveryChoice[];
+  estimatedSeconds?: number;
+  sourceArticles?: readonly DailyDiscoverySourceArticle[];
 }
 
 export interface DailyDiscoveryProgress {

@@ -1,3 +1,4 @@
+import {WritableSignal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {User} from 'firebase/auth';
@@ -5,6 +6,7 @@ import {BehaviorSubject} from 'rxjs';
 
 import {AuthService} from '../../../services/auth.service';
 import {SiteSearchOverlayService} from '../../search/services/site-search-overlay.service';
+import {DailyDiscoveryChallenge} from '../models/daily-discovery.model';
 import {DailyDiscoveryService} from '../services/daily-discovery.service';
 import {DailyDiscoveryStateService} from '../services/daily-discovery-state.service';
 import {DailyDiscoveryRailComponent} from './daily-discovery-rail.component';
@@ -149,6 +151,76 @@ describe('DailyDiscoveryRailComponent', () => {
     expect(markCompleted).not.toHaveBeenCalled();
     expect(element.textContent).toContain('Not quite. Search the post again.');
     expect(element.querySelector('#daily-discovery-answer')).not.toBeNull();
+  });
+
+  it('renders imported choices and a hint, then submits only the selected choice id', async () => {
+    const importedChallenge: DailyDiscoveryChallenge = {
+      id: '2026-08-09-q4',
+      dateKey: '2026-08-09',
+      question: 'What final responsibility do both comparison articles give the reader?',
+      points: 5,
+      interactionType: 'multiple_choice',
+      questionType: 'compare_articles',
+      difficulty: 'challenge',
+      hint: 'Compare the final workflow step in each article.',
+      choices: [
+        {id: 'a', text: 'Verify the details and make the final decision'},
+        {id: 'b', text: 'Let the AI place the order'},
+      ],
+      estimatedSeconds: 75,
+      completedToday: false,
+      challengeNumber: 4,
+      totalQuestions: 5,
+      completedCount: 3,
+      dailyComplete: false,
+      progress: null,
+    };
+    const componentState = fixture.componentInstance as unknown as {
+      challenge: WritableSignal<DailyDiscoveryChallenge | null>;
+    };
+    componentState.challenge.set(importedChallenge);
+    submitAnswer.and.resolveTo({
+      correct: true,
+      message: 'Both articles keep the final decision with the reader.',
+      source: {slug: 'first-source', title: 'First source'},
+      sources: [
+        {slug: 'first-source', title: 'First source'},
+        {slug: 'second-source', title: 'Second source'},
+      ],
+      awarded: false,
+      points: 0,
+      total: null,
+      progress: null,
+      totalQuestions: 5,
+      completedCount: 4,
+      dailyComplete: false,
+    });
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll<HTMLInputElement>('input[type="radio"]')).toHaveSize(2);
+    expect(element.querySelector('#daily-discovery-answer')).toBeNull();
+    expect(element.textContent).toContain('Need a hint?');
+    expect(element.textContent).toContain('Compare the final workflow step in each article.');
+
+    const choice = element.querySelector<HTMLInputElement>('input[type="radio"][value="a"]');
+    choice?.click();
+    fixture.detectChanges();
+    element.querySelector<HTMLFormElement>('.daily-discovery-answer-form')
+      ?.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(submitAnswer).toHaveBeenCalledWith({
+      challengeId: '2026-08-09-q4',
+      dateKey: '2026-08-09',
+      answer: 'a',
+      completedChallengeIds: [],
+    });
+    expect(element.textContent).toContain('First source');
+    expect(element.textContent).toContain('Second source');
   });
 
   it('shows the awarded points and streak benefit to a signed-in solver', async () => {

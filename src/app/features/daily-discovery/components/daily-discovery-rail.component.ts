@@ -1,4 +1,13 @@
-import {ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+  viewChild,
+  viewChildren,
+} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
@@ -90,8 +99,12 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
               <div>
                 <p class="daily-discovery-answer-label">Discovery complete</p>
                 <p class="daily-discovery-result-message">{{ answerResult()?.message }}</p>
-                @if (answerResult()?.source; as source) {
-                  <a [routerLink]="['/', pathNames.BLOG, source.slug]">Read {{ source.title }}</a>
+                @if (answerSources().length > 0) {
+                  <div class="daily-discovery-sources" aria-label="Source articles">
+                    @for (source of answerSources(); track source.slug) {
+                      <a [routerLink]="['/', pathNames.BLOG, source.slug]">Read {{ source.title }}</a>
+                    }
+                  </div>
                 }
                 @if (currentUser()) {
                   <p class="daily-discovery-account-note">
@@ -127,21 +140,55 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
               </div>
             </div>
           } @else {
-            <form class="daily-discovery-answer-form" (submit)="checkAnswer($event)">
-              <div class="daily-discovery-answer-field">
-                <label for="daily-discovery-answer">Your answer</label>
-                <input
-                  #answerInput
-                  id="daily-discovery-answer"
-                  type="text"
-                  maxlength="160"
-                  autocomplete="off"
-                  placeholder="Type the answer you found"
-                  [value]="answer()"
-                  [attr.aria-describedby]="answerResult() ? 'daily-discovery-feedback' : null"
-                  (input)="updateAnswer(answerInput.value)"
-                >
-              </div>
+            <form
+              class="daily-discovery-answer-form"
+              [class.has-choices]="dailyChallenge.interactionType === 'multiple_choice'"
+              (submit)="checkAnswer($event)"
+            >
+              @if (dailyChallenge.hint) {
+                <details class="daily-discovery-hint">
+                  <summary>Need a hint?</summary>
+                  <p>{{ dailyChallenge.hint }}</p>
+                </details>
+              }
+
+              @if (dailyChallenge.interactionType === 'multiple_choice' && dailyChallenge.choices?.length) {
+                <fieldset class="daily-discovery-answer-field is-choice-field">
+                  <legend>Choose one answer</legend>
+                  <div class="daily-discovery-choices">
+                    @for (choice of dailyChallenge.choices ?? []; track choice.id) {
+                      <label class="daily-discovery-choice">
+                        <input
+                          #answerChoice
+                          type="radio"
+                          name="daily-discovery-answer"
+                          [value]="choice.id"
+                          [checked]="answer() === choice.id"
+                          [attr.aria-describedby]="answerResult() ? 'daily-discovery-feedback' : null"
+                          (change)="updateAnswer(choice.id)"
+                        >
+                        <span class="daily-discovery-choice-id" aria-hidden="true">{{ choice.id }}</span>
+                        <span>{{ choice.text }}</span>
+                      </label>
+                    }
+                  </div>
+                </fieldset>
+              } @else {
+                <div class="daily-discovery-answer-field">
+                  <label for="daily-discovery-answer">Your answer</label>
+                  <input
+                    #answerInput
+                    id="daily-discovery-answer"
+                    type="text"
+                    maxlength="160"
+                    autocomplete="off"
+                    placeholder="Type the answer you found"
+                    [value]="answer()"
+                    [attr.aria-describedby]="answerResult() ? 'daily-discovery-feedback' : null"
+                    (input)="updateAnswer(answerInput.value)"
+                  >
+                </div>
+              }
 
               <div class="daily-discovery-answer-actions">
                 <button type="button" class="daily-discovery-search daily-discovery-search-secondary" (click)="searchTheBlog()">
@@ -271,7 +318,8 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
     .daily-discovery-check:focus-visible,
     .daily-discovery-next:focus-visible,
     .daily-discovery-dismiss:focus-visible,
-    .daily-discovery-answer-field input:focus-visible {
+    .daily-discovery-answer-field input:focus-visible,
+    .daily-discovery-hint summary:focus-visible {
       outline: 2px solid #67e8f9;
       outline-offset: 3px;
     }
@@ -376,7 +424,8 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       gap: 0.45rem;
     }
 
-    .daily-discovery-answer-field label {
+    .daily-discovery-answer-field > label,
+    .daily-discovery-answer-field legend {
       color: #67e8f9;
       font-family: var(--font-accent);
       font-size: 0.64rem;
@@ -385,7 +434,95 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       text-transform: uppercase;
     }
 
-    .daily-discovery-answer-field input {
+    .daily-discovery-answer-field.is-choice-field,
+    .daily-discovery-answer-form.has-choices .daily-discovery-answer-actions {
+      grid-column: 1 / -1;
+    }
+
+    .daily-discovery-answer-field.is-choice-field {
+      min-width: 0;
+      margin: 0;
+      border: 0;
+      padding: 0;
+    }
+
+    .daily-discovery-answer-field legend {
+      margin-bottom: 0.55rem;
+    }
+
+    .daily-discovery-choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+
+    .daily-discovery-choice {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
+      gap: 0.62rem;
+      align-items: center;
+      min-height: 3.25rem;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(15, 23, 42, 0.72);
+      padding: 0.68rem 0.78rem;
+      color: #e2e8f0;
+      cursor: pointer;
+      font-size: 0.82rem;
+      line-height: 1.38;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .daily-discovery-choice:hover,
+    .daily-discovery-choice:has(input:checked) {
+      border-color: #67e8f9;
+      background: rgba(8, 47, 73, 0.6);
+    }
+
+    .daily-discovery-choice input {
+      width: 1rem;
+      height: 1rem;
+      margin: 0;
+      accent-color: #22d3ee;
+    }
+
+    .daily-discovery-choice-id {
+      display: grid;
+      width: 1.55rem;
+      height: 1.55rem;
+      place-items: center;
+      border: 1px solid rgba(103, 232, 249, 0.44);
+      border-radius: 999px;
+      color: #a5f3fc;
+      font-family: var(--font-accent);
+      font-size: 0.66rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .daily-discovery-hint {
+      grid-column: 1 / -1;
+      color: #cbd5e1;
+      font-size: 0.8rem;
+    }
+
+    .daily-discovery-hint summary {
+      width: fit-content;
+      color: #67e8f9;
+      cursor: pointer;
+      font-family: var(--font-accent);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .daily-discovery-hint p {
+      margin: 0.45rem 0 0;
+      max-width: 70rem;
+      line-height: 1.45;
+    }
+
+    .daily-discovery-answer-field input[type="text"] {
       min-height: 2.8rem;
       width: 100%;
       border: 1px solid rgba(148, 163, 184, 0.42);
@@ -395,7 +532,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       color-scheme: dark;
     }
 
-    .daily-discovery-answer-field input::placeholder {
+    .daily-discovery-answer-field input[type="text"]::placeholder {
       color: #64748b;
     }
 
@@ -494,6 +631,13 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       text-underline-offset: 0.2rem;
     }
 
+    .daily-discovery-sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1rem;
+      margin-top: 0.35rem;
+    }
+
     .daily-discovery-account-note {
       margin-top: 0.45rem;
       color: #94a3b8;
@@ -539,6 +683,10 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       .daily-discovery-dismiss {
         grid-column: 1 / -1;
       }
+
+      .daily-discovery-choices {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -557,6 +705,7 @@ export class DailyDiscoveryRailComponent {
   private readonly searchOverlay = inject(SiteSearchOverlayService);
   private readonly authService = inject(AuthService);
   private readonly answerInput = viewChild<ElementRef<HTMLInputElement>>('answerInput');
+  private readonly answerChoices = viewChildren<ElementRef<HTMLInputElement>>('answerChoice');
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly challenge = signal<DailyDiscoveryChallenge | null>(null);
@@ -576,6 +725,11 @@ export class DailyDiscoveryRailComponent {
   protected readonly dailyComplete = computed(() => (
     this.answerResult()?.dailyComplete ?? this.challenge()?.dailyComplete ?? false
   ));
+  protected readonly answerSources = computed(() => {
+    const result = this.answerResult();
+
+    return result?.sources ?? (result?.source ? [result.source] : []);
+  });
 
   constructor() {
     void this.loadChallenge();
@@ -585,7 +739,7 @@ export class DailyDiscoveryRailComponent {
     this.isExpanded.update(value => !value);
 
     if (this.isExpanded() && !this.isCompleted()) {
-      queueMicrotask(() => this.answerInput()?.nativeElement.focus());
+      queueMicrotask(() => this.focusAnswerControl());
     }
   }
 
@@ -648,7 +802,12 @@ export class DailyDiscoveryRailComponent {
     this.isCompleted.set(false);
     await this.loadChallenge();
     this.isExpanded.set(true);
-    queueMicrotask(() => this.answerInput()?.nativeElement.focus());
+    queueMicrotask(() => this.focusAnswerControl());
+  }
+
+  private focusAnswerControl(): void {
+    this.answerChoices()[0]?.nativeElement.focus();
+    this.answerInput()?.nativeElement.focus();
   }
 
   private async loadChallenge(): Promise<void> {

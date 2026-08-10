@@ -69,6 +69,12 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'contact author inbox').map(entry => entry.id))
       .toEqual(['review-public-submissions']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'email alert smtp')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'daily discovery json upload').map(entry => entry.id))
+      .toContain('manage-daily-discovery-question-sets');
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'daily discovery')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'daily discovery')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'load existing validate draft').map(entry => entry.id))
+      .toContain('manage-daily-discovery-question-sets');
   });
 
   it('never returns a role-restricted match to an unauthorized user', () => {
@@ -79,5 +85,14 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'user roles')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'view as user')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'delete auth user')).toEqual([]);
+
+    const dailyDiscovery = ADMIN_GUIDE_ENTRIES.find(
+      entry => entry.id === 'manage-daily-discovery-question-sets'
+    );
+
+    expect(dailyDiscovery).toBeDefined();
+    expect(dailyDiscovery?.links[0].route).toBe('/admin/cms/daily-discovery');
+    expect(canViewAdminGuideEntry(dailyDiscovery!, ['contentEditor'])).toBeTrue();
+    expect(canViewAdminGuideEntry(dailyDiscovery!, ['viewer'])).toBeFalse();
   });
 });
