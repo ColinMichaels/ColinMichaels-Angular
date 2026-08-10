@@ -1,4 +1,5 @@
 import {BlogPost} from '../../../features/blog/models/blog-post.model';
+import {validateEditorDocumentForBlog} from './blog-editor-document-validation.util';
 import {createBlogBlocksFromEditorDocument, createEditorDocument} from './blog-editorjs-adapter';
 
 function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
@@ -131,6 +132,31 @@ describe('blog-editorjs-adapter', () => {
         height: 820,
       },
     });
+  });
+
+  it('does not emit an undefined height for legacy app embeds', () => {
+    const document = createEditorDocument(createPost({
+      blocks: [{
+        id: 'legacy-app-embed',
+        type: 'embed',
+        data: {
+          provider: 'app',
+          url: 'https://example.com/tool',
+          embedUrl: 'https://example.com/tool',
+          caption: 'Legacy app embed',
+        },
+      }],
+    }));
+
+    expect(document.blocks[0]).toEqual({
+      id: 'legacy-app-embed',
+      type: 'appEmbed',
+      data: {
+        url: 'https://example.com/tool',
+        caption: 'Legacy app embed',
+      },
+    });
+    expect(validateEditorDocumentForBlog(document).isValid).toBeTrue();
   });
 
   it('round-trips Suno editor blocks through canonical song and player URLs', () => {
@@ -370,8 +396,26 @@ describe('blog-editorjs-adapter', () => {
       }],
     });
 
+    const document = createEditorDocument(createPost({blocks}));
+
     expect(blocks[0].data.imageSize).toBeUndefined();
-    expect(createEditorDocument(createPost({blocks})).blocks[0].data['imageSize']).toBeUndefined();
+    expect(document.blocks[0]).toEqual({
+      id: 'legacy-image',
+      type: 'image',
+      data: {
+        file: {
+          url: '/assets/images/backgrounds/day.webp',
+          alt: '',
+        },
+        alt: '',
+        caption: '',
+        withBorder: false,
+        withBackground: false,
+        stretched: false,
+        imageLayout: 'contained',
+      },
+    });
+    expect(validateEditorDocumentForBlog(document).isValid).toBeTrue();
   });
 
   it('compatibility-protects an image block with an arbitrary size value', () => {

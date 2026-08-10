@@ -233,8 +233,8 @@ function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
           file: {
             url: block.data.url ?? '',
             alt: block.data.alt ?? '',
-            width: block.data.width,
-            height: block.data.height,
+            ...(block.data.width !== undefined ? {width: block.data.width} : {}),
+            ...(block.data.height !== undefined ? {height: block.data.height} : {}),
           },
           alt: block.data.alt ?? '',
           caption: block.data.caption ?? '',
@@ -265,7 +265,7 @@ function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
           data: {
             url: block.data.embedUrl ?? block.data.url ?? '',
             caption: block.data.caption ?? '',
-            height: block.data.height,
+            ...(block.data.height !== undefined ? {height: block.data.height} : {}),
           },
         };
       }
