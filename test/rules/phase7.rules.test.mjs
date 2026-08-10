@@ -114,6 +114,8 @@ test('the recursive admin fallback cannot bypass backend-only publishing records
     ['postComments', 'comment'],
     ['userPointEvents', 'point-event'],
     ['dailyDiscoveryQuestionSets', '2026-08-09'],
+    ['dailyDiscoveryAdminReceipts', 'receipt'],
+    ['dailyDiscoveryAdminAudit', 'audit-event'],
     ['publicSubmissions', 'submission'],
     ['publicSubmissionRateLimits', 'limit'],
   ]) {
@@ -122,6 +124,8 @@ test('the recursive admin fallback cannot bypass backend-only publishing records
   await assertFails(getDoc(doc(adminDb, 'shareLinks', 'opaque-share')));
   await assertFails(getDoc(doc(adminDb, 'postDrafts', 'owner-user', 'recoveries', 'draft-post')));
   await assertFails(getDoc(doc(adminDb, 'dailyDiscoveryQuestionSets', '2026-08-09')));
+  await assertFails(getDoc(doc(adminDb, 'dailyDiscoveryAdminReceipts', 'receipt')));
+  await assertFails(getDoc(doc(adminDb, 'dailyDiscoveryAdminAudit', 'audit-event')));
 });
 
 test('public submission records are private and writable only by the backend', async () => {

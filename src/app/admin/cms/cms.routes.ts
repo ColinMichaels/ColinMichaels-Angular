@@ -42,6 +42,11 @@ export const cmsRoutes: Routes = [
     loadComponent: () => import('./pages/homepage-hero/homepage-hero-manager.component').then(m => m.CmsHomepageHeroManagerComponent),
   },
   {
+    path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`,
+    data: {roles: CMS_ACCESS_ROLES},
+    loadComponent: () => import('./daily-discovery/daily-discovery-admin-page.component').then(m => m.DailyDiscoveryAdminPageComponent),
+  },
+  {
     path: `${PATH_NAMES.ADMIN_CMS}/${PATH_NAMES.ADMIN_CMS_TOPICS}`,
     data: {roles: CMS_ACCESS_ROLES},
     loadComponent: () => import('./pages/topic-manager/topic-manager.component').then(m => m.CmsTopicManagerComponent),

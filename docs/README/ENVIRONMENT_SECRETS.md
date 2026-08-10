@@ -179,7 +179,16 @@ npm run seed:daily-discovery:local
 npm start
 ```
 
-The seed script is loopback-guarded and creates only emulator data, including the documented local reader account in `docs/ARCHITECTURE/DAILY_DISCOVERY.md`.
+The seed script is loopback-guarded and creates only emulator data, including the documented local reader and CMS editor accounts in `docs/ARCHITECTURE/DAILY_DISCOVERY.md`.
+
+The manual Daily Discovery importer uses the Firebase Admin SDK, not a browser Firebase session. Local imports require only the loopback Firestore emulator. Production source validation and writes require Application Default Credentials on the operator machine:
+
+```bash
+gcloud auth application-default login
+npm run import:daily-discovery -- --file "/absolute/path/daily-discovery-YYYY-MM-DD.json" --project colinmichaels
+```
+
+The first command opens Google's authentication flow and stores credentials outside this repository. Never place a service-account JSON file, refresh token, or generated answer file in source control, an Angular asset directory, a Codex prompt, or the Auto Blog output JSON. If a service account is used instead, keep `GOOGLE_APPLICATION_CREDENTIALS` pointed at a protected file outside the repository and grant only the Firestore access required for this controlled import. See `docs/ARCHITECTURE/DAILY_DISCOVERY.md` for the required dry-run, approval, write, and project-confirmation flags.
 
 `getLatestYouTubeVideos` is a Firebase callable Function, so loading it directly in a browser sends `GET` and will log `Request has invalid method. GET`. Use the Angular app or the browser-test HTTP wrapper instead:
 

@@ -8,6 +8,7 @@ describe('getAdminPageTitle', () => {
     expect(getAdminPageTitle('/admin/cms/new')).toBe('New Post');
     expect(getAdminPageTitle('/admin/cms/example-post/edit')).toBe('Edit Post');
     expect(getAdminPageTitle('/admin/cms/calendar')).toBe('Calendar');
+    expect(getAdminPageTitle('/admin/cms/daily-discovery')).toBe('Daily Discovery');
     expect(getAdminPageTitle('/admin/cms/social-connections')).toBe('Social Connections');
     expect(getAdminPageTitle('/admin/cms/media-library')).toBe('Media Library');
     expect(getAdminPageTitle('/admin/submissions')).toBe('Submissions');

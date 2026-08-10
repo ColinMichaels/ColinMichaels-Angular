@@ -236,6 +236,37 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
   },
   {
     category: 'site-content',
+    id: 'manage-daily-discovery-question-sets',
+    keywords: [
+      'daily discovery',
+      'quiz',
+      'question set',
+      'json upload',
+      'replace',
+      'revision',
+      'live date',
+      'importer',
+      'manual review',
+    ],
+    links: [{label: 'Open Daily Discovery', route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`}],
+    roles: CMS_ACCESS_ROLES,
+    steps: [
+      {text: 'Generate and review a dated daily-discovery-YYYY-MM-DD.json file outside the website repository. Never copy an answer-bearing file into Angular assets or source control.'},
+      {
+        text: 'Open Daily Discovery, choose the Eastern date, then use Upload dated JSON or Paste JSON to load the complete generated file.',
+        link: {label: 'Open Daily Discovery', route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`}
+      },
+      {text: 'Review every prompt, hint, type, difficulty, estimated time, choice, correct answer, explanation, source slug, and evidence field. Imported multiple-choice sets can use Load existing into editor; automatic title-gap sets require a replacement JSON file.'},
+      {text: 'Choose Validate draft after every edit. The server verifies the complete schema and every source against currently published posts; saving remains locked until the current draft passes.'},
+      {text: 'Approve draft or manual-review input when prompted. Replacing today’s live set also requires explicit confirmation and the same ordered question IDs so reader progress and awards remain stable.'},
+      {text: 'Choose Create set or Replace revision only after validation. A stale revision is rejected instead of overwriting another change; successful saves create an audit event and idempotent retry receipt.'},
+      {text: 'Use Download edited JSON when the reviewed draft should also be retained outside the site, then open the public homepage to verify the saved interaction.'},
+    ],
+    summary: 'Upload, edit, validate, create, inspect, or safely replace private Daily Discovery question sets.',
+    title: 'Manage Daily Discovery question sets',
+  },
+  {
+    category: 'site-content',
     id: 'manage-topic-hubs',
     keywords: ['topics', 'topic hub', 'slug', 'search', 'homepage', 'seed defaults', 'publish'],
     links: [{label: 'Open Topics', route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_TOPICS}`}],

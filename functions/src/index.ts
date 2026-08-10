@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 
 import {getAuth, UserRecord} from 'firebase-admin/auth';
 import {initializeApp} from 'firebase-admin/app';
-import {FieldValue, getFirestore, Timestamp} from 'firebase-admin/firestore';
+import {DocumentSnapshot, FieldValue, getFirestore, Timestamp} from 'firebase-admin/firestore';
 import {getStorage} from 'firebase-admin/storage';
 import {logger} from 'firebase-functions';
 import {defineSecret, defineString} from 'firebase-functions/params';
@@ -114,11 +114,22 @@ import {
   selectNextDailyDiscoveryChallenge,
 } from './daily-discovery';
 import {
+  DAILY_DISCOVERY_IMPORTED_GENERATION_VERSION,
   DAILY_DISCOVERY_GENERATION_VERSION,
   DailyDiscoveryGenerationSource,
+  convertExternalDailyDiscoveryQuiz,
   generateDailyDiscoveryQuestions,
   parseStoredDailyDiscoveryQuestionSet,
 } from './daily-discovery-generation';
+import {
+  DailyDiscoveryAdminError,
+  createDailyDiscoveryAdminReceiptId,
+  getStoredDailyDiscoveryRevision,
+  parseAdminDailyDiscoveryDateRequest,
+  parseAdminDailyDiscoverySaveRequest,
+  planDailyDiscoveryAdminMutation,
+  requiresDailyDiscoveryDraftApproval,
+} from './daily-discovery-admin';
 
 export {
   beginSocialConnection,
@@ -160,6 +171,9 @@ const POST_COMMENTS_COLLECTION = 'postComments';
 const POST_POLLS_COLLECTION = 'postPolls';
 const USER_POINT_EVENTS_COLLECTION = 'userPointEvents';
 const DAILY_DISCOVERY_QUESTION_SETS_COLLECTION = 'dailyDiscoveryQuestionSets';
+const DAILY_DISCOVERY_ADMIN_RECEIPTS_COLLECTION = 'dailyDiscoveryAdminReceipts';
+const DAILY_DISCOVERY_ADMIN_AUDIT_COLLECTION = 'dailyDiscoveryAdminAudit';
+const DAILY_DISCOVERY_ADMIN_RECEIPT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SHARE_LINKS_COLLECTION = 'shareLinks';
 const SHARE_LANDING_EVENTS_COLLECTION = 'shareLandingEvents';
 const PUSH_SUBSCRIPTIONS_COLLECTION = 'pushSubscriptions';
@@ -2418,6 +2432,264 @@ export const recordPostRead = onCall(
   }
 );
 
+/**
+ * Returns the private canonical question set to an authenticated CMS editor.
+ * Accepted answers never pass through the public Daily Discovery callable.
+ */
+export const getAdminDailyDiscoveryQuestionSet = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    requireCmsAccess(request.auth);
+    const {dateKey} = parseAdminDailyDiscoveryDateRequestOrThrow(request.data);
+    const snapshot = await getFirestore()
+      .collection(DAILY_DISCOVERY_QUESTION_SETS_COLLECTION)
+      .doc(dateKey)
+      .get();
+
+    if (!snapshot.exists) {
+      return {dateKey, exists: false};
+    }
+
+    const stored = snapshot.data();
+    const questions = parseStoredDailyDiscoveryQuestionSet(stored, dateKey);
+
+    if (!questions) {
+      throw new HttpsError('data-loss', 'The stored Daily Discovery question set is invalid.');
+    }
+
+    let revision: number;
+
+    try {
+      revision = getStoredDailyDiscoveryRevision(stored);
+    } catch (error) {
+      throwDailyDiscoveryAdminHttpsError(error);
+    }
+
+    return {
+      dateKey,
+      exists: true,
+      revision,
+      status: 'ready',
+      generationVersion: getTrimmedString(stored?.['generationVersion']),
+      generationMode: getTrimmedString(stored?.['generationMode']),
+      generatedAt: getTrimmedString(stored?.['generatedAt']),
+      createdAt: getTrimmedString(stored?.['createdAt']) || getTrimmedString(stored?.['generatedAt']),
+      updatedAt: getTrimmedString(stored?.['updatedAt']) || getTrimmedString(stored?.['generatedAt']),
+      sourcePostIds: getStringArrayValue(stored?.['sourcePostIds']),
+      questions,
+    };
+  }
+);
+
+/**
+ * Validates generated JSON against published posts and creates or replaces one
+ * private dated set. Revision, live-date, audit, and retry protections make it
+ * safe for a future admin upload screen as well as direct callable clients.
+ */
+export const saveAdminDailyDiscoveryQuestionSet = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 60,
+    memory: '512MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireCmsAccess(request.auth);
+    const data = parseAdminDailyDiscoverySaveRequestOrThrow(request.data);
+    const publishedSources = await loadPublishedDailyDiscoverySources(500);
+    let converted: ReturnType<typeof convertExternalDailyDiscoveryQuiz>;
+
+    try {
+      converted = convertExternalDailyDiscoveryQuiz(data.quiz, publishedSources);
+    } catch (error) {
+      throw new HttpsError(
+        'invalid-argument',
+        error instanceof Error ? error.message : 'Daily Discovery JSON could not be validated.'
+      );
+    }
+
+    const requiresApproval = requiresDailyDiscoveryDraftApproval(
+      converted.inputStatus,
+      converted.uploadStatus
+    );
+
+    if (!data.dryRun && requiresApproval && !data.approveDraft) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Draft or manual-review Daily Discovery JSON requires explicit approval before it can be saved.'
+      );
+    }
+
+    const firestore = getFirestore();
+    const questionSetRef = firestore
+      .collection(DAILY_DISCOVERY_QUESTION_SETS_COLLECTION)
+      .doc(converted.dateKey);
+    const currentDateKey = getDailyDiscoveryDateKey();
+
+    if (data.dryRun) {
+      const existingSnapshot = await questionSetRef.get();
+      const existingState = getDailyDiscoveryExistingAdminState(existingSnapshot, converted.dateKey);
+      let plan;
+
+      try {
+        plan = planDailyDiscoveryAdminMutation({
+          operation: data.operation,
+          dateKey: converted.dateKey,
+          currentDateKey,
+          expectedRevision: data.expectedRevision,
+          existingRevision: existingState.revision,
+          existingQuestionIds: existingState.questionIds,
+          nextQuestionIds: converted.questions.map(question => question.id),
+          confirmLiveReplacement: data.confirmLiveReplacement,
+        });
+      } catch (error) {
+        throwDailyDiscoveryAdminHttpsError(error);
+      }
+
+      return {
+        dryRun: true,
+        dateKey: converted.dateKey,
+        operation: data.operation,
+        currentRevision: existingState.revision,
+        nextRevision: plan.nextRevision,
+        liveReplacement: plan.liveReplacement,
+        questionCount: converted.questions.length,
+        publishedSourceCount: converted.sourcePostIds.length,
+        requiresApproval,
+      };
+    }
+
+    const receiptId = createDailyDiscoveryAdminReceiptId(actorUid, data.requestId);
+    const receiptRef = firestore.collection(DAILY_DISCOVERY_ADMIN_RECEIPTS_COLLECTION).doc(receiptId);
+    const auditRef = firestore.collection(DAILY_DISCOVERY_ADMIN_AUDIT_COLLECTION).doc(receiptId);
+    const now = new Date().toISOString();
+    const receiptExpiresAt = Timestamp.fromMillis(Date.now() + DAILY_DISCOVERY_ADMIN_RECEIPT_TTL_MS);
+
+    try {
+      return await firestore.runTransaction(async transaction => {
+        const [existingSnapshot, receiptSnapshot] = await Promise.all([
+          transaction.get(questionSetRef),
+          transaction.get(receiptRef),
+        ]);
+
+        if (receiptSnapshot.exists) {
+          const receipt = receiptSnapshot.data() ?? {};
+
+          if (
+            receipt['actorUid'] !== actorUid
+            || receipt['requestId'] !== data.requestId
+            || receipt['requestFingerprint'] !== data.requestFingerprint
+          ) {
+            throw new DailyDiscoveryAdminError(
+              'receipt-conflict',
+              'This Daily Discovery requestId was already used for a different save request.'
+            );
+          }
+
+          return {
+            ...parseDailyDiscoveryAdminReceiptResult(receipt['result']),
+            idempotent: true,
+          };
+        }
+
+        const existingState = getDailyDiscoveryExistingAdminState(existingSnapshot, converted.dateKey);
+        const plan = planDailyDiscoveryAdminMutation({
+          operation: data.operation,
+          dateKey: converted.dateKey,
+          currentDateKey,
+          expectedRevision: data.expectedRevision,
+          existingRevision: existingState.revision,
+          existingQuestionIds: existingState.questionIds,
+          nextQuestionIds: converted.questions.map(question => question.id),
+          confirmLiveReplacement: data.confirmLiveReplacement,
+        });
+        const existingDocument = existingSnapshot.data() ?? {};
+        const createdAt = getTrimmedString(existingDocument['createdAt'])
+          || getTrimmedString(existingDocument['generatedAt'])
+          || now;
+        const createdAtTimestamp = existingDocument['createdAtTimestamp']
+          ?? existingDocument['generatedAtTimestamp']
+          ?? FieldValue.serverTimestamp();
+        const result = {
+          dryRun: false,
+          dateKey: converted.dateKey,
+          operation: data.operation,
+          revision: plan.nextRevision,
+          liveReplacement: plan.liveReplacement,
+          questionCount: converted.questions.length,
+          publishedSourceCount: converted.sourcePostIds.length,
+          updatedAt: now,
+        } as const;
+
+        transaction.set(questionSetRef, {
+          dateKey: converted.dateKey,
+          status: 'ready',
+          revision: plan.nextRevision,
+          generationVersion: DAILY_DISCOVERY_IMPORTED_GENERATION_VERSION,
+          generationMode: 'admin-cms-json-import',
+          generatedAt: now,
+          generatedAtTimestamp: FieldValue.serverTimestamp(),
+          createdAt,
+          createdAtTimestamp,
+          updatedAt: now,
+          updatedAtTimestamp: FieldValue.serverTimestamp(),
+          sourcePostIds: converted.sourcePostIds,
+          questions: converted.questions,
+          importMetadata: {
+            schema: data.quiz['schema'],
+            version: data.quiz['version'],
+            sourceGeneratedAt: converted.generatedAt,
+            inputStatus: converted.inputStatus,
+            uploadStatus: converted.uploadStatus,
+            approvedDraft: requiresApproval,
+            importedAt: now,
+            importedBy: actorUid,
+            qualityChecks: converted.qualityChecks,
+          },
+        });
+        transaction.create(auditRef, {
+          id: receiptId,
+          actorUid,
+          requestId: data.requestId,
+          operation: data.operation,
+          dateKey: converted.dateKey,
+          previousRevision: existingState.revision,
+          revision: plan.nextRevision,
+          liveReplacement: plan.liveReplacement,
+          previousQuestionCount: existingState.questionIds?.length ?? 0,
+          questionCount: converted.questions.length,
+          publishedSourceCount: converted.sourcePostIds.length,
+          occurredAt: now,
+          occurredAtTimestamp: FieldValue.serverTimestamp(),
+        });
+        transaction.create(receiptRef, {
+          id: receiptId,
+          actorUid,
+          requestId: data.requestId,
+          requestFingerprint: data.requestFingerprint,
+          operation: data.operation,
+          dateKey: converted.dateKey,
+          result,
+          createdAt: now,
+          createdAtTimestamp: FieldValue.serverTimestamp(),
+          expiresAt: receiptExpiresAt,
+        });
+
+        return {...result, idempotent: false};
+      });
+    } catch (error) {
+      throwDailyDiscoveryAdminHttpsError(error);
+    }
+  }
+);
+
 export const getDailyDiscoveryChallenge = onCall(
   {
     region: FUNCTION_REGION,
@@ -2447,6 +2719,14 @@ export const getDailyDiscoveryChallenge = onCall(
       dateKey,
       question: selection.challenge.question,
       points: DAILY_DISCOVERY_POINTS,
+      ...(selection.challenge.interactionType && selection.challenge.choices ? {
+        interactionType: selection.challenge.interactionType,
+        choices: selection.challenge.choices,
+      } : {}),
+      ...(selection.challenge.questionType ? {questionType: selection.challenge.questionType} : {}),
+      ...(selection.challenge.difficulty ? {difficulty: selection.challenge.difficulty} : {}),
+      ...(selection.challenge.hint ? {hint: selection.challenge.hint} : {}),
+      ...(selection.challenge.estimatedSeconds ? {estimatedSeconds: selection.challenge.estimatedSeconds} : {}),
       completedToday: selection.dailyComplete,
       challengeNumber: selection.challengeNumber,
       totalQuestions: selection.totalQuestions,
@@ -2478,7 +2758,9 @@ export const submitDailyDiscoveryAnswer = onCall(
     if (!isDailyDiscoveryAnswerCorrect(challenge, data.answer)) {
       return {
         correct: false,
-        message: 'Not quite. Search the blog and compare the complete post title.',
+        message: challenge.interactionType === 'multiple_choice'
+          ? 'Not quite. Use the hint, search the blog, and check the article evidence.'
+          : 'Not quite. Search the blog and compare the complete post title.',
         totalQuestions: challenges.length,
         completedCount: new Set(
           data.completedChallengeIds.filter(id => challenges.some(candidate => candidate.id === id))
@@ -2487,13 +2769,15 @@ export const submitDailyDiscoveryAnswer = onCall(
       };
     }
 
+    const sources = challenge.sourceArticles ?? [{
+      slug: challenge.sourceSlug,
+      title: challenge.sourceTitle,
+    }];
     const solvedResult = {
       correct: true,
       message: challenge.answerSummary,
-      source: {
-        slug: challenge.sourceSlug,
-        title: challenge.sourceTitle,
-      },
+      source: sources[0],
+      sources,
     } as const;
 
     const auth = request.auth;
@@ -2598,6 +2882,102 @@ export const submitDailyDiscoveryAnswer = onCall(
   }
 );
 
+async function loadPublishedDailyDiscoverySources(
+  limit: number
+): Promise<readonly DailyDiscoveryGenerationSource[]> {
+  const snapshot = await getFirestore().collection(BLOG_POSTS_COLLECTION)
+    .where('status', '==', 'published')
+    .limit(limit)
+    .get();
+
+  return snapshot.docs
+    .filter(postSnapshot => !isHiddenCatCornerPost(postSnapshot.data()))
+    .map(postSnapshot => {
+      const post = postSnapshot.data();
+
+      return {
+        id: postSnapshot.id,
+        slug: getTrimmedString(post['slug']),
+        title: getTrimmedString(post['title']),
+        publishedAt: getTrimmedString(post['publishedAt']) || getTrimmedString(post['updatedAt']),
+      } satisfies DailyDiscoveryGenerationSource;
+    })
+    .filter(source => source.slug.length > 0 && source.title.length > 0);
+}
+
+function getDailyDiscoveryExistingAdminState(
+  snapshot: DocumentSnapshot,
+  dateKey: string
+): { revision: number | null; questionIds: readonly string[] | null } {
+  if (!snapshot.exists) {
+    return {revision: null, questionIds: null};
+  }
+
+  const stored = snapshot.data();
+  const questions = parseStoredDailyDiscoveryQuestionSet(stored, dateKey);
+
+  if (!questions) {
+    throw new DailyDiscoveryAdminError(
+      'data-loss',
+      `Stored Daily Discovery question set ${dateKey} is invalid and was not overwritten.`
+    );
+  }
+
+  return {
+    revision: getStoredDailyDiscoveryRevision(stored),
+    questionIds: questions.map(question => question.id),
+  };
+}
+
+function parseDailyDiscoveryAdminReceiptResult(value: unknown): {
+  dryRun: false;
+  dateKey: string;
+  operation: 'create' | 'replace';
+  revision: number;
+  liveReplacement: boolean;
+  questionCount: number;
+  publishedSourceCount: number;
+  updatedAt: string;
+} {
+  if (!isRecord(value)) {
+    throw new DailyDiscoveryAdminError('data-loss', 'Stored Daily Discovery save receipt is invalid.');
+  }
+
+  const dateKey = getTrimmedString(value['dateKey']);
+  const operation = value['operation'];
+  const revision = value['revision'];
+  const questionCount = value['questionCount'];
+  const publishedSourceCount = value['publishedSourceCount'];
+  const updatedAt = getTrimmedString(value['updatedAt']);
+
+  if (
+    value['dryRun'] !== false
+    || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)
+    || (operation !== 'create' && operation !== 'replace')
+    || !Number.isInteger(revision)
+    || (revision as number) < 1
+    || typeof value['liveReplacement'] !== 'boolean'
+    || !Number.isInteger(questionCount)
+    || (questionCount as number) < 1
+    || !Number.isInteger(publishedSourceCount)
+    || (publishedSourceCount as number) < 0
+    || !updatedAt
+  ) {
+    throw new DailyDiscoveryAdminError('data-loss', 'Stored Daily Discovery save receipt is invalid.');
+  }
+
+  return {
+    dryRun: false,
+    dateKey,
+    operation,
+    revision: revision as number,
+    liveReplacement: value['liveReplacement'],
+    questionCount: questionCount as number,
+    publishedSourceCount: publishedSourceCount as number,
+    updatedAt,
+  };
+}
+
 async function getOrCreateDailyDiscoveryQuestionSet(
   dateKey: string
 ): Promise<readonly DailyDiscoveryChallengeDefinition[]> {
@@ -2613,22 +2993,7 @@ async function getOrCreateDailyDiscoveryQuestionSet(
   }
 
   try {
-    const postsSnapshot = await firestore.collection(BLOG_POSTS_COLLECTION)
-      .where('status', '==', 'published')
-      .limit(250)
-      .get();
-    const sources = postsSnapshot.docs
-      .filter(postSnapshot => !isHiddenCatCornerPost(postSnapshot.data()))
-      .map(postSnapshot => {
-        const post = postSnapshot.data();
-
-        return {
-          id: postSnapshot.id,
-          slug: getTrimmedString(post['slug']),
-          title: getTrimmedString(post['title']),
-          publishedAt: getTrimmedString(post['publishedAt']) || getTrimmedString(post['updatedAt']),
-        } satisfies DailyDiscoveryGenerationSource;
-      });
+    const sources = await loadPublishedDailyDiscoverySources(250);
     const generatedQuestions = generateDailyDiscoveryQuestions(sources, dateKey);
     const now = new Date().toISOString();
 
@@ -5106,6 +5471,50 @@ function requireCmsAccess(auth: AdminCallableAuth | undefined): string {
   }
 
   return auth.uid;
+}
+
+function parseAdminDailyDiscoveryDateRequestOrThrow(value: unknown) {
+  try {
+    return parseAdminDailyDiscoveryDateRequest(value);
+  } catch (error) {
+    throwDailyDiscoveryAdminHttpsError(error);
+  }
+}
+
+function parseAdminDailyDiscoverySaveRequestOrThrow(value: unknown) {
+  try {
+    return parseAdminDailyDiscoverySaveRequest(value);
+  } catch (error) {
+    throwDailyDiscoveryAdminHttpsError(error);
+  }
+}
+
+function throwDailyDiscoveryAdminHttpsError(error: unknown): never {
+  if (error instanceof HttpsError) {
+    throw error;
+  }
+
+  if (!(error instanceof DailyDiscoveryAdminError)) {
+    throw error;
+  }
+
+  switch (error.kind) {
+    case 'invalid-argument':
+      throw new HttpsError('invalid-argument', error.message, error.details);
+    case 'already-exists':
+    case 'receipt-conflict':
+      throw new HttpsError('already-exists', error.message, error.details);
+    case 'not-found':
+      throw new HttpsError('not-found', error.message, error.details);
+    case 'revision-conflict':
+      throw new HttpsError('aborted', error.message, error.details);
+    case 'past-date':
+    case 'live-confirmation-required':
+    case 'live-question-ids-changed':
+      throw new HttpsError('failed-precondition', error.message, error.details);
+    case 'data-loss':
+      throw new HttpsError('data-loss', error.message, error.details);
+  }
 }
 
 function getPublicSubmissionSmtpConfig(): PublicSubmissionSmtpConfig {
