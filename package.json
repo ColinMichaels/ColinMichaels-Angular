@@ -23,6 +23,8 @@
     "serve:functions": "npm run build:functions && firebase emulators:start --only functions",
     "serve:daily-discovery:local": "npm run build:functions && firebase emulators:start --only auth,functions,firestore",
     "seed:daily-discovery:local": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=colinmichaels node functions/scripts/seed-daily-discovery-emulator.mjs",
+    "import:daily-discovery": "npm run build:functions && node functions/scripts/import-daily-discovery-questions.mjs",
+    "import:daily-discovery:local": "npm run build:functions && FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=colinmichaels node functions/scripts/import-daily-discovery-questions.mjs",
     "serve:emulators": "npm run build:functions && firebase emulators:start --only auth,functions,firestore,database,storage"
   },
   "engines": {

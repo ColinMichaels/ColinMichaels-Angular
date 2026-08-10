@@ -29,9 +29,17 @@ Component inventory:
 
 The public `SiteHeaderComponent` is intentionally not rendered on `/admin/**`. Existing routes and guards remain unchanged; the shell only reorganizes navigation and page composition.
 
-The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk Editor, Social Connections, Authors, Homepage, Topics, Recommended Links, Media Library, Submissions, Comments, and Users. The checked-in `agents/skills/update-admin-guide` skill and its local `$update-admin-guide` installation define the required source, permission, test, documentation, and rendered-validation workflow after future blog or admin features change. See `docs/ARCHITECTURE/ADMIN_GUIDE.md` for the complete contract and rollback notes.
+The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk Editor, Social Connections, Authors, Homepage, Daily Discovery, Topics, Recommended Links, Media Library, Submissions, Comments, and Users. The checked-in `agents/skills/update-admin-guide` skill and its local `$update-admin-guide` installation define the required source, permission, test, documentation, and rendered-validation workflow after future blog or admin features change. See `docs/ARCHITECTURE/ADMIN_GUIDE.md` for the complete contract and rollback notes.
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, Recovery & Conflicts, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
+
+## Daily Discovery Administration
+
+Daily Discovery is available at `/admin/cms/daily-discovery` for CMS roles (`admin`, `cmsAdmin`, and `contentEditor`). The screen uses `getAdminDailyDiscoveryQuestionSet` to inspect one dated canonical set and `saveAdminDailyDiscoveryQuestionSet` to validate and create or replace a complete generated JSON set. Question sets remain private backend records because they include accepted answers.
+
+The page accepts a dated `.json` file, drag-and-drop, or pasted JSON; provides structured editing for prompts, hints, type, difficulty, estimated time, choices, correct answers, explanations, and source evidence; and can load an existing imported multiple-choice set back into the editor. Automatic title-gap sets remain view-only and require a complete generated JSON replacement. An edited draft can be downloaded without writing Firestore.
+
+The save boundary verifies every source against a published non-Cat-Corner post, requires explicit approval for draft/manual-review input, blocks past Eastern dates, uses optimistic revisions for replacements, and records an audit event plus an idempotent retry receipt. Replacing the current live date also requires explicit confirmation and the same ordered question IDs so completed reader progress and point awards stay stable. Firestore Rules deny direct browser access to the question, receipt, and audit collections. The guarded `npm run import:daily-discovery` command remains available as a create-only recovery/operator path. See `docs/ARCHITECTURE/DAILY_DISCOVERY.md` for the JSON contract, local testing, deployment, and rollback requirements.
 
 ## Authors And Post Assignment
 
