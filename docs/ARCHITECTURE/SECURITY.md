@@ -83,10 +83,11 @@ the embedded third-party player remains subject to Suno's availability, privacy/
 - The only local-storage value used by recovery is an opaque generated new-post ID. It grants no data access; Firestore owner checks remain authoritative.
 - New blog image uploads use an actor-owned create-only staging path. Storage Rules enforce role, owner UID, declared image type, and size before upload. The trusted finalizer then compares stored metadata with the byte signature, bounds decoded pixels, generates immutable AVIF/WebP/JPEG variants, records checksums and object identity, and removes staging/partial outputs on failure.
 - Final blog variants are public-read because published posts are public, but browser writes are denied. Existing legacy blog-media paths remain public-read/backend-write to avoid breaking stored posts. The recursive Storage fallback explicitly excludes the complete `cms` subtree, so overlapping matches cannot grant private staging reads or browser mutation of final and legacy blog media.
+- `storage.cors.json` permits browser `GET` and `HEAD` requests from any origin so the public custom domain, Firebase preview channels, and local development can fetch published media through the Firebase Storage download endpoint. The wildcard is limited to read-only methods: it does not grant object access, bypass Storage Rules, expose create-only staging objects, or permit browser writes. The production workflow applies this bucket-level configuration only when the policy or its deployment tooling changes, or when an operator explicitly selects the Storage CORS manual-deploy input.
 - Physical canonical deletion is restricted to `admin`, `cmsAdmin`, and `mediaManager`; `contentEditor` can upload/finalize actor-owned staging objects but cannot destroy canonical media. Deletion requires a reference-report dry run and explicit confirmation. The reference scan and transition to a ten-minute `deleting` lease occur in one transaction; referenced assets and partial deletion failures retain their durable records.
 
 Risk:
-other local/session storage rehydration paths still need schema guards. Public blog media is not confidential and must not contain private information.
+other local/session storage rehydration paths still need schema guards. Public blog media is not confidential and must not contain private information. CORS must never be treated as an authorization boundary; Storage Rules and trusted backend ownership remain authoritative.
 
 ## 8) CMS Canonical Write Concurrency
 

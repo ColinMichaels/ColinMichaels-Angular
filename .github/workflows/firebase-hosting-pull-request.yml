@@ -23,6 +23,7 @@ jobs:
       functions_changed: ${{ steps.scope.outputs.functions_changed }}
       seo_template_changed: ${{ steps.scope.outputs.seo_template_changed }}
       functions_deploy_needed: ${{ steps.scope.outputs.functions_deploy_needed }}
+      storage_cors_changed: ${{ steps.scope.outputs.storage_cors_changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,6 +36,22 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: .github/scripts/detect-firebase-deploy-scope.sh
+
+  validate_storage_cors:
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.storage_cors_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+
+      - name: Validate Firebase Storage browser CORS
+        run: node --test scripts/validate-firebase-storage-cors.test.mjs && node scripts/validate-firebase-storage-cors.mjs storage.cors.json
 
   validate_preview_environment:
     needs: detect_changes
@@ -181,7 +198,8 @@ jobs:
       - detect_changes
       - build_hosting_preview
       - build_functions_preview
-    if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting_preview.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.build_functions_preview.result == 'success') }}
+      - validate_storage_cors
+    if: ${{ always() && needs.detect_changes.outputs.hosting_changed == 'true' && needs.build_hosting_preview.result == 'success' && (needs.detect_changes.outputs.functions_deploy_needed != 'true' || needs.build_functions_preview.result == 'success') && (needs.detect_changes.outputs.storage_cors_changed != 'true' || needs.validate_storage_cors.result == 'success') }}
     runs-on: ubuntu-latest
     environment: preview
     steps:
