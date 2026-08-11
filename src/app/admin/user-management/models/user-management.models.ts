@@ -1,3 +1,5 @@
+import {UserAccountPoints} from '../../../shared/user-account/user-account.model';
+
 export interface AdminManagedUser {
   uid: string;
   email: string | null;
@@ -10,6 +12,7 @@ export interface AdminManagedUser {
   lastSignInAt: string | null;
   roles: readonly string[];
   customClaims: Record<string, unknown>;
+  points: UserAccountPoints;
 }
 
 export interface AdminUsersResponse {
@@ -46,4 +49,28 @@ export interface DeleteAdminUserRequest {
 export interface DeleteAdminUserResponse {
   uid: string;
   deletedAt: string;
+}
+
+export type AdminUserPointOperation = 'add' | 'remove' | 'set';
+
+export interface AdjustAdminUserPointsRequest {
+  uid: string;
+  operation: AdminUserPointOperation;
+  amount: number;
+  reason: string;
+}
+
+export interface AdminUserPointAdjustment {
+  id: string;
+  operation: AdminUserPointOperation;
+  delta: number;
+  previousTotal: number;
+  newTotal: number;
+  reason: string;
+  updatedAt: string;
+}
+
+export interface AdjustAdminUserPointsResponse {
+  user: AdminManagedUser;
+  adjustment: AdminUserPointAdjustment;
 }

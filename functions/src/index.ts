@@ -64,6 +64,12 @@ import {
   ownsUserRoleMutationLease,
   replaceManagedUserRoleClaims,
 } from './user-role-mutation';
+import {
+  AdminUserPointAdjustmentPlan,
+  AdminUserPointAdjustmentRequest,
+  parseAdminUserPointAdjustmentRequest,
+  planAdminUserPointAdjustment,
+} from './admin-user-points';
 import {reconcileSocialAnnouncementStatus} from './social-delivery';
 import {
   createPostPollResults,
@@ -1159,11 +1165,18 @@ interface AdminManagedUser {
   lastSignInAt: string | null;
   roles: readonly string[];
   customClaims: Record<string, unknown>;
+  points: UserAccountPoints;
 }
 
 type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 type BlogCommentStatus = 'pending' | 'approved' | 'hidden' | 'deleted';
-type PointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved' | 'daily_discovery';
+type PointEventType =
+  'post_read'
+  | 'post_share'
+  | 'site_share'
+  | 'comment_approved'
+  | 'daily_discovery'
+  | 'admin_adjustment';
 type CommentModerationAction = 'approve' | 'hide' | 'restore' | 'delete';
 
 interface UserAccountPoints {
@@ -1172,6 +1185,7 @@ interface UserAccountPoints {
   shares: number;
   approvedComments: number;
   dailyDiscoveries: number;
+  manualAdjustments: number;
 }
 
 interface UserAccountDocument {
@@ -1234,6 +1248,19 @@ interface SetAdminUserDisabledResponse {
 interface DeleteAdminUserResponse {
   uid: string;
   deletedAt: string;
+}
+
+interface AdjustAdminUserPointsResponse {
+  user: AdminManagedUser;
+  adjustment: {
+    id: string;
+    operation: 'add' | 'remove' | 'set';
+    delta: number;
+    previousTotal: number;
+    newTotal: number;
+    reason: string;
+    updatedAt: string;
+  };
 }
 
 interface CatCornerAccessClaimResponse {
@@ -1881,9 +1908,16 @@ export const listAdminUsers = onCall(
     const {pageSize, pageToken} = parseListUsersRequest(request.data);
     const auth = getAuth();
     const result = await auth.listUsers(pageSize, pageToken ?? undefined);
+    const firestore = getFirestore();
+    const accountSnapshots = result.users.length > 0
+      ? await firestore.getAll(...result.users.map(user => firestore.collection(USERS_COLLECTION).doc(user.uid)))
+      : [];
 
     return {
-      users: result.users.map(toAdminManagedUser),
+      users: result.users.map((user, index) => toAdminManagedUser(
+        user,
+        getUserAccountPoints(accountSnapshots[index]?.data()?.['points'])
+      )),
       nextPageToken: result.pageToken ?? null,
       fetchedAt: new Date().toISOString(),
     } satisfies AdminUsersResponse;
@@ -1924,7 +1958,7 @@ export const updateAdminUserRoles = onCall(
       });
 
       return {
-        user: toAdminManagedUser(updatedUser),
+        user: await toAdminManagedUserWithPoints(updatedUser),
         updatedAt,
       } satisfies UpdateAdminUserRolesResponse;
     });
@@ -1965,7 +1999,7 @@ export const setAdminUserDisabled = onCall(
       });
 
       return {
-        user: toAdminManagedUser(updatedUser),
+        user: await toAdminManagedUserWithPoints(updatedUser),
         updatedAt,
       } satisfies SetAdminUserDisabledResponse;
     });
@@ -2008,6 +2042,95 @@ export const deleteAdminUser = onCall(
 
       return {uid, deletedAt} satisfies DeleteAdminUserResponse;
     });
+  }
+);
+
+export const adjustAdminUserPoints = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 30,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => {
+    const actorUid = requireUserManagementAdmin(request.auth);
+    let data: AdminUserPointAdjustmentRequest;
+
+    try {
+      data = parseAdminUserPointAdjustmentRequest(request.data);
+    } catch (error) {
+      throw new HttpsError('invalid-argument', getErrorMessage(error, 'User point adjustment is invalid.'));
+    }
+
+    const auth = getAuth();
+    const targetUser = await auth.getUser(data.uid);
+    const firestore = getFirestore();
+    const userRef = firestore.collection(USERS_COLLECTION).doc(data.uid);
+    const eventId = createPointEventId('admin_adjustment', data.uid, randomUUID());
+    const eventRef = firestore.collection(USER_POINT_EVENTS_COLLECTION).doc(eventId);
+    const updatedAt = new Date().toISOString();
+
+    const transactionResult = await firestore.runTransaction(async transaction => {
+      const userSnapshot = await transaction.get(userRef);
+      const currentPoints = getUserAccountPoints(userSnapshot.data()?.['points']);
+      let adjustment: AdminUserPointAdjustmentPlan;
+
+      try {
+        adjustment = planAdminUserPointAdjustment(currentPoints.total, data.operation, data.amount);
+      } catch (error) {
+        throw new HttpsError('failed-precondition', getErrorMessage(error, 'Unable to adjust this point balance.'));
+      }
+
+      const nextPoints: UserAccountPoints = {
+        ...currentPoints,
+        total: adjustment.newTotal,
+        manualAdjustments: currentPoints.manualAdjustments + adjustment.delta,
+      };
+
+      transaction.set(userRef, {
+        uid: data.uid,
+        points: nextPoints,
+        updatedAt,
+      }, {merge: true});
+      transaction.set(eventRef, {
+        id: eventId,
+        uid: data.uid,
+        type: 'admin_adjustment',
+        operation: data.operation,
+        points: adjustment.delta,
+        previousTotal: adjustment.previousTotal,
+        newTotal: adjustment.newTotal,
+        reason: data.reason,
+        actorUid,
+        createdAt: updatedAt,
+        createdAtTimestamp: FieldValue.serverTimestamp(),
+      });
+
+      return {adjustment, points: nextPoints};
+    });
+
+    logger.info('Adjusted managed user points.', {
+      actorUid,
+      targetUid: data.uid,
+      operation: data.operation,
+      delta: transactionResult.adjustment.delta,
+      previousTotal: transactionResult.adjustment.previousTotal,
+      newTotal: transactionResult.adjustment.newTotal,
+      eventId,
+      updatedAt,
+    });
+
+    return {
+      user: toAdminManagedUser(targetUser, transactionResult.points),
+      adjustment: {
+        id: eventId,
+        operation: data.operation,
+        ...transactionResult.adjustment,
+        reason: data.reason,
+        updatedAt,
+      },
+    } satisfies AdjustAdminUserPointsResponse;
   }
 );
 
@@ -6148,6 +6271,7 @@ function getUserAccountPoints(value: unknown): UserAccountPoints {
     shares: getNumberValue(record['shares']),
     approvedComments: getNumberValue(record['approvedComments']),
     dailyDiscoveries: getNumberValue(record['dailyDiscoveries']),
+    manualAdjustments: getNumberValue(record['manualAdjustments']),
   };
 }
 
@@ -6316,7 +6440,12 @@ function parseDeleteAdminUserRequest(value: unknown): { uid: string; confirmatio
   return {uid, confirmation};
 }
 
-function toAdminManagedUser(user: UserRecord): AdminManagedUser {
+async function toAdminManagedUserWithPoints(user: UserRecord): Promise<AdminManagedUser> {
+  const snapshot = await getFirestore().collection(USERS_COLLECTION).doc(user.uid).get();
+  return toAdminManagedUser(user, getUserAccountPoints(snapshot.data()?.['points']));
+}
+
+function toAdminManagedUser(user: UserRecord, points: UserAccountPoints): AdminManagedUser {
   const customClaims = user.customClaims ?? {};
 
   return {
@@ -6331,6 +6460,7 @@ function toAdminManagedUser(user: UserRecord): AdminManagedUser {
     lastSignInAt: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toISOString() : null,
     roles: getClaimRoles(customClaims),
     customClaims,
+    points,
   };
 }
 
