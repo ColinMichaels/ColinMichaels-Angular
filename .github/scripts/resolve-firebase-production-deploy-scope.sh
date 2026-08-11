@@ -20,6 +20,7 @@ if [ "$event_name" = "workflow_dispatch" ]; then
   deploy_functions="$(to_bool "${INPUT_DEPLOY_FUNCTIONS:-false}")"
   force_functions="$(to_bool "${INPUT_FORCE_FUNCTIONS:-false}")"
   deploy_rules="$(to_bool "${INPUT_DEPLOY_RULES:-false}")"
+  deploy_storage_cors="$(to_bool "${INPUT_DEPLOY_STORAGE_CORS:-false}")"
 
   if [ "$deploy_hosting" = true ]; then
     deploy_functions=true
@@ -37,6 +38,7 @@ else
   deploy_hosting="$hosting_changed"
   deploy_functions="$functions_deploy_needed"
   deploy_rules="$rules_changed"
+  deploy_storage_cors="$storage_cors_changed"
 fi
 
 if [ "$deploy_functions" = true ]; then
@@ -60,6 +62,7 @@ fi
   echo "deploy_functions=$deploy_functions"
   echo "force_functions=$force_functions"
   echo "deploy_rules=$deploy_rules"
+  echo "deploy_storage_cors=$deploy_storage_cors"
   echo "deploy_site_build=$deploy_site_build"
 } >> "$GITHUB_OUTPUT"
 
@@ -70,6 +73,7 @@ fi
   echo "- Deploy Functions: \`$deploy_functions\`"
   echo "- Force-confirm Functions policy change: \`$force_functions\`"
   echo "- Deploy security rules: \`$deploy_rules\`"
+  echo "- Apply Storage CORS: \`$deploy_storage_cors\`"
   echo "- Build site assets: \`$deploy_site_build\`"
   echo ""
   echo "<details><summary>Scope source</summary>"

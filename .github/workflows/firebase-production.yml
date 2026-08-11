@@ -26,6 +26,11 @@ on:
         required: true
         type: boolean
         default: false
+      deploy_storage_cors:
+        description: Apply the version-controlled Firebase Storage browser CORS policy
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: firebase-production
@@ -42,6 +47,7 @@ jobs:
       deploy_functions: ${{ steps.scope.outputs.deploy_functions }}
       force_functions: ${{ steps.scope.outputs.force_functions }}
       deploy_rules: ${{ steps.scope.outputs.deploy_rules }}
+      deploy_storage_cors: ${{ steps.scope.outputs.deploy_storage_cors }}
       deploy_site_build: ${{ steps.scope.outputs.deploy_site_build }}
     steps:
       - name: Checkout repository
@@ -58,11 +64,12 @@ jobs:
           INPUT_DEPLOY_FUNCTIONS: ${{ inputs.deploy_functions || false }}
           INPUT_FORCE_FUNCTIONS: ${{ inputs.force_functions || false }}
           INPUT_DEPLOY_RULES: ${{ inputs.deploy_rules || false }}
+          INPUT_DEPLOY_STORAGE_CORS: ${{ inputs.deploy_storage_cors || false }}
         run: .github/scripts/resolve-firebase-production-deploy-scope.sh
 
   deploy_production:
     needs: plan_deploy
-    if: ${{ needs.plan_deploy.outputs.deploy_hosting == 'true' || needs.plan_deploy.outputs.deploy_functions == 'true' || needs.plan_deploy.outputs.deploy_rules == 'true' }}
+    if: ${{ needs.plan_deploy.outputs.deploy_hosting == 'true' || needs.plan_deploy.outputs.deploy_functions == 'true' || needs.plan_deploy.outputs.deploy_rules == 'true' || needs.plan_deploy.outputs.deploy_storage_cors == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -172,7 +179,7 @@ jobs:
             printf 'WEB_PUSH_SUBJECT=%s\n' "$WEB_PUSH_SUBJECT"
           } >> "$dotenv_path"
 
-      - name: Set up Node.js for rules-only deploy
+      - name: Set up Node.js for configuration-only deploy
         if: ${{ needs.plan_deploy.outputs.deploy_site_build != 'true' }}
         uses: actions/setup-node@v4
         with:
@@ -197,6 +204,12 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
         run: .github/scripts/deploy-firebase-target.sh rules firestore:rules,database,storage
+
+      - name: Apply Firebase Storage browser CORS
+        if: ${{ needs.plan_deploy.outputs.deploy_storage_cors == 'true' }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.firebase-auth.outputs.credentials_file_path }}
+        run: .github/scripts/apply-firebase-storage-cors.sh
 
       - name: Deploy Firebase Functions
         if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}

@@ -14,6 +14,7 @@ hosting_changed=false
 functions_changed=false
 seo_template_changed=false
 rules_changed=false
+storage_cors_changed=false
 
 while IFS= read -r file; do
   [ -z "$file" ] && continue
@@ -30,6 +31,9 @@ while IFS= read -r file; do
       ;;
     firestore.rules|database.rules.json|storage.rules)
       rules_changed=true
+      ;;
+    storage.cors.json|.github/scripts/apply-firebase-storage-cors.sh|scripts/validate-firebase-storage-cors.mjs)
+      storage_cors_changed=true
       ;;
     scripts/prepare-functions-seo.mjs)
       functions_changed=true
@@ -67,12 +71,17 @@ if [ "${FORCE_RULES:-false}" = true ]; then
   rules_changed=true
 fi
 
+if [ "${FORCE_STORAGE_CORS:-false}" = true ]; then
+  storage_cors_changed=true
+fi
+
 {
   echo "hosting_changed=$hosting_changed"
   echo "functions_changed=$functions_changed"
   echo "seo_template_changed=$seo_template_changed"
   echo "functions_deploy_needed=$functions_deploy_needed"
   echo "rules_changed=$rules_changed"
+  echo "storage_cors_changed=$storage_cors_changed"
   echo "changed_files<<EOF"
   printf '%s\n' "$changed_files"
   echo "EOF"
@@ -86,6 +95,7 @@ fi
   echo "- SEO HTML template may change: \`$seo_template_changed\`"
   echo "- Functions deploy needed: \`$functions_deploy_needed\`"
   echo "- Security rules changed: \`$rules_changed\`"
+  echo "- Storage CORS changed: \`$storage_cors_changed\`"
   echo ""
   echo "<details><summary>Changed files</summary>"
   echo ""
