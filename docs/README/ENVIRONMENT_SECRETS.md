@@ -219,6 +219,31 @@ Firestore and Storage rules deploys require Firebase Rules API permissions. If s
 
 Storage rules deploys also require Cloud Storage for Firebase permissions. If security-rules deploy fails with `firebasestorage.defaultBucket.get denied`, grant the deploy service account the Firebase Storage Admin role so Firebase CLI can read the default bucket and release `storage.rules`.
 
+### Firebase Storage browser CORS
+
+Published blog media is intentionally public-readable, but direct browser `fetch`, PWA caching, and blob downloads still require a bucket CORS response. The version-controlled `storage.cors.json` policy allows only `GET` and `HEAD`. It uses a wildcard origin so the production custom domain, Firebase Hosting preview-channel origins, and local development all work without continually mutating the bucket policy. CORS does not bypass `storage.rules`; private create-only staging objects remain unreadable and browser writes remain denied.
+
+Validate the policy without changing Google Cloud:
+
+```bash
+node --test scripts/validate-firebase-storage-cors.test.mjs
+node scripts/validate-firebase-storage-cors.mjs storage.cors.json
+```
+
+On a push to `master`, `.github/scripts/detect-firebase-deploy-scope.sh` selects a configuration-only production job when the CORS policy or apply tooling changes. The job runs `.github/scripts/apply-firebase-storage-cors.sh`, which validates the policy, authenticates with the existing protected deployment credential, applies it with `gcloud storage buckets update --cors-file`, and prints the resulting bucket CORS configuration. It does not rebuild or deploy Hosting, Functions, or Security Rules unless those scopes also changed.
+
+For a manual repair, run **Deploy Firebase Production** with `deploy_site`, `deploy_functions`, and `deploy_rules` disabled and `deploy_storage_cors` enabled. The deployment principal needs `storage.buckets.get` and `storage.buckets.update`; grant `roles/storage.admin` only at the affected bucket when a custom least-privilege role is not available.
+
+After the workflow succeeds, verify an existing public media URL from the deployed site. The response must be successful and include `Access-Control-Allow-Origin`:
+
+```bash
+curl --silent --show-error --dump-header - --output /dev/null \
+  --header 'Origin: https://colinmichaels.com' \
+  'https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/<encoded-public-object>?alt=media&token=<download-token>'
+```
+
+Rollback by reverting `storage.cors.json` to the previous reviewed policy and rerunning the CORS-only workflow. If the previous state intentionally had no CORS configuration, an authorized operator can run `gcloud storage buckets update gs://colinmichaels.firebasestorage.app --clear-cors`; doing so restores the browser-fetch failure and should be treated as an outage rollback only.
+
 Cloud Functions deploys also require the deploy caller to act as the runtime service account. If deploy fails with `Caller is missing permission 'iam.serviceaccounts.actAs' on service account ...-compute@developer.gserviceaccount.com`, grant the deploy service account `roles/iam.serviceAccountUser` on the default Compute Engine service account.
 
 If browser calls fail as CORS errors but an `OPTIONS` probe returns `403 Forbidden` from Google Frontend with no `Access-Control-Allow-Origin`, the Gen 2 Function's underlying Cloud Run service is private. The source sets public invokers for browser-facing Functions, but the deployed services may need public Cloud Run invoker bindings after a first deploy or failed IAM update.
