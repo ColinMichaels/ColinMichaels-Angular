@@ -21,11 +21,23 @@ const adminClaims = {
   roles: {admin: true},
 };
 
+function getEmulatorAddress(environmentName, fallbackPort) {
+  const configuredAddress = process.env[environmentName] ?? '';
+  const separatorIndex = configuredAddress.lastIndexOf(':');
+  const host = separatorIndex > 0 ? configuredAddress.slice(0, separatorIndex) : '127.0.0.1';
+  const configuredPort = separatorIndex > 0 ? Number(configuredAddress.slice(separatorIndex + 1)) : fallbackPort;
+
+  return {
+    host,
+    port: Number.isInteger(configuredPort) ? configuredPort : fallbackPort,
+  };
+}
+
 before(async () => {
   testEnvironment = await initializeTestEnvironment({
     projectId,
-    firestore: {host: '127.0.0.1', port: 8080},
-    storage: {host: '127.0.0.1', port: 9199},
+    firestore: getEmulatorAddress('FIRESTORE_EMULATOR_HOST', 8080),
+    storage: getEmulatorAddress('FIREBASE_STORAGE_EMULATOR_HOST', 9199),
   });
 });
 
@@ -145,7 +157,7 @@ test('public submission records are private and writable only by the backend', a
   await assertFails(getDoc(doc(editorDb, 'publicSubmissionRateLimits', 'limit')));
 });
 
-test('new user profiles accept legacy or zero Daily Discovery points but never client-awarded points', async () => {
+test('new user profiles accept legacy or zero optional counters but never client-awarded points', async () => {
   const createUserProfile = (uid, points) => ({
     uid,
     email: `${uid}@example.com`,
@@ -171,13 +183,19 @@ test('new user profiles accept legacy or zero Daily Discovery points but never c
   const zeroDailyDb = testEnvironment.authenticatedContext('zero-daily-reader').firestore();
   await assertSucceeds(setDoc(
     doc(zeroDailyDb, 'users', 'zero-daily-reader'),
-    createUserProfile('zero-daily-reader', {...legacyPoints, dailyDiscoveries: 0})
+    createUserProfile('zero-daily-reader', {...legacyPoints, dailyDiscoveries: 0, manualAdjustments: 0})
   ));
 
   const forgedDailyDb = testEnvironment.authenticatedContext('forged-daily-reader').firestore();
   await assertFails(setDoc(
     doc(forgedDailyDb, 'users', 'forged-daily-reader'),
     createUserProfile('forged-daily-reader', {...legacyPoints, total: 5, dailyDiscoveries: 5})
+  ));
+
+  const forgedAdjustmentDb = testEnvironment.authenticatedContext('forged-adjustment-reader').firestore();
+  await assertFails(setDoc(
+    doc(forgedAdjustmentDb, 'users', 'forged-adjustment-reader'),
+    createUserProfile('forged-adjustment-reader', {...legacyPoints, total: 5, manualAdjustments: 5})
   ));
 });
 

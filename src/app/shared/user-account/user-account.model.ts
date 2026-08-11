@@ -16,7 +16,13 @@ export type UserRole =
 
 export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
 
-export type UserPointEventType = 'post_read' | 'post_share' | 'site_share' | 'comment_approved' | 'daily_discovery';
+export type UserPointEventType =
+  'post_read'
+  | 'post_share'
+  | 'site_share'
+  | 'comment_approved'
+  | 'daily_discovery'
+  | 'admin_adjustment';
 
 export interface UserAccountPoints {
   total: number;
@@ -24,6 +30,7 @@ export interface UserAccountPoints {
   shares: number;
   approvedComments: number;
   dailyDiscoveries: number;
+  manualAdjustments: number;
 }
 
 export interface UserDailyDiscoveryProgress {
@@ -73,6 +80,11 @@ export interface UserPointEvent {
   commentId?: string;
   challengeId?: string;
   challengeDate?: string;
+  operation?: 'add' | 'remove' | 'set';
+  previousTotal?: number;
+  newTotal?: number;
+  reason?: string;
+  actorUid?: string;
   createdAt: string;
 }
 
