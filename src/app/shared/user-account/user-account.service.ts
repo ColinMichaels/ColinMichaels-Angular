@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   Firestore,
+  getDoc,
   limit,
   onSnapshot,
   orderBy,
@@ -66,6 +67,12 @@ export class UserAccountService {
         error => observer.error(error)
       );
     });
+  }
+
+  async getUserAccount(uid: string): Promise<UserAccountDocument | null> {
+    const accountSnapshot = await getDoc(doc(this.getFirestore(), 'users', uid));
+
+    return accountSnapshot.exists() ? accountSnapshot.data() as UserAccountDocument : null;
   }
 
   listenToPointEvents(uid: string, maxEvents = 12): Observable<readonly UserPointEvent[]> {

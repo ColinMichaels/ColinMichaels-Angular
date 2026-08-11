@@ -30,6 +30,10 @@ describe('admin guide content', () => {
       .toEqual(['manage-user-roles']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'delete auth user').map(entry => entry.id))
       .toEqual(['manage-user-roles']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'remove point balance').map(entry => entry.id))
+      .toEqual(['manage-user-points']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'points leaderboard comments sort').map(entry => entry.id))
+      .toEqual(['manage-user-points']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['admin'], 'Open Media Library').map(entry => entry.id))
       .toContain('upload-and-reuse-media');
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'raw json').map(entry => entry.id))
@@ -79,12 +83,17 @@ describe('admin guide content', () => {
 
   it('never returns a role-restricted match to an unauthorized user', () => {
     const manageUsers = ADMIN_GUIDE_ENTRIES.find(entry => entry.id === 'manage-user-roles');
+    const managePoints = ADMIN_GUIDE_ENTRIES.find(entry => entry.id === 'manage-user-points');
 
     expect(manageUsers).toBeDefined();
+    expect(managePoints).toBeDefined();
     expect(canViewAdminGuideEntry(manageUsers!, ['cmsAdmin'])).toBeFalse();
+    expect(canViewAdminGuideEntry(managePoints!, ['cmsAdmin'])).toBeFalse();
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'user roles')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'view as user')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'delete auth user')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'add user points')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['cmsAdmin'], 'points leaderboard')).toEqual([]);
 
     const dailyDiscovery = ADMIN_GUIDE_ENTRIES.find(
       entry => entry.id === 'manage-daily-discovery-question-sets'

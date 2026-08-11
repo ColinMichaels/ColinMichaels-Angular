@@ -16,6 +16,7 @@ import {
   CAT_CORNER_ADDICT_ROLE,
   UserAccountDocument,
   UserAccountProfile,
+  UserPointEvent,
 } from '../user-account/user-account.model';
 import {UserAccountService} from '../user-account/user-account.service';
 import {UserProfileComponent} from './user-profile.component';
@@ -48,6 +49,7 @@ describe('UserProfileComponent', () => {
       shares: 0,
       approvedComments: 0,
       dailyDiscoveries: 5,
+      manualAdjustments: 0,
     },
     dailyDiscovery: {
       currentStreak: 1,
@@ -68,6 +70,18 @@ describe('UserProfileComponent', () => {
     isAnonymous: false,
     providerData: [],
   } as unknown as User;
+  const adminAdjustmentEvent: UserPointEvent = {
+    id: 'admin-adjustment-reader-uid-1',
+    uid,
+    type: 'admin_adjustment',
+    points: -5,
+    operation: 'remove',
+    previousTotal: 5,
+    newTotal: 0,
+    reason: 'Duplicate reward correction',
+    actorUid: 'admin-uid',
+    createdAt: '2026-08-10T12:00:00.000Z',
+  };
 
   let fixture: ComponentFixture<UserProfileComponent>;
   let authServiceMock: {
@@ -107,7 +121,7 @@ describe('UserProfileComponent', () => {
           provide: UserAccountService,
           useValue: {
             listenToUserAccount: jasmine.createSpy('listenToUserAccount').and.returnValue(of(accountDocument)),
-            listenToPointEvents: jasmine.createSpy('listenToPointEvents').and.returnValue(of([])),
+            listenToPointEvents: jasmine.createSpy('listenToPointEvents').and.returnValue(of([adminAdjustmentEvent])),
           },
         },
         {
@@ -220,6 +234,8 @@ describe('UserProfileComponent', () => {
     expect(textContent).toContain('Full screen');
     expect(textContent).toContain('Daily Discovery');
     expect(textContent).toContain('Discovery Streak');
+    expect(textContent).toContain('Manual adjustments');
+    expect(textContent).toContain('Points adjustment: Duplicate reward correction');
   });
 
   it('renders the Cat Corner Addict role as a profile badge', () => {

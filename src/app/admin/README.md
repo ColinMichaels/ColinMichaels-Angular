@@ -22,7 +22,7 @@ Component inventory:
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 - `AdminGuidePageComponent` provides the searchable `/admin/guide` operating manual with stable fragment links, clipboard sharing, direct protected-route actions, a desktop contents rail, and a mobile jump menu.
 - `admin-guide.content.ts` is the typed instruction source. It filters entries by the shared route-role constants before search, Common tasks, categories, and result counts are derived, so unauthorized workflows are absent rather than disabled.
-- `UserManagementPageComponent` keeps role changes and the admin-only **View as User** entry in one protected account workflow. The preview confirmation states that role/profile UI is simulated while Firebase requests retain the actor's admin identity.
+- `UserManagementPageComponent` keeps the original paginated account-management table as its default view and exposes the complete points leaderboard as a separate alternate view. Role, access, deletion, and **View as User** controls remain in the primary account workflow; **Manage Points** remains in the points view. The preview confirmation states that role/profile UI is simulated while Firebase requests retain the actor's admin identity.
 - `PublicSubmissionsPageComponent` provides the CMS-role-gated `/admin/submissions` master-detail inbox with status counts, full-text local filtering, private contact/proposal detail, alert health, reversible review actions, and a real response composer.
 - `PublicSubmissionService` listens to the read-only Firestore review collection and routes status changes plus email responses through trusted callable Functions.
 - Shared `UserViewBannerComponent` remains fixed above route content while a preview is active, identifies the target and roles, reports disabled accounts, and provides the recovery-safe **Exit View** action.
@@ -322,18 +322,21 @@ The user management console is available at `/admin/users` and is restricted to 
 It calls Firebase callable functions:
 
 - `listAdminUsers`
+- `adjustAdminUserPoints`
 - `updateAdminUserRoles`
 - `setAdminUserDisabled`
 - `deleteAdminUser`
 
-All four functions require an authenticated Firebase user with `admin: true` or `roles.admin: true`. Role updates preserve unrelated custom claims, store future permissions under the `roles` custom-claim map, and mirror `admin` / `cmsAdmin` at the top level for compatibility with existing rules. Users must refresh their Firebase ID token, usually by signing out and back in, before new role claims affect their session.
+All five functions require an authenticated Firebase user with `admin: true` or `roles.admin: true`. The default **User management** view preserves the paginated Firebase Auth account table. The alternate **Points leaderboard** view calls `UserManagementService.listAllUsers`, which follows protected page tokens so ranking and sorting cover the complete Auth user list without replacing the account workflow. `listAdminUsers` joins each page with the normalized `/users/{uid}.points` projection. During a staggered rollout, if an older deployed callable omits that projection, the leaderboard reads the missing balance from the same admin-readable `/users/{uid}` document used by Profile instead of presenting compatibility zeros. The leaderboard starts with the highest current total and can sort by user, total, post-reading, share, approved-comment, Daily Discovery, or manual-adjustment points. `adjustAdminUserPoints` accepts Add, Remove, or Set total operations with bounded whole-number
+amounts and a required reason; it updates the total and net `manualAdjustments` counter in a Firestore transaction and creates an `admin_adjustment` point event containing the signed delta, previous/new totals, actor UID, target UID, and reason. A removal cannot make the balance negative, and earned counters for reads, shares, approved comments, and Daily Discovery remain unchanged. Role updates preserve unrelated custom claims, store future permissions under the `roles` custom-claim map, and mirror `admin` / `cmsAdmin` at the top level for compatibility with existing rules. Users must refresh their Firebase ID token, usually by signing out and back in, before new role claims affect their session.
 
 Sign-in disable/restore and deletion are serialized against role changes for the same UID. Administrators cannot disable, restore, or delete their own account from User Management. Disabling preserves the Auth record, providers, roles, and site data while rejecting future sign-ins and refreshes; the callable also explicitly revokes refresh tokens. Deletion requires the exact email or UID as server-validated confirmation and removes only the Firebase Auth record. It deliberately preserves `/users/{uid}`, comments, points, authored content, and other site data, and it does not prevent the deleted email from registering again. Structured Functions logs record the actor UID, target UID, action result, and timestamp without logging the target email.
 
 Component inventory:
 
-- `UserManagementPageComponent` lists Firebase Auth users, filters loaded rows, pages through Auth results, edits role claims, and presents explicit disable, restore, and typed-delete confirmations.
-- `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables.
+- `UserManagementPageComponent` defaults to the paginated Firebase Auth user table with account search, roles, status, **View as User**, disable/restore, and typed-delete controls; its separate points view renders the complete sortable leaderboard with only the point-specific editor action.
+- `UserPointsEditorComponent` displays the full point breakdown, validates Add/Remove/Set total changes, requires an audit reason, previews the resulting balance, and submits one callable-backed adjustment.
+- `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables, preserves single-page requests for account management, follows every `listAdminUsers` page token only when the complete leaderboard is requested, and hydrates any legacy missing point projection from the canonical user account document during staggered deployments.
 
 ## Public Submission Inbox
 

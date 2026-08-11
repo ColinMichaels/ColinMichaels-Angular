@@ -75,7 +75,7 @@ service cloud.firestore {
     function hasZeroPoints(points) {
       return points is map
         && points.keys().hasAll(['total', 'postReads', 'shares', 'approvedComments'])
-        && points.keys().hasOnly(['total', 'postReads', 'shares', 'approvedComments', 'dailyDiscoveries'])
+        && points.keys().hasOnly(['total', 'postReads', 'shares', 'approvedComments', 'dailyDiscoveries', 'manualAdjustments'])
         && points.total == 0
         && points.postReads == 0
         && points.shares == 0
@@ -83,6 +83,10 @@ service cloud.firestore {
         && (
           !points.keys().hasAny(['dailyDiscoveries'])
           || points.dailyDiscoveries == 0
+        )
+        && (
+          !points.keys().hasAny(['manualAdjustments'])
+          || points.manualAdjustments == 0
         );
     }
 

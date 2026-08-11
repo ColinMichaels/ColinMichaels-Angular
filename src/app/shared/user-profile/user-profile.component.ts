@@ -248,6 +248,10 @@ interface LinkedProviderView {
                     <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.dailyDiscoveries ?? 0 }} points</dd>
                   </div>
                   <div>
+                    <dt class="text-zinc-500">Manual adjustments</dt>
+                    <dd class="mt-1 text-zinc-200">{{ accountDocument()?.points?.manualAdjustments ?? 0 }} points</dd>
+                  </div>
+                  <div>
                     <dt class="text-zinc-500">Discovery Streak</dt>
                     <dd class="mt-1 text-zinc-200">{{ accountDocument()?.dailyDiscovery?.currentStreak ?? 0 }} days</dd>
                   </div>
@@ -262,7 +266,7 @@ interface LinkedProviderView {
                   <article class="grid gap-1 border border-zinc-800 bg-zinc-950 p-3 text-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                       <p class="font-medium text-zinc-100">{{ pointEventLabel(event) }}</p>
-                      <span class="text-cyan-100">+{{ event.points }}</span>
+                      <span [class.text-cyan-100]="event.points >= 0" [class.text-rose-200]="event.points < 0">{{ event.points > 0 ? '+' : '' }}{{ event.points }}</span>
                     </div>
                     <p class="text-xs text-zinc-500">{{ event.createdAt }}</p>
                   </article>
@@ -422,6 +426,8 @@ export class UserProfileComponent {
         return `Approved comment${event.postSlug ? ` on /blog/${event.postSlug}` : ''}`;
       case 'daily_discovery':
         return `Solved Daily Discovery${event.challengeDate ? ` for ${event.challengeDate}` : ''}`;
+      case 'admin_adjustment':
+        return `Points adjustment${event.reason ? `: ${event.reason}` : ''}`;
       default:
         return 'Point activity';
     }

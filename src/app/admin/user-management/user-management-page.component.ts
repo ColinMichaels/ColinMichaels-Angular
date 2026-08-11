@@ -3,9 +3,10 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {Router} from '@angular/router';
 
 import {AuthService} from '../../services/auth.service';
-import {AdminManagedUser} from './models/user-management.models';
+import {AdjustAdminUserPointsResponse, AdminManagedUser} from './models/user-management.models';
 import {UserManagementService} from './services/user-management.service';
 import {CAT_CORNER_ADDICT_ROLE} from '../../shared/user-account/user-account.model';
+import {UserPointsEditorComponent} from './components/user-points-editor.component';
 
 const suggestedRoles = [
   'admin',
@@ -17,7 +18,28 @@ const suggestedRoles = [
   CAT_CORNER_ADDICT_ROLE,
 ] as const;
 const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+const pointNumberFormatter = new Intl.NumberFormat('en-US');
 type UserAccessAction = 'disable' | 'enable' | 'delete';
+type UserManagementView = 'users' | 'points';
+type UserSortDirection = 'asc' | 'desc';
+type UserSortKey =
+  | 'user'
+  | 'total'
+  | 'postReads'
+  | 'shares'
+  | 'approvedComments'
+  | 'dailyDiscoveries'
+  | 'manualAdjustments';
+
+const userSortLabels: Record<UserSortKey, string> = {
+  user: 'User name',
+  total: 'Total points',
+  postReads: 'Reading points',
+  shares: 'Share points',
+  approvedComments: 'Comment points',
+  dailyDiscoveries: 'Daily Discovery points',
+  manualAdjustments: 'Manual adjustments',
+};
 
 interface PendingUserAccessAction {
   action: UserAccessAction;
@@ -44,9 +66,14 @@ function formatAccountDate(value: string | null): string {
   }).format(new Date(value));
 }
 
+function getUserLabel(user: AdminManagedUser): string {
+  return user.displayName || user.email || user.uid;
+}
+
 @Component({
   selector: 'app-user-management-page',
   imports: [
+    UserPointsEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -61,58 +88,125 @@ function formatAccountDate(value: string | null): string {
           <button
             type="button"
             class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-            [disabled]="isLoading()"
-            (click)="refreshUsers()"
+            [disabled]="isActiveViewLoading()"
+            (click)="refreshActiveView()"
           >
             Refresh
           </button>
         </header>
 
-        <section class="grid gap-4 sm:grid-cols-3">
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Loaded Users</p>
-            <p class="mt-2 text-3xl font-semibold">{{ users().length }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Admins</p>
-            <p class="mt-2 text-3xl font-semibold">{{ adminCount() }}</p>
-          </div>
-          <div class="border border-zinc-800 bg-zinc-900 p-4">
-            <p class="text-sm text-zinc-500">Disabled</p>
-            <p class="mt-2 text-3xl font-semibold">{{ disabledCount() }}</p>
-          </div>
-        </section>
+        <div class="grid gap-2 border border-zinc-800 bg-zinc-900 p-2 sm:grid-cols-2" role="tablist" aria-label="User management views">
+          <button
+            id="user-management-tab"
+            type="button"
+            role="tab"
+            class="border px-4 py-3 text-left text-sm font-semibold transition-colors"
+            [class.border-cyan-400]="activeView() === 'users'"
+            [class.bg-cyan-400]="activeView() === 'users'"
+            [class.text-zinc-950]="activeView() === 'users'"
+            [class.border-transparent]="activeView() !== 'users'"
+            [class.text-zinc-300]="activeView() !== 'users'"
+            [attr.aria-selected]="activeView() === 'users'"
+            aria-controls="user-management-panel"
+            (click)="showView('users')"
+          >
+            <span class="block">User management</span>
+            <span class="mt-1 block text-xs font-normal opacity-75">Accounts, roles, access, and deletion</span>
+          </button>
+          <button
+            id="user-points-tab"
+            type="button"
+            role="tab"
+            class="border px-4 py-3 text-left text-sm font-semibold transition-colors"
+            [class.border-violet-400]="activeView() === 'points'"
+            [class.bg-violet-400]="activeView() === 'points'"
+            [class.text-zinc-950]="activeView() === 'points'"
+            [class.border-transparent]="activeView() !== 'points'"
+            [class.text-zinc-300]="activeView() !== 'points'"
+            [attr.aria-selected]="activeView() === 'points'"
+            aria-controls="user-points-panel"
+            (click)="showView('points')"
+          >
+            <span class="block">Points leaderboard</span>
+            <span class="mt-1 block text-xs font-normal opacity-75">Balances, ranking, and adjustments</span>
+          </button>
+        </div>
 
-        <section class="grid gap-4 border border-zinc-800 bg-zinc-900 p-4 md:grid-cols-[1fr_auto] md:items-end">
-          <label class="grid gap-2 text-sm text-zinc-300">
-            Search users
-            <input
-              type="search"
-              class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-              placeholder="Email, display name, uid, or role"
-              [value]="searchTerm()"
-              (input)="updateSearch($event)"
-            >
-          </label>
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
-              [disabled]="pageTokenStack().length === 0 || isLoading()"
-              (click)="loadPreviousPage()"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
-              [disabled]="!nextPageToken() || isLoading()"
-              (click)="loadNextPage()"
-            >
-              Next
-            </button>
-          </div>
-        </section>
+        @if (activeView() === 'users') {
+          <section id="user-management-panel" class="space-y-8" role="tabpanel" aria-labelledby="user-management-tab">
+            <section class="grid gap-4 sm:grid-cols-3">
+              <div class="border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-sm text-zinc-500">Loaded Users</p>
+                <p class="mt-2 text-3xl font-semibold">{{ users().length }}</p>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-sm text-zinc-500">Admins</p>
+                <p class="mt-2 text-3xl font-semibold">{{ adminCount() }}</p>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-sm text-zinc-500">Disabled</p>
+                <p class="mt-2 text-3xl font-semibold">{{ disabledCount() }}</p>
+              </div>
+            </section>
+
+            <section class="grid gap-4 border border-zinc-800 bg-zinc-900 p-4 md:grid-cols-[1fr_auto] md:items-end">
+              <label class="grid gap-2 text-sm text-zinc-300">
+                Search users
+                <input
+                  type="search"
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
+                  placeholder="Email, display name, uid, or role"
+                  [value]="searchTerm()"
+                  (input)="updateSearch($event)"
+                >
+              </label>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+                  [disabled]="pageTokenStack().length === 0 || isLoading()"
+                  (click)="loadPreviousPage()"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                  [disabled]="!nextPageToken() || isLoading()"
+                  (click)="loadNextPage()"
+                >
+                  Next
+                </button>
+              </div>
+            </section>
+          </section>
+        } @else {
+          <section id="user-points-panel" class="space-y-8" role="tabpanel" aria-labelledby="user-points-tab">
+            <section class="grid gap-4 sm:grid-cols-2">
+              <div class="border border-zinc-800 bg-zinc-900 p-4">
+                <p class="text-sm text-zinc-500">Leaderboard Users</p>
+                <p class="mt-2 text-3xl font-semibold">{{ leaderboardUsers().length }}</p>
+              </div>
+              <div class="border border-violet-400/30 bg-violet-950/20 p-4">
+                <p class="text-sm text-violet-200/70">Current Points</p>
+                <p class="mt-2 text-3xl font-semibold text-violet-100">{{ formatPoints(totalPoints()) }}</p>
+              </div>
+            </section>
+
+            <section class="border border-zinc-800 bg-zinc-900 p-4">
+              <label class="grid gap-2 text-sm text-zinc-300">
+                Search points leaderboard
+                <input
+                  type="search"
+                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-violet-300"
+                  placeholder="Email, display name, uid, or role"
+                  [value]="pointsSearchTerm()"
+                  (input)="updatePointsSearch($event)"
+                >
+              </label>
+            </section>
+          </section>
+        }
 
         @if (statusMessage()) {
           <p class="border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-100" role="status" aria-live="polite">{{ statusMessage() }}</p>
@@ -122,102 +216,260 @@ function formatAccountDate(value: string | null): string {
           <p class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100" role="alert">{{ errorMessage() }}</p>
         }
 
-        <section class="overflow-hidden border border-zinc-800">
+        @if (activeView() === 'users') {
+          <section class="overflow-hidden border border-zinc-800" aria-label="Firebase Auth users">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-zinc-800 text-left text-sm">
+                <caption class="sr-only">Firebase Auth users with roles, account status, last sign-in, and management actions.</caption>
+                <thead class="bg-zinc-900 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  <tr>
+                    <th scope="col" class="px-4 py-3 font-medium">User</th>
+                    <th scope="col" class="px-4 py-3 font-medium">Roles</th>
+                    <th scope="col" class="px-4 py-3 font-medium">Status</th>
+                    <th scope="col" class="px-4 py-3 font-medium">Last Sign-In</th>
+                    <th scope="col" class="px-4 py-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-800 bg-zinc-950">
+                  @if (isLoading()) {
+                    <tr>
+                      <td colspan="5" class="px-4 py-10 text-center text-zinc-400">Loading users...</td>
+                    </tr>
+                  } @else {
+                    @for (user of filteredUsers(); track user.uid) {
+                      <tr class="align-top">
+                        <td class="px-4 py-4">
+                          <div class="font-medium text-zinc-100">{{ user.displayName || user.email || user.uid }}</div>
+                          <div class="mt-1 text-xs text-zinc-500">{{ user.email || 'No email' }}</div>
+                          <div class="mt-1 max-w-72 break-all text-xs text-zinc-600">{{ user.uid }}</div>
+                        </td>
+                        <td class="px-4 py-4">
+                          <div class="flex max-w-sm flex-wrap gap-2">
+                            @if (user.roles.length > 0) {
+                              @for (role of user.roles; track role) {
+                                <span class="border border-cyan-400/30 bg-cyan-950/30 px-2 py-1 text-xs text-cyan-100">{{ role }}</span>
+                              }
+                            } @else {
+                              <span class="text-zinc-500">No roles</span>
+                            }
+                          </div>
+                        </td>
+                        <td class="px-4 py-4">
+                          <div class="grid gap-2 text-xs">
+                            <span [class.text-red-200]="user.disabled" [class.text-emerald-200]="!user.disabled">
+                              {{ user.disabled ? 'Disabled' : 'Active' }}
+                            </span>
+                            <span [class.text-zinc-500]="!user.emailVerified" [class.text-emerald-200]="user.emailVerified">
+                              {{ user.emailVerified ? 'Email verified' : 'Email unverified' }}
+                            </span>
+                          </div>
+                        </td>
+                        <td class="px-4 py-4 text-zinc-300">{{ formatDate(user.lastSignInAt) }}</td>
+                        <td class="px-4 py-4">
+                          <div class="flex min-w-40 flex-col gap-2">
+                            <button
+                              type="button"
+                              class="border border-amber-400/70 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                              [disabled]="user.uid === currentUser()?.uid || isStartingUserView()"
+                              [attr.title]="user.uid === currentUser()?.uid ? 'You are already signed in as this user' : null"
+                              (click)="openUserViewConfirmation(user)"
+                            >
+                              View as User
+                            </button>
+                            <button
+                              type="button"
+                              class="border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                              (click)="openEditor(user)"
+                            >
+                              Manage Roles
+                            </button>
+                            <button
+                              type="button"
+                              class="border border-orange-400/70 px-3 py-2 text-sm font-medium text-orange-100 hover:bg-orange-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                              [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
+                              [attr.title]="user.uid === currentUser()?.uid ? 'You cannot change sign-in access for your own admin account' : null"
+                              (click)="openAccessConfirmation(user, user.disabled ? 'enable' : 'disable')"
+                            >
+                              {{ user.disabled ? 'Restore Sign-In' : 'Disable Sign-In' }}
+                            </button>
+                            <button
+                              type="button"
+                              class="border border-red-500/70 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                              [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
+                              [attr.title]="user.uid === currentUser()?.uid ? 'You cannot delete your own admin account' : null"
+                              (click)="openAccessConfirmation(user, 'delete')"
+                            >
+                              Delete Auth User
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="px-4 py-10 text-center text-zinc-400">No users match this search.</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        } @else {
+          <section class="overflow-hidden border border-zinc-800" aria-labelledby="points-leaderboard-title">
+          <header class="border-b border-zinc-800 bg-zinc-900 px-4 py-4 sm:flex sm:items-end sm:justify-between sm:gap-6">
+            <div>
+              <h2 id="points-leaderboard-title" class="text-xl font-semibold text-zinc-50">Points leaderboard</h2>
+              <p class="mt-1 max-w-3xl text-sm leading-6 text-zinc-400">Current balances from reading posts, shares, approved comments, Daily Discovery, and audited manual adjustments. Rank follows the active sort.</p>
+              <p class="mt-2 text-xs text-zinc-500 sm:hidden">Swipe the table horizontally to compare every point source and reach point controls.</p>
+            </div>
+            <p class="mt-3 shrink-0 text-xs uppercase tracking-[0.18em] text-zinc-500 sm:mt-0" aria-live="polite">
+              {{ sortSummary() }}
+            </p>
+          </header>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-zinc-800 text-left text-sm">
+            <table class="min-w-[960px] divide-y divide-zinc-800 text-left text-sm">
+              <caption class="sr-only">Sortable leaderboard of Firebase Auth users and their current reader point balances.</caption>
               <thead class="bg-zinc-900 text-xs uppercase tracking-[0.18em] text-zinc-500">
                 <tr>
-                  <th scope="col" class="px-4 py-3 font-medium">User</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Roles</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Status</th>
-                  <th scope="col" class="px-4 py-3 font-medium">Last Sign-In</th>
+                  <th scope="col" class="w-16 px-4 py-3 font-medium">Rank</th>
+                  <th scope="col" class="min-w-60 px-4 py-3 font-medium" [attr.aria-sort]="sortAria('user')">
+                    <button type="button" class="inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('user')">
+                      User
+                      @if (isSortedBy('user')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('total')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('total')">
+                      Total
+                      @if (isSortedBy('total')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('postReads')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('postReads')">
+                      Reading
+                      @if (isSortedBy('postReads')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('shares')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('shares')">
+                      Shares
+                      @if (isSortedBy('shares')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('approvedComments')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('approvedComments')">
+                      Comments
+                      @if (isSortedBy('approvedComments')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('dailyDiscoveries')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('dailyDiscoveries')">
+                      Daily
+                      @if (isSortedBy('dailyDiscoveries')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-medium" [attr.aria-sort]="sortAria('manualAdjustments')">
+                    <button type="button" class="ml-auto inline-flex items-center gap-2 hover:text-zinc-200" (click)="sortUsersBy('manualAdjustments')">
+                      Manual
+                      @if (isSortedBy('manualAdjustments')) {
+                        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="sortDirection() === 'asc'" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      }
+                    </button>
+                  </th>
                   <th scope="col" class="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-zinc-800 bg-zinc-950">
-                @if (isLoading()) {
+                @if (isPointsLoading()) {
                   <tr>
-                    <td colspan="5" class="px-4 py-10 text-center text-zinc-400">Loading users...</td>
+                    <td colspan="9" class="px-4 py-10 text-center text-zinc-400">Loading the full leaderboard...</td>
                   </tr>
                 } @else {
-                  @for (user of filteredUsers(); track user.uid) {
+                  @for (user of rankedUsers(); track user.uid; let rank = $index) {
                     <tr class="align-top">
+                      <td class="px-4 py-4 text-lg font-semibold text-zinc-500" [class.text-cyan-300]="rank === 0">#{{ rank + 1 }}</td>
                       <td class="px-4 py-4">
                         <div class="font-medium text-zinc-100">{{ user.displayName || user.email || user.uid }}</div>
                         <div class="mt-1 text-xs text-zinc-500">{{ user.email || 'No email' }}</div>
                         <div class="mt-1 max-w-72 break-all text-xs text-zinc-600">{{ user.uid }}</div>
-                      </td>
-                      <td class="px-4 py-4">
-                        <div class="flex max-w-sm flex-wrap gap-2">
+                        <div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                          <span [class.text-red-200]="user.disabled" [class.text-emerald-200]="!user.disabled">
+                            {{ user.disabled ? 'Disabled' : 'Active' }}
+                          </span>
+                          <span class="text-zinc-700" aria-hidden="true">/</span>
+                          <span [class.text-zinc-500]="!user.emailVerified" [class.text-emerald-200]="user.emailVerified">
+                            {{ user.emailVerified ? 'Email verified' : 'Email unverified' }}
+                          </span>
+                          <span class="text-zinc-700" aria-hidden="true">/</span>
+                          <span class="text-zinc-500">Last sign-in {{ formatDate(user.lastSignInAt) }}</span>
+                        </div>
+                        <div class="mt-2 flex max-w-sm flex-wrap gap-1.5">
                           @if (user.roles.length > 0) {
                             @for (role of user.roles; track role) {
                               <span class="border border-cyan-400/30 bg-cyan-950/30 px-2 py-1 text-xs text-cyan-100">{{ role }}</span>
                             }
                           } @else {
-                            <span class="text-zinc-500">No roles</span>
+                            <span class="text-xs text-zinc-600">No roles</span>
                           }
                         </div>
                       </td>
-                      <td class="px-4 py-4">
-                        <div class="grid gap-2 text-xs">
-                          <span [class.text-red-200]="user.disabled" [class.text-emerald-200]="!user.disabled">
-                            {{ user.disabled ? 'Disabled' : 'Active' }}
-                          </span>
-                          <span [class.text-zinc-500]="!user.emailVerified" [class.text-emerald-200]="user.emailVerified">
-                            {{ user.emailVerified ? 'Email verified' : 'Email unverified' }}
-                          </span>
-                        </div>
+                      <td class="px-4 py-4 text-right text-xl font-semibold text-violet-100">{{ formatPoints(user.points.total) }}</td>
+                      <td class="px-4 py-4 text-right text-zinc-300">{{ formatPoints(user.points.postReads) }}</td>
+                      <td class="px-4 py-4 text-right text-zinc-300">{{ formatPoints(user.points.shares) }}</td>
+                      <td class="px-4 py-4 text-right text-zinc-300">{{ formatPoints(user.points.approvedComments) }}</td>
+                      <td class="px-4 py-4 text-right text-zinc-300">{{ formatPoints(user.points.dailyDiscoveries) }}</td>
+                      <td class="px-4 py-4 text-right" [class.text-rose-200]="user.points.manualAdjustments < 0" [class.text-zinc-300]="user.points.manualAdjustments >= 0">
+                        {{ user.points.manualAdjustments > 0 ? '+' : '' }}{{ formatPoints(user.points.manualAdjustments) }}
                       </td>
-                      <td class="px-4 py-4 text-zinc-300">{{ formatDate(user.lastSignInAt) }}</td>
                       <td class="px-4 py-4">
-                        <div class="flex min-w-40 flex-col gap-2">
+                        <div class="min-w-32">
                           <button
                             type="button"
-                            class="border border-amber-400/70 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
-                            [disabled]="user.uid === currentUser()?.uid || isStartingUserView()"
-                            [attr.title]="user.uid === currentUser()?.uid ? 'You are already signed in as this user' : null"
-                            (click)="openUserViewConfirmation(user)"
+                            class="w-full border border-violet-400/70 px-3 py-2 text-sm font-medium text-violet-100 hover:bg-violet-400 hover:text-zinc-950"
+                            (click)="openPointsEditor(user)"
                           >
-                            View as User
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-                            (click)="openEditor(user)"
-                          >
-                            Manage Roles
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-orange-400/70 px-3 py-2 text-sm font-medium text-orange-100 hover:bg-orange-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
-                            [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
-                            [attr.title]="user.uid === currentUser()?.uid ? 'You cannot change sign-in access for your own admin account' : null"
-                            (click)="openAccessConfirmation(user, user.disabled ? 'enable' : 'disable')"
-                          >
-                            {{ user.disabled ? 'Restore Sign-In' : 'Disable Sign-In' }}
-                          </button>
-                          <button
-                            type="button"
-                            class="border border-red-500/70 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
-                            [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
-                            [attr.title]="user.uid === currentUser()?.uid ? 'You cannot delete your own admin account' : null"
-                            (click)="openAccessConfirmation(user, 'delete')"
-                          >
-                            Delete Auth User
+                            Manage Points
                           </button>
                         </div>
                       </td>
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="5" class="px-4 py-10 text-center text-zinc-400">No users match this search.</td>
+                      <td colspan="9" class="px-4 py-10 text-center text-zinc-400">No users match this search.</td>
                     </tr>
                   }
                 }
               </tbody>
             </table>
           </div>
-        </section>
+          </section>
+        }
 
         @if (selectedUser(); as user) {
           <section class="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 py-8">
@@ -320,6 +572,14 @@ function formatAccountDate(value: string | null): string {
               </footer>
             </div>
           </section>
+        }
+
+        @if (selectedPointsUser(); as user) {
+          <app-user-points-editor
+            [user]="user"
+            (dismissed)="closePointsEditor()"
+            (pointsAdjusted)="handlePointsAdjusted($event)"
+          />
         }
 
         @if (pendingAccessAction(); as pending) {
@@ -460,18 +720,26 @@ export class UserManagementPageComponent {
   private readonly router = inject(Router);
 
   protected readonly suggestedRoles = suggestedRoles;
+  protected readonly activeView = signal<UserManagementView>('users');
   protected readonly users = signal<readonly AdminManagedUser[]>([]);
+  protected readonly leaderboardUsers = signal<readonly AdminManagedUser[]>([]);
   protected readonly searchTerm = signal('');
+  protected readonly pointsSearchTerm = signal('');
   protected readonly isLoading = signal(false);
+  protected readonly isPointsLoading = signal(false);
+  protected readonly hasLoadedPoints = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly isStartingUserView = signal(false);
   protected readonly isMutatingAccess = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly statusMessage = signal<string | null>(null);
+  protected readonly sortKey = signal<UserSortKey>('total');
+  protected readonly sortDirection = signal<UserSortDirection>('desc');
   protected readonly nextPageToken = signal<string | null>(null);
   protected readonly currentPageToken = signal<string | null>(null);
   protected readonly pageTokenStack = signal<string[]>([]);
   protected readonly selectedUser = signal<AdminManagedUser | null>(null);
+  protected readonly selectedPointsUser = signal<AdminManagedUser | null>(null);
   protected readonly pendingUserView = signal<AdminManagedUser | null>(null);
   protected readonly pendingAccessAction = signal<PendingUserAccessAction | null>(null);
   protected readonly accessConfirmation = signal('');
@@ -494,11 +762,73 @@ export class UserManagementPageComponent {
       ...user.roles,
     ].some(value => value.toLowerCase().includes(term)));
   });
+  protected readonly filteredLeaderboardUsers = computed(() => {
+    const term = normalizeSearch(this.pointsSearchTerm());
+
+    if (!term) {
+      return this.leaderboardUsers();
+    }
+
+    return this.leaderboardUsers().filter(user => [
+      user.uid,
+      user.email ?? '',
+      user.displayName ?? '',
+      ...user.roles,
+    ].some(value => value.toLowerCase().includes(term)));
+  });
+  protected readonly rankedUsers = computed(() => {
+    const key = this.sortKey();
+    const direction = this.sortDirection();
+
+    return [...this.filteredLeaderboardUsers()].sort((first, second) => {
+      const comparison = key === 'user'
+        ? getUserLabel(first).localeCompare(getUserLabel(second), undefined, {sensitivity: 'base'})
+        : first.points[key] - second.points[key];
+
+      if (comparison === 0) {
+        return getUserLabel(first).localeCompare(getUserLabel(second), undefined, {sensitivity: 'base'});
+      }
+
+      return direction === 'asc' ? comparison : -comparison;
+    });
+  });
+  protected readonly totalPoints = computed(() => this.leaderboardUsers().reduce((total, user) => total + user.points.total, 0));
   protected readonly adminCount = computed(() => this.users().filter(user => user.roles.includes('admin')).length);
   protected readonly disabledCount = computed(() => this.users().filter(user => user.disabled).length);
+  protected readonly isActiveViewLoading = computed(() => this.activeView() === 'users'
+    ? this.isLoading()
+    : this.isPointsLoading());
+  protected readonly sortSummary = computed(() => {
+    const key = this.sortKey();
+    const direction = this.sortDirection();
+    const order = key === 'user'
+      ? (direction === 'asc' ? 'A to Z' : 'Z to A')
+      : (direction === 'asc' ? 'low to high' : 'high to low');
+
+    return `${userSortLabels[key]}: ${order}`;
+  });
 
   constructor() {
     void this.loadUsers();
+  }
+
+  protected refreshActiveView(): void {
+    if (this.activeView() === 'points') {
+      void this.loadPointsUsers();
+      return;
+    }
+
+    this.refreshUsers();
+  }
+
+  protected showView(view: UserManagementView): void {
+    this.activeView.set(view);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+
+    if (view === 'points' && !this.hasLoadedPoints() && !this.isPointsLoading()) {
+      void this.loadPointsUsers();
+    }
   }
 
   protected refreshUsers(): void {
@@ -538,12 +868,57 @@ export class UserManagementPageComponent {
     this.searchTerm.set(input?.value ?? '');
   }
 
+  protected updatePointsSearch(event: Event): void {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+    this.pointsSearchTerm.set(input?.value ?? '');
+  }
+
+  protected sortUsersBy(key: UserSortKey): void {
+    if (this.sortKey() === key) {
+      this.sortDirection.update(direction => direction === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    this.sortKey.set(key);
+    this.sortDirection.set(key === 'user' ? 'asc' : 'desc');
+  }
+
+  protected sortAria(key: UserSortKey): 'ascending' | 'descending' | null {
+    if (!this.isSortedBy(key)) {
+      return null;
+    }
+
+    return this.sortDirection() === 'asc' ? 'ascending' : 'descending';
+  }
+
+  protected isSortedBy(key: UserSortKey): boolean {
+    return this.sortKey() === key;
+  }
+
   protected openEditor(user: AdminManagedUser): void {
     this.selectedUser.set(user);
     this.draftRoles.set([...user.roles].sort((a, b) => a.localeCompare(b)));
     this.newRoleName.set('');
     this.roleInputError.set(null);
     this.statusMessage.set(null);
+  }
+
+  protected openPointsEditor(user: AdminManagedUser): void {
+    this.selectedPointsUser.set(user);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+  }
+
+  protected closePointsEditor(): void {
+    this.selectedPointsUser.set(null);
+  }
+
+  protected handlePointsAdjusted(result: AdjustAdminUserPointsResponse): void {
+    this.replaceUser(result.user);
+    this.selectedPointsUser.set(null);
+    const accountLabel = result.user.email ?? result.user.uid;
+    const action = result.adjustment.delta > 0 ? 'Added' : 'Removed';
+    this.statusMessage.set(`${action} ${Math.abs(result.adjustment.delta)} points ${result.adjustment.delta > 0 ? 'to' : 'from'} ${accountLabel}. New balance: ${result.adjustment.newTotal}.`);
   }
 
   protected openAccessConfirmation(user: AdminManagedUser, action: UserAccessAction): void {
@@ -604,14 +979,14 @@ export class UserManagementPageComponent {
           uid: pending.user.uid,
           confirmation: this.accessConfirmation().trim(),
         });
-        this.users.update(users => users.filter(user => user.uid !== result.uid));
+        this.removeUser(result.uid);
         this.statusMessage.set(`Deleted the Firebase Auth record for ${accountLabel}. Stored site data was preserved.`);
       } else {
         const result = await this.userManagement.setUserDisabled({
           uid: pending.user.uid,
           disabled: pending.action === 'disable',
         });
-        this.users.update(users => users.map(user => user.uid === result.user.uid ? result.user : user));
+        this.replaceUser(result.user);
         this.statusMessage.set(result.user.disabled
           ? `Disabled Firebase Auth sign-in for ${accountLabel}.`
           : `Restored Firebase Auth sign-in for ${accountLabel}.`);
@@ -726,7 +1101,7 @@ export class UserManagementPageComponent {
         roles: this.draftRoles(),
       });
 
-      this.users.update(users => users.map(existingUser => existingUser.uid === result.user.uid ? result.user : existingUser));
+      this.replaceUser(result.user);
       this.selectedUser.set(result.user);
       this.draftRoles.set([...result.user.roles]);
       this.statusMessage.set(`Updated roles for ${result.user.email ?? result.user.uid}. The user must refresh their session for new claims to apply.`);
@@ -739,6 +1114,10 @@ export class UserManagementPageComponent {
 
   protected formatDate(value: string | null): string {
     return formatAccountDate(value);
+  }
+
+  protected formatPoints(value: number): string {
+    return pointNumberFormatter.format(value);
   }
 
   private async loadUsers(pageToken?: string): Promise<void> {
@@ -757,6 +1136,34 @@ export class UserManagementPageComponent {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async loadPointsUsers(): Promise<void> {
+    this.isPointsLoading.set(true);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+
+    try {
+      const result = await this.userManagement.listAllUsers();
+      this.leaderboardUsers.set(result.users);
+      this.hasLoadedPoints.set(true);
+    } catch (error) {
+      this.errorMessage.set(getErrorMessage(error));
+      this.leaderboardUsers.set([]);
+      this.hasLoadedPoints.set(false);
+    } finally {
+      this.isPointsLoading.set(false);
+    }
+  }
+
+  private replaceUser(updatedUser: AdminManagedUser): void {
+    this.users.update(users => users.map(user => user.uid === updatedUser.uid ? updatedUser : user));
+    this.leaderboardUsers.update(users => users.map(user => user.uid === updatedUser.uid ? updatedUser : user));
+  }
+
+  private removeUser(uid: string): void {
+    this.users.update(users => users.filter(user => user.uid !== uid));
+    this.leaderboardUsers.update(users => users.filter(user => user.uid !== uid));
   }
 
   private addRole(role: string): void {

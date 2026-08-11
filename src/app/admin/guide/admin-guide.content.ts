@@ -394,14 +394,15 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
   {
     category: 'administration',
     id: 'manage-user-roles',
-    keywords: ['users', 'roles', 'permissions', 'claims', 'admin', 'cms admin', 'content editor', 'media manager', 'viewer', 'view as user', 'impersonation', 'troubleshoot', 'diagnose access', 'disable sign in', 'restore sign in', 'delete auth user', 'fake email', 'suspicious signup'],
+    keywords: ['users', 'roles', 'permissions', 'claims', 'admin', 'cms admin', 'content editor', 'media manager', 'viewer', 'view as user', 'impersonation', 'troubleshoot', 'diagnose access', 'disable sign in', 'restore sign in', 'delete auth user', 'fake email', 'suspicious signup', 'previous page', 'next page'],
     links: [{label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}],
     roles: USER_MANAGEMENT_ACCESS_ROLES,
     steps: [
       {
-        text: 'Open Users and search by email, display name, UID, or role.',
+        text: 'Open Users. User management is the default view and keeps the paginated Firebase Auth account list separate from the points leaderboard.',
         link: {label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}
       },
+      {text: 'Search the current page by email, display name, UID, or role. Use Previous and Next to move through Firebase Auth pages without replacing the account-management workflow.'},
       {text: 'Choose View as User, review the selected identity and roles, then choose Start View to test role-aware navigation, profile details, badges, and route access.'},
       {text: 'Keep the amber preview banner visible and choose Exit View when testing is complete. The preview does not replace Firebase authentication, so backend requests still use your admin account and must not be treated as permission-denial tests.'},
       {text: 'For a suspicious or fake signup, choose Disable Sign-In to deny future authentication while keeping the email registered. Existing short-lived ID tokens can remain usable until they expire.'},
@@ -412,8 +413,28 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
       {text: 'Save the role update, then ask the user to refresh their token—usually by signing out and back in.'},
       {text: 'Use a fresh View as session to verify the resulting sidebar and route access, then ask the real user to confirm backend behavior after their token refresh.'},
     ],
-    summary: 'Disable suspicious sign-ins, restore or delete Auth users, preview role-aware application views, and assign least-privilege custom claims.',
+    summary: 'Review Firebase Auth accounts, control sign-in access, preview role-aware application views, and assign least-privilege custom claims.',
     title: 'Manage users and roles',
+  },
+  {
+    category: 'administration',
+    id: 'manage-user-points',
+    keywords: ['users', 'points', 'point balance', 'points leaderboard', 'rank readers', 'sort points', 'reading points', 'share points', 'comment points', 'interaction points', 'add points', 'remove points', 'set total', 'reader rewards', 'manual adjustment', 'audit reason'],
+    links: [{label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}],
+    roles: USER_MANAGEMENT_ACCESS_ROLES,
+    steps: [
+      {
+        text: 'Open Users, then select Points leaderboard. This alternate section loads the complete user set for ranking without replacing the default account-management list.',
+        link: {label: 'Open Users', route: `${adminRoute}/${PATH_NAMES.ADMIN_USERS}`}
+      },
+      {text: 'Inspect the leaderboard, ranked by current total by default. Choose User, Total, Reading, Shares, Comments, Daily, or Manual to sort the complete list in either direction; rank follows the active sort.'},
+      {text: 'Use the visible point columns to compare each account’s current total with points earned from post reading, shares, approved comments, Daily Discovery, and the net manual adjustment. Choose Manage Points for the selected account’s full breakdown.'},
+      {text: 'Choose Add, Remove, or Set total; enter a whole-number amount and a specific reason; inspect the balance summary; then choose Save Point Change. A removal cannot make the balance negative, and earned-category counters are not rewritten.'},
+      {text: 'Every saved point change is user-visible account state. The server writes it atomically, records the signed adjustment and reason in point activity, and logs the acting and target UIDs.'},
+      {text: 'Return to User management for roles, sign-in access, deletion, or account simulation; those controls are intentionally not duplicated in the points section.'},
+    ],
+    summary: 'Use the separate leaderboard section to compare reader balances and make reasoned, audited point adjustments.',
+    title: 'Manage and adjust user points',
   },
 ] as const;
 
