@@ -39,7 +39,7 @@ import {
           class="fixed inset-x-0 bottom-0 top-16 z-40 cursor-default bg-slate-950/45 backdrop-blur-sm dark:bg-black/65"
           aria-hidden="true"
           tabindex="-1"
-          (click)="requestClose()"
+          (click)="requestClose(false)"
         ></button>
 
         <div

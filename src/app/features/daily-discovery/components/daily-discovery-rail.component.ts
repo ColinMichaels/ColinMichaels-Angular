@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -26,7 +27,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
   template: `
     <section
       class="daily-discovery"
-      [class.is-answer-open]="isExpanded()"
       aria-labelledby="daily-discovery-heading"
     >
       <div class="daily-discovery-shell">
@@ -38,18 +38,20 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
             }
           </p>
           @if (challenge(); as dailyChallenge) {
-            <button
-              type="button"
-              class="daily-discovery-question"
-              [attr.aria-expanded]="isExpanded()"
-              aria-controls="daily-discovery-answer-panel"
-              (click)="toggleAnswerPanel()"
-            >
-              <span id="daily-discovery-heading">{{ dailyChallenge.question }}</span>
-              <svg aria-hidden="true" viewBox="0 0 24 24" [class.is-expanded]="isExpanded()">
-                <path d="m6.5 9 5.5 5.5L17.5 9"></path>
-              </svg>
-            </button>
+            <div class="daily-discovery-question-row">
+              <p id="daily-discovery-heading" class="daily-discovery-question">
+                {{ dailyChallenge.question }}
+              </p>
+              <button
+                type="button"
+                class="daily-discovery-answer-toggle"
+                [attr.aria-expanded]="isExpanded()"
+                aria-controls="daily-discovery-answer-panel"
+                (click)="toggleAnswerPanel()"
+              >
+                {{ answerActionLabel() }}
+              </button>
+            </div>
           } @else if (loadError()) {
             <p id="daily-discovery-heading" class="daily-discovery-status">Today's prompt is taking a little longer to arrive.</p>
           } @else {
@@ -76,19 +78,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
             </span>
           }
         </div>
-
-        <button
-          type="button"
-          class="daily-discovery-search"
-          [disabled]="!challenge()"
-          (click)="searchTheBlog()"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <circle cx="10.5" cy="10.5" r="6"></circle>
-            <path d="m15 15 4.5 4.5"></path>
-          </svg>
-          <span>Search the blog</span>
-        </button>
       </div>
 
       @if (isExpanded() && challenge(); as dailyChallenge) {
@@ -191,13 +180,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
               }
 
               <div class="daily-discovery-answer-actions">
-                <button type="button" class="daily-discovery-search daily-discovery-search-secondary" (click)="searchTheBlog()">
-                  <svg aria-hidden="true" viewBox="0 0 24 24">
-                    <circle cx="10.5" cy="10.5" r="6"></circle>
-                    <path d="m15 15 4.5 4.5"></path>
-                  </svg>
-                  <span>Search the blog</span>
-                </button>
                 <button type="submit" class="daily-discovery-check" [disabled]="submitting() || !answer().trim()">
                   {{ submitting() ? 'Checking…' : 'Check answer' }}
                 </button>
@@ -247,7 +229,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     .daily-discovery-shell {
       display: grid;
-      grid-template-columns: minmax(20rem, 2.25fr) minmax(7rem, 0.62fr) auto;
+      grid-template-columns: minmax(20rem, 2.25fr) minmax(7rem, 0.62fr);
       gap: clamp(1rem, 2vw, 2.25rem);
       align-items: center;
       min-height: 7.25rem;
@@ -290,17 +272,18 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       text-transform: uppercase;
     }
 
-    .daily-discovery-question {
+    .daily-discovery-question-row {
       display: flex;
       width: 100%;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      border: 0;
-      background: transparent;
-      padding: 0;
+    }
+
+    .daily-discovery-question {
+      min-width: 0;
+      margin: 0;
       color: #f8fafc;
-      cursor: pointer;
       font-family: var(--font-heading);
       font-size: clamp(1rem, 1.25vw, 1.25rem);
       font-weight: 650;
@@ -308,13 +291,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       text-align: left;
     }
 
-    .daily-discovery-question:hover,
-    .daily-discovery-question:focus-visible {
-      color: #cffafe;
-    }
-
-    .daily-discovery-question:focus-visible,
-    .daily-discovery-search:focus-visible,
+    .daily-discovery-answer-toggle:focus-visible,
     .daily-discovery-check:focus-visible,
     .daily-discovery-next:focus-visible,
     .daily-discovery-dismiss:focus-visible,
@@ -324,8 +301,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       outline-offset: 3px;
     }
 
-    .daily-discovery-question svg,
-    .daily-discovery-search svg,
     .daily-discovery-next svg {
       width: 1.15rem;
       height: 1.15rem;
@@ -335,14 +310,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-width: 1.8;
-    }
-
-    .daily-discovery-question svg {
-      transition: transform 180ms ease;
-    }
-
-    .daily-discovery-question svg.is-expanded {
-      transform: rotate(180deg);
     }
 
     .daily-discovery-status {
@@ -362,7 +329,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       color: #67e8f9;
     }
 
-    .daily-discovery-search,
+    .daily-discovery-answer-toggle,
     .daily-discovery-check {
       display: inline-flex;
       min-height: 2.8rem;
@@ -383,22 +350,17 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
     }
 
-    .daily-discovery-search:hover,
+    .daily-discovery-answer-toggle:hover,
     .daily-discovery-check:hover {
       border-color: #cffafe;
       background: #cffafe;
     }
 
-    .daily-discovery-search:disabled,
     .daily-discovery-check:disabled {
       border-color: #475569;
       background: #334155;
       color: #94a3b8;
       cursor: not-allowed;
-    }
-
-    .daily-discovery.is-answer-open > .daily-discovery-shell > .daily-discovery-search {
-      display: none;
     }
 
     .daily-discovery-answer-panel {
@@ -543,11 +505,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       align-items: center;
     }
 
-    .daily-discovery-search-secondary {
-      background: transparent;
-      color: #cffafe;
-    }
-
     .daily-discovery-dismiss {
       min-height: 2.8rem;
       border: 0;
@@ -661,11 +618,6 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
         padding-block: 0.9rem 1rem;
       }
 
-      .daily-discovery-search {
-        grid-column: 1;
-        width: 100%;
-      }
-
       .daily-discovery-answer-form {
         grid-template-columns: 1fr;
       }
@@ -679,19 +631,13 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
         grid-template-columns: 1fr 1fr;
       }
 
-      .daily-discovery-answer-actions .daily-discovery-search,
-      .daily-discovery-dismiss {
-        grid-column: 1 / -1;
-      }
-
       .daily-discovery-choices {
         grid-template-columns: 1fr;
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .daily-discovery-question svg,
-      .daily-discovery-search,
+      .daily-discovery-answer-toggle,
       .daily-discovery-check,
       .daily-discovery-next {
         transition: none;
@@ -725,10 +671,31 @@ export class DailyDiscoveryRailComponent {
   protected readonly dailyComplete = computed(() => (
     this.answerResult()?.dailyComplete ?? this.challenge()?.dailyComplete ?? false
   ));
+  protected readonly answerActionLabel = computed(() => {
+    const questionType = this.challenge()?.questionType;
+
+    return questionType === 'scenario_application'
+      || questionType === 'inference'
+      || questionType === 'compare_articles'
+      || questionType === 'sequence'
+      ? 'Solve'
+      : 'Answer';
+  });
   protected readonly answerSources = computed(() => {
     const result = this.answerResult();
 
     return result?.sources ?? (result?.source ? [result.source] : []);
+  });
+  private readonly answerControlFocusEffect = effect(() => {
+    if (!this.isExpanded() || this.isCompleted()) {
+      return;
+    }
+
+    const control = this.answerChoices()[0]?.nativeElement ?? this.answerInput()?.nativeElement;
+
+    if (control) {
+      setTimeout(() => control.focus(), 0);
+    }
   });
 
   constructor() {
@@ -739,17 +706,12 @@ export class DailyDiscoveryRailComponent {
     this.isExpanded.update(value => !value);
 
     if (this.isExpanded() && !this.isCompleted()) {
-      queueMicrotask(() => this.focusAnswerControl());
+      this.searchOverlay.requestAttention();
     }
   }
 
   protected closeAnswerPanel(): void {
     this.isExpanded.set(false);
-  }
-
-  protected searchTheBlog(): void {
-    this.isExpanded.set(true);
-    this.searchOverlay.openAndFocus();
   }
 
   protected updateAnswer(value: string): void {
@@ -802,12 +764,6 @@ export class DailyDiscoveryRailComponent {
     this.isCompleted.set(false);
     await this.loadChallenge();
     this.isExpanded.set(true);
-    queueMicrotask(() => this.focusAnswerControl());
-  }
-
-  private focusAnswerControl(): void {
-    this.answerChoices()[0]?.nativeElement.focus();
-    this.answerInput()?.nativeElement.focus();
   }
 
   private async loadChallenge(): Promise<void> {

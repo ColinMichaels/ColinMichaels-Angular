@@ -16,7 +16,7 @@ describe('DailyDiscoveryRailComponent', () => {
   let element: HTMLElement;
   let getChallenge: jasmine.Spy;
   let submitAnswer: jasmine.Spy;
-  let openAndFocus: jasmine.Spy;
+  let requestAttention: jasmine.Spy;
   let hasCompleted: jasmine.Spy;
   let markCompleted: jasmine.Spy;
   let getCompletedChallengeIds: jasmine.Spy;
@@ -37,7 +37,7 @@ describe('DailyDiscoveryRailComponent', () => {
       progress: null,
     });
     submitAnswer = jasmine.createSpy('submitAnswer');
-    openAndFocus = jasmine.createSpy('openAndFocus');
+    requestAttention = jasmine.createSpy('requestAttention');
     hasCompleted = jasmine.createSpy('hasCompleted').and.returnValue(false);
     markCompleted = jasmine.createSpy('markCompleted');
     getCompletedChallengeIds = jasmine.createSpy('getCompletedChallengeIds').and.returnValue([]);
@@ -53,7 +53,7 @@ describe('DailyDiscoveryRailComponent', () => {
           provide: DailyDiscoveryStateService,
           useValue: {hasCompleted, markCompleted, getCompletedChallengeIds, getCompletedChallengeIdsForToday},
         },
-        {provide: SiteSearchOverlayService, useValue: {openAndFocus}},
+        {provide: SiteSearchOverlayService, useValue: {requestAttention}},
       ],
     }).compileComponents();
 
@@ -71,22 +71,25 @@ describe('DailyDiscoveryRailComponent', () => {
     expect(element.textContent).toContain('1 / 10');
     expect(element.textContent).not.toContain('Today at');
     expect(element.textContent).not.toContain('ColinMichaels.com');
+    expect(element.textContent).not.toContain('Search the blog');
     expect(element.querySelectorAll('input[type="search"]')).toHaveSize(0);
+    expect(element.querySelector('.daily-discovery-question')?.tagName).toBe('P');
+    expect(element.querySelector('.daily-discovery-answer-toggle')?.textContent?.trim()).toBe('Answer');
   });
 
-  it('opens and focuses the existing header search from its CTA', () => {
-    const searchButton = [...element.querySelectorAll<HTMLButtonElement>('button')]
-      .find(button => button.textContent?.includes('Search the blog'));
+  it('opens and focuses the answer while cueing the existing header search', async () => {
+    const answerButton = element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle');
 
-    searchButton?.click();
+    answerButton?.click();
     fixture.detectChanges();
+    await fixture.whenStable();
 
-    expect(openAndFocus).toHaveBeenCalledTimes(1);
+    expect(requestAttention).toHaveBeenCalledTimes(1);
+    expect(answerButton?.getAttribute('aria-expanded')).toBe('true');
     expect(element.querySelector<HTMLInputElement>('#daily-discovery-answer')?.type).toBe('text');
+    expect(document.activeElement).toBe(element.querySelector('#daily-discovery-answer'));
     expect(element.querySelectorAll('input[type="search"]')).toHaveSize(0);
-    expect(getComputedStyle(
-      element.querySelector<HTMLButtonElement>('.daily-discovery-shell > .daily-discovery-search')!
-    ).display).toBe('none');
+    expect(element.textContent).not.toContain('Search the blog');
   });
 
   it('stores a successful guest completion on the device', async () => {
@@ -105,7 +108,7 @@ describe('DailyDiscoveryRailComponent', () => {
       completedCount: 1,
       dailyComplete: false,
     });
-    const questionButton = element.querySelector<HTMLButtonElement>('.daily-discovery-question');
+    const questionButton = element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle');
 
     questionButton?.click();
     fixture.detectChanges();
@@ -136,7 +139,7 @@ describe('DailyDiscoveryRailComponent', () => {
       correct: false,
       message: 'Not quite. Search the post again.',
     });
-    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle')?.click();
     fixture.detectChanges();
     const input = element.querySelector<HTMLInputElement>('#daily-discovery-answer');
     if (input) {
@@ -197,7 +200,8 @@ describe('DailyDiscoveryRailComponent', () => {
     });
     fixture.detectChanges();
 
-    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    expect(element.querySelector('.daily-discovery-answer-toggle')?.textContent?.trim()).toBe('Solve');
+    element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle')?.click();
     fixture.detectChanges();
 
     expect(element.querySelectorAll<HTMLInputElement>('input[type="radio"]')).toHaveSize(2);
@@ -247,7 +251,7 @@ describe('DailyDiscoveryRailComponent', () => {
       dailyComplete: false,
     });
     fixture.detectChanges();
-    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle')?.click();
     fixture.detectChanges();
     const input = element.querySelector<HTMLInputElement>('#daily-discovery-answer');
     if (input) {
@@ -288,7 +292,7 @@ describe('DailyDiscoveryRailComponent', () => {
       dailyComplete: false,
       progress: null,
     });
-    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle')?.click();
     fixture.detectChanges();
     const input = element.querySelector<HTMLInputElement>('#daily-discovery-answer');
     if (input) {
@@ -347,7 +351,7 @@ describe('DailyDiscoveryRailComponent', () => {
         completedChallengeIds: ['2026-08-09-q01'],
       },
     });
-    element.querySelector<HTMLButtonElement>('.daily-discovery-question')?.click();
+    element.querySelector<HTMLButtonElement>('.daily-discovery-answer-toggle')?.click();
     fixture.detectChanges();
     const input = element.querySelector<HTMLInputElement>('#daily-discovery-answer');
     if (input) {

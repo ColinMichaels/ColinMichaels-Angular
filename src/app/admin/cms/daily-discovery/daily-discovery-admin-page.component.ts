@@ -31,6 +31,7 @@ import {
   DailyDiscoveryExternalQuiz,
 } from './daily-discovery-admin.models';
 import {DailyDiscoveryAdminService} from './daily-discovery-admin.service';
+import {DailyDiscoveryDraftPreviewComponent} from './daily-discovery-draft-preview.component';
 
 function getErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) {
@@ -60,6 +61,7 @@ function getSelectValue(event: Event): string {
     AdminAlertComponent,
     AdminEditorActionBarComponent,
     AdminPageHeaderComponent,
+    DailyDiscoveryDraftPreviewComponent,
     FontAwesomeModule,
     RouterLink,
   ],
@@ -275,6 +277,13 @@ function getSelectValue(event: Event): string {
                 <button type="button" class="mt-3 min-h-10 w-full border border-zinc-700 px-3 text-xs font-semibold text-zinc-300 hover:border-cyan-300 hover:text-cyan-200" (click)="downloadDraft()">
                   Download edited JSON
                 </button>
+                <button
+                  type="button"
+                  class="mt-2 min-h-10 w-full border border-cyan-500/60 bg-cyan-500/5 px-3 text-xs font-semibold text-cyan-200 hover:border-cyan-300 hover:bg-cyan-300 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  (click)="previewOpen.set(true)"
+                >
+                  Preview reader experience
+                </button>
               </section>
 
               <section class="p-4">
@@ -307,7 +316,12 @@ function getSelectValue(event: Event): string {
           </aside>
 
           <section class="min-w-0 border border-zinc-800 bg-zinc-900/35">
-            @if (activeQuestion(); as question) {
+            @if (previewOpen() && draftQuiz(); as previewQuiz) {
+              <app-daily-discovery-draft-preview
+                [quiz]="previewQuiz"
+                (closePreview)="previewOpen.set(false)"
+              ></app-daily-discovery-draft-preview>
+            } @else if (activeQuestion(); as question) {
               <header class="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3 sm:px-5">
                 <div>
                   <h2 class="text-sm font-semibold text-zinc-100">Editing question {{ selectedQuestionIndex() + 1 }} of {{ draftQuiz()?.questions?.length }}</h2>
@@ -467,6 +481,7 @@ export class DailyDiscoveryAdminPageComponent implements OnInit {
   protected readonly validatedSignature = signal('');
   protected readonly pastedJson = signal('');
   protected readonly pasteOpen = signal(false);
+  protected readonly previewOpen = signal(false);
   protected readonly approveDraft = signal(false);
   protected readonly confirmLiveReplacement = signal(false);
   protected readonly loadingSet = signal(false);
@@ -615,6 +630,7 @@ export class DailyDiscoveryAdminPageComponent implements OnInit {
     this.selectedQuestionIndex.set(0);
     this.approveDraft.set(false);
     this.confirmLiveReplacement.set(false);
+    this.previewOpen.set(false);
     this.clearValidation();
     this.successMessage.set('Draft cleared. The stored set was not changed.');
   }
@@ -638,6 +654,7 @@ export class DailyDiscoveryAdminPageComponent implements OnInit {
     this.selectedQuestionIndex.set(0);
     this.approveDraft.set(false);
     this.confirmLiveReplacement.set(false);
+    this.previewOpen.set(false);
     this.clearValidation();
     this.errorMessage.set('');
     this.successMessage.set('Existing questions loaded into a local draft. Nothing changes until validation and save succeed.');
@@ -807,6 +824,7 @@ export class DailyDiscoveryAdminPageComponent implements OnInit {
       this.pastedJson.set('');
       this.approveDraft.set(false);
       this.confirmLiveReplacement.set(false);
+      this.previewOpen.set(false);
       this.clearValidation();
       await this.loadDate(result.dateKey);
       this.successMessage.set(success);
@@ -871,6 +889,7 @@ export class DailyDiscoveryAdminPageComponent implements OnInit {
       this.selectedQuestionIndex.set(0);
       this.approveDraft.set(false);
       this.confirmLiveReplacement.set(false);
+      this.previewOpen.set(false);
       this.clearValidation();
       this.successMessage.set(`${quiz.questions.length} questions loaded. Review the draft, then validate it against published posts.`);
     } catch (error) {
