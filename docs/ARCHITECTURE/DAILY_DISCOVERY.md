@@ -8,10 +8,10 @@ The interaction remains guest-accessible. Signing in adds durable benefits—fiv
 
 ## Component Inventory
 
-- `DailyDiscoveryRailComponent` owns the collapsed prompt rail, text or multiple-choice answer panel, optional hint, completion feedback, multiple source links, and responsive presentation. The rail starts directly with the challenge; it does not repeat the site name or a separate Today/date block.
+- `DailyDiscoveryRailComponent` owns the collapsed prompt rail, question-type-aware **Answer** or **Solve** action, text or multiple-choice answer panel, optional hint, completion feedback, multiple source links, and responsive presentation. The rail starts directly with the challenge; it does not repeat the site name, a separate Today/date block, or a duplicate search action.
 - `DailyDiscoveryService` calls the public challenge and answer-check Functions. It never receives accepted answers.
 - `DailyDiscoveryStateService` retains up to 140 successful guest completions in device-local storage. It stores only challenge identifiers and completion timestamps.
-- `SiteSearchOverlayService.openAndFocus()` lets the rail open and focus the existing `SiteHeaderComponent` search input.
+- `SiteSearchOverlayService.requestAttention()` lets the rail briefly highlight the existing `SiteHeaderComponent` search input without opening it or taking focus from the answer control. `openAndFocus()` remains available to surfaces that explicitly send a visitor into search.
 - `HomeArticleHeroComponent` composes the rail directly after the hero content so the daily prompt remains part of the first homepage surface. Its featured-post artwork stays top-anchored in compact desktop crops and returns to the source 16:9 ratio at tablet and mobile widths so embedded image labels remain readable.
 - `UserProfileComponent` projects Daily Discovery point totals and the current streak alongside the existing reader-point summary.
 - `functions/src/daily-discovery.ts` owns the reviewed fallback catalog, Eastern-time date selection, exact normalized answer matching, sequential selection, and pure streak rules.
@@ -20,6 +20,7 @@ The interaction remains guest-accessible. Signing in adds durable benefits—fiv
 - `functions/scripts/import-daily-discovery-questions.mjs` validates, canonicalizes, dry-runs, and create-only imports dated Codex JSON files.
 - `getDailyDiscoveryChallenge` and `submitDailyDiscoveryAnswer` are the public callable boundary for prompt delivery and answer validation.
 - `DailyDiscoveryAdminPageComponent` provides the CMS-role-gated `/admin/cms/daily-discovery` upload, paste, structured question editing, validation, and create/replace workflow.
+- `DailyDiscoveryDraftPreviewComponent` gives CMS operators a local reader-style test of the currently loaded draft, including direct question navigation, hints, answer feedback, explanations, source links, completion, and restart without calling public answer, progress, streak, or point services.
 - `DailyDiscoveryAdminService` is the Angular callable client; `daily-discovery-admin.adapter.ts` owns safe local parsing, existing-set conversion, normalization, and quality-count regeneration.
 - `getAdminDailyDiscoveryQuestionSet` and `saveAdminDailyDiscoveryQuestionSet` are the CMS-role-gated private read and create/replace boundary used by the Admin interface.
 
@@ -28,12 +29,12 @@ The interaction remains guest-accessible. Signing in adds durable benefits—fiv
 1. The homepage requests the next unfinished challenge for the current `America/New_York` calendar date and supplies device-local completed ids for a guest.
 2. The Function reads `dailyDiscoveryQuestionSets/{YYYY-MM-DD}`. A reviewed manual import can create this private document before the first visit. If no valid set exists, that first request deterministically creates up to ten title-gap questions from published, publicly discoverable posts and stores the result in a transaction. Later visitors receive the same set.
 3. The public response contains the challenge id, date, question, point value, question number, total count, completion summary, and—when imported—choices, difficulty, estimated time, and an optional hint. It does not expose accepted answers, explanations, or source posts before a correct submission.
-4. **Search the blog** expands the answer rail and calls `openAndFocus()` on the shared search overlay. The header input remains the only `type="search"` field on the page.
+4. A compact **Answer** action opens direct title-gap and article-hunt questions; reasoning-oriented scenario, inference, comparison, and sequence questions use **Solve**. Opening the panel moves focus to its first answer control and briefly highlights the shared header search as a discovery cue. The rail contains no search button, and the header input remains the only `type="search"` field on the page.
 5. A visitor submits either the text answer or the selected multiple-choice id. The Function rejects expired challenge/date pairs and evaluates all answers through normalized exact matching on the server.
 6. A correct answer reveals the explanation and one or more source posts. **Next question** requests the next unfinished interaction without closing the rail. A guest completion is remembered on that device; a signed-in completion also creates one deterministic point event for that user, Eastern date, and challenge.
 7. A repeated correct signed-in submission returns the existing total and progress without awarding points again. After the final question, the rail reports the daily set complete.
 
-The answer panel opens above the rail on wider screens and joins document flow on narrow screens. It is not a modal, popup, or page-blocking membership prompt. Keyboard focus is moved only when the visitor opens the answer field or explicitly requests the shared site search.
+The answer panel opens above the rail on wider screens and joins document flow on narrow screens. It is not a modal, popup, or page-blocking membership prompt. Keyboard focus moves to the answer field when the visitor chooses **Answer** or **Solve**; the search cue is visual only and respects reduced-motion preferences.
 
 ## Manual Codex JSON Import
 
@@ -80,6 +81,8 @@ The Admin interface uses the trusted backend without granting the browser direct
 All three collections are backend-only under Firestore Rules. An optional Firestore TTL policy may delete receipt documents by their `expiresAt` field after 30 days; audit records should be retained. The callables do not need a new API key or server secret because they use existing Firebase Authentication claims and the Admin SDK.
 
 At `/admin/cms/daily-discovery`, an operator chooses an Eastern date and can upload, drag-and-drop, or paste a complete generated JSON file. The structured editor exposes each prompt, type, difficulty, estimated time, hint, choice, correct answer, explanation, source slug, generated title, and evidence field. Any edit clears the previous validation result. **Validate draft** performs a dry run through the same server validation used by the write, and **Create set** or **Replace revision N** remains disabled until the exact current draft passes.
+
+**Preview reader experience** replaces the editing pane with an Admin-only interactive rendering of the loaded draft. An operator can jump directly to any question, reveal its hint, try incorrect and correct choices, inspect the post-answer explanation and sources, advance through completion, and restart. The preview reads only the local draft object: it does not replace the stored set, call `submitDailyDiscoveryAnswer`, update guest completion storage, create point events, or change account streaks. Returning to the editor preserves the draft.
 
 An existing imported multiple-choice set can be converted into a local editing draft because its private canonical questions retain the choices, correct choice id, explanations, and source slugs. The original generated evidence is not stored; the conversion uses the answer explanation as review evidence, and the operator can refine it before validation. Deterministic title-gap sets cannot be converted safely into multiple-choice drafts, so the page instructs the operator to upload a complete replacement JSON file instead. **Download edited JSON** preserves the normalized reviewed file locally without writing Firestore.
 
@@ -134,6 +137,8 @@ Open `http://localhost:4200/`, expand Daily Discovery, solve the missing title w
 
 Sign in with the emulator-only CMS editor, then open `http://localhost:4200/admin/cms/daily-discovery` to test the protected visual workflow. Upload or paste a future-dated JSON file, edit one question, validate it, create the set, reload it into the editor, validate again, and replace the next revision. The fixed credentials are local-only and never exist in production Auth.
 
+Before saving, choose **Preview reader experience** and verify question navigation, hint disclosure, an incorrect attempt, a correct attempt, explanation/source disclosure, next-question progression, completion, restart, and return to editor. No emulator point or progress records should be created by this preview because it does not call the public answer service.
+
 To test a generated multiple-choice file locally, run the seed first so the current emulator set is removed, then import before loading the homepage:
 
 ```bash
@@ -146,7 +151,7 @@ Guest progress intentionally survives a page reload. To restart the browser-side
 
 ## Rollback
 
-Hosting can roll back the Admin editor and multi-question rail without deleting data because the route, account field, private set documents, and per-challenge point events are additive. If the Functions are rolled back to the one-question implementation, roll Hosting back at the same time because the public response contract changed; rolling back only the Admin Hosting interface leaves the guarded CLI importer available. Existing `daily_discovery` point events, account progress, question sets, admin audit records, and retry receipts should remain as historical or idempotency data; no destructive cleanup is required. Rolling back the new callables removes authenticated replacement capability but does not invalidate question sets already written in the imported generation format.
+Hosting can roll back the Admin editor, draft preview, and multi-question rail without deleting data because the route, preview state, account field, private set documents, and per-challenge point events are additive. Removing the preview component only removes a local Admin testing surface; it has no stored data or migration to reverse. If the Functions are rolled back to the one-question implementation, roll Hosting back at the same time because the public response contract changed; rolling back only the Admin Hosting interface leaves the guarded CLI importer available. Existing `daily_discovery` point events, account progress, question sets, admin audit records, and retry receipts should remain as historical or idempotency data; no destructive cleanup is required. Rolling back the new callables removes authenticated replacement capability but does not invalidate question sets already written in the imported generation format.
 
 ## Validation
 
@@ -154,8 +159,8 @@ Hosting can roll back the Admin editor and multi-question rail without deleting 
 - Guarded importer dry-run/write verification against the Firestore emulator.
 - Firestore Rules verification that question, receipt, and audit collections remain inaccessible to direct public and admin clients.
 - Angular rail, multiple-choice/hint/source behavior, device-state, header-focus, homepage-composition, and Profile projection tests.
-- Admin adapter, callable service, route-role, navigation-title, upload/paste, structured editing, validation-lock, and create/replace component tests.
+- Admin adapter, callable service, route-role, navigation-title, upload/paste, structured editing, local reader-preview states, validation-lock, and create/replace component tests.
 - Desktop and mobile Admin browser checks covering date loading, JSON intake, question selection/editing, validation, confirmations, and save feedback.
 - Repository lint and production build.
-- Desktop and narrow browser verification for collapsed, progress, search-open, answer, incorrect, correct, next-question, and final-completion states.
-- A production smoke test after deployment confirming first-request set creation, ten prompts, existing header search focus, source links, anonymous progression, authenticated per-question award idempotency, the 50-point daily ceiling, and next-day rollover.
+- Desktop and narrow browser verification for collapsed, progress, header-search cue, answer, incorrect, correct, next-question, and final-completion states.
+- A production smoke test after deployment confirming first-request set creation, ten prompts, answer-control focus with the visual-only header search cue, source links, anonymous progression, authenticated per-question award idempotency, the 50-point daily ceiling, and next-day rollover.
