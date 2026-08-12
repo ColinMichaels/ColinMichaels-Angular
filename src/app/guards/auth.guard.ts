@@ -4,7 +4,6 @@ import {Observable, map, take} from 'rxjs';
 
 import {AuthService} from '../services/auth.service';
 import {PATH_NAMES} from '../app-route-paths';
-
 @Injectable({
   providedIn: 'root'
 })
