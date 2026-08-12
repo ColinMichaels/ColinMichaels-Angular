@@ -65,7 +65,7 @@ The header field is the single search input for the live-results experience. `Si
 - links to the full `/search` page with the current query
 - exposes the field and result panel as one labelled modal search surface
 - keeps keyboard focus inside that surface while open and announces the number of available results without reading the full list on every update
-- preserves Escape, backdrop, and close-button dismissal, returning focus to the header field unless a result navigation has begun
+- preserves Escape and close-button dismissal with focus restored to the header field; clicking the backdrop or anywhere outside the search surface closes it and clears the header input's focus, while result navigation continues without restoring focus
 
 The Blog index no longer renders a duplicate Search action because the global launcher remains visible in the sticky header.
 

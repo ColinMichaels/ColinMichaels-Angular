@@ -1,4 +1,4 @@
-import {ComponentFixture, DeferBlockState, TestBed} from '@angular/core/testing';
+import {ComponentFixture, DeferBlockState, fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {signal} from '@angular/core';
 import {BehaviorSubject, of} from 'rxjs';
@@ -14,6 +14,7 @@ describe('SiteHeaderComponent', () => {
   let nativeElement: HTMLElement;
   let openSearch: jasmine.Spy;
   let openAndFocusSearch: jasmine.Spy;
+  let requestSearchAttention: jasmine.Spy;
   let closeSearch: jasmine.Spy;
   let getRoleAuthorization: jasmine.Spy;
 
@@ -34,17 +35,23 @@ describe('SiteHeaderComponent', () => {
     };
     const searchOpen = signal(false);
     const focusRequest = signal(0);
+    const attentionRequest = signal(0);
     openSearch = jasmine.createSpy('openSearch').and.callFake(() => searchOpen.set(true));
     openAndFocusSearch = jasmine.createSpy('openAndFocusSearch').and.callFake(() => {
       searchOpen.set(true);
       focusRequest.update(value => value + 1);
     });
+    requestSearchAttention = jasmine.createSpy('requestSearchAttention').and.callFake(() => {
+      attentionRequest.update(value => value + 1);
+    });
     closeSearch = jasmine.createSpy('closeSearch').and.callFake(() => searchOpen.set(false));
     const searchOverlayService = {
       isOpen: searchOpen.asReadonly(),
       focusRequest: focusRequest.asReadonly(),
+      attentionRequest: attentionRequest.asReadonly(),
       open: openSearch,
       openAndFocus: openAndFocusSearch,
+      requestAttention: requestSearchAttention,
       close: closeSearch,
     };
     const siteSearchService = {
@@ -109,6 +116,25 @@ describe('SiteHeaderComponent', () => {
     expect(nativeElement.querySelectorAll('input[type="search"]')).toHaveSize(1);
   });
 
+  it('briefly highlights the header search without opening it or stealing focus', fakeAsync(() => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
+
+    menuButton?.focus();
+    requestSearchAttention();
+    fixture.detectChanges();
+    tick();
+    fixture.detectChanges();
+
+    expect(searchInput?.classList).toContain('site-header-search-attention');
+    expect(document.activeElement).toBe(menuButton);
+    expect(openSearch).not.toHaveBeenCalled();
+
+    tick(1600);
+    fixture.detectChanges();
+    expect(searchInput?.classList).not.toContain('site-header-search-attention');
+  }));
+
   it('uses the header field as the only search input in the open results panel', async () => {
     const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
 
@@ -151,6 +177,60 @@ describe('SiteHeaderComponent', () => {
 
     expect(closeSearch).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(searchInput);
+    expect(nativeElement.querySelector('form[role="search"]')).not.toBeNull();
+  });
+
+  it('closes search and clears input focus when the backdrop is clicked', async () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+
+    searchInput?.focus();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
+    fixture.detectChanges();
+
+    const backdrop = nativeElement.querySelector<HTMLButtonElement>('button[aria-hidden="true"][tabindex="-1"]');
+    expect(backdrop).not.toBeNull();
+    expect(document.activeElement).toBe(searchInput);
+
+    backdrop?.click();
+    fixture.detectChanges();
+
+    expect(closeSearch).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).not.toBe(searchInput);
+    expect(nativeElement.querySelector('form[role="search"]')).not.toBeNull();
+  });
+
+  it('keeps search open when the input or results panel is clicked', async () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+
+    searchInput?.focus();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
+    fixture.detectChanges();
+    closeSearch.calls.reset();
+
+    searchInput?.click();
+    nativeElement.querySelector<HTMLElement>('#site-search-drawer-title')?.click();
+    fixture.detectChanges();
+
+    expect(closeSearch).not.toHaveBeenCalled();
+    expect(nativeElement.querySelector('#site-search-results-panel')).not.toBeNull();
+  });
+
+  it('closes search and clears input focus for a document click outside the search form', () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+
+    searchInput?.focus();
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(searchInput);
+
+    document.body.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    fixture.detectChanges();
+
+    expect(closeSearch).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).not.toBe(searchInput);
     expect(nativeElement.querySelector('form[role="search"]')).not.toBeNull();
   });
 

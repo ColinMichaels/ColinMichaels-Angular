@@ -79,6 +79,9 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'daily discovery')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'load existing validate draft').map(entry => entry.id))
       .toContain('manage-daily-discovery-question-sets');
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'reader preview no points').map(entry => entry.id))
+      .toContain('manage-daily-discovery-question-sets');
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'reader preview no points')).toEqual([]);
   });
 
   it('never returns a role-restricted match to an unauthorized user', () => {

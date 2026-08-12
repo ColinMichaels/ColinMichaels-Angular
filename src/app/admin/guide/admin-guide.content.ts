@@ -247,6 +247,10 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
       'live date',
       'importer',
       'manual review',
+      'reader preview',
+      'future questions',
+      'test answers',
+      'no points',
     ],
     links: [{label: 'Open Daily Discovery', route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`}],
     roles: CMS_ACCESS_ROLES,
@@ -257,6 +261,7 @@ export const ADMIN_GUIDE_ENTRIES: readonly AdminGuideEntry[] = [
         link: {label: 'Open Daily Discovery', route: `${cmsRoute}/${PATH_NAMES.ADMIN_CMS_DAILY_DISCOVERY}`}
       },
       {text: 'Review every prompt, hint, type, difficulty, estimated time, choice, correct answer, explanation, source slug, and evidence field. Imported multiple-choice sets can use Load existing into editor; automatic title-gap sets require a replacement JSON file.'},
+      {text: 'Choose Preview reader experience to test any uploaded draft locally, including question jumps, hints, answer feedback, explanations, sources, completion, and restart. Preview activity never changes the live quiz or writes reader progress, streaks, or points.'},
       {text: 'Choose Validate draft after every edit. The server verifies the complete schema and every source against currently published posts; saving remains locked until the current draft passes.'},
       {text: 'Approve draft or manual-review input when prompted. Replacing today’s live set also requires explicit confirmation and the same ordered question IDs so reader progress and awards remain stable.'},
       {text: 'Choose Create set or Replace revision only after validation. A stale revision is rejected instead of overwriting another change; successful saves create an audit event and idempotent retry receipt.'},

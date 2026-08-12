@@ -49,6 +49,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
         </a>
 
         <form
+          #searchForm
           class="relative mx-auto w-full min-w-0 max-w-xl"
           [attr.role]="searchOverlay.isOpen() ? 'dialog' : 'search'"
           [attr.aria-modal]="searchOverlay.isOpen() ? 'true' : null"
@@ -79,6 +80,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
             autocomplete="off"
             [value]="searchQuery()"
             class="site-header-search-input"
+            [class.site-header-search-attention]="searchAttentionActive()"
             aria-haspopup="dialog"
             aria-controls="site-search-results-panel"
             [attr.aria-expanded]="searchOverlay.isOpen()"
@@ -209,17 +211,44 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
     .site-header-overlay-open {
       z-index: 90;
     }
+
+    .site-header-search-attention {
+      animation: site-header-search-attention 720ms ease-in-out 2;
+    }
+
+    @keyframes site-header-search-attention {
+      0%, 100% {
+        border-color: var(--site-border);
+        box-shadow: 0 0 0 0 rgb(var(--site-accent-rgb) / 0);
+      }
+
+      50% {
+        border-color: var(--site-accent);
+        box-shadow: 0 0 0 5px rgb(var(--site-accent-rgb) / 0.28);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .site-header-search-attention {
+        border-color: var(--site-accent);
+        box-shadow: 0 0 0 3px rgb(var(--site-accent-rgb) / 0.22);
+        animation: none;
+      }
+    }
   `,
 })
 export class SiteHeaderComponent {
   @ViewChild('headerSearchInput') private headerSearchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('searchForm') private searchForm?: ElementRef<HTMLFormElement>;
 
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly searchOverlay = inject(SiteSearchOverlayService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
   protected readonly searchQuery = signal('');
+  protected readonly searchAttentionActive = signal(false);
   private lastFocusRequest = 0;
+  private lastAttentionRequest = 0;
   // A monotonic request can refocus the one shared search field even when it is already open.
   private readonly externalSearchFocusEffect = effect(() => {
     const request = this.searchOverlay.focusRequest();
@@ -230,6 +259,23 @@ export class SiteHeaderComponent {
 
     this.lastFocusRequest = request;
     setTimeout(() => this.headerSearchInput?.nativeElement.focus(), 0);
+  });
+  private readonly externalSearchAttentionEffect = effect(onCleanup => {
+    const request = this.searchOverlay.attentionRequest();
+
+    if (request <= this.lastAttentionRequest) {
+      return;
+    }
+
+    this.lastAttentionRequest = request;
+    this.searchAttentionActive.set(false);
+    const startTimer = setTimeout(() => this.searchAttentionActive.set(true), 0);
+    const stopTimer = setTimeout(() => this.searchAttentionActive.set(false), 1600);
+
+    onCleanup(() => {
+      clearTimeout(startTimer);
+      clearTimeout(stopTimer);
+    });
   });
 
   protected openSearch(): void {
@@ -251,20 +297,23 @@ export class SiteHeaderComponent {
   protected closeSearch(restoreFocus = true): void {
     this.searchOverlay.close();
 
-    if (restoreFocus) {
-      queueMicrotask(() => {
-        const searchInput = this.headerSearchInput?.nativeElement;
-
-        if (!searchInput || searchInput.ownerDocument.activeElement === searchInput) {
-          this.suppressNextSearchFocusOpen = false;
-          return;
-        }
-
-        this.suppressNextSearchFocusOpen = true;
-        searchInput.focus();
-        this.suppressNextSearchFocusOpen = false;
-      });
+    if (!restoreFocus) {
+      this.headerSearchInput?.nativeElement.blur();
+      return;
     }
+
+    queueMicrotask(() => {
+      const searchInput = this.headerSearchInput?.nativeElement;
+
+      if (!searchInput || searchInput.ownerDocument.activeElement === searchInput) {
+        this.suppressNextSearchFocusOpen = false;
+        return;
+      }
+
+      this.suppressNextSearchFocusOpen = true;
+      searchInput.focus();
+      this.suppressNextSearchFocusOpen = false;
+    });
   }
 
   protected updateSearchQuery(value: string): void {
@@ -287,13 +336,19 @@ export class SiteHeaderComponent {
 
   @HostListener('document:click', ['$event'])
   protected handleDocumentClick(event: Event): void {
-    if (!this.isMenuOpen()) {
+    const target = event.target;
+
+    if (!(target instanceof Node)) {
       return;
     }
 
-    const target = event.target;
+    const searchForm = this.searchForm?.nativeElement;
 
-    if (target instanceof Node && !this.host.nativeElement.contains(target)) {
+    if (this.searchOverlay.isOpen() && searchForm && !searchForm.contains(target)) {
+      this.closeSearch(false);
+    }
+
+    if (this.isMenuOpen() && !this.host.nativeElement.contains(target)) {
       this.closeMenu();
     }
   }

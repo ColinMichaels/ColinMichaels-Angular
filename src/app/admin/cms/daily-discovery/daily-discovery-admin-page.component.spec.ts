@@ -9,13 +9,13 @@ function createQuizJson(): string {
   return JSON.stringify({
     schema: 'colinmichaels.daily-discovery-quiz',
     version: 1,
-    quizDate: '2026-08-10',
+    quizDate: '2099-08-10',
     timezone: 'America/New_York',
     status: 'ready',
     uploadStatus: 'approved',
-    generatedAt: '2026-08-10T08:00:00-04:00',
+    generatedAt: '2099-08-10T08:00:00-04:00',
     questions: Array.from({length: 5}, (_, index) => ({
-      id: `2026-08-10-q${index + 1}`,
+      id: `2099-08-10-q${index + 1}`,
       position: index + 1,
       type: ['article_hunt', 'scenario_application', 'inference', 'compare_articles', 'sequence'][index],
       difficulty: index === 0 ? 'easy' : index === 4 ? 'challenge' : 'medium',
@@ -92,7 +92,7 @@ describe('DailyDiscoveryAdminPageComponent', () => {
     const transfer = new DataTransfer();
     transfer.items.add(new File(
       [createQuizJson()],
-      'daily-discovery-2026-08-10.json',
+      'daily-discovery-2099-08-10.json',
       {type: 'application/json'}
     ));
     input.files = transfer.files;
@@ -101,7 +101,16 @@ describe('DailyDiscoveryAdminPageComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(element.textContent).toContain('daily-discovery-2026-08-10.json');
+    expect(element.textContent).toContain('daily-discovery-2099-08-10.json');
+    expect(element.textContent).toContain('Editing question 1 of 5');
+
+    findButton(element, 'Preview reader experience').click();
+    fixture.detectChanges();
+    expect(element.textContent).toContain('Admin-only reader preview');
+    expect(element.textContent).toContain('Which supported answer belongs to question number 1?');
+
+    findButton(element, 'Return to editor').click();
+    fixture.detectChanges();
     expect(element.textContent).toContain('Editing question 1 of 5');
   });
 
@@ -125,7 +134,7 @@ describe('DailyDiscoveryAdminPageComponent', () => {
 
     const validation: DailyDiscoveryAdminDryRunResult = {
       dryRun: true,
-      dateKey: '2026-08-10',
+      dateKey: '2099-08-10',
       operation: 'create',
       currentRevision: null,
       nextRevision: 1,
@@ -145,7 +154,7 @@ describe('DailyDiscoveryAdminPageComponent', () => {
 
     service.saveQuestionSet.and.resolveTo({
       dryRun: false,
-      dateKey: '2026-08-10',
+      dateKey: '2099-08-10',
       operation: 'create',
       revision: 1,
       liveReplacement: false,
@@ -159,6 +168,6 @@ describe('DailyDiscoveryAdminPageComponent', () => {
     fixture.detectChanges();
 
     expect(service.saveQuestionSet.calls.count()).toBe(2);
-    expect(element.textContent).toContain('Created 2026-08-10 at revision 1');
+    expect(element.textContent).toContain('Created 2099-08-10 at revision 1');
   });
 });
