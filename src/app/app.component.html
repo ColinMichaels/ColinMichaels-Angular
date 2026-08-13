@@ -1,3 +1,10 @@
+<div
+  class="contents"
+  [appSearchHighlight]="activeSearchQuery()"
+  [searchHighlightScrollToFirst]="scrollToFirstSearchMatch()"
+  searchHighlightScrollSelector="[data-reading-content]"
+  [searchHighlightContext]="currentUrl()"
+>
 @if (showOsNotifications()) {
   @defer (when showOsNotifications()) {
     <app-notification-server/>
@@ -24,8 +31,12 @@
 </div>
 <app-user-view-banner/>
 <app-screen-saver-launcher/>
+@if (showSiteHeader()) {
+  <app-daily-discovery-play-overlay/>
+}
 @if (showBlogMembershipCampaign()) {
   @defer (when showBlogMembershipCampaign()) {
     <app-blog-membership-campaign/>
   }
 }
+</div>

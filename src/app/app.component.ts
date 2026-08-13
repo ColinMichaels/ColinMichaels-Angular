@@ -1,4 +1,4 @@
-import {Component, ChangeDetectionStrategy, computed, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, computed, effect, inject} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {filter, map, startWith} from 'rxjs/operators';
@@ -20,6 +20,12 @@ import {UserViewBannerComponent} from './shared/user-view/user-view-banner.compo
 import {
   BlogMembershipCampaignComponent
 } from './features/blog/components/signup-campaign/blog-membership-campaign.component';
+import {SiteSearchHighlightDirective} from './features/search/directives/site-search-highlight.directive';
+import {SiteSearchOverlayService} from './features/search/services/site-search-overlay.service';
+import {
+  DailyDiscoveryPlayOverlayComponent
+} from './features/daily-discovery/components/daily-discovery-play-overlay.component';
+import {DailyDiscoveryPlayService} from './features/daily-discovery/services/daily-discovery-play.service';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -63,13 +69,28 @@ export function shouldShowReaderTools(url: string): boolean {
   return READER_ROUTES.some(route => currentUrl === route || (route !== '/' && routeMatchesPrefix(currentUrl, route)));
 }
 
-export function shouldShowBlogMembershipCampaign(url: string): boolean {
+export function shouldShowBlogMembershipCampaign(url: string, dailyDiscoveryPlaying = false): boolean {
   const currentUrl = url.split('?')[0].split('#')[0];
   const blogRoute = `/${PATH_NAMES.BLOG}`;
   const previewRoute = `${blogRoute}/preview`;
 
   return routeMatchesPrefix(currentUrl, blogRoute)
-    && !routeMatchesPrefix(currentUrl, previewRoute);
+    && !routeMatchesPrefix(currentUrl, previewRoute)
+    && !dailyDiscoveryPlaying;
+}
+
+export function getSiteSearchQuery(url: string): string {
+  const queryString = url.split('?')[1]?.split('#')[0] ?? '';
+  return new URLSearchParams(queryString).get('q')?.trim() ?? '';
+}
+
+export function isBlogArticleRoute(url: string): boolean {
+  const currentUrl = url.split('?')[0].split('#')[0];
+  const segments = currentUrl.split('/').filter(Boolean);
+
+  return segments.length === 2
+    && segments[0] === PATH_NAMES.BLOG
+    && segments[1] !== 'search';
 }
 
 @Component({
@@ -83,6 +104,8 @@ export function shouldShowBlogMembershipCampaign(url: string): boolean {
     SiteHeaderComponent,
     UserViewBannerComponent,
     BlogMembershipCampaignComponent,
+    SiteSearchHighlightDirective,
+    DailyDiscoveryPlayOverlayComponent,
   ],
   templateUrl: './app.component.html',
   styles: [],
@@ -102,7 +125,9 @@ export class AppComponent {
   private readonly pushNotifications = inject(PwaPushService);
   private readonly theme = inject(SiteThemeService);
   private readonly authService = inject(AuthService);
-  private readonly currentUrl = toSignal(
+  private readonly siteSearch = inject(SiteSearchOverlayService);
+  private readonly dailyDiscoveryPlay = inject(DailyDiscoveryPlayService);
+  protected readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map(event => event.urlAfterRedirects),
@@ -122,11 +147,14 @@ export class AppComponent {
     return shouldShowReaderTools(this.currentUrl());
   });
   protected readonly showBlogMembershipCampaign = computed(() => {
-    return shouldShowBlogMembershipCampaign(this.currentUrl());
+    return shouldShowBlogMembershipCampaign(this.currentUrl(), this.dailyDiscoveryPlay.isPlaying());
   });
   protected readonly activeUserView = toSignal(this.authService.userView$, {initialValue: null});
+  protected readonly activeSearchQuery = this.siteSearch.query;
+  protected readonly scrollToFirstSearchMatch = computed(() => isBlogArticleRoute(this.currentUrl()));
 
   constructor() {
+    effect(() => this.siteSearch.setQuery(getSiteSearchQuery(this.currentUrl())));
     this.sitePreloader.start();
     this.shareAttribution.start();
     this.pushNotifications.start();

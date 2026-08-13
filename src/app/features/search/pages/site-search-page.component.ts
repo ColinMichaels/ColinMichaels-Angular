@@ -4,6 +4,7 @@ import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {SiteSearchOverlayService} from '../services/site-search-overlay.service';
 import {
   getFeaturedSearchItems,
   getSearchCategories,
@@ -187,6 +188,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
         @if (result.image) {
           <a
             [routerLink]="result.path"
+            [queryParams]="resultSearchQueryParams()"
             class="blog-media-frame blog-post-image-frame group aspect-[16/9]"
           >
             <img
@@ -199,6 +201,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
         } @else {
           <a
             [routerLink]="result.path"
+            [queryParams]="resultSearchQueryParams()"
             class="blog-media-frame grid aspect-[16/9] place-items-center bg-slate-100 text-slate-500 transition hover:border-cyan-600 hover:text-cyan-700 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
             aria-label="Open {{ result.title }}"
           >
@@ -219,7 +222,11 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
           </div>
 
           <h2 class="mt-2 heading-subsection">
-            <a [routerLink]="result.path" class="hover:text-cyan-700 dark:hover:text-cyan-300">
+            <a
+              [routerLink]="result.path"
+              [queryParams]="resultSearchQueryParams()"
+              class="hover:text-cyan-700 dark:hover:text-cyan-300"
+            >
               {{ result.title }}
             </a>
           </h2>
@@ -254,6 +261,7 @@ export class SiteSearchPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly search = inject(SiteSearchService);
+  private readonly searchOverlay = inject(SiteSearchOverlayService);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly query = signal('');
@@ -292,6 +300,7 @@ export class SiteSearchPageComponent {
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.query.set(params.get('q') ?? '');
+      this.searchOverlay.setQuery(this.query());
       this.typeFilter.set(parseTypeFilter(params.get('type')));
       this.categoryFilter.set(params.get('category') ?? '');
       this.tagFilter.set(params.get('tag') ?? '');
@@ -302,10 +311,12 @@ export class SiteSearchPageComponent {
 
   protected updateQuery(value: string): void {
     this.query.set(value);
+    this.searchOverlay.setQuery(value);
   }
 
   protected submitSearch(value: string): false {
     this.query.set(value.trim());
+    this.searchOverlay.setQuery(this.query());
     this.syncQueryParams();
 
     return false;
@@ -338,6 +349,7 @@ export class SiteSearchPageComponent {
 
   protected clearSearch(): void {
     this.query.set('');
+    this.searchOverlay.setQuery('');
     this.typeFilter.set(DEFAULT_TYPE_FILTER);
     this.categoryFilter.set('');
     this.tagFilter.set('');
@@ -348,6 +360,11 @@ export class SiteSearchPageComponent {
 
   protected trackResult(index: number, result: SiteSearchResult): string {
     return `${result.type}-${result.id}-${index}`;
+  }
+
+  protected resultSearchQueryParams(): {q?: string} {
+    const query = this.query().trim();
+    return query ? {q: query} : {};
   }
 
   private syncQueryParams(): void {

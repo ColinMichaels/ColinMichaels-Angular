@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {
   AppComponent,
+  getSiteSearchQuery,
+  isBlogArticleRoute,
   shouldShowBlogMembershipCampaign,
   shouldShowOsNotifications,
   shouldShowReaderTools,
@@ -56,9 +58,19 @@ describe('AppComponent', () => {
 
   it('shows the membership campaign on public blog routes only', () => {
     expect(shouldShowBlogMembershipCampaign('/blog')).toBeTrue();
+    expect(shouldShowBlogMembershipCampaign('/blog', true)).toBeFalse();
     expect(shouldShowBlogMembershipCampaign('/blog/member-benefits?source=social')).toBeTrue();
     expect(shouldShowBlogMembershipCampaign('/blog/preview/private-token')).toBeFalse();
     expect(shouldShowBlogMembershipCampaign('/topics')).toBeFalse();
+  });
+
+  it('recognizes article routes and restores decoded search queries from URLs', () => {
+    expect(isBlogArticleRoute('/blog/search-highlights?q=Firebase%20architecture')).toBeTrue();
+    expect(isBlogArticleRoute('/blog/search?q=Firebase')).toBeFalse();
+    expect(isBlogArticleRoute('/blog/category/technology')).toBeFalse();
+    expect(getSiteSearchQuery('/blog/search-highlights?q=Firebase%20architecture#details'))
+      .toBe('Firebase architecture');
+    expect(getSiteSearchQuery('/blog/search-highlights')).toBe('');
   });
 
 });

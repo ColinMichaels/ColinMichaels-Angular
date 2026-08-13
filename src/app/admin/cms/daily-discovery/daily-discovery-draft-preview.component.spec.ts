@@ -86,14 +86,15 @@ describe('DailyDiscoveryDraftPreviewComponent', () => {
     fixture.detectChanges();
     expect(element.textContent).toContain('Preview hint 1.');
 
-    const choices = element.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-    choices[1].click();
+    const incorrectChoice = element.querySelector<HTMLInputElement>('input[type="radio"][value="b"]');
+    incorrectChoice?.click();
     fixture.detectChanges();
     findButton(element, 'Check answer').click();
     fixture.detectChanges();
     expect(element.textContent).toContain('Not quite');
 
-    choices[0].click();
+    const correctChoice = element.querySelector<HTMLInputElement>('input[type="radio"][value="a"]');
+    correctChoice?.click();
     fixture.detectChanges();
     findButton(element, 'Check answer').click();
     fixture.detectChanges();
@@ -104,6 +105,20 @@ describe('DailyDiscoveryDraftPreviewComponent', () => {
     fixture.detectChanges();
     expect(element.textContent).toContain('Advanced preview question 2?');
     expect(element.textContent).toContain('1 tested this session');
+  });
+
+  it('uses shuffled alphabetical markers as the only visible selection control', () => {
+    const displayedInputs = Array.from(element.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+    const displayedMarkers = Array.from(element.querySelectorAll<HTMLElement>('[data-choice-marker]'));
+
+    expect(displayedInputs.map(input => input.value)).toEqual(['b', 'a']);
+    expect(displayedInputs.every(input => input.classList.contains('sr-only'))).toBeTrue();
+    expect(displayedMarkers.map(marker => marker.textContent?.trim())).toEqual(['A', 'B']);
+
+    displayedInputs[1].click();
+    fixture.detectChanges();
+
+    expect(displayedMarkers[1].classList).toContain('bg-cyan-300');
   });
 
   it('routes a skipped final question back to the first untested question', () => {
