@@ -171,11 +171,11 @@ export const MEDIA_LIBRARY_SEO_METADATA: SeoMetadata = {
 };
 
 export const HOMEPAGE_CMS_SEO_METADATA: SeoMetadata = {
-  title: createSiteTitle('CMS Homepage Hero'),
-  description: 'Protected CMS controls for homepage hero copy, slides, and featured article selection.',
+  title: createSiteTitle('CMS Homepage Feature'),
+  description: 'Protected CMS controls for homepage article selection, editorial imagery, and preserved legacy slides.',
   path: '/admin/cms/homepage',
   image: HOMEPAGE_OG_IMAGE,
-  imageAlt: createPreviewImageAlt('CMS homepage hero'),
+  imageAlt: createPreviewImageAlt('CMS homepage feature'),
   type: 'website',
   robots: 'noindex,nofollow',
 };

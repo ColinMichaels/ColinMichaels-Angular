@@ -79,8 +79,8 @@ describe('SiteHeaderComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders the blog-first search and icon utility layout without Labs navigation', () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+  it('renders the editorial navigation, search, and icon utility layout without Labs navigation', () => {
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
     const postsLink = nativeElement.querySelector<HTMLAnchorElement>('a[aria-label="Browse all posts"]');
     const logoLink = nativeElement.querySelector<HTMLAnchorElement>('a[aria-label="Go to homepage"]');
     const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
@@ -94,13 +94,17 @@ describe('SiteHeaderComponent', () => {
     expect(logoLink?.querySelector('h1')).toBeNull();
     expect(menuButton).not.toBeNull();
     expect(menuButton?.classList).toContain('site-icon-control');
-    expect(nativeElement.querySelector('nav[aria-label="Primary navigation"]')).toBeNull();
+    const primaryNavigation = nativeElement.querySelector<HTMLElement>('nav[aria-label="Primary navigation"]');
+    expect(primaryNavigation).not.toBeNull();
+    expect(primaryNavigation?.textContent).toContain('Discover');
+    expect(primaryNavigation?.textContent).toContain('Topics');
+    expect(primaryNavigation?.textContent).toContain('About');
     expect(nativeElement.querySelector('button[aria-label="Toggle navigation menu"]')).toBeNull();
     expect(nativeElement.textContent).not.toContain('Labs');
   });
 
   it('opens the live-results search overlay from the header field', () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     expect(searchInput).not.toBeNull();
     searchInput?.click();
@@ -109,7 +113,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('focuses the existing header search when another page control requests search', async () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
     const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
 
     menuButton?.focus();
@@ -122,7 +126,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('briefly highlights the header search without opening it or stealing focus', fakeAsync(() => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
     const menuButton = nativeElement.querySelector<HTMLButtonElement>('button[aria-label="Open site menu"]');
 
     menuButton?.focus();
@@ -141,7 +145,7 @@ describe('SiteHeaderComponent', () => {
   }));
 
   it('uses the header field as the only search input in the open results panel', async () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     searchInput?.focus();
     if (searchInput) {
@@ -162,7 +166,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('restores focus to the search field after dismissing the contained search surface', async () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     expect(searchInput).not.toBeNull();
     searchInput?.dispatchEvent(new FocusEvent('focus'));
@@ -187,7 +191,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('closes search and clears input focus when the backdrop is clicked', async () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     searchInput?.focus();
     searchInput?.dispatchEvent(new FocusEvent('focus'));
@@ -209,7 +213,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('keeps search open when the input or results panel is clicked', async () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     searchInput?.focus();
     searchInput?.dispatchEvent(new FocusEvent('focus'));
@@ -228,7 +232,7 @@ describe('SiteHeaderComponent', () => {
   });
 
   it('closes search and clears input focus for a document click outside the search form', () => {
-    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
+    const searchInput = nativeElement.querySelector<HTMLInputElement>('input[type="search"]');
 
     searchInput?.focus();
     searchInput?.dispatchEvent(new FocusEvent('focus'));

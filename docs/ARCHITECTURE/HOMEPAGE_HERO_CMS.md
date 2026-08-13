@@ -1,4 +1,4 @@
-# Homepage Hero CMS
+# Homepage Editorial Feature CMS
 
 ## Route And Boundary
 
@@ -9,91 +9,109 @@
 - Shared post selector: `src/app/features/homepage/utils/homepage-post-selection.util.ts`
 - Firestore document: `homepageSettings/home`
 
-The homepage hero remains part of the public website. The CMS manager is protected admin UI and must not move into
-`core-os`.
+The publication-first feature remains part of the public website. The CMS manager is protected admin UI and remains
+outside `core-os`.
 
-## Runtime Contract
+## Public Runtime Contract
 
-- The public hero reads `HomepageHeroRepositoryService.settings`.
-- If Firestore is unavailable, the document is missing, the document is draft-only for anonymous readers, or there are
-  no published slides, the renderer falls back to the previous static hero image and copy.
-- Published slides are sorted by `sortOrder`, then creation date, then ID.
-- The renderer resolves an ordered post gallery. Its lead is a valid CMS-selected post override, then the newest
-  published post marked `featured`, then the newest published post when no feature flags exist. The remaining unique
-  published posts follow in reverse chronological order. Multiple posts can remain featured; the resolver sorts by
-  `publishedAt`, falls back to `updatedAt`, and never clears historical flags.
-- The public hero renders exactly one gallery post at a time. Non-wrapping previous and next controls sit beneath the
-  card, and each arrow is rendered only when a post exists in that direction. A polite position status announces the
-  active title and exposes its one-based position without turning the gallery into an automatic carousel. When an
-  endpoint removes the focused arrow, focus moves to the surviving control.
-- When `useFeaturedPostBackground` is enabled and the gallery lead has `backgroundImage`, that image becomes the
-  sole homepage hero background. It is centered, decorative, high-priority, and static; it suppresses slideshow
-  rotation and Ken Burns motion while active. Navigating article cards does not replace this canonical background.
-- The slideshow uses stacked image elements with opacity transitions. It does not use a third-party carousel package,
-  and its published slides become fallbacks whenever the hero post has a custom background.
-- Slides can individually opt into a subtle Ken Burns-style transform animation. The animation runs independently from
-  the active slide class so crossfades do not restart transform keyframes, and the focal point drives the transform
-  origin so the motion keeps the intended crop area anchored.
-- When any published slide has Ken Burns motion enabled, the public renderer uses an effective crossfade of at least
-  `1400ms` even if the saved fade setting is lower.
-- Background rotation is decorative and automatic. The public homepage does not expose controls for the background
-  slideshow; the visible controls navigate article cards only.
-- Rotation and per-slide Ken Burns motion pause for hidden browser tabs and `prefers-reduced-motion: reduce`.
-- Only the first effective hero image carries `data-site-preload-image`, preserving the public preloader's
-  one-critical-image contract. An enabled post background owns this marker while it overrides the slideshow.
-- If the post-background option is disabled, the post has no background, or the image fails to load, the renderer uses
-  the published CMS slides, or the branded static image when no published slides are available. Changing the resolved
-  post or background URL resets the failed candidate so it can be retried later.
-- The gallery lead is excluded by ID from More writing instead of assuming it is the first repository row. Other recent
-  gallery entries can still appear in that section.
+- The article title is the homepage `h1`. The original personal headline and summary are no longer rendered publicly.
+- The lead is a valid CMS-selected post override, then the newest published post marked `featured`, then the newest
+  published post when no feature flags exist. Remaining unique published posts follow in reverse chronological order.
+- The public feature renders one post at a time with its excerpt, date, calculated reading time, and article link.
+  Non-wrapping previous and next controls preserve the existing post gallery and focus handoff. The redundant curator
+  row is omitted because authorship remains available on the article and its other listing surfaces.
+- When at least two posts are available, the active story advances every 30 seconds and wraps from the final story to
+  the lead. Manual navigation restarts the 30-second interval. Rotation pauses while the page is hidden, while the hero
+  contains keyboard focus, when the reader presses the visible pause control, and initially for readers who
+  prefer reduced motion; the same control can explicitly resume it.
+- The feature has two simultaneous image roles. `backgroundImage` fills a decorative, full-bleed backdrop under a dark
+  readability scrim, while the normal post image remains sharp in the large linked media panel beside the semantic
+  title and metadata.
+- When `backgroundImage` is absent, the normal post image is reused as the backdrop with heavy blur, darkening, and
+  overscan so baked-in cover text cannot compete with the hero copy. The linked panel remains unblurred.
+- The published legacy slide pool supplies the final backdrop and panel placeholder only when neither the dedicated
+  background nor the normal post image works. If no published CMS slide exists, the bundled default slide supplies
+  that final placeholder.
+- The legacy slide pool starts at a deterministic hash of the post ID or slug. A post therefore keeps the same
+  apparently random fallback between visits, while different posts can begin with different images. Slides advance
+  only when an image fails; they never rotate while a story is displayed.
+- A failed image advances to the next source. Changing the active post clears the failure set so an updated source can
+  be retried.
+- The first working backdrop is eager, high priority, decorative, and owns `data-site-preload-image`. The linked panel
+  is also eager and retains a stable aspect ratio to avoid layout shift.
+- Legacy slides no longer rotate inside the homepage feature. The independent, opt-in Screen Saver launcher remains
+  in the application shell and can still present those same published slides in its full-viewport viewer.
+- The active post remains excluded by ID from More to read. Other posts in the feature gallery may still appear there.
+- Daily Discovery remains immediately below the feature and continues to transfer active play into the persistent
+  public-shell overlay.
+
+## Editorial Image Contract
+
+The optional `BlogPost.backgroundImage` is now labelled **Editorial Feature / Post Background** in the post editor.
+It remains the same additive field used by blog-detail backgrounds; no second homepage image field is introduced.
+
+For a strong homepage crop, attach a clean landscape source at least 1920 pixels wide, without a baked-in title,
+button, date, or other essential text. Keep important subjects away from the extreme edges. The normal post image
+remains required by the existing workflow, stays visible in the linked panel, and becomes the blurred backdrop only
+when the dedicated editorial background is absent.
 
 ## CMS Workflow
 
-- CMS editors can update headline lines, summary copy, hero status, the optional selected-post override, slideshow
-  timing, and slide metadata. Automatic mode always uses the newest featured post; older posts can remain marked.
-- `Use featured post background` is an explicit, persisted opt-in. It is off by default; turning it off always restores
-  the slideshow even when the resolved post has a background attached.
-- The post editor's Full-screen Post Background control owns both article-route backgrounds and the optional homepage
-  override. The homepage toggle must also be enabled. Removing that field, disabling the toggle, or unfeaturing the
-  post restores the configured slideshow.
-- Each slide exposes a Ken Burns motion toggle. Newly uploaded or manually added slides default to motion enabled,
-  while older saved slides without the field normalize to motion disabled.
-- Multi-image uploads use the existing `BlogMediaUploadService` with slug `homepage` and role `homepage-hero`.
-- Uploaded images are optimized to WebP where supported by the existing client-side media optimizer.
-- Editors can also add an already-hosted image URL manually.
-- Slide removal only removes the slide from homepage settings. It does not delete Firebase Storage objects.
+- CMS roles can choose automatic featured-post selection or an explicit published post at `/admin/cms/homepage`.
+- The current public media roles are informational in Featured Article. The existing `useFeaturedPostBackground` field
+  remains editable as **Legacy client: prefer post background** under Legacy Hero Settings for older clients and code
+  rollback; it does not alter the current renderer.
+- The post editor owns cover and editorial media selection, upload, preview, and detach actions. Detaching does not
+  delete the reusable media asset.
+- Legacy headline, summary, timing, focal-point, and motion fields remain editable and stored for older clients and
+  rollback. Published slide images continue to supply the optional Screen Saver and the current homepage's stable
+  post-specific fallback pool.
+- The existing save validator still requires at least one published legacy slide before the settings document can be
+  published. Slide removal only changes homepage settings and never deletes Firebase Storage objects.
 
-## Migration And Deployment
+## Homepage Composition
 
-- Legacy `featuredPostMode: latest` settings normalize in memory to `featured`; no Firestore rewrite or post backfill
-  is required. The `selected` mode remains a deliberate manual override.
-- Existing homepage settings without `useFeaturedPostBackground` normalize to `false`, preserving their slideshow
-  behavior without a Firestore rewrite.
-- Existing post feature flags remain unchanged and can continue contributing to future search ranking and weighting.
-- Existing posts without `backgroundImage` retain the CMS slideshow and branded fallback behavior.
-- Deploy Angular Hosting and Firebase Functions together so the visible hero and crawler-facing homepage social image
-  resolve the same post. No Firestore or Storage Rules change is required.
-- Rollback is code-only: redeploy the previous Hosting and Functions versions together. Older builds safely ignore the
-  additive `useFeaturedPostBackground` field, and saved `featured` or `selected` modes remain valid without data repair.
-- As an immediate operational fallback before a rollback, disable `Use featured post background`; the published CMS
-  slideshow or branded static image resumes without changing any post media.
+The public route now reads as an editorial publication rather than a personal splash page:
+
+1. featured article and image;
+2. compact Daily Discovery prompt;
+3. More to read article listing with the existing Continue Reading state;
+4. compact topic directory;
+5. existing recovery collections;
+6. concise Colin Michaels professional profile and project/contact links;
+7. existing video, recommendations, social sharing, and footer surfaces.
+
+The `HomeEditorialAboutComponent` is homepage-specific UI. Shared post cards remain in
+`BlogPostListingComponent`, whose additive `editorial` layout changes presentation without changing repositories,
+routes, or stored post data.
+
+## Migration, Deployment, And Rollback
+
+- No Firestore, Storage, Function, Security Rule, or post migration is required.
+- Existing settings and post feature flags remain valid. Legacy `featuredPostMode: latest` still normalizes in memory
+  to `featured`.
+- Existing settings without `useFeaturedPostBackground` continue to normalize to `false` for older-client and
+  rollback compatibility; the current renderer does not read the field when ordering media.
+- Existing `backgroundImage`, slide, copy, timing, and motion values are preserved unchanged. The optional Screen
+  Saver therefore needs no migration.
+- Deployment is Angular Hosting only for this presentation change.
+- Code rollback restores the previous full-screen slideshow renderer from the same saved data. Because no field is
+  removed or repurposed, rollback requires no content repair.
+- For an immediate image-source adjustment without rollback, update the post's editorial asset or normal post image.
+  Published fallback slides matter only when both are unavailable; reordering or changing that pool can change the
+  deterministic per-post placeholder.
 
 ## Security
 
-- Firestore public reads are limited to `homepageSettings/home` when the document is missing or has `status:
-  published`.
-- Firestore list/create/update/delete access remains restricted to CMS content roles.
-- Storage uploads reuse `cms/blog-media/{postSlug}/{assetRole}/{fileName}`, which is publicly readable and writable only
-  by CMS/media roles.
+- Firestore public reads remain limited to the published `homepageSettings/home` document.
+- Firestore list/create/update/delete access remains restricted to `CMS_ACCESS_ROLES`.
+- Media upload and finalization retain their existing authenticated CMS/media boundaries.
 
 ## Validation
 
-- `npm run build`
-- `npm --prefix functions run build`
-- `npm run lint`
-- Run focused hero, selection, social-preview, validation, and Main integration tests.
-- Verify `/` and `/admin/cms/homepage`.
-- Check the post-background toggle off and on, a valid post background, failed-image fallback, first/middle/last article
-  navigation states, single-post arrow suppression, desktop, tablet, mobile, reduced-motion, and hidden-tab pause
-  behavior.
-- Confirm the first rendered hero image still dismisses the public preloader.
+- Run focused homepage, listing, Continue Reading, header, Admin Guide, manager, and Main integration tests.
+- Run `npm run build` and `npm run lint`.
+- Verify `/` at desktop and mobile widths, including article navigation, failure fallback, Daily Discovery, Continue
+  Reading, topic links, About links, dark/light theme behavior, reduced motion, and browser console status.
+- Verify `/admin/cms/homepage` and `/admin/guide#update-the-homepage-hero` with an allowed CMS role; confirm a viewer
+  cannot receive the guide entry.

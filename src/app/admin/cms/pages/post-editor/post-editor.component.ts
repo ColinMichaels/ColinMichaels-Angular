@@ -619,7 +619,7 @@ function getErrorMessage(error: unknown): string {
                 <app-admin-control-module
                   title="Post Images"
                   [summary]="mediaModuleSummary"
-                  description="Choose the required cover image and an optional full-screen background for selected posts."
+                  description="Choose the required cover image and an optional wide, text-free editorial image for featured reading surfaces."
                   [expanded]="mediaSettingsOpen()"
                   (expandedChange)="mediaSettingsOpen.set($event)"
                 >
@@ -637,11 +637,11 @@ function getErrorMessage(error: unknown): string {
 
                     <app-blog-media-uploader
                       formControlName="backgroundImage"
-                      label="Full-screen Post Background"
-                      description="Optional. Displays behind this article and can replace the homepage slideshow when this post owns the hero and Use featured post background is enabled in Homepage Hero controls. A landscape image at least 1920px wide works best."
-                      buttonLabel="Choose Background"
-                      placeholder="Optional background image URL"
-                      previewAlt="Full-screen post background preview"
+                      label="Editorial Feature / Post Background"
+                      description="Optional. Used behind the article and as the full-bleed homepage backdrop when this post owns the hero. The normal post image remains visible in the homepage panel. Use a clean landscape image without baked-in headlines; at least 1920px wide works best."
+                      buttonLabel="Choose Editorial Image"
+                      placeholder="Optional editorial image URL"
+                      previewAlt="Editorial feature image preview"
                       assetRole="post-background"
                       [postSlug]="mediaUploadSlug"
                       [optimizationMaxWidth]="2560"
@@ -653,14 +653,14 @@ function getErrorMessage(error: unknown): string {
                     @if (postForm.controls.backgroundImage.value.trim()) {
                       <div
                         class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
-                        <p class="text-xs text-zinc-500">The background is decorative and does not replace the cover
-                          image.</p>
+                        <p class="text-xs text-zinc-500">The editorial image remains separate from the required cover
+                          image and supplies the article and homepage backdrops.</p>
                         <button
                           type="button"
                           class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
                           (click)="clearBackgroundImage()"
                         >
-                          Remove background from post
+                          Remove editorial image from post
                         </button>
                       </div>
                     }
@@ -1356,8 +1356,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
 
     return this.postForm.controls.backgroundImage.value.trim()
-      ? 'Cover ready · Custom background'
-      : 'Cover ready · Standard background';
+      ? 'Cover ready · Editorial image ready'
+      : 'Cover ready · No editorial image';
   }
 
   protected get seoModuleSummary(): string {
