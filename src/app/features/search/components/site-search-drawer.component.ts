@@ -99,6 +99,7 @@ import {
                 @for (result of quickResults(); track trackResult($index, result)) {
                   <a
                     [routerLink]="result.path"
+                    [queryParams]="resultSearchQueryParams()"
                     class="site-card-interactive site-search-quick-result grid grid-cols-[4.25rem_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[5.25rem_minmax(0,1fr)] sm:p-4"
                     [class.site-search-quick-result-topic]="!!result.topic"
                     [ngStyle]="resultTopicStyle(result)"
@@ -304,6 +305,10 @@ export class SiteSearchDrawerComponent {
     const query = this.query().trim();
 
     return query ? {q: query} : {};
+  }
+
+  protected resultSearchQueryParams(): { q?: string } {
+    return this.advancedSearchQueryParams();
   }
 
   protected requestClose(restoreFocus = true): void {

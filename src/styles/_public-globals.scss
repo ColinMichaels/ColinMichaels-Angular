@@ -588,3 +588,16 @@ app-site-header :is(h1, a, button),
     line-height: 1.08 !important;
   }
 }
+.site-theme-scope::highlight(site-search-match) {
+  background-color: #fde047;
+  color: #172033;
+  text-decoration: underline;
+  text-decoration-color: #ca8a04;
+  text-decoration-thickness: .12em;
+}
+
+.site-theme-scope::highlight(site-search-active-match) {
+  background-color: #fb923c;
+  color: #111827;
+  text-decoration-color: #9a3412;
+}

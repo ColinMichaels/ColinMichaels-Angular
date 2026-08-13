@@ -69,7 +69,15 @@ The header field is the single search input for the live-results experience. `Si
 
 The Blog index no longer renders a duplicate Search action because the global launcher remains visible in the sticky header.
 
+The shared search overlay service also owns the active query text. While that field contains a value, the app shell uses the browser Custom Highlight API to mark case-insensitive phrase and token matches across visible public-page text without rewriting Angular or Editor.js DOM nodes. Quick and full search-result links preserve the query as `?q=`, so a selected page or article restores the same highlights after navigation or refresh. On a blog-detail route, the first visible match inside `[data-reading-content]` becomes the active match and scrolls into view; reduced-motion visitors receive an immediate jump instead of smooth motion. Clearing the search field removes both highlight layers. This is browser-only presentation state and changes no post, Firestore, route path, or stored reader data.
+
 The focus boundary uses Angular CDK's maintained `CdkTrapFocus` primitive rather than a feature-specific key loop. Global `:focus-visible` styling provides a three-pixel, theme-aware outline; pointer focus is not globally suppressed. These changes require no route, content, Firebase, or stored-data migration. Rolling back the shell restores the earlier search and heading presentation without changing public URLs or documents.
+
+## Persistent Daily Discovery Layer
+
+`AppComponent` mounts `DailyDiscoveryPlayOverlayComponent` once inside the public-site shell rather than inside a routed page. The homepage `DailyDiscoveryRailComponent` remains the only entry point; starting play transfers the current challenge to the root-provided `DailyDiscoveryPlayService` and hides the rail so the hero never renders a duplicate question surface. Public route changes retain the tab-scoped challenge, draft answer, answer visibility, and feedback. Core OS and Admin routes do not render the overlay because those shells own separate interaction and z-index systems.
+
+The fixed card is non-modal: only the card accepts pointer input, while its bottom contrast gradient is pointer-transparent and the header, routed page, links, scrolling, and Reader Tools remain available. The blog membership campaign is not instantiated while play is active because its higher-priority dialog would cover the pinned question; its normal route and eligibility checks resume immediately after the session stops. The Playing Discovery switch, close control, and Escape all clear the active session; **Keep browsing** hides only the answer controls and keeps the question pinned. This shell addition changes no route, Firebase contract, persisted content, guest-completion schema, or account data. Hosting rollback removes the root overlay host and play service and restores homepage-only answer presentation without a data migration.
 
 ## Reusable Post Presentation
 
@@ -235,6 +243,7 @@ Deployment requires the Angular Hosting bundle and Firebase Functions. Post meta
 Relevant regression coverage includes:
 
 - `site-header.component.spec.ts` for logo/search/menu ownership, the single-input dialog contract, and dismissal focus restoration
+- `site-search-overlay.service.spec.ts`, `site-search-highlight.directive.spec.ts`, and `app.component.spec.ts` for shared query ownership, longest-first non-overlapping matches, DOM-preserving highlight ranges, article-only reveal behavior, and reduced-motion-safe scrolling
 - `app.routes.spec.ts` for the temporary Labs redirect
 - `reader-tools.component.spec.ts` for stable panel dimensions
 - `offline-blog-post.service.spec.ts` for public snapshot validation and Cache Storage lifecycle
@@ -249,4 +258,4 @@ Relevant regression coverage includes:
 - `blog-post-background.component.spec.ts` for decorative semantics, preload ownership, and failed-image fallback
 - `blog-validation.util.spec.ts`, `blog-repository.service.spec.ts`, and `offline-blog-post.service.spec.ts` for the optional schema, normalization, and offline preservation contract
 - `blog-repository.service.spec.ts` for cached and cold direct-slug article loading without a full-collection dependency
-- browser checks for live result filtering, contained search focus, Escape restoration, skip navigation, heading hierarchy, 44px targets, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect
+- browser checks for live result filtering, query-preserving result navigation, visible page/article highlights, smooth first-match article reveal, contained search focus, Escape restoration, skip navigation, heading hierarchy, 44px targets, the compact menu, Reader Tools theme changes, desktop/mobile layout, and the `/labs` redirect
