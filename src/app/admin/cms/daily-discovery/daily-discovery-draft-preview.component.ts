@@ -11,6 +11,7 @@ import {
   DailyDiscoveryExternalQuestion,
   DailyDiscoveryExternalQuiz,
 } from './daily-discovery-admin.models';
+import {createDailyDiscoveryDisplayChoices} from '../../../features/daily-discovery/utils/daily-discovery-choice-order.util';
 
 type PreviewFeedback = 'idle' | 'incorrect' | 'correct';
 
@@ -123,26 +124,40 @@ type PreviewFeedback = 'idle' | 'incorrect' | 'correct';
               <fieldset [disabled]="feedback === 'correct'">
                 <legend class="text-sm font-semibold text-zinc-200">Choose one answer</legend>
                 <div class="mt-3 grid gap-3">
-                  @for (choice of question.choices; track choice.id) {
+                  @for (displayChoice of displayChoices(question); track displayChoice.choice.id) {
                     <label
                       class="grid min-h-14 cursor-pointer grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 border bg-zinc-950 px-4 py-3 text-sm leading-6 transition focus-within:ring-2 focus-within:ring-cyan-300"
-                      [class.border-cyan-300]="selectedChoiceId === choice.id && feedback === 'idle'"
-                      [class.border-rose-400]="selectedChoiceId === choice.id && feedback === 'incorrect'"
-                      [class.border-emerald-400]="feedback === 'correct' && choice.id === question.answer.correctChoiceId"
-                      [class.border-zinc-800]="selectedChoiceId !== choice.id && !(feedback === 'correct' && choice.id === question.answer.correctChoiceId)"
-                      [class.bg-cyan-300/5]="selectedChoiceId === choice.id && feedback === 'idle'"
-                      [class.bg-rose-400/5]="selectedChoiceId === choice.id && feedback === 'incorrect'"
-                      [class.bg-emerald-400/10]="feedback === 'correct' && choice.id === question.answer.correctChoiceId"
+                      [attr.data-choice-id]="displayChoice.choice.id"
+                      [class.border-cyan-300]="selectedChoiceId === displayChoice.choice.id && feedback === 'idle'"
+                      [class.border-rose-400]="selectedChoiceId === displayChoice.choice.id && feedback === 'incorrect'"
+                      [class.border-emerald-400]="feedback === 'correct' && displayChoice.choice.id === question.answer.correctChoiceId"
+                      [class.border-zinc-800]="selectedChoiceId !== displayChoice.choice.id && !(feedback === 'correct' && displayChoice.choice.id === question.answer.correctChoiceId)"
+                      [class.bg-cyan-300/5]="selectedChoiceId === displayChoice.choice.id && feedback === 'idle'"
+                      [class.bg-rose-400/5]="selectedChoiceId === displayChoice.choice.id && feedback === 'incorrect'"
+                      [class.bg-emerald-400/10]="feedback === 'correct' && displayChoice.choice.id === question.answer.correctChoiceId"
                     >
                       <input
                         type="radio"
-                        class="h-4 w-4 accent-cyan-300"
+                        class="sr-only"
                         [name]="'preview-' + question.id"
-                        [value]="choice.id"
-                        [checked]="selectedChoiceId === choice.id"
-                        (change)="selectChoice(choice.id)"
+                        [value]="displayChoice.choice.id"
+                        [checked]="selectedChoiceId === displayChoice.choice.id"
+                        (change)="selectChoice(displayChoice.choice.id)"
                       >
-                      <span>{{ choice.text }}</span>
+                      <span
+                        class="grid h-7 w-7 place-items-center rounded-full border border-cyan-300/50 text-xs font-bold text-cyan-200 transition"
+                        data-choice-marker
+                        aria-hidden="true"
+                        [class.border-cyan-100]="selectedChoiceId === displayChoice.choice.id && feedback === 'idle'"
+                        [class.bg-cyan-300]="selectedChoiceId === displayChoice.choice.id && feedback === 'idle'"
+                        [class.text-zinc-950]="selectedChoiceId === displayChoice.choice.id && feedback === 'idle'"
+                        [class.border-rose-300]="selectedChoiceId === displayChoice.choice.id && feedback === 'incorrect'"
+                        [class.bg-rose-400]="selectedChoiceId === displayChoice.choice.id && feedback === 'incorrect'"
+                        [class.text-white]="selectedChoiceId === displayChoice.choice.id && feedback === 'incorrect'"
+                        [class.border-emerald-300]="feedback === 'correct' && displayChoice.choice.id === question.answer.correctChoiceId"
+                        [class.bg-emerald-300]="feedback === 'correct' && displayChoice.choice.id === question.answer.correctChoiceId"
+                      >{{ displayChoice.label }}</span>
+                      <span>{{ displayChoice.choice.text }}</span>
                     </label>
                   }
                 </div>
@@ -226,6 +241,13 @@ export class DailyDiscoveryDraftPreviewComponent implements OnChanges {
 
   protected activeQuestion(): DailyDiscoveryExternalQuestion | null {
     return this.quiz.questions[this.selectedQuestionIndex] ?? null;
+  }
+
+  protected displayChoices(question: DailyDiscoveryExternalQuestion) {
+    return createDailyDiscoveryDisplayChoices(
+      question.choices,
+      `${this.quiz.quizDate}:${question.id}`,
+    );
   }
 
   protected selectQuestion(index: number): void {

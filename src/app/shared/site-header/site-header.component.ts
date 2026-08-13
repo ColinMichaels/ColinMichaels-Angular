@@ -245,7 +245,7 @@ export class SiteHeaderComponent {
   protected readonly searchOverlay = inject(SiteSearchOverlayService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly isMenuOpen = signal(false);
-  protected readonly searchQuery = signal('');
+  protected readonly searchQuery = this.searchOverlay.query;
   protected readonly searchAttentionActive = signal(false);
   private lastFocusRequest = 0;
   private lastAttentionRequest = 0;
@@ -317,7 +317,7 @@ export class SiteHeaderComponent {
   }
 
   protected updateSearchQuery(value: string): void {
-    this.searchQuery.set(value);
+    this.searchOverlay.setQuery(value);
     this.openSearch();
   }
 

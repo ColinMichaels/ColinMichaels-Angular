@@ -16,6 +16,7 @@ describe('SiteHeaderComponent', () => {
   let openAndFocusSearch: jasmine.Spy;
   let requestSearchAttention: jasmine.Spy;
   let closeSearch: jasmine.Spy;
+  let setSearchQuery: jasmine.Spy;
   let getRoleAuthorization: jasmine.Spy;
 
   beforeEach(async () => {
@@ -36,6 +37,7 @@ describe('SiteHeaderComponent', () => {
     const searchOpen = signal(false);
     const focusRequest = signal(0);
     const attentionRequest = signal(0);
+    const searchQuery = signal('');
     openSearch = jasmine.createSpy('openSearch').and.callFake(() => searchOpen.set(true));
     openAndFocusSearch = jasmine.createSpy('openAndFocusSearch').and.callFake(() => {
       searchOpen.set(true);
@@ -45,13 +47,16 @@ describe('SiteHeaderComponent', () => {
       attentionRequest.update(value => value + 1);
     });
     closeSearch = jasmine.createSpy('closeSearch').and.callFake(() => searchOpen.set(false));
+    setSearchQuery = jasmine.createSpy('setSearchQuery').and.callFake((query: string) => searchQuery.set(query));
     const searchOverlayService = {
       isOpen: searchOpen.asReadonly(),
       focusRequest: focusRequest.asReadonly(),
       attentionRequest: attentionRequest.asReadonly(),
+      query: searchQuery.asReadonly(),
       open: openSearch,
       openAndFocus: openAndFocusSearch,
       requestAttention: requestSearchAttention,
+      setQuery: setSearchQuery,
       close: closeSearch,
     };
     const siteSearchService = {
@@ -153,6 +158,7 @@ describe('SiteHeaderComponent', () => {
     expect(nativeElement.querySelector('#site-search-results-panel [role="status"]')?.textContent).toContain('0 results');
     expect(nativeElement.querySelectorAll('input[type="search"]')).toHaveSize(1);
     expect(searchInput?.value).toBe('voice AI');
+    expect(setSearchQuery).toHaveBeenCalledWith('voice AI');
   });
 
   it('restores focus to the search field after dismissing the contained search surface', async () => {
@@ -184,6 +190,7 @@ describe('SiteHeaderComponent', () => {
     const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
 
     searchInput?.focus();
+    searchInput?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
     const deferBlocks = await fixture.getDeferBlocks();
     await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
@@ -205,6 +212,7 @@ describe('SiteHeaderComponent', () => {
     const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
 
     searchInput?.focus();
+    searchInput?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
     const deferBlocks = await fixture.getDeferBlocks();
     await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
@@ -223,6 +231,7 @@ describe('SiteHeaderComponent', () => {
     const searchInput = nativeElement.querySelector<HTMLInputElement>('input[placeholder="Search"]');
 
     searchInput?.focus();
+    searchInput?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
     expect(document.activeElement).toBe(searchInput);
 
