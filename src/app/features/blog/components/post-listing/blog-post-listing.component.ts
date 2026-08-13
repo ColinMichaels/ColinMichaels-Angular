@@ -7,7 +7,7 @@ import {BlogPostSummary} from '../../models/blog-post.model';
 import {createBlogCategorySlug, createBlogTagSlug} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 
-export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact';
+export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact' | 'editorial';
 export type BlogPostListingMediaPresentation = 'standard' | 'background';
 
 export interface BlogPostListingAppearance {
@@ -84,6 +84,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
               [ngStyle]="appearanceStyle(post)"
             >
               <article class="post-listing__article">
+                @if (layout === 'fan' && mediaPresentation === 'background') {
+                  <!-- Keep atmosphere separate from the readable, linked thumbnail. -->
+                  <div class="post-listing__backdrop" aria-hidden="true">
+                    <img [src]="postImage(post)" alt="">
+                  </div>
+                }
+
                 <a
                   class="blog-image-reveal post-listing__media"
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
@@ -246,6 +253,10 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
     .post-listing__article {
       color: var(--site-text);
+    }
+
+    .post-listing__backdrop {
+      display: none;
     }
 
     .post-listing__media {
@@ -474,39 +485,78 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       transform: translateY(-0.2rem);
     }
 
-    /* Overlapping feature fan */
-    .post-listing--fan {
-      display: flex;
-      width: 100%;
-      align-items: stretch;
+    .post-listing--editorial {
+      display: grid;
+      gap: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .post-listing--editorial .post-listing__item {
+      border: 1px solid var(--site-border);
+    }
+
+    .post-listing--editorial .post-listing__article {
+      display: grid;
+      grid-template-columns: minmax(10rem, 0.72fr) minmax(0, 1.28fr);
+      min-height: 9rem;
+    }
+
+    .post-listing--editorial .post-listing__media {
+      height: 100%;
+      border: 0;
+      border-right: 1px solid rgb(var(--post-accent-rgb) / 0.2);
+      aspect-ratio: auto;
+    }
+
+    .post-listing--editorial .post-listing__content {
       justify-content: center;
+      padding: clamp(1rem, 2vw, 1.45rem);
+    }
+
+    .post-listing--editorial .post-listing__title {
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: clamp(1.35rem, 2vw, 1.85rem);
+      font-weight: 500;
+    }
+
+    .post-listing--editorial .post-listing__item:first-child .post-listing__article {
+      grid-template-columns: minmax(15rem, 1.05fr) minmax(0, 0.95fr);
+      min-height: clamp(19rem, 34vw, 25rem);
+    }
+
+    .post-listing--editorial .post-listing__item:first-child .post-listing__content {
+      padding: clamp(1.35rem, 3vw, 2.25rem);
+    }
+
+    .post-listing--editorial .post-listing__item:first-child .post-listing__title {
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      line-height: 1.04;
+    }
+
+    .post-listing--editorial .post-listing__item:first-child .post-listing__excerpt {
+      font-size: 1rem;
+      line-height: 1.62;
+    }
+
+    .post-listing--editorial .post-listing__read-link {
+      width: fit-content;
+      padding: 0.25rem 0;
+    }
+
+    /* Feature cards */
+    .post-listing--fan {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+      gap: clamp(0.9rem, 1.8vw, 1.5rem);
       padding: 2.3rem clamp(1.5rem, 3.5vw, 3.4rem) 2.8rem;
-      isolation: isolate;
     }
 
     .post-listing--fan .post-listing__item {
-      width: min(34rem, 42%);
-      flex: 0 1 34rem;
-      margin-inline: -1rem;
-      transform: rotate(-2.4deg) translateY(0.55rem);
-      transform-origin: 50% 100%;
-      transition: transform 220ms ease, z-index 0s 220ms;
-    }
-
-    .post-listing--fan .post-listing__item:nth-child(3n + 2) {
-      z-index: 2;
-      transform: translateY(-0.8rem);
-    }
-
-    .post-listing--fan .post-listing__item:nth-child(3n) {
-      transform: rotate(2.4deg) translateY(0.55rem);
+      transition: transform 220ms ease;
     }
 
     .post-listing--fan .post-listing__item:hover,
     .post-listing--fan .post-listing__item:focus-within {
-      z-index: 4;
-      transform: translateY(-1.15rem) rotate(0);
-      transition-delay: 0s;
+      transform: translateY(-0.3rem);
     }
 
     .post-listing--fan .post-listing__article {
@@ -544,28 +594,46 @@ export type BlogPostListingAppearanceByPostId = Readonly<
         isolation: isolate;
         overflow: hidden;
         min-height: 21rem;
-        background: var(--site-panel);
+        background: rgb(2 6 12 / 0.94);
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__backdrop {
+        position: absolute;
+        z-index: 0;
+        inset: -1.5rem;
+        display: block;
+        pointer-events: none;
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__backdrop::after {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgb(2 6 12 / 0.48) 0%, rgb(2 6 12 / 0.76) 44%, rgb(2 6 12 / 0.98) 100%),
+          rgb(2 6 12 / 0.42);
+        content: '';
+      }
+
+      .post-listing-region--background-media .post-listing--fan .post-listing__backdrop img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: blur(1.35rem) brightness(0.34) saturate(0.58);
+        transform: scale(1.16);
       }
 
       .post-listing-region--background-media .post-listing--fan .post-listing__media {
-        position: absolute;
-        z-index: 0;
-        inset: 0;
+        z-index: 2;
         display: block;
-        aspect-ratio: auto;
-        border: 0;
+        width: clamp(5.75rem, 7vw, 7rem);
+        margin: clamp(1.1rem, 2vw, 1.4rem) clamp(1.1rem, 2vw, 1.4rem) 0;
+        aspect-ratio: 4 / 3;
+        border: 1px solid rgb(var(--post-accent-rgb) / 0.7);
+        box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.42);
       }
 
       .post-listing-region--background-media .post-listing--fan .post-listing__media::after {
-        border-color: rgb(var(--post-accent-rgb) / 0.24);
-        background:
-          linear-gradient(180deg, rgb(2 6 12 / 0.24) 0%, rgb(2 6 12 / 0.52) 42%, rgb(2 6 12 / 0.94) 100%),
-          linear-gradient(90deg, rgb(2 6 12 / 0.54) 0%, transparent 74%);
-      }
-
-      .post-listing-region--background-media .post-listing--fan .post-listing__media img {
-        filter: brightness(0.72) saturate(0.82);
-        transform: scale(1.01);
+        border-color: rgb(255 255 255 / 0.14);
       }
 
       .post-listing-region--background-media .post-listing--fan .post-listing__media:focus-visible {
@@ -576,7 +644,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       .post-listing-region--background-media .post-listing--fan .post-listing__content {
         position: relative;
         z-index: 1;
-        min-height: 21rem;
+        min-height: 14.5rem;
         justify-content: flex-end;
         gap: 0.55rem;
         padding: clamp(1.25rem, 2.5vw, 1.9rem);
@@ -608,15 +676,19 @@ export type BlogPostListingAppearanceByPostId = Readonly<
         text-shadow: 0 1px 0.45rem rgb(0 0 0 / 0.95);
       }
 
-      .post-listing-region--background-media .post-listing--fan .post-listing__item:hover img,
-      .post-listing-region--background-media .post-listing--fan .post-listing__item:focus-within img {
-        filter: brightness(0.8) saturate(0.96);
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:hover .post-listing__media img,
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:focus-within .post-listing__media img {
         transform: scale(1.04);
       }
 
       :host-context(.reader-contrast-high)
-      .post-listing-region--background-media .post-listing--fan .post-listing__media {
+      .post-listing-region--background-media .post-listing--fan .post-listing__backdrop {
         display: none;
+      }
+
+      :host-context(.reader-contrast-high)
+      .post-listing-region--background-media .post-listing--fan .post-listing__article {
+        background: var(--site-panel);
       }
 
       :host-context(.reader-contrast-high)
@@ -784,18 +856,36 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     @media (max-width: 47.99rem) {
-      .post-listing--fan {
-        display: grid;
-        padding: 0;
-        border-top: 1px solid var(--site-border);
+      .post-listing--editorial .post-listing__article,
+      .post-listing--editorial .post-listing__item:first-child .post-listing__article {
+        grid-template-columns: minmax(7.5rem, 34vw) minmax(0, 1fr);
+        min-height: 9rem;
       }
 
-      .post-listing--fan .post-listing__item,
-      .post-listing--fan .post-listing__item:nth-child(3n + 2),
-      .post-listing--fan .post-listing__item:nth-child(3n) {
-        width: auto;
-        margin: 0;
-        border-bottom: 1px solid var(--site-border);
+      .post-listing--editorial .post-listing__item:first-child .post-listing__content,
+      .post-listing--editorial .post-listing__content {
+        padding: 1rem;
+      }
+
+      .post-listing--editorial .post-listing__item:first-child .post-listing__title,
+      .post-listing--editorial .post-listing__title {
+        font-size: 1.3rem;
+        line-height: 1.16;
+      }
+
+      .post-listing--editorial .post-listing__excerpt,
+      .post-listing--editorial .post-listing__read-link {
+        display: none;
+      }
+
+      .post-listing--fan {
+        gap: 0.75rem;
+        padding: 0;
+      }
+
+      .post-listing--fan .post-listing__item {
+        border: 1px solid rgb(var(--post-accent-rgb) / 0.32);
+        background: var(--site-panel-soft);
         transform: none;
       }
 
@@ -812,7 +902,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
         border: 0;
         background: transparent;
         box-shadow: none;
-        padding-block: 1rem;
+        padding: 0.75rem;
       }
 
       .post-listing--fan .post-listing__media {
@@ -833,6 +923,17 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     @media (max-width: 39.99rem) {
+      .post-listing--editorial .post-listing__article,
+      .post-listing--editorial .post-listing__item:first-child .post-listing__article {
+        grid-template-columns: 1fr;
+      }
+
+      .post-listing--editorial .post-listing__media {
+        min-height: 11rem;
+        border-right: 0;
+        border-bottom: 1px solid var(--site-border);
+      }
+
       .post-listing--list .post-listing__article {
         grid-template-columns: 1fr;
       }
@@ -869,8 +970,6 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       }
 
       .post-listing--fan .post-listing__item,
-      .post-listing--fan .post-listing__item:nth-child(3n + 2),
-      .post-listing--fan .post-listing__item:nth-child(3n),
       .post-listing--fan .post-listing__item:hover,
       .post-listing--fan .post-listing__item:focus-within,
       .post-listing--grid .post-listing__item:hover .post-listing__article,

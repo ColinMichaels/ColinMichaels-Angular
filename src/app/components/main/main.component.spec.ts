@@ -238,6 +238,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('app-daily-discovery-rail')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
     expect(element.querySelector('#topic-guides')).not.toBeNull();
+    expect(element.querySelector('#home-topic-strip-heading')?.textContent).toContain('Browse by topic');
     expect(element.querySelector('#health-recovery')).not.toBeNull();
     expect(element.querySelector('#medical-information')).not.toBeNull();
     expect(element.querySelector('#labs')).toBeNull();
@@ -287,9 +288,9 @@ describe('MainComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.textContent).toContain('A Life of Curiosity.');
-    expect(element.textContent).toContain('A Journey of Growth.');
-    expect(element.textContent).toContain('More writing');
+    expect(element.textContent).not.toContain('A Life of Curiosity.');
+    expect(element.textContent).not.toContain('A Journey of Growth.');
+    expect(element.textContent).toContain('More to read');
     expect(element.querySelector('#home-article-hero')?.textContent).toContain('Open heart surgery weekly update');
 
     const moreWritingSection = element.querySelector('#blog');

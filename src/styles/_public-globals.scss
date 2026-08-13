@@ -14,6 +14,7 @@
   --font-heading: 'Lexend', 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-subheading: 'K2D', 'Lexend', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-accent: 'K2D', 'Lexend', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-editorial: Georgia, 'Times New Roman', serif;
   --site-header-sticky-height: 3.5rem;
   --blog-sticky-toolbar-height: 3.25rem;
   --blog-sticky-stack-height: calc(var(--site-header-sticky-height) + var(--blog-sticky-toolbar-height));
@@ -390,10 +391,20 @@ app-site-header :is(h1, a, button),
 .public-reader-scope :is(
   .blog-page-title,
   .heading-display,
-  .home-hero-title
+  .home-hero-title,
+  .home-hero-post-title
 ) {
   font-size: clamp(2.25rem, calc(2.9rem * var(--reader-font-scale)), 5.25rem) !important;
   line-height: 1.08 !important;
+}
+
+.public-reader-scope .home-hero-post-title {
+  font-size: clamp(
+    2.65rem,
+    calc(4.8vw * var(--reader-font-scale)),
+    calc(5.35rem * var(--reader-font-scale))
+  ) !important;
+  line-height: .99 !important;
 }
 
 .public-reader-scope .blog-article-title {
@@ -441,7 +452,6 @@ app-site-header :is(h1, a, button),
 
 .public-reader-scope :is(
   .heading-card,
-  .home-hero-post-title,
   .topic-hub-page h3,
   .blog-markdown h3
 ) {

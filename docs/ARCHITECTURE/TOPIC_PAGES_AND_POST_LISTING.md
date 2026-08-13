@@ -17,12 +17,13 @@ The accepted visual references are:
 
 Location: `src/app/features/blog/components/post-listing/blog-post-listing.component.ts`
 
-This is a presentational, repository-free component. Its parent supplies already-filtered `BlogPostSummary` values and chooses one of four layouts:
+This is a presentational, repository-free component. Its parent supplies already-filtered `BlogPostSummary` values and chooses one of five layouts:
 
 - `list`: media-led editorial rows for the blog index, topic archives, and single-post features;
 - `grid`: image-led cards for category and homepage discovery;
 - `fan`: three overlapping feature cards on desktop that become readable media rows on mobile;
-- `compact`: dense archive rows for tag results and other high-volume indexes.
+- `compact`: dense archive rows for tag results and other high-volume indexes;
+- `editorial`: one lead story followed by compact rows for the homepage More to read section.
 
 The component owns consistent post/category/tag links, image resolution, date metadata, heading level, excerpt/tag visibility, optional promotional excerpt clamping, topic appearance variables, and loading/error/empty states. Its default media treatment remains unchanged, while parents can opt a listing into `mediaPresentation="background"` to place each resolved post image behind that card's content. `titleMaxLength` bounds the displayed heading copy by character count, and `titleLineClamp` caps its rendered lines; both title controls are opt-in so archive consumers retain their full titles. Parents can expose the same code-native read action outside the `fan` layout with `showReadLink` and customize its label with `readLinkLabel`. `appearanceByPostId` supports mixed-topic feeds without moving topic lookup into the component.
 

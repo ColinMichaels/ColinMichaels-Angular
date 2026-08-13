@@ -57,7 +57,7 @@ describe('BlogPostListingComponent', () => {
   });
 
   it('renders every typed layout as an accessible list region', () => {
-    const layouts: readonly BlogPostListingLayout[] = ['list', 'grid', 'fan', 'compact'];
+    const layouts: readonly BlogPostListingLayout[] = ['list', 'grid', 'fan', 'compact', 'editorial'];
 
     for (const layout of layouts) {
       fixture.componentRef.setInput('layout', layout);
@@ -214,6 +214,9 @@ describe('BlogPostListingComponent', () => {
     expect(region?.classList.contains('post-listing-region--background-media')).toBeTrue();
     expect(region?.classList.contains('post-listing-region--title-clamped')).toBeTrue();
     expect(region?.style.getPropertyValue('--listing-title-lines')).toBe('3');
+    expect(element.querySelectorAll('.post-listing__backdrop').length).toBe(2);
+    expect(element.querySelectorAll('.post-listing__backdrop img[alt=""]').length).toBe(2);
+    expect(element.querySelectorAll('.post-listing__media img').length).toBe(2);
     expect(visibleTitle.length).toBeLessThanOrEqual(titleMaxLength);
     expect(visibleTitle).toMatch(/(?:\.\.\.|…)$/);
     expect(fullTitle.startsWith(visiblePrefix)).toBeTrue();

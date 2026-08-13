@@ -77,7 +77,8 @@ import {ChangeDetectionStrategy, Component} from '@angular/core';
 
       <g transform="translate(330 58)">
         <text class="site-logo-wordmark" x="0" y="48">COLIN MICHAELS</text>
-        <text class="site-logo-tagline" x="2" y="84">EXPLORE. LEARN. CREATE.</text>
+        <text class="site-logo-tagline" x="2" y="82">IDEAS, TOOLS, AND DISCOVERIES</text>
+        <text class="site-logo-tagline" x="2" y="105">WORTH PASSING ON.</text>
       </g>
     </svg>
   `,
@@ -160,9 +161,9 @@ import {ChangeDetectionStrategy, Component} from '@angular/core';
     .site-logo-tagline {
       fill: var(--logo-accent);
       font-family: var(--font-accent);
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
-      letter-spacing: 6px;
+      letter-spacing: 2.4px;
     }
 
     @media (prefers-reduced-motion: no-preference) {

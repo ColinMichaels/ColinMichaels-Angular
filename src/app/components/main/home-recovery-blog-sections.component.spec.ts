@@ -100,28 +100,31 @@ describe('HomeRecoveryBlogSectionsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('promotes the three newest weekly updates on a fan-style board', () => {
+  it('promotes the three newest weekly updates as clean full-width image cards', () => {
     const element = fixture.nativeElement as HTMLElement;
     const section = element.querySelector<HTMLElement>('#health-recovery');
-    const listing = section?.querySelector<HTMLElement>('[data-layout="fan"]');
+    const listing = section?.querySelector<HTMLElement>('[data-layout="grid"]');
     const weeklyListing = fixture.debugElement
       .queryAll(By.directive(BlogPostListingComponent))
       .map(debugElement => debugElement.componentInstance as BlogPostListingComponent)
-      .find(component => component.layout === 'fan');
+      .find(component => component.layout === 'grid');
     const firstTitleLink = listing?.querySelector<HTMLAnchorElement>(
       '[data-post-id="weekly-update-one"] .post-listing__title a'
     );
     const firstVisibleTitle = firstTitleLink?.querySelector<HTMLSpanElement>('span');
 
-    expect(section?.querySelector('.home-updates-board')).not.toBeNull();
-    expect(weeklyListing?.mediaPresentation).toBe('background');
+    expect(section?.querySelector('.home-updates-board')).toBeNull();
+    expect(section?.querySelector('.home-updates-board__rail')).toBeNull();
+    expect(weeklyListing?.mediaPresentation).toBe('standard');
+    expect(weeklyListing?.showReadLink).toBeTrue();
     expect(weeklyListing?.titleMaxLength).toBe(72);
     expect(weeklyListing?.titleLineClamp).toBe(3);
-    expect(listing?.getAttribute('data-media-presentation')).toBe('background');
-    expect(listing?.classList.contains('post-listing-region--background-media')).toBeTrue();
+    expect(listing?.getAttribute('data-media-presentation')).toBe('standard');
+    expect(listing?.classList.contains('post-listing-region--background-media')).toBeFalse();
     expect(listing?.classList.contains('post-listing-region--title-clamped')).toBeTrue();
     expect(listing?.style.getPropertyValue('--listing-title-lines')).toBe('3');
     expect(listing?.querySelectorAll('[data-post-id]').length).toBe(3);
+    expect(listing?.querySelectorAll('.post-listing__backdrop').length).toBe(0);
     expect(listing?.querySelectorAll('.post-listing__media img').length).toBe(3);
     expect(listing?.querySelector('[data-post-id="weekly-update-one"]')).not.toBeNull();
     expect(listing?.querySelector('[data-post-id="weekly-update-two"]')).not.toBeNull();
@@ -149,5 +152,7 @@ describe('HomeRecoveryBlogSectionsComponent', () => {
     expect(listing?.querySelector('[data-post-id^="weekly-update"]')).toBeNull();
     expect(listing?.textContent).toContain('Read this lesson');
     expect(section?.querySelector('a[href="/topics/recovery-planning"]')).not.toBeNull();
+    expect(section?.querySelector('.home-hospital-disclaimer')).toBeNull();
+    expect(section?.textContent).not.toContain('Always confirm care decisions');
   });
 });
