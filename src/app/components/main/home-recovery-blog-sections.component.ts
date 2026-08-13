@@ -60,33 +60,26 @@ const HOSPITAL_LESSON_LIMIT = 1;
           </p>
         </div>
 
-        <div class="home-updates-board">
-          <div class="home-updates-board__rail" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <app-blog-post-listing
-            class="home-updates-board__listing"
-            [posts]="weeklyUpdatePosts()"
-            layout="fan"
-            [headingLevel]="3"
-            [loading]="!blogIsReady()"
-            [loadingItemCount]="weeklyUpdateLimit"
-            [error]="blogLoadError()"
-            errorTitle="Unable to load weekly updates"
-            [appearance]="recoveryAppearance()"
-            [showTags]="false"
-            mediaPresentation="background"
-            [titleMaxLength]="72"
-            [titleLineClamp]="3"
-            [excerptLineClamp]="3"
-            readLinkLabel="Read update"
-            emptyTitle="No published weekly updates yet"
-            emptyMessage="New recovery notes will be pinned here as they become available."
-            regionLabel="Latest weekly recovery updates"
-          ></app-blog-post-listing>
-        </div>
+        <app-blog-post-listing
+          class="home-weekly-listing"
+          [posts]="weeklyUpdatePosts()"
+          layout="grid"
+          [headingLevel]="3"
+          [loading]="!blogIsReady()"
+          [loadingItemCount]="weeklyUpdateLimit"
+          [error]="blogLoadError()"
+          errorTitle="Unable to load weekly updates"
+          [appearance]="recoveryAppearance()"
+          [showTags]="false"
+          [showReadLink]="true"
+          [titleMaxLength]="72"
+          [titleLineClamp]="3"
+          [excerptLineClamp]="3"
+          readLinkLabel="Read update"
+          emptyTitle="No published weekly updates yet"
+          emptyMessage="New recovery notes will appear here as they become available."
+          regionLabel="Latest weekly recovery updates"
+        ></app-blog-post-listing>
 
         <a
           [routerLink]="['/', pathNames.BLOG, 'category', 'weekly-updates']"
@@ -145,9 +138,6 @@ const HOSPITAL_LESSON_LIMIT = 1;
           </div>
         </div>
 
-        <p class="home-hospital-disclaimer">
-          Always confirm care decisions, medications, symptoms, and insurance questions with qualified professionals.
-        </p>
       </div>
     </section>
   `,
@@ -194,49 +184,9 @@ const HOSPITAL_LESSON_LIMIT = 1;
       stroke-width: 1.65;
     }
 
-    .home-updates-board {
-      position: relative;
-      isolation: isolate;
-      overflow: hidden;
+    .home-weekly-listing {
+      display: block;
       margin-top: clamp(2rem, 4vw, 3rem);
-      border: 1px solid rgb(var(--site-accent-rgb) / 0.38);
-      background:
-        linear-gradient(rgb(var(--site-accent-rgb) / 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgb(var(--site-accent-rgb) / 0.045) 1px, transparent 1px),
-        var(--site-panel-soft);
-      background-size: 1.5rem 1.5rem;
-      box-shadow:
-        inset 0 0 0 0.3rem var(--site-bg),
-        inset 0 0 0 0.36rem rgb(var(--site-accent-rgb) / 0.2),
-        0 1.5rem 4rem rgb(0 0 0 / 0.12);
-      padding-top: 1.35rem;
-    }
-
-    .home-updates-board__rail {
-      position: absolute;
-      z-index: 0;
-      top: 1.2rem;
-      right: clamp(1.25rem, 3vw, 2.5rem);
-      left: clamp(1.25rem, 3vw, 2.5rem);
-      display: flex;
-      height: 0.35rem;
-      align-items: center;
-      justify-content: space-between;
-      border-block: 1px solid rgb(var(--site-accent-rgb) / 0.28);
-      background: var(--site-bg);
-      pointer-events: none;
-    }
-
-    .home-updates-board__rail span {
-      width: 0.55rem;
-      height: 0.55rem;
-      border: 1px solid rgb(var(--site-accent-rgb) / 0.5);
-      background: var(--site-panel);
-    }
-
-    .home-updates-board__listing {
-      position: relative;
-      z-index: 1;
     }
 
     .home-section-route {
@@ -311,27 +261,6 @@ const HOSPITAL_LESSON_LIMIT = 1;
       margin-top: 1rem;
     }
 
-    .home-hospital-disclaimer {
-      margin: clamp(2rem, 4vw, 3rem) 0 0;
-      border-top: 1px solid var(--site-border);
-      color: var(--site-muted);
-      font-size: 0.9rem;
-      line-height: 1.55;
-      padding: 1rem 0 0 1rem;
-      position: relative;
-    }
-
-    .home-hospital-disclaimer::before {
-      position: absolute;
-      top: 1rem;
-      bottom: 0;
-      left: 0;
-      width: 1px;
-      background: var(--site-accent);
-      content: '';
-    }
-
-    :host-context(.reader-contrast-high) .home-updates-board,
     :host-context(.reader-contrast-high) .home-hospital-feature {
       background: var(--site-panel);
       box-shadow: none;
@@ -348,18 +277,6 @@ const HOSPITAL_LESSON_LIMIT = 1;
 
       .home-hospital-layout {
         grid-template-columns: minmax(19rem, 0.78fr) minmax(0, 1.22fr);
-      }
-    }
-
-    @media (max-width: 47.99rem) {
-      .home-updates-board {
-        padding: 2.2rem 1rem 0.5rem;
-      }
-
-      .home-updates-board__rail {
-        top: 1rem;
-        right: 1rem;
-        left: 1rem;
       }
     }
 

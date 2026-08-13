@@ -6,8 +6,8 @@ Use this boundary for shared UI, directives, pipes, Firebase facades, design tok
 
 Current shared primitives:
 
-- `site-header`: compact public blog header with a homepage brand link, live-results search launcher, post-list shortcut,
-  contact and contributor-intake links, and a responsive menu for navigation, install discovery, the role-aware Cat Corner
+- `site-header`: compact public blog header with a homepage brand link, desktop Discover/Topics/About navigation,
+  live-results search launcher, post-list shortcut, contact and contributor-intake links, and a responsive menu for navigation, install discovery, the role-aware Cat Corner
   entry point, and account/admin actions. Labs implementation remains preserved, while `/labs` redirects to `/blog`
   during the section redesign.
 - `pwa`: install, connection, version, native-control, storage, Web Push, safe notification-routing, and app-badge services plus public install and offline/update status surfaces. Personal native, notification, and storage controls live on the protected Profile page. Cache policy remains owned by the root `ngsw-config.json` file; `pwa-worker.js` imports Angular's worker before adding badge events. Explicit saved-article snapshots, IndexedDB reading progress, favorites, and read-later management remain feature-scoped under `features/blog` and are managed from Profile.

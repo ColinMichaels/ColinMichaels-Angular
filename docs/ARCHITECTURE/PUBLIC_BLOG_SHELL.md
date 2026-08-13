@@ -18,7 +18,7 @@ The public shell treats the blog as the primary content destination while keepin
 - `.site-menu-link` with success, accent, and danger modifiers for the responsive utility menu and install/account entries; and
 - Tailwind-backed `rounded-site-overlay` and `shadow-site-overlay` utilities for the header menu and search overlay.
 
-Utilities on an individual template can still override spacing when a feature needs deliberate art direction, but public components should prefer these primitives for base geometry. The homepage hero, topic map, recovery boards, article body, and Reader Tools retain their specialized visual systems.
+Utilities on an individual template can still override spacing when a feature needs deliberate art direction, but public components should prefer these primitives for base geometry. The homepage editorial feature, compact topic directory, recovery boards, article body, and Reader Tools retain their specialized visual systems.
 
 `SiteHeaderComponent`, `SiteSearchDrawerComponent`, `SiteAuthControlsComponent`, and `PwaInstallControlComponent` now compose the same search, icon, and menu-link primitives. `BlogCommentsComponent` composes the shared card, field, button, success, error, and empty-state primitives while keeping threading and reply presentation local. This completes the generic public utility-cluster migration; feature-specific archive filters, article blocks, recovery panels, topic-map graphics, and Core OS controls remain deliberately component-owned.
 
@@ -43,12 +43,13 @@ The boundary changes presentation ownership only. It requires no route, Firebase
 `SiteHeaderComponent` renders three responsive regions:
 
 - the Colin Michaels logo, which always routes to `/` without claiming the page-level `h1`
-- a rounded `Search` field that opens and filters the existing live-results drawer
+- a desktop publication navigation with Discover, Topics, and About destinations
+- a rounded `Search articles and ideas` field that opens and filters the existing live-results drawer
 - compact utilities: an optional post-list shortcut and one site/account menu
 
 The utility menu owns links to All Posts and OS, install discovery, the Cat Corner link for `catCornerAddict`/full-admin accounts, and the role-aware account/admin controls supplied by `SiteAuthControlsComponent`. Its rows use `.site-menu-link` plus purpose modifiers, while the header shortcut, menu trigger, search close action, and desktop account buttons use `.site-icon-control`. Personal reading-library, saved-offline, notification, native-device, and storage settings live on the protected Profile page instead of expanding the global menu. On narrow screens the post-list shortcut is hidden because the same destination remains available inside the menu.
 
-The public shell places a keyboard-revealed **Skip to main content** link before the sticky header and gives the shared route frame a stable focus target. Page components retain ownership of their one meaningful `h1`; the homepage featured article exposes its previously hidden title as a visible, two-line `h2`. Header search, logo, post-list, and menu controls retain at least a 44px target at narrow and desktop widths.
+The public shell places a keyboard-revealed **Skip to main content** link before the sticky header and gives the shared route frame a stable focus target. Page components retain ownership of their one meaningful `h1`; the homepage uses the featured article title itself as that heading. Header search, logo, post-list, and menu controls retain at least a 44px target at narrow and desktop widths.
 
 ## Cat Corner Discovery
 
@@ -83,8 +84,8 @@ The fixed card is non-modal: only the card accepts pointer input, while its bott
 
 `BlogPostListingComponent` is the shared public post-discovery surface for the Blog index, category and tag archives,
 homepage writing/recovery sections, and topic hubs. Parents keep ownership of repository queries and filtering while
-the component owns post anatomy, links, metadata, media, accessible state panels, and four explicit layout variants:
-`list`, `grid`, `fan`, and `compact`. This preserves familiar interaction and typography without forcing every page
+the component owns post anatomy, links, metadata, media, accessible state panels, and five explicit layout variants:
+`list`, `grid`, `fan`, `compact`, and homepage-specific `editorial`. This preserves familiar interaction and typography without forcing every page
 into the same visual density. Topic hubs use the fan only for the first three promoted posts and return to normal list
 rows for the remaining archive. See `TOPIC_PAGES_AND_POST_LISTING.md` for the component and data migration contract.
 
@@ -177,7 +178,7 @@ Every body image opens through the same accessible gallery dialog. Opening store
 ## Optional Post Backgrounds
 
 `BlogPost.backgroundImage` is an optional full-post field used by the single-post and draft-preview routes and, when
-the post resolves as the homepage hero, as a custom homepage backdrop. When it is absent or blank,
+the post resolves as the homepage feature, as its dedicated text-free editorial image. When it is absent or blank,
 `BlogDetailComponent` preserves the existing opaque blog page exactly. When it is present,
 `BlogPostBackgroundComponent` renders the image as a decorative fixed viewport layer with a dark scrim while the
 article and footer receive translucent surfaces. The cover image remains the article hero and the source for
@@ -206,10 +207,15 @@ The dedicated CMS `Suno Song` tool accepts only exact HTTPS `/song/{uuid}` or `/
 
 The public renderer repeats URL validation, loads the exact canonical player in a provider-specific sandbox, and keeps a visible `Listen on Suno` link. Invalid or future unsupported Suno paths remain external links. Custom HTML still cannot frame Suno or any other provider, and `frame-src` adds only the exact Suno origin. See `docs/ARCHITECTURE/EDITORJS_SUNO_EMBEDS.md` for the complete data, privacy, deployment, and rollback contract.
 
-On the homepage, the same optional field replaces all CMS hero slides only while that post owns the hero and the
-Homepage Hero manager's `Use featured post background` option is enabled. It remains decorative, uses a centered cover
-crop, disables rotation, and falls back to the configured slideshow when the option is off or after a load error. The
-cover continues to drive the article panel thumbnail and social-image fallback.
+On the homepage, the same optional field fills a decorative, full-bleed feature backdrop under a dark readability
+scrim while the normal post image remains sharp in the linked media panel. When the dedicated background is missing,
+the renderer reuses the post image behind the copy with heavy blur, darkening, and overscan so baked-in cover text does
+not compete with the semantic hero title. Only when neither the dedicated background nor the normal post image is
+available does it choose a deterministic post-specific starting point in the published legacy slide pool and advance
+through that pool after load failures.
+Legacy slides remain stored and do not rotate while a story is displayed; the normal post image continues to drive
+cards and social-image fallback. The stored `useFeaturedPostBackground` field remains available only for older clients
+and code rollback.
 
 The CMS Post Images module reuses `BlogMediaUploaderComponent` for existing-library selection, URL entry, upload,
 preview, and an explicit detach action. Empty values are normalized away and serialized with Firestore `deleteField()`

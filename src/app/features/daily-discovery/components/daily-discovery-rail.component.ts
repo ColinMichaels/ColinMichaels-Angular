@@ -18,6 +18,13 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
   template: `
     <section class="daily-discovery" aria-labelledby="daily-discovery-heading">
       <div class="daily-discovery-shell">
+        <span class="daily-discovery-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" focusable="false">
+            <circle cx="21" cy="21" r="13"></circle>
+            <path d="m30.5 30.5 10 10"></path>
+            <path d="m21 13.5 2.2 5.3 5.3 2.2-5.3 2.2-2.2 5.3-2.2-5.3-5.3-2.2 5.3-2.2 2.2-5.3Z"></path>
+          </svg>
+        </span>
         <div class="daily-discovery-prompt">
           <p class="daily-discovery-label">
             Daily Discovery
@@ -73,8 +80,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       position: relative;
       z-index: 4;
       display: block;
-      width: 100vw;
-      margin-inline: calc((100% - 100vw) / 2);
+      width: 100%;
     }
 
     :host(.is-playing) {
@@ -83,21 +89,39 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     .daily-discovery {
       position: relative;
-      border-top: 1px solid rgba(103, 232, 249, 0.74);
-      background: linear-gradient(90deg, rgba(2, 6, 23, 0.99), rgba(8, 23, 43, 0.99) 48%, rgba(2, 6, 23, 0.99));
-      box-shadow: 0 -18px 45px rgba(2, 6, 23, 0.52);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(2, 10, 19, 0.9);
       color: #f8fafc;
     }
 
     .daily-discovery-shell {
       display: grid;
-      width: min(100%, 96rem);
-      min-height: 7.25rem;
-      grid-template-columns: minmax(20rem, 2.25fr) minmax(7rem, 0.62fr);
-      gap: clamp(1rem, 2vw, 2.25rem);
+      width: 100%;
+      min-height: 7.75rem;
+      grid-template-columns: 5.5rem minmax(20rem, 2.25fr) minmax(9rem, 0.62fr);
+      gap: clamp(1rem, 2vw, 2rem);
       align-items: center;
-      margin-inline: auto;
-      padding: 1.1rem clamp(1rem, 4vw, 3rem);
+      padding: 1rem clamp(1rem, 2.5vw, 2rem);
+    }
+
+    .daily-discovery-mark {
+      display: grid;
+      width: 4.5rem;
+      height: 4.5rem;
+      place-items: center;
+      border: 1px solid #22d3ee;
+      border-radius: 999px;
+      color: #67e8f9;
+    }
+
+    .daily-discovery-mark svg {
+      width: 3rem;
+      height: 3rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.6;
     }
 
     .daily-discovery-prompt {
@@ -126,10 +150,10 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       min-width: 0;
       margin: 0;
       color: #f8fafc;
-      font-family: var(--font-heading);
-      font-size: clamp(1rem, 1.25vw, 1.25rem);
-      font-weight: 650;
-      line-height: 1.3;
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: clamp(1.25rem, 1.75vw, 1.75rem);
+      font-weight: 500;
+      line-height: 1.18;
       text-align: left;
     }
 
@@ -195,7 +219,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     @media (max-width: 1040px) {
       .daily-discovery-shell {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: 4rem minmax(0, 1fr);
       }
 
       .daily-discovery-points {
@@ -205,9 +229,28 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     @media (max-width: 720px) {
       .daily-discovery-shell {
-        grid-template-columns: 1fr;
+        grid-template-columns: 3.5rem minmax(0, 1fr);
         gap: 0.7rem 1rem;
         padding-block: 0.9rem 1rem;
+      }
+
+      .daily-discovery-mark {
+        width: 3.5rem;
+        height: 3.5rem;
+      }
+
+      .daily-discovery-mark svg {
+        width: 2.3rem;
+        height: 2.3rem;
+      }
+
+      .daily-discovery-question-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .daily-discovery-answer-toggle {
+        width: 100%;
       }
     }
 

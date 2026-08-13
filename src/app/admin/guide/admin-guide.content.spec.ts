@@ -82,6 +82,15 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'reader preview no points').map(entry => entry.id))
       .toContain('manage-daily-discovery-question-sets');
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'reader preview no points')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'editorial image static fallback').map(entry => entry.id))
+      .toEqual(['update-the-homepage-hero']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'editorial image static fallback')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'post image placeholder').map(entry => entry.id))
+      .toEqual(['update-the-homepage-hero']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'post image placeholder')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'blurred backdrop image panel').map(entry => entry.id))
+      .toEqual(['update-the-homepage-hero']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'blurred backdrop image panel')).toEqual([]);
   });
 
   it('never returns a role-restricted match to an unauthorized user', () => {
@@ -106,5 +115,12 @@ describe('admin guide content', () => {
     expect(dailyDiscovery?.links[0].route).toBe('/admin/cms/daily-discovery');
     expect(canViewAdminGuideEntry(dailyDiscovery!, ['contentEditor'])).toBeTrue();
     expect(canViewAdminGuideEntry(dailyDiscovery!, ['viewer'])).toBeFalse();
+
+    const homepageFeature = ADMIN_GUIDE_ENTRIES.find(entry => entry.id === 'update-the-homepage-hero');
+
+    expect(homepageFeature).toBeDefined();
+    expect(homepageFeature?.links[0].route).toBe('/admin/cms/homepage');
+    expect(canViewAdminGuideEntry(homepageFeature!, ['contentEditor'])).toBeTrue();
+    expect(canViewAdminGuideEntry(homepageFeature!, ['viewer'])).toBeFalse();
   });
 });

@@ -66,5 +66,19 @@ describe('ContinueReadingShelfComponent', () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="continue-reading-shelf"]')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).classList).toContain('is-empty');
+  });
+
+  it('offers the compact editorial resume treatment on the homepage', () => {
+    fixture.componentRef.setInput('surface', 'homeEditorial');
+    fixture.componentRef.setInput('maxRecords', 1);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.continue-reading-shelf--home-editorial')).not.toBeNull();
+    expect(element.textContent).toContain('Pick up where you left off on this device.');
+    expect(element.textContent).toContain('Resume article');
+    expect(element.textContent).not.toContain('Your reading');
   });
 });
