@@ -3,9 +3,11 @@ import {RouterTestingModule} from '@angular/router/testing';
 
 import {BlogPostSummary} from '../../models/blog-post.model';
 import {BlogPostRailComponent} from './blog-post-rail.component';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 
 describe('BlogPostRailComponent', () => {
   let fixture: ComponentFixture<BlogPostRailComponent>;
+  let analytics: { trackContentSelection: jasmine.Spy };
 
   const suggestedPost: BlogPostSummary = {
     id: 'related-1',
@@ -21,8 +23,10 @@ describe('BlogPostRailComponent', () => {
   };
 
   beforeEach(async () => {
+    analytics = {trackContentSelection: jasmine.createSpy('trackContentSelection')};
     await TestBed.configureTestingModule({
       imports: [BlogPostRailComponent, RouterTestingModule],
+      providers: [{provide: SiteAnalyticsService, useValue: analytics}],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BlogPostRailComponent);
@@ -35,9 +39,12 @@ describe('BlogPostRailComponent', () => {
     const text = fixture.nativeElement.textContent;
     const relatedLink = fixture.nativeElement.querySelector('a[href="/blog/related-post"]');
 
-    expect(text).toContain('More posts');
+    expect(text).toContain('Read next');
     expect(text).toContain('A related article');
     expect(relatedLink).not.toBeNull();
+
+    relatedLink.click();
+    expect(analytics.trackContentSelection).toHaveBeenCalledWith(suggestedPost, 'related_reading');
   });
 
   it('renders explicitly placed custom blocks in rail mode', () => {

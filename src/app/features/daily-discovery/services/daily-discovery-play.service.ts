@@ -1,5 +1,6 @@
 import {Injectable, computed, inject, signal} from '@angular/core';
 
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {DailyDiscoveryAnswerResult, DailyDiscoveryChallenge} from '../models/daily-discovery.model';
 import {DailyDiscoveryService} from './daily-discovery.service';
 import {DailyDiscoveryStateService} from './daily-discovery-state.service';
@@ -14,6 +15,7 @@ import {DailyDiscoveryStateService} from './daily-discovery-state.service';
 export class DailyDiscoveryPlayService {
   private readonly dailyDiscoveryService = inject(DailyDiscoveryService);
   private readonly localState = inject(DailyDiscoveryStateService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private returnFocus: HTMLElement | null = null;
 
   readonly challenge = signal<DailyDiscoveryChallenge | null>(null);
@@ -48,6 +50,11 @@ export class DailyDiscoveryPlayService {
     this.answersVisible.set(true);
     this.isPlaying.set(true);
     this.returnFocus = returnFocus ?? null;
+    this.analytics.trackDailyDiscoveryStart(
+      challenge.id,
+      challenge.questionType ?? challenge.interactionType,
+      challenge.progress !== null
+    );
   }
 
   stop(): void {
@@ -100,10 +107,26 @@ export class DailyDiscoveryPlayService {
       });
 
       this.answerResult.set(result);
+      const signedIn = challenge.progress !== null || result.progress !== null && result.progress !== undefined;
+      this.analytics.trackDailyDiscoveryAnswer(
+        challenge.id,
+        challenge.questionType ?? challenge.interactionType,
+        result.correct,
+        result.dailyComplete === true,
+        signedIn
+      );
 
       if (result.correct) {
         this.localState.markCompleted(challenge.dateKey, challenge.id);
         this.isCompleted.set(true);
+
+        if (result.dailyComplete) {
+          this.analytics.trackDailyDiscoveryComplete(
+            challenge.dateKey,
+            result.totalQuestions ?? challenge.totalQuestions,
+            signedIn
+          );
+        }
       }
     } catch {
       this.answerResult.set({

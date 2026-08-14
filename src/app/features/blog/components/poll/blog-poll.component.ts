@@ -16,6 +16,7 @@ import {AuthService} from '../../../../services/auth.service';
 import {BlogPollResults} from '../../models/blog-poll.model';
 import {BlogContentBlock, BlogPollOption} from '../../models/blog-post.model';
 import {BlogPollService} from '../../services/blog-poll.service';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 
 @Component({
   selector: 'app-blog-poll',
@@ -163,6 +164,7 @@ export class BlogPollComponent implements OnChanges {
 
   private readonly authService = inject(AuthService);
   private readonly pollService = inject(BlogPollService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private loadKey = '';
@@ -234,13 +236,15 @@ export class BlogPollComponent implements OnChanges {
     this.submitting = true;
     this.errorMessage = '';
     this.statusMessage = '';
+    const selectedOptionId = this.selectedOptionId;
+    const voteUpdated = Boolean(this.persistedOptionId && this.persistedOptionId !== selectedOptionId);
 
     try {
       const results = await this.pollService.submitVote({
         postId: this.postId,
         postSlug: this.postSlug,
         pollId: this.block.id,
-        optionId: this.selectedOptionId,
+        optionId: selectedOptionId,
       });
       this.results = results;
       this.persistedOptionId = results.selectedOptionId;
@@ -249,6 +253,13 @@ export class BlogPollComponent implements OnChanges {
       this.statusMessage = results.resultsVisible
         ? 'Vote recorded.'
         : 'Vote recorded. Results are private for this poll.';
+      this.analytics.trackPollVote(
+        {id: this.postId, slug: this.postSlug},
+        this.block.id,
+        selectedOptionId,
+        voteUpdated,
+        results.resultsVisible
+      );
     } catch (error) {
       this.errorMessage = error instanceof Error ? error.message : 'Unable to save your vote. Please try again.';
     } finally {
