@@ -178,6 +178,24 @@ describe('BlogPostListingComponent', () => {
     expect(region?.style.getPropertyValue('--listing-title-lines')).toBe('');
   });
 
+  it('keeps editorial cover artwork fully visible without changing other layouts', () => {
+    fixture.componentRef.setInput('layout', 'editorial');
+    fixture.detectChanges();
+
+    let image = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
+      '.post-listing__media img'
+    );
+    expect(image?.style.objectFit).toBe('contain');
+
+    fixture.componentRef.setInput('layout', 'grid');
+    fixture.detectChanges();
+
+    image = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
+      '.post-listing__media img'
+    );
+    expect(image?.style.objectFit).toBe('');
+  });
+
   it('supports background fan media and word-aware visible title truncation without losing the full title', () => {
     const fullTitle =
       'A weekly recovery update about rebuilding routines, rediscovering confidence, and making steady progress';
