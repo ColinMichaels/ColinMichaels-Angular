@@ -99,6 +99,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                   <img
                     [src]="postImage(post)"
                     [alt]="post.title + ' cover image'"
+                    [style.object-fit]="layout === 'editorial' ? 'contain' : null"
                     loading="lazy"
                   >
                 </a>
