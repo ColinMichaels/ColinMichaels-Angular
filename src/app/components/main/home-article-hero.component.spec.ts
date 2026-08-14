@@ -113,7 +113,7 @@ describe('HomeArticleHeroComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 3 title');
-    expect(element.querySelector('.home-hero-post-control-previous')).toBeNull();
+    expect(element.querySelector('.home-hero-post-control-previous')).not.toBeNull();
     expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('1 / 3');
 
     element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
@@ -179,16 +179,25 @@ describe('HomeArticleHeroComponent', () => {
     }
   });
 
-  it('moves focus to the remaining story arrow at an endpoint', async () => {
-    const fixture = await createComponent([createPost(1), createPost(2)]);
+  it('keeps both story arrows mounted and focused while wrapping at an endpoint', async () => {
+    const fixture = await createComponent([createPost(1), createPost(2), createPost(3)]);
     const element = fixture.nativeElement as HTMLElement;
-    const nextButton = element.querySelector<HTMLButtonElement>('.home-hero-post-control-next');
+    const previousButton = element.querySelector<HTMLButtonElement>('.home-hero-post-control-previous');
 
-    nextButton?.focus();
-    nextButton?.click();
+    previousButton?.focus();
+    previousButton?.click();
     fixture.detectChanges();
 
-    expect(document.activeElement).toBe(element.querySelector('.home-hero-post-control-previous'));
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 1 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('3 / 3');
+    expect(element.querySelector('.home-hero-post-control-next')).not.toBeNull();
+    expect(document.activeElement).toBe(previousButton);
+
+    element.querySelector<HTMLButtonElement>('.home-hero-post-control-next')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 3 title');
+    expect(element.querySelector('.home-hero-post-position')?.textContent).toContain('1 / 3');
   });
 
   it('keeps the viewed post selected when recent posts reorder behind the same lead', async () => {
