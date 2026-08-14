@@ -430,9 +430,23 @@ function createGalleryImageRow(
   emptyPreview.style.cssText = 'padding:16px;text-align:center;font-size:12px;color:#71717a';
 
   const renderPreview = (url: string): void => {
-    preview.replaceChildren(url.trim() ? imageElement : emptyPreview);
-    if (url.trim()) {
-      imageElement.src = url.trim();
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+      preview.replaceChildren(emptyPreview);
+      return;
+    }
+
+    try {
+      const parsedUrl = new URL(trimmedUrl);
+      const isSafeProtocol = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+      if (!isSafeProtocol) {
+        preview.replaceChildren(emptyPreview);
+        return;
+      }
+      imageElement.src = parsedUrl.toString();
+      preview.replaceChildren(imageElement);
+    } catch {
+      preview.replaceChildren(emptyPreview);
     }
   };
   renderPreview(image.url);
