@@ -226,17 +226,31 @@ The post editor's Post Images module keeps the cover required, lets selected pos
 
 Draft preview links are generated from the CMS editor only for posts that remain in `draft` status. The backend creates the random token and atomically updates the canonical revision plus `postPreviews/{token}` snapshot; replacement and revocation remove the previous token in the same transaction. Firestore Rules allow public single-document reads only while the embedded post is still a draft and the preview expiry timestamp is in the future; clients cannot create, update, list, or delete preview documents directly.
 
-## Homepage Hero Manager
+## Homepage Feature Manager
 
-The homepage hero manager is available at `/admin/cms/homepage`. Automatic selection uses the newest published post
+The homepage feature manager is available at `/admin/cms/homepage`. Automatic selection uses the newest published post
 marked Featured while retaining all older feature flags; Selected post remains an explicit manual override. Legacy
 Latest settings normalize to this automatic featured policy without a Firestore migration.
 
-The manager includes an explicit `Use featured post background` toggle, which defaults off for existing and new
-settings. When enabled and the resolved hero post has a Full-screen Post Background, the public homepage uses that
-single image until the option is disabled, the field is removed, a different post resolves, or the image fails to
-load. Otherwise the published slideshow plays normally. The post editor owns the reusable background attachment; the
-homepage manager does not duplicate it into hero settings.
+The public feature uses two simultaneous media roles. A resolved post's text-free `Editorial Feature / Post
+Background` fills the decorative hero backdrop, while the normal post image remains sharp in the large linked panel.
+When no dedicated background is attached, the renderer reuses the post image as a heavily blurred, darkened backdrop
+so baked-in cover text cannot compete with the semantic hero copy. Only when neither the dedicated background nor the
+normal post image is available or loads successfully does the renderer choose a stable post-specific starting image from the published Screen Saver / Legacy
+slides and advance through the remaining slides after load failures. The same post keeps the same placeholder between
+visits, while different posts can receive different placeholder artwork. The post editor owns the reusable editorial
+attachment; the homepage manager does not duplicate it into settings.
+
+The saved `useFeaturedPostBackground` checkbox now appears as **Legacy client: prefer post background** under Legacy
+Hero Settings. It remains editable for older clients and code rollback but does not change the current public media
+roles.
+
+The publication-first homepage no longer renders the legacy personal headline or automatic background slideshow,
+crossfade, and Ken Burns motion. The independent, optional full-screen Screen Saver remains available and continues to
+read the published slide collection. The current homepage also reuses that collection as its non-rotating article
+fallback pool. Existing headline, summary, slide, timing, and motion fields stay stored for older clients and code
+rollback. Publishing still requires at least one slide under the existing validation contract; removing a slide from
+settings does not delete its Storage object.
 
 ## Topic Manager
 

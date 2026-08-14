@@ -23,14 +23,12 @@ import {
 import {AuthService} from '../../services/auth.service';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogShareEvent, BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
-import {
-  ContinueReadingShelfComponent
-} from '../../features/blog/components/continue-reading-shelf.component';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {HomepageSocialPreviewService} from '../../features/homepage/services/homepage-social-preview.service';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
 import {selectHomepageHeroPost} from '../../features/homepage/utils/homepage-post-selection.util';
 import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../../shared/seo/seo.metadata';
+import {SiteAnalyticsService} from '../../shared/analytics/site-analytics.service';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 
 @Component({
@@ -39,7 +37,6 @@ import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
     AuthorBioComponent,
     BlogShareActionsComponent,
     BlogPostCardSkeletonComponent,
-    ContinueReadingShelfComponent,
     FaIconComponent,
     HomeArticleHeroComponent,
     HomeLatestWritingSectionComponent,
@@ -56,6 +53,7 @@ import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 export class MainComponent {
   private readonly authService = inject(AuthService);
   private readonly engagement = inject(BlogEngagementService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
   private readonly homepageSocialPreview = inject(HomepageSocialPreviewService);
@@ -91,6 +89,7 @@ export class MainComponent {
   }
 
   protected recordSiteShare(event: BlogShareEvent): void {
+    this.analytics.trackShare(null, event.provider, 'homepage', this.isSignedIn());
     void this.engagement.recordSiteShare({
       provider: event.provider,
       ...(event.shareId ? {shareId: event.shareId} : {}),

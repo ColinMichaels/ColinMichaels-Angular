@@ -2,11 +2,9 @@
   <main class="pb-32 sm:pb-28 lg:pb-24">
     <app-home-article-hero/>
 
-    <app-continue-reading-shelf surface="home" [maxRecords]="3"/>
-
     @defer (on viewport) {
       <app-home-latest-writing-section
-        heading="More writing"
+        heading="More to read"
         [excludePostId]="heroPostId()"
         [maxPosts]="3"
         [featuredFirst]="false"
@@ -15,7 +13,7 @@
       <section id="blog" class="site-section">
         <div class="site-section-header">
           <div>
-            <h2 class="mt-3 heading-section">More writing</h2>
+            <h2 class="mt-3 heading-section">More to read</h2>
           </div>
           <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
             View all posts
@@ -80,23 +78,21 @@
               <div class="site-skeleton-block h-10 w-full max-w-sm lg:justify-self-end"></div>
             </div>
 
-            <div
-              class="mt-8 border border-teal-300/30 bg-zinc-900/70 px-4 pb-2 pt-9 dark:bg-zinc-900/70 md:px-6 md:pb-8 md:pt-14"
-              aria-hidden="true"
-            >
-              <div class="grid gap-0 md:grid-cols-3 md:gap-4">
-                @for (i of [1, 2, 3]; track i) {
-                  <article class="min-h-56 border border-teal-300/20 bg-zinc-950 p-5 md:min-h-80 md:p-6">
+            <div class="mt-8 grid gap-4 md:grid-cols-3" aria-hidden="true">
+              @for (i of [1, 2, 3]; track i) {
+                <article class="site-skeleton-card overflow-hidden">
+                  <div class="site-skeleton-block aspect-[16/10] w-full"></div>
+                  <div class="flex flex-1 flex-col p-5">
                     <div class="site-skeleton-block h-3 w-24"></div>
-                    <div class="mt-6 site-skeleton-block h-6 w-4/5"></div>
+                    <div class="mt-4 site-skeleton-block h-6 w-4/5"></div>
                     <div class="mt-3 site-skeleton-block h-6 w-3/5"></div>
-                    <div class="mt-8 space-y-2">
+                    <div class="mt-5 space-y-2">
                       <div class="site-skeleton-block h-3 w-full"></div>
                       <div class="site-skeleton-block h-3 w-4/5"></div>
                     </div>
-                  </article>
-                }
-              </div>
+                  </div>
+                </article>
+              }
             </div>
             <div class="mt-5 site-skeleton-block h-10 w-52" aria-hidden="true"></div>
           </div>
@@ -230,7 +226,7 @@
         <div class="max-w-xl">
           <h2 id="site-footer-title" class="heading-card">ColinMichaels.com</h2>
           <p class="mt-3 text-body">
-            A constantly improving collection of writing, projects, media, and personal notes. Stay tuned.
+            Ideas, tools, and discoveries worth passing on.
           </p>
           <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-500">
             &copy; {{ currentYear }} Colin Michaels. All rights reserved.

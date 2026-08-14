@@ -20,12 +20,14 @@ import {catchError, finalize, map, of, switchMap, tap} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
 import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {PwaNetworkService} from '../../../../shared/pwa/pwa-network.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogPostBackgroundComponent} from '../../components/post-background/blog-post-background.component';
 import {BlogPostRailComponent} from '../../components/post-rail/blog-post-rail.component';
+import {ArticleReactionComponent} from '../../components/article-reaction/article-reaction.component';
 import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
@@ -51,6 +53,7 @@ import {
   hasMeaningfulPostUpdate
 } from '../../utils/blog-reading.util';
 import {createBlogPostLayoutBlocks} from '../../utils/blog-block-placement.util';
+import {rankRelatedBlogPosts} from '../../utils/blog-related-posts.util';
 
 const HEALTH_CONTENT_TERMS = [
   'cardiac',
@@ -84,6 +87,7 @@ function normalizeHealthTerm(value: string): string {
     BlogCommentsComponent,
     BlogPostBackgroundComponent,
     BlogPostRailComponent,
+    ArticleReactionComponent,
     BlogShareActionsComponent,
     BlogStickyPostToolbarComponent,
     BlogTableOfContentsComponent,
@@ -247,6 +251,14 @@ function normalizeHealthTerm(value: string): string {
                   [activeHeadingId]="activeContentSectionId()"
                 ></app-blog-block-renderer>
               </div>
+
+              @if (!isPreviewRoute() && !isOfflineCopy()) {
+                <app-article-reaction
+                  class="mt-12"
+                  [post]="currentPost"
+                  [signedIn]="isSignedIn()"
+                ></app-article-reaction>
+              }
             </div>
 
             @if (hasRightRail()) {
@@ -540,6 +552,7 @@ export class BlogDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly engagementService = inject(BlogEngagementService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly authorRepository = inject(AuthorRepositoryService);
   protected readonly articleLibrary = inject(BlogArticleLibraryService);
@@ -771,15 +784,7 @@ export class BlogDetailComponent {
       return [];
     }
 
-    return this.posts()
-      .map(post => ({post, count: this.getSharedTaxonomyCount(post, currentPost)}))
-      .filter(({post, count}) => post.slug !== currentPost.slug && count > 0)
-      .sort((left, right) => (
-        right.count - left.count
-        || this.getPostDate(right.post).localeCompare(this.getPostDate(left.post))
-      ))
-      .map(({post}) => post)
-      .slice(0, 3);
+    return rankRelatedBlogPosts(this.posts(), currentPost, 3);
   });
   protected readonly hasRightRail = computed(() => (
     this.railBlocks().length > 0 || this.suggestedPosts().length > 0
@@ -879,9 +884,11 @@ export class BlogDetailComponent {
         this.showReaderFeedback('Offline copy updated with the latest article text.');
       } else if (this.offlinePosts.hasSavedSlug(post.slug)) {
         await this.offlinePosts.remove(post.slug);
+        this.analytics.trackArticleSave(post, 'offline', false, this.isSignedIn());
         this.showReaderFeedback('Offline copy removed from this device.');
       } else {
         await this.offlinePosts.save(post);
+        this.analytics.trackArticleSave(post, 'offline', true, this.isSignedIn());
         this.showReaderFeedback('Post downloaded for offline reading. Local article images were prepared when available.');
       }
     } catch (error) {
@@ -903,6 +910,7 @@ export class BlogDetailComponent {
     try {
       const favorite = !(this.articleLibraryRecord()?.favorite ?? false);
       await this.articleLibrary.setFavorite(post, favorite);
+      this.analytics.trackArticleSave(post, 'favorite', favorite, this.isSignedIn());
       this.showReaderFeedback(favorite ? 'Added to favorites.' : 'Removed from favorites.');
     } catch {
       this.showReaderFeedback('Favorites could not be updated on this device.');
@@ -921,6 +929,7 @@ export class BlogDetailComponent {
     try {
       const readLater = !(this.articleLibraryRecord()?.readLater ?? false);
       await this.articleLibrary.setReadLater(post, readLater);
+      this.analytics.trackArticleSave(post, 'read_later', readLater, this.isSignedIn());
       this.showReaderFeedback(readLater ? 'Saved to read later.' : 'Removed from read later.');
     } catch {
       this.showReaderFeedback('Read later could not be updated on this device.');
@@ -980,6 +989,10 @@ export class BlogDetailComponent {
     const progressPercent = Math.round((readDistance / readableDistance) * 100);
     this.updateActiveContentSection();
     this.readingProgress.set(progressPercent);
+    const post = this.post();
+    if (post && !this.isPreviewRoute()) {
+      this.analytics.trackArticleProgress(post, progressPercent, this.isSignedIn());
+    }
     this.scheduleProgressPersistence(progressPercent);
   }
 
@@ -1036,18 +1049,6 @@ export class BlogDetailComponent {
     }, 650);
   }
 
-  private getSharedTaxonomyCount(post: BlogPostSummary, currentPost: BlogPostSummary): number {
-    const currentTerms = new Set(getBlogTaxonomyTerms(currentPost).map(term => term.toLowerCase()));
-
-    return getBlogTaxonomyTerms(post)
-      .filter(term => currentTerms.has(term.toLowerCase()))
-      .length;
-  }
-
-  private getPostDate(post: BlogPostSummary): string {
-    return post.publishedAt ?? post.updatedAt;
-  }
-
   protected createCurrentPostPath(slug: string): string {
     const previewToken = this.previewToken();
 
@@ -1065,6 +1066,7 @@ export class BlogDetailComponent {
       return;
     }
 
+    this.analytics.trackShare(post, event.provider, 'article', this.isSignedIn());
     void this.engagementService.recordPostShare({
       postId: post.id,
       postSlug: post.slug,

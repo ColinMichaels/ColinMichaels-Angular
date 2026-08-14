@@ -1,15 +1,13 @@
-import {DatePipe, DOCUMENT, isPlatformBrowser, NgOptimizedImage, NgStyle} from '@angular/common';
+import {DOCUMENT, DatePipe, NgStyle, isPlatformBrowser} from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   PLATFORM_ID,
   computed,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
@@ -17,6 +15,7 @@ import {RouterLink} from '@angular/router';
 import {PATH_NAMES} from '../../app-route-paths';
 import {BlogPost} from '../../features/blog/models/blog-post.model';
 import {createBlogReadingStats} from '../../features/blog/utils/blog-reading.util';
+import {DailyDiscoveryRailComponent} from '../../features/daily-discovery/components/daily-discovery-rail.component';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
 import {HomepageHeroSlide} from '../../features/homepage/models/homepage-hero.model';
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
@@ -24,20 +23,34 @@ import {getPublishedHomepageHeroSlides} from '../../features/homepage/utils/home
 import {selectHomepageHeroPosts} from '../../features/homepage/utils/homepage-post-selection.util';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
-import {DailyDiscoveryRailComponent} from '../../features/daily-discovery/components/daily-discovery-rail.component';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postImage, postMatchesHubTerms} from './home-blog-section.utils';
 
 const HERO_POST_EXCERPT_MAX_LENGTH = 318;
+const HERO_POST_ROTATION_INTERVAL_MS = 30_000;
 const DEFAULT_TOPIC_ACCENT = '#22d3ee';
 const DEFAULT_TOPIC_ACCENT_STRONG = '#67e8f9';
 const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
+
+type EditorialMediaSource = 'background' | 'post' | 'slide';
+
+interface EditorialMedia {
+  alt: string;
+  objectPosition: string;
+  source: EditorialMediaSource;
+  url: string;
+}
+
+interface EditorialMediaSet {
+  background: EditorialMedia | null;
+  post: EditorialMedia | null;
+  slides: readonly EditorialMedia[];
+}
 
 @Component({
   selector: 'app-home-article-hero',
   imports: [
     DatePipe,
-    NgOptimizedImage,
     NgStyle,
     RouterLink,
     DailyDiscoveryRailComponent,
@@ -49,188 +62,164 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       id="home-article-hero"
       class="home-article-hero"
       aria-labelledby="home-article-hero-heading"
+      (focusin)="setHeroFocusWithin(true)"
+      (focusout)="handleHeroFocusOut($event)"
     >
-      <div class="home-hero-slideshow" aria-hidden="true">
-        @for (slide of heroSlides(); track slide.id; let slideIndex = $index; let first = $first) {
+      @if (heroBackdropMedia(); as backdrop) {
+        <div
+          class="home-hero-backdrop"
+          [class.home-hero-backdrop--blurred]="backdrop.source === 'post'"
+          aria-hidden="true"
+        >
           <img
-            [ngSrc]="slide.imageUrl"
-            fill
-            sizes="100vw"
-            priority
+            [src]="backdrop.url"
             alt=""
-            class="home-hero-background-image"
-            [class.is-active]="slideIndex === activeSlideIndex()"
-            [class.has-ken-burns]="slideHasKenBurns(slide)"
-            [style.object-position]="slideObjectPosition(slide)"
-            [style.transform-origin]="slideObjectPosition(slide)"
-            [style.--home-hero-transition-duration]="heroTransitionDuration()"
-            [style.--home-hero-ken-burns-duration]="heroKenBurnsDuration()"
-            [style.--home-hero-ken-burns-delay]="slideKenBurnsDelay(slideIndex)"
-            [style.--home-hero-ken-burns-x]="slideKenBurnsOffset(slide, 'x')"
-            [style.--home-hero-ken-burns-y]="slideKenBurnsOffset(slide, 'y')"
-            [attr.data-site-preload-image]="first ? '' : null"
-            (error)="handleHeroBackgroundError(slide.imageUrl)"
+            class="home-hero-backdrop-image"
+            [style.object-position]="backdrop.objectPosition"
+            decoding="async"
+            loading="eager"
+            fetchpriority="high"
+            data-site-preload-image
+            width="1920"
+            height="1080"
+            (error)="handleHeroMediaError(backdrop.url)"
           >
-        }
-      </div>
-      <div class="home-hero-background-lines" aria-hidden="true"></div>
+        </div>
+      }
 
       <div class="home-hero-shell">
-        <div class="home-hero-copy">
-          <h1 id="home-article-hero-heading" class="home-hero-title">
-            @for (line of heroHeadlineLines(); track line) {
-              <span>{{ line }}</span>
-            }
-          </h1>
-          <p class="home-hero-summary">
-            {{ heroSettings().summary }}
-          </p>
-          <div class="home-hero-actions">
-            <a href="#blog" class="home-hero-action home-hero-action-primary">
-              <span class="home-hero-action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M12 4v14"></path>
-                  <path d="m6.5 12.5 5.5 5.5 5.5-5.5"></path>
-                </svg>
-              </span>
-              <span>Explore the Journey</span>
-            </a>
-            <a [routerLink]="['/', pathNames.BLOG]" class="home-hero-action home-hero-action-secondary">
-              <span class="home-hero-action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M6 4.75h12"></path>
-                  <path d="M6 9.75h12"></path>
-                  <path d="M6 14.75h8"></path>
-                  <path d="M6 19.25h5"></path>
-                </svg>
-              </span>
-              <span>See What's New</span>
-            </a>
-          </div>
-        </div>
+        @if (blogLoadError(); as error) {
+          <div class="home-hero-message" role="status">{{ error }}</div>
+        } @else if (activeHeroPost(); as post) {
+          <article class="home-hero-story" [ngStyle]="postThemeStyle(post)">
+            <div class="home-hero-copy">
+              <h1 id="home-article-hero-heading" class="home-hero-post-title">{{ post.title }}</h1>
+              <p class="home-hero-post-excerpt">{{ postExcerpt(post) }}</p>
 
-        <app-daily-discovery-rail/>
-
-        <div class="home-hero-post-column">
-          <p class="home-hero-posts-label">Latest from the journey</p>
-
-          @if (blogLoadError(); as error) {
-            <div class="home-hero-message" role="status">
-              {{ error }}
-            </div>
-          } @else if (activeHeroPost(); as post) {
-            <div
-              class="home-hero-posts"
-              role="group"
-              aria-label="Featured and recent posts"
-            >
-              <a
-                [routerLink]="['/', pathNames.BLOG, post.slug]"
-                class="home-hero-panel"
-                [ngStyle]="postThemeStyle(post)"
-                [attr.aria-label]="'Read more: ' + post.title"
-              >
-                <div class="home-hero-panel-content">
-                  <span class="home-hero-panel-thumbnail">
-                    <img
-                      [src]="postImage(post)"
-                      [alt]="post.title + ' thumbnail'"
-                      class="home-hero-panel-image"
-                      decoding="async"
-                      loading="eager"
-                    >
-                  </span>
-                  <div class="home-hero-panel-body">
-
-                    <h2 class="home-hero-post-title">{{ post.title }}</h2>
-                    <span class="home-hero-post-excerpt">{{ postExcerpt(post) }}</span>
-                    <span class="home-hero-meta-row">
-                      <span class="home-hero-meta">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path d="M7 3.5v3"></path>
-                          <path d="M17 3.5v3"></path>
-                          <path d="M4.75 8.5h14.5"></path>
-                          <rect x="4.75" y="5.5" width="14.5" height="14" rx="2"></rect>
-                        </svg>
-                        {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
-                      </span>
-                      <span class="home-hero-meta">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <circle cx="12" cy="12" r="8"></circle>
-                          <path d="M12 7.75V12l3 2.25"></path>
-                        </svg>
-                        {{ readingMinutes(post) }} min read
-                      </span>
-                    </span>
-                    <div class="flex justify-between">
-                      <span class="home-hero-read-more">
-                        Read more
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path d="M5 12h13"></path>
-                          <path d="m13 6 6 6-6 6"></path>
-                        </svg>
-                      </span>
-                      <span class="home-hero-category">{{ postTopicLabel(post) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </a>
-            </div>
-
-            @if (hasPreviousHeroPost() || hasNextHeroPost()) {
-              <div
-                class="home-hero-post-controls"
-                role="group"
-                aria-label="Featured and recent post navigation"
-              >
-                @if (previousHeroPost(); as previousPost) {
-                  <button
-                    #previousHeroPostControl
-                    type="button"
-                    class="home-hero-post-control home-hero-post-control-previous"
-                    [attr.aria-label]="'Show previous post: ' + previousPost.title"
-                    (click)="showPreviousHeroPost()"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="m14.5 5-7 7 7 7"></path>
-                    </svg>
-                  </button>
-                }
-
-                <span class="home-hero-post-position" aria-live="polite" aria-atomic="true">
-                  <span class="sr-only">Showing {{ post.title }}. </span>
-                  <span aria-hidden="true">{{ activeHeroPostIndex() + 1 }} / {{ heroPostCandidates().length }}</span>
+              <div class="home-hero-meta-row">
+                <span class="home-hero-meta">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M7 3.5v3"></path>
+                    <path d="M17 3.5v3"></path>
+                    <path d="M4.75 8.5h14.5"></path>
+                    <rect x="4.75" y="5.5" width="14.5" height="14" rx="2"></rect>
+                  </svg>
+                  {{ (post.publishedAt || post.updatedAt) | date: 'MMM d, y':'UTC' }}
                 </span>
+                <span class="home-hero-meta-separator" aria-hidden="true"></span>
+                <span class="home-hero-meta">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="12" cy="12" r="8"></circle>
+                    <path d="M12 7.75V12l3 2.25"></path>
+                  </svg>
+                  {{ readingMinutes(post) }} min read
+                </span>
+              </div>
 
-                @if (nextHeroPost(); as nextPost) {
-                  <button
-                    #nextHeroPostControl
-                    type="button"
-                    class="home-hero-post-control home-hero-post-control-next"
-                    [attr.aria-label]="'Show next post: ' + nextPost.title"
-                    (click)="showNextHeroPost()"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="m9.5 5 7 7-7 7"></path>
-                    </svg>
-                  </button>
+              <div class="home-hero-actions">
+                <a
+                  [routerLink]="['/', pathNames.BLOG, post.slug]"
+                  class="home-hero-read-more"
+                  [attr.aria-label]="'Read the story: ' + post.title"
+                >
+                  Read the story
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M5 12h13"></path>
+                    <path d="m13 6 6 6-6 6"></path>
+                  </svg>
+                </a>
+
+                @if (hasMultipleHeroPosts()) {
+                  <div class="home-hero-post-controls" role="group" aria-label="Featured story navigation">
+                    @if (previousHeroPost(); as previousPost) {
+                      <button
+                        type="button"
+                        class="home-hero-post-control home-hero-post-control-previous"
+                        [attr.aria-label]="'Show previous post: ' + previousPost.title"
+                        (click)="showPreviousHeroPost()"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="m14.5 5-7 7 7 7"></path>
+                        </svg>
+                      </button>
+                    }
+
+                    <span class="home-hero-post-position" aria-live="polite" aria-atomic="true">
+                      <span class="sr-only">Showing {{ post.title }}. </span>
+                      <span aria-hidden="true">{{ activeHeroPostIndex() + 1 }} / {{ heroPostCandidates().length }}</span>
+                    </span>
+
+                    @if (nextHeroPost(); as nextPost) {
+                      <button
+                        type="button"
+                        class="home-hero-post-control home-hero-post-control-next"
+                        [attr.aria-label]="'Show next post: ' + nextPost.title"
+                        (click)="showNextHeroPost()"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="m9.5 5 7 7-7 7"></path>
+                        </svg>
+                      </button>
+                    }
+
+                    <button
+                      type="button"
+                      class="home-hero-post-control home-hero-rotation-control"
+                      [attr.aria-label]="heroPostRotationPaused()
+                        ? 'Resume automatic featured story rotation'
+                        : 'Pause automatic featured story rotation'"
+                      [attr.aria-pressed]="heroPostRotationPaused()"
+                      [attr.title]="heroPostRotationPaused()
+                        ? 'Resume automatic story rotation'
+                        : 'Pause automatic story rotation'"
+                      (click)="toggleHeroPostRotation()"
+                    >
+                      @if (heroPostRotationPaused()) {
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="m8.5 6 9 6-9 6Z"></path>
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M8.5 6.5v11"></path>
+                          <path d="M15.5 6.5v11"></path>
+                        </svg>
+                      }
+                    </button>
+                  </div>
                 }
               </div>
-            }
-          } @else if (blogIsLoading()) {
-            <div class="home-hero-posts" aria-hidden="true">
-              <div class="home-hero-panel home-hero-panel-skeleton">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
             </div>
-          } @else {
-            <div class="home-hero-message" role="status">
-              No published posts yet.
-            </div>
-          }
-        </div>
+
+            <a
+              [routerLink]="['/', pathNames.BLOG, post.slug]"
+              class="home-hero-panel"
+              [attr.aria-label]="'Read more: ' + post.title"
+            >
+              @if (heroPanelMedia(); as media) {
+                <img
+                  [src]="media.url"
+                  [alt]="media.alt"
+                  class="home-hero-panel-image"
+                  [style.object-position]="media.objectPosition"
+                  decoding="async"
+                  loading="eager"
+                  fetchpriority="high"
+                  width="1600"
+                  height="900"
+                  (error)="handleHeroMediaError(media.url)"
+                >
+              }
+            </a>
+          </article>
+
+          <app-daily-discovery-rail/>
+        } @else if (blogIsLoading()) {
+          <div class="home-hero-loading" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        } @else {
+          <div class="home-hero-message" role="status">No published posts yet.</div>
+        }
       </div>
     </section>
   `,
@@ -243,374 +232,109 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       position: relative;
       isolation: isolate;
       overflow: hidden;
-      min-height: calc(100svh - var(--site-header-sticky-height));
-      background: #020617;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      background:
+        radial-gradient(circle at 52% 25%, rgba(14, 116, 144, 0.12), transparent 34rem),
+        linear-gradient(180deg, #020811 0%, #030b14 65%, #02070d 100%);
       color: #f8fafc;
     }
 
-    .home-hero-slideshow {
+    .home-hero-backdrop {
       position: absolute;
-      inset: 0;
       z-index: 0;
+      inset: -2rem;
       overflow: hidden;
       pointer-events: none;
     }
 
-    .home-hero-background-image {
+    .home-hero-backdrop::after {
       position: absolute;
       inset: 0;
-      z-index: 0;
+      background:
+        linear-gradient(90deg, rgba(2, 8, 17, 0.93) 0%, rgba(2, 8, 17, 0.82) 34%, rgba(2, 8, 17, 0.34) 69%, rgba(2, 8, 17, 0.52) 100%),
+        linear-gradient(180deg, rgba(2, 8, 17, 0.24) 0%, rgba(2, 8, 17, 0.64) 100%);
+      content: '';
+    }
+
+    .home-hero-backdrop-image {
+      display: block;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
-      filter: saturate(0.95) contrast(1.04) brightness(0.82);
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(1.025) translate3d(0, 0, 0);
-      transition: opacity var(--home-hero-transition-duration, 1200ms) cubic-bezier(0.4, 0, 0.2, 1);
-      will-change: opacity, transform;
+      filter: brightness(0.78) saturate(0.9) contrast(1.04);
+      transform: scale(1.025);
     }
 
-    .home-hero-background-image.is-active {
-      z-index: 1;
-      opacity: 1;
-    }
-
-    .home-hero-background-image.has-ken-burns {
-      animation: home-hero-ken-burns var(--home-hero-ken-burns-duration, 11000ms) ease-in-out
-      var(--home-hero-ken-burns-delay, 0ms) infinite alternate both;
-    }
-
-    .home-hero-background-lines {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      background-image: linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
-      background-size: 42px 42px, 42px 42px;
-      mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.65), transparent 58%);
-      opacity: 0.9;
+    .home-hero-backdrop--blurred .home-hero-backdrop-image {
+      filter: blur(1.35rem) brightness(0.52) saturate(0.72);
+      transform: scale(1.12);
     }
 
     .home-hero-shell {
       position: relative;
-      z-index: 3;
-      display: grid;
-      grid-template-columns: minmax(0, 0.92fr) minmax(35rem, 1.28fr);
-      grid-template-rows: minmax(0, 1fr) auto;
-      column-gap: clamp(2rem, 4vw, 4.5rem);
-      row-gap: 0;
-      align-items: center;
-      width: min(100%, 96rem);
-      min-height: max(40rem, calc(100svh - var(--site-header-sticky-height)));
+      z-index: 1;
+      width: min(100%, 92rem);
       margin-inline: auto;
-      padding: clamp(3rem, 6vw, 5.75rem) clamp(1rem, 4vw, 3rem) 0;
+      padding: clamp(2rem, 4vw, 3.25rem) clamp(1rem, 4vw, 3rem) clamp(1.25rem, 2.5vw, 2rem);
     }
 
-    .home-hero-copy {
-      grid-column: 1;
-      grid-row: 1;
-      max-width: 42rem;
-      padding-top: clamp(1rem, 4vw, 3rem);
-    }
-
-    app-daily-discovery-rail {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      align-self: end;
-    }
-
-    .home-hero-title {
-      display: grid;
-      gap: 0.08em;
-      margin: 0;
-      font-family: var(--font-heading);
-      font-size: clamp(2.25rem, 3.1vw, 4.1rem);
-      font-weight: 750;
-      letter-spacing: 0;
-      line-height: 1.01;
-      text-shadow: 0 18px 44px rgba(0, 0, 0, 0.58);
-    }
-
-    .home-hero-title span {
-      display: block;
-    }
-
-    .home-hero-summary {
-      margin: clamp(1rem, 1.8vw, 1.45rem) 0 0;
-      max-width: 39rem;
-      color: rgba(248, 250, 252, 0.9);
-      font-size: clamp(1rem, 1.08vw, 1.16rem);
-      line-height: 1.62;
-      text-wrap: pretty;
-    }
-
-    .home-hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: clamp(1rem, 1.4vw, 1.35rem);
-    }
-
-    .home-hero-action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      min-height: 3.1rem;
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      padding: 0.74rem 1.1rem;
-      color: #ffffff;
-      font-family: var(--font-accent);
-      font-size: 0.86rem;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      transition: border-color 180ms ease,
-      background 180ms ease,
-      box-shadow 180ms ease,
-      color 180ms ease;
-    }
-
-    .home-hero-action-primary {
-      border-color: rgba(103, 232, 249, 0.78);
-      background: rgba(34, 211, 238, 0.12);
-      color: #cffafe;
-      box-shadow: 0 18px 40px rgba(8, 145, 178, 0.16);
-    }
-
-    .home-hero-action-primary:hover,
-    .home-hero-action-primary:focus-visible {
-      background: #67e8f9;
-      color: #082f49;
-      box-shadow: 0 20px 44px rgba(8, 145, 178, 0.26);
-    }
-
-    .home-hero-action-secondary {
-      background: rgba(2, 6, 23, 0.38);
-      color: #f8fafc;
-      backdrop-filter: blur(12px);
-    }
-
-    .home-hero-action-secondary:hover,
-    .home-hero-action-secondary:focus-visible {
-      border-color: rgba(103, 232, 249, 0.52);
-      background: rgba(8, 47, 73, 0.42);
-      color: #cffafe;
-    }
-
-    .home-hero-action-icon {
-      display: inline-flex;
-      width: 1.35rem;
-      height: 1.35rem;
-      align-items: center;
-      justify-content: center;
-      color: currentColor;
-    }
-
-    .home-hero-action-icon svg,
-    .home-hero-meta svg,
-    .home-hero-read-more svg,
-    .home-hero-post-control svg {
-      width: 100%;
-      height: 100%;
-      fill: none;
-      stroke: currentColor;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.9;
-    }
-
-    .home-hero-post-column {
-      grid-column: 2;
-      grid-row: 1;
-      min-width: 0;
-    }
-
-    .home-hero-posts-label {
-      margin: 0 0 0.85rem 1rem;
-      color: var(--site-text);
-      font-family: var(--font-accent);
-      font-size: 0.92rem;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-    }
-
-    .home-hero-posts {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1rem;
-      align-items: stretch;
-    }
-
-    .home-hero-post-controls {
-      display: grid;
-      grid-template-columns: 2.75rem minmax(5rem, auto) 2.75rem;
-      gap: 0.75rem;
-      align-items: center;
-      justify-content: center;
-      margin-top: 1rem;
-    }
-
-    .home-hero-post-control {
-      display: inline-flex;
-      width: 2.75rem;
-      height: 2.75rem;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(103, 232, 249, 0.52);
-      background: rgba(2, 6, 23, 0.68);
-      color: #cffafe;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-      transition: border-color 180ms ease,
-      background 180ms ease,
-      color 180ms ease,
-      transform 180ms ease;
-    }
-
-    .home-hero-post-control:hover {
-      border-color: #67e8f9;
-      background: #67e8f9;
-      color: #082f49;
-      transform: translateY(-1px);
-    }
-
-    .home-hero-post-control:focus-visible {
-      outline: 2px solid #67e8f9;
-      outline-offset: 3px;
-    }
-
-    .home-hero-post-control svg {
-      width: 1.2rem;
-      height: 1.2rem;
-    }
-
-    .home-hero-post-control-previous {
-      grid-column: 1;
-    }
-
-    .home-hero-post-position {
-      grid-column: 2;
-      color: rgba(248, 250, 252, 0.82);
-      font-family: var(--font-accent);
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-align: center;
-    }
-
-    .home-hero-post-control-next {
-      grid-column: 3;
-    }
-
-    .home-hero-panel {
+    .home-hero-story {
       --home-hero-topic-accent: #22d3ee;
       --home-hero-topic-accent-strong: #67e8f9;
       --home-hero-topic-rgb: 34 211 238;
+      display: grid;
+      gap: clamp(2rem, 4vw, 4.25rem);
+      align-items: stretch;
+    }
 
-      position: relative;
+    .home-hero-copy {
       display: flex;
       min-width: 0;
-      overflow: hidden;
-      border: 1px solid rgb(var(--home-hero-topic-rgb) / 0.34);
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.44), transparent 34%),
-      linear-gradient(180deg, rgb(var(--home-hero-topic-rgb) / 0.08), rgba(2, 6, 23, 0.46)),
-      rgba(2, 6, 23, 0.72);
-      color: #ffffff;
-      text-decoration: none;
-      transition: border-color 300ms ease;
-    }
-
-    .home-hero-panel:is(:hover, :focus-visible) {
-      border-color: rgb(var(--home-hero-topic-rgb) / 0.8);
-      box-shadow: 0 28px 70px rgb(var(--home-hero-topic-rgb) / 0.18);
-    }
-
-    .home-hero-panel-content {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      min-height: 100%;
-      width: 100%;
-      flex: 1;
+      /* Reserve enough copy height for the story actions to stay anchored while titles change. */
+      min-block-size: 34rem;
       flex-direction: column;
-      justify-content: flex-start;
-      text-shadow: 0 12px 28px rgba(0, 0, 0, 0.72);
-    }
-
-    .home-hero-panel-body {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      padding: 1rem;
-    }
-
-    .home-hero-panel-thumbnail {
-      position: relative;
-      display: block;
-      width: 100%;
-      height: clamp(15rem, 31svh, 19rem);
-      margin-bottom: 1rem;
-      overflow: hidden;
-    }
-
-    .home-hero-panel-image {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      /* Keep headings baked into cover art visible when the desktop frame becomes short and wide. */
-      object-position: center top;
-      transform-origin: center top;
-      filter: saturate(0.95) contrast(1.04) brightness(0.86);
-      transition: filter 300ms ease,
-      transform 300ms ease;
-    }
-
-    .home-hero-panel:is(:hover, :focus-visible) .home-hero-panel-image {
-      filter: saturate(1.05) contrast(1.06) brightness(0.92);
-      transform: scale(1.03);
+      padding-block: clamp(0.5rem, 2vw, 1.5rem);
     }
 
     .home-hero-post-title {
-      display: -webkit-box;
-      margin: 0 0 0.55rem;
-      overflow: hidden;
+      margin: 0;
+      max-width: 13ch;
       color: #ffffff;
-      font-family: var(--font-heading);
-      font-size: clamp(1.15rem, 2vw, 1.45rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: clamp(2.65rem, 4.8vw, 5.35rem);
+      font-weight: 500;
+      letter-spacing: -0.045em;
+      line-height: 0.99;
+      overflow-wrap: break-word;
       text-wrap: balance;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      text-shadow: 0 0.12rem 1.2rem rgba(0, 0, 0, 0.72);
     }
 
     .home-hero-post-excerpt {
       display: -webkit-box;
-      margin-top: 0;
+      max-width: 40rem;
+      margin: clamp(1.15rem, 2vw, 1.65rem) 0 0;
       overflow: hidden;
-      color: #ffffff;
-      font-size: 0.95rem;
-      line-height: 1.45;
+      color: #dbe4ed;
+      font-size: clamp(1rem, 1.25vw, 1.18rem);
+      line-height: 1.58;
+      text-wrap: pretty;
+      text-shadow: 0 0.1rem 0.9rem rgba(0, 0, 0, 0.78);
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 4;
     }
 
     .home-hero-meta-row {
-      display: grid;
-      gap: 0.5rem;
-      margin: 1rem 0;
-      color: #f8fafc;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem 0.9rem;
+      margin-top: clamp(1.25rem, 2vw, 1.75rem);
+      color: #e2e8f0;
       font-family: var(--font-accent);
-      font-size: 0.58rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 0.78rem;
+      font-weight: 650;
+      letter-spacing: 0.055em;
       text-transform: uppercase;
     }
 
@@ -620,227 +344,262 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
       gap: 0.48rem;
     }
 
-    .home-hero-meta svg {
-      width: 1rem;
-      height: 1rem;
+    .home-hero-meta svg,
+    .home-hero-read-more svg,
+    .home-hero-post-control svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
     }
 
+    .home-hero-meta svg {
+      width: 1.05rem;
+      height: 1.05rem;
+    }
 
-    .home-hero-category {
-      display: inline-flex;
-      align-self: flex-end;
-      margin-bottom: 0.75rem;
-      border-radius: 0.2rem;
-      border: 1px solid rgb(var(--home-hero-topic-rgb) / 0.58);
-      background: rgb(var(--home-hero-topic-rgb) / 0.18);
-      color: var(--home-hero-topic-accent-strong);
-      font-family: var(--font-accent);
-      font-size: 0.68rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      line-height: 1;
-      padding: 0.45rem 0.58rem;
-      text-transform: uppercase;
-      text-shadow: none;
+    .home-hero-meta-separator {
+      width: 1px;
+      height: 1.1rem;
+      background: rgba(148, 163, 184, 0.45);
+    }
+
+    .home-hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      margin-top: auto;
+      padding-top: clamp(1.35rem, 2.4vw, 2rem);
     }
 
     .home-hero-read-more {
       display: inline-flex;
-      width: fit-content;
+      min-height: 3.35rem;
       align-items: center;
-      gap: 0.45rem;
-      margin-top: auto;
+      justify-content: center;
+      gap: 1rem;
       border: 1px solid var(--home-hero-topic-accent-strong);
       background: var(--home-hero-topic-accent-strong);
-      overflow: hidden;
-      padding: 0.62rem 0.78rem;
-      color: #020617;
+      padding: 0.78rem 1.45rem;
+      color: #082f49;
       font-family: var(--font-accent);
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      transition: background 180ms ease,
-      color 180ms ease;
+      font-size: 0.98rem;
+      font-weight: 650;
+      text-decoration: none;
+      transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+    }
+
+    .home-hero-read-more:hover {
+      border-color: #cffafe;
+      background: #cffafe;
+      transform: translateY(-1px);
     }
 
     .home-hero-read-more svg {
-      width: 1rem;
-      height: 1rem;
+      width: 1.2rem;
+      height: 1.2rem;
     }
 
-    .home-hero-panel:is(:hover, :focus-visible) .home-hero-read-more {
-      background: var(--home-hero-topic-accent-strong);
-      color: #020617;
-    }
-
-    .home-hero-message {
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(2, 6, 23, 0.48);
-      padding: 1rem;
-      color: rgba(248, 250, 252, 0.86);
-      backdrop-filter: blur(12px);
-    }
-
-    .home-hero-panel-skeleton {
+    .home-hero-post-controls {
       display: grid;
-      align-content: end;
-      gap: 0.8rem;
-      padding: 1.4rem;
-      background: linear-gradient(110deg, rgba(15, 23, 42, 0.9), rgba(51, 65, 85, 0.45), rgba(15, 23, 42, 0.9));
-      background-size: 220% 100%;
-      animation: home-hero-shimmer 1.6s ease-in-out infinite;
+      grid-template-columns: 2.75rem minmax(3.5rem, auto) 2.75rem 2.75rem;
+      align-items: center;
+      gap: 0.55rem;
     }
 
-    .home-hero-panel-skeleton span {
+    .home-hero-post-control {
+      display: inline-flex;
+      width: 2.75rem;
+      height: 2.75rem;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(103, 232, 249, 0.42);
+      background: transparent;
+      color: #cffafe;
+      cursor: pointer;
+      transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .home-hero-post-control:hover {
+      border-color: #67e8f9;
+      background: rgba(103, 232, 249, 0.12);
+    }
+
+    .home-hero-post-control svg {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
+
+    .home-hero-post-control-previous {
+      grid-column: 1;
+    }
+
+    .home-hero-post-position {
+      grid-column: 2;
+      color: #94a3b8;
+      font-family: var(--font-accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-align: center;
+    }
+
+    .home-hero-post-control-next {
+      grid-column: 3;
+    }
+
+    .home-hero-rotation-control {
+      grid-column: 4;
+    }
+
+    .home-hero-panel {
+      position: relative;
       display: block;
-      height: 0.8rem;
-      background: rgba(255, 255, 255, 0.18);
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid rgb(var(--home-hero-topic-rgb) / 0.27);
+      background: #020617;
+      aspect-ratio: 16 / 10;
+      text-decoration: none;
     }
 
-    .home-hero-panel-skeleton span:first-child {
-      width: 4.5rem;
-      margin-bottom: 12rem;
+    .home-hero-panel::after {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(255, 255, 255, 0.035);
+      content: '';
+      pointer-events: none;
     }
 
-    .home-hero-panel-skeleton span:nth-child(2) {
-      width: 80%;
-      height: 1.35rem;
+    .home-hero-panel-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(0.98) contrast(1.03);
+      transition: filter 240ms ease, transform 360ms ease;
     }
 
-    .home-hero-panel-skeleton span:last-child {
-      width: 58%;
+    .home-hero-panel:hover .home-hero-panel-image,
+    .home-hero-panel:focus-visible .home-hero-panel-image {
+      filter: saturate(1.04) contrast(1.04);
+      transform: scale(1.018);
     }
 
-    @keyframes home-hero-shimmer {
-      0% {
-        background-position: 0% 50%;
-      }
-      100% {
-        background-position: -220% 50%;
-      }
+    app-daily-discovery-rail {
+      display: block;
+      margin-top: clamp(1.5rem, 3vw, 2.25rem);
     }
 
-    @keyframes home-hero-ken-burns {
-      0% {
-        transform: scale(1.022) translate3d(0, 0, 0);
-      }
-      100% {
-        transform: scale(1.055) translate3d(
-          var(--home-hero-ken-burns-x, 0.45%),
-          var(--home-hero-ken-burns-y, -0.45%),
-          0
-        );
-      }
+    .home-hero-message,
+    .home-hero-loading {
+      min-height: clamp(22rem, 58svh, 38rem);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(2, 6, 23, 0.72);
+      padding: clamp(1.5rem, 4vw, 3rem);
+      color: #cbd5e1;
     }
 
-    @media (max-width: 1180px) {
-      .home-hero-shell {
-        grid-template-columns: minmax(0, 0.9fr) minmax(30rem, 1.25fr);
-        column-gap: 1.75rem;
-      }
-
-      .home-hero-post-excerpt {
-        -webkit-line-clamp: 3;
-      }
+    .home-hero-loading {
+      display: grid;
+      align-content: center;
+      gap: 1rem;
     }
 
-    @media (max-width: 980px) {
-      .home-article-hero,
-      .home-hero-shell {
-        min-height: auto;
-      }
+    .home-hero-loading span {
+      display: block;
+      height: 1rem;
+      background: rgba(148, 163, 184, 0.15);
+    }
 
-      .home-hero-shell {
-        display: block;
-        padding-block: 1rem 0;
+    .home-hero-loading span:first-child {
+      width: 56%;
+      height: 3.5rem;
+    }
+
+    .home-hero-loading span:nth-child(2) {
+      width: 42%;
+    }
+
+    .home-hero-loading span:last-child {
+      width: 28%;
+    }
+
+    @media (min-width: 64rem) {
+      .home-hero-story {
+        grid-template-columns: minmax(25rem, 0.82fr) minmax(33rem, 1.18fr);
       }
 
       .home-hero-copy {
-        max-width: 44rem;
-        padding-top: 0;
-      }
-
-      .home-hero-post-column {
-        margin-top: 3rem;
-        padding-bottom: 2rem;
-      }
-
-      .home-hero-posts-label {
-        margin-left: 0;
-      }
-
-      .home-hero-posts {
-        grid-auto-flow: row;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 1rem;
-        overflow: visible;
-        padding: 0.25rem 0 0;
-        scroll-snap-type: none;
-        transform: none;
-      }
-
-      .home-hero-panel-thumbnail {
-        height: auto;
-        aspect-ratio: 16 / 9;
-      }
-
-      .home-hero-panel {
-        min-height: 29rem;
-        scroll-snap-align: none;
-      }
-
-      .home-hero-category {
-        display: inline-flex;
-        margin-bottom: 0.75rem;
-      }
-
-      .home-hero-post-excerpt {
-        margin-top: 0;
-      }
-
-      .home-hero-meta-row {
-        margin-top: 1.45rem;
-      }
-
-      .home-hero-read-more {
-        margin-top: auto;
+        min-block-size: clamp(36.75rem, 46vw, 42rem);
       }
     }
 
-    @media (max-width: 640px) {
-      .home-hero-title {
-        font-size: clamp(2rem, 9vw, 3rem);
+    @media (max-width: 63.99rem) {
+      .home-hero-backdrop::after {
+        background:
+          linear-gradient(180deg, rgba(2, 8, 17, 0.38) 0%, rgba(2, 8, 17, 0.72) 48%, rgba(2, 8, 17, 0.9) 100%),
+          linear-gradient(90deg, rgba(2, 8, 17, 0.68), rgba(2, 8, 17, 0.46));
       }
 
-      .home-hero-summary {
-        font-size: 1rem;
-        line-height: 1.62;
+      .home-hero-copy {
+        order: 2;
+      }
+
+      .home-hero-panel {
+        order: 1;
+      }
+
+      .home-hero-post-title {
+        max-width: 16ch;
+      }
+    }
+
+    @media (max-width: 39.99rem) {
+      .home-hero-shell {
+        padding-top: 1rem;
+      }
+
+      .home-hero-story {
+        gap: 1.35rem;
+      }
+
+      .home-hero-panel {
+        width: calc(100% + 2rem);
+        margin-inline: -1rem;
+        border-inline: 0;
+        aspect-ratio: 4 / 3;
+      }
+
+      .home-hero-post-title {
+        font-size: clamp(2.35rem, 12vw, 3.55rem);
+      }
+
+      .home-hero-post-excerpt {
+        -webkit-line-clamp: 5;
       }
 
       .home-hero-actions {
-        display: grid;
+        align-items: stretch;
       }
 
-      .home-hero-action {
-        width: 100%;
-        justify-content: flex-start;
+      .home-hero-read-more {
+        flex: 1 1 12rem;
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .home-hero-action,
-      .home-hero-background-image,
-      .home-hero-panel,
-      .home-hero-panel-image,
-      .home-hero-post-control,
       .home-hero-read-more,
-      .home-hero-panel-skeleton {
-        animation: none;
+      .home-hero-post-control,
+      .home-hero-panel-image {
         transition: none;
       }
 
-      .home-hero-background-image {
+      .home-hero-read-more:hover,
+      .home-hero-panel:hover .home-hero-panel-image,
+      .home-hero-panel:focus-visible .home-hero-panel-image {
         transform: none;
       }
     }
@@ -848,12 +607,11 @@ const DEFAULT_TOPIC_ACCENT_RGB = '34 211 238';
 })
 export class HomeArticleHeroComponent {
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
-  private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
-  private readonly topicHubRepository = inject(TopicHubRepositoryService);
-  private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly platformId = inject(PLATFORM_ID);
-  private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly document = inject(DOCUMENT);
+  private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
 
   protected readonly allPublishedPosts = this.blogPostFeed.publishedPosts;
   protected readonly heroSettings = computed(() => {
@@ -861,7 +619,6 @@ export class HomeArticleHeroComponent {
 
     return settings.status === 'published' ? settings : DEFAULT_HOMEPAGE_HERO_SETTINGS;
   });
-  protected readonly heroHeadlineLines = computed(() => this.heroSettings().headlineLines);
   protected readonly heroPostCandidates = computed(() => (
     selectHomepageHeroPosts(this.allPublishedPosts(), this.heroSettings())
   ));
@@ -876,72 +633,91 @@ export class HomeArticleHeroComponent {
       ?? posts[this.activeHeroPostIndex()]
       ?? this.heroPost();
   });
-  protected readonly previousHeroPost = computed(() => (
-    this.heroPostCandidates()[this.activeHeroPostIndex() - 1] ?? null
-  ));
-  protected readonly nextHeroPost = computed(() => (
-    this.heroPostCandidates()[this.activeHeroPostIndex() + 1] ?? null
-  ));
-  protected readonly hasPreviousHeroPost = computed(() => this.previousHeroPost() !== null);
-  protected readonly hasNextHeroPost = computed(() => this.nextHeroPost() !== null);
-  // Keep the backdrop tied to the resolved lead, not the card being browsed.
-  private readonly postBackgroundImageUrl = computed(() => {
-    if (!this.heroSettings().useFeaturedPostBackground) {
-      return '';
+  // Keep both arrows mounted and wrap at the endpoints so the navigation row and keyboard focus never shift.
+  protected readonly hasMultipleHeroPosts = computed(() => this.heroPostCandidates().length > 1);
+  protected readonly previousHeroPost = computed(() => {
+    const posts = this.heroPostCandidates();
+
+    if (posts.length < 2) {
+      return null;
     }
 
-    return this.heroPost()?.backgroundImage?.trim() ?? '';
+    const previousIndex = (this.activeHeroPostIndex() - 1 + posts.length) % posts.length;
+    return posts[previousIndex] ?? null;
   });
-  private readonly postBackgroundCandidateKey = computed(() => {
-    const post = this.heroPost();
-    const imageUrl = this.postBackgroundImageUrl();
+  protected readonly nextHeroPost = computed(() => {
+    const posts = this.heroPostCandidates();
 
-    return post && imageUrl ? `${post.id}:${imageUrl}` : '';
-  });
-  private readonly failedPostBackgroundCandidateKey = signal('');
-  private activePostBackgroundCandidateKey = '';
-  private activeHeroLeadPostId = '';
-  // Endpoint navigation removes the clicked arrow, so focus moves to the remaining control.
-  private readonly pendingHeroPostControlFocus = signal<'previous' | 'next' | null>(null);
-  private readonly previousHeroPostControl = viewChild<ElementRef<HTMLButtonElement>>('previousHeroPostControl');
-  private readonly nextHeroPostControl = viewChild<ElementRef<HTMLButtonElement>>('nextHeroPostControl');
-  protected readonly heroSlides = computed(() => {
-    const post = this.heroPost();
-    const backgroundImageUrl = this.postBackgroundImageUrl();
-    const candidateKey = this.postBackgroundCandidateKey();
-
-    if (post && backgroundImageUrl && candidateKey !== this.failedPostBackgroundCandidateKey()) {
-      // Project the post background into the existing slide renderer without persisting it as CMS slideshow media.
-      return [createPostBackgroundSlide(post, backgroundImageUrl)];
+    if (posts.length < 2) {
+      return null;
     }
 
-    const slides = getPublishedHomepageHeroSlides(this.heroSettings());
-
-    return slides.length > 0 ? slides : getPublishedHomepageHeroSlides(DEFAULT_HOMEPAGE_HERO_SETTINGS);
+    const nextIndex = (this.activeHeroPostIndex() + 1) % posts.length;
+    return posts[nextIndex] ?? null;
   });
-  protected readonly heroTransitionMs = computed(() => {
-    const transitionMs = this.heroSettings().transitionMs;
-    const hasKenBurnsSlides = this.heroSlides().some(slide => slide.kenBurnsEnabled);
-
-    return hasKenBurnsSlides ? Math.max(transitionMs, 1400) : transitionMs;
-  });
-  protected readonly heroTransitionDuration = computed(() => `${this.heroTransitionMs()}ms`);
-  protected readonly heroKenBurnsDuration = computed(() => {
-    const settings = this.heroSettings();
-
-    return `${Math.max(11000, settings.intervalMs + this.heroTransitionMs() + 2500)}ms`;
-  });
-  protected readonly activeSlideIndex = signal(0);
+  protected readonly heroPostRotationPaused = signal(false);
+  private readonly heroFocusWithin = signal(false);
   private readonly pageVisible = signal(true);
-  private readonly reducedMotion = signal(false);
-  private readonly shouldRotateSlides = computed(() => {
+  private readonly failedMediaUrls = signal<ReadonlySet<string>>(new Set<string>());
+  // Keep backdrop and panel roles independent so a text-heavy cover is blurred only behind the semantic hero copy.
+  private readonly heroMediaSet = computed<EditorialMediaSet>(() => {
+    const post = this.activeHeroPost();
     const settings = this.heroSettings();
+    const slides = getPublishedHomepageHeroSlides(settings);
+    const fallbackSlides = slides.length > 0
+      ? slides
+      : getPublishedHomepageHeroSlides(DEFAULT_HOMEPAGE_HERO_SETTINGS);
+    const postBackground = post?.backgroundImage?.trim() ?? '';
+    const postCover = post ? postImage(post).trim() : '';
+    const orderedSlides = this.orderFallbackSlides(fallbackSlides, post);
+    const background: EditorialMedia | null = postBackground
+      ? {
+        url: postBackground,
+        alt: '',
+        objectPosition: '50% 50%',
+        source: 'background',
+      }
+      : null;
+    const postMedia: EditorialMedia | null = postCover
+      ? {
+        url: postCover,
+        alt: post ? `${post.title} cover image` : '',
+        objectPosition: '50% 50%',
+        source: 'post',
+      }
+      : null;
+    const slideMedia = orderedSlides.map<EditorialMedia>(slide => ({
+      url: slide.imageUrl.trim(),
+      alt: '',
+      objectPosition: this.slideObjectPosition(slide),
+      source: 'slide',
+    }));
 
-    return settings.slideshowEnabled
-      && this.heroSlides().length > 1
-      && this.pageVisible()
-      && !this.reducedMotion();
+    return {background, post: postMedia, slides: slideMedia};
   });
+  protected readonly heroBackdropMedia = computed<EditorialMedia | null>(() => {
+    if (!this.activeHeroPost()) {
+      return null;
+    }
+
+    const media = this.heroMediaSet();
+
+    return this.firstWorkingMedia([
+      media.background,
+      media.post,
+      ...media.slides,
+    ]);
+  });
+  protected readonly heroPanelMedia = computed<EditorialMedia | null>(() => {
+    const media = this.heroMediaSet();
+
+    return this.firstWorkingMedia([
+      media.post,
+      media.background,
+      ...media.slides,
+    ]);
+  });
+  private activeHeroLeadPostId = '';
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
@@ -951,16 +727,10 @@ export class HomeArticleHeroComponent {
   protected readonly pathNames = PATH_NAMES;
 
   constructor() {
-    this.initializeMotionState();
-    this.resetFailedBackgroundWhenCandidateChanges();
+    this.initializeHeroPostRotationEnvironment();
     this.keepActiveHeroPostInBounds();
-    this.keepHeroPostNavigationFocus();
-    this.keepActiveSlideInBounds();
-    this.startSlideRotation();
-  }
-
-  protected postImage(post: BlogPost): string {
-    return postImage(post);
+    this.resetFailedMediaWhenPostChanges();
+    this.startHeroPostRotation();
   }
 
   protected postLabel(post: BlogPost): string {
@@ -990,73 +760,148 @@ export class HomeArticleHeroComponent {
   }
 
   protected showPreviousHeroPost(): void {
-    const targetIndex = Math.max(0, this.activeHeroPostIndex() - 1);
+    const postCount = this.heroPostCandidates().length;
 
-    this.setActiveHeroPost(targetIndex);
-
-    if (targetIndex === 0) {
-      this.pendingHeroPostControlFocus.set('next');
+    if (postCount < 2) {
+      return;
     }
+
+    this.setActiveHeroPost((this.activeHeroPostIndex() - 1 + postCount) % postCount);
   }
 
   protected showNextHeroPost(): void {
-    const lastPostIndex = Math.max(0, this.heroPostCandidates().length - 1);
-    const targetIndex = Math.min(lastPostIndex, this.activeHeroPostIndex() + 1);
+    const postCount = this.heroPostCandidates().length;
 
-    this.setActiveHeroPost(targetIndex);
-
-    if (targetIndex === lastPostIndex) {
-      this.pendingHeroPostControlFocus.set('previous');
+    if (postCount < 2) {
+      return;
     }
+
+    this.setActiveHeroPost((this.activeHeroPostIndex() + 1) % postCount);
   }
 
-  protected slideObjectPosition(slide: HomepageHeroSlide): string {
+  protected toggleHeroPostRotation(): void {
+    this.heroPostRotationPaused.update(paused => !paused);
+  }
+
+  protected setHeroFocusWithin(hasFocus: boolean): void {
+    this.heroFocusWithin.set(hasFocus);
+  }
+
+  protected handleHeroFocusOut(event: FocusEvent): void {
+    const section = event.currentTarget as HTMLElement | null;
+    const nextTarget = event.relatedTarget;
+
+    if (section && nextTarget instanceof Node && section.contains(nextTarget)) {
+      return;
+    }
+
+    this.heroFocusWithin.set(false);
+  }
+
+  protected handleHeroMediaError(imageUrl: string): void {
+    this.failedMediaUrls.update(urls => new Set([...urls, imageUrl]));
+  }
+
+  private firstWorkingMedia(candidates: readonly (EditorialMedia | null)[]): EditorialMedia | null {
+    const failedUrls = this.failedMediaUrls();
+    const visitedUrls = new Set<string>();
+
+    for (const candidate of candidates) {
+      if (!candidate?.url || visitedUrls.has(candidate.url) || failedUrls.has(candidate.url)) {
+        continue;
+      }
+
+      visitedUrls.add(candidate.url);
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private slideObjectPosition(slide: HomepageHeroSlide): string {
     return `${slide.focalPointX}% ${slide.focalPointY}%`;
   }
 
-  protected slideHasKenBurns(slide: HomepageHeroSlide): boolean {
-    return slide.kenBurnsEnabled && this.pageVisible() && !this.reducedMotion();
-  }
-
-  protected slideKenBurnsDelay(slideIndex: number): string {
-    return `-${slideIndex * 1300}ms`;
-  }
-
-  protected slideKenBurnsOffset(slide: HomepageHeroSlide, axis: 'x' | 'y'): string {
-    const focalPoint = axis === 'x' ? slide.focalPointX : slide.focalPointY;
-    const centeredOffset = axis === 'x' ? 0.45 : -0.45;
-
-    if (focalPoint < 45) {
-      return axis === 'x' ? '0.65%' : '0.45%';
+  private orderFallbackSlides(
+    slides: readonly HomepageHeroSlide[],
+    post: BlogPost | null
+  ): readonly HomepageHeroSlide[] {
+    if (slides.length < 2) {
+      return slides;
     }
 
-    if (focalPoint > 55) {
-      return axis === 'x' ? '-0.65%' : '-0.55%';
-    }
+    // A stable per-post offset supplies variety without making the fallback change between visits.
+    const seed = post?.id.trim() || post?.slug.trim() || post?.title.trim() || 'homepage-feature';
+    const startIndex = stableStringHash(seed) % slides.length;
 
-    return `${centeredOffset}%`;
-  }
-
-  protected handleHeroBackgroundError(imageUrl: string): void {
-    if (imageUrl === this.postBackgroundImageUrl()) {
-      this.failedPostBackgroundCandidateKey.set(this.postBackgroundCandidateKey());
-    }
+    return [
+      ...slides.slice(startIndex),
+      ...slides.slice(0, startIndex),
+    ];
   }
 
   private postTopic(post: BlogPost): TopicHub | null {
     return this.topicHubs().find(topicHub => postMatchesHubTerms(post, topicHub.terms)) ?? null;
   }
 
-  private resetFailedBackgroundWhenCandidateChanges(): void {
-    effect(() => {
-      const candidateKey = this.postBackgroundCandidateKey();
+  private initializeHeroPostRotationEnvironment(): void {
+    if (!this.isBrowser) {
+      return;
+    }
 
-      if (candidateKey === this.activePostBackgroundCandidateKey) {
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePageVisibility = () => this.pageVisible.set(this.document.visibilityState !== 'hidden');
+    const pauseForReducedMotion = () => {
+      if (reducedMotionQuery.matches) {
+        this.heroPostRotationPaused.set(true);
+      }
+    };
+
+    updatePageVisibility();
+    pauseForReducedMotion();
+    this.document.addEventListener('visibilitychange', updatePageVisibility);
+    reducedMotionQuery.addEventListener('change', pauseForReducedMotion);
+    this.destroyRef.onDestroy(() => {
+      this.document.removeEventListener('visibilitychange', updatePageVisibility);
+      reducedMotionQuery.removeEventListener('change', pauseForReducedMotion);
+    });
+  }
+
+  private startHeroPostRotation(): void {
+    effect(onCleanup => {
+      const postCount = this.heroPostCandidates().length;
+      const activeIndex = this.activeHeroPostIndex();
+      const shouldRotate = this.isBrowser
+        && postCount > 1
+        && this.pageVisible()
+        && !this.heroPostRotationPaused()
+        && !this.heroFocusWithin();
+
+      if (!shouldRotate) {
         return;
       }
 
-      this.activePostBackgroundCandidateKey = candidateKey;
-      this.failedPostBackgroundCandidateKey.set('');
+      // A one-shot timer restarts whenever the active index or a pause condition changes.
+      const timeoutId = window.setTimeout(() => {
+        this.setActiveHeroPost((activeIndex + 1) % postCount);
+      }, HERO_POST_ROTATION_INTERVAL_MS);
+
+      onCleanup(() => window.clearTimeout(timeoutId));
+    });
+  }
+
+  private resetFailedMediaWhenPostChanges(): void {
+    let activePostId = '';
+
+    effect(() => {
+      const nextPostId = this.activeHeroPost()?.id ?? '';
+
+      if (nextPostId === activePostId) {
+        return;
+      }
+
+      activePostId = nextPostId;
+      this.failedMediaUrls.set(new Set<string>());
     });
   }
 
@@ -1068,7 +913,6 @@ export class HomeArticleHeroComponent {
       const activeIndex = this.activeHeroPostIndex();
       const activePostId = this.activeHeroPostId();
 
-      // Preserve the viewed post by ID across reorders, but reset when editorial lead selection changes.
       if (leadPostId !== this.activeHeroLeadPostId) {
         this.activeHeroLeadPostId = leadPostId;
 
@@ -1106,24 +950,6 @@ export class HomeArticleHeroComponent {
     });
   }
 
-  private keepHeroPostNavigationFocus(): void {
-    effect(() => {
-      const pendingFocus = this.pendingHeroPostControlFocus();
-      const control = pendingFocus === 'previous'
-        ? this.previousHeroPostControl()
-        : pendingFocus === 'next'
-          ? this.nextHeroPostControl()
-          : undefined;
-
-      if (!control) {
-        return;
-      }
-
-      control.nativeElement.focus({preventScroll: true});
-      this.pendingHeroPostControlFocus.set(null);
-    });
-  }
-
   private setActiveHeroPost(index: number): void {
     const post = this.heroPostCandidates()[index];
 
@@ -1134,74 +960,6 @@ export class HomeArticleHeroComponent {
     this.activeHeroPostIndex.set(index);
     this.activeHeroPostId.set(post.id);
   }
-
-  private initializeMotionState(): void {
-    if (!this.isBrowser) {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const updateReducedMotion = () => this.reducedMotion.set(mediaQuery.matches);
-    const updatePageVisibility = () => this.pageVisible.set(this.document.visibilityState !== 'hidden');
-
-    updateReducedMotion();
-    updatePageVisibility();
-
-    mediaQuery.addEventListener('change', updateReducedMotion);
-    this.document.addEventListener('visibilitychange', updatePageVisibility);
-    this.destroyRef.onDestroy(() => {
-      mediaQuery.removeEventListener('change', updateReducedMotion);
-      this.document.removeEventListener('visibilitychange', updatePageVisibility);
-    });
-  }
-
-  private keepActiveSlideInBounds(): void {
-    effect(() => {
-      const slideCount = this.heroSlides().length;
-      const activeIndex = this.activeSlideIndex();
-
-      if (slideCount === 0 || activeIndex >= slideCount) {
-        this.activeSlideIndex.set(0);
-      }
-    });
-  }
-
-  private startSlideRotation(): void {
-    effect(onCleanup => {
-      if (!this.isBrowser || !this.shouldRotateSlides()) {
-        return;
-      }
-
-      const intervalId = window.setInterval(() => this.goToNextSlide(), this.heroSettings().intervalMs);
-
-      onCleanup(() => window.clearInterval(intervalId));
-    });
-  }
-
-  private goToNextSlide(): void {
-    const slideCount = this.heroSlides().length;
-
-    if (slideCount <= 1) {
-      return;
-    }
-
-    this.activeSlideIndex.update(index => (index + 1) % slideCount);
-  }
-}
-
-function createPostBackgroundSlide(post: BlogPost, imageUrl: string): HomepageHeroSlide {
-  return {
-    id: `featured-post-background-${post.id}`,
-    imageUrl,
-    altText: '',
-    focalPointX: 50,
-    focalPointY: 50,
-    kenBurnsEnabled: false,
-    sortOrder: 0,
-    status: 'published',
-    createdAt: post.createdAt,
-    updatedAt: post.updatedAt,
-  };
 }
 
 function truncateText(value: string, maximumLength: number): string {
@@ -1221,4 +979,15 @@ function truncateText(value: string, maximumLength: number): string {
   ).trimEnd();
 
   return `${visibleValue}...`;
+}
+
+function stableStringHash(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
 }

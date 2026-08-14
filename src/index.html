@@ -340,8 +340,8 @@
       }
     })(window, document);
   </script>
-  <!-- Google Tag Manager -->
-  <script>(function (w, d, s, l, i) {
+  <!-- Google Analytics: one production destination; Angular emits route page views. -->
+  <script>(function (w, d, i) {
     var hostname = w.location.hostname;
     var isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
     var isAdminRoute = w.location.pathname === '/admin' || w.location.pathname.indexOf('/admin/') === 0;
@@ -350,29 +350,23 @@
       return;
     }
 
-    function loadGtm() {
-      w[l] = w[l] || [];
-      w[l].push({
-        'gtm.start':
-          new Date().getTime(), event: 'gtm.js'
-      });
-      var f = d.getElementsByTagName(s)[0],
-        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
-      j.async = true;
-      j.src =
-        'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-      f.parentNode.insertBefore(j, f);
-    }
+    w.dataLayer = w.dataLayer || [];
+    w.gtag = w.gtag || function () {
+      w.dataLayer.push(arguments);
+    };
+    w.gtag('js', new Date());
+    w.gtag('config', i, {
+      send_page_view: false,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    });
 
-    if ('requestIdleCallback' in w) {
-      w.requestIdleCallback(loadGtm, {timeout: 3000});
-    } else {
-      w.addEventListener('load', function () {
-        w.setTimeout(loadGtm, 0);
-      }, {once: true});
-    }
-  })(window, document, 'script', 'dataLayer', 'GTM-Q6BN');</script>
-  <!-- End Google Tag Manager -->
+    var script = d.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(i);
+    d.head.appendChild(script);
+  })(window, document, 'G-6V5GQRZFBH');</script>
+  <!-- End Google Analytics -->
 
   <meta property="fb:app_id" content="112752895476149">
   <meta property="og:site_name" content="ColinMichaels.com">
@@ -477,12 +471,6 @@
   <meta name="theme-color" content="#09090b">
 </head>
 <body class="bg-black text-white antialiased outline-none" id="colin-michaels">
-<!-- Google Tag Manager (noscript) -->
-<noscript>
-  <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-Q6BN"
-          height="0" width="0" style="display:none;visibility:hidden"></iframe>
-</noscript>
-<!-- End Google Tag Manager (noscript) -->
 <div id="cm-initial-loader" class="cm-initial-loader" role="status" aria-live="polite" aria-label="Loading latest stories">
   <div class="cm-loader-shell">
     <div class="cm-loader-brand">

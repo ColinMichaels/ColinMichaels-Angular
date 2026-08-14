@@ -36,7 +36,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
       [class.site-header-overlay-open]="searchOverlay.isOpen() || isMenuOpen()"
     >
       <div
-        class="site-header-row mx-auto grid max-w-site grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8">
+        class="site-header-row mx-auto grid max-w-site grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-6 lg:px-8 xl:grid-cols-[auto_auto_minmax(18rem,1fr)_auto]">
         <a
           routerLink="/"
           class="group inline-flex min-h-11 w-24 min-w-0 items-center min-[400px]:w-28 sm:w-48 lg:w-56"
@@ -47,6 +47,18 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
             <app-site-logo/>
           </span>
         </a>
+
+        <nav class="hidden items-center gap-6 xl:flex" aria-label="Primary navigation">
+          <a [routerLink]="['/', pathNames.BLOG]" routerLinkActive="site-header-primary-link-active" class="site-header-primary-link">
+            Discover
+          </a>
+          <a routerLink="/" fragment="topic-guides" class="site-header-primary-link">
+            Topics
+          </a>
+          <a routerLink="/" fragment="about" class="site-header-primary-link">
+            About
+          </a>
+        </nav>
 
         <form
           #searchForm
@@ -76,7 +88,7 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
             id="site-header-search"
             type="search"
             cdkFocusInitial
-            placeholder="Search"
+            placeholder="Search articles and ideas"
             autocomplete="off"
             [value]="searchQuery()"
             class="site-header-search-input"
@@ -210,6 +222,21 @@ import {PwaInstallControlComponent} from '../pwa/pwa-install-control.component';
 
     .site-header-overlay-open {
       z-index: 90;
+    }
+
+    .site-header-primary-link {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      color: var(--site-text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .site-header-primary-link:hover,
+    .site-header-primary-link-active {
+      color: var(--site-accent-strong);
     }
 
     .site-header-search-attention {

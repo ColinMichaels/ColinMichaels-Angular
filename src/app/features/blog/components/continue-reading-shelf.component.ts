@@ -2,6 +2,7 @@ import {ChangeDetectionStrategy, Component, Input, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {
   BlogArticleLibraryRecord,
   BlogArticleLibraryService,
@@ -11,23 +12,31 @@ import {
   selector: 'app-continue-reading-shelf',
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {class: 'block'},
+  host: {
+    class: 'block',
+    '[class.is-empty]': 'visibleRecords().length === 0',
+  },
   template: `
     @if (visibleRecords().length > 0) {
       <section
         class="continue-reading-shelf"
         [class.continue-reading-shelf--home]="surface === 'home'"
+        [class.continue-reading-shelf--home-editorial]="surface === 'homeEditorial'"
         aria-labelledby="continue-reading-heading"
         data-testid="continue-reading-shelf"
       >
         <div [class.site-section-inner]="surface === 'home'">
           <header class="continue-reading-shelf__header">
             <div>
-              <p class="eyebrow eyebrow-cyan">Your reading</p>
+              @if (surface !== 'homeEditorial') {
+                <p class="eyebrow eyebrow-cyan">Your reading</p>
+              }
               <h2 id="continue-reading-heading" class="mt-2 heading-section">Continue reading</h2>
             </div>
             <p class="continue-reading-shelf__intro">
-              Pick up from your last saved section. Reading progress stays on this device.
+              {{ surface === 'homeEditorial'
+                ? 'Pick up where you left off on this device.'
+                : 'Pick up from your last saved section. Reading progress stays on this device.' }}
             </p>
           </header>
 
@@ -38,6 +47,7 @@ import {
                 [routerLink]="['/', pathNames.BLOG, record.post.slug]"
                 [fragment]="resumeFragment(record)"
                 [attr.aria-label]="resumeAriaLabel(record)"
+                (click)="trackResume(record)"
               >
                 <img
                   [src]="record.post.coverImage"
@@ -57,7 +67,7 @@ import {
                   </span>
                   <span class="continue-reading-card__title">{{ record.post.title }}</span>
                   <span class="continue-reading-card__action">
-                    Continue article
+                    {{ surface === 'homeEditorial' ? 'Resume article' : 'Continue article' }}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M5 12h14"></path>
                       <path d="m14 7 5 5-5 5"></path>
@@ -93,6 +103,64 @@ import {
         linear-gradient(135deg, color-mix(in srgb, var(--site-accent-soft) 58%, transparent), transparent 62%),
         var(--site-panel-soft);
       margin-bottom: 0;
+    }
+
+    .continue-reading-shelf--home-editorial {
+      margin: 0;
+      border: 1px solid var(--site-border);
+      background: rgba(2, 8, 17, 0.42);
+      padding: clamp(1.15rem, 2.5vw, 1.6rem);
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-shelf__header {
+      display: block;
+      border-bottom: 1px solid var(--site-border);
+      padding-bottom: 1.25rem;
+    }
+
+    .continue-reading-shelf--home-editorial .heading-section {
+      margin-top: 0;
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: clamp(1.75rem, 2.5vw, 2.2rem);
+      font-weight: 500;
+      letter-spacing: -0.025em;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-shelf__intro {
+      margin-top: 0.55rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-shelf__grid {
+      grid-template-columns: 1fr;
+      margin-top: 1.25rem;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-card {
+      grid-template-columns: minmax(14rem, 0.42fr) minmax(0, 1fr);
+      grid-template-rows: minmax(11rem, auto);
+      border-color: var(--site-border);
+      background: transparent;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-card__image {
+      object-fit: contain;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-card__title {
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-card__action {
+      min-height: 2.75rem;
+      justify-content: space-between;
+      border: 1px solid var(--site-accent);
+      background: var(--site-accent);
+      padding: 0.6rem 0.8rem;
+      color: #082f49;
     }
 
     .continue-reading-shelf__header {
@@ -251,12 +319,25 @@ import {
         grid-template-rows: 7.5rem minmax(0, 1fr);
       }
     }
+
+    @media (max-width: 47.99rem) {
+      .continue-reading-shelf--home-editorial .continue-reading-card {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .continue-reading-shelf--home-editorial .continue-reading-card__image {
+        height: auto;
+        aspect-ratio: 16 / 9;
+      }
+    }
   `],
 })
 export class ContinueReadingShelfComponent {
   private readonly library = inject(BlogArticleLibraryService);
+  private readonly analytics = inject(SiteAnalyticsService);
 
-  @Input() surface: 'home' | 'blog' = 'blog';
+  @Input() surface: 'home' | 'homeEditorial' | 'blog' = 'blog';
   @Input() maxRecords = 3;
 
   protected readonly pathNames = PATH_NAMES;
@@ -272,5 +353,10 @@ export class ContinueReadingShelfComponent {
   protected resumeAriaLabel(record: BlogArticleLibraryRecord): string {
     const section = record.lastHeadingText ? ` at ${record.lastHeadingText}` : '';
     return `Continue ${record.post.title}${section}, ${record.progressPercent}% read`;
+  }
+
+  protected trackResume(record: BlogArticleLibraryRecord): void {
+    this.analytics.trackContinueReading(record.post, record.progressPercent, this.surface);
+    this.analytics.trackContentSelection(record.post, 'continue_reading');
   }
 }

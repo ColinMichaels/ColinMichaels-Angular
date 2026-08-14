@@ -63,8 +63,8 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-7xl space-y-8">
         <app-admin-page-header
-          title="Homepage Hero"
-          description="Manage the first viewport copy, featured article selection, and rotating background image set."
+          title="Homepage Feature"
+          description="Manage featured article selection, its editorial media fallbacks, and preserved legacy hero settings."
         >
           <div adminPageHeaderActions class="contents">
             <button
@@ -87,7 +87,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
 
         <section class="grid gap-4 sm:grid-cols-4">
           <app-admin-stat-card
-            label="Hero Status"
+            label="Feature Status"
             [value]="settings().status"
             size="compact"
             [capitalize]="true"
@@ -107,8 +107,8 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
           <section class="space-y-6">
             <section class="space-y-5 border border-zinc-800 bg-zinc-900/70 p-5">
               <div>
-                <h2 class="text-xl font-semibold text-zinc-50">Hero Copy</h2>
-                <p class="mt-1 text-sm text-zinc-500">These fields replace the current hardcoded homepage headline and intro.</p>
+                <h2 class="text-xl font-semibold text-zinc-50">Legacy Hero Settings</h2>
+                <p class="mt-1 text-sm text-zinc-500">Preserved for rollback and older clients. The publication-first homepage uses the featured article title, excerpt, and automatic media roles instead.</p>
               </div>
 
               <div class="grid gap-4 md:grid-cols-[160px_1fr]">
@@ -147,11 +147,26 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                   <input type="text" formControlName="headlineLine3" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300">
                 </label>
               </div>
+
+              <label class="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 p-3">
+                <span>
+                  <span class="block text-sm font-medium text-zinc-200">Legacy client: prefer post background</span>
+                  <span class="mt-1 block text-xs leading-5 text-zinc-500">
+                    Retained for older homepage clients and code rollback. The current homepage uses the post's
+                    Editorial Feature / Post Background as its full-bleed backdrop without reading this setting.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  formControlName="useFeaturedPostBackground"
+                  class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-300"
+                >
+              </label>
             </section>
 
             <section class="space-y-5 border border-zinc-800 bg-zinc-900/70 p-5">
               <div>
-                <h2 class="text-xl font-semibold text-zinc-50">Featured Article Overlay</h2>
+                <h2 class="text-xl font-semibold text-zinc-50">Featured Article</h2>
                 <p class="mt-1 text-sm text-zinc-500">
                   The newest published post marked featured appears automatically. Older posts can remain featured;
                   select a specific post only when you need a manual override.
@@ -185,30 +200,27 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                     }
                   </select>
                 </label>
-                <label class="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 p-3 md:col-span-2">
+                <div class="border border-cyan-500/30 bg-cyan-500/5 p-3 md:col-span-2" role="note">
                   <span>
-                    <span class="block text-sm font-medium text-zinc-200">Use featured post background</span>
+                    <span class="block text-sm font-medium text-zinc-200">Current public media roles</span>
                     <span class="mt-1 block text-xs leading-5 text-zinc-500">
-                      When enabled, the resolved post's Full-screen Post Background replaces the slideshow. When
-                      disabled—or when that image is missing or fails—the published homepage slides play normally.
+                      The Editorial Feature / Post Background fills the backdrop while the normal post image stays
+                      sharp in the article panel. Without a dedicated background, the post image is reused behind the
+                      copy with heavy blur and darkening. Legacy slides are the final fallback.
                     </span>
                   </span>
-                  <input
-                    type="checkbox"
-                    formControlName="useFeaturedPostBackground"
-                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-cyan-300"
-                  >
-                </label>
+                </div>
               </div>
             </section>
 
             <section class="space-y-5 border border-zinc-800 bg-zinc-900/70 p-5">
               <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <div>
-                  <h2 class="text-xl font-semibold text-zinc-50">Background Slides</h2>
+                  <h2 class="text-xl font-semibold text-zinc-50">Screen Saver / Legacy Slides</h2>
                   <p class="mt-1 text-sm text-zinc-500">
-                    Upload, order, and publish the homepage slideshow. It remains active unless the featured-post
-                    background option above is enabled and the resolved post has a working background image.
+                    These images still supply the optional full-screen Screen Saver, remain available for rollback,
+                    and provide a stable post-specific placeholder when a featured post has no working background or
+                    post image. The homepage shows one at a time and does not rotate them in place.
                   </p>
                 </div>
                 <label class="inline-flex cursor-pointer justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
@@ -305,7 +317,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                   </article>
                 } @empty {
                   <div class="border border-dashed border-zinc-700 p-5 text-sm leading-6 text-zinc-400">
-                    No slides are configured. Upload at least one image before publishing the homepage hero.
+                    No slides are configured. Upload at least one Screen Saver / Legacy image before publishing these settings.
                   </div>
                 }
               </div>
@@ -315,8 +327,8 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
           <aside class="space-y-6">
             <section class="space-y-5 border border-zinc-800 bg-zinc-900/70 p-5">
               <div>
-                <h2 class="text-xl font-semibold text-zinc-50">Slideshow Timing</h2>
-                <p class="mt-1 text-sm text-zinc-500">The public hero pauses on hover, focus, hidden tabs, and reduced motion.</p>
+                <h2 class="text-xl font-semibold text-zinc-50">Legacy Slideshow Timing</h2>
+                <p class="mt-1 text-sm text-zinc-500">Preserved for rollback. These values no longer animate the public publication-first feature.</p>
               </div>
               <label class="flex items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 p-3">
                 <span class="text-sm font-medium text-zinc-200">Enable autoplay</span>
@@ -355,10 +367,9 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                 </div>
               </article>
               <p class="text-xs leading-5 text-zinc-500">
-                Published fallback slide count: {{ publishedSlideCount() }}. This preview shows slideshow imagery. On
-                the public homepage, the resolved hero post's optional full-screen background replaces these slides
-                only when Use featured post background is enabled; disabling it, or a failed/missing image, restores
-                the slideshow or static fallback.
+                Published fallback slide count: {{ publishedSlideCount() }}. These images remain available to the
+                optional Screen Saver and rollback. The current homepage uses them only when neither the dedicated
+                background nor the normal post image can load.
               </p>
             </section>
 
@@ -373,7 +384,7 @@ function hasDownloadUrl(progress: BlogMediaUploadProgress): progress is BlogMedi
                 class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
                 [disabled]="heroForm.invalid || saveInProgress || uploadInProgress"
               >
-                {{ saveInProgress ? 'Saving...' : 'Save Homepage Hero' }}
+                {{ saveInProgress ? 'Saving...' : 'Save Homepage Feature' }}
               </button>
             </app-admin-editor-action-bar>
           </aside>
@@ -453,7 +464,7 @@ export class CmsHomepageHeroManagerComponent {
     }
 
     if (settings.status === 'published' && getPublishedHomepageHeroSlides(settings).length === 0) {
-      this.toast.error('Publish at least one hero slide before publishing the homepage hero.');
+      this.toast.error('Publish at least one Screen Saver / Legacy slide before publishing the homepage feature.');
       return;
     }
 
@@ -462,9 +473,9 @@ export class CmsHomepageHeroManagerComponent {
     try {
       const savedSettings = await this.homepageHeroRepository.saveHomepageHeroSettings(settings);
       this.patchHeroForm(savedSettings);
-      this.toast.success('Saved homepage hero settings.');
+      this.toast.success('Saved homepage feature settings.');
     } catch (error) {
-      this.toast.error(`Unable to save homepage hero settings: ${getErrorMessage(error)}`);
+      this.toast.error(`Unable to save homepage feature settings: ${getErrorMessage(error)}`);
     } finally {
       this.saveInProgress = false;
     }
@@ -476,16 +487,16 @@ export class CmsHomepageHeroManagerComponent {
     try {
       const settings = await this.homepageHeroRepository.loadHomepageHeroSettingsFromFirestore();
       this.patchHeroForm(settings);
-      this.toast.success('Refreshed homepage hero settings from Firestore.');
+      this.toast.success('Refreshed homepage feature settings from Firestore.');
     } catch (error) {
-      this.toast.error(`Unable to refresh homepage hero settings: ${getErrorMessage(error)}`);
+      this.toast.error(`Unable to refresh homepage feature settings: ${getErrorMessage(error)}`);
     } finally {
       this.refreshInProgress = false;
     }
   }
 
   protected resetToDefaultHero(): void {
-    const confirmed = window.confirm('Load the default homepage hero settings into the editor? This will not write to Firestore until you save.');
+    const confirmed = window.confirm('Load the default homepage feature settings into the editor? This will not write to Firestore until you save.');
 
     if (!confirmed) {
       return;
@@ -649,12 +660,12 @@ export class CmsHomepageHeroManagerComponent {
     }
 
     if (this.saveInProgress) {
-      return 'Saving homepage hero settings...';
+      return 'Saving homepage feature settings...';
     }
 
     return this.heroForm.dirty
-      ? 'Unsaved homepage hero changes.'
-      : 'Homepage hero settings are up to date.';
+      ? 'Unsaved homepage feature changes.'
+      : 'Homepage feature settings are up to date.';
   }
 
   private patchHeroForm(settings: HomepageHeroSettings): void {
