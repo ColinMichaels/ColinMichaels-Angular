@@ -3,13 +3,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   PLATFORM_ID,
   computed,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
@@ -131,11 +129,10 @@ interface EditorialMediaSet {
                   </svg>
                 </a>
 
-                @if (hasPreviousHeroPost() || hasNextHeroPost()) {
+                @if (hasMultipleHeroPosts()) {
                   <div class="home-hero-post-controls" role="group" aria-label="Featured story navigation">
                     @if (previousHeroPost(); as previousPost) {
                       <button
-                        #previousHeroPostControl
                         type="button"
                         class="home-hero-post-control home-hero-post-control-previous"
                         [attr.aria-label]="'Show previous post: ' + previousPost.title"
@@ -154,7 +151,6 @@ interface EditorialMediaSet {
 
                     @if (nextHeroPost(); as nextPost) {
                       <button
-                        #nextHeroPostControl
                         type="button"
                         class="home-hero-post-control home-hero-post-control-next"
                         [attr.aria-label]="'Show next post: ' + nextPost.title"
@@ -288,11 +284,15 @@ interface EditorialMediaSet {
       --home-hero-topic-rgb: 34 211 238;
       display: grid;
       gap: clamp(2rem, 4vw, 4.25rem);
-      align-items: center;
+      align-items: stretch;
     }
 
     .home-hero-copy {
+      display: flex;
       min-width: 0;
+      /* Reserve enough copy height for the story actions to stay anchored while titles change. */
+      min-block-size: 34rem;
+      flex-direction: column;
       padding-block: clamp(0.5rem, 2vw, 1.5rem);
     }
 
@@ -370,7 +370,8 @@ interface EditorialMediaSet {
       flex-wrap: wrap;
       align-items: center;
       gap: 1rem;
-      margin-top: clamp(1.35rem, 2.4vw, 2rem);
+      margin-top: auto;
+      padding-top: clamp(1.35rem, 2.4vw, 2rem);
     }
 
     .home-hero-read-more {
@@ -530,6 +531,10 @@ interface EditorialMediaSet {
       .home-hero-story {
         grid-template-columns: minmax(25rem, 0.82fr) minmax(33rem, 1.18fr);
       }
+
+      .home-hero-copy {
+        min-block-size: clamp(36.75rem, 46vw, 42rem);
+      }
     }
 
     @media (max-width: 63.99rem) {
@@ -628,14 +633,28 @@ export class HomeArticleHeroComponent {
       ?? posts[this.activeHeroPostIndex()]
       ?? this.heroPost();
   });
-  protected readonly previousHeroPost = computed(() => (
-    this.heroPostCandidates()[this.activeHeroPostIndex() - 1] ?? null
-  ));
-  protected readonly nextHeroPost = computed(() => (
-    this.heroPostCandidates()[this.activeHeroPostIndex() + 1] ?? null
-  ));
-  protected readonly hasPreviousHeroPost = computed(() => this.previousHeroPost() !== null);
-  protected readonly hasNextHeroPost = computed(() => this.nextHeroPost() !== null);
+  // Keep both arrows mounted and wrap at the endpoints so the navigation row and keyboard focus never shift.
+  protected readonly hasMultipleHeroPosts = computed(() => this.heroPostCandidates().length > 1);
+  protected readonly previousHeroPost = computed(() => {
+    const posts = this.heroPostCandidates();
+
+    if (posts.length < 2) {
+      return null;
+    }
+
+    const previousIndex = (this.activeHeroPostIndex() - 1 + posts.length) % posts.length;
+    return posts[previousIndex] ?? null;
+  });
+  protected readonly nextHeroPost = computed(() => {
+    const posts = this.heroPostCandidates();
+
+    if (posts.length < 2) {
+      return null;
+    }
+
+    const nextIndex = (this.activeHeroPostIndex() + 1) % posts.length;
+    return posts[nextIndex] ?? null;
+  });
   protected readonly heroPostRotationPaused = signal(false);
   private readonly heroFocusWithin = signal(false);
   private readonly pageVisible = signal(true);
@@ -699,9 +718,6 @@ export class HomeArticleHeroComponent {
     ]);
   });
   private activeHeroLeadPostId = '';
-  private readonly pendingHeroPostControlFocus = signal<'previous' | 'next' | null>(null);
-  private readonly previousHeroPostControl = viewChild<ElementRef<HTMLButtonElement>>('previousHeroPostControl');
-  private readonly nextHeroPostControl = viewChild<ElementRef<HTMLButtonElement>>('nextHeroPostControl');
   protected readonly topicHubs = toSignal(
     this.topicHubRepository.getPublishedTopicHubs$(),
     {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
@@ -713,7 +729,6 @@ export class HomeArticleHeroComponent {
   constructor() {
     this.initializeHeroPostRotationEnvironment();
     this.keepActiveHeroPostInBounds();
-    this.keepHeroPostNavigationFocus();
     this.resetFailedMediaWhenPostChanges();
     this.startHeroPostRotation();
   }
@@ -745,24 +760,23 @@ export class HomeArticleHeroComponent {
   }
 
   protected showPreviousHeroPost(): void {
-    const targetIndex = Math.max(0, this.activeHeroPostIndex() - 1);
+    const postCount = this.heroPostCandidates().length;
 
-    this.setActiveHeroPost(targetIndex);
-
-    if (targetIndex === 0) {
-      this.pendingHeroPostControlFocus.set('next');
+    if (postCount < 2) {
+      return;
     }
+
+    this.setActiveHeroPost((this.activeHeroPostIndex() - 1 + postCount) % postCount);
   }
 
   protected showNextHeroPost(): void {
-    const lastPostIndex = Math.max(0, this.heroPostCandidates().length - 1);
-    const targetIndex = Math.min(lastPostIndex, this.activeHeroPostIndex() + 1);
+    const postCount = this.heroPostCandidates().length;
 
-    this.setActiveHeroPost(targetIndex);
-
-    if (targetIndex === lastPostIndex) {
-      this.pendingHeroPostControlFocus.set('previous');
+    if (postCount < 2) {
+      return;
     }
+
+    this.setActiveHeroPost((this.activeHeroPostIndex() + 1) % postCount);
   }
 
   protected toggleHeroPostRotation(): void {
@@ -933,24 +947,6 @@ export class HomeArticleHeroComponent {
       if (activePostId !== fallbackPostId) {
         this.activeHeroPostId.set(fallbackPostId);
       }
-    });
-  }
-
-  private keepHeroPostNavigationFocus(): void {
-    effect(() => {
-      const pendingFocus = this.pendingHeroPostControlFocus();
-      const control = pendingFocus === 'previous'
-        ? this.previousHeroPostControl()
-        : pendingFocus === 'next'
-          ? this.nextHeroPostControl()
-          : undefined;
-
-      if (!control) {
-        return;
-      }
-
-      control.nativeElement.focus({preventScroll: true});
-      this.pendingHeroPostControlFocus.set(null);
     });
   }
 
