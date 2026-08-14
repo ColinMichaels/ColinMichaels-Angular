@@ -15,6 +15,7 @@ This folder is the entry point for project documentation.
 - [Architecture Overview](../ARCHITECTURE/OVERVIEW.md)
 - [Architecture Audit and Refactor Plan](../ARCHITECTURE/AUDIT_REFACTOR_PLAN.md)
 - [Core Services](../ARCHITECTURE/SERVICES.md)
+- [Analytics and Measurement](../ARCHITECTURE/ANALYTICS_AND_MEASUREMENT.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)
 - [Admin Console Reorganization](../ARCHITECTURE/ADMIN_CONSOLE_REORGANIZATION_PLAN.md)

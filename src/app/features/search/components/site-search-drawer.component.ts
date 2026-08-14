@@ -14,6 +14,7 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {
   getFeaturedSearchItems,
   normalizeSearchValue,
@@ -89,7 +90,7 @@ import {
                   [routerLink]="['/', pathNames.SEARCH]"
                   [queryParams]="advancedSearchQueryParams()"
                   class="site-inline-link inline-flex min-h-11 items-center text-sm"
-                  (click)="requestClose(false)"
+                  (click)="openAdvancedSearch()"
                 >
                   Advanced search
                 </a>
@@ -103,7 +104,7 @@ import {
                     class="site-card-interactive site-search-quick-result grid grid-cols-[4.25rem_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[5.25rem_minmax(0,1fr)] sm:p-4"
                     [class.site-search-quick-result-topic]="!!result.topic"
                     [ngStyle]="resultTopicStyle(result)"
-                    (click)="requestClose(false)"
+                    (click)="selectResult(result)"
                   >
                     <span class="site-search-result-media" aria-hidden="true">
                       @if (result.image) {
@@ -165,7 +166,7 @@ import {
               [routerLink]="['/', pathNames.SEARCH]"
               [queryParams]="advancedSearchQueryParams()"
               class="blog-action-primary w-full justify-center"
-              (click)="requestClose(false)"
+              (click)="openAdvancedSearch()"
             >
               Open full search
             </a>
@@ -270,6 +271,7 @@ export class SiteSearchDrawerComponent {
   readonly query = input('');
 
   private readonly search = inject(SiteSearchService);
+  private readonly analytics = inject(SiteAnalyticsService);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly items = toSignal(this.search.getSearchItems$(), {initialValue: []});
@@ -313,6 +315,22 @@ export class SiteSearchDrawerComponent {
 
   protected requestClose(restoreFocus = true): void {
     this.closeSearch.emit(restoreFocus);
+  }
+
+  protected openAdvancedSearch(): void {
+    this.analytics.trackSearch(this.query(), this.quickResults().length, 'search_drawer');
+    this.requestClose(false);
+  }
+
+  protected selectResult(result: SiteSearchResult): void {
+    this.analytics.trackSearch(this.query(), this.quickResults().length, 'search_drawer');
+    this.analytics.trackContentSelection({
+      id: result.id,
+      slug: result.path,
+      categories: result.categories,
+      contentType: result.type === 'blog' ? 'article' : 'page',
+    }, 'search_drawer', this.query());
+    this.requestClose(false);
   }
 
   protected trackResult(index: number, result: SiteSearchResult): string {

@@ -7,6 +7,7 @@ import {AuthService} from '../../../../services/auth.service';
 import {BlogContentBlock} from '../../models/blog-post.model';
 import {BlogPollService} from '../../services/blog-poll.service';
 import {BlogPollComponent} from './blog-poll.component';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 
 const pollBlock: BlogContentBlock = {
   id: 'poll-1',
@@ -29,6 +30,7 @@ describe('BlogPollComponent', () => {
     getResults: jasmine.Spy;
     submitVote: jasmine.Spy;
   };
+  let analytics: { trackPollVote: jasmine.Spy };
   const user = {uid: 'reader-1'} as User;
 
   function createComponent(block = pollBlock): ComponentFixture<BlogPollComponent> {
@@ -61,12 +63,14 @@ describe('BlogPollComponent', () => {
         ],
       }),
     };
+    analytics = {trackPollVote: jasmine.createSpy('trackPollVote')};
 
     await TestBed.configureTestingModule({
       imports: [BlogPollComponent, RouterTestingModule],
       providers: [
         {provide: AuthService, useValue: {user$: authState$.asObservable()}},
         {provide: BlogPollService, useValue: pollService},
+        {provide: SiteAnalyticsService, useValue: analytics},
       ],
     }).compileComponents();
   });
@@ -105,6 +109,13 @@ describe('BlogPollComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('3 votes');
     expect(fixture.nativeElement.textContent).toContain('Your vote');
     expect(fixture.nativeElement.textContent).toContain('4 responses');
+    expect(analytics.trackPollVote).toHaveBeenCalledWith(
+      {id: 'post-1', slug: 'sample-post'},
+      'poll-1',
+      'ai',
+      false,
+      true
+    );
   });
 
   it('loads always-visible results for signed-out readers', async () => {
@@ -192,5 +203,6 @@ describe('BlogPollComponent', () => {
 
     expect(pollService.getResults).not.toHaveBeenCalled();
     expect(pollService.submitVote).not.toHaveBeenCalled();
+    expect(analytics.trackPollVote).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import {Injectable, PLATFORM_ID, inject} from '@angular/core';
 import {NavigationEnd, Router} from '@angular/router';
 import {filter, startWith, Subscription} from 'rxjs';
 
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {BlogEngagementService} from './blog-engagement.service';
 
 const SHARE_ID_PATTERN = /^[A-Za-z0-9_-]{20,80}$/;
@@ -12,6 +13,7 @@ const SHARE_RECORDED_STORAGE_PREFIX = 'share-attribution.recorded.';
 @Injectable({providedIn: 'root'})
 export class ShareAttributionService {
   private readonly engagement = inject(BlogEngagementService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   private subscription: Subscription | null = null;
@@ -47,7 +49,9 @@ export class ShareAttributionService {
       shareId,
       visitId: this.getOrCreateVisitId(),
     }).then(result => {
-      if (!result.recorded) {
+      if (result.recorded) {
+        this.analytics.trackShareLanding();
+      } else {
         this.removeRecordedMarker(recordedKey);
       }
     }).catch(() => this.removeRecordedMarker(recordedKey));

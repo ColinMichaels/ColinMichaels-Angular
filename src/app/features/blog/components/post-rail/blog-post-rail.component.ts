@@ -1,10 +1,11 @@
 import {DatePipe} from '@angular/common';
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogContentBlock, BlogPostSummary} from '../../models/blog-post.model';
 import {BlogBlockRendererComponent} from '../block-renderer/blog-block-renderer.component';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 
 @Component({
   selector: 'app-blog-post-rail',
@@ -36,9 +37,9 @@ import {BlogBlockRendererComponent} from '../block-renderer/blog-block-renderer.
         <section aria-labelledby="blog-post-rail-suggested-heading">
           <div class="flex items-end justify-between gap-3 border-b border-slate-200 pb-3 dark:border-zinc-800">
             <div>
-              <p class="eyebrow-sm eyebrow-cyan">Keep reading</p>
+              <p class="eyebrow-sm eyebrow-cyan">Related to this story</p>
               <h2 id="blog-post-rail-suggested-heading" class="mt-1 text-lg font-semibold text-slate-950 dark:text-zinc-50">
-                More posts
+                Read next
               </h2>
             </div>
             <a
@@ -52,6 +53,7 @@ import {BlogBlockRendererComponent} from '../block-renderer/blog-block-renderer.
               <a
                 [routerLink]="['/', pathNames.BLOG, suggestedPost.slug]"
                 class="group block min-h-24 py-4"
+                (click)="trackSuggestedPost(suggestedPost)"
               >
                 <span class="block text-xs text-slate-500 dark:text-zinc-500">
                   {{ suggestedPost.publishedAt ? (suggestedPost.publishedAt | date: 'MMM d, y') : (suggestedPost.updatedAt | date: 'MMM d, y') }}
@@ -79,4 +81,9 @@ export class BlogPostRailComponent {
   @Input() postPath = '';
 
   protected readonly pathNames = PATH_NAMES;
+  private readonly analytics = inject(SiteAnalyticsService);
+
+  protected trackSuggestedPost(post: BlogPostSummary): void {
+    this.analytics.trackContentSelection(post, 'related_reading');
+  }
 }

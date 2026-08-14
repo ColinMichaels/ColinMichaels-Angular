@@ -38,6 +38,8 @@ Option IDs are created when an answer row is added and survive label edits. Edit
 
 The public `BlogPollComponent` receives the post ID, slug, and typed poll block from `BlogBlockRendererComponent`. It renders an accessible radio group and uses the existing login-return flow for signed-out readers. Results use semantic text and CSS bars rather than canvas or a chart dependency, so percentages and counts remain available to assistive technology and responsive at narrow widths.
 
+After the callable accepts a vote, the component emits a privacy-filtered `poll_vote` GA4 event containing only public post/poll/option identifiers, whether an existing vote changed, and whether results were returned. It does not send the question, answer labels, account ID, or aggregate counts. The callable result remains authoritative; failed, read-only preview, and signed-out attempts do not emit the event.
+
 The browser never reads or writes vote documents directly. It calls:
 
 - `getPostPollResults` to load the caller-authorized result shape.
