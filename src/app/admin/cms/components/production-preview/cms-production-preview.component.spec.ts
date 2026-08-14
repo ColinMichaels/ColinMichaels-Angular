@@ -27,6 +27,18 @@ const supportedBlockFixture: readonly BlogContentBlock[] = [
     },
   },
   {
+    id: 'gallery',
+    type: 'gallery',
+    data: {
+      title: 'Gallery fixture',
+      galleryLayout: 'grid',
+      galleryImages: [
+        {url: 'https://images.example.com/gallery-one.jpg', alt: 'First gallery fixture'},
+        {url: 'https://images.example.com/gallery-two.jpg', alt: 'Second gallery fixture'},
+      ],
+    },
+  },
+  {
     id: 'embed',
     type: 'embed',
     data: {embedUrl: 'https://www.youtube.com/embed/L229QDxDakU', caption: 'Video fixture'},
@@ -87,6 +99,7 @@ const expectedSupportedBlockTypes = [
   'code',
   'delimiter',
   'embed',
+  'gallery',
   'header',
   'html',
   'image',
@@ -154,6 +167,8 @@ describe('CmsProductionPreviewComponent', () => {
     expect(element.textContent).toContain('Sanitized HTML fixture');
     expect(element.querySelector('img[alt="Preview fixture image"]')).not.toBeNull();
     expect(element.querySelector('figure[data-image-size="large"]')).not.toBeNull();
+    expect(element.querySelector('[data-gallery-layout="grid"]')).not.toBeNull();
+    expect(element.querySelector('img[alt="First gallery fixture"]')).not.toBeNull();
     expect(element.querySelector('iframe[title="Video fixture"]')).not.toBeNull();
     expect(element.querySelector('hr')).not.toBeNull();
     expect(element.querySelector('app-cat-corner-easter-egg')).not.toBeNull();

@@ -237,6 +237,7 @@ function createBlogPostBodyText(post: BlogPost): string {
       block.data.yAxisTitle,
       block.data.sourceLabel,
       block.data.accessibilitySummary,
+      ...(block.data.galleryImages ?? []).flatMap(image => [image.alt, image.caption]),
     ])
     .filter((value): value is string => typeof value === 'string')
     .join(' ');

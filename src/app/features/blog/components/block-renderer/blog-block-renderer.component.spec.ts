@@ -895,6 +895,51 @@ describe('BlogBlockRendererComponent', () => {
     expect(markdown?.querySelector('script')).toBeNull();
   });
 
+  it('renders typed galleries and keeps their lightbox navigation inside the gallery', () => {
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'standalone-before',
+        type: 'image',
+        data: {url: '/assets/images/backgrounds/night.webp?before=1', alt: 'Standalone before'},
+      },
+      {
+        id: 'gallery-1',
+        type: 'gallery',
+        data: {
+          title: 'Studio details',
+          galleryLayout: 'mosaic',
+          galleryImages: [
+            {url: '/assets/images/backgrounds/day.webp?gallery=1', alt: 'Gallery first'},
+            {url: '/assets/images/backgrounds/night.webp?gallery=2', alt: 'Gallery second'},
+          ],
+        },
+      },
+      {
+        id: 'standalone-after',
+        type: 'image',
+        data: {url: '/assets/images/backgrounds/day.webp?after=1', alt: 'Standalone after'},
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const gallery = element.querySelector<HTMLElement>('[data-gallery-layout="mosaic"]');
+    const galleryButtons = gallery?.querySelectorAll<HTMLButtonElement>('[data-testid="blog-gallery-image-button"]');
+    galleryButtons?.[1].click();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLElement>('#blog-lightbox-title')?.textContent).toContain('2 / 2');
+    expect(element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]')?.src)
+      .toContain('night.webp?gallery=2');
+
+    element.querySelector<HTMLButtonElement>('[data-testid="blog-lightbox-next"]')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]')?.src)
+      .toContain('day.webp?gallery=1');
+    expect(element.querySelector<HTMLElement>('#blog-lightbox-title')?.textContent).toContain('1 / 2');
+  });
+
   it('opens post body images in a lightbox with a download action', () => {
     fixture.componentRef.setInput('fallbackAlt', 'Fallback post title');
     fixture.componentRef.setInput('blocks', [

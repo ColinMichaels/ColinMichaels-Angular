@@ -201,10 +201,18 @@ function createTagCheck(values: readonly string[]): SeoChecklistItem {
 }
 
 function createInlineImageAltCheck(blocks: readonly BlogContentBlock[]): SeoChecklistItem {
-  const imageBlocks = blocks.filter(block => block.type === 'image' && block.data.url?.trim());
-  const missingAltCount = imageBlocks.filter(block => !block.data.alt?.trim()).length;
+  const images = blocks.flatMap(block => {
+    if (block.type === 'image' && block.data.url?.trim()) {
+      return [{alt: block.data.alt}];
+    }
 
-  if (imageBlocks.length === 0) {
+    return block.type === 'gallery'
+      ? (block.data.galleryImages ?? []).filter(image => image.url.trim())
+      : [];
+  });
+  const missingAltCount = images.filter(image => !image.alt?.trim()).length;
+
+  if (images.length === 0) {
     return createItem('image-alt', 'Inline image alt text', 'No inline images need alt text yet.', 'pass');
   }
 
@@ -212,7 +220,7 @@ function createInlineImageAltCheck(blocks: readonly BlogContentBlock[]): SeoChec
     return createItem('image-alt', 'Inline image alt text', `${missingAltCount} inline image${missingAltCount === 1 ? '' : 's'} missing alt text.`, 'warning');
   }
 
-  return createItem('image-alt', 'Inline image alt text', 'All inline images include alt text.', 'pass', `${imageBlocks.length} image${imageBlocks.length === 1 ? '' : 's'}`);
+  return createItem('image-alt', 'Inline image alt text', 'All inline images include alt text.', 'pass', `${images.length} image${images.length === 1 ? '' : 's'}`);
 }
 
 function createHeadingCheck(blocks: readonly BlogContentBlock[]): SeoChecklistItem {

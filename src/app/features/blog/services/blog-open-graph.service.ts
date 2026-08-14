@@ -152,11 +152,33 @@ export class BlogOpenGraphService {
   }
 
   private findFirstImageBlockUrl(post: BlogPost): string {
-    return post.blocks.find(block => block.type === 'image' && block.data.url)?.data.url ?? '';
+    for (const block of post.blocks) {
+      if (block.type === 'image' && block.data.url) {
+        return block.data.url;
+      }
+
+      const galleryUrl = block.type === 'gallery' ? block.data.galleryImages?.find(image => image.url)?.url : undefined;
+      if (galleryUrl) {
+        return galleryUrl;
+      }
+    }
+
+    return '';
   }
 
   private findFirstImageBlockAlt(post: BlogPost): string {
-    return post.blocks.find(block => block.type === 'image' && block.data.alt)?.data.alt ?? '';
+    for (const block of post.blocks) {
+      if (block.type === 'image' && block.data.alt) {
+        return block.data.alt;
+      }
+
+      const galleryAlt = block.type === 'gallery' ? block.data.galleryImages?.find(image => image.alt)?.alt : undefined;
+      if (galleryAlt) {
+        return galleryAlt;
+      }
+    }
+
+    return '';
   }
 
   private truncateDescription(value: string): string {

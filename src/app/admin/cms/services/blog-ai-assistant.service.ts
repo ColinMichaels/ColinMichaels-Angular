@@ -151,6 +151,12 @@ export class BlogAiAssistantService {
       case 'image':
       case 'embed':
         return [data.caption, data.alt, data.provider].filter(Boolean).join(' ');
+      case 'gallery':
+        return [
+          data.title,
+          data.caption,
+          ...(data.galleryImages ?? []).flatMap(image => [image.alt, image.caption]),
+        ].filter(Boolean).join(' ');
       case 'code':
         return [data.language, data.code].filter(Boolean).join(' ');
       case 'markdown':

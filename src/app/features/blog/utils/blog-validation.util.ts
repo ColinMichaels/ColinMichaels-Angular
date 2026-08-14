@@ -1,6 +1,7 @@
 import {
   BLOG_BLOCK_PLACEMENTS,
   BLOG_CHART_TYPES,
+  BLOG_GALLERY_LAYOUTS,
   BLOG_IMAGE_LAYOUTS,
   BLOG_IMAGE_SIZES,
   BLOG_LIST_PRESENTATIONS,
@@ -41,6 +42,7 @@ const blogBlockTypeSet = new Set<BlogBlockType>([
   'paragraph',
   'header',
   'image',
+  'gallery',
   'embed',
   'list',
   'quote',
@@ -112,6 +114,14 @@ function isBlogBlockData(type: BlogBlockType, value: unknown): boolean {
       && value['unsupportedBlock'] === undefined;
   }
 
+  if (type === 'gallery') {
+    return Array.isArray(value['galleryImages'])
+      && value['galleryImages'].length >= 2
+      && value['galleryImages'].length <= 20
+      && value['galleryImages'].every(isBlogGalleryImage)
+      && value['unsupportedBlock'] === undefined;
+  }
+
   if (type === 'unsupported') {
     const envelope = value['unsupportedBlock'];
     return isRecord(envelope)
@@ -141,6 +151,8 @@ function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
     && (value['level'] === undefined || value['level'] === 2 || value['level'] === 3)
     && (value['imageLayout'] === undefined || (BLOG_IMAGE_LAYOUTS as readonly unknown[]).includes(value['imageLayout']))
     && (value['imageSize'] === undefined || (BLOG_IMAGE_SIZES as readonly unknown[]).includes(value['imageSize']))
+    && (value['galleryLayout'] === undefined
+      || (BLOG_GALLERY_LAYOUTS as readonly unknown[]).includes(value['galleryLayout']))
     && (value['listStyle'] === undefined || (BLOG_LIST_STYLES as readonly unknown[]).includes(value['listStyle']))
     && (value['listPresentation'] === undefined
       || (BLOG_LIST_PRESENTATIONS as readonly unknown[]).includes(value['listPresentation']))
@@ -156,7 +168,26 @@ function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
     && (value['chartPoints'] === undefined || isBlogChartPoints(value['chartPoints']))
     && (value['labels'] === undefined || isStringArray(value['labels']))
     && (value['datasets'] === undefined || isBlogChartDatasets(value['datasets']))
+    && (value['galleryImages'] === undefined || (Array.isArray(value['galleryImages'])
+      && value['galleryImages'].every(isBlogGalleryImage)))
     && (value['pollOptions'] === undefined || isBlogPollOptions(value['pollOptions']));
+}
+
+function isBlogGalleryImage(value: unknown): boolean {
+  if (!isRecord(value) || Array.isArray(value)) {
+    return false;
+  }
+
+  const allowedKeys = new Set(['url', 'alt', 'caption', 'width', 'height']);
+
+  return Object.keys(value).every(key => allowedKeys.has(key))
+    && typeof value['url'] === 'string'
+    && value['url'].trim().length > 0
+    && typeof value['alt'] === 'string'
+    && value['alt'].trim().length > 0
+    && (value['caption'] === undefined || typeof value['caption'] === 'string')
+    && (value['width'] === undefined || isPositiveFiniteNumber(value['width']))
+    && (value['height'] === undefined || isPositiveFiniteNumber(value['height']));
 }
 
 function isPositiveFiniteNumber(value: unknown): boolean {
@@ -402,6 +433,12 @@ export function hasTrustedBlogPostUrls(post: BlogPost): boolean {
   return post.blocks.every(block => {
     const data = block.data;
     if (block.type === 'image' && !isBlogMediaUrl(data.url ?? '')) {
+      return false;
+    }
+    if (block.type === 'gallery' && !(data.galleryImages ?? []).every(image => (
+      isBlogMediaUrl(image.url)
+      && !hasDisallowedInlineUrlProtocol(image.caption)
+    ))) {
       return false;
     }
     if (block.type === 'embed' && !isBlogHttpUrl(data.embedUrl?.trim() || data.url?.trim() || '')) {

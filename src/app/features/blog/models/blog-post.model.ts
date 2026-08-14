@@ -49,6 +49,22 @@ export const BLOG_IMAGE_SIZES = [
 
 export type BlogImageSize = typeof BLOG_IMAGE_SIZES[number];
 
+export const BLOG_GALLERY_LAYOUTS = [
+  'slideshow',
+  'grid',
+  'mosaic',
+] as const;
+
+export type BlogGalleryLayout = typeof BLOG_GALLERY_LAYOUTS[number];
+
+export interface BlogGalleryImage {
+  url: string;
+  alt: string;
+  caption?: string;
+  width?: number;
+  height?: number;
+}
+
 export type BlogJsonPrimitive = string | number | boolean | null;
 
 export type BlogJsonValue = BlogJsonPrimitive | BlogJsonObject | readonly BlogJsonValue[];
@@ -103,6 +119,7 @@ export type BlogBlockType =
   'paragraph'
   | 'header'
   | 'image'
+  | 'gallery'
   | 'embed'
   | 'list'
   | 'quote'
@@ -203,6 +220,8 @@ export interface BlogBlockData {
   withBackground?: boolean;
   imageLayout?: BlogImageLayout;
   imageSize?: BlogImageSize;
+  galleryLayout?: BlogGalleryLayout;
+  galleryImages?: readonly BlogGalleryImage[];
   variant?: BlogTypographyVariant;
   attribution?: string;
   stats?: readonly BlogStatItem[];

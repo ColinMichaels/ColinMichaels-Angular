@@ -22,11 +22,12 @@ const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{15,127}$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const STATUSES = new Set(['draft', 'scheduled', 'published', 'archived']);
 const BLOCK_TYPES = new Set([
-  'paragraph', 'header', 'image', 'embed', 'list', 'quote', 'code', 'markdown', 'delimiter',
+  'paragraph', 'header', 'image', 'gallery', 'embed', 'list', 'quote', 'code', 'markdown', 'delimiter',
   'typography', 'stats', 'chart', 'poll', 'catCornerUnlock', 'html', 'unsupported',
 ]);
 const IMAGE_LAYOUTS = new Set(['fullWidth', 'contained', 'inlineStart', 'inlineEnd']);
 const IMAGE_SIZES = new Set(['small', 'medium', 'large', 'wide']);
+const GALLERY_LAYOUTS = new Set(['slideshow', 'grid', 'mosaic']);
 const LIST_STYLES = new Set(['unordered', 'ordered', 'checklist']);
 const LIST_PRESENTATIONS = new Set(['standard', 'steps']);
 const BLOCK_PLACEMENTS = new Set(['content', 'rail']);
@@ -613,6 +614,22 @@ function validateBlock(value: unknown, blockIds: Set<string>): void {
       invalid('Image block data is invalid.');
     }
   }
+  if (type === 'gallery') {
+    const images = data['galleryImages'];
+    if (!GALLERY_LAYOUTS.has(String(data['galleryLayout']))
+      || !Array.isArray(images)
+      || images.length < 2
+      || images.length > 20
+      || !images.every(isGalleryImage)) {
+      invalid('Gallery block data is invalid.');
+    }
+
+    for (const image of images) {
+      if (isRecord(image)) {
+        rejectUnsafeInlineProtocols(image);
+      }
+    }
+  }
   if (type === 'embed') {
     const url = getTrimmedString(data['embedUrl']) || getTrimmedString(data['url']);
     if (!isHttpUrl(url)) {
@@ -673,6 +690,9 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
     || (value['pollResultsVisibility'] !== undefined
       && !POLL_RESULTS_VISIBILITIES.has(String(value['pollResultsVisibility'])))
     || (value['listMeta'] !== undefined && !isJsonObject(value['listMeta']))
+    || (value['galleryLayout'] !== undefined && !GALLERY_LAYOUTS.has(String(value['galleryLayout'])))
+    || (value['galleryImages'] !== undefined && (!Array.isArray(value['galleryImages'])
+      || !value['galleryImages'].every(isGalleryImage)))
     || (value['labels'] !== undefined && !isStringArray(value['labels']))
     || (value['stats'] !== undefined && !isStats(value['stats']))
     || (value['chartPoints'] !== undefined && !isChartPoints(value['chartPoints']))
@@ -680,6 +700,21 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
     || (value['pollOptions'] !== undefined && !isPollOptions(value['pollOptions']))) {
     invalid('Block data fields are invalid.');
   }
+}
+
+function isGalleryImage(value: unknown): boolean {
+  if (!isRecord(value) || Array.isArray(value)) {
+    return false;
+  }
+
+  const allowedKeys = new Set(['url', 'alt', 'caption', 'width', 'height']);
+
+  return Object.keys(value).every(key => allowedKeys.has(key))
+    && isAllowedMediaUrl(getTrimmedString(value['url']))
+    && getTrimmedString(value['alt']).length > 0
+    && (value['caption'] === undefined || typeof value['caption'] === 'string')
+    && isOptionalPositiveNumber(value['width'])
+    && isOptionalPositiveNumber(value['height']);
 }
 
 function validateAuthor(value: unknown): void {

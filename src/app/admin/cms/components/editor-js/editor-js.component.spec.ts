@@ -34,6 +34,36 @@ const existingInlineImage: MediaLibraryItem = {
   uploadedAt: '2026-07-11T12:00:00.000Z',
 };
 
+const galleryLibraryImageOne: MediaLibraryItem = {
+  ...existingInlineImage,
+  id: 'gallery-library-one',
+  displayName: 'Gallery library one',
+  originalFileName: 'gallery-library-one.webp',
+  fileName: 'gallery-library-one.webp',
+  thumbnailUrl: 'https://cdn.example.com/gallery-library-one-thumbnail.webp',
+  previewUrl: 'https://cdn.example.com/gallery-library-one-preview.webp',
+  originalUrl: 'https://cdn.example.com/gallery-library-one.webp',
+  downloadUrl: 'https://cdn.example.com/gallery-library-one-download.webp',
+  altText: 'First gallery selection',
+  description: 'First selected caption.',
+  uploadedAt: '2026-07-12T12:00:00.000Z',
+};
+
+const galleryLibraryImageTwo: MediaLibraryItem = {
+  ...existingInlineImage,
+  id: 'gallery-library-two',
+  displayName: 'Gallery library two',
+  originalFileName: 'gallery-library-two.webp',
+  fileName: 'gallery-library-two.webp',
+  thumbnailUrl: 'https://cdn.example.com/gallery-library-two-thumbnail.webp',
+  previewUrl: 'https://cdn.example.com/gallery-library-two-preview.webp',
+  originalUrl: 'https://cdn.example.com/gallery-library-two.webp',
+  downloadUrl: 'https://cdn.example.com/gallery-library-two-download.webp',
+  altText: 'Second gallery selection',
+  description: 'Second selected caption.',
+  uploadedAt: '2026-07-13T12:00:00.000Z',
+};
+
 async function waitForEditorLoad(fixture: ComponentFixture<EditorJsComponent>): Promise<void> {
   const startedAt = Date.now();
 
@@ -57,7 +87,11 @@ describe('EditorJsComponent', () => {
 
   beforeEach(async () => {
     const mediaLibraryService = {
-      listenToMediaItems: jasmine.createSpy('listenToMediaItems').and.returnValue(of([existingInlineImage])),
+      listenToMediaItems: jasmine.createSpy('listenToMediaItems').and.returnValue(of([
+        existingInlineImage,
+        galleryLibraryImageOne,
+        galleryLibraryImageTwo,
+      ])),
       listenToFolders: jasmine.createSpy('listenToFolders').and.returnValue(of([])),
     } satisfies Pick<MediaLibraryService, 'listenToMediaItems' | 'listenToFolders'>;
 
@@ -273,6 +307,94 @@ describe('EditorJsComponent', () => {
       width: existingInlineImage.width,
       height: existingInlineImage.height,
     }));
+  });
+
+  it('keeps the image choices scrollable while the image actions remain available', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'inline-image-layout',
+        type: 'image',
+        data: {},
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+    clickButtonByText(fixture, 'Choose Existing');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const panel = element.querySelector<HTMLElement>('[data-testid="cms-image-panel"]');
+    const library = element.querySelector<HTMLElement>('[data-testid="cms-image-library-scroll"]');
+    const options = element.querySelector<HTMLElement>('[data-testid="cms-image-options-scroll"]');
+    const actions = element.querySelector<HTMLElement>('[data-testid="cms-image-actions"]');
+
+    expect(panel).not.toBeNull();
+    expect(panel?.classList.contains('lg:h-[92dvh]')).toBeTrue();
+    expect(library?.classList.contains('lg:overflow-y-auto')).toBeTrue();
+    expect(options?.classList.contains('lg:overflow-y-auto')).toBeTrue();
+    expect(options?.contains(actions ?? null)).toBeFalse();
+    expect(actions?.parentElement).toBe(options?.parentElement ?? null);
+    expect(actions?.textContent).toContain('Use Selected Image');
+  });
+
+  it('adds several Media Library images to a gallery in selection order', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'gallery-multi-select',
+        type: 'gallery',
+        data: {
+          layout: 'grid',
+          images: [
+            {url: 'https://cdn.example.com/existing-gallery-one.webp', alt: 'Existing gallery image one'},
+            {url: 'https://cdn.example.com/existing-gallery-two.webp', alt: 'Existing gallery image two'},
+          ],
+        },
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+    clickButtonByText(fixture, 'Add from Media Library');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('Choose Gallery Images');
+    expect(element.querySelector('[data-testid="cms-gallery-selection-count"]')?.textContent)
+      .toContain('0 of 18 selected');
+
+    clickButtonByText(fixture, 'Gallery library one');
+    fixture.detectChanges();
+    clickButtonByText(fixture, 'Gallery library two');
+    fixture.detectChanges();
+
+    const selectedList = element.querySelector<HTMLOListElement>('ol[aria-label="Selected gallery images"]');
+    expect(selectedList?.textContent).toContain('Gallery library one');
+    expect(selectedList?.textContent).toContain('Gallery library two');
+    expect(element.querySelector('[data-testid="cms-gallery-selection-count"]')?.textContent)
+      .toContain('2 of 18 selected');
+
+    clickButtonByText(fixture, 'Add 2 Images');
+    await waitForSelectorState(fixture, '[data-testid="cms-image-panel"]', false);
+
+    const document = await fixture.componentInstance.getDocument();
+    const gallery = document.blocks.find(block => block.type === 'gallery');
+    expect((gallery?.data['images'] as readonly unknown[]).slice(-2)).toEqual([
+      {
+        url: galleryLibraryImageOne.originalUrl,
+        alt: galleryLibraryImageOne.altText,
+        caption: galleryLibraryImageOne.description,
+        width: galleryLibraryImageOne.width,
+        height: galleryLibraryImageOne.height,
+      },
+      {
+        url: galleryLibraryImageTwo.originalUrl,
+        alt: galleryLibraryImageTwo.altText,
+        caption: galleryLibraryImageTwo.description,
+        width: galleryLibraryImageTwo.width,
+        height: galleryLibraryImageTwo.height,
+      },
+    ]);
   });
 
   it('round trips raw JSON edits back into the WYSIWYG editor', async () => {
