@@ -2,6 +2,7 @@ import type {OutputData} from '@editorjs/editorjs';
 
 import {
   BLOG_CHART_TYPES,
+  BLOG_GALLERY_LAYOUTS,
   BLOG_IMAGE_LAYOUTS,
   BLOG_IMAGE_SIZES,
   BLOG_LIST_PRESENTATIONS,
@@ -24,6 +25,7 @@ const knownEditorBlockTypes = new Set([
   'paragraph',
   'header',
   'image',
+  'gallery',
   'embed',
   'list',
   'quote',
@@ -290,6 +292,8 @@ function getKnownBlockValidationError(type: string, data: BlogJsonObject): strin
       return validateLegacyChecklistData(data);
     case 'image':
       return validateImageData(data);
+    case 'gallery':
+      return validateGalleryData(data);
     case 'embed':
       return validateFields(data, {
         service: isString,
@@ -481,6 +485,48 @@ function validateImageData(data: BlogJsonObject): string | null {
   });
 
   return error;
+}
+
+function validateGalleryData(data: BlogJsonObject): string | null {
+  const error = validateFields(data, {
+    title: isString,
+    caption: isString,
+    layout: value => typeof value === 'string'
+      && (BLOG_GALLERY_LAYOUTS as readonly string[]).includes(value),
+    images: value => Array.isArray(value) && value.every(isGalleryImage),
+  });
+
+  if (error) {
+    return error;
+  }
+
+  const images = data['images'];
+
+  if (!Array.isArray(images) || images.length < 2 || images.length > 20) {
+    return 'must contain between 2 and 20 images.';
+  }
+
+  return null;
+}
+
+function isGalleryImage(value: BlogJsonValue): boolean {
+  if (!isJsonObject(value)) {
+    return false;
+  }
+
+  const error = validateFields(value, {
+    url: isString,
+    alt: isString,
+    caption: isString,
+    width: isPositiveFiniteNumber,
+    height: isPositiveFiniteNumber,
+  });
+
+  return error === null
+    && typeof value['url'] === 'string'
+    && value['url'].trim().length > 0
+    && typeof value['alt'] === 'string'
+    && value['alt'].trim().length > 0;
 }
 
 function validateStatsData(data: BlogJsonObject): string | null {

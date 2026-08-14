@@ -12,12 +12,14 @@ The repository already provides:
 
 - one synchronized WYSIWYG and JSON Article Content document;
 - typed CMS-to-blog block adaptation and a separate public renderer;
-- headings, paragraphs, images, lists, quotes, code, Markdown, typography, stats, charts, polls, embeds, HTML, and Cat Corner blocks;
+- headings, paragraphs, images, multi-image galleries, lists, quotes, code, Markdown, typography, stats, charts, polls, embeds, HTML, and Cat Corner blocks;
 - four migration-safe image layouts: `fullWidth`, `contained`, `inlineStart`, and `inlineEnd`;
 - image URLs, alternative text, captions, dimensions, borders, backgrounds, and Media Library selection;
 - drafts, scheduled and published states, temporary draft previews, metadata controls, and role-aware CMS access.
 
 This foundation should be preserved. New presentation fields must be optional, have legacy defaults, and be understood by both the editor adapter and public renderer before authors can save them.
+
+The additive `gallery` extension supplies manual slideshow, responsive grid, and mosaic layouts for two to twenty images while reusing the trusted media pipeline and public lightbox. Its server allowlist, canonical hydration boundary, deployment sequence, and rollback requirements are documented in `EDITORJS_IMAGE_GALLERIES.md`.
 
 ## Findings And Risk Register
 

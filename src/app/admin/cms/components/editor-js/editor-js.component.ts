@@ -39,6 +39,7 @@ import {AppEmbedBlockTool} from './tools/app-embed-block.tool';
 import {ChartBlockTool} from './tools/chart-block.tool';
 import {CatCornerUnlockBlockTool} from './tools/cat-corner-unlock-block.tool';
 import {CmsCodeBlockTool} from './tools/code-block.tool';
+import {CMS_GALLERY_MAX_IMAGES, CmsGalleryBlockTool} from './tools/gallery-block.tool';
 import {CmsImageBlockTool, CmsImageLibrarySelection} from './tools/cms-image-block.tool';
 import {HtmlBlockTool} from './tools/html-block.tool';
 import {ListPresentationTune} from './tools/list-presentation.tune';
@@ -62,6 +63,7 @@ interface EditorToolModules {
   CmsCodeBlock: ToolConstructable;
   CmsMarkdownBlock: ToolConstructable;
   CmsImageBlock: ToolConstructable;
+  CmsGalleryBlock: ToolConstructable;
   TypographyBlock: ToolConstructable;
   StatsBlock: ToolConstructable;
   ChartBlock: ToolConstructable;
@@ -90,7 +92,7 @@ export type EditorImageUploader = (
 ) => Promise<EditorImageUploadResult>;
 
 type EditorImageInsertTab = 'library' | 'upload';
-type EditorImagePanelMode = 'insert' | 'select';
+type EditorImagePanelMode = 'insert' | 'select' | 'selectMultiple';
 type EditorImageLayoutMode = BlogImageLayout;
 type EditorImageSizeMode = BlogImageSize | '';
 type EditorViewMode = 'visual' | 'preview' | 'json';
@@ -184,6 +186,7 @@ async function loadEditorTools(): Promise<EditorToolModules> {
     CmsCodeBlock: CmsCodeBlockTool as unknown as ToolConstructable,
     CmsMarkdownBlock: CmsMarkdownBlockTool as unknown as ToolConstructable,
     CmsImageBlock: CmsImageBlockTool as unknown as ToolConstructable,
+    CmsGalleryBlock: CmsGalleryBlockTool as unknown as ToolConstructable,
     TypographyBlock: TypographyBlockTool as unknown as ToolConstructable,
     StatsBlock: StatsBlockTool as unknown as ToolConstructable,
     ChartBlock: ChartBlockTool as unknown as ToolConstructable,
@@ -433,7 +436,7 @@ function parseEditorDocument(source: string): OutputData {
 
       @if (isImagePanelOpen()) {
         <div
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-2 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Insert image"
@@ -445,13 +448,23 @@ function parseEditorDocument(source: string): OutputData {
             (click)="closeImageInsertPanel()"
           ></button>
 
-          <section class="relative z-10 grid max-h-[92vh] w-full max-w-6xl overflow-hidden border border-zinc-700 bg-zinc-950 shadow-2xl lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div class="min-h-0 border-b border-zinc-800 lg:border-b-0 lg:border-r">
+          <section
+            class="relative z-10 grid max-h-[calc(100dvh-1rem)] w-full max-w-6xl overflow-y-auto border border-zinc-700 bg-zinc-950 shadow-2xl sm:max-h-[calc(100dvh-2rem)] lg:h-[92dvh] lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden"
+            data-testid="cms-image-panel"
+          >
+            <div
+              class="min-h-0 border-b border-zinc-800 lg:grid lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden lg:border-b-0 lg:border-r">
               <header class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
                 <div>
                   <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Media</p>
                   <h3 class="text-lg font-semibold text-zinc-50">
-                    {{ imagePanelMode === 'select' ? 'Choose Existing Image' : 'Insert Image' }}
+                    {{
+                      imagePanelMode === 'insert'
+                        ? 'Insert Image'
+                        : imagePanelMode === 'selectMultiple'
+                          ? 'Choose Gallery Images'
+                          : 'Choose Existing Image'
+                    }}
                   </h3>
                 </div>
 
@@ -484,7 +497,10 @@ function parseEditorDocument(source: string): OutputData {
               </header>
 
               @if (imageInsertTab === 'library') {
-                <div class="space-y-4 p-4">
+                <div
+                  class="space-y-4 p-4 lg:min-h-0 lg:overflow-y-auto"
+                  data-testid="cms-image-library-scroll"
+                >
                   <label class="block space-y-2">
                     <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Search library</span>
                     <input
@@ -504,18 +520,27 @@ function parseEditorDocument(source: string): OutputData {
                     <p class="border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200" role="alert">{{ message }}</p>
                   }
 
-                  <div class="grid max-h-[54vh] gap-3 overflow-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+                  <div class="grid gap-3 pr-1 sm:grid-cols-2 xl:grid-cols-3">
                     @for (item of filteredMediaLibraryImages; track item.id) {
                       <button
                         type="button"
-                        class="group border p-2 text-left transition hover:border-cyan-400"
-                        [class.border-cyan-300]="selectedMediaItemId === item.id"
-                        [class.bg-cyan-950]="selectedMediaItemId === item.id"
-                        [class.border-zinc-800]="selectedMediaItemId !== item.id"
-                        [class.bg-zinc-900]="selectedMediaItemId !== item.id"
-                        [attr.aria-pressed]="selectedMediaItemId === item.id"
+                        class="group relative border p-2 text-left transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-45"
+                        [class.border-cyan-300]="isMediaItemSelected(item.id)"
+                        [class.bg-cyan-950]="isMediaItemSelected(item.id)"
+                        [class.border-zinc-800]="!isMediaItemSelected(item.id)"
+                        [class.bg-zinc-900]="!isMediaItemSelected(item.id)"
+                        [attr.aria-pressed]="isMediaItemSelected(item.id)"
+                        [disabled]="isMediaItemSelectionDisabled(item.id)"
                         (click)="selectMediaItem(item)"
                       >
+                        @if (getMediaSelectionOrder(item.id); as selectionOrder) {
+                          <span
+                            class="absolute right-3 top-3 z-10 grid size-7 place-items-center rounded-full border border-cyan-100 bg-cyan-300 text-xs font-bold text-zinc-950 shadow"
+                            aria-hidden="true"
+                          >
+                            {{ selectionOrder }}
+                          </span>
+                        }
                         <img
                           [src]="getMediaPreviewUrl(item)"
                           [alt]="item.altText || item.displayName"
@@ -536,7 +561,7 @@ function parseEditorDocument(source: string): OutputData {
                   </div>
                 </div>
               } @else {
-                <div class="flex min-h-[420px] items-center justify-center p-4">
+                <div class="flex min-h-[420px] items-center justify-center p-4 lg:min-h-0 lg:overflow-y-auto">
                   <section class="w-full max-w-lg space-y-5 border border-dashed border-zinc-700 bg-zinc-900/70 p-6 text-center">
                     <div class="space-y-2">
                       <h4 class="text-lg font-semibold text-zinc-50">Upload and embed</h4>
@@ -596,99 +621,159 @@ function parseEditorDocument(source: string): OutputData {
               }
             </div>
 
-            <aside class="space-y-5 overflow-auto p-4">
-              <div class="space-y-2">
-                <h4 class="text-base font-semibold text-zinc-50">Image options</h4>
-                <p class="text-xs leading-5 text-zinc-500">
-                  {{ imagePanelMode === 'select'
-                    ? 'These options will update the current Editor.js image block.'
-                    : 'These options are saved with the new Editor.js image block.' }}
-                </p>
+            <aside class="min-h-0 lg:grid lg:grid-rows-[minmax(0,1fr)_auto]">
+              <div class="space-y-5 p-4 lg:min-h-0 lg:overflow-y-auto" data-testid="cms-image-options-scroll">
+                @if (imagePanelMode === 'selectMultiple') {
+                  <div class="space-y-2">
+                    <h4 class="text-base font-semibold text-zinc-50">Gallery selection</h4>
+                    <p class="text-xs leading-5 text-zinc-500">
+                      Select up to {{ imageSelectionLimit }} images. They will be added to the gallery in the order
+                      selected.
+                    </p>
+                  </div>
+
+                  <div
+                    class="border border-cyan-500/40 bg-cyan-950/20 px-3 py-2 text-sm text-cyan-100"
+                    role="status"
+                    aria-live="polite"
+                    data-testid="cms-gallery-selection-count"
+                  >
+                    {{ selectedMediaItemIds.length }} of {{ imageSelectionLimit }} selected
+                  </div>
+
+                  @if (selectedMediaItems.length > 0) {
+                    <ol class="space-y-2" aria-label="Selected gallery images">
+                      @for (item of selectedMediaItems; track item.id; let selectionIndex = $index) {
+                        <li class="flex items-center gap-3 border border-zinc-800 bg-zinc-900 p-2">
+                          <span
+                            class="grid size-7 shrink-0 place-items-center rounded-full bg-cyan-300 text-xs font-bold text-zinc-950">
+                            {{ selectionIndex + 1 }}
+                          </span>
+                          <img
+                            [src]="getMediaPreviewUrl(item)"
+                            alt=""
+                            class="size-12 shrink-0 bg-zinc-800 object-cover"
+                            loading="lazy"
+                          >
+                          <span class="min-w-0 flex-1 truncate text-sm text-zinc-100">{{ item.displayName }}</span>
+                          <button
+                            type="button"
+                            class="shrink-0 border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:border-red-400 hover:text-red-200"
+                            [attr.aria-label]="'Remove ' + item.displayName + ' from gallery selection'"
+                            (click)="selectMediaItem(item)"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      }
+                    </ol>
+                  } @else {
+                    <div
+                      class="border border-dashed border-zinc-800 bg-zinc-900/70 p-5 text-sm leading-6 text-zinc-500">
+                      Choose images from the library. A numbered badge records their gallery order.
+                    </div>
+                  }
+                } @else {
+                  <div class="space-y-2">
+                    <h4 class="text-base font-semibold text-zinc-50">Image options</h4>
+                    <p class="text-xs leading-5 text-zinc-500">
+                      {{
+                        imagePanelMode === 'select'
+                          ? 'These options will update the current Editor.js image block.'
+                          : 'These options are saved with the new Editor.js image block.'
+                      }}
+                    </p>
+                  </div>
+
+                  @if (selectedMediaItem; as item) {
+                    <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
+                      <img
+                        [src]="getMediaPreviewUrl(item)"
+                        [alt]="item.altText || item.displayName"
+                        class="aspect-video w-full object-contain"
+                        loading="lazy"
+                      >
+                      <figcaption class="space-y-1 px-3 py-2">
+                        <p class="truncate text-sm font-medium text-zinc-100">{{ item.displayName }}</p>
+                        <p class="truncate text-xs text-zinc-500">{{ getMediaMetaLabel(item) }}</p>
+                      </figcaption>
+                    </figure>
+                  } @else {
+                    <div class="border border-dashed border-zinc-800 bg-zinc-900/70 p-5 text-sm text-zinc-500">
+                      Select an image from the library or upload a new one.
+                    </div>
+                  }
+
+                  <label class="block space-y-2">
+                    <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Caption</span>
+                    <textarea
+                      rows="3"
+                      [value]="imageCaption"
+                      class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
+                      placeholder="Optional image caption"
+                      (input)="updateImageCaption($event)"
+                    ></textarea>
+                  </label>
+
+                  <label class="block space-y-2">
+                    <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Alt text</span>
+                    <input
+                      type="text"
+                      [value]="imageAltText"
+                      class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
+                      placeholder="Describe the image"
+                      (input)="updateImageAltText($event)"
+                    >
+                  </label>
+
+                  <fieldset class="space-y-3">
+                    <legend class="text-xs uppercase tracking-[0.2em] text-zinc-500">Layout</legend>
+                    @for (option of imageLayoutOptions; track option.value) {
+                      <button
+                        type="button"
+                        class="block w-full border px-3 py-3 text-left"
+                        [class.border-cyan-300]="imageLayoutMode === option.value"
+                        [class.bg-cyan-950]="imageLayoutMode === option.value"
+                        [class.border-zinc-800]="imageLayoutMode !== option.value"
+                        [class.bg-zinc-900]="imageLayoutMode !== option.value"
+                        [attr.aria-pressed]="imageLayoutMode === option.value"
+                        (click)="setImageLayoutMode(option.value)"
+                      >
+                        <span class="block text-sm font-medium text-zinc-100">{{ option.label }}</span>
+                        <span class="mt-1 block text-xs text-zinc-500">{{ option.description }}</span>
+                      </button>
+                    }
+                  </fieldset>
+
+                  <label class="block space-y-2">
+                    <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Size</span>
+                    <select
+                      [value]="imageSizeMode"
+                      data-testid="cms-image-size"
+                      class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      (change)="setImageSizeMode($event)"
+                    >
+                      <option value="">Automatic (preserve existing behavior)</option>
+                      @for (option of imageSizeOptions; track option.value) {
+                        <option [value]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                    <span class="block text-xs leading-5 text-zinc-500">
+                    Wide uses the safe article width. Inline images stack automatically when the viewport or Reader text scale is too narrow.
+                  </span>
+                  </label>
+
+                  @if (imageInsertMessage(); as message) {
+                    <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200"
+                       role="status">{{ message }}</p>
+                  }
+                }
               </div>
 
-              @if (selectedMediaItem; as item) {
-                <figure class="overflow-hidden border border-zinc-800 bg-zinc-900">
-                  <img
-                    [src]="getMediaPreviewUrl(item)"
-                    [alt]="item.altText || item.displayName"
-                    class="aspect-video w-full object-contain"
-                    loading="lazy"
-                  >
-                  <figcaption class="space-y-1 px-3 py-2">
-                    <p class="truncate text-sm font-medium text-zinc-100">{{ item.displayName }}</p>
-                    <p class="truncate text-xs text-zinc-500">{{ getMediaMetaLabel(item) }}</p>
-                  </figcaption>
-                </figure>
-              } @else {
-                <div class="border border-dashed border-zinc-800 bg-zinc-900/70 p-5 text-sm text-zinc-500">
-                  Select an image from the library or upload a new one.
-                </div>
-              }
-
-              <label class="block space-y-2">
-                <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Caption</span>
-                <textarea
-                  rows="3"
-                  [value]="imageCaption"
-                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                  placeholder="Optional image caption"
-                  (input)="updateImageCaption($event)"
-                ></textarea>
-              </label>
-
-              <label class="block space-y-2">
-                <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Alt text</span>
-                <input
-                  type="text"
-                  [value]="imageAltText"
-                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
-                  placeholder="Describe the image"
-                  (input)="updateImageAltText($event)"
-                >
-              </label>
-
-              <fieldset class="space-y-3">
-                <legend class="text-xs uppercase tracking-[0.2em] text-zinc-500">Layout</legend>
-                @for (option of imageLayoutOptions; track option.value) {
-                  <button
-                    type="button"
-                    class="block w-full border px-3 py-3 text-left"
-                    [class.border-cyan-300]="imageLayoutMode === option.value"
-                    [class.bg-cyan-950]="imageLayoutMode === option.value"
-                    [class.border-zinc-800]="imageLayoutMode !== option.value"
-                    [class.bg-zinc-900]="imageLayoutMode !== option.value"
-                    [attr.aria-pressed]="imageLayoutMode === option.value"
-                    (click)="setImageLayoutMode(option.value)"
-                  >
-                    <span class="block text-sm font-medium text-zinc-100">{{ option.label }}</span>
-                    <span class="mt-1 block text-xs text-zinc-500">{{ option.description }}</span>
-                  </button>
-                }
-              </fieldset>
-
-              <label class="block space-y-2">
-                <span class="text-xs uppercase tracking-[0.2em] text-zinc-500">Size</span>
-                <select
-                  [value]="imageSizeMode"
-                  data-testid="cms-image-size"
-                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                  (change)="setImageSizeMode($event)"
-                >
-                  <option value="">Automatic (preserve existing behavior)</option>
-                  @for (option of imageSizeOptions; track option.value) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-                <span class="block text-xs leading-5 text-zinc-500">
-                  Wide uses the safe article width. Inline images stack automatically when the viewport or Reader text scale is too narrow.
-                </span>
-              </label>
-
-              @if (imageInsertMessage(); as message) {
-                <p class="border border-emerald-500/50 bg-emerald-950/30 px-3 py-2 text-sm text-emerald-200" role="status">{{ message }}</p>
-              }
-
-              <footer class="flex flex-wrap justify-end gap-2 border-t border-zinc-800 pt-4">
+              <footer
+                class="flex flex-wrap justify-end gap-2 border-t border-zinc-800 bg-zinc-950 p-4"
+                data-testid="cms-image-actions"
+              >
                 <button
                   type="button"
                   class="border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
@@ -699,10 +784,10 @@ function parseEditorDocument(source: string): OutputData {
                 <button
                   type="button"
                   class="border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                  [disabled]="!selectedMediaItem"
+                  [disabled]="isMediaSelectionActionDisabled"
                   (click)="insertSelectedMediaImage()"
                 >
-                  {{ imagePanelMode === 'select' ? 'Use Selected Image' : 'Insert Selected' }}
+                  {{ mediaSelectionActionLabel }}
                 </button>
               </footer>
             </aside>
@@ -1008,6 +1093,8 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   protected imageInsertTab: EditorImageInsertTab = 'library';
   protected imageLibrarySearch = '';
   protected selectedMediaItemId: string | null = null;
+  protected selectedMediaItemIds: string[] = [];
+  protected imageSelectionLimit = CMS_GALLERY_MAX_IMAGES;
   protected imageCaption = '';
   protected imageAltText = '';
   protected imageLayoutMode: EditorImageLayoutMode = 'fullWidth';
@@ -1018,6 +1105,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   private editor: EditorJS | null = null;
   private hasLoadedMediaLibrary = false;
   private pendingImageSelectionResolver: ((selection: CmsImageLibrarySelection | null) => void) | null = null;
+  private pendingImageSelectionsResolver: ((selections: readonly CmsImageLibrarySelection[] | null) => void) | null = null;
   private suppressContentChanges = false;
   private previewDocument: OutputData | null = null;
   private diagnosticsTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1028,6 +1116,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
         clearTimeout(this.diagnosticsTimer);
       }
       this.resolvePendingImageSelection(null);
+      this.resolvePendingImageSelections(null);
       this.editor?.destroy();
       this.editor = null;
     });
@@ -1272,8 +1361,52 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     return this.mediaLibraryItems().find(item => item.id === this.selectedMediaItemId) ?? null;
   }
 
+  protected get selectedMediaItems(): readonly MediaLibraryItem[] {
+    const itemsById = new Map(this.mediaLibraryItems().map(item => [item.id, item]));
+    return this.selectedMediaItemIds
+      .map(id => itemsById.get(id))
+      .filter((item): item is MediaLibraryItem => Boolean(item));
+  }
+
+  protected get isMediaSelectionActionDisabled(): boolean {
+    return this.imagePanelMode === 'selectMultiple'
+      ? this.selectedMediaItemIds.length === 0
+      : !this.selectedMediaItem;
+  }
+
+  protected get mediaSelectionActionLabel(): string {
+    if (this.imagePanelMode === 'selectMultiple') {
+      const count = this.selectedMediaItemIds.length;
+      return count === 0 ? 'Add Selected Images' : `Add ${count} Image${count === 1 ? '' : 's'}`;
+    }
+
+    return this.imagePanelMode === 'select' ? 'Use Selected Image' : 'Insert Selected';
+  }
+
+  protected isMediaItemSelected(itemId: string): boolean {
+    return this.imagePanelMode === 'selectMultiple'
+      ? this.selectedMediaItemIds.includes(itemId)
+      : this.selectedMediaItemId === itemId;
+  }
+
+  protected getMediaSelectionOrder(itemId: string): number | null {
+    if (this.imagePanelMode !== 'selectMultiple') {
+      return null;
+    }
+
+    const index = this.selectedMediaItemIds.indexOf(itemId);
+    return index >= 0 ? index + 1 : null;
+  }
+
+  protected isMediaItemSelectionDisabled(itemId: string): boolean {
+    return this.imagePanelMode === 'selectMultiple'
+      && this.selectedMediaItemIds.length >= this.imageSelectionLimit
+      && !this.selectedMediaItemIds.includes(itemId);
+  }
+
   protected openImageInsertPanel(): void {
     this.resolvePendingImageSelection(null);
+    this.resolvePendingImageSelections(null);
     this.imagePanelMode = 'insert';
     this.imageInsertTab = 'library';
     this.resetImageInsertForm();
@@ -1285,6 +1418,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
 
   protected closeImageInsertPanel(): void {
     this.resolvePendingImageSelection(null);
+    this.resolvePendingImageSelections(null);
     this.isImagePanelOpen.set(false);
     this.imageInsertMessage.set(null);
     this.imagePanelMode = 'insert';
@@ -1305,6 +1439,22 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   }
 
   protected selectMediaItem(item: MediaLibraryItem): void {
+    if (this.imagePanelMode === 'selectMultiple') {
+      const selectedIndex = this.selectedMediaItemIds.indexOf(item.id);
+
+      if (selectedIndex >= 0) {
+        this.selectedMediaItemIds = this.selectedMediaItemIds.filter(id => id !== item.id);
+      } else if (this.selectedMediaItemIds.length >= this.imageSelectionLimit) {
+        this.imageInsertMessage.set(`You can select up to ${this.imageSelectionLimit} image${this.imageSelectionLimit === 1 ? '' : 's'} in this pass.`);
+        return;
+      } else {
+        this.selectedMediaItemIds = [...this.selectedMediaItemIds, item.id];
+      }
+
+      this.imageInsertMessage.set(null);
+      return;
+    }
+
     const previousItem = this.selectedMediaItem;
     const previousAltText = previousItem?.altText ?? previousItem?.displayName ?? '';
     const previousCaption = previousItem?.description ?? '';
@@ -1344,6 +1494,19 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
   }
 
   protected async insertSelectedMediaImage(): Promise<void> {
+    if (this.imagePanelMode === 'selectMultiple') {
+      const selections = this.selectedMediaItems.map(item => this.createMediaLibrarySelection(item));
+
+      if (selections.length === 0) {
+        this.imageInsertMessage.set('Select at least one image before adding it to the gallery.');
+        return;
+      }
+
+      this.resolvePendingImageSelections(selections);
+      this.closeImageInsertPanel();
+      return;
+    }
+
     const item = this.selectedMediaItem;
     const url = item ? this.getMediaSourceUrl(item) : '';
 
@@ -1352,15 +1515,12 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
       return;
     }
 
-    const selection: CmsImageLibrarySelection = {
-      url,
+    const selection = this.createMediaLibrarySelection(item, {
       alt: this.imageAltText.trim() || item.altText || item.displayName,
       caption: this.imageCaption.trim(),
       imageLayout: this.imageLayoutMode,
       ...(this.imageSizeMode ? {imageSize: this.imageSizeMode} : {}),
-      ...(item.width ? {width: item.width} : {}),
-      ...(item.height ? {height: item.height} : {}),
-    };
+    });
 
     if (this.imagePanelMode === 'select') {
       this.resolvePendingImageSelection(selection);
@@ -1530,6 +1690,19 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
               },
             },
           },
+          gallery: {
+            class: tools.CmsGalleryBlock,
+            config: {
+              mediaLibrary: {
+                selectImages: (limit: number) => this.selectExistingImages(limit),
+              },
+              uploader: {
+                uploadByFile: async (file: File, onProgress?: EditorImageUploadProgressCallback) => (
+                  this.uploadImageFile(file, onProgress)
+                ),
+              },
+            },
+          },
         },
       };
 
@@ -1684,14 +1857,14 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
 
   private selectExistingImage(current: CmsImageLibrarySelection): Promise<CmsImageLibrarySelection | null> {
     this.resolvePendingImageSelection(null);
+    this.resolvePendingImageSelections(null);
     this.imagePanelMode = 'select';
     this.imageInsertTab = 'library';
-    this.selectedMediaItemId = null;
+    this.resetImageInsertForm();
     this.imageCaption = current.caption;
     this.imageAltText = current.alt;
     this.imageLayoutMode = current.imageLayout;
     this.imageSizeMode = current.imageSize ?? '';
-    this.imageLibrarySearch = '';
     this.imageInsertMessage.set(null);
     this.mediaLibraryError.set(null);
     this.isImagePanelOpen.set(true);
@@ -1702,10 +1875,34 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     });
   }
 
+  private selectExistingImages(limit: number): Promise<readonly CmsImageLibrarySelection[] | null> {
+    this.resolvePendingImageSelection(null);
+    this.resolvePendingImageSelections(null);
+    this.imagePanelMode = 'selectMultiple';
+    this.imageInsertTab = 'library';
+    this.resetImageInsertForm();
+    const normalizedLimit = Number.isFinite(limit) ? Math.floor(limit) : CMS_GALLERY_MAX_IMAGES;
+    this.imageSelectionLimit = Math.min(CMS_GALLERY_MAX_IMAGES, Math.max(1, normalizedLimit));
+    this.imageInsertMessage.set(null);
+    this.mediaLibraryError.set(null);
+    this.isImagePanelOpen.set(true);
+    this.ensureMediaLibraryLoaded();
+
+    return new Promise(resolve => {
+      this.pendingImageSelectionsResolver = resolve;
+    });
+  }
+
   private resolvePendingImageSelection(selection: CmsImageLibrarySelection | null): void {
     const resolver = this.pendingImageSelectionResolver;
     this.pendingImageSelectionResolver = null;
     resolver?.(selection);
+  }
+
+  private resolvePendingImageSelections(selections: readonly CmsImageLibrarySelection[] | null): void {
+    const resolver = this.pendingImageSelectionsResolver;
+    this.pendingImageSelectionsResolver = null;
+    resolver?.(selections);
   }
 
   private ensureMediaLibraryLoaded(): void {
@@ -1721,6 +1918,8 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
       .subscribe({
         next: items => {
           this.mediaLibraryItems.set(items);
+          const availableIds = new Set(items.map(item => item.id));
+          this.selectedMediaItemIds = this.selectedMediaItemIds.filter(id => availableIds.has(id));
           this.isMediaLibraryLoading.set(false);
         },
         error: error => {
@@ -1784,6 +1983,8 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
 
   private resetImageInsertForm(): void {
     this.selectedMediaItemId = null;
+    this.selectedMediaItemIds = [];
+    this.imageSelectionLimit = CMS_GALLERY_MAX_IMAGES;
     this.imageLibrarySearch = '';
     this.imageCaption = '';
     this.imageAltText = '';
@@ -1793,6 +1994,21 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
 
   private getMediaSourceUrl(item: MediaLibraryItem): string {
     return item.originalUrl ?? item.downloadUrl ?? item.previewUrl ?? item.thumbnailUrl ?? '';
+  }
+
+  private createMediaLibrarySelection(
+    item: MediaLibraryItem,
+    overrides: Partial<CmsImageLibrarySelection> = {}
+  ): CmsImageLibrarySelection {
+    return {
+      url: this.getMediaSourceUrl(item),
+      alt: item.altText || item.displayName,
+      caption: item.description ?? '',
+      imageLayout: 'contained',
+      ...(item.width ? {width: item.width} : {}),
+      ...(item.height ? {height: item.height} : {}),
+      ...overrides,
+    };
   }
 
   private getMediaSearchText(item: MediaLibraryItem): string {

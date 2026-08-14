@@ -564,6 +564,17 @@ export class MediaLibraryService {
           altText: block.data.alt,
         });
       }
+
+      if (block.type === 'gallery') {
+        for (const image of block.data.galleryImages ?? []) {
+          attachments.push({
+            role: 'gallery-image',
+            url: image.url,
+            caption: image.caption,
+            altText: image.alt,
+          });
+        }
+      }
     }
 
     return attachments.filter(attachment => attachment.url.trim().length > 0);

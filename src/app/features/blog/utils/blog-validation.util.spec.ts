@@ -368,4 +368,33 @@ describe('blog post validation', () => {
       socialPromotion: {announcements: [{...announcement, postFormat: 'thread'}]},
     })).toBeFalse();
   });
+
+  it('hydrates bounded gallery blocks and enforces every nested image URL', () => {
+    const gallery = {
+      id: 'gallery-1',
+      type: 'gallery' as const,
+      data: {
+        title: 'Session gallery',
+        galleryLayout: 'grid' as const,
+        galleryImages: [
+          {url: '/assets/images/backgrounds/day.webp', alt: 'Day session', width: 1600, height: 900},
+          {url: 'https://images.example.com/night.webp', alt: 'Night session', caption: 'After dark'},
+        ],
+      },
+    };
+    const post = {...createPost(), blocks: [gallery]};
+
+    expect(isBlogPost(post)).toBeTrue();
+    expect(hasTrustedBlogPostUrls(post)).toBeTrue();
+    expect(hasTrustedBlogPostUrls({
+      ...post,
+      blocks: [{
+        ...gallery,
+        data: {
+          ...gallery.data,
+          galleryImages: [gallery.data.galleryImages[0], {url: 'javascript:alert(1)', alt: 'Unsafe'}],
+        },
+      }],
+    })).toBeFalse();
+  });
 });

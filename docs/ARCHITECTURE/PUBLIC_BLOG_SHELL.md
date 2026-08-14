@@ -175,6 +175,8 @@ Body images retain the existing Full width, Contained, Inline left, and Inline r
 
 Every body image opens through the same accessible gallery dialog. Opening stores the trigger, makes article and surrounding page content inert, locks body scroll with scrollbar compensation, and places focus on Close. Tab and Shift+Tab remain inside the dialog, Left/Right moves through multi-image galleries, Escape closes, and focus returns to the original image trigger. If an article or lightbox image fails, the renderer replaces the broken control with a visible status fallback while retaining alt-derived context and the caption. Crop ratios, focal points, art direction, and generated responsive sources remain deferred until the trusted media backend can own durable variants.
 
+Typed `gallery` blocks group two to twenty images as a manual slideshow, responsive equal grid, or CSS-grid mosaic. Their DOM and lightbox order always follow the author's stored order; slideshow controls do not autoplay, and lightbox navigation stays within the selected gallery rather than moving into unrelated article images. Grid and Mosaic collapse at narrow widths or larger Reader text scales, while reduced-motion preferences remove transitions. The complete authoring, validation, deployment, and rollback contract is documented in `EDITORJS_IMAGE_GALLERIES.md`.
+
 ## Optional Post Backgrounds
 
 `BlogPost.backgroundImage` is an optional full-post field used by the single-post and draft-preview routes and, when

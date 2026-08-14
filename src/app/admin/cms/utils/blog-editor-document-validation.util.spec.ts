@@ -264,4 +264,27 @@ describe('blog editor document validation', () => {
     });
     expect(document.blocks[1].type).toBe('table');
   });
+
+  it('accepts bounded galleries and rejects invalid layouts, counts, alt text, and dimensions', () => {
+    const image = {url: 'https://images.example.com/one.jpg', alt: 'Studio one'};
+    const valid = validateEditorDocumentForBlog({
+      blocks: [{
+        id: 'gallery-valid',
+        type: 'gallery',
+        data: {layout: 'slideshow', images: [image, {...image, url: 'https://images.example.com/two.jpg'}]},
+      }],
+    });
+    const invalidDocuments = [
+      {layout: 'carousel-auto', images: [image, image]},
+      {layout: 'grid', images: [image]},
+      {layout: 'mosaic', images: [image, {...image, alt: ''}]},
+      {layout: 'grid', images: [image, {...image, width: -10}]},
+    ].map(data => validateEditorDocumentForBlog({
+      blocks: [{id: 'gallery-invalid', type: 'gallery', data}],
+    }));
+
+    expect(valid.isValid).toBeTrue();
+    expect(invalidDocuments.every(result => !result.isValid)).toBeTrue();
+    expect(invalidDocuments.every(result => result.diagnostics[0].blockType === 'gallery')).toBeTrue();
+  });
 });

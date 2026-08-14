@@ -55,6 +55,44 @@ test('accepts the complete backward-compatible Editor.js post contract', () => {
   assert.doesNotThrow(() => validateTrustedBlogPost(createPost(), new Date('2026-08-03T13:00:00.000Z')));
 });
 
+test('accepts bounded trusted galleries and rejects malformed nested image data', () => {
+  const gallery = {
+    id: 'gallery-1',
+    type: 'gallery',
+    data: {
+      title: 'Session gallery',
+      galleryLayout: 'mosaic',
+      galleryImages: [
+        {url: '/assets/images/session-one.webp', alt: 'Session one', width: 1600, height: 900},
+        {url: 'https://images.example.com/session-two.webp', alt: 'Session two', caption: 'After dark'},
+      ],
+    },
+  };
+
+  assert.doesNotThrow(() => validateTrustedBlogPost(createPost({blocks: [gallery]})));
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{...gallery, data: {...gallery.data, galleryLayout: 'autoplay'}}],
+  })), /Block data fields/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{
+      ...gallery,
+      data: {
+        ...gallery.data,
+        galleryImages: [gallery.data.galleryImages[0], {url: 'javascript:alert(1)', alt: 'Unsafe'}],
+      },
+    }],
+  })), /Block data fields/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{
+      ...gallery,
+      data: {
+        ...gallery.data,
+        galleryImages: [gallery.data.galleryImages[0], {url: '/assets/images/two.webp', alt: ''}],
+      },
+    }],
+  })), /Block data fields/);
+});
+
 test('rejects unsafe URL protocols before a trusted write', () => {
   const post = createPost({coverImage: 'javascript:alert(1)'});
   assert.throws(
@@ -144,6 +182,9 @@ test('extracts only trusted Phase 7 media identities from storage paths and prov
   const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/example.appspot.com/o/${encodeURIComponent(storagePath)}?alt=media&token=test`;
   const googleStorageUrl = `https://storage.googleapis.com/example.appspot.com/${storagePath}`;
   assert.deepEqual(collectTrustedBlogMediaIds({coverImage: firebaseUrl, blocks: [{url: googleStorageUrl}]}), [mediaId]);
+  assert.deepEqual(collectTrustedBlogMediaIds({
+    blocks: [{type: 'gallery', data: {galleryImages: [{url: firebaseUrl}, {url: googleStorageUrl}]}}],
+  }), [mediaId]);
   assert.deepEqual(collectTrustedBlogMediaIds({
     legacy: 'cms/blog-media/legacy-post/editor-image/legacy.webp',
     external: `https://cdn.example.com/${storagePath}`,
