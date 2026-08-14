@@ -950,6 +950,7 @@ interface SeoAuthorDocument {
 }
 
 interface BlogBlockData {
+  title?: string;
   text?: string;
   level?: 2 | 3;
   url?: string;
@@ -967,10 +968,20 @@ interface BlogBlockData {
   attribution?: string;
   question?: string;
   description?: string;
+  galleryLayout?: 'slideshow' | 'grid' | 'mosaic';
+  galleryImages?: readonly BlogGalleryImage[];
   pollOptions?: readonly {
     id: string;
     label: string;
   }[];
+}
+
+interface BlogGalleryImage {
+  url: string;
+  alt: string;
+  caption?: string;
+  width?: number;
+  height?: number;
 }
 
 interface BlogListItem {
@@ -5203,6 +5214,42 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
       return safeUrl ? `<img src="${escapeHtml(safeUrl)}" alt="${escapeHtml(alt)}" loading="lazy">` : '';
     }
 
+    case 'gallery': {
+      const images = (data.galleryImages ?? []).flatMap(image => {
+        const safeUrl = createOptionalAbsoluteHttpUrl(image.url.trim());
+
+        if (!safeUrl) {
+          return [];
+        }
+
+        const alt = stripHtml(image.alt)
+          || stripHtml(image.caption ?? '')
+          || `${stripHtml(fallbackImageAlt) || 'Blog content'} gallery image`;
+        const caption = stripHtml(image.caption ?? '');
+
+        return [[
+          '  <figure>',
+          `    <img src="${escapeHtml(safeUrl)}" alt="${escapeHtml(alt)}" loading="lazy">`,
+          caption ? `    <figcaption>${escapeHtml(caption)}</figcaption>` : '',
+          '  </figure>',
+        ].filter(Boolean).join('\n')];
+      });
+
+      if (images.length === 0) {
+        return '';
+      }
+
+      const title = stripHtml(data.title ?? '');
+      const caption = stripHtml(data.caption ?? '');
+      return [
+        `<section aria-label="${escapeHtml(title || 'Image gallery')}">`,
+        title ? `  <h3>${escapeHtml(title)}</h3>` : '',
+        ...images,
+        caption ? `  <p>${escapeHtml(caption)}</p>` : '',
+        '</section>',
+      ].filter(Boolean).join('\n');
+    }
+
     case 'embed': {
       const caption = stripHtml(data.caption ?? data.provider ?? '');
       const url = data.embedUrl?.trim() || data.url?.trim() || '';
@@ -5319,19 +5366,31 @@ function formatFallbackDate(value: string): string {
 }
 
 function getFirstImageAlt(blocks: readonly unknown[]): string {
-  const imageBlock = blocks.find(block => {
-    if (!isRecord(block) || block['type'] !== 'image' || !isRecord(block['data'])) {
-      return false;
+  for (const block of blocks) {
+    if (!isRecord(block) || !isRecord(block['data'])) {
+      continue;
     }
 
-    return typeof block['data']['alt'] === 'string';
-  });
+    if (block['type'] === 'image') {
+      const alt = getTrimmedString(block['data']['alt']);
+      if (alt) {
+        return alt;
+      }
+    }
 
-  if (!imageBlock || !isRecord(imageBlock) || !isRecord(imageBlock['data'])) {
-    return '';
+    if (block['type'] === 'gallery' && Array.isArray(block['data']['galleryImages'])) {
+      for (const image of block['data']['galleryImages']) {
+        if (isRecord(image)) {
+          const alt = getTrimmedString(image['alt']);
+          if (alt) {
+            return alt;
+          }
+        }
+      }
+    }
   }
 
-  return getTrimmedString(imageBlock['data']['alt']);
+  return '';
 }
 
 function getStringArrayValue(value: unknown): readonly string[] {

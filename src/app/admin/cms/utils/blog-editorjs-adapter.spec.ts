@@ -1065,4 +1065,66 @@ describe('blog-editorjs-adapter', () => {
       tunes: {alignmentTune: {alignment: 'right'}},
     });
   });
+
+  it('round-trips ordered gallery images and omits unavailable optional fields', () => {
+    const source = {
+      blocks: [{
+        id: 'gallery-1',
+        type: 'gallery',
+        data: {
+          title: 'Recording weekend',
+          caption: 'Three moments from the session.',
+          layout: 'mosaic',
+          images: [
+            {url: '/assets/images/backgrounds/day.webp', alt: 'Day session', width: 1600, height: 900},
+            {url: '/assets/images/backgrounds/night.webp', alt: 'Night session', caption: 'After dark'},
+          ],
+        },
+      }],
+    };
+
+    const blocks = createBlogBlocksFromEditorDocument(source);
+
+    expect(blocks).toEqual([{
+      id: 'gallery-1',
+      type: 'gallery',
+      data: {
+        title: 'Recording weekend',
+        caption: 'Three moments from the session.',
+        galleryLayout: 'mosaic',
+        galleryImages: [
+          {url: '/assets/images/backgrounds/day.webp', alt: 'Day session', width: 1600, height: 900},
+          {url: '/assets/images/backgrounds/night.webp', alt: 'Night session', caption: 'After dark'},
+        ],
+      },
+    }]);
+    expect(createEditorDocument(createPost({blocks})).blocks).toEqual(source.blocks);
+  });
+
+  it('compatibility-protects a malformed known gallery without dropping its images', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'gallery-invalid',
+        type: 'gallery',
+        data: {
+          layout: 'autoplay-stack',
+          images: [{url: '/assets/images/backgrounds/day.webp', alt: 'Only image'}],
+        },
+      }],
+    });
+
+    expect(blocks[0] as unknown).toEqual({
+      id: 'gallery-invalid',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'gallery',
+          originalData: {
+            layout: 'autoplay-stack',
+            images: [{url: '/assets/images/backgrounds/day.webp', alt: 'Only image'}],
+          },
+        },
+      },
+    });
+  });
 });

@@ -60,6 +60,10 @@ describe('admin guide content', () => {
       .toEqual(['create-and-publish-a-post']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'lightbox focus escape').map(entry => entry.id))
       .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'slideshow grid mosaic').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'multi image gallery')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'slideshow gallery')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'wide image layout')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'trusted publishing idempotent retry').map(entry => entry.id))
       .toEqual(['create-and-publish-a-post']);

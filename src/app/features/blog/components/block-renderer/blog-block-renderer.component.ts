@@ -31,6 +31,8 @@ import {
   BLOG_IMAGE_SIZES,
   BlogBlockData,
   BlogContentBlock,
+  BlogGalleryImage,
+  BlogGalleryLayout,
   BlogImageLayout,
   BlogImageSize,
   BlogListItem,
@@ -52,6 +54,7 @@ import {
 } from '../../utils/blog-embed.util';
 import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../utils/blog-suno-embed.util';
 import {BlogChartComponent} from '../chart/blog-chart.component';
+import {BlogGalleryComponent} from '../gallery/blog-gallery.component';
 import {BlogRichTextComponent} from '../rich-text/blog-rich-text.component';
 import {BlogPollComponent} from '../poll/blog-poll.component';
 
@@ -78,6 +81,9 @@ interface RenderableBlogBlock {
   stats: readonly RenderableBlogStat[];
   imageAlt: string;
   galleryIndex: number | null;
+  galleryImages: readonly BlogGalleryImage[];
+  galleryLayout: BlogGalleryLayout;
+  galleryStartIndex: number | null;
   imageLoadFailed: boolean;
 }
 
@@ -119,6 +125,7 @@ interface LightboxBodyStyleState {
     FaIconComponent,
     CatCornerEasterEggComponent,
     BlogChartComponent,
+    BlogGalleryComponent,
     BlogPollComponent,
     BlogRichTextComponent,
   ],
@@ -492,6 +499,19 @@ interface LightboxBodyStyleState {
                   <figcaption [class]="imageCaptionClass()"><app-blog-rich-text [html]="row.captionHtml"></app-blog-rich-text></figcaption>
                 }
               </figure>
+            }
+          }
+          @case ('gallery') {
+            @if (row.galleryImages.length > 0) {
+              <app-blog-gallery
+                [images]="row.galleryImages"
+                [layout]="row.galleryLayout"
+                [title]="row.block.data.title || ''"
+                [caption]="row.block.data.caption || ''"
+                [fallbackAlt]="fallbackAlt"
+                [lightboxStartIndex]="row.galleryStartIndex || 0"
+                (imageOpen)="openImageLightbox($event, row.galleryStartIndex, row.galleryImages.length)"
+              ></app-blog-gallery>
             }
           }
           @case ('embed') {
@@ -1286,6 +1306,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
   private lightboxBodyStyleState: LightboxBodyStyleState | null = null;
   private lightboxFocusTimer: ReturnType<typeof setTimeout> | undefined;
   private lightboxReturnFocus: HTMLElement | null = null;
+  private activeImageScope: { start: number; end: number } | null = null;
   private readonly trustedEmbedHosts = new Set([
     'www.youtube.com',
     'youtube.com',
@@ -1313,6 +1334,8 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         && isBlogQuickSummaryHeading(this.createPlainText(block.data.text));
       const listStyle = this.createListStyle(block.data);
       let galleryIndex: number | null = null;
+      let galleryStartIndex: number | null = null;
+      const galleryImages = block.type === 'gallery' ? block.data.galleryImages ?? [] : [];
 
       if (block.type === 'image' && block.data.url) {
         galleryIndex = imageGallery.length;
@@ -1321,8 +1344,24 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
           alt: imageAlt,
           captionHtml,
           captionText: this.createPlainText(block.data.caption),
-          downloadName: this.createDownloadFileName(block),
+          downloadName: this.createDownloadFileName(block.data.url, imageAlt, block.id),
           loadFailed: false,
+        });
+      }
+
+      if (galleryImages.length > 0) {
+        galleryStartIndex = imageGallery.length;
+
+        galleryImages.forEach((image, index) => {
+          const alt = image.alt.trim() || this.fallbackAlt.trim() || `Blog gallery image ${index + 1}`;
+          imageGallery.push({
+            url: image.url,
+            alt,
+            captionHtml: image.caption ?? '',
+            captionText: this.createPlainText(image.caption),
+            downloadName: this.createDownloadFileName(image.url, alt, `${block.id}-${index + 1}`),
+            loadFailed: false,
+          });
         });
       }
 
@@ -1351,6 +1390,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         stats: this.createStats(block.data.stats),
         imageAlt,
         galleryIndex,
+        galleryImages,
+        galleryLayout: block.data.galleryLayout ?? 'grid',
+        galleryStartIndex,
         imageLoadFailed: false,
       };
     });
@@ -1438,11 +1480,15 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return '';
     }
 
-    return `${this.activeImageIndex + 1} / ${this.imageGallery.length}`;
+    const start = this.activeImageScope?.start ?? 0;
+    const end = this.activeImageScope?.end ?? this.imageGallery.length;
+    return `${this.activeImageIndex - start + 1} / ${end - start}`;
   }
 
   protected get hasMultipleImages(): boolean {
-    return this.imageGallery.length > 1;
+    const start = this.activeImageScope?.start ?? 0;
+    const end = this.activeImageScope?.end ?? this.imageGallery.length;
+    return end - start > 1;
   }
 
   protected formatCodeLanguageLabel(language: string | undefined): string {
@@ -1477,13 +1523,20 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     }
   }
 
-  protected openImageLightbox(galleryIndex: number | null): void {
+  protected openImageLightbox(
+    galleryIndex: number | null,
+    scopeStart: number | null = null,
+    scopeLength?: number
+  ): void {
     if (galleryIndex === null || !this.imageGallery[galleryIndex]) {
       return;
     }
 
     const document = this.host.nativeElement.ownerDocument;
     this.lightboxReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.activeImageScope = scopeStart !== null && scopeLength && scopeLength > 0
+      ? {start: scopeStart, end: Math.min(this.imageGallery.length, scopeStart + scopeLength)}
+      : null;
     this.activeImageIndex = galleryIndex;
     this.preparePageForLightbox();
     this.scheduleLightboxFocus();
@@ -1528,6 +1581,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     }
 
     this.activeImageIndex = null;
+    this.activeImageScope = null;
     this.restorePageAfterLightbox();
     this.cdr.markForCheck();
 
@@ -1571,7 +1625,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    this.activeImageIndex = (this.activeImageIndex - 1 + this.imageGallery.length) % this.imageGallery.length;
+    const start = this.activeImageScope?.start ?? 0;
+    const end = this.activeImageScope?.end ?? this.imageGallery.length;
+    this.activeImageIndex = this.activeImageIndex <= start ? end - 1 : this.activeImageIndex - 1;
   }
 
   protected showNextImage(event?: Event): void {
@@ -1581,7 +1637,9 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    this.activeImageIndex = (this.activeImageIndex + 1) % this.imageGallery.length;
+    const start = this.activeImageScope?.start ?? 0;
+    const end = this.activeImageScope?.end ?? this.imageGallery.length;
+    this.activeImageIndex = this.activeImageIndex >= end - 1 ? start : this.activeImageIndex + 1;
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -1782,14 +1840,14 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
     )).filter(element => element.getAttribute('aria-hidden') !== 'true');
   }
 
-  private createDownloadFileName(block: BlogContentBlock): string {
-    const sourceName = this.getFileNameFromUrl(block.data.url);
+  private createDownloadFileName(url: string | undefined, alt: string, fallbackId: string): string {
+    const sourceName = this.getFileNameFromUrl(url);
 
     if (sourceName) {
       return sourceName;
     }
 
-    return `${this.sanitizeFileName(block.data.alt || this.fallbackAlt || block.id) || 'blog-image'}.jpg`;
+    return `${this.sanitizeFileName(alt || this.fallbackAlt || fallbackId) || 'blog-image'}.jpg`;
   }
 
   private getFileNameFromUrl(value: string | undefined): string {

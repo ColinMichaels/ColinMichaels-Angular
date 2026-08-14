@@ -197,7 +197,12 @@ export class OfflineBlogPostService {
       contentFormat: post.contentFormat,
       blocks: post.blocks.map(block => ({
         ...block,
-        data: {...block.data},
+        data: {
+          ...block.data,
+          ...(block.data.galleryImages
+            ? {galleryImages: block.data.galleryImages.map(image => ({...image}))}
+            : {}),
+        },
       })),
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
@@ -219,6 +224,9 @@ export class OfflineBlogPostService {
       ...post.blocks
         .filter(block => block.type === 'image')
         .map(block => block.data.url),
+      ...post.blocks.flatMap(block => block.type === 'gallery'
+        ? (block.data.galleryImages ?? []).map(image => image.url)
+        : []),
     ];
     const localAssets = [...new Set(candidates
       .filter((value): value is string => Boolean(value))

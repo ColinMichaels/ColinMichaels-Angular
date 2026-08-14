@@ -3,6 +3,7 @@ import type {OutputBlockData, OutputData} from '@editorjs/editorjs';
 import {
   BLOG_BLOCK_PLACEMENTS,
   BLOG_CHART_TYPES,
+  BLOG_GALLERY_LAYOUTS,
   BLOG_IMAGE_LAYOUTS,
   BLOG_IMAGE_SIZES,
   BLOG_LIST_PRESENTATIONS,
@@ -16,6 +17,8 @@ import {
   BlogChartPoint,
   BlogChartType,
   BlogContentBlock,
+  BlogGalleryImage,
+  BlogGalleryLayout,
   BlogImageLayout,
   BlogImageSize,
   BlogJsonObject,
@@ -40,6 +43,7 @@ const supportedBlockTypes = new Set<BlogBlockType>([
   'paragraph',
   'header',
   'image',
+  'gallery',
   'embed',
   'list',
   'quote',
@@ -122,6 +126,12 @@ function toImageSize(value: unknown): BlogImageSize | undefined {
   return typeof value === 'string' && (BLOG_IMAGE_SIZES as readonly string[]).includes(value)
     ? value as BlogImageSize
     : undefined;
+}
+
+function toGalleryLayout(value: unknown): BlogGalleryLayout {
+  return typeof value === 'string' && (BLOG_GALLERY_LAYOUTS as readonly string[]).includes(value)
+    ? value as BlogGalleryLayout
+    : 'grid';
 }
 
 function toChartType(value: unknown): BlogChartType {
@@ -243,6 +253,23 @@ function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
           stretched: block.data.stretched ?? false,
           imageLayout: block.data.imageLayout ?? (block.data.stretched ? 'fullWidth' : 'contained'),
           ...(block.data.imageSize ? {imageSize: block.data.imageSize} : {}),
+        },
+      };
+    case 'gallery':
+      return {
+        id: block.id,
+        type: block.type,
+        data: {
+          title: block.data.title ?? '',
+          caption: block.data.caption ?? '',
+          layout: block.data.galleryLayout ?? 'grid',
+          images: (block.data.galleryImages ?? []).map(image => ({
+            url: image.url,
+            alt: image.alt,
+            ...(image.caption ? {caption: image.caption} : {}),
+            ...(image.width !== undefined ? {width: image.width} : {}),
+            ...(image.height !== undefined ? {height: image.height} : {}),
+          })),
         },
       };
     case 'embed':
@@ -741,6 +768,13 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         ...(imageSize ? {imageSize} : {}),
       };
     }
+    case 'gallery':
+      return {
+        title: getString(data, 'title') ?? '',
+        caption: getString(data, 'caption') ?? '',
+        galleryLayout: toGalleryLayout(data['layout']),
+        galleryImages: extractGalleryImages(data['images']),
+      };
     case 'embed':
       return {
         provider: getString(data, 'service') ?? '',
@@ -824,6 +858,32 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         unsupportedBlock: createUnsupportedEnvelope(data),
       };
   }
+}
+
+function extractGalleryImages(value: unknown): readonly BlogGalleryImage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap(item => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const url = getString(item, 'url') ?? '';
+    const alt = getString(item, 'alt') ?? '';
+    const caption = getString(item, 'caption')?.trim();
+    const width = getNumber(item, 'width');
+    const height = getNumber(item, 'height');
+
+    return [{
+      url,
+      alt,
+      ...(caption ? {caption} : {}),
+      ...(width !== undefined ? {width} : {}),
+      ...(height !== undefined ? {height} : {}),
+    }];
+  });
 }
 
 export function createEditorDocument(post: BlogPost): OutputData {
