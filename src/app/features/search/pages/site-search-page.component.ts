@@ -4,6 +4,7 @@ import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {SiteSearchOverlayService} from '../services/site-search-overlay.service';
 import {
   getFeaturedSearchItems,
@@ -190,6 +191,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
             [routerLink]="result.path"
             [queryParams]="resultSearchQueryParams()"
             class="blog-media-frame blog-post-image-frame group aspect-[16/9]"
+            (click)="selectResult(result)"
           >
             <img
               [src]="result.image"
@@ -204,6 +206,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
             [queryParams]="resultSearchQueryParams()"
             class="blog-media-frame grid aspect-[16/9] place-items-center bg-slate-100 text-slate-500 transition hover:border-cyan-600 hover:text-cyan-700 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
             aria-label="Open {{ result.title }}"
+            (click)="selectResult(result)"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.7">
               <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h6.8L19 7.7v10.8a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-13Z"></path>
@@ -226,6 +229,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
               [routerLink]="result.path"
               [queryParams]="resultSearchQueryParams()"
               class="hover:text-cyan-700 dark:hover:text-cyan-300"
+              (click)="selectResult(result)"
             >
               {{ result.title }}
             </a>
@@ -262,6 +266,7 @@ export class SiteSearchPageComponent {
   private readonly router = inject(Router);
   private readonly search = inject(SiteSearchService);
   private readonly searchOverlay = inject(SiteSearchOverlayService);
+  private readonly analytics = inject(SiteAnalyticsService);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly query = signal('');
@@ -317,6 +322,7 @@ export class SiteSearchPageComponent {
   protected submitSearch(value: string): false {
     this.query.set(value.trim());
     this.searchOverlay.setQuery(this.query());
+    this.analytics.trackSearch(this.query(), this.results().length, 'search_page');
     this.syncQueryParams();
 
     return false;
@@ -365,6 +371,16 @@ export class SiteSearchPageComponent {
   protected resultSearchQueryParams(): {q?: string} {
     const query = this.query().trim();
     return query ? {q: query} : {};
+  }
+
+  protected selectResult(result: SiteSearchResult): void {
+    this.analytics.trackSearch(this.query(), this.results().length, 'search_page');
+    this.analytics.trackContentSelection({
+      id: result.id,
+      slug: result.path,
+      categories: result.categories,
+      contentType: result.type === 'blog' ? 'article' : 'page',
+    }, 'search_page', this.query());
   }
 
   private syncQueryParams(): void {

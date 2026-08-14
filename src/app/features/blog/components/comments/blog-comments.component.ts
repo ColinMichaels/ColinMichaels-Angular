@@ -19,6 +19,7 @@ import {EMPTY, Subscription, catchError} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {BlogComment} from '../../models/blog-comment.model';
 import {BlogPost} from '../../models/blog-post.model';
 import {BLOG_COMMENT_PAGE_SIZE, BlogCommentService} from '../../services/blog-comment.service';
@@ -261,6 +262,7 @@ export class BlogCommentsComponent implements OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly commentService = inject(BlogCommentService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private commentsSubscription?: Subscription;
   private bodyValueSubscription?: Subscription;
   private readonly commentsPageSize = signal(BLOG_COMMENT_PAGE_SIZE);
@@ -337,6 +339,11 @@ export class BlogCommentsComponent implements OnChanges, OnDestroy {
       this.commentForm.reset({body: ''});
       this.commentLength.set(0);
       this.replyingToComment.set(null);
+      this.analytics.trackCommentSubmit(
+        this.post,
+        Boolean(replyTarget),
+        result.comment.status === 'approved' ? 'approved' : 'pending'
+      );
       this.statusMessage.set(result.comment.status === 'approved'
         ? `Your ${replyTarget ? 'reply' : 'comment'} is live.`
         : `Your ${replyTarget ? 'reply' : 'comment'} is waiting for admin review. Once approved, future comments can publish faster.`);

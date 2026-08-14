@@ -140,10 +140,10 @@ describe('HomeArticleHeroComponent', () => {
       );
       const element = fixture.nativeElement as HTMLElement;
       const title = () => element.querySelector('.home-hero-post-title')?.textContent?.trim();
-      const rotationControl = element.querySelector<HTMLButtonElement>('.home-hero-rotation-control');
+      const rotationControl = () => element.querySelector<HTMLButtonElement>('.home-hero-rotation-control');
 
       expect(title()).toBe('Post 3 title');
-      expect(rotationControl?.getAttribute('aria-pressed')).toBe('false');
+      expect(rotationControl()?.getAttribute('aria-pressed')).toBe('false');
 
       jasmine.clock().tick(29_999);
       fixture.detectChanges();
@@ -153,15 +153,15 @@ describe('HomeArticleHeroComponent', () => {
       fixture.detectChanges();
       expect(title()).toBe('Post 2 title');
 
-      rotationControl?.click();
+      rotationControl()?.click();
       fixture.detectChanges();
-      expect(rotationControl?.getAttribute('aria-pressed')).toBe('true');
+      expect(rotationControl()?.getAttribute('aria-pressed')).toBe('true');
 
       jasmine.clock().tick(30_000);
       fixture.detectChanges();
       expect(title()).toBe('Post 2 title');
 
-      rotationControl?.click();
+      rotationControl()?.click();
       fixture.detectChanges();
       jasmine.clock().tick(30_000);
       fixture.detectChanges();

@@ -32,6 +32,34 @@
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
 
+## `shared/analytics/site-analytics.service.ts`
+
+- Responsibility:
+  emit one query-free page view per Angular route and privacy-filtered GA4 product events for meaningful public reader behavior, including article depth, saved actions, reactions, poll votes, shares, comments, search, content selection, and Daily Discovery.
+- Dependencies:
+  browser `document`/`window`, the public route boundary, and the production GA4 measurement destination. It has no Firebase, identity-record, or content-body dependency.
+- Called by:
+  `AppComponent`, public blog detail/comments/polls/related-reading, Continue Reading, search page/drawer, homepage share, share attribution, and Daily Discovery play flows.
+- Privacy and environment boundary:
+  local hosts, server rendering, and `/admin` routes are excluded; comment/answer text and account IDs are omitted; likely personal search terms are redacted.
+- Current risks:
+  GA4 remains directional and can include sophisticated automation. Useful reporting also depends on the documented GA4 custom dimensions, metrics, key events, and validated internal-traffic rule.
+- Migration:
+  the application shell now loads the single production Google tag directly and no longer loads `GTM-Q6BN`; the external container remains untouched for rollback history.
+
+## `features/blog/services/blog-article-reaction.service.ts`
+
+- Responsibility:
+  keep one compact reader reaction per article and browser device so a response remains visibly selected when the reader returns.
+- Dependencies:
+  browser local storage only; the service is server-rendering safe and has no Firebase, identity, points, or moderation dependency.
+- Called by:
+  the end-of-article `ArticleReactionComponent` on published online articles.
+- Privacy and authority boundary:
+  only the public article slug and one of four fixed reaction codes are stored. Reactions are content-direction signals, not authenticated votes, backend totals, or rewards.
+- Migration:
+  no data backfill is required. Removing the component leaves a small inert local-storage map that can be discarded naturally.
+
 ## `author-repository.service.ts`
 
 - Responsibility:

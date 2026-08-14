@@ -2,6 +2,7 @@ import {ChangeDetectionStrategy, Component, Input, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../app-route-paths';
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {
   BlogArticleLibraryRecord,
   BlogArticleLibraryService,
@@ -46,6 +47,7 @@ import {
                 [routerLink]="['/', pathNames.BLOG, record.post.slug]"
                 [fragment]="resumeFragment(record)"
                 [attr.aria-label]="resumeAriaLabel(record)"
+                (click)="trackResume(record)"
               >
                 <img
                   [src]="record.post.coverImage"
@@ -317,6 +319,7 @@ import {
 })
 export class ContinueReadingShelfComponent {
   private readonly library = inject(BlogArticleLibraryService);
+  private readonly analytics = inject(SiteAnalyticsService);
 
   @Input() surface: 'home' | 'homeEditorial' | 'blog' = 'blog';
   @Input() maxRecords = 3;
@@ -334,5 +337,10 @@ export class ContinueReadingShelfComponent {
   protected resumeAriaLabel(record: BlogArticleLibraryRecord): string {
     const section = record.lastHeadingText ? ` at ${record.lastHeadingText}` : '';
     return `Continue ${record.post.title}${section}, ${record.progressPercent}% read`;
+  }
+
+  protected trackResume(record: BlogArticleLibraryRecord): void {
+    this.analytics.trackContinueReading(record.post, record.progressPercent, this.surface);
+    this.analytics.trackContentSelection(record.post, 'continue_reading');
   }
 }

@@ -26,6 +26,7 @@ import {
   DailyDiscoveryPlayOverlayComponent
 } from './features/daily-discovery/components/daily-discovery-play-overlay.component';
 import {DailyDiscoveryPlayService} from './features/daily-discovery/services/daily-discovery-play.service';
+import {SiteAnalyticsService} from './shared/analytics/site-analytics.service';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -127,6 +128,7 @@ export class AppComponent {
   private readonly authService = inject(AuthService);
   private readonly siteSearch = inject(SiteSearchOverlayService);
   private readonly dailyDiscoveryPlay = inject(DailyDiscoveryPlayService);
+  private readonly analytics = inject(SiteAnalyticsService);
   protected readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -154,11 +156,15 @@ export class AppComponent {
   protected readonly scrollToFirstSearchMatch = computed(() => isBlogArticleRoute(this.currentUrl()));
 
   constructor() {
-    effect(() => this.siteSearch.setQuery(getSiteSearchQuery(this.currentUrl())));
+    this.seo.initializeRouteTracking();
+    effect(() => {
+      const currentUrl = this.currentUrl();
+      this.siteSearch.setQuery(getSiteSearchQuery(currentUrl));
+      this.analytics.trackPageView(currentUrl);
+    });
     this.sitePreloader.start();
     this.shareAttribution.start();
     this.pushNotifications.start();
-    this.seo.initializeRouteTracking();
     this.theme.mode();
     this.readerPreferences.preferences();
   }
