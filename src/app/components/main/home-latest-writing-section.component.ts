@@ -101,16 +101,6 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
       display: none;
     }
 
-    @media (min-width: 72rem) {
-      .home-latest-section__content {
-        grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.3fr);
-      }
-
-      .home-latest-section__content:has(app-continue-reading-shelf.is-empty) {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
     @media (max-width: 39.99rem) {
       .home-latest-section__header {
         align-items: flex-start;

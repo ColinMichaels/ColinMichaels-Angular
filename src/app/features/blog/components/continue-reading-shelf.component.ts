@@ -138,10 +138,14 @@ import {
     }
 
     .continue-reading-shelf--home-editorial .continue-reading-card {
-      grid-template-columns: 1fr;
-      grid-template-rows: 10rem minmax(0, 1fr);
+      grid-template-columns: minmax(14rem, 0.42fr) minmax(0, 1fr);
+      grid-template-rows: minmax(11rem, auto);
       border-color: var(--site-border);
       background: transparent;
+    }
+
+    .continue-reading-shelf--home-editorial .continue-reading-card__image {
+      object-fit: contain;
     }
 
     .continue-reading-shelf--home-editorial .continue-reading-card__title {
@@ -313,6 +317,18 @@ import {
       .continue-reading-card {
         grid-template-columns: 1fr;
         grid-template-rows: 7.5rem minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 47.99rem) {
+      .continue-reading-shelf--home-editorial .continue-reading-card {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .continue-reading-shelf--home-editorial .continue-reading-card__image {
+        height: auto;
+        aspect-ratio: 16 / 9;
       }
     }
   `],
