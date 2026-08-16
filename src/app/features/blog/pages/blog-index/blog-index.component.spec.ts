@@ -169,7 +169,7 @@ describe('BlogIndexComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders ten posts on the first page', () => {
+  it('renders the first batch of posts without pagination controls', () => {
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
 
@@ -180,25 +180,25 @@ describe('BlogIndexComponent', () => {
     expect(renderedPosts[DEFAULT_PAGINATION_PAGE_SIZE - 1].getAttribute('data-post-id')).toBe('post-10');
     expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('editorial');
     expect(element.querySelector('.site-pagination__view[aria-current="true"]')?.textContent?.trim()).toBe('Image + title');
-    expect(element.querySelector('.site-pagination__summary')?.textContent).toContain('Showing 1–10 of 23 posts');
+    expect(element.querySelector('.blog-infinite-scroll__progress')?.textContent).toContain('10 of 23 posts shown');
     expect(element.querySelectorAll('.site-pagination__views').length).toBe(1);
     expect(element.querySelector('.blog-index-display-controls .site-pagination__views')).not.toBeNull();
+    expect(element.querySelector('[aria-label="Blog posts pagination"]')).toBeNull();
     expect(element.querySelector('.blog-page-title')).toBeNull();
     expect(element.querySelector('app-blog-category-nav')).toBeNull();
   });
 
-  it('updates the rendered blog slice from the page query parameter', () => {
-    queryParamMap.next(convertToParamMap({page: '2'}));
+  it('loads the next post batch on demand', () => {
+    (fixture.componentInstance as unknown as {loadMorePosts(): void}).loadMorePosts();
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
 
-    expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE);
-    expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-11');
-    expect(renderedPosts[DEFAULT_PAGINATION_PAGE_SIZE - 1].getAttribute('data-post-id')).toBe('post-20');
-    expect(element.querySelector('.site-pagination [aria-current="page"]')?.textContent?.trim()).toBe('2');
-    expect(element.querySelector('.site-pagination__summary')?.textContent).toContain('Showing 11–20 of 23 posts');
+    expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE * 2);
+    expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');
+    expect(renderedPosts[DEFAULT_PAGINATION_PAGE_SIZE * 2 - 1].getAttribute('data-post-id')).toBe('post-20');
+    expect(element.querySelector('.blog-infinite-scroll__progress')?.textContent).toContain('20 of 23 posts shown');
   });
 
   it('switches the post presentation from the view query parameter', () => {

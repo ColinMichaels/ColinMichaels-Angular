@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map} from 'rxjs';
@@ -15,13 +15,7 @@ import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
 import {postMatchesTopicHub} from '../../../topics/utils/topic-post-matching.util';
-import {
-  clampPaginationPage,
-  DEFAULT_PAGINATION_PAGE_SIZE,
-  getPaginationPageCount,
-  paginateItems,
-  parsePaginationPage,
-} from '../../../../shared/pagination/pagination.util';
+import {DEFAULT_PAGINATION_PAGE_SIZE} from '../../../../shared/pagination/pagination.util';
 import {SitePaginationComponent} from '../../../../shared/pagination/site-pagination.component';
 import {YouTubeLatestVideosComponent} from '../../../youtube/components/latest-videos/youtube-latest-videos.component';
 import {
@@ -38,6 +32,7 @@ import {
   parseBlogCategoryFilterSlugs,
 } from '../../utils/blog-category-url.util';
 import {BlogTopicGuideComponent} from '../../components/topic-guide/blog-topic-guide.component';
+import {BlogInfiniteScrollComponent} from '../../components/infinite-scroll/blog-infinite-scroll.component';
 
 type BlogTagRouteKind = ReturnType<typeof createBlogTagTaxonomyRoute>['kind'];
 
@@ -69,6 +64,7 @@ const MAX_POPULAR_TAGS = 10;
     OfflineArticlesControlComponent,
     BlogTopicGuideComponent,
     BlogPostListingComponent,
+    BlogInfiniteScrollComponent,
     YouTubeLatestVideosComponent,
     SitePaginationComponent,
   ],
@@ -147,7 +143,7 @@ const MAX_POPULAR_TAGS = 10;
             }
 
             <app-blog-post-listing
-              [posts]="paginatedPosts()"
+              [posts]="visiblePosts()"
               [layout]="listingLayout()"
               [loading]="isLoading()"
               [error]="loadError()"
@@ -157,17 +153,14 @@ const MAX_POPULAR_TAGS = 10;
               regionLabel="Published blog posts"
             ></app-blog-post-listing>
 
-            <app-site-pagination
-              [currentPage]="currentPage()"
-              [totalItems]="posts().length"
-              [pageSize]="postsPageSize"
-              [routeCommands]="['/', pathNames.BLOG]"
-              fragment="blog-post-list"
-              itemLabel="posts"
-              itemLabelSingular="post"
-              ariaLabel="Blog posts pagination"
-              [showViewOptions]="false"
-            ></app-site-pagination>
+            @if (!isLoading() && !loadError() && posts().length > 0) {
+              <app-blog-infinite-scroll
+                [hasMore]="hasMorePosts()"
+                [loadedCount]="visiblePosts().length"
+                [totalCount]="posts().length"
+                (loadMore)="loadMorePosts()"
+              ></app-blog-infinite-scroll>
+            }
           </section>
 
           <aside class="blog-index-sidebar" aria-label="Reading suggestions">
@@ -480,10 +473,6 @@ export class BlogIndexComponent {
     this.route.queryParamMap.pipe(map(params => params.get('topic') ?? '')),
     {initialValue: this.route.snapshot.queryParamMap.get('topic') ?? ''}
   );
-  private readonly requestedPage = toSignal(
-    this.route.queryParamMap.pipe(map(params => parsePaginationPage(params.get('page')))),
-    {initialValue: parsePaginationPage(this.route.snapshot.queryParamMap.get('page'))}
-  );
   private readonly requestedView = toSignal(
     this.route.queryParamMap.pipe(map(params => params.get('view'))),
     {initialValue: this.route.snapshot.queryParamMap.get('view')}
@@ -603,13 +592,9 @@ export class BlogIndexComponent {
       ))
       .slice(0, MAX_POPULAR_TAGS);
   });
-  protected readonly totalPages = computed(() => getPaginationPageCount(this.posts().length, this.postsPageSize));
-  protected readonly currentPage = computed(() => clampPaginationPage(this.requestedPage(), this.totalPages()));
-  protected readonly paginatedPosts = computed(() => paginateItems(
-    this.posts(),
-    this.currentPage(),
-    this.postsPageSize
-  ));
+  private readonly visiblePostCount = signal(this.postsPageSize);
+  protected readonly visiblePosts = computed(() => this.posts().slice(0, this.visiblePostCount()));
+  protected readonly hasMorePosts = computed(() => this.visiblePostCount() < this.posts().length);
   protected readonly activeTopicAppearance = computed(() => {
     const topic = this.activeTopic();
 
@@ -627,11 +612,25 @@ export class BlogIndexComponent {
     return this.topicSlug() === topicSlug;
   }
 
+  protected loadMorePosts(): void {
+    const totalPosts = this.posts().length;
+
+    if (this.visiblePostCount() >= totalPosts) {
+      return;
+    }
+
+    this.visiblePostCount.update(count => Math.min(count + this.postsPageSize, totalPosts));
+  }
+
   protected topicFilterQueryParams(topicSlug: string | null): {topic: string | null; page: null} {
     return {topic: topicSlug, page: null};
   }
 
   constructor() {
     this.openGraph.applyBlogIndex();
+    effect(() => {
+      this.posts();
+      this.visiblePostCount.set(this.postsPageSize);
+    });
   }
 }
