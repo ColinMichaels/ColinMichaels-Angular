@@ -103,15 +103,16 @@ interface EditorialMediaSet {
           </div>
 
           <nav class="home-hero-explore" aria-label="Explore Colin Michaels">
-            <a [routerLink]="['/', 'topics', 'gadgets-toys']">Gadgets & finds</a>
-            <a [routerLink]="['/', 'topics', 'drones-fpv']">FPV stories</a>
+            <a class="home-hero-explore__gadgets" [routerLink]="['/', 'topics', 'gadgets-toys']">Gadgets & finds</a>
+            <a class="home-hero-explore__fpv" [routerLink]="['/', 'topics', 'drones-fpv']">FPV stories</a>
             <a
+              class="home-hero-explore__subscribe"
               [href]="youtubeSubscribeUrl"
               target="_blank"
               rel="noopener noreferrer"
               (click)="recordYouTubeSubscribe()"
             >Subscribe</a>
-            <a [routerLink]="['/']" fragment="about">About Colin</a>
+            <a class="home-hero-explore__about" [routerLink]="['/']" fragment="about">About Colin</a>
           </nav>
         </header>
 
@@ -369,12 +370,16 @@ interface EditorialMediaSet {
     }
 
     .home-hero-explore a {
+      --home-hero-explore-accent: #67e8f9;
+      --home-hero-explore-rgb: 34 211 238;
       display: inline-flex;
       min-height: 2.75rem;
       align-items: center;
-      border: 1px solid rgba(103, 232, 249, 0.34);
+      border: 1px solid rgb(var(--home-hero-explore-rgb) / 0.66);
+      background: rgb(var(--home-hero-explore-rgb) / 0.12);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.03);
       padding: 0.62rem 0.8rem;
-      color: #e0f2fe;
+      color: var(--home-hero-explore-accent);
       font-family: var(--font-accent);
       font-size: 0.77rem;
       font-weight: 700;
@@ -383,11 +388,32 @@ interface EditorialMediaSet {
       transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
     }
 
+    .home-hero-explore .home-hero-explore__gadgets {
+      --home-hero-explore-accent: #fbbf24;
+      --home-hero-explore-rgb: 245 158 11;
+    }
+
+    .home-hero-explore .home-hero-explore__fpv {
+      --home-hero-explore-accent: #fb7185;
+      --home-hero-explore-rgb: 244 63 94;
+    }
+
+    .home-hero-explore .home-hero-explore__subscribe {
+      --home-hero-explore-accent: #fca5a5;
+      --home-hero-explore-rgb: 239 68 68;
+    }
+
     .home-hero-explore a:hover,
     .home-hero-explore a:focus-visible {
-      border-color: #67e8f9;
-      background: rgba(103, 232, 249, 0.12);
+      border-color: var(--home-hero-explore-accent);
+      background: rgb(var(--home-hero-explore-rgb) / 0.24);
       color: #ffffff;
+      outline: none;
+    }
+
+    .home-hero-explore a:focus-visible {
+      outline: 2px solid var(--home-hero-explore-accent);
+      outline-offset: 0.18rem;
     }
 
     .home-hero-story {
