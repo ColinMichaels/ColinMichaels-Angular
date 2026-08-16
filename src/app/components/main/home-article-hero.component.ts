@@ -23,6 +23,8 @@ import {getPublishedHomepageHeroSlides} from '../../features/homepage/utils/home
 import {selectHomepageHeroPosts} from '../../features/homepage/utils/homepage-post-selection.util';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import type {TopicHub} from '../../features/topics/topic-hubs.data';
+import {SiteAnalyticsService} from '../../shared/analytics/site-analytics.service';
+import {YOUTUBE_CHANNEL_ID, YOUTUBE_SUBSCRIBE_URL} from '../../shared/seo/site-identity';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 import {postImage, postMatchesHubTerms} from './home-blog-section.utils';
 
@@ -88,12 +90,43 @@ interface EditorialMediaSet {
       }
 
       <div class="home-hero-shell">
+        <header class="home-hero-identity">
+          <div class="home-hero-identity-copy">
+            <p class="home-hero-identity-eyebrow">Colin Michaels · Florida creator</p>
+            <h1 id="home-article-hero-heading" class="home-hero-identity-title">
+              Cool gadgets, useful tech, and internet finds
+            </h1>
+            <p class="home-hero-identity-summary">
+              Follow the things I’m testing, researching, building, flying, and learning—with clear notes on what
+              I’ve tried firsthand and what I haven’t.
+            </p>
+          </div>
+
+          <nav class="home-hero-explore" aria-label="Explore Colin Michaels">
+            <a class="home-hero-explore__gadgets" [routerLink]="['/', 'topics', 'gadgets-toys']">Gadgets & finds</a>
+            <a class="home-hero-explore__fpv" [routerLink]="['/', 'topics', 'drones-fpv']">FPV stories</a>
+            <a
+              class="home-hero-explore__subscribe"
+              [href]="youtubeSubscribeUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              (click)="recordYouTubeSubscribe()"
+            >Subscribe</a>
+            <a class="home-hero-explore__about" [routerLink]="['/']" fragment="about">About Colin</a>
+          </nav>
+        </header>
+
         @if (blogLoadError(); as error) {
           <div class="home-hero-message" role="status">{{ error }}</div>
         } @else if (activeHeroPost(); as post) {
-          <article class="home-hero-story" [ngStyle]="postThemeStyle(post)">
+          <article
+            class="home-hero-story"
+            aria-labelledby="home-featured-story-heading"
+            [ngStyle]="postThemeStyle(post)"
+          >
             <div class="home-hero-copy">
-              <h1 id="home-article-hero-heading" class="home-hero-post-title">{{ post.title }}</h1>
+              <p class="home-hero-story-eyebrow">Featured story</p>
+              <h2 id="home-featured-story-heading" class="home-hero-post-title">{{ post.title }}</h2>
               <p class="home-hero-post-excerpt">{{ postExcerpt(post) }}</p>
 
               <div class="home-hero-meta-row">
@@ -211,15 +244,22 @@ interface EditorialMediaSet {
               }
             </a>
           </article>
-
-          <app-daily-discovery-rail/>
         } @else if (blogIsLoading()) {
-          <div class="home-hero-loading" aria-hidden="true">
-            <span></span><span></span><span></span>
+          <div class="home-hero-story home-hero-story--loading" aria-hidden="true">
+            <div class="home-hero-copy home-hero-loading-copy">
+              <span class="home-hero-loading-eyebrow"></span>
+              <span class="home-hero-loading-title"></span>
+              <span class="home-hero-loading-line"></span>
+              <span class="home-hero-loading-line home-hero-loading-line--short"></span>
+              <span class="home-hero-loading-action"></span>
+            </div>
+            <div class="home-hero-panel home-hero-loading-media"></div>
           </div>
         } @else {
           <div class="home-hero-message" role="status">No published posts yet.</div>
         }
+
+        <app-daily-discovery-rail/>
       </div>
     </section>
   `,
@@ -278,33 +318,130 @@ interface EditorialMediaSet {
       padding: clamp(2rem, 4vw, 3.25rem) clamp(1rem, 4vw, 3rem) clamp(1.25rem, 2.5vw, 2rem);
     }
 
+    .home-hero-identity {
+      display: grid;
+      gap: 1.25rem 2.5rem;
+      align-items: end;
+      margin-bottom: clamp(1.75rem, 4vw, 3.25rem);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+      padding-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    }
+
+    .home-hero-identity-copy {
+      min-width: 0;
+    }
+
+    .home-hero-identity-eyebrow,
+    .home-hero-story-eyebrow {
+      margin: 0 0 0.7rem;
+      color: #67e8f9;
+      font-family: var(--font-accent);
+      font-size: 0.72rem;
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .home-hero-identity-title {
+      max-width: 19ch;
+      margin: 0;
+      color: #ffffff;
+      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-size: clamp(2.15rem, 4vw, 4rem);
+      font-weight: 500;
+      letter-spacing: -0.042em;
+      line-height: 1.02;
+      text-wrap: balance;
+    }
+
+    .home-hero-identity-summary {
+      max-width: 47rem;
+      margin: 1rem 0 0;
+      color: #cbd5e1;
+      font-size: clamp(0.98rem, 1.2vw, 1.1rem);
+      line-height: 1.65;
+      text-wrap: pretty;
+    }
+
+    .home-hero-explore {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .home-hero-explore a {
+      --home-hero-explore-accent: #67e8f9;
+      --home-hero-explore-rgb: 34 211 238;
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      border: 1px solid rgb(var(--home-hero-explore-rgb) / 0.66);
+      background: rgb(var(--home-hero-explore-rgb) / 0.12);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.03);
+      padding: 0.62rem 0.8rem;
+      color: var(--home-hero-explore-accent);
+      font-family: var(--font-accent);
+      font-size: 0.77rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+    }
+
+    .home-hero-explore .home-hero-explore__gadgets {
+      --home-hero-explore-accent: #fbbf24;
+      --home-hero-explore-rgb: 245 158 11;
+    }
+
+    .home-hero-explore .home-hero-explore__fpv {
+      --home-hero-explore-accent: #fb7185;
+      --home-hero-explore-rgb: 244 63 94;
+    }
+
+    .home-hero-explore .home-hero-explore__subscribe {
+      --home-hero-explore-accent: #fca5a5;
+      --home-hero-explore-rgb: 239 68 68;
+    }
+
+    .home-hero-explore a:hover,
+    .home-hero-explore a:focus-visible {
+      border-color: var(--home-hero-explore-accent);
+      background: rgb(var(--home-hero-explore-rgb) / 0.24);
+      color: #ffffff;
+      outline: none;
+    }
+
+    .home-hero-explore a:focus-visible {
+      outline: 2px solid var(--home-hero-explore-accent);
+      outline-offset: 0.18rem;
+    }
+
     .home-hero-story {
       --home-hero-topic-accent: #22d3ee;
       --home-hero-topic-accent-strong: #67e8f9;
       --home-hero-topic-rgb: 34 211 238;
       display: grid;
       gap: clamp(2rem, 4vw, 4.25rem);
-      align-items: stretch;
+      align-items: start;
     }
 
     .home-hero-copy {
       display: flex;
       min-width: 0;
-      /* Reserve enough copy height for the story actions to stay anchored while titles change. */
-      min-block-size: 34rem;
+      /* The copy must grow with a real title so the discovery rail never overlaps it. */
       flex-direction: column;
       padding-block: clamp(0.5rem, 2vw, 1.5rem);
     }
 
     .home-hero-post-title {
       margin: 0;
-      max-width: 13ch;
+      max-width: 18ch;
       color: #ffffff;
       font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
-      font-size: clamp(2.65rem, 4.8vw, 5.35rem);
+      font-size: clamp(1.9rem, calc(2.5vw * var(--reader-font-scale, 1)), 3rem);
       font-weight: 500;
       letter-spacing: -0.045em;
-      line-height: 0.99;
+      line-height: 1.06;
       overflow-wrap: break-word;
       text-wrap: balance;
       text-shadow: 0 0.12rem 1.2rem rgba(0, 0, 0, 0.72);
@@ -458,10 +595,13 @@ interface EditorialMediaSet {
       position: relative;
       display: block;
       min-width: 0;
+      /* Keep a stable landscape frame so featured artwork is never squeezed into a cropped strip. */
+      max-width: 100%;
+      width: 100%;
       overflow: hidden;
       border: 1px solid rgb(var(--home-hero-topic-rgb) / 0.27);
       background: #020617;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 16 / 9;
       text-decoration: none;
     }
 
@@ -477,15 +617,14 @@ interface EditorialMediaSet {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       filter: saturate(0.98) contrast(1.03);
-      transition: filter 240ms ease, transform 360ms ease;
+      transition: filter 240ms ease;
     }
 
     .home-hero-panel:hover .home-hero-panel-image,
     .home-hero-panel:focus-visible .home-hero-panel-image {
       filter: saturate(1.04) contrast(1.04);
-      transform: scale(1.018);
     }
 
     app-daily-discovery-rail {
@@ -493,8 +632,7 @@ interface EditorialMediaSet {
       margin-top: clamp(1.5rem, 3vw, 2.25rem);
     }
 
-    .home-hero-message,
-    .home-hero-loading {
+    .home-hero-message {
       min-height: clamp(22rem, 58svh, 38rem);
       border: 1px solid rgba(148, 163, 184, 0.18);
       background: rgba(2, 6, 23, 0.72);
@@ -502,38 +640,69 @@ interface EditorialMediaSet {
       color: #cbd5e1;
     }
 
-    .home-hero-loading {
-      display: grid;
-      align-content: center;
-      gap: 1rem;
-    }
-
-    .home-hero-loading span {
+    .home-hero-story--loading span,
+    .home-hero-loading-media {
       display: block;
+      background: linear-gradient(90deg, rgba(148, 163, 184, 0.1), rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.1));
+      background-size: 200% 100%;
+      animation: home-hero-skeleton 1.8s ease-in-out infinite;
+    }
+
+    .home-hero-loading-copy {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(2, 6, 23, 0.72);
+      padding: clamp(1.5rem, 4vw, 3rem);
+    }
+
+    .home-hero-loading-eyebrow {
+      width: 7.5rem;
+      height: 0.7rem;
+    }
+
+    .home-hero-loading-title {
+      width: min(100%, 31rem);
+      height: clamp(7rem, 13vw, 12rem);
+      margin-top: 1.25rem;
+    }
+
+    .home-hero-loading-line {
+      width: min(100%, 38rem);
       height: 1rem;
-      background: rgba(148, 163, 184, 0.15);
+      margin-top: 1.5rem;
     }
 
-    .home-hero-loading span:first-child {
-      width: 56%;
-      height: 3.5rem;
+    .home-hero-loading-line--short {
+      width: min(72%, 27rem);
+      margin-top: 0.75rem;
     }
 
-    .home-hero-loading span:nth-child(2) {
-      width: 42%;
+    .home-hero-loading-action {
+      width: 11rem;
+      height: 3.35rem;
+      margin-top: auto;
     }
 
-    .home-hero-loading span:last-child {
-      width: 28%;
+    .home-hero-loading-media {
+      border-color: rgba(148, 163, 184, 0.18);
+    }
+
+    @keyframes home-hero-skeleton {
+      from {
+        background-position: 100% 0;
+      }
+
+      to {
+        background-position: -100% 0;
+      }
     }
 
     @media (min-width: 64rem) {
-      .home-hero-story {
-        grid-template-columns: minmax(25rem, 0.82fr) minmax(33rem, 1.18fr);
+      .home-hero-identity {
+        grid-template-columns: minmax(0, 1fr) auto;
       }
 
-      .home-hero-copy {
-        min-block-size: clamp(36.75rem, 46vw, 42rem);
+      .home-hero-story {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       }
     }
 
@@ -562,19 +731,35 @@ interface EditorialMediaSet {
         padding-top: 1rem;
       }
 
+      .home-hero-identity {
+        margin-bottom: 1.75rem;
+      }
+
+      .home-hero-identity-title {
+        font-size: clamp(2.1rem, 11vw, 3.3rem);
+      }
+
+      .home-hero-explore {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .home-hero-explore a {
+        justify-content: center;
+        text-align: center;
+      }
+
       .home-hero-story {
         gap: 1.35rem;
       }
 
       .home-hero-panel {
-        width: calc(100% + 2rem);
-        margin-inline: -1rem;
+        margin-inline: 0;
         border-inline: 0;
-        aspect-ratio: 4 / 3;
       }
 
       .home-hero-post-title {
-        font-size: clamp(2.35rem, 12vw, 3.55rem);
+        font-size: clamp(1.85rem, 9vw, 2.65rem);
       }
 
       .home-hero-post-excerpt {
@@ -591,6 +776,7 @@ interface EditorialMediaSet {
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .home-hero-explore a,
       .home-hero-read-more,
       .home-hero-post-control,
       .home-hero-panel-image {
@@ -602,11 +788,17 @@ interface EditorialMediaSet {
       .home-hero-panel:focus-visible .home-hero-panel-image {
         transform: none;
       }
+
+      .home-hero-story--loading span,
+      .home-hero-loading-media {
+        animation: none;
+      }
     }
   `],
 })
 export class HomeArticleHeroComponent {
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
+  private readonly analytics = inject(SiteAnalyticsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
@@ -725,6 +917,7 @@ export class HomeArticleHeroComponent {
   protected readonly blogIsLoading = this.blogPostFeed.isLoading;
   protected readonly blogLoadError = this.blogPostFeed.loadError;
   protected readonly pathNames = PATH_NAMES;
+  protected readonly youtubeSubscribeUrl = YOUTUBE_SUBSCRIBE_URL;
 
   constructor() {
     this.initializeHeroPostRotationEnvironment();
@@ -757,6 +950,10 @@ export class HomeArticleHeroComponent {
 
   protected readingMinutes(post: BlogPost): number {
     return createBlogReadingStats(post).readingMinutes;
+  }
+
+  protected recordYouTubeSubscribe(): void {
+    this.analytics.trackYouTubeOutbound(YOUTUBE_CHANNEL_ID, 'subscribe', 'homepage_youtube');
   }
 
   protected showPreviousHeroPost(): void {

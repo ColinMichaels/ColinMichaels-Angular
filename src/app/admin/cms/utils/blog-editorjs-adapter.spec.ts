@@ -92,6 +92,68 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('round-trips one explicit companion YouTube video without changing legacy embeds', () => {
+    const blocks = createBlogBlocksFromEditorDocument({
+      blocks: [{
+        id: 'youtube-companion',
+        type: 'youtubeEmbed',
+        data: {
+          url: 'https://youtu.be/L229QDxDakU',
+          isCompanionVideo: true,
+          videoTitle: 'Field flight',
+          videoDescription: 'The exact public companion video.',
+          videoUploadDate: '2026-08-13T13:43:21Z',
+          videoDurationSeconds: 158.4,
+        },
+      }],
+    });
+
+    expect(blocks[0]).toEqual({
+      id: 'youtube-companion',
+      type: 'embed',
+      data: {
+        provider: 'youtube',
+        url: 'https://youtu.be/L229QDxDakU',
+        embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+        isCompanionVideo: true,
+        videoTitle: 'Field flight',
+        videoDescription: 'The exact public companion video.',
+        videoUploadDate: '2026-08-13T13:43:21Z',
+        videoDurationSeconds: 158.4,
+      },
+    });
+
+    expect(createEditorDocument(createPost({blocks})).blocks[0]).toEqual({
+      id: 'youtube-companion',
+      type: 'youtubeEmbed',
+      data: {
+        url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+        isCompanionVideo: true,
+        videoTitle: 'Field flight',
+        videoDescription: 'The exact public companion video.',
+        videoUploadDate: '2026-08-13T13:43:21Z',
+        videoDurationSeconds: 158.4,
+      },
+    });
+  });
+
+  it('rejects multiple companion video selections as an ambiguous article pairing', () => {
+    expect(() => createBlogBlocksFromEditorDocument({
+      blocks: [
+        {
+          id: 'youtube-1',
+          type: 'youtubeEmbed',
+          data: {url: 'https://youtu.be/L229QDxDakU', isCompanionVideo: true},
+        },
+        {
+          id: 'youtube-2',
+          type: 'youtubeEmbed',
+          data: {url: 'https://youtu.be/abcdefghijk', isCompanionVideo: true},
+        },
+      ],
+    })).toThrowError(/exactly one companion YouTube block/i);
+  });
+
   it('round-trips app editor blocks through the typed blog embed model', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [

@@ -1,6 +1,10 @@
-import {BlogPostStatus} from '../../../features/blog/models/blog-post.model';
+import {BlogEvidenceBasis, BlogPostStatus} from '../../../features/blog/models/blog-post.model';
 import {BlogSocialPromotion} from '../../../features/blog/models/blog-social-promotion.model';
 import {isBlogPostStatus, isRecord} from '../../../features/blog/utils/blog-validation.util';
+import {
+  isBlogEditorialSourceDate,
+  isBlogEvidenceBasis
+} from '../../../features/blog/utils/blog-editorial-metadata.util';
 import {EditorRecoverySnapshot} from './editor-document.model';
 
 export const CMS_POST_RECOVERY_SCHEMA_VERSION = 1;
@@ -24,6 +28,13 @@ export interface CmsPostRecoveryFormData {
   seoDescription: string;
   canonical: string;
   openGraphImage: string;
+  evidenceBasis?: BlogEvidenceBasis | '';
+  evidenceSummary?: string;
+  sourceReviewedAt?: string;
+  relationshipDisclosure?: string;
+  aiAssistanceDisclosure?: string;
+  syntheticMediaDisclosure?: string;
+  updateNote?: string;
 }
 
 export interface CmsPostRecoverySnapshot {
@@ -63,9 +74,22 @@ const RECOVERY_FORM_STRING_FIELDS: readonly (keyof CmsPostRecoveryFormData)[] = 
   'openGraphImage',
 ];
 
+const RECOVERY_FORM_OPTIONAL_STRING_FIELDS: readonly (keyof CmsPostRecoveryFormData)[] = [
+  'evidenceSummary',
+  'relationshipDisclosure',
+  'aiAssistanceDisclosure',
+  'syntheticMediaDisclosure',
+  'updateNote',
+];
+
 function isRecoveryFormData(value: unknown): value is CmsPostRecoveryFormData {
   return isRecord(value)
     && RECOVERY_FORM_STRING_FIELDS.every(field => typeof value[field] === 'string')
+    && RECOVERY_FORM_OPTIONAL_STRING_FIELDS.every(field => value[field] === undefined || typeof value[field] === 'string')
+    && (value['evidenceBasis'] === undefined || value['evidenceBasis'] === '' || isBlogEvidenceBasis(value['evidenceBasis']))
+    && (value['sourceReviewedAt'] === undefined
+      || value['sourceReviewedAt'] === ''
+      || isBlogEditorialSourceDate(value['sourceReviewedAt']))
     && typeof value['featured'] === 'boolean'
     && typeof value['catCornerEnabled'] === 'boolean'
     && typeof value['catCornerDiscoveryPost'] === 'boolean'

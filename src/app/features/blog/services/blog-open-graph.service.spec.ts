@@ -86,4 +86,63 @@ describe('BlogOpenGraphService Cat Corner indexing', () => {
       url: 'https://www.colinmichaels.com/blog/cat-corner-seo-post',
     }));
   });
+
+  it('uses the consolidated category identity for article metadata', () => {
+    const post = createPost();
+    post.categories = ['Cat Corner', 'Cats & Pets'];
+
+    service.applyBlogPost(post);
+
+    expect(seo.apply).toHaveBeenCalledWith(jasmine.objectContaining({
+      article: jasmine.objectContaining({section: 'Cats & Pets'}),
+    }));
+  });
+
+  it('adds only explicit external article references to BlogPosting schema', () => {
+    const post = createPost();
+    post.blocks = [{
+      id: 'references',
+      type: 'paragraph',
+      data: {
+        text: 'Use <a href="https://www.faa.gov/uas">FAA guidance</a> and <a href="/blog/next-story">the next story</a>.',
+      },
+    }];
+
+    service.applyBlogPost(post);
+
+    expect(seo.createBlogPostingJsonLd).toHaveBeenCalledWith(jasmine.objectContaining({
+      citations: ['https://www.faa.gov/uas'],
+    }));
+  });
+
+  it('passes only a complete exact companion video into BlogPosting schema', () => {
+    const post = createPost();
+    post.blocks = [{
+      id: 'companion',
+      type: 'embed',
+      data: {
+        provider: 'youtube',
+        url: 'https://youtu.be/L229QDxDakU',
+        isCompanionVideo: true,
+        videoTitle: 'Field flight',
+        videoDescription: 'The exact public companion video.',
+        videoUploadDate: '2026-08-13T13:43:21Z',
+        videoDurationSeconds: 158,
+      },
+    }];
+
+    service.applyBlogPost(post);
+
+    expect(seo.createBlogPostingJsonLd).toHaveBeenCalledWith(jasmine.objectContaining({
+      video: {
+        name: 'Field flight',
+        description: 'The exact public companion video.',
+        thumbnailUrl: ['https://i.ytimg.com/vi/L229QDxDakU/hqdefault.jpg'],
+        uploadDate: '2026-08-13T13:43:21Z',
+        embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+        url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+        duration: 'PT2M38S',
+      },
+    }));
+  });
 });

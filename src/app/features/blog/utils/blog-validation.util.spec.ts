@@ -156,6 +156,23 @@ describe('blog post validation', () => {
     expect(isBlogPost(createPost())).toBeTrue();
   });
 
+  it('accepts bounded editorial evidence metadata without requiring it on legacy posts', () => {
+    expect(isBlogPost({
+      ...createPost(),
+      editorial: {
+        evidenceBasis: 'mixed',
+        evidenceSummary: 'Hands-on field notes are separated from the linked manufacturer specifications.',
+        sourceReviewedAt: '2026-08-15',
+        relationshipDisclosure: 'No product access or compensation was supplied for this article.',
+        aiAssistanceDisclosure: 'AI assisted with transcript organization; Colin reviewed the final claims.',
+        syntheticMediaDisclosure: 'The cover is an AI-generated editorial illustration.',
+        updateNote: 'Clarified which specifications came from the manufacturer.',
+      },
+    })).toBeTrue();
+    expect(isBlogPost({...createPost(), editorial: {evidenceBasis: 'verified-by-magic'}})).toBeFalse();
+    expect(isBlogPost({...createPost(), editorial: {sourceReviewedAt: '2026-02-30'}})).toBeFalse();
+  });
+
   it('keeps URL validation write-only so legacy posts remain readable', () => {
     const legacyPost = {
       ...createPost(),
@@ -268,6 +285,53 @@ describe('blog post validation', () => {
         }],
       },
     })).toBeTrue();
+  });
+
+  it('accepts a boolean companion-video marker and rejects an untyped marker', () => {
+    const companionBlock = {
+      id: 'youtube-companion',
+      type: 'embed' as const,
+      data: {
+        provider: 'youtube',
+        url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+        embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+        isCompanionVideo: true,
+        videoTitle: 'Field flight',
+        videoDescription: 'The exact public companion video.',
+        videoUploadDate: '2026-08-13T13:43:21Z',
+        videoDurationSeconds: 158.4,
+      },
+    };
+
+    expect(isBlogPost({...createPost(), blocks: [companionBlock]})).toBeTrue();
+    expect(isBlogPost({
+      ...createPost(),
+      blocks: [{
+        ...companionBlock,
+        data: {...companionBlock.data, isCompanionVideo: 'yes'},
+      }],
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      blocks: [{
+        ...companionBlock,
+        data: {...companionBlock.data, videoUploadDate: '2026-08-13T13:43:21'},
+      }],
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      blocks: [{
+        ...companionBlock,
+        data: {...companionBlock.data, videoDurationSeconds: 0},
+      }],
+    })).toBeFalse();
+    expect(isBlogPost({
+      ...createPost(),
+      blocks: [{
+        ...companionBlock,
+        data: {...companionBlock.data, isCompanionVideo: false},
+      }],
+    })).toBeFalse();
   });
 
   it('accepts unscheduled drafts, unscheduled cancellations, and the canonical X channel', () => {

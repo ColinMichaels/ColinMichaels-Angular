@@ -27,7 +27,13 @@ import {BlogCommentsComponent} from '../../components/comments/blog-comments.com
 import {BlogShareActionsComponent} from '../../components/share-actions/blog-share-actions.component';
 import {BlogPostBackgroundComponent} from '../../components/post-background/blog-post-background.component';
 import {BlogPostRailComponent} from '../../components/post-rail/blog-post-rail.component';
+import {BlogNextReadComponent} from '../../components/next-read/blog-next-read.component';
 import {ArticleReactionComponent} from '../../components/article-reaction/article-reaction.component';
+import {
+  ReaderMembershipInviteComponent
+} from '../../components/reader-membership-invite/reader-membership-invite.component';
+import {BlogEditorialEvidenceComponent} from '../../components/editorial-evidence/blog-editorial-evidence.component';
+import {BlogTopicGuideComponent} from '../../components/topic-guide/blog-topic-guide.component';
 import {BlogStickyPostToolbarComponent} from '../../components/sticky-post-toolbar/blog-sticky-post-toolbar.component';
 import {BlogTableOfContentsComponent} from '../../components/table-of-contents/blog-table-of-contents.component';
 import {BlogTagListComponent} from '../../components/tag-list/tag-list.component';
@@ -53,7 +59,17 @@ import {
   hasMeaningfulPostUpdate
 } from '../../utils/blog-reading.util';
 import {createBlogPostLayoutBlocks} from '../../utils/blog-block-placement.util';
-import {rankRelatedBlogPosts} from '../../utils/blog-related-posts.util';
+import {rankContextualRelatedBlogPosts} from '../../utils/blog-related-posts.util';
+import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
+import {selectPrimaryTopicHubForPost} from '../../../topics/utils/topic-post-matching.util';
+import {YouTubeLatestVideosComponent} from '../../../youtube/components/latest-videos/youtube-latest-videos.component';
+import {
+  YouTubeCompanionVideoComponent
+} from '../../../youtube/components/companion-video/youtube-companion-video.component';
+import {
+  selectBlogCompanionVideo,
+  shouldShowDroneYouTubeJourney,
+} from '../../utils/blog-youtube-journey.util';
 
 const HEALTH_CONTENT_TERMS = [
   'cardiac',
@@ -87,12 +103,18 @@ function normalizeHealthTerm(value: string): string {
     BlogCommentsComponent,
     BlogPostBackgroundComponent,
     BlogPostRailComponent,
+    BlogNextReadComponent,
     ArticleReactionComponent,
+    ReaderMembershipInviteComponent,
+    BlogEditorialEvidenceComponent,
+    BlogTopicGuideComponent,
     BlogShareActionsComponent,
     BlogStickyPostToolbarComponent,
     BlogTableOfContentsComponent,
     BlogTagListComponent,
     AuthorBioComponent,
+    YouTubeCompanionVideoComponent,
+    YouTubeLatestVideosComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -188,7 +210,7 @@ function normalizeHealthTerm(value: string): string {
                   height="675"
                 >
                 <div class="blog-post-taxonomy flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
-                  @for (category of currentPost.categories; track category) {
+                  @for (category of canonicalCategories(currentPost); track category) {
                     <span class="blog-category-badge">
                       {{ category }}
                     </span>
@@ -197,6 +219,7 @@ function normalizeHealthTerm(value: string): string {
                 <p class="blog-post-dek text-lg leading-8 text-slate-600 dark:text-zinc-400">
                   {{ currentPost.excerpt }}
                 </p>
+                <app-blog-editorial-evidence [post]="currentPost"></app-blog-editorial-evidence>
               </header>
             </div>
 
@@ -252,12 +275,57 @@ function normalizeHealthTerm(value: string): string {
                 ></app-blog-block-renderer>
               </div>
 
+              @if (primaryTopicHub(); as topicHub) {
+                <app-blog-topic-guide [topic]="topicHub"></app-blog-topic-guide>
+              }
+
+              @if (primarySuggestedPost(); as suggestedPost) {
+                <app-blog-next-read [post]="suggestedPost"></app-blog-next-read>
+              }
+
               @if (!isPreviewRoute() && !isOfflineCopy()) {
+                <app-reader-membership-invite
+                  [postSlug]="currentPost.slug"
+                ></app-reader-membership-invite>
                 <app-article-reaction
                   class="mt-12"
                   [post]="currentPost"
                   [signedIn]="isSignedIn()"
                 ></app-article-reaction>
+
+                @if (companionVideo(); as video) {
+                  @defer (on viewport) {
+                    <app-youtube-companion-video
+                      class="mt-12 block"
+                      [videoId]="video.videoId"
+                      [videoUrl]="video.videoUrl"
+                      [thumbnailUrl]="video.thumbnailUrl"
+                      [articleTitle]="currentPost.title"
+                    ></app-youtube-companion-video>
+                  } @placeholder {
+                    <section
+                      class="site-skeleton-card mt-12 h-64"
+                      aria-label="Loading the companion Captain Colin video"
+                    ></section>
+                  }
+                } @else if (showDroneYouTubeJourney()) {
+                  @defer (on viewport) {
+                    <app-youtube-latest-videos
+                      class="mt-12 block overflow-hidden rounded-2xl"
+                      [maxResults]="3"
+                      sectionId="article-drone-youtube"
+                      eyebrow="Continue with Captain Colin"
+                      heading="Watch the flights behind the field notes."
+                      description="See the newest FPV flights, Florida locations, and drone experiments, then subscribe for the next field report."
+                      analyticsSourceComponent="article_drones_youtube"
+                    ></app-youtube-latest-videos>
+                  } @placeholder {
+                    <section
+                      class="site-skeleton-card mt-12 h-64"
+                      aria-label="Loading related Captain Colin videos"
+                    ></section>
+                  }
+                }
               }
             </div>
 
@@ -265,7 +333,7 @@ function normalizeHealthTerm(value: string): string {
               <aside class="blog-detail-right-rail min-w-0 xl:row-span-4 xl:row-start-1">
                 <app-blog-post-rail
                   [blocks]="railBlocks()"
-                  [suggestedPosts]="suggestedPosts()"
+                  [suggestedPosts]="railSuggestedPosts()"
                   [postId]="currentPost.id"
                   [postSlug]="currentPost.slug"
                   [postTitle]="currentPost.title"
@@ -406,6 +474,7 @@ function normalizeHealthTerm(value: string): string {
             <h2 class="text-sm font-semibold text-slate-950 dark:text-zinc-100">Resources</h2>
             <div class="mt-3 grid gap-2">
               <a href="/sitemap.xml" class="hover:text-cyan-800 dark:hover:text-cyan-200">Sitemap</a>
+              <a [routerLink]="['/', pathNames.EDITORIAL_STANDARDS]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Editorial Standards</a>
               <a [routerLink]="['/', pathNames.PRIVACY]" class="hover:text-cyan-800 dark:hover:text-cyan-200">Privacy</a>
               <a
                 href="https://github.com/ColinMichaels"
@@ -555,6 +624,7 @@ export class BlogDetailComponent {
   private readonly analytics = inject(SiteAnalyticsService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly authorRepository = inject(AuthorRepositoryService);
+  private readonly topicHubRepository = inject(TopicHubRepositoryService);
   protected readonly articleLibrary = inject(BlogArticleLibraryService);
   protected readonly offlinePosts = inject(OfflineBlogPostService);
   private readonly openGraph = inject(BlogOpenGraphService);
@@ -575,6 +645,10 @@ export class BlogDetailComponent {
   protected readonly pathNames = PATH_NAMES;
   protected readonly authorProfile = COLIN_AUTHOR_PROFILE;
   protected readonly authors = toSignal(this.authorRepository.getPublishedAuthors$(), {initialValue: []});
+  protected readonly topicHubs = toSignal(
+    this.topicHubRepository.getPublishedTopicHubs$(),
+    {initialValue: this.topicHubRepository.getPublishedTopicHubs()}
+  );
   protected readonly slug = toSignal(
     this.route.paramMap.pipe(map(params => params.get('slug') ?? '')),
     {initialValue: this.route.snapshot.paramMap.get('slug') ?? ''}
@@ -646,6 +720,25 @@ export class BlogDetailComponent {
       this.offlineRecord(),
       this.network.offline(),
       this.publishedPostLoadError()
+    );
+  });
+  protected readonly primaryTopicHub = computed(() => {
+    const post = this.post();
+
+    return post ? selectPrimaryTopicHubForPost(post, this.topicHubs()) : undefined;
+  });
+  protected readonly companionVideo = computed(() => (
+    selectBlogCompanionVideo(this.post()?.blocks ?? [])
+  ));
+  protected readonly showDroneYouTubeJourney = computed(() => {
+    const post = this.post();
+
+    return Boolean(
+      post
+      && !this.isPreviewRoute()
+      && !this.isOfflineCopy()
+      && !this.companionVideo()
+      && shouldShowDroneYouTubeJourney(post, this.primaryTopicHub()?.slug)
     );
   });
   private readonly failedBackgroundImageUrl = signal('');
@@ -764,6 +857,10 @@ export class BlogDetailComponent {
 
     return HEALTH_CONTENT_TERMS.some(term => searchableText.includes(normalizeHealthTerm(term)));
   });
+
+  protected canonicalCategories(post: BlogPost): readonly string[] {
+    return getBlogTaxonomyTerms(post);
+  }
   protected readonly currentPostIndex = computed(() => (
     this.posts().findIndex(post => post.slug === this.slug())
   ));
@@ -784,10 +881,12 @@ export class BlogDetailComponent {
       return [];
     }
 
-    return rankRelatedBlogPosts(this.posts(), currentPost, 3);
+    return rankContextualRelatedBlogPosts(this.posts(), currentPost, 3);
   });
+  protected readonly primarySuggestedPost = computed(() => this.suggestedPosts()[0] ?? null);
+  protected readonly railSuggestedPosts = computed(() => this.suggestedPosts().slice(1));
   protected readonly hasRightRail = computed(() => (
-    this.railBlocks().length > 0 || this.suggestedPosts().length > 0
+    this.railBlocks().length > 0 || this.railSuggestedPosts().length > 0
   ));
   protected readonly articleGridLayout = computed(() => createBlogArticleGridLayout(
     this.hasTableOfContents(),

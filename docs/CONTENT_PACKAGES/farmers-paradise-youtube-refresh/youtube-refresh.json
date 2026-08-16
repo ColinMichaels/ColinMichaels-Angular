@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "status": "local-only",
+  "capturedAt": "2026-08-15T02:32:42Z",
+  "video": {
+    "id": "aiA2hlRcVpk",
+    "url": "https://www.youtube.com/watch?v=aiA2hlRcVpk",
+    "publishedAt": "2026-08-13T13:43:21Z",
+    "durationSeconds": 158.1279,
+    "publicViewsAtCapture": 37,
+    "currentTitle": "Farmers Paradise | Golden Hour Over the Farm | Peaceful Drone Flight"
+  },
+  "proposed": {
+    "title": "Drone Tour of the Farm | Golden Hour to Garden Rows",
+    "thumbnailPath": "src/assets/social/youtube/farmers-paradise-thumbnail-v2.jpg",
+    "thumbnailDisclosure": "AI-assisted composite based on a frame from this video and Colin's creator portrait.",
+    "description": "A peaceful drone tour of the farm, from golden-hour aerial views over the farmhouse and fields to low passes through the garden rows.\n\nThe flight starts above the property in warm evening light, then shifts into brighter views across the fields before dropping to garden level. No manufactured drama—just one farm changing as the camera gets closer.\n\nExplore more drone flights and FPV field notes:\nhttps://colinmichaels.com/topics/drones-fpv\n\nSubscribe for the next Captain Colin flight:\nhttps://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA?sub_confirmation=1\n\nChapters:\n0:00 Golden-hour opening\n0:10 Farmhouse from above\n0:40 Across the property\n0:50 Open fields\n1:20 Dropping to garden level\n2:00 Garden rows\n\nFilmed and published by Colin Michaels / Captain Colin.\nNo sponsorship or affiliate links.\nThumbnail: AI-assisted composite based on a frame from this video and Colin's creator portrait.\n\n#DroneVideo #FarmFromAbove #AerialVideo",
+    "pinnedComment": "The garden-level part surprised me more than the sunset. Which part would you want a longer flight through next—the farmhouse, open field, or garden rows?\n\nMore flights and field notes: https://colinmichaels.com/topics/drones-fpv",
+    "communityPost": "The farm looked calm from the ground. From the air, it turned into three completely different places: golden-hour farmhouse, open field, and garden rows. Which one should get a longer flight next?\n\n▶ https://www.youtube.com/watch?v=aiA2hlRcVpk",
+    "playlist": {
+      "title": "Captain Colin Flies | FPV & Drone Flights",
+      "order": [
+        "aiA2hlRcVpk",
+        "duqDtFy5d-c",
+        "xW73-8e3EVM",
+        "xXMx4OSsTg0",
+        "zMs9OYg_Bz8"
+      ]
+    },
+    "endScreen": {
+      "startSecondsFromEnd": 20,
+      "videoId": "xXMx4OSsTg0",
+      "includeSubscribe": true
+    },
+    "companionArticle": {
+      "status": "staged-unpublished",
+      "url": "https://colinmichaels.com/blog/drone-tour-farm-golden-hour-garden-rows",
+      "descriptionInsertion": "Read the companion flight story and see timestamped stills:\nhttps://colinmichaels.com/blog/drone-tour-farm-golden-hour-garden-rows",
+      "pinnedCommentAfterPublication": "The garden-level part surprised me more than the sunset. Which part would you want a longer flight through next—the farmhouse, open field, or garden rows?\n\nFlight story + timestamped stills:\nhttps://colinmichaels.com/blog/drone-tour-farm-golden-hour-garden-rows",
+      "siteMeasurement": {
+        "event": "select_content",
+        "sourceComponent": "article_companion_youtube",
+        "actions": [
+          "video_thumbnail",
+          "video_watch",
+          "subscribe"
+        ]
+      },
+      "activationGates": [
+        "Colin approves the first-person article voice and disclosures.",
+        "The article is imported and inspected in authenticated CMS Production Preview.",
+        "The public article URL returns 200 and has the exact self-canonical.",
+        "The companion embed, field-notes download, FAA links, images, and poll pass mobile and desktop checks.",
+        "A baseline timestamp is recorded before the YouTube description or pinned comment is changed."
+      ]
+    }
+  },
+  "publicationGates": [
+    "Verify https://colinmichaels.com/topics/drones-fpv is live before adding its link.",
+    "Retain the current title, description, and thumbnail for rollback.",
+    "Keep the proposed title stable during the thumbnail comparison.",
+    "Preview chapters, crop, links, and end-screen placement on the public watch page.",
+    "Do not add the companion article URL until its public 200, canonical, embed, links, and responsive rendering are verified.",
+    "Record raw counts with rates; do not claim popularity from low-volume movement."
+  ]
+}

@@ -19,7 +19,14 @@ import {Subject, debounceTime, lastValueFrom, tap} from 'rxjs';
 import {DEFAULT_AUTHOR_ID} from '../../../../features/authors/authors.constants';
 import {AuthorProfile} from '../../../../features/authors/models/author.model';
 import {AuthorRepositoryService} from '../../../../features/authors/services/author-repository.service';
-import {BlogContentBlock, BlogPost, BlogPostStatus} from '../../../../features/blog/models/blog-post.model';
+import {
+  BLOG_EVIDENCE_BASES,
+  BlogContentBlock,
+  BlogEditorialMetadata,
+  BlogEvidenceBasis,
+  BlogPost,
+  BlogPostStatus,
+} from '../../../../features/blog/models/blog-post.model';
 import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../../../../features/blog/models/blog-post-revision.model';
 import {
   BLOG_SOCIAL_CHANNELS,
@@ -69,6 +76,10 @@ import {
 import {createBlogBlocksFromMarkdown} from '../../utils/blog-markdown-import.util';
 import {SeoChecklistInput} from '../../utils/blog-seo-checklist';
 import {getRemotePostDisposition} from '../../utils/post-editor-reliability.util';
+import {
+  BLOG_EVIDENCE_BASIS_LABELS,
+  normalizeBlogEditorialMetadata,
+} from '../../../../features/blog/utils/blog-editorial-metadata.util';
 import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
 import {PostScheduleCalendarComponent} from './post-schedule-calendar.component';
@@ -115,6 +126,13 @@ interface PostEditorForm {
   seoDescription: FormControl<string>;
   canonical: FormControl<string>;
   openGraphImage: FormControl<string>;
+  evidenceBasis: FormControl<BlogEvidenceBasis | ''>;
+  evidenceSummary: FormControl<string>;
+  sourceReviewedAt: FormControl<string>;
+  relationshipDisclosure: FormControl<string>;
+  aiAssistanceDisclosure: FormControl<string>;
+  syntheticMediaDisclosure: FormControl<string>;
+  updateNote: FormControl<string>;
 }
 
 interface ImportedPostDocument {
@@ -124,6 +142,10 @@ interface ImportedPostDocument {
 
 const BLOG_CANONICAL_BASE_URL = `${SITE_URL}/blog`;
 const statusOptions: readonly BlogPostStatus[] = BLOG_POST_STATUSES;
+const evidenceBasisOptions = BLOG_EVIDENCE_BASES.map(value => ({
+  value,
+  label: BLOG_EVIDENCE_BASIS_LABELS[value],
+}));
 const postedDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -157,6 +179,26 @@ function requiredText(value: string, fallback: string): string {
 function normalizeOpenGraphImage(value: string | undefined, coverImage: string): string {
   const trimmedValue = value?.trim() ?? '';
   return trimmedValue && trimmedValue !== coverImage ? trimmedValue : '';
+}
+
+function createEditorialMetadataFromForm(value: {
+  evidenceBasis: BlogEvidenceBasis | '';
+  evidenceSummary: string;
+  sourceReviewedAt: string;
+  relationshipDisclosure: string;
+  aiAssistanceDisclosure: string;
+  syntheticMediaDisclosure: string;
+  updateNote: string;
+}): BlogEditorialMetadata | undefined {
+  return normalizeBlogEditorialMetadata({
+    evidenceBasis: value.evidenceBasis || undefined,
+    evidenceSummary: value.evidenceSummary,
+    sourceReviewedAt: value.sourceReviewedAt,
+    relationshipDisclosure: value.relationshipDisclosure,
+    aiAssistanceDisclosure: value.aiAssistanceDisclosure,
+    syntheticMediaDisclosure: value.syntheticMediaDisclosure,
+    updateNote: value.updateNote,
+  });
 }
 
 function toDateTimeLocalValue(value: string | null): string {
@@ -332,6 +374,10 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
   const catCorner = Object.prototype.hasOwnProperty.call(value, 'catCorner')
     ? parseCmsCatCornerSettings(value['catCorner'])
     : currentPost.catCorner;
+  const hasImportedEditorial = Object.prototype.hasOwnProperty.call(value, 'editorial');
+  const editorial = hasImportedEditorial
+    ? normalizeBlogEditorialMetadata(value['editorial'])
+    : currentPost.editorial;
   const seoTitle = getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']) || og?.title || importedTitle;
   const seoDescription = getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']) || og?.description || excerpt;
   const openGraphImage = getTrimmedString(seo['openGraphImage']) || og?.image;
@@ -354,6 +400,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
     ...(hasImportedBackgroundImage ? {backgroundImage} : {}),
     featured,
     ...(catCorner ? {catCorner} : {}),
+    ...(hasImportedEditorial ? {editorial} : {}),
     author: createImportedAuthor(value['author'], currentPost.author),
     categories: categories.length > 0 ? categories : currentPost.categories,
     subcategories: subcategories.length > 0 ? subcategories : currentPost.subcategories,
@@ -664,6 +711,90 @@ function getErrorMessage(error: unknown): string {
                         </button>
                       </div>
                     }
+                  </div>
+                </app-admin-control-module>
+
+                <app-admin-control-module
+                  title="Evidence & Disclosures"
+                  [summary]="postForm.controls.evidenceBasis.value ? 'Classified · ' + postForm.controls.evidenceBasis.value : 'Unclassified · legacy notice shown'"
+                  description="Tell readers what was personally experienced, researched, supplied, assisted, or materially corrected. Blank disclosure fields make no claim."
+                  [expanded]="editorialSettingsOpen()"
+                  (expandedChange)="editorialSettingsOpen.set($event)"
+                >
+                  <div class="grid gap-3 md:grid-cols-2">
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Primary evidence basis</span>
+                      <select
+                        formControlName="evidenceBasis"
+                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      >
+                        <option value="">Not classified yet</option>
+                        @for (option of evidenceBasisOptions; track option.value) {
+                          <option [value]="option.value">{{ option.label }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Sources checked</span>
+                      <input
+                        type="date"
+                        formControlName="sourceReviewedAt"
+                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      >
+                    </label>
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Evidence summary</span>
+                      <textarea
+                        formControlName="evidenceSummary"
+                        rows="3"
+                        maxlength="1200"
+                        placeholder="Example: I flew the aircraft for three batteries; range and waterproofing specifications remain manufacturer claims."
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Relationship disclosure</span>
+                      <textarea
+                        formControlName="relationshipDisclosure"
+                        rows="2"
+                        maxlength="1200"
+                        placeholder="State sponsorship, affiliate links, free products, loans, travel, early access, or other relevant relationships."
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">AI assistance disclosure</span>
+                      <textarea
+                        formControlName="aiAssistanceDisclosure"
+                        rows="3"
+                        maxlength="1200"
+                        placeholder="Describe material AI help with research organization, transcription, drafting, code, or visual ideation."
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Synthetic media disclosure</span>
+                      <textarea
+                        formControlName="syntheticMediaDisclosure"
+                        rows="3"
+                        maxlength="1200"
+                        placeholder="Identify editorial illustrations or synthetic media that could be mistaken for documentary evidence."
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Latest substantive update or correction</span>
+                      <textarea
+                        formControlName="updateNote"
+                        rows="2"
+                        maxlength="1000"
+                        placeholder="Explain what materially changed and why. Leave blank for routine copy edits."
+                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+                      ></textarea>
+                    </label>
+                    <p class="border border-cyan-400/25 bg-cyan-400/5 px-3 py-2 text-xs leading-5 text-zinc-400 md:col-span-2">
+                      Unclassified articles remain publishable for migration safety, but readers see that their evidence details have not yet been reviewed under the current editorial standard.
+                    </p>
                   </div>
                 </app-admin-control-module>
 
@@ -1128,6 +1259,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
+  protected readonly evidenceBasisOptions = evidenceBasisOptions;
   protected readonly workspaces = POST_EDITOR_WORKSPACES;
   protected readonly activeWorkspace = signal<PostEditorWorkspace>(
     isPostEditorWorkspace(this.route.snapshot.queryParamMap.get('tab'))
@@ -1160,6 +1292,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected readonly publishingSettingsOpen = signal(false);
   protected readonly scheduleCalendarOpen = signal(false);
   protected readonly mediaSettingsOpen = signal(false);
+  protected readonly editorialSettingsOpen = signal(false);
   protected readonly seoSettingsOpen = signal(false);
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected lastSaved: EditorSavedDocument | null = null;
@@ -1458,7 +1591,9 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.isApplyingEditorState = true;
 
     try {
-      this.postForm.setValue(recovery.form, {emitEvent: false});
+      // Older schema-v1 recovery drafts do not have the additive editorial
+      // fields. Patch the known values so those drafts remain recoverable.
+      this.postForm.patchValue(recovery.form, {emitEvent: false});
       this.syncCatCornerDiscoveryControl();
       this.socialPromotionDraft = recovery.socialPromotion;
       this.socialWorkspacePost = this.createSocialWorkspacePost();
@@ -1973,6 +2108,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
           canonical: this.resolveCanonicalUrlForSave(formValue.canonical, formValue.slug, savedSlug),
           openGraphImage,
         },
+        editorial: createEditorialMetadataFromForm(formValue),
         blocks: createBlogBlocksFromEditorDocument(saved.data),
         socialPromotion: this.socialPromotionDraft.announcements.length > 0
           ? this.socialPromotionDraft
@@ -2294,6 +2430,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         canonical: form.canonical.trim() || this.createCanonicalUrl(form.slug),
         openGraphImage: normalizeOpenGraphImage(form.openGraphImage, coverImage),
       },
+      editorial: createEditorialMetadataFromForm(form),
       publishedAt: fromDateTimeLocalValue(form.publishedAt),
       socialPromotion: this.socialPromotionDraft,
     };
@@ -2353,6 +2490,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         canonical: this.resolveCanonicalUrlForSave(formValue.canonical, formValue.slug, slug),
         openGraphImage,
       },
+      editorial: createEditorialMetadataFromForm(formValue),
       blocks: createBlogBlocksFromEditorDocument(document),
       socialPromotion: this.socialPromotionDraft.announcements.length > 0
         ? this.socialPromotionDraft
@@ -2431,6 +2569,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
       seoDescription: new FormControl(post.seo.description, {nonNullable: true}),
       canonical: new FormControl(post.seo.canonical ?? this.createCanonicalUrl(post.slug), {nonNullable: true}),
       openGraphImage: new FormControl(normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage), {nonNullable: true}),
+      evidenceBasis: new FormControl<BlogEvidenceBasis | ''>(post.editorial?.evidenceBasis ?? '', {nonNullable: true}),
+      evidenceSummary: new FormControl(post.editorial?.evidenceSummary ?? '', {nonNullable: true}),
+      sourceReviewedAt: new FormControl(post.editorial?.sourceReviewedAt ?? '', {nonNullable: true}),
+      relationshipDisclosure: new FormControl(post.editorial?.relationshipDisclosure ?? '', {nonNullable: true}),
+      aiAssistanceDisclosure: new FormControl(post.editorial?.aiAssistanceDisclosure ?? '', {nonNullable: true}),
+      syntheticMediaDisclosure: new FormControl(post.editorial?.syntheticMediaDisclosure ?? '', {nonNullable: true}),
+      updateNote: new FormControl(post.editorial?.updateNote ?? '', {nonNullable: true}),
     });
   }
 
@@ -2467,6 +2612,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
       seoDescription: post.seo.description,
       canonical: post.seo.canonical ?? this.createCanonicalUrl(post.slug),
       openGraphImage: normalizeOpenGraphImage(post.seo.openGraphImage, post.coverImage),
+      evidenceBasis: post.editorial?.evidenceBasis ?? '',
+      evidenceSummary: post.editorial?.evidenceSummary ?? '',
+      sourceReviewedAt: post.editorial?.sourceReviewedAt ?? '',
+      relationshipDisclosure: post.editorial?.relationshipDisclosure ?? '',
+      aiAssistanceDisclosure: post.editorial?.aiAssistanceDisclosure ?? '',
+      syntheticMediaDisclosure: post.editorial?.syntheticMediaDisclosure ?? '',
+      updateNote: post.editorial?.updateNote ?? '',
     });
     this.syncCatCornerDiscoveryControl();
   }
@@ -2498,6 +2650,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       generatedCanonicalUrl: this.generatedCanonicalUrl,
       openGraphImage: formValue.openGraphImage,
       blocks: this.getLatestKnownBlocks(),
+      editorial: createEditorialMetadataFromForm(formValue),
     };
   }
 

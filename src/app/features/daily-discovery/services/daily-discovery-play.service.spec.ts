@@ -1,6 +1,7 @@
 import {TestBed} from '@angular/core/testing';
 
 import {DailyDiscoveryChallenge} from '../models/daily-discovery.model';
+import {CelebrationService} from '../../../shared/celebration/celebration.service';
 import {DailyDiscoveryPlayService} from './daily-discovery-play.service';
 import {DailyDiscoveryService} from './daily-discovery.service';
 import {DailyDiscoveryStateService} from './daily-discovery-state.service';
@@ -13,6 +14,8 @@ describe('DailyDiscoveryPlayService', () => {
   let markCompleted: jasmine.Spy;
   let getCompletedChallengeIds: jasmine.Spy;
   let getCompletedChallengeIdsForToday: jasmine.Spy;
+  let celebrateCorrectAnswer: jasmine.Spy;
+  let celebratePointsAwarded: jasmine.Spy;
 
   beforeEach(() => {
     getChallenge = jasmine.createSpy('getChallenge');
@@ -21,6 +24,8 @@ describe('DailyDiscoveryPlayService', () => {
     markCompleted = jasmine.createSpy('markCompleted');
     getCompletedChallengeIds = jasmine.createSpy('getCompletedChallengeIds').and.returnValue([]);
     getCompletedChallengeIdsForToday = jasmine.createSpy('getCompletedChallengeIdsForToday').and.returnValue([]);
+    celebrateCorrectAnswer = jasmine.createSpy('celebrateCorrectAnswer');
+    celebratePointsAwarded = jasmine.createSpy('celebratePointsAwarded');
 
     TestBed.configureTestingModule({
       providers: [
@@ -28,6 +33,10 @@ describe('DailyDiscoveryPlayService', () => {
         {
           provide: DailyDiscoveryStateService,
           useValue: {hasCompleted, markCompleted, getCompletedChallengeIds, getCompletedChallengeIdsForToday},
+        },
+        {
+          provide: CelebrationService,
+          useValue: {celebrateCorrectAnswer, celebratePointsAwarded},
         },
       ],
     });
@@ -75,6 +84,34 @@ describe('DailyDiscoveryPlayService', () => {
     expect(markCompleted).toHaveBeenCalledWith('2026-08-09', 'question-1');
     expect(service.isCompleted()).toBeTrue();
     expect(service.completedCount()).toBe(1);
+    expect(celebrateCorrectAnswer).toHaveBeenCalledTimes(1);
+    expect(celebratePointsAwarded).not.toHaveBeenCalled();
+  });
+
+  it('uses the points celebration once a signed-in correct answer earns points', async () => {
+    submitAnswer.and.resolveTo({
+      correct: true,
+      message: 'Correct.',
+      awarded: true,
+      points: 5,
+      progress: {
+        currentStreak: 2,
+        longestStreak: 2,
+        totalCompleted: 2,
+        lastCompletedDate: '2026-08-09',
+        completedChallengeIds: ['question-1'],
+      },
+      completedCount: 1,
+      totalQuestions: 5,
+      dailyComplete: false,
+    });
+    service.start(createChallenge());
+    service.updateAnswer('safe word');
+
+    await service.checkAnswer();
+
+    expect(celebratePointsAwarded).toHaveBeenCalledOnceWith(5);
+    expect(celebrateCorrectAnswer).not.toHaveBeenCalled();
   });
 
   it('keeps the overlay active while loading the next unfinished question', async () => {

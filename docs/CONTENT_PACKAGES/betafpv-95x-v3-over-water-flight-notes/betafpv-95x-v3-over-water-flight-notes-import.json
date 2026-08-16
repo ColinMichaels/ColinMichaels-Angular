@@ -1,0 +1,360 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T22:30:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "betafpv-95x-v3-over-water-flight-notes",
+      "revision": 0,
+      "slug": "betafpv-95x-v3-over-water-flight-notes",
+      "title": "BetaFPV 95X V3 Over Water: The Settings, Battery, and Retest Plan",
+      "excerpt": "My second day with the BetaFPV 95X V3 produced a cinematic over-water flight—and questions about ISO, Log color, a 450mAh 4S pack, flight time, and acro practice that are still worth answering.",
+      "coverImage": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-cover.webp",
+      "thumbnailImage": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Photography & Video"
+      ],
+      "subcategories": [],
+      "tags": [
+        "BetaFPV 95X V3",
+        "FPV",
+        "Cinewhoop",
+        "Over-Water Flight",
+        "Insta360 SMO 4K",
+        "Camera Settings",
+        "Drone Battery",
+        "Flight Practice",
+        "VelociDrone"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "mixed",
+        "evidenceSummary": "This article is grounded in Colin's exact January 2021 BetaFPV 95X V3 flight, its public description, and Colin's own visible replies about ISO 100, automatic settings, Log capture, DaVinci color correction, a 450mAh 4S pack, approximately 2.5-3 minutes in wind, and VelociDrone acro practice. Current BETAFPV and FAA pages were reviewed for forward-looking configuration and flight context. The archive does not preserve a complete build, raw-file metadata, controlled endurance test, exact route, or every camera and export setting, so the draft does not claim a definitive review, comparison, or recommendation.",
+        "sourceReviewedAt": "2026-08-15",
+        "relationshipDisclosure": "No sponsorship, affiliate link, free product, loaner, or paid placement is claimed for this article. Colin must confirm that relationship boundary before publication.",
+        "aiAssistanceDisclosure": "AI assistance was used to organize the public source record, research current official references, prepare explicitly synthetic editorial visuals, and draft this package. Colin must review the first-person voice, reply-derived details, flight context, images, links, and final wording before publication.",
+        "syntheticMediaDisclosure": "The cover, thumbnail, Open Graph image, and two in-body images are AI-generated editorial illustrations created on August 15, 2026. They are generic and non-branded, do not depict an exact BetaFPV product, location, route, or measured test result, and must not be presented as documentary footage. Colin's exact YouTube video remains the documentary record."
+      },
+      "seo": {
+        "title": "BetaFPV 95X V3 Over Water: Settings & Flight Notes",
+        "description": "Watch Colin's BetaFPV 95X V3 over-water flight and get the saved ISO, Log, 450mAh 4S, flight-time, acro-practice, and safer-retest notes.",
+        "canonical": "https://colinmichaels.com/blog/betafpv-95x-v3-over-water-flight-notes",
+        "openGraphImage": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "What My BetaFPV 95X V3 Flight Actually Preserved",
+        "description": "The real over-water flight, the settings and battery answers saved in the comments, the missing evidence, and a better retest plan.",
+        "image": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-og.jpg",
+        "imageAlt": "AI-generated editorial illustration of a small generic cinewhoop following a glowing return path over calm water",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-01",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "I still like the nerve and calm in this flight. I also know an old cinematic edit is not the same thing as a complete test record. The useful story lives in the space between those two truths.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "On New Year's Day 2021, during my second day with the BetaFPV 95X V3 and Insta360 SMO 4K, I took the little cinewhoop over water and showed my dad what it could do. Another pilot's over-water video had given me the push to try it. My upload preserved the flight; the conversation under it preserved several details I should have put in the description from the start."
+          }
+        },
+        {
+          "id": "video-companion-01",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=IJjZir1qM1Y",
+            "embedUrl": "https://www.youtube.com/embed/IJjZir1qM1Y",
+            "caption": "The original 6:27 BetaFPV 95X V3 over-water flight, filmed and published by Colin Michaels / Captain Colin. The written notes below provide the settings and limits that the music-led edit does not narrate.",
+            "isCompanionVideo": true,
+            "videoTitle": "BetaFpv 95x V3 - Over Water Cinematic Insta360 4K SMO",
+            "videoDescription": "A cinematic New Year's Day over-water flight from Colin's second day with the BetaFPV 95X V3 and Insta360 SMO 4K, created after another pilot's flight inspired him to show the aircraft to his dad.",
+            "videoUploadDate": "2021-01-02",
+            "videoDurationSeconds": 387
+          }
+        },
+        {
+          "id": "disclosure-01",
+          "type": "paragraph",
+          "data": {
+            "text": "This is a first-person archive reconstruction from my exact public upload and my own visible replies. It is not a recovered flight log. I do not have a complete build sheet, raw-file metadata, a standardized battery test, or every camera and export setting in this package. Nobody paid for placement, and there are no affiliate links in this draft."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "Quick Summary (TL;DR)",
+            "level": 2
+          }
+        },
+        {
+          "id": "tldr-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "The video is real second-day field footage, not a controlled product review or long-range test.",
+              "In a public reply, I said I locked ISO at 100, left the remaining settings automatic, shot in Log, and color corrected in DaVinci Resolve.",
+              "In another reply, I identified a 450mAh 4S pack and roughly 2.5-3 minutes of flight time in windy conditions.",
+              "I learned acro in VelociDrone and needed a couple of months before I felt comfortable; that is personal context, not a training prescription.",
+              "A proper retest would preserve the exact build, camera screen, source files, airspace check, weather, route, start/end voltage, and a planned reserve."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-record",
+          "type": "header",
+          "data": {
+            "text": "What the Old Comments Preserved",
+            "level": 2
+          }
+        },
+        {
+          "id": "record-stats-01",
+          "type": "stats",
+          "data": {
+            "title": "The surviving field notes",
+            "caption": "These are answers Colin posted publicly under the exact video. They are recollections from the session, not extracted telemetry or camera metadata.",
+            "stats": [
+              {
+                "label": "ISO",
+                "value": "100",
+                "caption": "Locked; the remaining camera settings were described as automatic"
+              },
+              {
+                "label": "Image path",
+                "value": "Log + Resolve",
+                "caption": "Shot in Log and color corrected in DaVinci Resolve"
+              },
+              {
+                "label": "Battery",
+                "value": "450mAh 4S",
+                "caption": "The pack Colin named in his public reply"
+              },
+              {
+                "label": "Flight time",
+                "value": "About 2.5-3 min",
+                "caption": "A windy-session estimate, not a controlled endurance result"
+              }
+            ]
+          }
+        },
+        {
+          "id": "record-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Those answers are more useful than a perfect-sounding retrospective. They tell us the grade was part of the final look and that the runtime belonged to one small pack in wind. They do not tell us the shutter, white balance, stabilization path, exact export, voltage thresholds, or whether another 95X V3 configuration would behave the same way."
+          }
+        },
+        {
+          "id": "image-retest-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-inline-retest.webp",
+            "alt": "AI-generated editorial illustration of a generic cinewhoop workbench with an action camera, small battery, memory card, battery checker, and blank checklist",
+            "caption": "AI-generated editorial illustration—not the archived aircraft or equipment. It represents the build, camera, battery, media, and checklist evidence a controlled retest should preserve.",
+            "width": 1440,
+            "height": 960,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "heading-unknowns",
+          "type": "header",
+          "data": {
+            "text": "What the Video Does Not Prove",
+            "level": 2
+          }
+        },
+        {
+          "id": "unknowns-table-01",
+          "type": "html",
+          "data": {
+            "title": "Evidence versus open questions",
+            "html": "<table><thead><tr><th>Visible or documented</th><th>Still unknown</th></tr></thead><tbody><tr><td>Real over-water flight</td><td>Exact route, wind, and full operating context</td></tr><tr><td>ISO 100; other settings described as auto</td><td>Shutter, white balance, frame rate, stabilization, and source metadata</td></tr><tr><td>Log capture and DaVinci color correction</td><td>Full grade, export codec, bitrate, and platform-processing effects</td></tr><tr><td>450mAh 4S and a 2.5-3 minute estimate</td><td>Start/end voltage, pack condition, weight, and standardized endurance</td></tr><tr><td>BetaFPV 95X V3 and SMO 4K named</td><td>Motor, controller, firmware, tune, receiver, propeller, and exact variant</td></tr></tbody></table>"
+          }
+        },
+        {
+          "id": "unknowns-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The distinction matters because BETAFPV's <a href=\"https://betafpv.com/collections/brushless-frame/products/beta95x-v3-frame-kit\">archived Beta95X V3 frame-kit page</a> describes a 100 mm pusher/ducted frame and support for a lightweight SMO 4K camera, while its <a href=\"https://support.betafpv.com/hc/en-us/articles/900004646103-CLI-for-Beta95X-V3\">Beta95X V3 CLI archive</a> lists controller, Betaflight, and motor-era variants. Those official pages help identify the product family; they do not reconstruct my complete aircraft."
+          }
+        },
+        {
+          "id": "heading-practice",
+          "type": "header",
+          "data": {
+            "text": "The Acro Practice Behind the Line",
+            "level": 2
+          }
+        },
+        {
+          "id": "practice-01",
+          "type": "paragraph",
+          "data": {
+            "text": "When a viewer asked about the flight mode, I explained that I had learned acro in VelociDrone, made myself keep practicing it, and needed a couple of months before I became comfortable. I also said I was still practicing and did not consider myself a freestyle pilot. That humility belongs in the story: simulator time can support repetition, but it does not remove the need for a conservative real-world plan."
+          }
+        },
+        {
+          "id": "heading-retest",
+          "type": "header",
+          "data": {
+            "text": "The Retest I Would Run Now",
+            "level": 2
+          }
+        },
+        {
+          "id": "retest-steps-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "Record the exact aircraft, motor, controller, firmware, tune, receiver, propeller, battery, all-up weight, and camera mount.",
+              "Show the complete camera settings screen and name the stabilization, color, exposure, resolution, and frame-rate choices.",
+              "Check current operating rules and airspace for the exact location; use the FAA's current B4UFLY starting point where applicable.",
+              "Choose a short visual-line-of-sight route with a dry launch, a dry alternate landing area, no uninvolved people in the line, and a co-located observer when needed.",
+              "Start with a dry-ground hover and control check before any water-adjacent pass.",
+              "Log wind, pack condition, start voltage, end voltage, flight duration, and the reserve decision instead of flying until the footage feels finished.",
+              "Change one camera or aircraft variable per pass and repeat the same conservative line only when conditions remain suitable.",
+              "Preserve one named source clip, the unedited flight log, the color grade, stabilization pass, and export settings together.",
+              "Stop at the planned reserve or first sign of an aircraft, link, battery, weather, visibility, people, or recovery concern."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "image-flight-plan-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/betafpv-95x-v3-over-water-flight-notes-inline-flight-plan.webp",
+            "alt": "AI-generated editorial top-down route plan with a dry launch point, short water-adjacent line, return arc, alternate dry landing area, and battery reserve marker",
+            "caption": "AI-generated editorial illustration—not the 2021 route, a navigational chart, or an airspace authorization. It visualizes the kind of short return path, dry alternate, and reserve decision a future plan should make explicit.",
+            "width": 1440,
+            "height": 960,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "fullWidth",
+            "imageSize": "wide"
+          }
+        },
+        {
+          "id": "heading-safety",
+          "type": "header",
+          "data": {
+            "text": "An Old Flight Is Not Current Authorization",
+            "level": 2
+          }
+        },
+        {
+          "id": "safety-01",
+          "type": "paragraph",
+          "data": {
+            "text": "For a present-day recreational U.S. flight, begin with the FAA's <a href=\"https://www.faa.gov/uas/recreational_flyers\">Recreational Flyers guidance</a> and <a href=\"https://www.faa.gov/uas/getting_started/where_can_i_fly\">Where Can I Fly?</a> page, determine which rules apply, check current airspace and authorization, and account for registration, Remote ID, visual-line-of-sight, community-based safety, property, state, and local requirements for the exact operation."
+          }
+        },
+        {
+          "id": "warning-safety-01",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "Do not copy an old over-water route from a cinematic edit. This article is not flight instruction, legal advice, airspace authorization, a waterproofing claim, or proof that a past flight met every current requirement.",
+            "attribution": "Flight-context boundary"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "Why I Still Like This Flight",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-01",
+          "type": "paragraph",
+          "data": {
+            "text": "It was my second day with the aircraft. I had been inspired by another pilot, wanted to show my dad, and brought home a line that still feels calm and committed. That human reason is stronger than turning the upload into a retroactive product verdict."
+          }
+        },
+        {
+          "id": "verdict-takeaway-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "Keep the feeling from the old flight. Upgrade the evidence, exit plan, and reserve before the next one.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "verdict-02",
+          "type": "paragraph",
+          "data": {
+            "text": "That is the Captain Colin standard I want to carry forward: real flights, exact limits, useful notes, and a next test the audience can help shape. Use the <a href=\"https://colinmichaels.com/resources/gadget-usefulness-scorecard\">Gadget Usefulness Scorecard</a> when a gear claim needs an evidence check, download the <a href=\"https://colinmichaels.com/downloads/captain-colin-drone-flight-field-notes.pdf\">Drone Flight Field Notes</a> before a repeatable field session, or explore more first-person stories in <a href=\"https://colinmichaels.com/topics/drones-fpv\">Drones &amp; FPV</a>."
+          }
+        },
+        {
+          "id": "poll-retest-priority",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Which variable should the next BetaFPV-style retest isolate first?",
+            "description": "Choose the evidence that would make the follow-up most useful. Signed-in readers can change their vote later.",
+            "pollOptions": [
+              {
+                "id": "camera-settings",
+                "label": "Camera settings"
+              },
+              {
+                "id": "battery-runtime",
+                "label": "Battery and runtime"
+              },
+              {
+                "id": "mount-stabilization",
+                "label": "Mount and stabilization"
+              },
+              {
+                "id": "route-reserve",
+                "label": "Route and reserve plan"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T22:30:00.000Z",
+      "updatedAt": "2026-08-15T22:30:00.000Z",
+      "publishedAt": null
+    }
+  ]
+}

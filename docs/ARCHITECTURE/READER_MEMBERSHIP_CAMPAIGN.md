@@ -8,24 +8,21 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
 
 ## Reader Flow
 
-1. Firebase Auth first resolves the reader as signed out. Only then does an eligible anonymous blog visitor enter the 3.2-second campaign delay; initialization and auth-listener failures never count as anonymous identity.
-2. The visitor can review three optional choices before continuing:
-   - browser alerts are selected as the recommended, fastest option;
-   - new-post email list is initially off;
-   - occasional newsletter is initially off.
-3. **Create free account** or **I already have an account** carries the choices through the existing `/login` route in session storage. The campaign login also offers **Continue reading — remind me later**, which clears the unsaved choices, returns to the requested article, and snoozes the offer for seven days.
-4. Popup sign-in remains the primary Google/Facebook path. Before a blocked-popup fallback starts redirect authentication, the app stores the validated internal return URL for at most 15 minutes. The callback restores that URL even when the provider round trip drops the `/login` query string, then clears it after successful navigation.
-5. After Firebase authentication and user-account bootstrap complete, email and newsletter choices are written to `users/{uid}.communicationPreferences`.
-6. If browser alerts were selected and the current browser supports them, a separate signed-in follow-up asks the reader to explicitly enable alerts. The native browser permission prompt is only opened from that button gesture.
-7. All three choices remain editable from the protected Profile page.
+1. Firebase Auth first resolves the reader as signed out. Initialization and auth-listener failures never count as anonymous identity.
+2. After the article body, an eligible anonymous reader sees a non-blocking inline card explaining the account benefits. It does not use a wall-clock trigger, overlay the article, trap focus, or lock body scrolling.
+3. **Create free account**, **I already have an account**, and **Not now** are visible together. The account actions preserve the current article as the validated internal return URL; **Not now** removes the inline card and snoozes it for 30 days.
+4. The account and Profile flows own all notification choices. No email, newsletter, or browser-notification preference is preselected by the inline invitation.
+5. Popup sign-in remains the primary Google/Facebook path. Before a blocked-popup fallback starts redirect authentication, the app stores the validated internal return URL for at most 15 minutes. The callback restores that URL even when the provider round trip drops the `/login` query string, then clears it after successful navigation.
+6. After Firebase authentication and user-account bootstrap complete, any preferences explicitly selected in an existing signup flow are written to `users/{uid}.communicationPreferences`.
+7. If browser alerts were explicitly selected and the current browser supports them, a separate signed-in follow-up asks the reader to enable alerts. The native browser permission prompt is only opened from that button gesture.
+8. All three choices remain editable from the protected Profile page.
 
-Closing the first offer snoozes it for seven days; **Not now** snoozes it for 30 days. Completing or closing the signed-in follow-up suppresses the campaign for 365 days on that browser. Pending signup choices use session storage so abandoned choices do not become durable account consent.
-
-The delayed offer rechecks auth and campaign eligibility immediately before opening. If Firebase restores a signed-in session while the timer is pending or while the anonymous offer is visible, the timer is cancelled and the offer closes without recording a dismissal. This keeps a returning member's account state authoritative without blocking article reading.
+**Not now** snoozes the inline invitation for 30 days. Completing or closing a signed-in follow-up suppresses the campaign for 365 days on that browser. Pending signup choices use session storage so abandoned choices do not become durable account consent.
 
 ## Component Inventory
 
-- `BlogMembershipCampaignComponent` owns the blog-only offer, consent controls, authentication handoff, browser-alert follow-up, CDK-backed modal focus containment/restoration, and responsive dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
+- `ReaderMembershipInviteComponent` owns the anonymous after-article offer, internal account return links, and 30-day dismissal. It has no dialog, focus trap, body lock, or notification defaults.
+- `BlogMembershipCampaignComponent` owns only saved-preference completion, browser-alert follow-up, CDK-backed modal focus containment/restoration, and responsive signed-in dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
 - `BlogMembershipCampaignStateService` owns versioned dismissal and pending-preference browser storage.
 - `AuthService.authState$` distinguishes initialization, authenticated, unauthenticated, and unavailable states. Campaign eligibility uses this state; existing `user$` consumers receive only resolved identity results.
 - `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts and account-level email choices.
@@ -61,7 +58,7 @@ Browser subscriptions are not stored in this map. They remain per-device records
 
 ## Consent And Delivery Boundaries
 
-Every preference is independently reversible. Marketing-oriented email and newsletter choices are not preselected. Browser alerts are recommended and selected in the campaign, but this never grants permission by itself: the reader must sign in and press **Enable browser alerts** before the browser can show its native permission prompt.
+Every preference is independently reversible. The anonymous inline invitation preselects no email, newsletter, or browser-notification choice. A signed-in reader can enable browser alerts only from an explicit **Enable browser alerts** gesture before the browser shows its native permission prompt.
 
 The current application can save email and newsletter preferences, but it does not yet contain an email service, mailing provider, or new-post email worker. The UI therefore describes these controls as joining a delivery list and never reports an email as sent. Do not advertise email delivery as live until a provider, sender identity, unsubscribe endpoint, suppression handling, and audited publish trigger are connected.
 
@@ -69,7 +66,8 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 
 ## Accessibility And Responsive Behavior
 
-- The popup is a labelled modal dialog with focus containment on open, restoration to the prior control on close, Escape dismissal, a named 44px close button, semantic fieldset controls, visible focus states, and live status feedback.
+- The anonymous invitation is an inline landmark after meaningful article content. At narrow widths its three actions stack as full-width 44px-or-larger targets, so dismissal and account paths remain simultaneously reachable without a focus trap.
+- The signed-in preference follow-up is a labelled modal dialog with focus containment on open, restoration to the prior control on close, Escape dismissal, a named 44px close button, visible focus states, and live status feedback.
 - Secondary actions retain 44px targets, and consent/dismissal copy uses the campaign's muted token instead of the lower-contrast legacy gray.
 - Reduced-motion preferences remove entry and control transitions.
 - Desktop presentation uses a two-column editorial layout; narrow and short viewports collapse the art and make the content region scrollable.
@@ -105,9 +103,9 @@ Changes to this campaign should validate:
 - `npm run build`
 - `npm run lint`
 - focused account-model, campaign-state, app-shell, login, and Profile tests
-- anonymous `/blog` display and delayed opening
-- close, **Not now**, login, register, and preference carry-over paths
-- desktop and mobile dialog/register rendering
+- anonymous article display with no timed dialog or body lock
+- inline **Not now**, login, register, and article return paths
+- desktop and mobile inline-card and signed-in follow-up rendering
 - keyboard focus, Escape behavior, checkbox states, and reduced-motion behavior
 - signed-in Profile preference changes
 - explicit browser permission from a user gesture on a secure deployed origin
@@ -137,3 +135,10 @@ Accessibility hardening validation on August 4, 2026:
 - The live homepage and search dialog retain one route-owned H1, a visible featured H2, 44px primary controls, no horizontal overflow, and no console warnings or errors at 1280×720 and 390×844.
 - The current browser's campaign dismissal was preserved. Modal containment/restoration for the membership offer was verified through the real CDK focus trap in headless Chromium rather than by altering reader storage.
 - Repository lint and the production build passed on Node.js 24.15.0; the initial bundle is `1.48 MB` raw and `336.97 kB` estimated transfer. The content-backed Playwright suite passed on desktop and mobile Chromium (`6/6`); unrelated browser cases seed only their isolated test context with a one-day campaign frequency cap so the marketing prompt cannot cover the surface under test.
+
+Inline reader-invitation validation on August 15, 2026:
+
+- The focused membership, invitation-analytics, and topic contract set passed (`31/31`); the complete Angular suite passed (`936/936`) on supported Node.js 24.15.0.
+- `npm run lint`, `npm run build`, the Functions build, the SEO-shell regression, and the focused Functions topic/fallback/header set (`15/15`) passed.
+- At 390×844 in a clean anonymous browser, the article showed no modal, no body scroll lock, and no console warning/error after five seconds. The inline card measured 358px wide from y=181 to y=663, keeping Create account, Sign in, and Not now inside one viewport.
+- Selecting **Not now** removed the card, preserved normal body scrolling, and left the reaction and related-reading flow visible.

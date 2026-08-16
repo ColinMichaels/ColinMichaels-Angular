@@ -8,6 +8,16 @@ import {resolveBlogPostImage} from '../../../../features/blog/utils/blog-image-u
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {
+  BlogEvidenceReview,
+  BlogEvidenceReviewState,
+  createBlogEvidenceReview,
+} from '../../utils/blog-evidence-review.util';
+import {
+  BlogDiscoveryReview,
+  BlogDiscoveryReviewState,
+  createBlogDiscoveryReview,
+} from '../../utils/blog-discovery-review.util';
+import {
   BLOG_POST_STATUSES,
   isBlogPost,
   isBlogPostStatus,
@@ -16,6 +26,8 @@ import {
 
 interface AdminPostRow {
   post: BlogPost;
+  evidence: BlogEvidenceReview;
+  discovery: BlogDiscoveryReview;
   updatedAt: string;
   publishedAt: string;
   postedTimestamp: number;
@@ -24,6 +36,7 @@ interface AdminPostRow {
 }
 
 type AdminPostSortMode =
+  | 'discovery-priority'
   | 'posted-desc'
   | 'posted-asc'
   | 'updated-desc'
@@ -39,6 +52,20 @@ interface AdminPostSortOption {
   label: string;
 }
 
+type AdminEvidenceFilterMode = 'all' | 'published-needs-review' | 'needs-review' | 'reviewed';
+
+interface AdminEvidenceFilterOption {
+  value: AdminEvidenceFilterMode;
+  label: string;
+}
+
+type AdminDiscoveryFilterMode = 'all' | 'published-needs-review' | 'needs-review' | 'ready';
+
+interface AdminDiscoveryFilterOption {
+  value: AdminDiscoveryFilterMode;
+  label: string;
+}
+
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -46,6 +73,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 });
 const sortOptions: readonly AdminPostSortOption[] = [
+  {value: 'discovery-priority', label: 'Discovery priority'},
   {value: 'posted-desc', label: 'Posted newest'},
   {value: 'posted-asc', label: 'Posted oldest'},
   {value: 'updated-desc', label: 'Updated newest'},
@@ -57,6 +85,24 @@ const sortOptions: readonly AdminPostSortOption[] = [
   {value: 'category-asc', label: 'Category'},
 ];
 const sortModes = new Set<AdminPostSortMode>(sortOptions.map(option => option.value));
+const evidenceFilterOptions: readonly AdminEvidenceFilterOption[] = [
+  {value: 'all', label: 'All evidence states'},
+  {value: 'published-needs-review', label: 'Published needs review'},
+  {value: 'needs-review', label: 'All needs review'},
+  {value: 'reviewed', label: 'Reviewed'},
+];
+const evidenceFilterModes = new Set<AdminEvidenceFilterMode>(
+  evidenceFilterOptions.map(option => option.value)
+);
+const discoveryFilterOptions: readonly AdminDiscoveryFilterOption[] = [
+  {value: 'all', label: 'All discovery states'},
+  {value: 'published-needs-review', label: 'Published discovery review'},
+  {value: 'needs-review', label: 'All discovery review'},
+  {value: 'ready', label: 'Discovery-ready'},
+];
+const discoveryFilterModes = new Set<AdminDiscoveryFilterMode>(
+  discoveryFilterOptions.map(option => option.value)
+);
 const bulkStatusOptions = BLOG_POST_STATUSES.filter(status => status !== 'scheduled');
 const pageSizeOptions: readonly number[] = [5, 10, 25, 50];
 function formatDate(value: string | null): string {
@@ -82,6 +128,14 @@ function createBackupFileName(): string {
 
 function isAdminPostSortMode(value: string): value is AdminPostSortMode {
   return sortModes.has(value as AdminPostSortMode);
+}
+
+function isAdminEvidenceFilterMode(value: string): value is AdminEvidenceFilterMode {
+  return evidenceFilterModes.has(value as AdminEvidenceFilterMode);
+}
+
+function isAdminDiscoveryFilterMode(value: string): value is AdminDiscoveryFilterMode {
+  return discoveryFilterModes.has(value as AdminDiscoveryFilterMode);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -164,7 +218,81 @@ function getErrorMessage(error: unknown): string {
           </div>
         </header>
 
-        <section class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 lg:grid-cols-[minmax(0,1fr)_220px_150px]">
+        <section
+          class="grid gap-5 border border-cyan-900/70 bg-cyan-950/20 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+          aria-label="Evidence review queue"
+        >
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.2em] text-cyan-300">Editorial trust</p>
+              <h2 class="mt-2 text-xl font-semibold text-zinc-100">Evidence review queue</h2>
+              <p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+                Find legacy or incomplete article evidence without assigning claims in bulk. Open each post to record its actual basis, boundaries, source date, and disclosures.
+              </p>
+            </div>
+            <dl class="grid gap-3 sm:grid-cols-3">
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Published needs review</dt>
+                <dd class="mt-1 text-2xl font-semibold text-rose-300">{{ publishedEvidenceReviewCount }}</dd>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Total needs review</dt>
+                <dd class="mt-1 text-2xl font-semibold text-amber-300">{{ evidenceReviewCount }}</dd>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Reviewed</dt>
+                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ reviewedEvidenceCount }}</dd>
+              </div>
+            </dl>
+          </div>
+          <button
+            type="button"
+            class="inline-flex justify-center border border-cyan-400 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+            [disabled]="publishedEvidenceReviewCount === 0"
+            (click)="showPublishedEvidenceReview()"
+          >
+            Review published posts
+          </button>
+        </section>
+
+        <section
+          class="grid gap-5 border border-violet-900/70 bg-violet-950/20 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+          aria-label="Discovery and trust review queue"
+        >
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.2em] text-violet-300">Audience growth</p>
+              <h2 class="mt-2 text-xl font-semibold text-zinc-100">Discovery &amp; trust review queue</h2>
+              <p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+                Prioritize published articles that still need usable sources, a genuinely contextual next read, or supporting material. Suggestions remain advisory; open each post and review the actual story before changing it.
+              </p>
+            </div>
+            <dl class="grid gap-3 sm:grid-cols-3">
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Published discovery review</dt>
+                <dd class="mt-1 text-2xl font-semibold text-rose-300">{{ publishedDiscoveryReviewCount }}</dd>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Total discovery review</dt>
+                <dd class="mt-1 text-2xl font-semibold text-amber-300">{{ discoveryReviewCount }}</dd>
+              </div>
+              <div class="border border-zinc-800 bg-zinc-950/70 p-3">
+                <dt class="text-xs uppercase tracking-wide text-zinc-500">Discovery-ready</dt>
+                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ discoveryReadyCount }}</dd>
+              </div>
+            </dl>
+          </div>
+          <button
+            type="button"
+            class="inline-flex justify-center border border-violet-400 px-4 py-2 text-sm font-medium text-violet-200 hover:bg-violet-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+            [disabled]="publishedDiscoveryReviewCount === 0"
+            (click)="showPublishedDiscoveryReview()"
+          >
+            Review published discovery gaps
+          </button>
+        </section>
+
+        <section class="grid gap-4 border border-zinc-800 bg-zinc-900/70 p-4 xl:grid-cols-[minmax(0,1fr)_200px_210px_200px_140px]">
           <label class="space-y-2">
             <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Search posts</span>
             <input
@@ -174,6 +302,34 @@ function getErrorMessage(error: unknown): string {
               class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-cyan-300"
               (input)="updateSearch($event)"
             >
+          </label>
+
+          <label class="space-y-2">
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Discovery &amp; trust</span>
+            <select
+              aria-label="Discovery and trust filter"
+              [value]="discoveryFilterMode"
+              class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-violet-300"
+              (change)="updateDiscoveryFilter($event)"
+            >
+              @for (option of discoveryFilterOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="space-y-2">
+            <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Evidence</span>
+            <select
+              aria-label="Evidence filter"
+              [value]="evidenceFilterMode"
+              class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
+              (change)="updateEvidenceFilter($event)"
+            >
+              @for (option of evidenceFilterOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
           </label>
 
           <label class="space-y-2">
@@ -192,12 +348,13 @@ function getErrorMessage(error: unknown): string {
           <label class="space-y-2">
             <span class="text-xs font-medium uppercase tracking-wide text-zinc-500">Rows</span>
             <select
+              aria-label="Rows per page"
               [value]="pageSize"
               class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
               (change)="updatePageSize($event)"
             >
               @for (option of pageSizeOptions; track option) {
-                <option [value]="option">{{ option }} per page</option>
+                <option [value]="option" [selected]="option === pageSize">{{ option }} per page</option>
               }
             </select>
           </label>
@@ -212,9 +369,9 @@ function getErrorMessage(error: unknown): string {
             }
           </p>
 
-          @if (searchTerm) {
-            <button type="button" class="text-cyan-300 hover:text-cyan-200" (click)="clearSearch()">
-              Clear search
+          @if (searchTerm || evidenceFilterMode !== 'all' || discoveryFilterMode !== 'all') {
+            <button type="button" class="text-cyan-300 hover:text-cyan-200" (click)="clearFilters()">
+              Clear filters
             </button>
           }
         </section>
@@ -310,6 +467,8 @@ function getErrorMessage(error: unknown): string {
                 <th class="px-4 py-3 font-medium">Title</th>
                 <th class="px-4 py-3 font-medium">Author</th>
                 <th class="px-4 py-3 font-medium">Status</th>
+                <th class="px-4 py-3 font-medium">Evidence</th>
+                <th class="px-4 py-3 font-medium">Discovery &amp; trust</th>
                 <th class="px-4 py-3 font-medium">Category</th>
                 <th class="px-4 py-3 font-medium">Updated</th>
                 <th class="px-4 py-3 font-medium">Posted</th>
@@ -352,6 +511,25 @@ function getErrorMessage(error: unknown): string {
                   <td class="px-4 py-4">
                     <span [class]="statusClass(row.post.status)">{{ row.post.status }}</span>
                   </td>
+                  <td class="min-w-56 px-4 py-4">
+                    <span [class]="evidenceClass(row.evidence.state)">{{ row.evidence.label }}</span>
+                    @if (row.evidence.publishedPriority) {
+                      <p class="mt-2 text-xs font-medium text-rose-300">Published priority</p>
+                    }
+                    <p class="mt-2 max-w-xs text-xs leading-5 text-zinc-500">{{ row.evidence.detail }}</p>
+                  </td>
+                  <td class="min-w-64 px-4 py-4">
+                    <span [class]="discoveryClass(row.discovery.state)">{{ row.discovery.label }}</span>
+                    @if (row.discovery.publishedPriority) {
+                      <p class="mt-2 text-xs font-medium text-rose-300">Published priority</p>
+                    }
+                    <p class="mt-2 max-w-sm text-xs leading-5 text-zinc-500">{{ row.discovery.detail }}</p>
+                    @if (row.discovery.requiredIssueCount > 0 || row.discovery.recommendationCount > 0) {
+                      <p class="mt-2 text-[11px] text-zinc-600">
+                        {{ row.discovery.requiredIssueCount }} required / {{ row.discovery.recommendationCount }} advisory
+                      </p>
+                    }
+                  </td>
                   <td class="px-4 py-4 text-zinc-400">
                     {{ row.post.categories.join(', ') }}
                   </td>
@@ -382,9 +560,9 @@ function getErrorMessage(error: unknown): string {
               </tr>
             } @empty {
               <tr class="bg-zinc-950">
-                <td colspan="9" class="px-4 py-12 text-center">
-                  <p class="text-base font-medium text-zinc-200">No posts match your search.</p>
-                  <p class="mt-2 text-sm text-zinc-500">Clear the search or adjust the sort options.</p>
+                <td colspan="11" class="px-4 py-12 text-center">
+                  <p class="text-base font-medium text-zinc-200">No posts match these filters.</p>
+                  <p class="mt-2 text-sm text-zinc-500">Clear or adjust the search, evidence, and discovery filters.</p>
                   </td>
                 </tr>
               }
@@ -425,12 +603,16 @@ export class CmsPostListComponent {
   private readonly toast = inject(CmsToastService);
 
   protected readonly sortOptions = sortOptions;
+  protected readonly evidenceFilterOptions = evidenceFilterOptions;
+  protected readonly discoveryFilterOptions = discoveryFilterOptions;
   protected readonly pageSizeOptions = pageSizeOptions;
   protected readonly bulkStatusOptions = bulkStatusOptions;
   protected readonly posts = toSignal(this.blogRepository.getAdminPosts$(), {initialValue: []});
   protected readonly rows = computed(() => this.createRows(this.posts()));
   protected searchTerm = '';
   protected sortMode: AdminPostSortMode = 'posted-desc';
+  protected evidenceFilterMode: AdminEvidenceFilterMode = 'all';
+  protected discoveryFilterMode: AdminDiscoveryFilterMode = 'all';
   protected pageSize = 10;
   protected currentPage = 1;
   protected backupInProgress = false;
@@ -441,11 +623,38 @@ export class CmsPostListComponent {
 
   protected get filteredRows(): readonly AdminPostRow[] {
     const normalizedSearchTerm = normalizeSearchText(this.searchTerm);
+    const evidenceRows = this.rows().filter(row => (
+      this.matchesEvidenceFilter(row) && this.matchesDiscoveryFilter(row)
+    ));
     const filteredRows = normalizedSearchTerm
-      ? this.rows().filter(row => row.searchableText.includes(normalizedSearchTerm))
-      : this.rows();
+      ? evidenceRows.filter(row => row.searchableText.includes(normalizedSearchTerm))
+      : evidenceRows;
 
     return [...filteredRows].sort((left, right) => this.compareRows(left, right));
+  }
+
+  protected get publishedEvidenceReviewCount(): number {
+    return this.rows().filter(row => row.evidence.publishedPriority).length;
+  }
+
+  protected get evidenceReviewCount(): number {
+    return this.rows().filter(row => row.evidence.needsReview).length;
+  }
+
+  protected get reviewedEvidenceCount(): number {
+    return this.rows().filter(row => !row.evidence.needsReview).length;
+  }
+
+  protected get publishedDiscoveryReviewCount(): number {
+    return this.rows().filter(row => row.discovery.publishedPriority).length;
+  }
+
+  protected get discoveryReviewCount(): number {
+    return this.rows().filter(row => row.discovery.needsReview).length;
+  }
+
+  protected get discoveryReadyCount(): number {
+    return this.rows().filter(row => !row.discovery.needsReview).length;
   }
 
   protected get totalPages(): number {
@@ -511,6 +720,27 @@ export class CmsPostListComponent {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
+  protected evidenceClass(state: BlogEvidenceReviewState): string {
+    const baseClass = 'inline-flex rounded border px-2 py-1 text-xs font-medium';
+
+    switch (state) {
+      case 'unclassified':
+        return `${baseClass} border-rose-500/60 text-rose-300`;
+      case 'incomplete':
+        return `${baseClass} border-amber-500/60 text-amber-300`;
+      case 'reviewed':
+        return `${baseClass} border-emerald-500/60 text-emerald-300`;
+    }
+  }
+
+  protected discoveryClass(state: BlogDiscoveryReviewState): string {
+    const baseClass = 'inline-flex rounded border px-2 py-1 text-xs font-medium';
+
+    return state === 'ready'
+      ? `${baseClass} border-emerald-500/60 text-emerald-300`
+      : `${baseClass} border-violet-500/60 text-violet-300`;
+  }
+
   protected hasActivePreview(post: BlogPost): boolean {
     if (!post.preview || post.status !== 'draft') {
       return false;
@@ -538,6 +768,24 @@ export class CmsPostListComponent {
     this.currentPage = 1;
   }
 
+  protected clearFilters(): void {
+    this.searchTerm = '';
+    this.evidenceFilterMode = 'all';
+    this.discoveryFilterMode = 'all';
+    this.currentPage = 1;
+  }
+
+  protected showPublishedEvidenceReview(): void {
+    this.evidenceFilterMode = 'published-needs-review';
+    this.currentPage = 1;
+  }
+
+  protected showPublishedDiscoveryReview(): void {
+    this.discoveryFilterMode = 'published-needs-review';
+    this.sortMode = 'discovery-priority';
+    this.currentPage = 1;
+  }
+
   protected updateSortMode(event: Event): void {
     const value = event.target instanceof HTMLSelectElement ? event.target.value : this.sortMode;
 
@@ -546,6 +794,32 @@ export class CmsPostListComponent {
     }
 
     this.sortMode = value;
+    this.currentPage = 1;
+  }
+
+  protected updateEvidenceFilter(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement
+      ? event.target.value
+      : this.evidenceFilterMode;
+
+    if (!isAdminEvidenceFilterMode(value)) {
+      return;
+    }
+
+    this.evidenceFilterMode = value;
+    this.currentPage = 1;
+  }
+
+  protected updateDiscoveryFilter(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement
+      ? event.target.value
+      : this.discoveryFilterMode;
+
+    if (!isAdminDiscoveryFilterMode(value)) {
+      return;
+    }
+
+    this.discoveryFilterMode = value;
     this.currentPage = 1;
   }
 
@@ -805,24 +1079,63 @@ export class CmsPostListComponent {
   }
 
   private createRows(posts: readonly BlogPost[]): readonly AdminPostRow[] {
-    return posts.map(post => ({
-      post,
-      updatedAt: formatDate(post.updatedAt),
-      publishedAt: formatDate(post.publishedAt),
-      postedTimestamp: getTimestamp(post.publishedAt ?? post.updatedAt),
-      updatedTimestamp: getTimestamp(post.updatedAt),
-      searchableText: normalizeSearchText([
-        post.title,
-        post.slug,
-        post.excerpt,
-        post.status,
-        post.categories.join(' '),
-        post.tags.join(' '),
-        post.author.name,
-        post.author.slug ?? '',
-        post.authorId ?? '',
-      ].join(' ')),
-    }));
+    return posts.map(post => {
+      const evidence = createBlogEvidenceReview(post);
+      const discovery = createBlogDiscoveryReview(post);
+
+      return {
+        post,
+        evidence,
+        discovery,
+        updatedAt: formatDate(post.updatedAt),
+        publishedAt: formatDate(post.publishedAt),
+        postedTimestamp: getTimestamp(post.publishedAt ?? post.updatedAt),
+        updatedTimestamp: getTimestamp(post.updatedAt),
+        searchableText: normalizeSearchText([
+          post.title,
+          post.slug,
+          post.excerpt,
+          post.status,
+          post.categories.join(' '),
+          post.tags.join(' '),
+          post.author.name,
+          post.author.slug ?? '',
+          post.authorId ?? '',
+          evidence.label,
+          evidence.detail,
+          discovery.label,
+          discovery.detail,
+          post.editorial?.evidenceBasis ?? '',
+          post.editorial?.sourceReviewedAt ?? '',
+        ].join(' ')),
+      };
+    });
+  }
+
+  private matchesEvidenceFilter(row: AdminPostRow): boolean {
+    switch (this.evidenceFilterMode) {
+      case 'all':
+        return true;
+      case 'published-needs-review':
+        return row.evidence.publishedPriority;
+      case 'needs-review':
+        return row.evidence.needsReview;
+      case 'reviewed':
+        return !row.evidence.needsReview;
+    }
+  }
+
+  private matchesDiscoveryFilter(row: AdminPostRow): boolean {
+    switch (this.discoveryFilterMode) {
+      case 'all':
+        return true;
+      case 'published-needs-review':
+        return row.discovery.publishedPriority;
+      case 'needs-review':
+        return row.discovery.needsReview;
+      case 'ready':
+        return !row.discovery.needsReview;
+    }
   }
 
   private extractImportPosts(value: unknown): readonly BlogPost[] {
@@ -861,6 +1174,10 @@ export class CmsPostListComponent {
 
   private compareRows(left: AdminPostRow, right: AdminPostRow): number {
     switch (this.sortMode) {
+      case 'discovery-priority':
+        return right.discovery.priorityScore - left.discovery.priorityScore
+          || right.postedTimestamp - left.postedTimestamp
+          || this.compareTitles(left, right);
       case 'posted-desc':
         return right.postedTimestamp - left.postedTimestamp || this.compareTitles(left, right);
       case 'posted-asc':

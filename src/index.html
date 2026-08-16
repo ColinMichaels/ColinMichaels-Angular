@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Colin Michaels | Projects, Writing, Media & Recovery Updates</title>
+  <title>Cool Gadgets, Useful Tech & Internet Finds | Colin Michaels</title>
   <meta name="description"
-        content="Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.">
+        content="Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with Colin Michaels—plus honest recovery stories and creator projects.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://colinmichaels.com">
   <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
@@ -51,6 +51,67 @@
       visibility: hidden;
       opacity: 0;
       pointer-events: none;
+    }
+
+    .cm-home-fallback {
+      width: min(100% - 2rem, 72rem);
+      margin: 0 auto;
+      padding: clamp(7rem, 16vw, 11rem) 0 4rem;
+    }
+
+    .cm-home-fallback p {
+      max-width: 52rem;
+      margin: 0.8rem 0;
+      color: #a1a1aa;
+    }
+
+    .cm-home-fallback h1 {
+      max-width: 58rem;
+      margin: 0;
+      color: #fafafa;
+      font-size: clamp(2.25rem, 7vw, 5rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .cm-home-fallback h2 {
+      margin-top: 3rem;
+      color: #fafafa;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+    }
+
+    .cm-home-fallback-eyebrow {
+      color: #67e8f9 !important;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .cm-home-fallback-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .cm-home-fallback-links a,
+    .cm-home-fallback-list a {
+      color: #67e8f9;
+    }
+
+    .cm-home-fallback-links a {
+      border: 1px solid rgba(103, 232, 249, 0.45);
+      padding: 0.7rem 0.9rem;
+      text-decoration: none;
+    }
+
+    .cm-home-fallback-list {
+      display: grid;
+      gap: 0.75rem;
+      max-width: 52rem;
+      padding-left: 1.25rem;
+      color: #d4d4d8;
     }
 
     .cm-loader-shell {
@@ -372,9 +433,9 @@
   <meta property="og:site_name" content="ColinMichaels.com">
   <meta property="og:locale" content="en_US">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Colin Michaels | Projects, Writing, Media & Recovery Updates">
+  <meta property="og:title" content="Cool Gadgets, Useful Tech & Internet Finds | Colin Michaels">
   <meta property="og:description"
-        content="Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.">
+        content="Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with Colin Michaels—plus honest recovery stories and creator projects.">
   <meta property="og:url" content="https://colinmichaels.com">
   <meta property="og:image" content="https://colinmichaels.com/assets/social/colin-michaels-og.jpg">
   <meta property="og:image:secure_url" content="https://colinmichaels.com/assets/social/colin-michaels-og.jpg">
@@ -384,9 +445,9 @@
   <meta property="og:image:alt" content="Colin Michaels personal site preview card">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Colin Michaels | Projects, Writing, Media & Recovery Updates">
+  <meta name="twitter:title" content="Cool Gadgets, Useful Tech & Internet Finds | Colin Michaels">
   <meta name="twitter:description"
-        content="Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.">
+        content="Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with Colin Michaels—plus honest recovery stories and creator projects.">
   <meta name="twitter:image" content="https://colinmichaels.com/assets/social/colin-michaels-og.jpg">
   <meta name="twitter:image:alt" content="Colin Michaels personal site preview card">
 
@@ -401,16 +462,20 @@
           "url": "https://colinmichaels.com",
           "jobTitle": "Applications Developer",
           "image": "https://colinmichaels.com/assets/social/colin-michaels-og.jpg",
-          "description": "Florida applications developer, FPV drone pilot, creative technologist, and writer sharing Angular/Firebase work, media projects, and patient-perspective recovery notes.",
+          "description": "Florida creator, applications developer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.",
           "knowsAbout": [
+            "Consumer gadgets, unusual internet finds, and hands-on product reviews",
+            "FPV drone flying, aerial video, and Florida locations",
+            "Practical technology and creator workflows",
+            "AI-assisted creative and technical workflows",
             "Angular and Firebase application architecture",
             "CMS publishing workflows and SEO implementation",
-            "AI-assisted creative and technical workflows",
-            "FPV media production and project demos",
             "Interactive browser labs and reusable OS-style UI systems",
             "Open-heart surgery recovery from a patient perspective"
           ],
           "sameAs": [
+            "https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA",
+            "https://www.instagram.com/colinmichaels/",
             "https://github.com/ColinMichaels",
             "https://www.linkedin.com/in/colinmichaels"
           ]
@@ -424,7 +489,7 @@
             "Colin Michaels",
             "colinmichaels.com"
           ],
-          "description": "Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.",
+          "description": "Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with Colin Michaels—plus honest recovery stories and creator projects.",
           "publisher": {
             "@id": "https://colinmichaels.com/#person"
           }
@@ -436,8 +501,8 @@
           ],
           "@id": "https://colinmichaels.com/#homepage",
           "url": "https://colinmichaels.com",
-          "name": "Colin Michaels | Projects, Writing, Media & Recovery Updates",
-          "description": "Colin Michaels shares a personal portfolio, blog, media work, recovery notes, and Angular/Firebase project labs from a Florida developer's perspective.",
+          "name": "Cool Gadgets, Useful Tech & Internet Finds | Colin Michaels",
+          "description": "Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with Colin Michaels—plus honest recovery stories and creator projects.",
           "isPartOf": {
             "@id": "https://colinmichaels.com/#website"
           },
@@ -471,6 +536,11 @@
   <meta name="theme-color" content="#09090b">
 </head>
 <body class="bg-black text-white antialiased outline-none" id="colin-michaels">
+<noscript>
+  <style>#cm-initial-loader {
+    display: none !important
+  }</style>
+</noscript>
 <div id="cm-initial-loader" class="cm-initial-loader" role="status" aria-live="polite" aria-label="Loading latest stories">
   <div class="cm-loader-shell">
     <div class="cm-loader-brand">
@@ -501,6 +571,37 @@
     </div>
   </div>
 </div>
-<app-root> </app-root>
+<app-root>
+  <main class="cm-home-fallback" data-homepage-fallback>
+    <p class="cm-home-fallback-eyebrow">Curious finds / useful tech / real stories</p>
+    <h1>Cool gadgets, useful tech, and internet finds</h1>
+    <p>
+      Colin Michaels is a Florida creator, applications developer, FPV pilot, and writer who investigates
+      unusual gadgets, practical technology, creative workflows, aerial video, and patient-perspective recovery.
+    </p>
+    <nav class="cm-home-fallback-links" aria-label="Start exploring">
+      <a href="/blog">Read the latest stories</a>
+      <a href="/topics/gadgets-toys">Explore gadgets and toys</a>
+      <a href="/topics/drones-fpv">Watch and read Drones &amp; FPV</a>
+      <a href="/editorial-standards">How stories are researched and corrected</a>
+      <a href="https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA">Visit Colin on YouTube</a>
+    </nav>
+    <section aria-labelledby="homepage-fallback-topics">
+      <h2 id="homepage-fallback-topics">Start with what interests you</h2>
+      <ul class="cm-home-fallback-list">
+        <li><a href="/topics/ai-setup">Practical AI</a> — useful setups, tested workflows, and honest limitations.</li>
+        <li><a href="/topics/angular-firebase-architecture">Angular &amp; Firebase</a> — application architecture and
+          publishing systems.
+        </li>
+        <li><a href="/topics/labs-projects">Labs &amp; projects</a> — working demos, experiments, and the lessons behind
+          them.
+        </li>
+        <li><a href="/topics/recovery-planning">Recovery planning</a> — first-person recovery stories with clear medical
+          boundaries.
+        </li>
+      </ul>
+    </section>
+  </main>
+</app-root>
 </body>
 </html>

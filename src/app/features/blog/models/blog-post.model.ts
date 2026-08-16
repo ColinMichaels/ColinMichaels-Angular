@@ -5,6 +5,16 @@ export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
 export type BlogContentFormat = 'editorjs';
 
+export const BLOG_EVIDENCE_BASES = [
+  'hands-on',
+  'first-person',
+  'researched',
+  'manufacturer-supplied',
+  'mixed',
+] as const;
+
+export type BlogEvidenceBasis = typeof BLOG_EVIDENCE_BASES[number];
+
 export const BLOG_BLOCK_PLACEMENTS = [
   'content',
   'rail',
@@ -179,6 +189,23 @@ export interface BlogOpenGraphMetadata {
   imageHeight?: number;
 }
 
+/**
+ * Optional reader-facing evidence and disclosure metadata. Legacy posts may
+ * omit this object; the public article then renders an explicit unclassified
+ * notice instead of inventing a testing, sourcing, or compensation claim.
+ */
+export interface BlogEditorialMetadata {
+  evidenceBasis?: BlogEvidenceBasis;
+  evidenceSummary?: string;
+  /** Calendar date (YYYY-MM-DD) on which time-sensitive sources were checked. */
+  sourceReviewedAt?: string;
+  relationshipDisclosure?: string;
+  aiAssistanceDisclosure?: string;
+  syntheticMediaDisclosure?: string;
+  /** Concise explanation of the latest substantive revision or correction. */
+  updateNote?: string;
+}
+
 export interface BlogAuthor {
   name: string;
   title?: string;
@@ -206,6 +233,16 @@ export interface BlogBlockData {
   height?: number;
   provider?: string;
   embedUrl?: string;
+  /** Marks one trusted YouTube embed as the article's exact companion video. */
+  isCompanionVideo?: boolean;
+  /** Exact public YouTube title used only for companion-video structured data. */
+  videoTitle?: string;
+  /** Exact public YouTube description/summary used only for companion-video structured data. */
+  videoDescription?: string;
+  /** Public YouTube upload date as an ISO date or timezone-qualified timestamp. */
+  videoUploadDate?: string;
+  /** Public video runtime in seconds. */
+  videoDurationSeconds?: number;
   items?: readonly string[];
   ordered?: boolean;
   listStyle?: BlogListStyle;
@@ -296,6 +333,7 @@ export interface BlogPost {
   status: BlogPostStatus;
   seo: BlogSeoMetadata;
   og?: BlogOpenGraphMetadata;
+  editorial?: BlogEditorialMetadata;
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
   socialPromotion?: BlogSocialPromotion;

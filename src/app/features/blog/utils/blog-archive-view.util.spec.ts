@@ -13,6 +13,6 @@ describe('blog archive view utilities', () => {
   it('maps archive views to existing reusable listing layouts', () => {
     expect(resolveBlogArchiveListingLayout('list')).toBe('compact');
     expect(resolveBlogArchiveListingLayout('grid')).toBe('grid');
-    expect(resolveBlogArchiveListingLayout('image-title')).toBe('list');
+    expect(resolveBlogArchiveListingLayout('image-title')).toBe('editorial');
   });
 });

@@ -1,5 +1,23 @@
 # Topic Pages and Reusable Post Listing
 
+## Public Identity Contract
+
+The code-defined public topic hubs are permanent crawlable identities. Their IDs, slugs, eyebrows, titles, descriptions, summaries, published state, short labels, article-matching terms, and code-defined public resource paths cannot be replaced by a stale, renamed, or archived Firestore document. Firestore may overlay artwork, guide content, theme color/icon/map presentation, ordering, and additive resources; unknown CMS-created topics remain fully CMS-authoritative. A future public slug or publication-state change requires an explicit redirect/removal decision plus synchronized Angular, Functions, sitemap, `llms.txt`, and contract-test updates.
+
+`lockDefaultTopicHubIdentity` applies that boundary before public and admin topic projections are sorted. Unknown CMS-created topics remain CMS-authoritative. `findTopicHubBySlug` resolves exact public slugs only; it no longer turns a valid server route into an undeclared client-only canonical.
+
+Functions topic fallbacks use `topic-hub-public-identity.ts` as the single Functions-side source for slug, heading, description, matching terms, and sitemap paths. They render actual related article links with `CollectionPage` and `ItemList` data rather than a heading-only shell. Angular keeps its richer presentation contract in `topic-hubs.data.ts`; focused contracts assert the same public identities and reject undeclared aliases such as `weekly-updates`.
+
+Topic resources may include same-origin printable PDFs, crawlable first-party resource pages, and current external authority references. `TopicGuideComponent` assigns a filename-bearing `download` attribute only to same-origin `.pdf` resources and opens HTTP(S) authority links in a separate, `noopener noreferrer` browsing context. The Drones & FPV hub links the Personal Aircraft Buyer Verification guide at `/resources/personal-aircraft-buyer-verification`; that guide supplies context, official starting points, related stories, and the direct PDF download. Functions mirror those paths in initial HTML so no-JavaScript readers and crawlers discover the same journey. PDF paths remain static assets: Firebase Hosting serves an existing file directly, while a missing PDF receives a real `404` instead of the Angular shell.
+
+The Gadgets & Toys hub uses `/resources/gadget-usefulness-scorecard` as its featured **Is It Actually Useful?** framework. Both hydrated and crawler fallbacks state the same owned/tried/borrowed/research-only evidence labels plus problem-fit, proof, true-cost, everyday-friction, and support criteria. Prepared HOVERAir AQUA, Unitree R1, and Laundry Chair packages link the guide; their staged YouTube descriptions use the same canonical resource URL.
+
+The Drone Flight Field Notes source lives at `scripts/build-drone-flight-field-notes-pdf.py`; its one generated public artifact lives at `public/downloads/captain-colin-drone-flight-field-notes.pdf`. The worksheet is a planning and debrief aid, not a comprehensive legal checklist. Its embedded official-source review date must be refreshed whenever its readiness language or FAA reference paths change.
+
+The Personal Aircraft Buyer Verification source lives at `scripts/build-personal-aircraft-buyer-verification-pdf.py`; its generated artifact lives at `public/downloads/captain-colin-personal-aircraft-buyer-verification.pdf`. The guide and PDF organize research and do not determine legal classification, safety, transaction rights, or suitability. Angular and Functions must keep the guide's canonical, visible heading, caution language, source links, and reviewed date aligned; there is no Firestore migration.
+
+The Gadget Usefulness Scorecard source lives at `scripts/build-gadget-usefulness-scorecard-pdf.py`; its generated artifact lives at `public/downloads/captain-colin-gadget-usefulness-scorecard.pdf`. The score is a documented conversation tool, not scientific product testing or buying advice. The route, Functions fallback, hub, packages, sitemap, search, `llms.txt`, and analytics identifier must change together if its public identity changes.
+
 ## Purpose
 
 Topic pages are editorial entry points into published writing. They should identify the subject quickly, promote the most useful posts, and then provide deeper guide material without repeating the same stack of checklist cards on every route.
@@ -49,10 +67,19 @@ The route component now composes the page in this order:
 1. topic breadcrumb, title, concise summary, actions, and topic artwork;
 2. up to three prioritized posts in the `fan` layout;
 3. remaining matching posts in the `list` layout;
-4. the supporting topic guide;
-5. image-led related-topic navigation.
+4. an optional topic-owned companion surface, currently the latest Captain Colin videos on `drones-fpv`;
+5. the supporting topic guide;
+6. image-led related-topic navigation.
 
 Featured CMS posts sort ahead of the otherwise newest-first repository order. Topic membership still uses legacy normalized term matching through `topic-post-matching.util.ts`; explicit post-to-topic IDs remain a future data-model improvement.
+
+### `BlogTopicGuideComponent`
+
+Location: `src/app/features/blog/components/topic-guide/blog-topic-guide.component.ts`
+
+Published article pages end their reading content with one compact route to the strongest matching public topic. `selectPrimaryTopicHubForPost` scores exact normalized matches in taxonomy first, followed by tags, title, slug, and excerpt; equal scores use the public topic display order, title, and slug. This keeps the choice deterministic and prevents an incidental title mention from overriding an explicit category. Posts without a genuine match receive no generic topic card.
+
+The guide remains outside `data-reading-content`, so it does not inflate reading-progress calculations. It uses the already published topic summary and route, creates no new Firestore relation, and remains backward-compatible with offline articles. Explicit post-to-topic IDs remain the preferred future model once the post schema has a controlled migration.
 
 ### `TopicGuideComponent`
 
@@ -88,6 +115,7 @@ Default artwork is stored in `src/assets/images/topics/`:
 - `angular-firebase-architecture.webp`
 - `labs-projects.webp`
 - `gadgets-toys.webp`
+- `drones-fpv.webp`
 
 The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions remain data, while UI labels stay code-native.
 
@@ -95,11 +123,13 @@ The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions rem
 
 The presentation fields are intentionally optional. Existing Firestore topic documents remain valid and are not rejected by `isTopicHub`.
 
-For the five bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. Stable-ID matching protects renamed CMS slugs. Unknown topics receive generic post-section copy and no forced image.
+For the six bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. Unknown topics receive generic post-section copy and no forced image.
 
-When Firestore already contains some bootstrap topics, the repository merges only code defaults whose stable ID and slug are both absent. This lets a newly shipped topic appear immediately without replacing CMS-authored copies of existing topics. A matching archived document remains authoritative and keeps that topic out of public results. The Topic Manager's **Seed Missing Defaults** action refreshes the Firestore collection first and writes only the absent documents, so it can persist a new code default without resetting customized topics or renamed slugs.
+When Firestore already contains some bootstrap topics, the repository merges only code defaults whose stable ID and slug are both absent. A matching default ID keeps its checked-in public slug, eyebrow, title, description, summary, short label, and matching terms so stale or renamed Firestore documents cannot change a crawlable route or reintroduce conflicting breadcrumb, CTA, guide, and archive labels after hydration. Firestore remains authoritative for publication status, ordering, theme colors/icons/map placement, artwork, guide content, and resources; an archived document therefore still stays out of public results. The Topic Manager's **Seed Missing Defaults** action refreshes the Firestore collection first and writes only the absent documents, so it can persist a new code default without resetting those supported customizations.
 
-The same stable-ID resolver keeps an old bootstrap slug valid after a CMS rename and replaces it with the topic's current canonical slug once published topic data has loaded. This preserves inbound links instead of turning a content rename into a 404.
+Bootstrap public slugs are code-owned canonical identities. An unexpected Firestore rename is ignored rather than exposed as a second route; unknown aliases resolve to the shared client 404 and receive explicit `noindex,follow` metadata after Angular navigation, matching the server-side unknown-route policy.
+
+`drones-fpv` is the first topic-specific cross-channel hub. It reuses `YouTubeLatestVideosComponent` with its own heading, section ID, and `source_component=topic_drones_youtube` attribution. The component still loads the same read-only public feed callable and sends no video title, description, viewer identity, or account data to GA4.
 
 The Topic Manager exposes the image path, alt text, dimensions, focal position, and topic-specific post-section language. Opening a legacy bootstrap topic populates the form from its fallback presentation data; saving the topic persists those fields to Firestore. Administrators can also use **Seed Missing Defaults** to persist only bootstrap documents that do not already exist.
 
@@ -117,6 +147,8 @@ Because `functions/src/index.ts` changed, deployment requires both Hosting asset
 - Parents select `h2` or `h3` card headings according to document context.
 - Fan order is DOM order; keyboard focus does not depend on visual overlap.
 - At narrow widths the fan becomes normal media rows and the topic hero actions become full-width rule-separated links.
+- The homepage topic strip uses three readable columns on medium screens and six columns only when the viewport can support them; it remains a single-column list on narrow screens.
+- The application-level viewport scroller keeps fragment targets 80 pixels below the top edge so the sticky public header does not cover topic and section headings reached through navigation links.
 - The homepage update board keeps the same fan DOM/focus order; its rail and grid are decorative, and narrow viewports return the image-backed desktop cards to normal readable media rows while retaining the bounded title treatment.
 - Reader high-contrast mode removes optional fan-card background images and restores solid theme-token text colors and
   surfaces so information and actions do not depend on overlays or image contrast.

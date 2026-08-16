@@ -8,6 +8,7 @@ This is a curated index for AI tools and readers. It supplements the canonical H
 
 - [Homepage](https://colinmichaels.com/): Overview of Colin Michaels, current featured writing, projects, media, and topic guides.
 - [Blog](https://colinmichaels.com/blog): Published articles and recent writing across technology, creative projects, and recovery.
+- [Editorial Standards and Corrections](https://colinmichaels.com/editorial-standards): Definitions for hands-on, researched, manufacturer-supplied, and synthetic material plus sourcing, disclosure, and correction practices.
 
 ## Topic guides
 
@@ -15,7 +16,14 @@ This is a curated index for AI tools and readers. It supplements the canonical H
 - [Recovery and Medical Planning Resources](https://colinmichaels.com/topics/recovery-planning): Personal recovery notes, emergency-planning resources, and lessons from open-heart surgery recovery.
 - [Angular and Firebase Architecture Notes](https://colinmichaels.com/topics/angular-firebase-architecture): Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.
 - [Labs and Project Demos](https://colinmichaels.com/topics/labs-projects): Interactive demos, browser experiments, UI systems, and public project notes.
-- [Gadgets and Toys](https://colinmichaels.com/topics/gadgets-toys): Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.
+- [Gadgets and Toys](https://colinmichaels.com/topics/gadgets-toys): Evidence-labeled research, hands-on notes when available, and honest verdicts on useful, strange, and clever technology found online.
+- [Drones and FPV](https://colinmichaels.com/topics/drones-fpv): FPV flights, Florida flying locations, practical field notes, and honest looks at aerial cameras and drone ideas.
+
+## Public resources
+
+- [Drone Flight Field Notes](https://colinmichaels.com/downloads/captain-colin-drone-flight-field-notes.pdf): A printable one-page purpose, setup, exit-plan, shot-plan, and debrief worksheet for drone flights.
+- [Gadget Usefulness Scorecard](https://colinmichaels.com/resources/gadget-usefulness-scorecard): The crawlable Is It Actually Useful? framework with a printable one-page worksheet for scoring problem fit, evidence, true cost, everyday friction, support, and an honest verdict.
+- [Personal Aircraft Buyer Verification](https://colinmichaels.com/resources/personal-aircraft-buyer-verification): A source-backed buyer-verification guide with a printable two-page worksheet for checking an aircraft offer, deposit terms, legal-category claim, operating reality, support, and evidence before purchase.
 
 ## Feeds and discovery
 

@@ -24,10 +24,13 @@ This folder is the entry point for project documentation.
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
 - [Blog Editor Production-Readiness Roadmap](../ARCHITECTURE/BLOG_EDITOR_PRODUCTION_READINESS.md)
 - [Editor.js Image Galleries](../ARCHITECTURE/EDITORJS_IMAGE_GALLERIES.md)
+- [Editor.js YouTube Companion Videos](../ARCHITECTURE/EDITORJS_YOUTUBE_COMPANION_VIDEOS.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
 - [Public Blog Shell](../ARCHITECTURE/PUBLIC_BLOG_SHELL.md)
 - [Reader Membership Campaign](../ARCHITECTURE/READER_MEMBERSHIP_CAMPAIGN.md)
 - [Privacy Policy and Public Footer](../ARCHITECTURE/PRIVACY_POLICY_AND_PUBLIC_FOOTER.md)
+- [Editorial Standards and Corrections](../ARCHITECTURE/EDITORIAL_STANDARDS_AND_CORRECTIONS.md)
+- [Article Evidence and Disclosures](../ARCHITECTURE/ARTICLE_EVIDENCE_AND_DISCLOSURES.md)
 - [Public Contact and Author Submissions](../ARCHITECTURE/PUBLIC_SUBMISSIONS.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
 - [Publishing Calendar](../ARCHITECTURE/PUBLISHING_CALENDAR.md)
@@ -44,8 +47,17 @@ This folder is the entry point for project documentation.
 
 - [Reader Membership Launch](../CAMPAIGNS/READER_MEMBERSHIP_LAUNCH.md)
 
+## Content Packages
+
+- [HOVERAir AQUA Article and YouTube Package](../CONTENT_PACKAGES/hoverair-aqua-waterproof-drone/POST_PACKAGE.md)
+- [Passenger Drones for Sale in 2026 Article and YouTube Package](../CONTENT_PACKAGES/passenger-drones-for-sale-2026/POST_PACKAGE.md)
+- [Unitree R1 $4,900 Humanoid Robot Article and YouTube Package](../CONTENT_PACKAGES/unitree-r1-4900-humanoid-robot/POST_PACKAGE.md)
+- [Temu Full-Size Drone SEO Refresh](../CONTENT_PACKAGES/temu-mega-drone-seo-refresh/SEO_REFRESH.md)
+- [Farmers Paradise YouTube Refresh](../CONTENT_PACKAGES/farmers-paradise-youtube-refresh/YOUTUBE_REFRESH.md)
+
 ## Planning
 
+- [Creator Growth Operating System](../SEO/CREATOR_GROWTH_OPERATING_SYSTEM.md)
 - [90-Day SEO Plan](../SEO/90_DAY_SEO_PLAN.md)
 - [Link Building Outreach](../SEO/LINK_BUILDING_OUTREACH.md)
 - [Tech Debt TODOs](../TODOS/TECH_DEBT.md)
@@ -54,5 +66,9 @@ This folder is the entry point for project documentation.
 
 ## SEO Reviews
 
+- [August 2026 Full SEO, Content, and Reader-Experience Audit](../SEO/AUDITS/2026-08-15/FULL-AUDIT-REPORT.md)
+- [August 2026 Creator Discovery and Trust Action Plan](../SEO/AUDITS/2026-08-15/ACTION-PLAN.md)
+- [August 2026 Public Blog Taxonomy Consolidation](../SEO/AUDITS/2026-08-15/TAXONOMY-CONSOLIDATION.md)
+- [August 2026 Search Title and Description Review](../SEO/AUDITS/2026-08-15/TITLE-DESCRIPTION-REVIEW.md)
 - [Site Identity SEO Review](../SEO/SITE_IDENTITY_REVIEW.md)
 - [Focused AI Search and llms.txt Analysis](../SEO/GEO-ANALYSIS.md)

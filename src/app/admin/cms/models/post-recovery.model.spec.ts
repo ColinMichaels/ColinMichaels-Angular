@@ -48,6 +48,25 @@ describe('CMS post recovery model', () => {
     expect(isCmsPostRecoverySnapshot(createRecovery())).toBeTrue();
   });
 
+  it('keeps legacy recovery forms valid and validates additive editorial fields when present', () => {
+    const recovery = createRecovery();
+
+    expect(isCmsPostRecoverySnapshot(recovery)).toBeTrue();
+    expect(isCmsPostRecoverySnapshot({
+      ...recovery,
+      form: {
+        ...recovery.form,
+        evidenceBasis: 'researched',
+        evidenceSummary: 'This article compares linked public evidence.',
+        sourceReviewedAt: '2026-08-15',
+      },
+    })).toBeTrue();
+    expect(isCmsPostRecoverySnapshot({
+      ...recovery,
+      form: {...recovery.form, evidenceBasis: 'unlimited-proof'},
+    })).toBeFalse();
+  });
+
   it('rejects malformed or cross-schema recovery payloads', () => {
     expect(isCmsPostRecoverySnapshot({...createRecovery(), schemaVersion: 2})).toBeFalse();
     expect(isCmsPostRecoverySnapshot({...createRecovery(), baseRevision: -1})).toBeFalse();

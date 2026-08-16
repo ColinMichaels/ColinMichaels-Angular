@@ -103,6 +103,103 @@ describe('SiteAnalyticsService', () => {
     }));
   });
 
+  it('tracks site-to-YouTube choices as content selections without sending video copy', () => {
+    service.trackYouTubeOutbound(' video-123 ', 'video_watch');
+    service.trackYouTubeOutbound('channel-456', 'subscribe', 'topic_drones_youtube');
+    service.trackYouTubeOutbound('video-789', 'video_title', 'article_drones_youtube');
+    service.trackYouTubeOutbound('video-companion', 'video_watch', 'article_companion_youtube');
+    service.trackYouTubeOutbound('video-sidebar', 'video_watch', 'blog_index_youtube');
+
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'video',
+      content_id: 'video-123',
+      content_group: 'youtube',
+      source_component: 'homepage_youtube',
+      method: 'video_watch',
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'channel',
+      content_id: 'channel-456',
+      content_group: 'youtube',
+      source_component: 'topic_drones_youtube',
+      method: 'subscribe',
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'video',
+      content_id: 'video-789',
+      content_group: 'youtube',
+      source_component: 'article_drones_youtube',
+      method: 'video_title',
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'video',
+      content_id: 'video-companion',
+      content_group: 'youtube',
+      source_component: 'article_companion_youtube',
+      method: 'video_watch',
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'video',
+      content_id: 'video-sidebar',
+      content_group: 'youtube',
+      source_component: 'blog_index_youtube',
+      method: 'video_watch',
+    }));
+  });
+
+  it('tracks a bounded creator-profile handoff without sending a URL or visitor identity', () => {
+    service.trackCreatorProfileOutbound('instagram');
+
+    expect(gtag).toHaveBeenCalledOnceWith('event', 'select_content', {
+      content_type: 'profile',
+      content_id: 'instagram',
+      content_group: 'creator_profile',
+      source_component: 'homepage_social',
+      method: 'outbound',
+      send_to: SITE_ANALYTICS_MEASUREMENT_ID,
+    });
+  });
+
+  it('tracks printable resource downloads with a bounded file identifier', () => {
+    service.trackResourceDownload(' Captain Colin Drone Flight Field Notes.pdf ');
+    service.trackResourceDownload(' Captain Colin Gadget Usefulness Scorecard.pdf ', 'resource_page');
+    service.trackResourceDownload('   ');
+
+    expect(gtag).toHaveBeenCalledTimes(2);
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_type: 'resource',
+      content_id: 'captain-colin-drone-flight-field-notes',
+      content_group: 'download',
+      source_component: 'topic_guide',
+      method: 'download',
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'select_content', jasmine.objectContaining({
+      content_id: 'captain-colin-gadget-usefulness-scorecard',
+      source_component: 'resource_page',
+      method: 'download',
+    }));
+  });
+
+  it('tracks the bounded after-article membership invitation without account data', () => {
+    service.trackReaderMembershipInvite(' Useful Reader Story ', 'view');
+    service.trackReaderMembershipInvite(' Useful Reader Story ', 'register');
+    service.trackReaderMembershipInvite('   ', 'dismiss');
+
+    expect(gtag).toHaveBeenCalledTimes(2);
+    expect(gtag).toHaveBeenCalledWith('event', 'reader_membership_invite', jasmine.objectContaining({
+      content_type: 'article',
+      content_slug: 'useful-reader-story',
+      source_component: 'after_article',
+      method: 'view',
+      auth_state: 'anonymous',
+      send_to: SITE_ANALYTICS_MEASUREMENT_ID,
+    }));
+    expect(gtag).toHaveBeenCalledWith('event', 'reader_membership_invite', jasmine.objectContaining({
+      content_slug: 'useful-reader-story',
+      method: 'register',
+    }));
+  });
+
   it('redacts likely personal search terms before they reach Google Analytics', () => {
     service.trackSearch('person@example.com', 0, 'search_page');
 

@@ -20,7 +20,7 @@ Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation 
 - The Post Editor now presents secondary settings as compact control modules. Post Details remains open, while Publishing, Cover Image, Search & Sharing, Draft Preview, SEO, AI suggestions, and Last Saved details default closed with live summaries and status badges. Its desktop inspector rail remains sticky beneath the shell header and uses a bounded internal scroller so all controls remain reachable above the fixed command area.
 - `AdminControlModuleComponent` keeps collapsed form content mounted, preserving field state and upload progress, and invalid saves automatically reveal the section that needs attention.
 - The Editor.js toolbar and sticky command area use the same denser hierarchy; on phones the sticky bar keeps status and Save visible while View/Delete actions move into a compact contextual menu.
-- The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, and renders the compact bulk-action surface only after at least one row is selected.
+- The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, renders the compact bulk-action surface only after at least one row is selected, and adds separate read-only Evidence and Discovery & Trust queues so editors can prioritize individual corpus work without bulk-inferred claims or content writes.
 - Calendar now distinguishes launch-following from fixed-time social plans, keeps launch plans aligned when a post is rescheduled, requires media for Instagram planning, reports provider readiness honestly, and receives direct post context from the Editor's Distribution module.
 - Social Connections is now a protected Publishing destination for Facebook, Instagram, and Threads authorization health, explicit Facebook Page selection, direct Instagram Business Login, reconnect, and disconnect controls while external delivery remains disabled.
 - Phase 3 has started with shared page-header, editor-action-bar, statistics-card, feedback-state, and list-search contracts for Homepage Hero, Topics, and Recommended Links. This removes duplicated identity, save-state, metric, feedback, and search markup while leaving routes, computed values, Firestore operations, and specialized list/detail editors unchanged.
@@ -140,7 +140,7 @@ Keep statistics secondary. Avoid four large metric cards when the numbers do not
 
 ### Posts
 
-Implementation status: the header maintenance disclosure and selection-only bulk action surface are complete; table, filtering, pagination, row actions, and repository behavior remain unchanged.
+Implementation status: the header maintenance disclosure, selection-only bulk action surface, evidence triage, and discovery/trust triage are complete. The table now exposes evidence plus discovery/trust states and corresponding filters while pagination, row actions, routes, and repository write behavior remain unchanged.
 
 - Keep search, sort, row count, and the post table as the primary surface.
 - Keep `New Post` as the sole primary button.
@@ -148,6 +148,7 @@ Implementation status: the header maintenance disclosure and selection-only bulk
 - Remove Topics, Links, Media, and Calendar from the page header because the shared sidebar owns navigation.
 - Hide the bulk-action panel until one or more rows are selected; show a compact selection action bar instead.
 - Keep status, update date, publish date, edit, preview/view, and destructive actions visible according to row state.
+- Keep evidence classification separate from the broader read-only Discovery & Trust projection. Prioritize published required evidence/source gaps, but leave contextual links and supporting artifacts advisory and require every change to occur in the individual editor.
 
 ### Calendar
 

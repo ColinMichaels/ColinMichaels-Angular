@@ -87,4 +87,63 @@ describe('selectHomepageHeroPost', () => {
 
     expect(selectHomepageHeroPost([older, newer], settings)).toBe(newer);
   });
+
+  it('keeps automatic hero stories inside the homepage creator promise', () => {
+    const healthcareFeature = createPost('healthcare-feature', '2026-06-30T12:00:00.000Z', {
+      title: 'When healthcare became pay to play',
+      excerpt: 'A patient access story after major surgery.',
+      categories: ['Health & Recovery'],
+      tags: ['Recovery'],
+      featured: true,
+    });
+    const gadgetFeature = createPost('gadget-feature', '2026-06-20T12:00:00.000Z', {
+      title: 'Seven gadgets that might actually help',
+      categories: ['Gadgets & Gear'],
+      tags: ['Useful Gadgets'],
+      featured: true,
+    });
+    const fpvStory = createPost('fpv-story', '2026-06-10T12:00:00.000Z', {
+      title: 'FPV flight notes',
+      categories: ['Drones & FPV'],
+      tags: ['FPV'],
+    });
+
+    expect(selectHomepageHeroPosts([healthcareFeature, gadgetFeature, fpvStory], settings).map(post => post.id))
+      .toEqual(['gadget-feature', 'fpv-story']);
+  });
+
+  it('limits automatic rotation to six focused stories', () => {
+    const posts = Array.from({length: 8}, (_, index) => createPost(
+      `tech-${index + 1}`,
+      `2026-06-${String(index + 1).padStart(2, '0')}T12:00:00.000Z`,
+    ));
+
+    expect(selectHomepageHeroPosts(posts, settings)).toHaveSize(6);
+    expect(selectHomepageHeroPosts(posts, settings).map(post => post.id))
+      .toEqual(['tech-8', 'tech-7', 'tech-6', 'tech-5', 'tech-4', 'tech-3']);
+  });
+
+  it('preserves an explicit off-promise editorial lead while focusing the remaining rotation', () => {
+    const selected = createPost('selected-health', '2026-06-30T12:00:00.000Z', {
+      title: 'A recovery milestone',
+      excerpt: 'A patient journal update.',
+      categories: ['Health & Recovery'],
+      tags: ['Recovery'],
+    });
+    const gadget = createPost('gadget', '2026-06-20T12:00:00.000Z', {
+      categories: ['Gadgets & Gear'],
+    });
+    const otherHealth = createPost('other-health', '2026-06-10T12:00:00.000Z', {
+      title: 'Another recovery update',
+      excerpt: 'Another patient journal entry.',
+      categories: ['Health & Recovery'],
+      tags: ['Recovery'],
+    });
+
+    expect(selectHomepageHeroPosts([otherHealth, gadget, selected], {
+      ...settings,
+      featuredPostMode: 'selected',
+      featuredPostId: selected.id,
+    }).map(post => post.id)).toEqual(['selected-health', 'gadget']);
+  });
 });

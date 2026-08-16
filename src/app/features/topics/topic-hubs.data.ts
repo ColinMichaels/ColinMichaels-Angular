@@ -23,9 +23,9 @@ export interface TopicHubAsset {
   items: readonly TopicHubAssetItem[];
 }
 
-export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask' | 'gamepad';
+export type TopicHubIcon = 'spark' | 'heart' | 'cube' | 'flask' | 'gamepad' | 'flight';
 
-export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask', 'gamepad'];
+export const TOPIC_HUB_ICONS: readonly TopicHubIcon[] = ['spark', 'heart', 'cube', 'flask', 'gamepad', 'flight'];
 
 export interface TopicHubMapPlacement {
   xPercent: number;
@@ -125,6 +125,11 @@ export const TOPIC_THEME_COLORS = {
     accent: '#f59e0b',
     accentStrong: '#fbbf24',
     accentRgb: '245 158 11',
+  },
+  drones: {
+    accent: '#f43f5e',
+    accentStrong: '#fb7185',
+    accentRgb: '244 63 94',
   },
 } as const;
 
@@ -602,8 +607,8 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     slug: 'gadgets-toys',
     eyebrow: 'Tech Finds',
     title: 'Gadgets & Toys',
-    description: 'Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.',
-    summary: 'A running shelf of tech I already own, things I want to try, and clever gadgets I find around the internet—with honest notes about what makes each one worth a closer look.',
+    description: 'Evidence-labeled gadget research, hands-on notes when available, and honest verdicts on useful, strange, and clever technology found online.',
+    summary: 'A running shelf of gadgets I own, try, borrow, want, or research online—judged by the problem they solve, the proof behind the pitch, true cost, everyday friction, and support.',
     status: 'published',
     displayOrder: 50,
     terms: [
@@ -642,78 +647,84 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
       objectPosition: 'center',
     },
     pageCopy: {
-      featuredHeading: 'Gadgets worth a closer look',
-      featuredDescription: 'Hands-on reviews, wish-list finds, and clever tech that is useful, playful, or simply too interesting not to share.',
-      archiveHeading: 'More gadgets and toys',
-      archiveDescription: 'Browse the rest of the product notes, discoveries, comparisons, and things I am considering.',
+      featuredHeading: 'Is it actually useful?',
+      featuredDescription: 'Unusual gadgets and clever problem-solvers with the evidence label, practical tradeoffs, and verdict visible before the enthusiasm runs away.',
+      archiveHeading: 'More useful, strange, and clever finds',
+      archiveDescription: 'Browse the rest of the gadget research, hands-on notes, comparisons, internet discoveries, and objects still waiting for a verdict.',
     },
     asset: {
-      title: 'Gadget Review Field Notes',
-      intro: 'A simple way to separate what I own, what I want to try, and what merely caught my eye—while keeping each recommendation useful and honest.',
+      title: 'Is It Actually Useful? Gadget Scorecard',
+      intro: 'A repeatable way to separate what an object promises from the evidence, complete cost, everyday friction, support, and the person it may genuinely help.',
       items: [
         {
-          label: 'State my relationship to the item',
-          description: 'Mark whether I own it, borrowed it, tried it briefly, want it, or simply found it interesting online.',
+          label: 'Real problem fit',
+          description: 'Name the user, recurring problem, frequency, and current workaround before deciding the object is useful.',
         },
         {
-          label: 'Explain what makes it interesting',
-          description: 'Focus on the real problem it solves, the playful idea behind it, or the design detail that makes it stand out.',
+          label: 'Evidence quality',
+          description: 'Label the item as owned, tried, borrowed, or research-only and separate direct evidence from marketing claims.',
         },
         {
-          label: 'Share hands-on details when available',
-          description: 'Note setup, build quality, daily use, limitations, and the small surprises that product pages usually leave out.',
+          label: 'True cost',
+          description: 'Count shipping, tax, accessories, subscriptions, consumables, replacement parts, maintenance, and failed experiments.',
         },
         {
-          label: 'Keep price and availability in context',
-          description: 'Treat prices, stock, crowdfunding promises, and release dates as time-sensitive details that readers should recheck.',
+          label: 'Everyday friction',
+          description: 'Check whether charging, pairing, accounts, storage, cleanup, compatibility, learning, or noise erases the convenience.',
         },
         {
-          label: 'Make recommendations transparent',
-          description: 'Clearly disclose gifts, review units, sponsorships, or affiliate links and separate enthusiasm from a final verdict.',
+          label: 'Support and exit',
+          description: 'Review returns, warranty, parts, privacy, cloud dependence, service history, resale, and what happens if the company disappears.',
         },
       ],
     },
     featuredProject: {
-      label: 'Start here',
-      title: 'Gadget Review Field Notes',
-      description: 'The simple owned, wanted, and found framework behind reviews and gadget discoveries on this site.',
-      href: `/${PATH_NAMES.TOPICS}/gadgets-toys#topic-start-here`,
-      ctaLabel: 'Open field notes',
+      label: 'Printable series framework',
+      title: 'Gadget Usefulness Scorecard',
+      description: 'Score problem fit, evidence, true cost, everyday friction, and support before writing the honest verdict.',
+      href: `/${PATH_NAMES.RESOURCES}/${PATH_NAMES.RESOURCE_GADGET_USEFULNESS_SCORECARD}`,
+      ctaLabel: 'Open the scorecard',
     },
     learningPath: [
       {
         label: '01',
-        title: 'Spot the idea',
-        description: 'Start with the useful, strange, playful, or unusually thoughtful detail that made the item worth noticing.',
+        title: 'Show the promise',
+        description: 'Start with the useful, strange, playful, or unusually thoughtful claim that made the item worth noticing.',
       },
       {
         label: '02',
-        title: 'Label the context',
-        description: 'Say whether it is owned, borrowed, tested, wanted, or simply an interesting online find.',
+        title: 'Label the evidence',
+        description: 'Say whether it is owned, tried, borrowed, or research-only and disclose relationships or synthetic media.',
       },
       {
         label: '03',
-        title: 'Look past the pitch',
-        description: 'Compare the promise with price, setup, compatibility, availability, and the likely day-to-day experience.',
+        title: 'Score the five tradeoffs',
+        description: 'Compare the promise with problem fit, proof, true cost, everyday friction, and support or exit options.',
       },
       {
         label: '04',
-        title: 'Use it when possible',
-        description: 'Capture the tactile details, limitations, and surprises that only show up outside a product listing.',
+        title: 'Explain the evidence',
+        description: 'Put one supporting fact or unanswered question beside every score instead of hiding uncertainty in a total.',
       },
       {
         label: '05',
-        title: 'Share the verdict',
-        description: 'Explain who might enjoy it, who should skip it, and whether the idea is better than the object itself.',
+        title: 'Give the useful answer',
+        description: 'Explain who it helps, who should skip it, the next move, and one related object worth judging next.',
       },
     ],
     checklist: [
-      'Label each item as owned, tested, wanted, or found online.',
-      'Explain why it is interesting before listing specifications.',
-      'Treat price, availability, and crowdfunding claims as time-sensitive.',
-      'Disclose gifts, review units, sponsorships, and affiliate relationships.',
+      'Label each item as owned, tried, borrowed, or research-only.',
+      'Score problem fit, evidence, true cost, everyday friction, and support from zero to four.',
+      'Put one supporting fact or unanswered question beside every score.',
+      'Disclose gifts, review units, sponsorships, affiliate relationships, and synthetic media.',
+      'Explain who it helps, who should skip it, and why the total does not decide the purchase.',
     ],
     resources: [
+      {
+        label: 'Printable Gadget Usefulness Scorecard',
+        description: 'Open the evidence-led guide and download the one-page Is It Actually Useful? worksheet.',
+        href: `/${PATH_NAMES.RESOURCES}/${PATH_NAMES.RESOURCE_GADGET_USEFULNESS_SCORECARD}`,
+      },
       {
         label: 'Gadget Posts',
         description: 'Browse reviews and interesting technology finds.',
@@ -728,6 +739,161 @@ export const TOPIC_HUBS: readonly TopicHub[] = [
     createdAt: DEFAULT_TOPIC_TIMESTAMP,
     updatedAt: DEFAULT_TOPIC_TIMESTAMP,
   },
+  {
+    id: 'topic-drones-fpv',
+    slug: 'drones-fpv',
+    eyebrow: 'Captain Colin Flies',
+    title: 'Drones & FPV',
+    description: 'FPV flights, Florida flying locations, practical drone field notes, and honest looks at aerial cameras and new drone ideas.',
+    summary: 'Flight stories, useful setup notes, and aerial-video experiments from Captain Colin—covering what worked, what did not, and what is worth trying on the next pack.',
+    status: 'published',
+    displayOrder: 60,
+    terms: [
+      'drone',
+      'drones',
+      'fpv',
+      'fpv drone',
+      'aerial video',
+      'aerial photography',
+      'flying camera',
+      'waterproof drone',
+      'quadcopter',
+      'drone pilot',
+      'drone review',
+      'drone flight',
+    ],
+    theme: {
+      shortLabel: 'Drones',
+      ...TOPIC_THEME_COLORS.drones,
+      mapPlacement: {
+        xPercent: 18,
+        yPercent: 77,
+        depth: 2,
+        scale: 0.96,
+        floatDelayMs: -3800,
+      },
+      icon: 'flight',
+      heroMotifs: ['FPV quad', 'Florida inlet', 'Flight path', 'Camera feed'],
+    },
+    heroImage: {
+      src: '/assets/images/topics/drones-fpv.webp',
+      alt: 'An FPV quadcopter banking over a turquoise Florida inlet beside mangroves and pale sand.',
+      width: 1600,
+      height: 900,
+      objectPosition: 'center',
+    },
+    pageCopy: {
+      featuredHeading: 'Start with the latest flights',
+      featuredDescription: 'Field reports, practical drone notes, and aerial-camera ideas grounded in real places, real footage, and honest tradeoffs.',
+      archiveHeading: 'More drone and FPV stories',
+      archiveDescription: 'Continue through the flights, gear notes, location stories, and experiments collected here.',
+    },
+    asset: {
+      title: 'Drone Flight Field Notes',
+      intro: 'A repeatable preflight and debrief framework for turning each flight into safer practice, better footage, and a more useful story.',
+      items: [
+        {
+          label: 'Define the purpose',
+          description: 'Choose the flight goal before launch: practice one maneuver, test a setting, scout a location, or capture one clear sequence.',
+        },
+        {
+          label: 'Check the place and conditions',
+          description: 'Review airspace, local restrictions, people and property, weather, launch space, recovery options, and signal obstacles before committing.',
+        },
+        {
+          label: 'Record the setup',
+          description: 'Note the aircraft, camera, battery, rates, filters, safety settings, and any change being tested so the results remain comparable.',
+        },
+        {
+          label: 'Protect the exit',
+          description: 'Keep enough battery, visibility, room, and attention for a calm return instead of treating the last seconds as usable flight time.',
+        },
+        {
+          label: 'Debrief the evidence',
+          description: 'Review footage and flight behavior, name one success and one correction, then carry a single improvement into the next pack.',
+        },
+      ],
+    },
+    featuredProject: {
+      label: 'Start here',
+      title: 'Drone Flight Field Notes',
+      description: 'The simple purpose, conditions, setup, exit, and debrief loop behind Captain Colin flight stories.',
+      href: `/${PATH_NAMES.TOPICS}/drones-fpv#topic-start-here`,
+      ctaLabel: 'Open field notes',
+    },
+    learningPath: [
+      {
+        label: '01',
+        title: 'Choose the mission',
+        description: 'Give the flight one clear goal so setup, footage, and the final story all point in the same direction.',
+      },
+      {
+        label: '02',
+        title: 'Read the location',
+        description: 'Check airspace, conditions, people, obstacles, launch space, and recovery options before flying.',
+      },
+      {
+        label: '03',
+        title: 'Set the aircraft',
+        description: 'Document the aircraft, camera, battery, rates, filters, and safety settings being used or tested.',
+      },
+      {
+        label: '04',
+        title: 'Fly the plan',
+        description: 'Capture the intended sequence while preserving enough margin for a controlled return.',
+      },
+      {
+        label: '05',
+        title: 'Share the lesson',
+        description: 'Pair the strongest footage with the setup, limitation, surprise, and next change that make it useful.',
+      },
+    ],
+    checklist: [
+      'Define one flight or filming goal before launch.',
+      'Check current airspace, local rules, conditions, people, property, and recovery options.',
+      'Record the aircraft, camera, battery, and settings used for the test.',
+      'Debrief one success and one correction before the next pack.',
+    ],
+    resources: [
+      {
+        label: 'Printable Drone Flight Field Notes',
+        description: 'Download the one-page purpose, setup, exit-plan, shot-plan, and debrief worksheet.',
+        href: '/downloads/captain-colin-drone-flight-field-notes.pdf',
+      },
+      {
+        label: 'Personal Aircraft Buyer Verification',
+        description: 'Use the two-page offer, deposit, legal-category, support, and evidence worksheet before treating a viral aircraft as a purchase.',
+        href: '/resources/personal-aircraft-buyer-verification',
+      },
+      {
+        label: 'FAA Recreational Flyers',
+        description: 'Check the current federal rules and responsibilities for recreational drone flying.',
+        href: 'https://www.faa.gov/uas/recreational_flyers',
+      },
+      {
+        label: 'FAA Where Can I Fly?',
+        description: 'Use the FAA starting point for current airspace and B4UFLY service information.',
+        href: 'https://www.faa.gov/uas/getting_started/where_can_i_fly',
+      },
+      {
+        label: 'FAA Remote ID',
+        description: 'Review the current Remote ID compliance paths for registered or registration-required drones.',
+        href: 'https://www.faa.gov/uas/getting_started/remote_id',
+      },
+      {
+        label: 'Drone Posts',
+        description: 'Browse field notes, reviews, and aerial-camera stories.',
+        href: `/${PATH_NAMES.BLOG}/category/drones`,
+      },
+      {
+        label: 'FPV Posts',
+        description: 'Read flight stories and first-person-view experiments.',
+        href: `/${PATH_NAMES.BLOG}/tag/fpv`,
+      },
+    ],
+    createdAt: '2026-08-14T00:00:00.000Z',
+    updatedAt: '2026-08-15T00:00:00.000Z',
+  },
 ];
 
 export function getTopicHub(slug: string): TopicHub | undefined {
@@ -739,16 +905,7 @@ export function findTopicHubBySlug(
   topics: readonly TopicHub[]
 ): TopicHub | undefined {
   const exactTopic = topics.find(topicHub => topicHub.slug === slug);
-
-  if (exactTopic) {
-    return exactTopic;
-  }
-
-  const defaultTopic = TOPIC_HUBS.find(topicHub => topicHub.slug === slug);
-
-  return defaultTopic
-    ? topics.find(topicHub => topicHub.id === defaultTopic.id)
-    : undefined;
+  return exactTopic;
 }
 
 export function getPublishedTopicHubs(topics: readonly TopicHub[] = TOPIC_HUBS): readonly TopicHub[] {
@@ -763,9 +920,51 @@ export function sortTopicHubs(topics: readonly TopicHub[]): readonly TopicHub[] 
   ));
 }
 
+/** Keep the crawlable identity and matching intent of code-defined public topics stable. */
+export function lockDefaultTopicHubIdentity(
+  topicHub: TopicHub,
+  defaults: readonly TopicHub[] = TOPIC_HUBS
+): TopicHub {
+  const defaultTopicHub = defaults.find(defaultTopic => defaultTopic.id === topicHub.id);
+
+  if (!defaultTopicHub) {
+    return topicHub;
+  }
+
+  return {
+    ...topicHub,
+    id: defaultTopicHub.id,
+    slug: defaultTopicHub.slug,
+    eyebrow: defaultTopicHub.eyebrow,
+    title: defaultTopicHub.title,
+    description: defaultTopicHub.description,
+    summary: defaultTopicHub.summary,
+    status: defaultTopicHub.status,
+    terms: defaultTopicHub.terms,
+    theme: {
+      ...topicHub.theme,
+      shortLabel: defaultTopicHub.theme.shortLabel,
+    },
+    resources: mergeDefaultTopicHubResources(defaultTopicHub.resources, topicHub.resources),
+  };
+}
+
+function mergeDefaultTopicHubResources(
+  defaultResources: readonly TopicHubResource[],
+  storedResources: readonly TopicHubResource[]
+): readonly TopicHubResource[] {
+  const defaultHrefs = new Set(defaultResources.map(resource => resource.href));
+
+  return [
+    ...defaultResources,
+    ...storedResources.filter(resource => !defaultHrefs.has(resource.href)),
+  ];
+}
+
 /**
- * Treat code-defined topics as bootstrap fallbacks: a persisted stable ID or
- * canonical slug always wins so CMS renames and archived topics stay authoritative.
+ * Treat code-defined topics as immutable public identities while still letting
+ * Firestore supply presentation, guide, artwork, ordering, and additive
+ * resources without renaming, archiving, or removing code-defined public paths.
  */
 export function getMissingDefaultTopicHubs(
   topics: readonly TopicHub[],
@@ -784,9 +983,13 @@ export function mergeMissingDefaultTopicHubs(
   topics: readonly TopicHub[],
   defaults: readonly TopicHub[] = TOPIC_HUBS
 ): readonly TopicHub[] {
+  const topicsWithLockedPublicIdentity = topics.map(topicHub => (
+    lockDefaultTopicHubIdentity(topicHub, defaults)
+  ));
+
   return sortTopicHubs([
-    ...topics,
-    ...getMissingDefaultTopicHubs(topics, defaults),
+    ...topicsWithLockedPublicIdentity,
+    ...getMissingDefaultTopicHubs(topicsWithLockedPublicIdentity, defaults),
   ]);
 }
 

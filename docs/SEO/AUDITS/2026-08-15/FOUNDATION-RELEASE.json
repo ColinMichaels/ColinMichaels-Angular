@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "status": "local-release-candidate",
+  "capturedAt": "2026-08-15T22:16:04Z",
+  "baseline": {
+    "source": ".seo-cache/audit-scores.json",
+    "analyzedAt": "2026-08-15T02:52:27Z",
+    "directionalSeoHealthScore": 68,
+    "sitemapUrls": 130,
+    "liveCriticalFindingCount": 3,
+    "note": "The score is a same-day directional release baseline, not a ranking prediction or a production result for the local changes."
+  },
+  "sourceState": {
+    "branch": "codex/creator-growth-loop",
+    "baseCommit": "376e05cb6cb4e9c7872d5a5a598515daf27d5802",
+    "releaseCommit": null,
+    "dirtyWorktree": true,
+    "exactReleaseTreeVerified": false
+  },
+  "criticalFixes": [
+    {
+      "id": "anonymous-reader-friction",
+      "liveFinding": "Anonymous mobile article visits could receive a focus-trapped full-screen membership dialog after 3.2 seconds, interrupting reading and locking body scroll.",
+      "localOutcome": "Anonymous article visits no longer schedule a wall-clock account offer. The same benefits remain in a non-blocking after-article invitation; the app-level dialog remains only for signed-in preference completion.",
+      "implementationFiles": [
+        "src/app/features/blog/components/signup-campaign/blog-membership-campaign.component.ts",
+        "src/app/features/blog/components/reader-membership-invite/reader-membership-invite.component.ts",
+        "src/app/features/blog/pages/blog-detail/blog-detail.component.ts"
+      ],
+      "testFiles": [
+        "src/app/features/blog/components/signup-campaign/blog-membership-campaign.component.spec.ts",
+        "src/app/features/blog/components/reader-membership-invite/reader-membership-invite.component.spec.ts"
+      ],
+      "publicRoutes": [
+        "/blog/they-bought-a-full-size-temu-mega-drone"
+      ],
+      "invariants": [
+        "No anonymous account offer is opened by elapsed wall-clock time.",
+        "Anonymous article reading never locks body scroll for membership promotion.",
+        "Create account, Sign in, and Not now remain together in the after-article invitation.",
+        "Signed-in preference completion retains its accessible dialog and focus management."
+      ]
+    },
+    {
+      "id": "public-topic-identity",
+      "liveFinding": "Stale Firestore topic overlays could rename a valid server route and canonicalize it to an undeclared direct-request 404; title intent could also diverge after hydration.",
+      "localOutcome": "Every code-defined topic retains its canonical slug, eyebrow, title, description, summary, matching terms, short label, required resources, and published state. Custom CMS topics and non-identity presentation fields remain manageable.",
+      "implementationFiles": [
+        "src/app/features/topics/topic-hubs.data.ts",
+        "src/app/features/topics/services/topic-hub-repository.service.ts",
+        "src/app/features/topics/topic-hub.component.ts",
+        "functions/src/topic-hub-public-identity.ts",
+        "functions/src/index.ts"
+      ],
+      "testFiles": [
+        "src/app/features/topics/topic-hubs.data.spec.ts",
+        "src/app/features/topics/topic-hub.component.spec.ts",
+        "functions/test/topic-hub-public-identity.test.cjs"
+      ],
+      "publicRoutes": [
+        "/topics/ai-setup",
+        "/topics/recovery-planning",
+        "/topics/angular-firebase-architecture",
+        "/topics/labs-projects",
+        "/topics/gadgets-toys",
+        "/topics/drones-fpv"
+      ],
+      "rejectedAliases": [
+        "/topics/weekly-updates"
+      ],
+      "invariants": [
+        "Direct HTTP route, sitemap path, canonical, hydrated URL, H1, title intent, and short label describe one topic.",
+        "A stale Firestore record cannot rename or archive a code-defined public topic.",
+        "An undeclared alias cannot inherit an indexable topic canonical after hydration.",
+        "A future public topic rename requires an explicit redirect, sitemap, canonical, and content migration in one release."
+      ]
+    },
+    {
+      "id": "meaningful-initial-html",
+      "liveFinding": "The physical homepage and 39 other sitemap routes lacked meaningful initial HTML, weakening no-JavaScript access and crawler understanding.",
+      "localOutcome": "The physical homepage has a semantic creator fallback, while the catch-all Function renders route-specific article, archive, topic, resource, trust, author, search, and not-found output with appropriate structured data.",
+      "implementationFiles": [
+        "src/index.html",
+        "functions/src/index.ts",
+        "functions/src/seo-fallback-pages.ts",
+        "functions/src/seo-site.ts",
+        "scripts/validate-seo-shell.mjs",
+        "firebase.json"
+      ],
+      "testFiles": [
+        "functions/test/seo-fallback-pages.test.cjs",
+        "functions/test/hosting-url-contract.test.cjs",
+        "functions/test/seo-response-headers.test.cjs"
+      ],
+      "publicRoutes": [
+        "/",
+        "/blog",
+        "/topics/drones-fpv",
+        "/topics/gadgets-toys",
+        "/editorial-standards",
+        "/resources/gadget-usefulness-scorecard",
+        "/resources/personal-aircraft-buyer-verification",
+        "/blog/they-bought-a-full-size-temu-mega-drone"
+      ],
+      "invariants": [
+        "A sitemap route never returns an empty initial app root.",
+        "Initial canonical, robots, H1, description, and JSON-LD agree with the requested route.",
+        "Unknown, protected, preview, and error routes do not inherit indexable homepage fallback content.",
+        "Hosting and all crawler-facing Functions retain the same report-only security-header policy."
+      ]
+    }
+  ],
+  "deploymentScope": {
+    "hostingRequired": true,
+    "functionsRequired": [
+      "renderSeoHtml",
+      "sitemapXml",
+      "rssFeed",
+      "jsonFeed"
+    ],
+    "deployTogether": true,
+    "firestoreMigrationRequired": false,
+    "cmsImportRequired": false,
+    "reason": "Hosting owns hydrated behavior and physical assets; Functions own initial HTML, sitemap, and feed identity. Shipping only one side can recreate crawler/client drift."
+  },
+  "validation": {
+    "supportedNode": "24.15.0",
+    "focusedAngular": {
+      "status": "passed",
+      "tests": 18
+    },
+    "functionsBuild": {
+      "status": "passed"
+    },
+    "focusedFunctions": {
+      "status": "passed",
+      "tests": 19
+    },
+    "seoShell": {
+      "status": "passed",
+      "shells": 3
+    },
+    "angularBuild": {
+      "status": "passed"
+    },
+    "lint": {
+      "status": "passed"
+    },
+    "diffCheck": {
+      "status": "passed"
+    }
+  },
+  "preDeployGates": [
+    "Review the complete worktree and create one intentional release commit; do not deploy from a dirty tree.",
+    "Re-run the focused Angular and Functions suites, Functions build, SEO-shell check, Angular build, lint, and diff check on the exact release commit.",
+    "Inspect authenticated CMS Production Preview and sign-in flows because anonymous tests cannot prove protected behavior.",
+    "Record current Hosting release and the deployed revisions for renderSeoHtml, sitemapXml, rssFeed, and jsonFeed as rollback authorities.",
+    "Obtain explicit approval for the public Hosting and Functions deployment."
+  ],
+  "postDeployProof": [
+    "Verify the exact deployed source commit and successful Hosting/Functions deployment state.",
+    "Request every sitemap URL and record status, canonical, robots, initial H1, substantive word count, and JSON-LD coverage.",
+    "Verify all six topic routes before and after hydration at desktop and 390x844 mobile widths; URL, canonical, H1, and title intent must remain stable.",
+    "Verify /topics/weekly-updates returns a true non-indexable 404 and never rewrites a canonical topic.",
+    "Use a brand-new browser storage profile to keep an anonymous article open for at least 10 seconds; prove no membership dialog, body lock, horizontal overflow, or blocked reading interaction.",
+    "Verify homepage and Temu article console state, keyboard navigation, reduced-motion behavior, and production analytics receipt without sending account or content text."
+  ],
+  "rollback": {
+    "hosting": "Restore the recorded previous Hosting release.",
+    "functions": "Restore the recorded previous revisions for all four crawler-facing Functions.",
+    "firestore": "Do not delete or rewrite topic documents; the public identity lock is code-only and custom presentation data remains compatible.",
+    "measurement": "Annotate the rollback time so crawler, GA4, and Search Console comparisons do not mix release states."
+  },
+  "readiness": {
+    "state": "blocked_exact_release_commit_and_public_approval",
+    "safeToDeploy": false,
+    "reason": "The critical fixes pass focused local tests, but the worktree is dirty, no exact release commit exists, authenticated preview is incomplete, and no public deployment approval has been given."
+  },
+  "externalActions": {
+    "commit": false,
+    "push": false,
+    "hostingDeploy": false,
+    "functionsDeploy": false,
+    "firestoreWrite": false,
+    "cmsImport": false,
+    "youtubeMutation": false,
+    "outreach": false
+  }
+}

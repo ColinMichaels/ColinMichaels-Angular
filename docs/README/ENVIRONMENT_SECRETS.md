@@ -201,7 +201,7 @@ Optional runtime params:
 
 - `OPENAI_TEXT_MODEL`, default `gpt-5.5`
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
-- `YOUTUBE_CHANNEL_ID`, required for the homepage latest videos feed
+- `YOUTUBE_CHANNEL_ID`, required for the homepage latest videos feed and currently required to equal the canonical Captain Colin ID `UCKZ3E88t-BoUqPgZygJw6bA`; it is public configuration, not a secret. The callable fails closed if it is missing or different. A primary-channel change must update both site-identity modules and the public profile/content/rollback contract before this parameter changes.
 - `PUBLIC_SUBMISSION_SMTP_HOST`, default `smtp.gmail.com`
 - `PUBLIC_SUBMISSION_SMTP_PORT`, default `465`
 - `PUBLIC_SUBMISSION_SMTP_SECURE`, default `true`

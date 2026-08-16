@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T14:30:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "unitree-r1-4900-humanoid-robot",
+      "revision": 0,
+      "slug": "unitree-r1-4900-humanoid-robot",
+      "title": "Unitree R1: What the $4,900 Humanoid Robot Actually Includes",
+      "excerpt": "Unitree lists the R1 Air at $4,900, but the developer-ready features live in the quote-only EDU tier. Here is what the price, hardware, store status, and safety warnings actually say.",
+      "coverImage": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-cover.webp",
+      "thumbnailImage": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Gadgets & Gear",
+        "Creative Technology",
+        "AI & Automation"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Unitree R1",
+        "Humanoid Robot",
+        "Robotics",
+        "Embodied AI",
+        "Robot Price",
+        "Developer Hardware",
+        "Is It Actually Useful"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based status check using Unitree's current product page, store, official demonstration, and independent expert context. Colin has not owned, ordered, operated, programmed, or tested an R1.",
+        "sourceReviewedAt": "2026-08-15",
+        "relationshipDisclosure": "Nobody paid for placement, supplied a robot, or provided an affiliate link. No hands-on access is claimed.",
+        "aiAssistanceDisclosure": "AI assistance was used to research, compare, structure, and draft this package. Colin must verify every price, configuration, availability, safety claim, and source before publication.",
+        "syntheticMediaDisclosure": "All package visuals are AI-generated editorial illustrations of generic humanoids, not Unitree product photographs, safety diagrams, test evidence, or proof that Colin handled an R1."
+      },
+      "seo": {
+        "title": "Unitree R1: What the $4,900 Humanoid Robot Includes",
+        "description": "Unitree lists the R1 Air at $4,900. Compare its hardware with the $5,900 R1 and developer-focused EDU tier, including the current store and safety catches.",
+        "canonical": "https://colinmichaels.com/blog/unitree-r1-4900-humanoid-robot",
+        "openGraphImage": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "Unitree R1: What the $4,900 Humanoid Robot Includes",
+        "description": "The $4,900 R1 Air is real. The developer-ready features belong to the quote-only EDU tier. Here is the current evidence and the catch.",
+        "image": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-og.jpg",
+        "imageAlt": "Generic compact humanoid and shipping case beside the words $4,900 Humanoid",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-01",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "A four-foot humanoid robot now has a starting price lower than some used cars. The headline is real. The version behind it is easier to misunderstand.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Unitree currently lists the R1 Air at <strong>$4,900 before tax and shipping</strong>. The company’s launch video shows an R1-style robot walking, dancing, kicking, falling, and recovering. The current specification page adds cameras, microphones, wireless connections, a controller, a quick-release battery, and about an hour of listed battery life."
+          }
+        },
+        {
+          "id": "intro-02",
+          "type": "paragraph",
+          "data": {
+            "text": "That is the interesting part. The important part is that the $4,900 model is not the developer-ready version."
+          }
+        },
+        {
+          "id": "disclosure-01",
+          "type": "paragraph",
+          "data": {
+            "text": "I have not owned, ordered, operated, programmed, or tested an R1. This is a research-based status check, not a hands-on review or buying recommendation. Nobody paid for placement, supplied a robot, or gave me an affiliate link. I checked Unitree’s product page, store, official demonstration, and independent expert context on August 15, 2026. Re-check the live pages before spending money."
+          }
+        },
+        {
+          "id": "video-official-01",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=v1Q4Su54iho",
+            "embedUrl": "https://www.youtube.com/embed/v1Q4Su54iho",
+            "caption": "Unitree’s official R1 demonstration is manufacturer evidence of showcased movement, not an independent endurance, autonomy, reliability, safety, or household-use test."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "TLDR",
+            "level": 2
+          }
+        },
+        {
+          "id": "tldr-list",
+          "type": "list",
+          "data": {
+            "items": [
+              "The current official product page lists the R1 Air at $4,900, the R1 at $5,900, and the R1 EDU as contact sales. Tax and shipping are excluded.",
+              "R1 Air has 20 degrees of freedom, a monocular camera, no listed dexterous hands, no high-power compute option, and no secondary-development support.",
+              "The $5,900 R1 moves to 26 degrees of freedom, a two-axis head and binocular camera, but still has no listed secondary-development support.",
+              "The EDU tier is the one Unitree lists for secondary development, optional dexterous hands, and optional high-power compute. Its public product page does not give a price.",
+              "All three list an eight-core processor, microphone array, speaker, Wi-Fi 6, Bluetooth 5.2, quick-release battery, controller, and about one hour of battery life.",
+              "Unitree’s official store labeled the product in stock while the selected R1 Air (White) variant showed backordered. It listed $300–$1,200 shipping and made the customer responsible for duties, taxes, and import clearance.",
+              "My verdict: the price breakthrough is real hardware progress, but the cheapest model is a motion-first platform, not a proven household helper."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-numbers",
+          "type": "header",
+          "data": {
+            "text": "Four Numbers That Explain the Appeal",
+            "level": 2
+          }
+        },
+        {
+          "id": "stats-current-01",
+          "type": "stats",
+          "data": {
+            "title": "Unitree R1 snapshot",
+            "caption": "Manufacturer specifications checked August 15, 2026; values can vary by configuration and scenario.",
+            "stats": [
+              {
+                "label": "R1 Air",
+                "value": "$4,900",
+                "caption": "Before tax and shipping"
+              },
+              {
+                "label": "Height",
+                "value": "1,230 mm",
+                "caption": "A little over four feet"
+              },
+              {
+                "label": "Weight",
+                "value": "About 27–29 kg",
+                "caption": "Depends on tier"
+              },
+              {
+                "label": "Battery",
+                "value": "About 1 hour",
+                "caption": "Listed across all tiers"
+              }
+            ]
+          }
+        },
+        {
+          "id": "source-specs-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Those are manufacturer specifications, not my measurements. Review the current <a href=\"https://www.unitree.com/R1/\">Unitree R1 product page</a> for the live table and its configuration caveats."
+          }
+        },
+        {
+          "id": "heading-air",
+          "type": "header",
+          "data": {
+            "text": "The $4,900 Headline Is the R1 Air",
+            "level": 2
+          }
+        },
+        {
+          "id": "tier-intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The official page makes the tier gap visible when the specifications are read as columns instead of as one long promise."
+          }
+        },
+        {
+          "id": "tier-table-01",
+          "type": "html",
+          "data": {
+            "title": "R1 tier comparison",
+            "html": "<table><caption>Unitree R1 specifications checked August 15, 2026</caption><thead><tr><th scope=\"col\">Model</th><th scope=\"col\">Public price</th><th scope=\"col\">Core hardware</th><th scope=\"col\">Developer expansion</th><th scope=\"col\">Listed warranty</th></tr></thead><tbody><tr><th scope=\"row\">R1 Air</th><td>$4,900 before tax and shipping</td><td>20 DOF; monocular camera; no head or waist DOF listed</td><td>No secondary development, high-power compute, or dexterous hand option listed</td><td>6 months</td></tr><tr><th scope=\"row\">R1</th><td>$5,900 before tax and shipping</td><td>26 DOF; two-axis head; binocular camera; two-axis waist</td><td>No secondary development, high-power compute, or dexterous hand option listed</td><td>8 months</td></tr><tr><th scope=\"row\">R1 EDU</th><td>Contact sales</td><td>26–40 DOF; binocular camera; two-axis head and waist</td><td>Secondary development; optional dexterous hands and 40–100 TOPS compute</td><td>12 months</td></tr></tbody></table>"
+          }
+        },
+        {
+          "id": "image-tiers-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-inline-tiers.webp",
+            "alt": "Three generic humanoid configurations compared at a robotics workbench",
+            "caption": "AI-generated editorial illustration of a basic, standard, and research-oriented humanoid comparison. It is not a Unitree product photo and does not depict the exact R1 configurations.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "tier-explain-01",
+          "type": "paragraph",
+          "data": {
+            "text": "That changes the buying question. If someone wants a compact robot that can perform supplied motions, respond through its included interface, and serve as a striking demonstration platform, the Air price is the headline."
+          }
+        },
+        {
+          "id": "tier-explain-02",
+          "type": "paragraph",
+          "data": {
+            "text": "If the goal is to install custom software, work through lower-level interfaces, add dexterous hands, or build on a higher-power compute module, the official table points to EDU. <strong>Contact sales</strong> is not the same buying proposition as $4,900."
+          }
+        },
+        {
+          "id": "heading-includes",
+          "type": "header",
+          "data": {
+            "text": "What the Inexpensive Versions Still Include",
+            "level": 2
+          }
+        },
+        {
+          "id": "includes-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The R1 Air is not an empty shell. Unitree lists an eight-core processor, four-microphone array, speaker, Wi-Fi 6, Bluetooth 5.2, a monocular camera, quick-release battery, charger, manual controller, OTA upgrades, and about one hour of battery life."
+          }
+        },
+        {
+          "id": "includes-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The $5,900 R1 adds more joints, a moving head and waist, and binocular vision. Both remain compact enough to fit in a workshop without needing an industrial robot cell built around them."
+          }
+        },
+        {
+          "id": "includes-03",
+          "type": "paragraph",
+          "data": {
+            "text": "That is meaningful. A mobile human-shaped machine at this price can give schools, performers, exhibits, robotics clubs, and determined hobbyists access to hardware that looked financially impossible a few years ago."
+          }
+        },
+        {
+          "id": "includes-04",
+          "type": "paragraph",
+          "data": {
+            "text": "It does not automatically make the robot useful at folding laundry, loading a dishwasher, carrying groceries, watching a pet, or moving safely through an unpredictable home. Those jobs require manipulation, perception, autonomy, recovery, and safety to work together—not only an impressive movement reel."
+          }
+        },
+        {
+          "id": "heading-demo",
+          "type": "header",
+          "data": {
+            "text": "The Official Demo Is a Capability Reel, Not a Chore List",
+            "level": 2
+          }
+        },
+        {
+          "id": "demo-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Unitree describes the platform as movement first, tasks as well. That is an honest clue about the product’s current center of gravity."
+          }
+        },
+        {
+          "id": "demo-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The launch video proves that the company can choreograph a compact humanoid through athletic motion. It does not establish what a new owner can reproduce without training, remote control, prepared routines, optional hardware, future software, or a controlled environment."
+          }
+        },
+        {
+          "id": "demo-03",
+          "type": "paragraph",
+          "data": {
+            "text": "An <a href=\"https://www.the-independent.com/tech/humanoid-robot-sale-unitree-r1-b2810194.html\">independent engineering explainer published through The Conversation</a> made the same broader distinction: humanoid hardware is moving quickly, while dependable software for open-ended real-world work remains the harder problem."
+          }
+        },
+        {
+          "id": "takeaway-task-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "Buy the task, not the body shape. If a wheeled robot, arm, cart, or ordinary appliance solves the job more safely and cheaply, looking human is not a feature worth paying for by itself.",
+            "attribution": "Practical test"
+          }
+        },
+        {
+          "id": "heading-checkout",
+          "type": "header",
+          "data": {
+            "text": "The Checkout Number Is Not the Ownership Number",
+            "level": 2
+          }
+        },
+        {
+          "id": "checkout-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Unitree’s current <a href=\"https://shop.unitree.com/zh/products/unitree-r1\">official store page</a> labeled the product in stock while the selected R1 Air (White) variant showed backordered. It listed shipping between $300 and $1,200, made the customer responsible for applicable duties, taxes, and import clearance, and required contact details for that clearance."
+          }
+        },
+        {
+          "id": "checkout-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The official product page excludes tax and shipping from its public prices. A buyer also needs current answers about availability, final configuration, import handling, warranty service, replacement parts, batteries, repair turnaround, training, software access, data handling, insurance, and return terms."
+          }
+        },
+        {
+          "id": "checkout-03",
+          "type": "paragraph",
+          "data": {
+            "text": "The six-, eight-, and twelve-month listed warranty periods are short enough to deserve attention on hardware this complex. Get the exact warranty brochure for the selected configuration before payment rather than assuming the longest period applies to every model."
+          }
+        },
+        {
+          "id": "heading-safety",
+          "type": "header",
+          "data": {
+            "text": "A Small Robot Can Still Demand a Big Safety Plan",
+            "level": 2
+          }
+        },
+        {
+          "id": "safety-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Unitree’s own product page warns that the humanoid has a complex structure and substantial power, tells users to keep a sufficient safety distance, and describes the global humanoid industry as early-stage. It also says some demonstrated functions are still being developed or tested for future release."
+          }
+        },
+        {
+          "id": "warning-safety-01",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "Those caveats belong beside the price, not at the bottom of the excitement. Manufacturer documentation and a qualified robotics safety review—not this article—should define real operating controls.",
+            "attribution": "Safety boundary"
+          }
+        },
+        {
+          "id": "image-safety-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/gadgets/unitree-r1-4900-humanoid-inline-safety.webp",
+            "alt": "Compact humanoid inside a marked test zone while adults observe from a distance",
+            "caption": "AI-generated editorial illustration of a controlled test area. It is not a Unitree facility, official safety diagram, or claim that this exact setup is sufficient.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "safety-02",
+          "type": "paragraph",
+          "data": {
+            "text": "Before operating any powerful mobile robot, I would want a clear test zone, an emergency-stop procedure, operator training, conservative motion limits, safe storage and charging, no pets or children in the area, and a plan for software or connection failure."
+          }
+        },
+        {
+          "id": "heading-checklist",
+          "type": "header",
+          "data": {
+            "text": "Before Buying One",
+            "level": 2
+          }
+        },
+        {
+          "id": "buying-steps-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "Write down the exact task the robot must perform without using the word future.",
+              "Confirm which model and options are required for that task, especially secondary development, hands, cameras, and compute.",
+              "Get the delivered price, stock state, shipping date, import responsibilities, warranty, returns, parts, batteries, and service path in writing.",
+              "Ask for an unedited demonstration of the exact task, configuration, software, environment, and operator skill level you expect to use.",
+              "Define the safe operating area, people and animals who may enter it, emergency stop, charging location, and recovery process.",
+              "Treat OTA software, future functions, and promotional motion as separate from capabilities available on delivery.",
+              "Compare the result with a purpose-built robot or ordinary tool that may solve the same problem with less risk and maintenance."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "My Verdict",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The Unitree R1 makes humanoid hardware dramatically more accessible. A $4,900 starting point, complete moving body, controller, sensors, wireless connectivity, and hour-long listed battery are not vaporware-shaped numbers on a concept slide. There is a live specification page and a buy-now store path."
+          }
+        },
+        {
+          "id": "verdict-02",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The catch is not that the robot is fake. The catch is that the cheapest version is easiest to misunderstand.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "verdict-03",
+          "type": "paragraph",
+          "data": {
+            "text": "R1 Air looks most sensible as a controlled demonstration, movement, education, or enthusiast platform for someone who understands its fixed boundaries. The standard R1 buys better articulation and perception. The EDU tier is the serious development proposition, and its public price is not the number making headlines."
+          }
+        },
+        {
+          "id": "verdict-04",
+          "type": "paragraph",
+          "data": {
+            "text": "I would not buy one as a household helper today. I would absolutely want to see one complete a boring, repeatable, useful task in an ordinary room—because that would be more impressive than another backflip."
+          }
+        },
+        {
+          "id": "related-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Score the R1's problem fit, evidence, true cost, everyday friction, and support with the printable <a href=\"https://colinmichaels.com/resources/gadget-usefulness-scorecard\">Is It Actually Useful? Gadget Scorecard</a>. Then explore more unusual hardware in the <a href=\"https://colinmichaels.com/topics/gadgets-toys\">Gadgets &amp; Toys topic hub</a>, or see what happened when Goonzquad assembled a <a href=\"https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone\">full-size Temu mega drone</a>."
+          }
+        },
+        {
+          "id": "poll-useful-task",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "What would a humanoid robot have to do before you would consider one?",
+            "description": "Choose the threshold that matters most. Signed-in readers can change their vote later.",
+            "pollOptions": [
+              {
+                "id": "household-chore",
+                "label": "Complete one household chore reliably"
+              },
+              {
+                "id": "fully-programmable",
+                "label": "Be fully programmable for projects"
+              },
+              {
+                "id": "family-safe",
+                "label": "Work safely around pets and family"
+              },
+              {
+                "id": "lower-cost-support",
+                "label": "Cost less and prove long-term support"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T14:30:00.000Z",
+      "updatedAt": "2026-08-15T14:30:00.000Z",
+      "publishedAt": null
+    }
+  ]
+}

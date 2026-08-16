@@ -9,6 +9,8 @@ import {HomepageHeroSettings} from '../../features/homepage/models/homepage-hero
 import {HomepageHeroRepositoryService} from '../../features/homepage/services/homepage-hero-repository.service';
 import {TopicHubRepositoryService} from '../../features/topics/services/topic-hub-repository.service';
 import {getPublishedTopicHubs, TopicHub} from '../../features/topics/topic-hubs.data';
+import {SiteAnalyticsService} from '../../shared/analytics/site-analytics.service';
+import {YOUTUBE_CHANNEL_ID, YOUTUBE_SUBSCRIBE_URL} from '../../shared/seo/site-identity';
 import {HomeArticleHeroComponent} from './home-article-hero.component';
 import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
 
@@ -81,6 +83,10 @@ describe('HomeArticleHeroComponent', () => {
       providers: [
         {provide: HomeBlogPostFeedService, useValue: configureBlogPostFeed(posts)},
         {provide: HomepageHeroRepositoryService, useValue: configureHomepageHeroRepository(heroSettings)},
+        {
+          provide: SiteAnalyticsService,
+          useValue: jasmine.createSpyObj<SiteAnalyticsService>('SiteAnalyticsService', ['trackYouTubeOutbound']),
+        },
         {provide: TopicHubRepositoryService, useValue: configureTopicHubRepository(getPublishedTopicHubs())},
       ],
     }).compileComponents();
@@ -92,16 +98,39 @@ describe('HomeArticleHeroComponent', () => {
     return fixture;
   }
 
-  it('makes the newest article the publication-first h1 and links its story and media', async () => {
+  it('keeps the creator promise as the h1 and presents the newest article as a featured story', async () => {
     const fixture = await createComponent([createPost(1), createPost(2), createPost(3)]);
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('.home-hero-post-title')?.tagName).toBe('H1');
+    expect(element.querySelectorAll('h1')).toHaveSize(1);
+    expect(element.querySelector('h1')?.textContent?.trim())
+      .toBe('Cool gadgets, useful tech, and internet finds');
+    expect(element.querySelector('.home-hero-post-title')?.tagName).toBe('H2');
     expect(element.querySelector('.home-hero-post-title')?.textContent?.trim()).toBe('Post 3 title');
     expect(element.querySelector<HTMLAnchorElement>('.home-hero-read-more')?.getAttribute('href')).toBe('/blog/post-3');
     expect(element.querySelector<HTMLAnchorElement>('.home-hero-panel')?.getAttribute('href')).toBe('/blog/post-3');
     expect(element.textContent).not.toContain('A Life of Curiosity');
     expect(element.querySelector('.home-hero-slideshow')).toBeNull();
+  });
+
+  it('surfaces compact topic, subscription, and author paths before the featured story', async () => {
+    const fixture = await createComponent([createPost(1)]);
+    const element = fixture.nativeElement as HTMLElement;
+    const exploreLinks = Array.from(element.querySelectorAll<HTMLAnchorElement>('.home-hero-explore a'));
+
+    expect(exploreLinks.map(link => link.textContent?.trim()))
+      .toEqual(['Gadgets & finds', 'FPV stories', 'Subscribe', 'About Colin']);
+    expect(exploreLinks.map(link => link.getAttribute('href'))).toEqual([
+      '/topics/gadgets-toys',
+      '/topics/drones-fpv',
+      YOUTUBE_SUBSCRIBE_URL,
+      '/#about',
+    ]);
+
+    exploreLinks[2]?.click();
+
+    expect(TestBed.inject(SiteAnalyticsService).trackYouTubeOutbound)
+      .toHaveBeenCalledOnceWith(YOUTUBE_CHANNEL_ID, 'subscribe', 'homepage_youtube');
   });
 
   it('preserves featured-post selection and one-story-at-a-time navigation', async () => {
@@ -134,6 +163,17 @@ describe('HomeArticleHeroComponent', () => {
         [createPost(1), createPost(2), createPost(3)],
         DEFAULT_HOMEPAGE_HERO_SETTINGS,
         () => {
+          spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+          spyOn(window, 'matchMedia').and.callFake(query => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: jasmine.createSpy('addListener'),
+            removeListener: jasmine.createSpy('removeListener'),
+            addEventListener: jasmine.createSpy('addEventListener'),
+            removeEventListener: jasmine.createSpy('removeEventListener'),
+            dispatchEvent: jasmine.createSpy('dispatchEvent').and.returnValue(true),
+          }));
           jasmine.clock().install();
           clockInstalled = true;
         }

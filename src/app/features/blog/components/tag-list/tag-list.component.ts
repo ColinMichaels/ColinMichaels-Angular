@@ -2,7 +2,7 @@ import {Component, Input, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
-import {createBlogTagSlug} from '../../utils/blog-category-url.util';
+import {createBlogTagTaxonomyRoute} from '../../utils/blog-category-url.util';
 
 @Component({
   selector: 'app-blog-tag-list',
@@ -10,9 +10,9 @@ import {createBlogTagSlug} from '../../utils/blog-category-url.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-wrap gap-2">
-      @for (tag of tags; track tag) {
+      @for (tag of tags; track $index) {
         <a
-          [routerLink]="['/', pathNames.BLOG, 'tag', tagSlug(tag)]"
+          [routerLink]="tagRouteCommands(tag)"
           class="blog-tag-chip">
           {{ tag }}
         </a>
@@ -25,7 +25,8 @@ export class BlogTagListComponent {
 
   protected readonly pathNames = PATH_NAMES;
 
-  protected tagSlug(tag: string): string {
-    return createBlogTagSlug(tag);
+  protected tagRouteCommands(tag: string): readonly string[] {
+    const route = createBlogTagTaxonomyRoute(tag);
+    return ['/', this.pathNames.BLOG, route.kind, route.slug];
   }
 }

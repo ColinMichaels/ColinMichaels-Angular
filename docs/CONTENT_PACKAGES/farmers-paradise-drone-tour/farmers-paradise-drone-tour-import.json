@@ -1,0 +1,413 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T17:45:58.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "drone-tour-farm-golden-hour-garden-rows",
+      "revision": 0,
+      "slug": "drone-tour-farm-golden-hour-garden-rows",
+      "title": "Drone Tour of the Farm: From Golden Hour to Garden Rows",
+      "excerpt": "A 2:38 Captain Colin flight starts above a farmhouse in golden light, crosses the open property, and finishes at garden level. Here is what the camera actually reveals along the way.",
+      "coverImage": "/assets/images/blog/drones/farmers-paradise-drone-tour-cover.webp",
+      "thumbnailImage": "/assets/images/blog/drones/farmers-paradise-drone-tour-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Photography & Video",
+        "Personal Stories"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Captain Colin Flies",
+        "Drone Video",
+        "Farm From Above",
+        "Golden Hour",
+        "Garden",
+        "Aerial Video",
+        "Drone Flight"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "mixed",
+        "evidenceSummary": "This companion article is grounded in Colin's own published 2:38 flight video, the visible timestamped sequence inspected from its public stream, and current FAA source pages reviewed for general U.S. flight context. The public record does not preserve the aircraft model, camera settings, exact location, flight purpose, airspace authorization, weather record, or operating conditions, so the draft makes no claims about them.",
+        "sourceReviewedAt": "2026-08-15",
+        "relationshipDisclosure": "No sponsor, product placement, affiliate link, or supplied aircraft is claimed for this article. Colin must confirm that boundary before publication.",
+        "aiAssistanceDisclosure": "AI assistance was used to inspect the public-video sequence, organize the article package, and draft the copy. Colin must review the first-person voice, factual boundaries, links, images, and final wording before publication.",
+        "syntheticMediaDisclosure": "The article cover, thumbnail, Open Graph image, and in-body stills are documentary frame derivatives from Colin's public video. They were cropped, resized, or compressed for web delivery; no generative editing or invented scene content was used. The source master remains authoritative."
+      },
+      "seo": {
+        "title": "Farm Drone Tour: Golden Hour to Garden Rows",
+        "description": "Watch Captain Colin's 2:38 farm drone tour move from a golden-hour farmhouse view across open fields and down into the working garden rows.",
+        "canonical": "https://colinmichaels.com/blog/drone-tour-farm-golden-hour-garden-rows",
+        "openGraphImage": "/assets/images/blog/drones/farmers-paradise-drone-tour-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "The Same Farm Becomes Three Places From Above",
+        "description": "A short Captain Colin flight moves from golden-hour farmhouse views to open fields and finally through the garden rows.",
+        "image": "/assets/images/blog/drones/farmers-paradise-drone-tour-og.jpg",
+        "imageAlt": "Wide golden-hour aerial view of a farmhouse, trees, open grass, outbuildings, and garden plots",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-01",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "The flight lasts only two minutes and thirty-eight seconds, but the farm changes identity twice: warm and distant, bright and open, then close enough for the garden rows to fill the frame.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "I published this flight on the <a href=\"https://www.youtube.com/@CaptainColin\">Captain Colin YouTube channel</a> as <em>Farmers Paradise</em>. Watching it back, the part that stays with me is not one dramatic move. It is the change in scale. The camera begins high enough to turn the property into a layout, then keeps closing the distance until the garden stops looking like geometry and starts looking like a place you could walk into."
+          }
+        },
+        {
+          "id": "video-companion-01",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=aiA2hlRcVpk",
+            "embedUrl": "https://www.youtube.com/embed/aiA2hlRcVpk",
+            "caption": "Farmers Paradise, filmed and published by Colin Michaels / Captain Colin. The article follows the visible sequence in this 2:38 flight.",
+            "isCompanionVideo": true,
+            "videoTitle": "Farmers Paradise | Golden Hour Over the Farm | Peaceful Drone Flight",
+            "videoDescription": "A peaceful drone tour of the farm, from golden-hour aerial views over the farmhouse and fields to low passes through the garden rows.",
+            "videoUploadDate": "2026-08-13T13:43:21Z",
+            "videoDurationSeconds": 158.1279
+          }
+        },
+        {
+          "id": "disclosure-01",
+          "type": "paragraph",
+          "data": {
+            "text": "This is a companion story built from my published video, not a reconstructed flight log. The public footage does not establish the aircraft, camera settings, exact location, airspace status, authorization, weather record, or operating conditions. I am describing what the camera shows and leaving those unpreserved details unclaimed. Nobody paid for placement, and there are no affiliate links in this article."
+          }
+        },
+        {
+          "id": "heading-timeline",
+          "type": "header",
+          "data": {
+            "text": "The Whole Flight in Three Moves",
+            "level": 2
+          }
+        },
+        {
+          "id": "timeline-stats-01",
+          "type": "stats",
+          "data": {
+            "title": "Visible flight sequence",
+            "caption": "Approximate chapter boundaries from the public 2:38 video; timestamps describe the edit, not telemetry.",
+            "stats": [
+              {
+                "label": "0:00–0:40",
+                "value": "Golden hour",
+                "caption": "Farmhouse, pool, and high property views"
+              },
+              {
+                "label": "0:40–1:20",
+                "value": "Open property",
+                "caption": "Trees, fields, and brighter aerial passes"
+              },
+              {
+                "label": "1:20–2:38",
+                "value": "Garden level",
+                "caption": "Outbuildings, rows, plants, and low passes"
+              }
+            ]
+          }
+        },
+        {
+          "id": "timeline-01",
+          "type": "paragraph",
+          "data": {
+            "text": "That progression is the real structure. The video is not simply a sunset loop and it is not only a garden fly-through. It starts with context, crosses the space between, and earns the close detail at the end. If I cut the last minute away, the opening would still look pleasant, but the flight would lose its point of view."
+          }
+        },
+        {
+          "id": "heading-high-view",
+          "type": "header",
+          "data": {
+            "text": "High Enough to Read the Property",
+            "level": 2
+          }
+        },
+        {
+          "id": "high-view-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The opening view makes the farmhouse the visual anchor. The pool catches the light, trees define the edges, and the garden structures sit farther away as smaller shapes. From this height, the interesting thing is not an individual plant or path. It is how the pieces relate to one another."
+          }
+        },
+        {
+          "id": "image-overhead-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/farmers-paradise-drone-tour-inline-overhead.webp",
+            "alt": "Straight-down aerial view of trees, lawn, small structures, garden plots, and a round pool",
+            "caption": "Around 0:45, the camera looks almost straight down as the edit begins moving away from the golden-hour establishing view. Documentary frame derivative from Colin's public video; resized and compressed, with no generative editing.",
+            "width": 640,
+            "height": 360,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "high-view-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The near-vertical frame is a useful reset. It flattens the scene into lines and patches, then gives the next passes room to restore depth. That is one reason aerial footage can make familiar ground feel newly legible: it does not only show more. It changes which relationships are easy to notice."
+          }
+        },
+        {
+          "id": "heading-fields",
+          "type": "header",
+          "data": {
+            "text": "The Middle Is the Transition, Not Filler",
+            "level": 2
+          }
+        },
+        {
+          "id": "fields-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Around the middle, the light becomes brighter and cooler. Trees and open grass take over the frame. The farmhouse is no longer the only subject, but the garden has not yet become the destination. This section does the quiet work of carrying the viewer across the property."
+          }
+        },
+        {
+          "id": "image-fields-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/farmers-paradise-drone-tour-inline-fields.webp",
+            "alt": "Bright aerial view across open green fields and a tree line under a partly cloudy sky",
+            "caption": "Around 1:16, open ground and the tree line replace the tighter farmhouse composition. Documentary frame derivative from Colin's public video; resized and compressed, with no generative editing.",
+            "width": 640,
+            "height": 360,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "fullWidth",
+            "imageSize": "wide"
+          }
+        },
+        {
+          "id": "fields-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The widest frames also make the later descent feel more deliberate. A low garden pass has more impact after the video has shown how much space surrounds it. The edit is using height as a storytelling tool: first orientation, then travel, then texture."
+          }
+        },
+        {
+          "id": "heading-descent",
+          "type": "header",
+          "data": {
+            "text": "Dropping Into the Garden Changes Everything",
+            "level": 2
+          }
+        },
+        {
+          "id": "descent-01",
+          "type": "paragraph",
+          "data": {
+            "text": "At roughly 1:20, the video stops behaving like a broad property tour. The camera comes down near outbuildings and planted areas. Grass, trellises, posts, paths, and leaves take up more of the frame. The view becomes less like a map and more like movement through a place."
+          }
+        },
+        {
+          "id": "image-descent-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/farmers-paradise-drone-tour-inline-descent.webp",
+            "alt": "Low view along a grassy garden path with dense plants, posts, and an outbuilding beneath a blue sky",
+            "caption": "Around 1:45, the flight is low enough for the path and plant growth to become the composition. Documentary frame derivative from Colin's public video; resized and compressed, with no generative editing.",
+            "width": 640,
+            "height": 360,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "descent-02",
+          "type": "paragraph",
+          "data": {
+            "text": "This is the section I would extend on a return flight. The high shots explain the property, but the garden gives the camera choices: follow a row, reveal an arch, skim beside leaves, or hold back long enough for the viewer to understand where the path leads. Closer does not automatically mean better. It means the shot has to become more specific."
+          }
+        },
+        {
+          "id": "image-rows-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/farmers-paradise-drone-tour-inline-rows.webp",
+            "alt": "Low flight beside broad green garden leaves, wire fencing, and an open field",
+            "caption": "Around 2:07, the plants become foreground rather than a distant pattern. Documentary frame derivative from Colin's public video; resized and compressed, with no generative editing.",
+            "width": 640,
+            "height": 360,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "fullWidth",
+            "imageSize": "wide"
+          }
+        },
+        {
+          "id": "image-garden-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/farmers-paradise-drone-tour-inline-garden.webp",
+            "alt": "View down a garden row with netting, trellises, flowers, and tall green plants under a blue sky",
+            "caption": "Around 2:20, the camera is inside the visual rhythm of the rows. Documentary frame derivative from Colin's public video; resized and compressed, with no generative editing.",
+            "width": 640,
+            "height": 360,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "heading-next-flight",
+          "type": "header",
+          "data": {
+            "text": "What I Would Carry Into the Next Flight",
+            "level": 2
+          }
+        },
+        {
+          "id": "next-flight-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The public video is the story, not the planning record, so I cannot turn it into a checklist after the fact. For the next flight, I would preserve the decisions while they are still fresh: the intended opening, the turn toward the garden, the one or two close passes worth protecting, and the reason to stop."
+          }
+        },
+        {
+          "id": "next-flight-list-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "Write the flight's one-sentence story before takeoff: establish, cross, descend, finish.",
+              "Mark the current rules and airspace check separately from the creative shot list.",
+              "Choose one safe reveal for the farmhouse and one clear route into the garden.",
+              "Record the actual aircraft, battery, weather, permissions, and operating notes instead of relying on the finished edit.",
+              "Keep the source master, then export web and social derivatives without treating them as new masters.",
+              "After landing, note which shot deserves a longer return flight while the memory is specific."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "field-notes-01",
+          "type": "paragraph",
+          "data": {
+            "text": "I built a printable <a href=\"https://colinmichaels.com/downloads/captain-colin-drone-flight-field-notes.pdf\">Captain Colin Drone Flight Field Notes</a> sheet for that job. It separates the creative plan, current flight checks, battery notes, and post-flight observations so a good-looking edit does not become the only surviving record."
+          }
+        },
+        {
+          "id": "heading-safety",
+          "type": "header",
+          "data": {
+            "text": "The Video Is Not Proof of Flight Compliance",
+            "level": 2
+          }
+        },
+        {
+          "id": "safety-01",
+          "type": "paragraph",
+          "data": {
+            "text": "A published clip cannot prove what authorization applied, which rules governed the operation, or what happened outside the frame. For a current U.S. flight, start with the FAA's <a href=\"https://www.faa.gov/uas/recreational_flyers\">Recreational Flyers</a> guidance, confirm <a href=\"https://www.faa.gov/uas/getting_started/where_can_i_fly\">where you can fly</a>, and check whether the aircraft must meet <a href=\"https://www.faa.gov/uas/getting_started/remote_id\">Remote ID</a> requirements. Also check current state, local, property, and site-specific restrictions."
+          }
+        },
+        {
+          "id": "warning-safety-01",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "The footage shows a visual sequence, not an airspace clearance, permission record, compliance certificate, or operating tutorial. Check the current rules for your exact flight before takeoff.",
+            "attribution": "Flight-context boundary"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "Why This Short Flight Works for Me",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The strongest choice in <em>Farmers Paradise</em> is the refusal to stay at postcard height. The golden-hour opening earns attention, but the garden gives the flight a destination. By the end, the property is no longer one pretty aerial view. It has layers, routes, and details."
+          }
+        },
+        {
+          "id": "verdict-02",
+          "type": "paragraph",
+          "data": {
+            "text": "That is the Captain Colin Flies format I want to keep building: a compact flight with a visible idea, an honest account of what the footage supports, and a reason to return. Explore the <a href=\"https://colinmichaels.com/topics/drones-fpv\">Drones &amp; FPV topic hub</a> for more flights, field notes, and researched drone stories."
+          }
+        },
+        {
+          "id": "verdict-takeaway-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The opening shows where the farm is. The final minute shows why the camera kept moving.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "poll-return-flight",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Which part deserves a longer return flight?",
+            "description": "Choose the view you would want Captain Colin to explore next. Signed-in readers can change their vote later.",
+            "pollOptions": [
+              {
+                "id": "farmhouse",
+                "label": "Golden-hour farmhouse"
+              },
+              {
+                "id": "open-field",
+                "label": "Open fields"
+              },
+              {
+                "id": "garden-rows",
+                "label": "Garden rows"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T17:45:58.000Z",
+      "updatedAt": "2026-08-15T17:45:58.000Z",
+      "publishedAt": null
+    }
+  ]
+}

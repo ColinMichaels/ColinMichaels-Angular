@@ -81,5 +81,38 @@ describe('SiteSearchService', () => {
     })[0];
     expect(authorResult?.id).toBe('markdown-search-post');
     expect(authorResult?.matchedFields).toContain('Author');
+
+    const policyResult = searchSiteItems(items, {
+      query: 'report a correction',
+      type: 'page',
+      category: '',
+      tag: '',
+      author: '',
+      sort: 'relevance',
+    })[0];
+    expect(policyResult?.id).toBe('page-editorial-standards');
+    expect(policyResult?.path).toBe('/editorial-standards');
+
+    const worksheetResult = searchSiteItems(items, {
+      query: 'aircraft deposit worksheet',
+      type: 'page',
+      category: '',
+      tag: '',
+      author: '',
+      sort: 'relevance',
+    })[0];
+    expect(worksheetResult?.id).toBe('page-personal-aircraft-buyer-verification');
+    expect(worksheetResult?.path).toBe('/resources/personal-aircraft-buyer-verification');
+
+    const scorecardResult = searchSiteItems(items, {
+      query: 'gadget usefulness scorecard',
+      type: 'page',
+      category: '',
+      tag: '',
+      author: '',
+      sort: 'relevance',
+    })[0];
+    expect(scorecardResult?.id).toBe('page-gadget-usefulness-scorecard');
+    expect(scorecardResult?.path).toBe('/resources/gadget-usefulness-scorecard');
   });
 });

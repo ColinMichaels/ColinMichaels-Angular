@@ -90,13 +90,13 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Server rendering:
   Firebase `renderSeoHtml` classifies incoming clean URLs before Angular loads. Known public routes receive indexable metadata, unknown routes return `404` with `noindex,follow`, missing published blog posts return `404` missing-post metadata, OS/admin routes stay valid but `noindex,nofollow`, and blog/topic pages can receive visible fallback HTML inside `<app-root>`.
 - Sitemap policy:
-  `sitemapXml` includes static public pages such as `/privacy`, topic hubs, published posts, and taxonomy URLs that meet thresholds. Categories/subcategories require at least `2` published posts. Tags require at least `3` published posts. Lower-count taxonomy pages remain accessible but use `noindex,follow` metadata and are omitted from the sitemap.
+  `sitemapXml` includes static public pages such as `/privacy`, topic hubs, published posts, and taxonomy URLs that meet thresholds. Categories/subcategories require at least `3` published posts. Tags require at least `5` published posts. Lower-count taxonomy pages remain accessible but use `noindex,follow` metadata and are omitted from the sitemap. Before threshold counting, legacy Cat Corner/health/recovery labels collapse to their canonical category and overlapping Recovery/Personal Growth tags contribute to the category that owns the same public intent; a post is counted once per canonical archive.
 - Crawler fallback content:
-  `/blog` receives crawlable article links and summaries. `/blog/:slug` receives semantic article fallback with author, date, categories, tags, cover image, and sanitized body blocks. `/topics/:slug` receives a lightweight visible topic fallback.
+  `/blog` receives crawlable article links and summaries. `/blog/:slug` receives semantic article fallback with author, date, categories, tags, cover image, and sanitized body blocks. The primary article image carries its known Open Graph dimensions, asynchronous decoding, eager loading, and high fetch priority so the no-JavaScript shell reserves the same media space instead of creating avoidable layout shift. Category, tag, and topic routes render actual matching article links with `CollectionPage`/`ItemList` data; `/privacy`, `/contact`, `/write-for-us`, and `/background` render route-specific `WebPage` fallbacks. `seo-fallback-pages.ts` owns escaping, shared collection/static shells, graph creation, and safe replacement of the physical homepage fallback.
 - Current risks:
   social crawlers do not execute the Angular runtime consistently, so deployed clean URLs depend on the Firebase `renderSeoHtml` Function and its packaged `seo-index.html` shell staying aligned with Angular hosting assets.
 - Planned cleanup:
-  extract pure Functions SEO policy helpers from `functions/src/index.ts` into a smaller testable module for direct unit coverage of status codes, robots directives, sitemap filtering, canonical URLs, and fallback HTML snippets.
+  continue extracting route classification, status/robots policy, and sitemap filtering from `functions/src/index.ts`; fallback rendering already has direct pure-module coverage.
 
 ## `youtube-feed.service.ts`
 
@@ -106,8 +106,12 @@ This section focuses on the key game/runtime services prioritized in the cleanup
   `FIREBASE_FUNCTIONS`, `getLatestYouTubeVideos` callable.
 - Called by:
   `YouTubeLatestVideosComponent` on the public homepage.
+- Audience and measurement boundary:
+  the section presents the channel's FPV, Florida, and creator focus with separate channel/subscription actions. Public video and channel selections reuse the privacy-aware `select_content` event; no YouTube account access, title/description copy, or viewer identity is sent to GA4.
+- Identity boundary:
+  `YOUTUBE_CHANNEL_ID` must match the canonical Captain Colin channel exported by both isolated site-identity modules. The Function validates configuration and YouTube's channel response; the Angular service validates the callable payload and replaces any returned channel URL with the canonical channel URL before components render links or record channel analytics.
 - Current risks:
-  the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching.
+  the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching. A deliberate primary-channel migration still requires a coordinated code, runtime-parameter, schema, content-package, and rollback review because Angular and Functions compile separately.
 - Planned cleanup:
   add Firebase App Check enforcement when App Check is configured for the public site.
 

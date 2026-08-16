@@ -60,28 +60,70 @@ const RAW_STATIC_SEARCH_ITEMS: readonly Omit<SiteSearchItem, 'searchText'>[] = [
     id: 'page-home',
     type: 'page' as const,
     title: 'Home',
-    excerpt: 'Portfolio, writing, media, projects, and recovery updates from Colin Michaels.',
+    excerpt: 'Cool gadgets, useful technology, internet finds, FPV stories, and creator projects from Colin Michaels.',
     path: '/',
-    titleText: 'home colin michaels',
-    excerptText: 'portfolio writing media projects recovery updates applications developer fpv drone creative technologist',
-    taxonomyText: 'homepage portfolio projects media writing',
-    bodyText: '',
-    categories: ['Site'],
-    tags: ['portfolio', 'projects', 'writing', 'media'],
+    titleText: 'home colin michaels cool gadgets useful tech internet finds captain colin',
+    excerptText: 'unusual gadgets practical technology fpv drone stories videos creator projects applications developer',
+    taxonomyText: 'homepage gadgets drones fpv youtube projects writing',
+    bodyText: 'is it actually useful captain colin flies one annoying problem one useful fix',
+    categories: ['Site', 'Gadgets & Toys', 'Drones & FPV'],
+    tags: ['gadgets', 'useful technology', 'internet finds', 'fpv', 'Captain Colin'],
     date: null,
   },
   {
     id: 'page-blog',
     type: 'page' as const,
     title: 'Blog',
-    excerpt: 'Notes on frontend engineering, Angular architecture, Firebase, CMS workflows, and web systems.',
+    excerpt: 'Articles about unusual gadgets, useful technology, FPV flights, creator projects, recovery, and software systems.',
     path: `/${PATH_NAMES.BLOG}`,
-    titleText: 'blog writing articles notes',
-    excerptText: 'frontend engineering angular architecture firebase cms workflows web systems',
-    taxonomyText: 'blog writing articles',
-    bodyText: '',
-    categories: ['Writing'],
-    tags: ['angular', 'firebase', 'cms', 'frontend'],
+    titleText: 'blog writing articles unusual gadgets useful technology fpv creator projects',
+    excerptText: 'gadget finds product research drones flights recovery angular firebase cms web systems',
+    taxonomyText: 'blog writing articles gadgets drones projects recovery software',
+    bodyText: 'is it actually useful captain colin flies practical guides first person stories',
+    categories: ['Writing', 'Gadgets & Toys', 'Drones & FPV'],
+    tags: ['gadgets', 'fpv', 'projects', 'recovery', 'angular', 'firebase'],
+    date: null,
+  },
+  {
+    id: 'page-editorial-standards',
+    type: 'page' as const,
+    title: 'Editorial Standards & Corrections',
+    excerpt: 'How ColinMichaels.com labels hands-on experience, research, sources, synthetic media, relationships, and corrections.',
+    path: `/${PATH_NAMES.EDITORIAL_STANDARDS}`,
+    titleText: 'editorial standards corrections trust transparency',
+    excerptText: 'hands-on tested research sources citations synthetic media ai disclosure sponsorship affiliate corrections updates',
+    taxonomyText: 'site policy trust sourcing author accountability',
+    bodyText: 'report an error explain evidence boundaries distinguish manufacturer claims from independent results',
+    categories: ['Site'],
+    tags: ['editorial standards', 'corrections', 'sources', 'disclosure'],
+    date: null,
+  },
+  {
+    id: 'page-gadget-usefulness-scorecard',
+    type: 'page' as const,
+    title: 'Gadget Usefulness Scorecard',
+    excerpt: 'A printable Is It Actually Useful? worksheet for scoring problem fit, evidence, true cost, everyday friction, support, and an honest verdict.',
+    path: `/${PATH_NAMES.RESOURCES}/${PATH_NAMES.RESOURCE_GADGET_USEFULNESS_SCORECARD}`,
+    titleText: 'gadget usefulness scorecard is it actually useful printable worksheet',
+    excerptText: 'score gadgets problem fit evidence true cost daily friction support verdict buyer research',
+    taxonomyText: 'gadgets toys useful technology internet finds product review resource captain colin',
+    bodyText: 'own tried borrowed research only product claims relationship disclosure test borrow buy wait skip watch list',
+    categories: ['Gadgets & Toys', 'Resources'],
+    tags: ['gadget scorecard', 'Is It Actually Useful', 'product research', 'printable worksheet'],
+    date: null,
+  },
+  {
+    id: 'page-personal-aircraft-buyer-verification',
+    type: 'page' as const,
+    title: 'Personal Aircraft Buyer Verification',
+    excerpt: 'A printable worksheet for checking an aircraft offer, deposit terms, legal-category claims, operating reality, support, and evidence.',
+    path: `/${PATH_NAMES.RESOURCES}/${PATH_NAMES.RESOURCE_PERSONAL_AIRCRAFT_BUYER_VERIFICATION}`,
+    titleText: 'personal aircraft buyer verification worksheet passenger drone ultralight evtol',
+    excerptText: 'aircraft offer deposit refund seller legal category part 103 operation training support evidence purchase research',
+    taxonomyText: 'drones fpv gadgets buyer guide printable resource',
+    bodyText: 'verify before paying filmed flight checkout page delivery configuration maintenance batteries parts warranty insurance records stop signs',
+    categories: ['Drones & FPV', 'Resources'],
+    tags: ['personal aircraft', 'buyer verification', 'Part 103', 'printable worksheet'],
     date: null,
   },
 ];
@@ -219,7 +261,7 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
 }
 
 function createBlogPostBodyText(post: BlogPost): string {
-  return post.blocks
+  const blockText = post.blocks
     .flatMap(block => [
       block.data.title,
       block.data.text,
@@ -241,6 +283,16 @@ function createBlogPostBodyText(post: BlogPost): string {
     ])
     .filter((value): value is string => typeof value === 'string')
     .join(' ');
+
+  return [
+    blockText,
+    post.editorial?.evidenceBasis,
+    post.editorial?.evidenceSummary,
+    post.editorial?.relationshipDisclosure,
+    post.editorial?.aiAssistanceDisclosure,
+    post.editorial?.syntheticMediaDisclosure,
+    post.editorial?.updateNote,
+  ].filter((value): value is string => typeof value === 'string').join(' ');
 }
 
 function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {

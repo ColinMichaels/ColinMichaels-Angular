@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T20:20:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "insta360-ace-pro-fpv-sunset-test",
+      "revision": 0,
+      "slug": "insta360-ace-pro-fpv-sunset-test",
+      "title": "Insta360 Ace Pro on an FPV Drone: What My Sunset Test Actually Showed",
+      "excerpt": "I flew the original Insta360 Ace Pro on an FPV quad at golden hour, then tried Active HDR and PureVideo as the light faded. Here is what the footage supports—and which missing settings prevent a controlled verdict.",
+      "coverImage": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-cover.webp",
+      "thumbnailImage": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Photography & Video",
+        "Gadgets & Gear"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Insta360 Ace Pro",
+        "FPV",
+        "Action Camera",
+        "Camera Test",
+        "Active HDR",
+        "PureVideo",
+        "Low Light",
+        "Captain Colin Flies"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "mixed",
+        "evidenceSummary": "This article is grounded in Colin's own December 2023 Ace Pro FPV upload, its public transcript, visible frame sequence, and repeated public audience questions. Current official Insta360 pages were reviewed for original-model recording specifications, and current FAA guidance was reviewed only as a present-day U.S. starting point. The upload does not preserve every stabilization, sharpness, color-profile, export, route, mounted-weight, or raw-file setting, so the draft does not claim a controlled comparison or final review.",
+        "sourceReviewedAt": "2026-08-15",
+        "relationshipDisclosure": "No sponsorship, affiliate link, free product, loaner, or paid placement is claimed for this article. Colin must confirm that relationship boundary before publication.",
+        "aiAssistanceDisclosure": "AI assistance was used to inspect the public transcript and visible frames, organize the source ledger, prepare web derivatives, and draft this package. Colin must review the first-person voice, flight context, settings uncertainty, images, links, and final wording before publication.",
+        "syntheticMediaDisclosure": "The cover, thumbnail, Open Graph image, and three in-body images are documentary frame derivatives captured from Colin's exact public video on August 15, 2026. They were cropped, resized, and compressed for web delivery; no generative editing or invented camera, aircraft, location, or test result was used. Colin's original master remains authoritative."
+      },
+      "seo": {
+        "title": "Insta360 Ace Pro FPV Sunset Test: What It Showed",
+        "description": "See what Colin's original Insta360 Ace Pro FPV sunset footage supports, what Active HDR and PureVideo looked like, and which missing settings prevent a controlled comparison.",
+        "canonical": "https://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test",
+        "openGraphImage": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "What My Ace Pro FPV Sunset Test Really Proved",
+        "description": "Real FPV footage, a changing sunset, two camera modes, and the settings I should have documented before calling it a comparison.",
+        "image": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-og.jpg",
+        "imageAlt": "FPV view over a baseball field, canal, and homes in warm sunset light",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-01",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "The Ace Pro footage looked good enough to make me enthusiastic and incomplete enough to make me careful. Two years later, the useful part is knowing which of those reactions the video can actually support.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "In December 2023, I strapped an original Insta360 Ace Pro onto an FPV quad with a makeshift mount and flew as the sun was going down. I tried a 4K30 Active HDR pass, switched to PureVideo as the light faded, watched the battery, checked the mount, and asked viewers what they wanted to know next. The result was a real field test—but not a controlled camera comparison."
+          }
+        },
+        {
+          "id": "video-companion-01",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=OFeCTH2LP9s",
+            "embedUrl": "https://www.youtube.com/embed/OFeCTH2LP9s",
+            "caption": "The original 10:09 Insta360 Ace Pro FPV field test, filmed and published by Colin Michaels / Captain Colin. Captions and the article summary provide the spoken context.",
+            "isCompanionVideo": true,
+            "videoTitle": "Camera ‘sham’ era! Insta360 Ace Pro First Reaction and FPV Flights video",
+            "videoDescription": "Join me for an exhilarating adventure as I take the Insta360 Ace Pro to new heights, literally! In this video, I really am enjoying this camera so far and don’t often boast about a camera. I think it could be lighter for fpv but overall it does an amazing job.",
+            "videoUploadDate": "2023-12-13",
+            "videoDurationSeconds": 609
+          }
+        },
+        {
+          "id": "disclosure-01",
+          "type": "paragraph",
+          "data": {
+            "text": "This article is based on my own published footage and public transcript. It is not a reconstructed flight log. The original session did not preserve every stabilization, sharpness, color-profile, export, route, mounted-weight, or raw-file setting, so I will not fill those gaps with guesses. Nobody paid for placement, and there are no affiliate links in this draft."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "Quick Summary (TL;DR)",
+            "level": 2
+          }
+        },
+        {
+          "id": "tldr-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "This was a hands-on first flight, not a laboratory review or a fixed-light comparison.",
+              "The transcript identifies a 4K30 Active HDR pass and later 4K30 PureVideo passes as the sunset darkened.",
+              "The footage proves the scenes were recorded; it does not prove every hidden camera or export setting.",
+              "The most repeated viewer questions—stabilization, exact settings, raw versus edited footage, low light, and weight—still deserve a properly logged retest.",
+              "My verdict is that the upload is useful evidence and an incomplete comparison at the same time."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-test",
+          "type": "header",
+          "data": {
+            "text": "The Test I Actually Ran",
+            "level": 2
+          }
+        },
+        {
+          "id": "test-specs-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The current <a href=\"https://onlinemanual.insta360.com/ace/en-us/specs/hardware/photo-video\">official Ace-series specification table</a> lists the original Ace Pro with 8K at 24fps, 4K at up to 120fps, and PureVideo up to 4K30. Those are manufacturer capabilities, not proof that every maximum mode appeared in my edit. In the video, I specifically narrate 4K30 Active HDR and 4K30 PureVideo attempts."
+          }
+        },
+        {
+          "id": "test-stats-01",
+          "type": "stats",
+          "data": {
+            "title": "What the public transcript preserves",
+            "caption": "Approximate points in the 10:09 edit; these labels summarize Colin's narration, not extracted camera metadata.",
+            "stats": [
+              {
+                "label": "0:31",
+                "value": "Golden hour",
+                "caption": "Sunlight is fading as the first flight begins"
+              },
+              {
+                "label": "3:18",
+                "value": "Active HDR",
+                "caption": "Colin identifies the next pass as 4K30"
+              },
+              {
+                "label": "5:18",
+                "value": "PureVideo",
+                "caption": "The first low-light-mode pass starts near sunset"
+              },
+              {
+                "label": "7:12",
+                "value": "Second pass",
+                "caption": "Another 4K30 PureVideo flight after the sun is lower"
+              }
+            ]
+          }
+        },
+        {
+          "id": "test-context-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The setup was intentionally improvised. I said the mount was makeshift, checked whether the camera had tilted, watched pack voltage, and admitted that I did not know whether stabilization was still on. That honesty is not a flaw in the footage. It is the boundary around what the footage can answer."
+          }
+        },
+        {
+          "id": "image-hdr-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-inline-hdr.webp",
+            "alt": "FPV view over a baseball field and surrounding trees in warm late-day light",
+            "caption": "Around 4:06, during the pass Colin introduced as 4K30 Active HDR. This documentary frame proves the visible scene, not an unrecorded stabilization or export setting.",
+            "width": 1200,
+            "height": 675,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "fullWidth",
+            "imageSize": "wide"
+          }
+        },
+        {
+          "id": "heading-hdr",
+          "type": "header",
+          "data": {
+            "text": "First Pass: Active HDR at Golden Hour",
+            "level": 2
+          }
+        },
+        {
+          "id": "hdr-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The Active HDR sequence has plenty of useful visual information: a bright sky, long shadows, green fields, trees, houses, and quick changes in angle. It is exactly the kind of scene that makes dynamic-range behavior interesting. It is not, however, a locked comparison scene. The drone keeps moving, the angle keeps changing, and the sun keeps dropping."
+          }
+        },
+        {
+          "id": "hdr-02",
+          "type": "paragraph",
+          "data": {
+            "text": "I can say that I liked what I saw. I cannot use one moving pass to declare that Active HDR beat another mode, that stabilization was enabled, or that the exported upload matches an untouched camera file. A good-looking result and a complete test record are different things."
+          }
+        },
+        {
+          "id": "heading-purevideo",
+          "type": "header",
+          "data": {
+            "text": "Second Pass: PureVideo as the Light Fell",
+            "level": 2
+          }
+        },
+        {
+          "id": "image-purevideo-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-inline-purevideo.webp",
+            "alt": "Tilted FPV view across a green field, trees, and a baseball diamond in late golden-hour light",
+            "caption": "Around 6:17, during the first sequence Colin identified as PureVideo. Documentary frame derivative from the exact public upload; cropped and compressed without generative editing.",
+            "width": 1200,
+            "height": 675,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "purevideo-01",
+          "type": "paragraph",
+          "data": {
+            "text": "PureVideo is the part viewers naturally want to judge because the scene is getting darker. The problem is that the light is not just low; it is changing from minute to minute. The later flight also follows a different path. That makes the footage useful for seeing what came back from the field, but weak as a scientific A/B test."
+          }
+        },
+        {
+          "id": "image-lowlight-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/insta360-ace-pro-fpv-sunset-test-inline-lowlight.webp",
+            "alt": "FPV view banking beside dark trees and a curving path after sunset",
+            "caption": "Around 8:30, during the second PureVideo sequence after the sun had fallen farther. The darker trees and brighter sky show why a future retest needs a fixed route and a logged start time.",
+            "width": 1200,
+            "height": 675,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "fullWidth",
+            "imageSize": "wide"
+          }
+        },
+        {
+          "id": "purevideo-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The second pass is the clearest reminder that the camera was not the only variable. Light level, direction, subject detail, flight path, speed, mount angle, battery condition, and whatever stabilization or export choices survived the session all affect what a viewer sees."
+          }
+        },
+        {
+          "id": "heading-questions",
+          "type": "header",
+          "data": {
+            "text": "What Viewers Asked—and What I Can Answer",
+            "level": 2
+          }
+        },
+        {
+          "id": "questions-table-01",
+          "type": "html",
+          "data": {
+            "title": "Audience questions and evidence status",
+            "html": "<table><caption>What the original upload can and cannot establish</caption><thead><tr><th scope=\"col\">Question</th><th scope=\"col\">What the record supports</th><th scope=\"col\">What a retest needs</th></tr></thead><tbody><tr><th scope=\"row\">Exact settings?</th><td>4K30 Active HDR and PureVideo are named in the narration.</td><td>Record the full settings screen before every pass.</td></tr><tr><th scope=\"row\">Stabilization?</th><td>I say in the video that I am not sure whether it was on.</td><td>Lock the state and publish matching clips.</td></tr><tr><th scope=\"row\">Raw or edited?</th><td>The public upload is an edited YouTube deliverable.</td><td>Preserve a named raw file and document the export.</td></tr><tr><th scope=\"row\">Low-light winner?</th><td>PureVideo footage is visible as the sunset darkens.</td><td>Use the same route, timing, exposure, and comparison frame.</td></tr><tr><th scope=\"row\">Too heavy for FPV?</th><td>I say the camera could be lighter; no mounted weight is recorded.</td><td>Weigh the complete rig and log flight behavior.</td></tr></tbody></table>"
+          }
+        },
+        {
+          "id": "questions-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Those questions are not a distraction from the article. They are the article. They show exactly where enthusiasm stopped being evidence and where a better second test should begin."
+          }
+        },
+        {
+          "id": "heading-retest",
+          "type": "header",
+          "data": {
+            "text": "The Retest Checklist I Wish I Had Used",
+            "level": 2
+          }
+        },
+        {
+          "id": "retest-steps-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "Film the full camera settings screen and name the mode before takeoff.",
+              "Record the complete mounted weight, battery, mount position, and aircraft configuration.",
+              "Lock stabilization, sharpness, color profile, exposure behavior, resolution, and frame rate.",
+              "Use the same safe route and similar speed for each pass.",
+              "Record start time and visible light conditions instead of relying on the phrase golden hour.",
+              "Preserve one named raw clip from each mode before editing.",
+              "Document the editor, timeline changes, stabilization pass, bitrate, codec, and export resolution.",
+              "Publish the limits beside the result, even when the footage looks great."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "heading-safety",
+          "type": "header",
+          "data": {
+            "text": "A Camera Test Is Still a Flight",
+            "level": 2
+          }
+        },
+        {
+          "id": "safety-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The video includes me recognizing that I should not fly over people. It does not preserve enough context for me to issue a retrospective compliance verdict. For a current U.S. flight, begin with the FAA's <a href=\"https://www.faa.gov/uas/recreational_flyers\">Recreational Flyers guidance</a>, determine which operating rules apply, confirm airspace and authorization, keep the required visual line of sight, and check current registration, Remote ID, community-based safety, property, state, and local requirements for the exact operation."
+          }
+        },
+        {
+          "id": "warning-safety-01",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "This article documents an old field test. It is not flight instruction, legal advice, airspace authorization, or proof that a past flight met every current requirement.",
+            "attribution": "Flight-context boundary"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "My Verdict Now",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The Ace Pro produced sunset FPV footage I was genuinely happy to bring home. The public upload also leaves too many variables unrecorded to support a clean Active HDR-versus-PureVideo verdict. Both things can be true without turning the video into either an advertisement or a failure."
+          }
+        },
+        {
+          "id": "verdict-takeaway-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The footage is the proof that I flew the test. The missing settings are the proof that I need to test it better next time.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "verdict-02",
+          "type": "paragraph",
+          "data": {
+            "text": "That is the standard I want for future Captain Colin gear stories: show the real thing, preserve the setup, explain the catch, and let the verdict be smaller than the thumbnail when the evidence is smaller. Use the <a href=\"https://colinmichaels.com/resources/gadget-usefulness-scorecard\">Gadget Usefulness Scorecard</a> for the same evidence-first decision loop, or explore more first-party footage and field notes in <a href=\"https://colinmichaels.com/topics/drones-fpv\">Drones &amp; FPV</a>."
+          }
+        },
+        {
+          "id": "poll-retest-priority",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Which variable should I lock down first in a proper retest?",
+            "description": "Choose the comparison that would make the next field test most useful. Signed-in readers can change their vote later.",
+            "pollOptions": [
+              {
+                "id": "hdr-vs-purevideo",
+                "label": "Active HDR vs PureVideo"
+              },
+              {
+                "id": "stabilization",
+                "label": "Stabilization on vs off"
+              },
+              {
+                "id": "raw-vs-export",
+                "label": "Raw clip vs final export"
+              },
+              {
+                "id": "mounted-weight",
+                "label": "Mounted-weight comparison"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T20:20:00.000Z",
+      "updatedAt": "2026-08-15T20:20:00.000Z",
+      "publishedAt": null
+    }
+  ]
+}

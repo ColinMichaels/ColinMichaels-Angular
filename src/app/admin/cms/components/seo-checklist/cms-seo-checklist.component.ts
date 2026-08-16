@@ -17,9 +17,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-admin-control-module
-      title="SEO Checklist"
+      title="Discovery & Trust Checklist"
       [summary]="checklistSummary"
-      description="Authoring checks for search, sharing, and discovery."
+      description="Authoring checks for search, sharing, citations, evidence, and useful reader continuation."
     >
       <span
         adminControlModuleStatus

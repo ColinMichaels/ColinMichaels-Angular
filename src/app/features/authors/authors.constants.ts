@@ -1,4 +1,5 @@
 import {AuthorProfile} from './models/author.model';
+import {CREATOR_PROFILE_URLS} from '../../shared/seo/site-identity';
 
 export const DEFAULT_AUTHOR_ID = 'colin-michaels';
 export const DEFAULT_AUTHOR_SLUG = 'colin-michaels';
@@ -14,8 +15,10 @@ export const DEFAULT_AUTHOR_PROFILE: AuthorProfile = {
   imageAlt: 'Colin Michaels portrait',
   location: 'Florida',
   externalProfiles: [
-    {label: 'GitHub', url: 'https://github.com/ColinMichaels'},
-    {label: 'LinkedIn', url: 'https://www.linkedin.com/in/colinmichaels'},
+    {label: 'YouTube', url: CREATOR_PROFILE_URLS.youtube},
+    {label: 'Instagram', url: CREATOR_PROFILE_URLS.instagram},
+    {label: 'GitHub', url: CREATOR_PROFILE_URLS.github},
+    {label: 'LinkedIn', url: CREATOR_PROFILE_URLS.linkedin},
   ],
   healthDisclaimer: 'Anything health-related on this site is personal experience only and should not be taken as medical advice.',
   status: 'published',
