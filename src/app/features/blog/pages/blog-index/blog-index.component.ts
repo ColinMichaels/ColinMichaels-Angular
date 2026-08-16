@@ -172,7 +172,7 @@ const MAX_POPULAR_TAGS = 10;
               <app-blog-next-read [post]="nextReadPost" [compact]="true"></app-blog-next-read>
             }
 
-            <app-daily-discovery-rail></app-daily-discovery-rail>
+            <app-daily-discovery-rail [compact]="true"></app-daily-discovery-rail>
 
             <app-article-library-control surface="menu"></app-article-library-control>
 
@@ -400,6 +400,7 @@ const MAX_POPULAR_TAGS = 10;
     }
 
     .blog-index-sidebar {
+      box-sizing: border-box;
       min-width: 0;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -414,8 +415,27 @@ const MAX_POPULAR_TAGS = 10;
       }
 
       .blog-index-sidebar {
+        align-self: start;
         position: sticky;
-        top: 1rem;
+        top: calc(var(--site-header-sticky-height) + 0.75rem);
+        max-height: calc(100dvh - var(--site-header-sticky-height) - 1.5rem);
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-right: 0.4rem;
+        scrollbar-color: color-mix(in srgb, var(--site-accent) 58%, transparent) transparent;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+      }
+
+      .blog-index-sidebar::-webkit-scrollbar {
+        width: 0.45rem;
+      }
+
+      .blog-index-sidebar::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--site-accent) 58%, transparent);
       }
     }
 

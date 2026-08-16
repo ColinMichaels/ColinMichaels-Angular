@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, Input, computed, inject, signal, viewChild} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 
 import {AuthService} from '../../../services/auth.service';
@@ -14,6 +14,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class.is-playing]': 'play.isPlaying()',
+    '[class.daily-discovery-rail--compact]': 'compact',
   },
   template: `
     <section class="daily-discovery" aria-labelledby="daily-discovery-heading">
@@ -85,6 +86,43 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
     }
 
     :host(.is-playing) {
+      display: none;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-shell {
+      min-height: 0;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      gap: 0.75rem;
+      padding: 0.9rem;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-mark {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-mark svg {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-question-row {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-question {
+      font-size: 1.08rem;
+      line-height: 1.28;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-answer-toggle {
+      width: 100%;
+      min-height: 2.5rem;
+    }
+
+    :host(.daily-discovery-rail--compact) .daily-discovery-points {
       display: none;
     }
 
@@ -302,6 +340,8 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
   `],
 })
 export class DailyDiscoveryRailComponent {
+  @Input() compact = false;
+
   private readonly dailyDiscoveryService = inject(DailyDiscoveryService);
   private readonly localState = inject(DailyDiscoveryStateService);
   private readonly searchOverlay = inject(SiteSearchOverlayService);

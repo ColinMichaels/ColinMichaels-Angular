@@ -63,6 +63,8 @@ import {BlogPostSummary} from '../../models/blog-post.model';
 
     .blog-next-read--compact .blog-next-read__media {
       aspect-ratio: 1;
+      align-self: start;
+      height: auto;
       max-height: none;
       border-radius: 0.6rem;
     }

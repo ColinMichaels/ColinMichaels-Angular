@@ -11,9 +11,85 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
     DatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [`
+    .youtube-latest-videos--compact {
+      padding-block: 0.9rem;
+    }
+
+    .youtube-latest-videos--compact .youtube-latest-videos__inner {
+      padding-inline: 0.9rem;
+    }
+
+    .youtube-latest-videos--compact .site-section-header {
+      display: block;
+      margin-bottom: 0;
+      padding-block: 0 0.85rem;
+    }
+
+    .youtube-latest-videos--compact .heading-section {
+      font-size: 1.25rem;
+      line-height: 1.28;
+    }
+
+    .youtube-latest-videos--compact .site-section-copy {
+      display: -webkit-box;
+      margin-top: 0.45rem;
+      overflow: hidden;
+      font-size: 0.84rem;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .youtube-latest-videos--compact .btn-youtube {
+      display: inline-flex;
+      min-height: 2.35rem;
+      margin-top: 0.75rem;
+      padding-inline: 0.7rem;
+      font-size: 0.78rem;
+    }
+
+    .youtube-latest-videos--compact .youtube-latest-videos__grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+
+    .youtube-latest-videos--compact .site-skeleton-card,
+    .youtube-latest-videos--compact .youtube-latest-videos__card {
+      min-height: 0;
+    }
+
+    .youtube-latest-videos--compact .site-card-body {
+      padding: 0.85rem;
+    }
+
+    .youtube-latest-videos--compact .site-card-body h3 {
+      margin-top: 0.65rem;
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    .youtube-latest-videos--compact .site-card-body > p:not(.site-meta) {
+      display: -webkit-box;
+      margin-top: 0.6rem;
+      overflow: hidden;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .youtube-latest-videos--compact .link-youtube {
+      padding-top: 0.8rem;
+    }
+  `],
   template: `
-    <section id="youtube" class="site-section-band-dark">
-      <div class="site-section-inner">
+    <section
+      id="youtube"
+      class="site-section-band-dark youtube-latest-videos"
+      [class.youtube-latest-videos--compact]="compact"
+    >
+      <div class="site-section-inner youtube-latest-videos__inner">
         <div class="site-section-header">
           <div class="max-w-2xl">
             <p class="eyebrow eyebrow-red">YouTube</p>
@@ -39,7 +115,7 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
             <p class="mt-2">{{ error }}</p>
           </div>
         } @else if (isLoading()) {
-          <div class="site-card-grid" aria-label="Loading latest YouTube videos">
+          <div class="site-card-grid youtube-latest-videos__grid" aria-label="Loading latest YouTube videos">
           @for (item of loadingCards; track item) {
             <div class="site-skeleton-card animate-pulse">
               <div class="aspect-video bg-zinc-200 dark:bg-zinc-800"></div>
@@ -53,9 +129,9 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
           }
         </div>
       } @else {
-          <div class="site-card-grid">
+          <div class="site-card-grid youtube-latest-videos__grid">
           @for (video of videos; track video.id) {
-            <article class="site-card group flex h-full flex-col overflow-hidden">
+            <article class="site-card group flex h-full flex-col overflow-hidden" [class.youtube-latest-videos__card]="compact">
               <a [href]="video.videoUrl" target="_blank" rel="noopener noreferrer" class="site-media-link">
                 <img
                   [src]="video.thumbnailUrl"
@@ -95,6 +171,7 @@ import {YouTubeFeedService} from '../../services/youtube-feed.service';
 })
 export class YouTubeLatestVideosComponent implements OnInit {
   @Input() maxResults = 3;
+  @Input() compact = false;
 
   protected readonly feed = signal<YouTubeFeedResponse | null>(null);
   protected readonly isLoading = signal(true);
