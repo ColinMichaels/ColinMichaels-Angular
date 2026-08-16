@@ -243,6 +243,8 @@ describe('BlogIndexComponent', () => {
     expect(element.querySelector('app-blog-next-read')).not.toBeNull();
     expect(element.querySelector('app-article-library-control')).not.toBeNull();
     expect(element.querySelector('app-continue-reading-shelf')).not.toBeNull();
+    expect(element.querySelector('app-offline-articles-control')).not.toBeNull();
+    expect(element.querySelector('app-daily-discovery-rail')).not.toBeNull();
     expect(element.querySelector('app-blog-post-rail')).not.toBeNull();
     expect(element.querySelector('app-youtube-latest-videos')).not.toBeNull();
   });

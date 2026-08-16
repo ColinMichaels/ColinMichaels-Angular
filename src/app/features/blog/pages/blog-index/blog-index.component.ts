@@ -12,6 +12,7 @@ import {ContinueReadingShelfComponent} from '../../components/continue-reading-s
 import {BlogNextReadComponent} from '../../components/next-read/blog-next-read.component';
 import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
 import {ArticleLibraryControlComponent} from '../../components/article-library-control/article-library-control.component';
+import {OfflineArticlesControlComponent} from '../../components/offline-articles-control/offline-articles-control.component';
 import {BlogPostRailComponent} from '../../components/post-rail/blog-post-rail.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
@@ -31,6 +32,7 @@ import {
   parseBlogArchiveView,
   resolveBlogArchiveListingLayout,
 } from '../../utils/blog-archive-view.util';
+import {DailyDiscoveryRailComponent} from '../../../daily-discovery/components/daily-discovery-rail.component';
 import {
   createBlogCategorySlug,
   createBlogCategoryTitle,
@@ -67,7 +69,9 @@ const MAX_POPULAR_TAGS = 10;
     ContinueReadingShelfComponent,
     BlogNextReadComponent,
     ArticleLibraryControlComponent,
+    DailyDiscoveryRailComponent,
     BlogPostRailComponent,
+    OfflineArticlesControlComponent,
     BlogTopicGuideComponent,
     BlogPostListingComponent,
     YouTubeLatestVideosComponent,
@@ -120,7 +124,7 @@ const MAX_POPULAR_TAGS = 10;
         </header>
 
         <section class="blog-topic-filters" aria-label="Popular topic filters">
-          <p class="blog-topic-filters__label">Popular topics</p>
+          <p class="blog-topic-filters__label">Most popular topics</p>
           <div class="blog-topic-filters__row">
             <a
               [routerLink]="['/', pathNames.BLOG]"
@@ -199,7 +203,11 @@ const MAX_POPULAR_TAGS = 10;
               <app-blog-next-read [post]="nextReadPost"></app-blog-next-read>
             }
 
+            <app-daily-discovery-rail></app-daily-discovery-rail>
+
             <app-article-library-control surface="menu"></app-article-library-control>
+
+            <app-offline-articles-control surface="menu"></app-offline-articles-control>
 
             <app-continue-reading-shelf surface="blog" [maxRecords]="3"></app-continue-reading-shelf>
 
@@ -337,7 +345,7 @@ const MAX_POPULAR_TAGS = 10;
     }
 
     .blog-index-shell {
-      max-width: min(88rem, calc(100vw - (var(--site-gutter) * 2)));
+      max-width: min(94rem, calc(100vw - (var(--site-gutter) * 2)));
     }
 
     .blog-index-sidebar-panel {
@@ -405,7 +413,7 @@ const MAX_POPULAR_TAGS = 10;
 
     @media (min-width: 1024px) {
       .blog-index-content {
-        grid-template-columns: minmax(0, 1fr) minmax(21rem, 28rem);
+        grid-template-columns: minmax(0, 1fr) minmax(24rem, 30rem);
         gap: clamp(1.6rem, 3.2vw, 2.75rem);
       }
 
@@ -417,6 +425,8 @@ const MAX_POPULAR_TAGS = 10;
 
     .blog-index-sidebar app-blog-post-rail,
     .blog-index-sidebar app-article-library-control,
+    .blog-index-sidebar app-offline-articles-control,
+    .blog-index-sidebar app-daily-discovery-rail,
     .blog-index-sidebar app-youtube-latest-videos,
     .blog-index-sidebar app-blog-topic-guide,
     .blog-index-sidebar app-blog-next-read,
