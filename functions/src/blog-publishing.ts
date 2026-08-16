@@ -21,6 +21,7 @@ const POST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{15,127}$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const STATUSES = new Set(['draft', 'scheduled', 'published', 'archived']);
+const EVIDENCE_BASES = new Set(['hands-on', 'first-person', 'researched', 'manufacturer-supplied', 'mixed']);
 const BLOCK_TYPES = new Set([
   'paragraph', 'header', 'image', 'gallery', 'embed', 'list', 'quote', 'code', 'markdown', 'delimiter',
   'typography', 'stats', 'chart', 'poll', 'catCornerUnlock', 'html', 'unsupported',
@@ -194,6 +195,7 @@ export function validateTrustedBlogPost(value: unknown, now = new Date(), allowD
   validateAuthor(value['author']);
   validateSeo(value['seo']);
   validateOpenGraph(value['og']);
+  validateEditorialMetadata(value['editorial']);
   validateSocialPromotion(value['socialPromotion']);
   validateCatCorner(value['catCorner']);
   validatePreview(value['preview'], status);
@@ -635,6 +637,14 @@ function validateBlock(value: unknown, blockIds: Set<string>): void {
     if (!isHttpUrl(url)) {
       invalid('Embed URLs must use HTTP(S).');
     }
+
+    const hasVideoMetadata = data['videoTitle'] !== undefined
+      || data['videoDescription'] !== undefined
+      || data['videoUploadDate'] !== undefined
+      || data['videoDurationSeconds'] !== undefined;
+    if (hasVideoMetadata && (data['provider'] !== 'youtube' || data['isCompanionVideo'] !== true)) {
+      invalid('Video metadata is allowed only on a selected YouTube companion block.');
+    }
   }
   if (type === 'list') {
     if (data['listStyle'] !== undefined && !LIST_STYLES.has(String(data['listStyle']))) {
@@ -674,15 +684,23 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
   const stringFields = [
     'title', 'text', 'url', 'alt', 'caption', 'provider', 'embedUrl', 'language', 'code', 'markdown',
     'attribution', 'unit', 'xAxisTitle', 'yAxisTitle', 'valueSuffix', 'sourceLabel', 'sourceUrl',
-    'accessibilitySummary', 'question', 'description', 'html',
+    'accessibilitySummary', 'question', 'description', 'html', 'videoTitle', 'videoDescription',
+    'videoUploadDate',
   ];
-  const numberFields = ['width', 'height', 'yMax', 'decimals'];
-  const booleanFields = ['ordered', 'stretched', 'withBorder', 'withBackground', 'showLegend'];
+  const numberFields = ['width', 'height', 'yMax', 'decimals', 'videoDurationSeconds'];
+  const booleanFields = [
+    'ordered', 'stretched', 'withBorder', 'withBackground', 'showLegend', 'isCompanionVideo',
+  ];
 
   if (!stringFields.every(field => value[field] === undefined || typeof value[field] === 'string')
     || !numberFields.every(field => value[field] === undefined
       || (typeof value[field] === 'number' && Number.isFinite(value[field])))
     || !booleanFields.every(field => value[field] === undefined || typeof value[field] === 'boolean')
+    || (value['videoUploadDate'] !== undefined && !isVideoStructuredDataUploadDate(value['videoUploadDate']))
+    || (value['videoDurationSeconds'] !== undefined
+      && (typeof value['videoDurationSeconds'] !== 'number'
+        || !Number.isFinite(value['videoDurationSeconds'])
+        || value['videoDurationSeconds'] <= 0))
     || (value['placement'] !== undefined && !BLOCK_PLACEMENTS.has(String(value['placement'])))
     || (value['level'] !== undefined && value['level'] !== 2 && value['level'] !== 3)
     || (value['variant'] !== undefined && !TYPOGRAPHY_VARIANTS.has(String(value['variant'])))
@@ -700,6 +718,21 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
     || (value['pollOptions'] !== undefined && !isPollOptions(value['pollOptions']))) {
     invalid('Block data fields are invalid.');
   }
+}
+
+function isVideoStructuredDataUploadDate(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+    return isDateOnly(trimmedValue);
+  }
+
+  return /^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:\d{2})$/.test(trimmedValue)
+    && isIsoDate(trimmedValue);
 }
 
 function isGalleryImage(value: unknown): boolean {
@@ -769,6 +802,48 @@ function validateOpenGraph(value: unknown): void {
   for (const key of ['title', 'description', 'imageAlt']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') {
       invalid('Open Graph metadata is invalid.');
+    }
+  }
+}
+
+function validateEditorialMetadata(value: unknown): void {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value) || Array.isArray(value)) {
+    invalid('Editorial evidence metadata is invalid.');
+  }
+
+  const allowedKeys = new Set([
+    'evidenceBasis',
+    'evidenceSummary',
+    'sourceReviewedAt',
+    'relationshipDisclosure',
+    'aiAssistanceDisclosure',
+    'syntheticMediaDisclosure',
+    'updateNote',
+  ]);
+  if (!Object.keys(value).every(key => allowedKeys.has(key))) {
+    invalid('Editorial evidence metadata contains unsupported fields.');
+  }
+  if (value['evidenceBasis'] !== undefined && !EVIDENCE_BASES.has(getTrimmedString(value['evidenceBasis']))) {
+    invalid('Editorial evidence basis is invalid.');
+  }
+  if (value['sourceReviewedAt'] !== undefined && !isDateOnly(value['sourceReviewedAt'])) {
+    invalid('Editorial source review date must use YYYY-MM-DD.');
+  }
+
+  const boundedFields: Readonly<Record<string, number>> = {
+    evidenceSummary: 1_200,
+    relationshipDisclosure: 1_200,
+    aiAssistanceDisclosure: 1_200,
+    syntheticMediaDisclosure: 1_200,
+    updateNote: 1_000,
+  };
+  for (const [field, maxLength] of Object.entries(boundedFields)) {
+    if (value[field] !== undefined
+      && (typeof value[field] !== 'string' || String(value[field]).trim().length > maxLength)) {
+      invalid(`Editorial ${field} is invalid or exceeds ${maxLength} characters.`);
     }
   }
 }
@@ -1109,6 +1184,19 @@ function isPollOptions(value: unknown): boolean {
 
 function isIsoDate(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0 && Number.isFinite(new Date(value).getTime());
+}
+
+function isDateOnly(value: unknown): boolean {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
 }
 
 function getTrimmedString(value: unknown): string {

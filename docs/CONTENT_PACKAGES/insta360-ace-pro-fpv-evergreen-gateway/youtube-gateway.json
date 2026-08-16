@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "status": "local-review-only",
+  "capturedAt": "2026-08-15",
+  "selectedBy": "../captain-colin-archive-gateways/archive-candidate-scorecard.json",
+  "externalActions": {
+    "youtubeEdited": false,
+    "titleChanged": false,
+    "descriptionChanged": false,
+    "chaptersChanged": false,
+    "thumbnailUploaded": false,
+    "commentPosted": false,
+    "commentReplied": false,
+    "commentLikedOrHearted": false,
+    "playlistChanged": false,
+    "cardChanged": false,
+    "endScreenChanged": false
+  },
+  "video": {
+    "channelId": "UCKZ3E88t-BoUqPgZygJw6bA",
+    "videoId": "OFeCTH2LP9s",
+    "url": "https://www.youtube.com/watch?v=OFeCTH2LP9s",
+    "durationSeconds": 609,
+    "premieredAt": "2023-12-13",
+    "currentTitle": "Camera ‘sham’ era! Insta360 Ace Pro First Reaction and FPV Flights video",
+    "preserveVideoId": true,
+    "preservePublicationHistory": true
+  },
+  "publicSnapshot": {
+    "views": 2328,
+    "likes": 70,
+    "comments": 30,
+    "channelSubscribers": 602,
+    "description": "Join me for an exhilarating adventure as I take the Insta360 Ace Pro to new heights, literally! In this video, I really am enjoying this camera so far and don’t often boast about a camera. I think it could be lighter for fpv but overall it does an amazing job.",
+    "thumbnailObservation": "A real-looking close-up of the Ace Pro mounted on an FPV quad with three competing text layers: FPV Flights, Insta360 Ace Pro, and FIRST THOUGHTS.",
+    "visibleAudienceSignals": [
+      "requests for exact camera settings",
+      "questions about stabilization and raw versus edited footage",
+      "interest in low-light performance",
+      "questions about camera and battery weight",
+      "positive responses to the detailed field test"
+    ]
+  },
+  "accuracyBoundary": {
+    "handsOn": true,
+    "firstFlightFieldTest": true,
+    "controlledComparison": false,
+    "finalReview": false,
+    "exactSettingsFullyDocumented": false,
+    "stabilizationSettingConfirmed": false,
+    "mountWasImprovised": true,
+    "narratedModes": [
+      "4K30 Active HDR",
+      "4K30 PureVideo"
+    ],
+    "manufacturerClaimsRechecked": [
+      "1/1.3-inch sensor",
+      "8K at 24fps",
+      "4K at up to 120fps",
+      "PureVideo up to 4K30 on Ace Pro"
+    ],
+    "retrospectiveFlightComplianceDetermination": false
+  },
+  "recommended": {
+    "title": "Insta360 Ace Pro FPV Test: HDR and PureVideo at Sunset",
+    "description": "I mounted an Insta360 Ace Pro on an FPV quad for a first-flight field test at sunset. This video shows the improvised mount, a 4K30 Active HDR flight, a 4K30 PureVideo flight as the light falls, and the questions I still had afterward.\n\nThis is hands-on first-flight footage, not a controlled camera comparison or final review. The original session did not preserve every setting clearly enough for me to claim an exact stabilization, sharpness, color-profile, or raw-versus-edited comparison. I would lock those variables before repeating the test.\n\nChapters:\n0:00 Test plan and improvised mount\n0:31 Golden-hour setup\n1:10 Ace Pro recording-mode overview\n2:25 Battery and mount check\n3:18 4K30 Active HDR flight\n5:18 PureVideo after sunset\n6:57 What I still wanted to test\n7:12 Second low-light flight\n9:34 Field-test takeaway\n\nWatch next — BetaFPV 95X V3 over-water flight:\nhttps://youtu.be/IJjZir1qM1Y\n\nFull first-party test notes and the retest checklist:\nhttps://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_article\n\nUse my evidence-led gadget scorecard before buying gear:\nhttps://colinmichaels.com/resources/gadget-usefulness-scorecard?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_scorecard\n\nMore Captain Colin flights and field notes:\nhttps://colinmichaels.com/topics/drones-fpv?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_drones\n\nOfficial Ace-series recording specifications:\nhttps://onlinemanual.insta360.com/ace/en-us/specs/hardware/photo-video\n\nU.S. recreational drone guidance:\nhttps://www.faa.gov/uas/recreational_flyers\n\nRecorded as an early Ace Pro field test. The product and firmware have moved on; recheck current official specifications before buying or repeating a setup.",
+    "chapters": [
+      {"seconds": 0, "label": "Test plan and improvised mount"},
+      {"seconds": 31, "label": "Golden-hour setup"},
+      {"seconds": 70, "label": "Ace Pro recording-mode overview"},
+      {"seconds": 145, "label": "Battery and mount check"},
+      {"seconds": 198, "label": "4K30 Active HDR flight"},
+      {"seconds": 318, "label": "PureVideo after sunset"},
+      {"seconds": 417, "label": "What I still wanted to test"},
+      {"seconds": 432, "label": "Second low-light flight"},
+      {"seconds": 574, "label": "Field-test takeaway"}
+    ],
+    "officialReferences": [
+      "https://onlinemanual.insta360.com/ace/en-us/specs/hardware/photo-video",
+      "https://www.faa.gov/uas/recreational_flyers"
+    ],
+    "continuation": {
+      "nextVideoId": "IJjZir1qM1Y",
+      "nextVideoTitle": "BetaFpv 95x V3 - Over Water Cinematic Insta360 4K SMO",
+      "endScreenPlacement": "final-20-seconds-after-preview",
+      "playlist": "Captain Colin Flies | FPV & Drone Flights",
+      "websiteUrls": [
+        "https://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_article",
+        "https://colinmichaels.com/resources/gadget-usefulness-scorecard?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_scorecard",
+        "https://colinmichaels.com/topics/drones-fpv?utm_source=youtube&utm_medium=video_description&utm_campaign=ace_pro_fpv_gateway&utm_content=ofecth2lp9s_drones"
+      ]
+    },
+    "thumbnail": {
+      "status": "source-frame-export-required",
+      "changeOnlyAfterStudioBaseline": true,
+      "width": 1280,
+      "height": 720,
+      "actualVideoFramesRequired": true,
+      "syntheticMediaAllowed": false,
+      "primaryFramesSeconds": [6, 453],
+      "primaryText": "ACE PRO ON FPV",
+      "secondaryText": "SUNSET FIELD TEST",
+      "maximumTextBlocks": 2,
+      "forbidden": [
+        "synthetic drone",
+        "synthetic camera",
+        "fabricated performance graph",
+        "fake comparison frame",
+        "unsupported winner or game-changer claim",
+        "fake view or rating metric"
+      ]
+    },
+    "pinnedComment": {
+      "state": "not-posted",
+      "text": "Transparency note: this was my first field flight with the Ace Pro, not a controlled comparison. The original session did not preserve every setting clearly enough for me to claim an exact stabilization, sharpness, color-profile, or raw-versus-edited test.\n\nThe most useful questions here are still the ones viewers raised: exact settings, low-light behavior, stabilization, and weight. If I repeat this test with every variable locked, which two modes should I compare first?"
+    },
+    "commentReplies": [
+      {
+        "context": "settings or stabilization question",
+        "state": "not-posted",
+        "text": "Good question. I did not preserve enough of the original session settings to give you a reliable exact answer, so I do not want to guess. A repeat test should show the full settings screen, raw clip, export settings, and mounted weight together."
+      },
+      {
+        "context": "weight or external-power question",
+        "state": "not-posted",
+        "text": "The weight tradeoff was real in this first flight. I have not documented a safe battery-free external-power setup for this exact rig, so I would treat that as a new test rather than advice from this upload."
+      }
+    ]
+  },
+  "rollout": {
+    "stages": [
+      "Capture current YouTube Studio analytics, metadata, end screen, cards, playlist state, and thumbnail file.",
+      "Apply only the evidence-boundary description and transcript-grounded chapters, then verify public mobile truncation, links, and chapter starts.",
+      "Wait 28 days or until impressions are sufficient for a directional comparison; inspect retention and search terms before changing the title.",
+      "Test the clearer title as a separate dated change while preserving the current title for rollback.",
+      "Replace the thumbnail only if Studio evidence justifies another variable, and only with approved frames from the exact source video.",
+      "Add the related BetaFPV end screen and playlist continuation after previewing final placement.",
+      "Pin the transparency question and review replies manually."
+    ],
+    "changeOneMeasuredSurfaceAtATime": true
+  },
+  "measurement": {
+    "minimumComparisonDays": 28,
+    "compareCountsBeforePercentages": true,
+    "metrics": [
+      "impressions by surface",
+      "impression click-through rate by surface",
+      "YouTube Search terms",
+      "first-30-second retention",
+      "average view duration",
+      "chapter-moment retention",
+      "end-screen impressions and clicks",
+      "substantive comments and replies",
+      "tagged website sessions after production receipt verification"
+    ]
+  },
+  "rollback": {
+    "preserveCurrentTitle": true,
+    "preserveCurrentDescription": true,
+    "preserveCurrentThumbnail": true,
+    "preserveCurrentCardsAndEndScreen": true,
+    "preserveCurrentPlaylistMembership": true,
+    "preserveCurrentComments": true,
+    "deleteOrUnlistVideo": false,
+    "reuploadVideo": false
+  }
+}

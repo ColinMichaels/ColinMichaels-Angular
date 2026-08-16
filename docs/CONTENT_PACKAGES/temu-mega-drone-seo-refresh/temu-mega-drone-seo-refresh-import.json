@@ -1,0 +1,646 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T02:20:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "post-041c74e0-31f7-460a-8e85-4be3d62d9622",
+      "revision": 0,
+      "slug": "they-bought-a-full-size-temu-mega-drone",
+      "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
+      "excerpt": "Goonzquad bought a full-size Temu drone, assembled it from crates, and flew it. Here is what arrived, what went wrong, and what the flight actually proved.",
+      "coverImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fcover%2F1783732242450-45938d58-ef28-4234-b6f5-122c795f518c.webp?alt=media&token=ab4439ce-037b-43e7-8997-72fe339f4041",
+      "featured": true,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels",
+        "profileUrl": "https://colinmichaels.com/authors/colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Creative Technology",
+        "Opinion"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Temu Drone",
+        "Mega Drone",
+        "Flying Car",
+        "Personal Aircraft",
+        "eVTOL",
+        "Goonzquad",
+        "Drone Technology",
+        "Future Transportation",
+        "Viral Video",
+        "Human-Carrying Drone"
+      ],
+      "status": "published",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based commentary using Goonzquad's original public video as primary evidence and the current eCFR Part 103 text for the rules boundary. Colin did not buy, inspect, assemble, or fly the aircraft.",
+        "sourceReviewedAt": "2026-08-14",
+        "relationshipDisclosure": "No ownership or hands-on relationship is claimed; the article comments on Goonzquad's published video.",
+        "aiAssistanceDisclosure": "AI assistance was used to audit, structure, and draft this refresh. Colin must verify the source video, legal references, and every material change before import.",
+        "syntheticMediaDisclosure": "The two new inline visuals are AI-generated editorial illustrations, not photographs of the shipment, aircraft, damaged parts, flight, or an official airspace chart.",
+        "updateNote": "Expanded the evidence boundary, disclosure, Part 103 context, imagery, internal discovery, and search packaging without changing the original publication date."
+      },
+      "seo": {
+        "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
+        "description": "Goonzquad bought a full-size Temu drone, assembled it from crates, and flew it. See what arrived, what went wrong, and what the flight actually proved.",
+        "canonical": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
+        "openGraphImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
+        "description": "The crates, damaged propeller, translated controls, low flight, and the limits of what one viral test can prove.",
+        "image": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
+        "imageAlt": "Colin reacts beside a blue single-seat multicopter on a pallet and the words Full-Size Mega Drone",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "h1",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "A full-size human-carrying drone arrived from Temu in crates. The damaged propeller was only the first warning sign.",
+            "attribution": "The short version"
+          }
+        },
+        {
+          "id": "p1",
+          "type": "paragraph",
+          "data": {
+            "text": "There are normal online purchases, questionable online purchases, and then there is ordering a human-carrying aircraft from Temu."
+          }
+        },
+        {
+          "id": "p2",
+          "type": "paragraph",
+          "data": {
+            "text": "The guys at Goonzquad apparently looked at the giant orange shopping app—the place most of us visit when we need twelve oddly specific cable clips for $3.47—and said, “Yes, but can it sell us aviation?”"
+          }
+        },
+        {
+          "id": "p3",
+          "type": "paragraph",
+          "data": {
+            "text": "The answer, disturbingly, was yes."
+          }
+        },
+        {
+          "id": "p4",
+          "type": "paragraph",
+          "data": {
+            "text": "Their video, <a href=\"https://www.youtube.com/watch?v=bUkvDe0x47A&amp;t=861s\">We Bought Temu’s Craziest Product!!!</a>, follows them unboxing, assembling, configuring, and eventually flying a full-size single-seat multicopter. Calling it a “drone” feels technically correct in the same way calling a monster truck “a vehicle” is technically correct. This thing has a seat, a harness, eight motors, giant carbon-fiber propellers, and enough confidence to make good judgment leave the room."
+          }
+        },
+        {
+          "id": "research-disclosure-2026",
+          "type": "typography",
+          "data": {
+            "variant": "aside",
+            "text": "I did not buy, inspect, assemble, or fly this aircraft. This is commentary on Goonzquad’s published video plus a rules update checked August 14, 2026. The flight footage proves what happened in that test; it does not establish certification, long-term reliability, or legal status for another aircraft or location.",
+            "attribution": "Evidence and hands-on disclosure"
+          }
+        },
+        {
+          "id": "Dgv4htzux_",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=bUkvDe0x47A",
+            "embedUrl": "https://www.youtube.com/embed/bUkvDe0x47A",
+            "caption": "Goonzquad’s original unboxing, assembly, and low-flight test provides the primary evidence discussed in this article."
+          }
+        },
+        {
+          "id": "p5",
+          "type": "paragraph",
+          "data": {
+            "text": "Naturally, I watched the whole thing."
+          }
+        },
+        {
+          "id": "h2",
+          "type": "header",
+          "data": {
+            "text": "TLDR",
+            "level": 2
+          }
+        },
+        {
+          "id": "l1",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard",
+            "items": [
+              "Goonzquad bought a full-size, human-carrying mega drone through Temu.",
+              "It arrived in multiple crates with a damaged propeller tip, some rust, translated controls, and absolutely no shortage of warning signs.",
+              "They tested it remotely, then put a roughly 180-pound person in the seat and lifted him off the ground.",
+              "The machine actually flew, which somehow made the situation more—not less—unbelievable.",
+              "This may be a glimpse of the future, but apparently the future ships in several boxes and needs help from ChatGPT.",
+              "The video does not provide enough verified weight, configuration, certification, or operating evidence to decide whether the aircraft qualified for a specific U.S. flight category."
+            ]
+          }
+        },
+        {
+          "id": "h3",
+          "type": "header",
+          "data": {
+            "text": "This Is Not the Temu Drone I Had in Mind",
+            "level": 2
+          }
+        },
+        {
+          "id": "p6",
+          "type": "paragraph",
+          "data": {
+            "text": "When somebody says “Temu drone,” I picture a $19 plastic quadcopter that promises 8K video, obstacle avoidance, GPS, facial recognition, weather control, and emotional support."
+          }
+        },
+        {
+          "id": "p7",
+          "type": "paragraph",
+          "data": {
+            "text": "What arrives is usually a humming potato with four propellers and a camera apparently borrowed from a 2007 flip phone."
+          }
+        },
+        {
+          "id": "p8",
+          "type": "paragraph",
+          "data": {
+            "text": "That is not what Goonzquad bought."
+          }
+        },
+        {
+          "id": "p9",
+          "type": "paragraph",
+          "data": {
+            "text": "They bought what is basically a personal flying platform: a carbon-fiber frame, a real seat, a joystick, batteries heavy enough to make everyone question the laws of physics, and two motors at each corner. The machine looks like somebody crossed a lawn chair with an industrial ceiling fan and then gave it venture capital."
+          }
+        },
+        {
+          "id": "p10",
+          "type": "paragraph",
+          "data": {
+            "text": "The closest comparison they mention is the Jetson ONE, except their machine came through Temu for a fraction of the price. They do not give a clear final purchase total in the video, which may be for the best. Some numbers are safer when they remain between you, your bank, and the person shipping aircraft parts across the Pacific."
+          }
+        },
+        {
+          "id": "h4",
+          "type": "header",
+          "data": {
+            "text": "The Warning Signs Arrived First",
+            "level": 2
+          }
+        },
+        {
+          "id": "p11",
+          "type": "paragraph",
+          "data": {
+            "text": "The unboxing is where a sensible person might have quietly reconsidered the entire project."
+          }
+        },
+        {
+          "id": "p12",
+          "type": "paragraph",
+          "data": {
+            "text": "One propeller arrived with visible damage near the tip—the part moving fastest when the machine is running. There was a little rust. Some hardware arrived loose in packaging that did not exactly whisper “certified aerospace logistics.” The charger was delayed in customs. The supplier promised to send a replacement propeller."
+          }
+        },
+        {
+          "id": "image-evidence-check",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/temu-mega-drone-evidence-check.webp",
+            "alt": "Inspection light, checklist, and tools beside a chipped generic multicopter propeller in a workshop",
+            "caption": "AI-generated editorial illustration of a damaged-parts inspection. It is not a photograph of the Goonzquad aircraft, its shipment, or the propeller shown in the video.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "p13",
+          "type": "paragraph",
+          "data": {
+            "text": "In other words, the usual experience of assembling discount patio furniture, except the patio furniture wants to carry you into the sky."
+          }
+        },
+        {
+          "id": "p14",
+          "type": "paragraph",
+          "data": {
+            "text": "To their credit, the guys did notice the damaged part, contacted the supplier, and discussed whether it was safe to use. They also planned to keep the first tests low and use the remote control before anyone climbed aboard."
+          }
+        },
+        {
+          "id": "p15",
+          "type": "paragraph",
+          "data": {
+            "text": "To their other kind of credit, they still kept assembling it because otherwise there would not be a video."
+          }
+        },
+        {
+          "id": "h5",
+          "type": "header",
+          "data": {
+            "text": "The Setup Process Was Reassuring in All the Wrong Ways",
+            "level": 2
+          }
+        },
+        {
+          "id": "p16",
+          "type": "paragraph",
+          "data": {
+            "text": "The controller booted into an interface they had to translate. The supplier was on the other side of a major time-zone difference. At one point, they said the supplier had warned them that an incorrect configuration could make the drone go up and not come back down."
+          }
+        },
+        {
+          "id": "p17",
+          "type": "paragraph",
+          "data": {
+            "text": "That is a sentence I prefer not to hear while configuring anything with a seat."
+          }
+        },
+        {
+          "id": "p18",
+          "type": "paragraph",
+          "data": {
+            "text": "Later, they used ChatGPT to help identify some of the controller buttons."
+          }
+        },
+        {
+          "id": "p19",
+          "type": "paragraph",
+          "data": {
+            "text": "I use ChatGPT constantly. I think it is incredibly useful. I use it to write, code, research ideas, organize projects, and occasionally figure out why software has decided to ruin my afternoon."
+          }
+        },
+        {
+          "id": "p20",
+          "type": "paragraph",
+          "data": {
+            "text": "But if the machine in front of me has eight giant propellers and the button labels are a mystery, I would like at least one person in the conversation to be wearing a shirt with the word “ENGINEER” embroidered on it."
+          }
+        },
+        {
+          "id": "p21",
+          "type": "paragraph",
+          "data": {
+            "text": "Instead, the process had the unmistakable energy of three guys assembling the future while the future’s customer-support representative was asleep in another country."
+          }
+        },
+        {
+          "id": "h6",
+          "type": "header",
+          "data": {
+            "text": "Then the Mega Drone Actually Flew",
+            "level": 2
+          }
+        },
+        {
+          "id": "p22",
+          "type": "paragraph",
+          "data": {
+            "text": "This is the part where the sarcasm has to pause for a second."
+          }
+        },
+        {
+          "id": "p23",
+          "type": "paragraph",
+          "data": {
+            "text": "They moved the machine to an open farm, powered it up, tested the motors individually, and flew it with the remote. It lifted, hovered, responded to control, and landed. It was surprisingly quiet. It looked stable. It did not immediately transform itself into a very expensive pile of carbon fiber."
+          }
+        },
+        {
+          "id": "p24",
+          "type": "paragraph",
+          "data": {
+            "text": "Then somebody got in."
+          }
+        },
+        {
+          "id": "p25",
+          "type": "paragraph",
+          "data": {
+            "text": "They buckled a roughly 180-pound person into the seat, kept the flight low, and lifted him off the ground under remote control. Not in a product demo. Not in a glossy manufacturer video. On a farm, after an unboxing that included damaged parts, translation software, and the phrase “guinea pig.”"
+          }
+        },
+        {
+          "id": "p26",
+          "type": "paragraph",
+          "data": {
+            "text": "And it worked."
+          }
+        },
+        {
+          "id": "p27",
+          "type": "paragraph",
+          "data": {
+            "text": "The passenger described it as peaceful. The pilot’s hands were shaking. Everyone immediately started talking about taking turns and flying around together, because the human brain has a fascinating ability to convert “that could have gone terribly” into “I call next.”"
+          }
+        },
+        {
+          "id": "h7",
+          "type": "header",
+          "data": {
+            "text": "This Is Probably the Future, Which Is Slightly Concerning",
+            "level": 2
+          }
+        },
+        {
+          "id": "p28",
+          "type": "paragraph",
+          "data": {
+            "text": "As ridiculous as the video is, there is something genuinely exciting underneath it."
+          }
+        },
+        {
+          "id": "p29",
+          "type": "paragraph",
+          "data": {
+            "text": "Personal electric aircraft are moving out of science-fiction artwork and into the awkward early-adopter phase. The machines are getting simpler to control. Electric motors make multicopter layouts possible. Software can handle stabilization that would be impossible for an untrained person to manage manually."
+          }
+        },
+        {
+          "id": "p30",
+          "type": "paragraph",
+          "data": {
+            "text": "The future may not arrive as a polished flying car with leather seats and a cup holder. It may arrive in several crates, with one missing charger, a translated controller, and a group chat with a supplier named “my dear friend.”"
+          }
+        },
+        {
+          "id": "p31",
+          "type": "paragraph",
+          "data": {
+            "text": "That is how technology often works. The first version is too expensive, too strange, too risky, or too inconvenient. Then somebody builds a cheaper version. Somebody else posts a video. The idea stops looking impossible. Ten years later, we all pretend it was obvious."
+          }
+        },
+        {
+          "id": "p32",
+          "type": "paragraph",
+          "data": {
+            "text": "I am not saying everyone will commute to work in a giant personal drone next year. I am saying the distance between “wild internet video” and “actual transportation category” suddenly looks a lot shorter than it did."
+          }
+        },
+        {
+          "id": "h-2026-reality",
+          "type": "header",
+          "data": {
+            "text": "The 2026 Reality Check: Flight Is Not Approval",
+            "level": 2
+          }
+        },
+        {
+          "id": "p-2026-proof",
+          "type": "paragraph",
+          "data": {
+            "text": "A machine lifting a person over a farm proves that this machine lifted a person during this filmed test. It does not by itself prove airworthiness, repeatable reliability, legal classification, pilot readiness, insurance coverage, safe shipping, or support for the next buyer."
+          }
+        },
+        {
+          "id": "l-2026-proof-boundaries",
+          "type": "list",
+          "data": {
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard",
+            "items": [
+              "The video shows the delivered components being assembled, powered, remotely tested, and flown low with one occupant.",
+              "The video shows real concerns, including visible propeller damage, rust, delayed equipment, translated controls, and remote supplier support.",
+              "The video does not publish a verified powered empty weight, complete conformity record, independent inspection, long-term flight log, or legal determination.",
+              "A similar-looking aircraft can have a different weight, configuration, software, battery, owner, maintenance state, and legal path."
+            ]
+          }
+        },
+        {
+          "id": "p-2026-part-103",
+          "type": "paragraph",
+          "data": {
+            "text": "In the United States, <a href=\"https://www.ecfr.gov/current/title-14/chapter-I/subchapter-F/part-103\">14 CFR Part 103</a> defines a narrow ultralight route for one occupant and sport or recreation. A powered ultralight must meet empty-weight, speed, and stall limits, and the operating rules restrict daylight, congested-area and crowd overflight, certain controlled airspace, and visibility. The video does not give enough verified data for me to say this aircraft qualified."
+          }
+        },
+        {
+          "id": "p-2026-buyer-verification",
+          "type": "paragraph",
+          "data": {
+            "text": "If a viral aircraft ever turns into a real offer, stop at the evidence boundary and use the <a href=\"https://colinmichaels.com/resources/personal-aircraft-buyer-verification\">Personal Aircraft Buyer Verification guide and printable worksheet</a>. It organizes seller identity, deposit terms, the exact configuration, legal-category claims, operating reality, training, support, and records without pretending to make the legal or safety decision for you."
+          }
+        },
+        {
+          "id": "image-part-103-planning",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/temu-mega-drone-part-103.webp",
+            "alt": "Generic single-seat multicopter parked beside a flight-planning table at an open rural field",
+            "caption": "AI-generated editorial illustration of flight planning in open terrain. It does not depict the Goonzquad aircraft, an official chart, or a legal determination under Part 103.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "p-2026-cluster-link",
+          "type": "paragraph",
+          "data": {
+            "text": "For flight stories, field notes, and future personal-aircraft checks, continue through the <a href=\"https://colinmichaels.com/topics/drones-fpv\">Drones &amp; FPV topic hub</a>. That route is the ongoing collection; this article remains the record of one unusually convincing internet purchase."
+          }
+        },
+        {
+          "id": "h8",
+          "type": "header",
+          "data": {
+            "text": "Would I Fly It?",
+            "level": 2
+          }
+        },
+        {
+          "id": "p33",
+          "type": "paragraph",
+          "data": {
+            "text": "Absolutely."
+          }
+        },
+        {
+          "id": "p34",
+          "type": "paragraph",
+          "data": {
+            "text": "After a trained professional inspected it. After the damaged propeller was replaced. After every bolt, motor, battery, controller setting, emergency procedure, operating rule, and weather condition had been checked. After a long remote-testing program. After locating a helmet, a parachute, an aircraft mechanic, three lawyers, and possibly a priest."
+          }
+        },
+        {
+          "id": "p35",
+          "type": "paragraph",
+          "data": {
+            "text": "So, basically: yes, but not five minutes after opening the box."
+          }
+        },
+        {
+          "id": "p36",
+          "type": "paragraph",
+          "data": {
+            "text": "This video is entertainment, not an instruction manual. A machine capable of lifting a person deserves more than enthusiasm and a translated menu. The fact that something can take off does not automatically mean it is ready to become your new weekend hobby."
+          }
+        },
+        {
+          "id": "p37",
+          "type": "paragraph",
+          "data": {
+            "text": "Still, I understand why they did it."
+          }
+        },
+        {
+          "id": "p38",
+          "type": "paragraph",
+          "data": {
+            "text": "There is a special kind of curiosity that looks at a human-sized drone and needs to know whether it works. That curiosity has built airplanes, rockets, race cars, computers, and a large percentage of the projects that begin with the words, “This is probably a terrible idea, but…”"
+          }
+        },
+        {
+          "id": "h9",
+          "type": "header",
+          "data": {
+            "text": "The Final Verdict",
+            "level": 2
+          }
+        },
+        {
+          "id": "p39",
+          "type": "paragraph",
+          "data": {
+            "text": "Are these guys crazy?"
+          }
+        },
+        {
+          "id": "p40",
+          "type": "paragraph",
+          "data": {
+            "text": "Yes."
+          }
+        },
+        {
+          "id": "p41",
+          "type": "paragraph",
+          "data": {
+            "text": "Was buying a full-size Temu mega drone an objectively questionable decision?"
+          }
+        },
+        {
+          "id": "p42",
+          "type": "paragraph",
+          "data": {
+            "text": "Also yes."
+          }
+        },
+        {
+          "id": "p43",
+          "type": "paragraph",
+          "data": {
+            "text": "Did I enjoy every minute of watching them discover that their internet-purchased flying chair could actually lift a human being?"
+          }
+        },
+        {
+          "id": "p44",
+          "type": "paragraph",
+          "data": {
+            "text": "Unfortunately, yes."
+          }
+        },
+        {
+          "id": "p45",
+          "type": "paragraph",
+          "data": {
+            "text": "The video ends just as one of the tests produces a fresh round of “oh no” and the wonderfully concise verdict, “we’re cooked.” That is both a cliffhanger and possibly the most accurate product review ever delivered."
+          }
+        },
+        {
+          "id": "p46",
+          "type": "paragraph",
+          "data": {
+            "text": "This may really be what the future looks like: electric, software-stabilized, surprisingly accessible, and assembled by people who are far more comfortable with risk than I am."
+          }
+        },
+        {
+          "id": "p47",
+          "type": "paragraph",
+          "data": {
+            "text": "I just assumed the future would come with better instructions."
+          }
+        },
+        {
+          "id": "poll-next-drone-check",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "What should I investigate next?",
+            "description": "Choose the part of human-carrying drones that needs the clearest evidence.",
+            "pollOptions": [
+              {
+                "id": "current-buying-options",
+                "label": "Current buying options"
+              },
+              {
+                "id": "part-103-rules",
+                "label": "Part 103 flight rules"
+              },
+              {
+                "id": "training-safety",
+                "label": "Training and safety"
+              },
+              {
+                "id": "ownership-costs",
+                "label": "Real ownership costs"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        },
+        {
+          "id": "h10",
+          "type": "header",
+          "data": {
+            "text": "Watch the Mega Drone Test",
+            "level": 2
+          }
+        },
+        {
+          "id": "p48",
+          "type": "paragraph",
+          "data": {
+            "text": "Watch Goonzquad’s <a href=\"https://www.youtube.com/watch?v=bUkvDe0x47A\">full video on YouTube</a>, or jump to the <a href=\"https://www.youtube.com/watch?v=bUkvDe0x47A&amp;t=861s\">moment-of-truth setup around 14:21</a>."
+          }
+        },
+        {
+          "id": "p49",
+          "type": "paragraph",
+          "data": {
+            "text": "Please enjoy it from the same safe location I did: sitting down, on the ground, with no Temu aircraft in my shopping cart."
+          }
+        }
+      ],
+      "createdAt": "2026-07-11T01:10:09.398Z",
+      "updatedAt": "2026-08-15T02:20:00.000Z",
+      "publishedAt": "2026-07-11T01:11:53.159Z"
+    }
+  ]
+}

@@ -1,0 +1,440 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T16:30:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "laundry-chair-half-dirty-clothes",
+      "revision": 0,
+      "slug": "laundry-chair-half-dirty-clothes",
+      "title": "The $1,100 Laundry Chair Solves a Real Problem—But Is It Worth It?",
+      "excerpt": "Simone Giertz's Laundry Chair gives once-worn clothes a rotating rail behind a real seat. The idea is clever. The $1,100 preorder, large footprint, and production timeline make the verdict more complicated.",
+      "coverImage": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-cover.webp",
+      "thumbnailImage": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Gadgets & Gear",
+        "Creative Technology"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Laundry Chair",
+        "Simone Giertz",
+        "Yetch Studio",
+        "Furniture Design",
+        "Useful Gadgets",
+        "Home Organization",
+        "Is It Actually Useful"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based product and preorder analysis using Yetch Studio's current product page and policies, Kickstarter's creator interview, Simone Giertz's official demonstration, and FTC consumer guidance. Colin has not ordered, assembled, sat in, loaded, or tested a Laundry Chair.",
+        "sourceReviewedAt": "2026-08-15",
+        "relationshipDisclosure": "Nobody paid for placement, supplied a chair, or provided an affiliate link. No hands-on access or purchase recommendation is claimed.",
+        "aiAssistanceDisclosure": "AI assistance was used to research, compare, structure, and draft this package. Colin must verify the current price, shipping estimate, production status, policies, claims, and source links before publication.",
+        "syntheticMediaDisclosure": "All package visuals are AI-generated editorial illustrations of generic furniture concepts, not Yetch product photographs, product evidence, or proof that Colin handled a Laundry Chair."
+      },
+      "seo": {
+        "title": "Laundry Chair: Is Simone Giertz's $1,100 Fix Worth It?",
+        "description": "Simone Giertz's Laundry Chair hides once-worn clothes behind a real seat. See how the $1,100 preorder works, what it includes, and who should skip it.",
+        "canonical": "https://colinmichaels.com/blog/laundry-chair-half-dirty-clothes",
+        "openGraphImage": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "The $1,100 Laundry Chair: Clever Fix or Fancy Valet?",
+        "description": "A rotating rail gives once-worn clothes a real home. The current preorder price, footprint, and production status make the verdict more complicated.",
+        "image": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-og.jpg",
+        "imageAlt": "Generic green corduroy chair with a wooden garment rail in a bedroom",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-01",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "There is a category of clothing that defeats both the closet and the hamper: worn once, not exactly clean, not dirty enough to wash. It usually ends up on a chair until the chair disappears.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "intro-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Simone Giertz built furniture around that confession. Her Laundry Chair is a real upholstered chair with a movable wooden rail for hanging those in-between clothes. Rotate the rail behind the chair and the visual mess retreats with it. The seat stays a seat."
+          }
+        },
+        {
+          "id": "intro-02",
+          "type": "paragraph",
+          "data": {
+            "text": "As of August 15, 2026, <a href=\"https://yetch.studio/products/laundry-chair\">Yetch Studio lists the Laundry Chair</a> as a <strong>$1,100 preorder</strong> in green or red, with worldwide shipping and an estimated November 2026 ship date. That makes it a more interesting question than whether the idea is clever. The idea is obviously clever. The question is whether it is $1,100 clever."
+          }
+        },
+        {
+          "id": "disclosure-01",
+          "type": "paragraph",
+          "data": {
+            "text": "I have not ordered, assembled, sat in, loaded, or tested a Laundry Chair. This is a research-based product and preorder analysis, not a hands-on review or buying recommendation. Nobody paid for placement, supplied a chair, or provided an affiliate link. I checked Yetch Studio's current product page and policies, Kickstarter's creator interview, Simone Giertz's official video, and current U.S. consumer guidance on August 15, 2026. Re-check the live pages before spending money."
+          }
+        },
+        {
+          "id": "video-official-01",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=F3rI7IVoBp4",
+            "embedUrl": "https://www.youtube.com/embed/F3rI7IVoBp4",
+            "caption": "Simone Giertz's official launch video is creator and manufacturer evidence of the design, mechanism, prototype, and intended use. It is not an independent comfort, durability, assembly, delivery, or long-term storage test."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "TLDR",
+            "level": 2
+          }
+        },
+        {
+          "id": "tldr-list",
+          "type": "list",
+          "data": {
+            "items": [
+              "The Laundry Chair combines a corduroy lounge chair with a movable hardwood rail for once-worn clothing.",
+              "The rail can rotate behind the chair, hiding hanging garments while leaving the seat usable.",
+              "Yetch currently lists it at $1,100 before shipping, in green or red, with worldwide delivery and an estimated November 2026 ship date.",
+              "The listed chair is about 36.7 × 36.4 × 36.7 inches, weighs about 45 pounds, supports up to 440 pounds, and is claimed to hold at least 10 garments depending on size and type.",
+              "It arrives flat-packed, includes tools and hardware, has a removable cushion cover, and carries a listed two-year warranty.",
+              "The preorder is not the same as a finished chair ready to ship: Yetch says packaging design and bulk material purchasing remain, the red color is still being refined, and the delivery estimate can change.",
+              "My verdict: it is a sharp piece of functional furniture for someone who loves the object and already needs a chair. It is hard to justify as storage alone."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-numbers",
+          "type": "header",
+          "data": {
+            "text": "Four Numbers That Explain the Chair",
+            "level": 2
+          }
+        },
+        {
+          "id": "stats-current-01",
+          "type": "stats",
+          "data": {
+            "title": "Laundry Chair snapshot",
+            "caption": "Yetch Studio specifications and claims checked August 15, 2026; shipping and production timing can change.",
+            "stats": [
+              {
+                "label": "Preorder",
+                "value": "$1,100",
+                "caption": "Before shipping"
+              },
+              {
+                "label": "Footprint",
+                "value": "36.7 × 36.4 in",
+                "caption": "Before walking clearance"
+              },
+              {
+                "label": "Chair weight",
+                "value": "About 45 lb",
+                "caption": "Manufacturer specification"
+              },
+              {
+                "label": "Rail capacity",
+                "value": "At least 10",
+                "caption": "Garment claim varies by item"
+              }
+            ]
+          }
+        },
+        {
+          "id": "numbers-note-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Those are <a href=\"https://yetch.studio/products/laundry-chair\">Yetch Studio's specifications and capacity claim</a>, not my measurements. The same page lists a 440-pound seat limit and a 55-pound shipping box."
+          }
+        },
+        {
+          "id": "heading-behavior",
+          "type": "header",
+          "data": {
+            "text": "The Product Starts With an Honest Behavior",
+            "level": 2
+          }
+        },
+        {
+          "id": "behavior-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The best thing about the Laundry Chair is that it does not demand a new habit before it becomes useful. People already drape once-worn jeans, shirts, and sweaters over a bedroom chair. The product notices that behavior and gives it structure."
+          }
+        },
+        {
+          "id": "behavior-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The rail matters more than the chair. Hanging keeps garments separated and visible instead of compressing everything into an archaeological layer cake. Rotating the rail behind the seat preserves the room's calmer face without pretending those clothes went back into the closet."
+          }
+        },
+        {
+          "id": "behavior-03",
+          "type": "paragraph",
+          "data": {
+            "text": "<a href=\"https://updates.kickstarter.com/creator-spotlight-why-simone-giertz-turned-to-kickstarter-for-her-latest-invention/\">Kickstarter's March 2026 creator interview</a> says the project began after Giertz noticed the proportions of a guest-room chair and started sketching. It also describes the Laundry Chair campaign as the source of one of Kickstarter's most viral social posts. That response makes sense: the invention turns a private mess into a shared joke, then offers an actual mechanism instead of a lecture about being tidier."
+          }
+        },
+        {
+          "id": "image-problem-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-inline-problem.webp",
+            "alt": "Ordinary chair buried in clothes beside a clear chair with garments organized on a rail",
+            "caption": "AI-generated editorial comparison of the familiar clothes-chair pile and a generic chair-plus-garment-rail solution. It is not a Yetch product photo or evidence that Colin tested the Laundry Chair.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "heading-price",
+          "type": "header",
+          "data": {
+            "text": "What the $1,100 Buys",
+            "level": 2
+          }
+        },
+        {
+          "id": "price-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Yetch lists a solid hardwood frame, 100% cotton corduroy upholstery, reinforced seams, a concealed cushion zipper, and a ball-bearing rotating mechanism for the rail. The cushion cover is removable for washing. The chair ships flat-packed with instructions, tools, and hardware."
+          }
+        },
+        {
+          "id": "price-02",
+          "type": "paragraph",
+          "data": {
+            "text": "That is meaningfully more substantial than bolting a coat hook to a discount chair. It is also furniture pricing, not gadget pricing. You are paying for an upholstered lounge chair, a large hardwood structure, a low-volume first production run, and a recognizable creator's product design."
+          }
+        },
+        {
+          "id": "price-takeaway-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "Would you choose this as your chair even if the rail were not a viral joke? If the answer is no, the storage feature has to carry too much of the price.",
+            "attribution": "Practical test"
+          }
+        },
+        {
+          "id": "heading-alternatives",
+          "type": "header",
+          "data": {
+            "text": "The Alternatives Solve Most of the Function",
+            "level": 2
+          }
+        },
+        {
+          "id": "alternatives-table-01",
+          "type": "html",
+          "data": {
+            "title": "Once-worn clothes options",
+            "html": "<table><caption>Practical ways to manage once-worn clothes</caption><thead><tr><th scope=\"col\">Option</th><th scope=\"col\">What it does well</th><th scope=\"col\">What it misses</th><th scope=\"col\">Best fit</th></tr></thead><tbody><tr><th scope=\"row\">Laundry Chair</th><td>Combines seating, hanging, and visual concealment in one designed object</td><td>Large footprint, $1,100 preorder, assembly, production wait</td><td>Design-focused buyer who needs both a lounge chair and garment storage</td></tr><tr><th scope=\"row\">Clothes valet</th><td>Keeps a small outfit organized in little floor space</td><td>No seating and limited capacity</td><td>Small room or repeat work outfit</td></tr><tr><th scope=\"row\">Wall or over-door hooks</th><td>Cheap, compact, easy to see and use</td><td>Can look busy and may require mounting or door clearance</td><td>Function-first renter or tight budget</td></tr><tr><th scope=\"row\">Separate garment rack</th><td>More capacity and flexible hanger spacing</td><td>Always visible and occupies its own footprint</td><td>Wardrobe overflow or many once-worn items</td></tr></tbody></table>"
+          }
+        },
+        {
+          "id": "image-alternatives-01",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/gadgets/laundry-chair-half-dirty-clothes-inline-alternatives.webp",
+            "alt": "Generic chair-and-rail concept beside a separate wooden clothes valet",
+            "caption": "AI-generated editorial comparison of a generic chair-plus-rail concept and a simple clothes valet. It is not a price comparison, product photograph, or exact depiction of the Laundry Chair.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "alternatives-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The most revealing alternative may be the chair you already own plus one nearby hook. It lacks the visual trick and finished-object appeal, but it tests whether a dedicated wear-again zone changes your room before you order a large piece of furniture."
+          }
+        },
+        {
+          "id": "heading-preorder",
+          "type": "header",
+          "data": {
+            "text": "The Preorder Is the Real Catch",
+            "level": 2
+          }
+        },
+        {
+          "id": "preorder-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Yetch estimates shipping in November 2026 and says later production batches may have later dates. Its FAQ also says the design is finished and a factory has made multiple versions, while packaging design and bulk material purchasing still remain. The company explicitly allows for production delays."
+          }
+        },
+        {
+          "id": "preorder-02",
+          "type": "paragraph",
+          "data": {
+            "text": "The red upholstery is still being refined, so its final production shade may change. Shipping is calculated at checkout. Customs or import fees may apply outside the seller's included charges, and Yetch says those costs are the buyer's responsibility."
+          }
+        },
+        {
+          "id": "preorder-03",
+          "type": "paragraph",
+          "data": {
+            "text": "<a href=\"https://yetch.studio/pages/contact\">Yetch's current support policy</a> says an order can be changed or canceled before shipment through the confirmation-email link. After delivery, its general return policy gives 14 days for an item in original condition with original packaging; international return shipping is normally the customer's responsibility unless the product is faulty. Confirm that these general terms apply to this specific preorder before paying, especially because returning a 55-pound furniture box is not a casual errand."
+          }
+        },
+        {
+          "id": "preorder-04",
+          "type": "paragraph",
+          "data": {
+            "text": "For U.S. online orders, <a href=\"https://consumer.ftc.gov/articles/what-do-if-youre-billed-things-you-never-got-or-you-get-unordered-products\">Federal Trade Commission consumer guidance</a> says sellers must ship within the promised time and, if shipping is delayed, give the buyer a choice between accepting the delay and canceling for a full refund. That is a useful backstop, not a replacement for reading the seller's current terms, keeping the receipt, and asking questions before the charge."
+          }
+        },
+        {
+          "id": "warning-preorder-01",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "November 2026 is an estimate, not proof of a completed production run or a chair ready to leave a warehouse today.",
+            "attribution": "Preorder boundary"
+          }
+        },
+        {
+          "id": "heading-checklist",
+          "type": "header",
+          "data": {
+            "text": "Before Preordering One",
+            "level": 2
+          }
+        },
+        {
+          "id": "buying-steps-01",
+          "type": "list",
+          "data": {
+            "items": [
+              "Tape a 36.7 × 36.4-inch rectangle on the intended floor and check door, closet, bed, and walking clearance.",
+              "Decide whether you genuinely need another lounge chair, not only a better clothes pile.",
+              "Try a seven-day wear-again zone using a rack, valet, or hooks you already have.",
+              "Confirm the final color, delivered price, shipping charge, taxes, customs, cancellation path, return shipping, warranty coverage, and replacement-parts process in writing.",
+              "Save the product page, estimated ship date, receipt, and seller messages.",
+              "If delivery timing matters, wait for finished production units and independent owner reports.",
+              "Do not treat a viral video or polished prototype as long-term comfort and durability evidence."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "My Verdict",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-01",
+          "type": "paragraph",
+          "data": {
+            "text": "The Laundry Chair succeeds as design because the joke disappears into the function. The rail is not decorative storytelling pasted onto a normal chair. It directly manages the garment limbo that created the project, and rotating it behind the seat is the satisfying part."
+          }
+        },
+        {
+          "id": "verdict-02",
+          "type": "paragraph",
+          "data": {
+            "text": "At $1,100, though, it should be judged first as furniture. I would want to sit in a production unit, rotate a fully loaded rail, assemble the flat pack, remove and replace the cushion cover, and see how the mechanism feels after months—not minutes—before calling it a value."
+          }
+        },
+        {
+          "id": "verdict-03",
+          "type": "paragraph",
+          "data": {
+            "text": "If you already want a distinctive upholstered chair, love Giertz's design work, have the floor space, and accept a first-production preorder, the rail could make this unusually personal furniture rather than an absurdly expensive rack."
+          }
+        },
+        {
+          "id": "verdict-takeaway-01",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "If the goal is simply to stop burying a chair under jeans, buy or improvise the wear-again zone first. The Laundry Chair is the most charming answer. It is not the only useful one.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "related-01",
+          "type": "paragraph",
+          "data": {
+            "text": "Score the Laundry Chair's problem fit, evidence, true cost, everyday friction, and support with the printable <a href=\"https://colinmichaels.com/resources/gadget-usefulness-scorecard\">Is It Actually Useful? Gadget Scorecard</a>. Then explore more curious objects in the <a href=\"https://colinmichaels.com/topics/gadgets-toys\">Gadgets &amp; Toys topic hub</a>, or read why the cheapest <a href=\"https://colinmichaels.com/blog/unitree-r1-4900-humanoid-robot\">Unitree R1 humanoid is not the developer version</a>."
+          }
+        },
+        {
+          "id": "poll-wear-again",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Where do your once-worn clothes go now?",
+            "description": "Choose the honest answer. Signed-in readers can change their vote later.",
+            "pollOptions": [
+              {
+                "id": "chair-pile",
+                "label": "The chair pile"
+              },
+              {
+                "id": "hooks-valet",
+                "label": "Hooks or a valet"
+              },
+              {
+                "id": "back-in-closet",
+                "label": "Back in the closet"
+              },
+              {
+                "id": "straight-to-hamper",
+                "label": "Straight into the hamper"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T16:30:00.000Z",
+      "updatedAt": "2026-08-15T16:30:00.000Z",
+      "publishedAt": null
+    }
+  ]
+}

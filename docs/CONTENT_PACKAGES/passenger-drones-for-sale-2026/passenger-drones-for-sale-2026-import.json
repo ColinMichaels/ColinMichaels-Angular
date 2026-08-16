@@ -1,0 +1,534 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T02:30:00.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "post-passenger-drones-for-sale-2026",
+      "revision": 0,
+      "slug": "passenger-drones-for-sale-2026",
+      "title": "Passenger Drones for Sale in 2026? I Checked the Real Order Pages",
+      "excerpt": "Jetson ONE and Pivotal Helix have active purchase paths. RYSE RECON's public reservation trail is old. Here is what the prices, timelines, and Part 103 rules actually mean.",
+      "coverImage": "/assets/images/blog/drones/passenger-drones-for-sale-2026-cover.webp",
+      "thumbnailImage": "/assets/images/blog/drones/passenger-drones-for-sale-2026-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Gadgets & Gear",
+        "Creative Technology"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Passenger Drone",
+        "Personal eVTOL",
+        "Jetson ONE",
+        "Pivotal Helix",
+        "RYSE RECON",
+        "Part 103",
+        "Ultralight Aircraft",
+        "Flying Car",
+        "Future Mobility",
+        "Is It Actually Useful"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based availability and rules comparison using current manufacturer order pages, dated company announcements, the eCFR Part 103 text, and an independent RYSE flight video. Colin has not flown, owned, ordered, or received any featured aircraft.",
+        "sourceReviewedAt": "2026-08-14",
+        "relationshipDisclosure": "No manufacturer paid for placement or provided an aircraft to Colin. No hands-on access is claimed.",
+        "aiAssistanceDisclosure": "AI assistance was used to research, compare, structure, and draft this package. Colin must verify every price, availability claim, rule reference, and source before publication.",
+        "syntheticMediaDisclosure": "All package visuals are AI-generated editorial illustrations of generic aircraft, not product photographs, order evidence, airspace charts, or proof that Colin handled or flew a featured aircraft."
+      },
+      "seo": {
+        "title": "Passenger Drones for Sale in 2026? What Is Real",
+        "description": "Jetson ONE and Pivotal Helix have active order paths, while RYSE RECON is harder to verify. Compare prices, timelines, specs, and U.S. Part 103 limits.",
+        "canonical": "https://colinmichaels.com/blog/passenger-drones-for-sale-2026",
+        "openGraphImage": "/assets/images/blog/drones/passenger-drones-for-sale-2026-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "Passenger Drones for Sale in 2026? I Checked the Real Order Pages",
+        "description": "A source-backed check of Jetson ONE, Pivotal Helix, RYSE RECON, current purchase evidence, and the Part 103 catch.",
+        "image": "/assets/images/blog/drones/passenger-drones-for-sale-2026-og.jpg",
+        "imageAlt": "Two generic personal electric aircraft beside Passenger Drones For Sale text",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-checkout-page",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "The future is real enough to have a checkout page. It is not yet simple enough to call transportation.",
+            "attribution": "Is It Actually Useful?"
+          }
+        },
+        {
+          "id": "intro-nickname",
+          "type": "paragraph",
+          "data": {
+            "text": "The internet calls them passenger drones because “single-occupant piloted ultralight electric vertical-takeoff aircraft” is a terrible thumbnail. The nickname is useful. It is also where the confusion starts."
+          }
+        },
+        {
+          "id": "intro-current-status",
+          "type": "paragraph",
+          "data": {
+            "text": "Some of the machines in those viral videos are real enough to order. The <a href=\"https://jetson.com/order\">Jetson ONE has a live checkout path</a> and an estimated 2028 delivery. <a href=\"https://www.pivotal.aero/personal\">Pivotal advertises a refundable Helix reservation</a>. RYSE announced RECON reservations in 2023, but I could not verify a current purchase path on its first-party website when I checked in August 2026."
+          }
+        },
+        {
+          "id": "intro-four-claims",
+          "type": "paragraph",
+          "data": {
+            "text": "That is not a three-way buying recommendation. It is a status check on a young category where “for sale,” “reserved,” “delivered,” and “flew once in a video” are four different claims."
+          }
+        },
+        {
+          "id": "disclosure-research",
+          "type": "typography",
+          "data": {
+            "variant": "aside",
+            "text": "I have not flown, owned, ordered, or received any of these aircraft. Nobody covered the research or paid for placement. I checked current manufacturer pages, dated company announcements, the eCFR text for Part 103, and an independent RYSE flight video on August 14, 2026. Prices, slots, and delivery language can change; re-check the linked pages before sending money.",
+            "attribution": "Research and relationship disclosure"
+          }
+        },
+        {
+          "id": "video-ryse-independent-flight",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=95idHg7jGrs",
+            "embedUrl": "https://www.youtube.com/embed/95idHg7jGrs",
+            "caption": "Robb Report's aviation editor flew a RYSE RECON in 2023. This is independent prototype-flight evidence, not proof of current 2026 retail availability."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "TLDR",
+            "level": 2
+          }
+        },
+        {
+          "id": "list-tldr",
+          "type": "list",
+          "data": {
+            "items": [
+              "Jetson’s current order page lists the ONE at $148,000 before taxes and fees, with an $8,000 non-refundable downpayment and estimated 2028 delivery.",
+              "Pivotal’s current site lists the Helix from $190,000 and a fully refundable $9,000 reservation before a $50,000 production deposit.",
+              "Pivotal’s page still says the reservation secures a 2026 delivery position. Confirm the actual slot in writing rather than treating time-sensitive page copy as a promise.",
+              "RYSE opened RECON reservations in January 2023. I could not verify a current first-party product and order page in August 2026.",
+              "These are single-seat piloted aircraft, not autonomous passenger-carrying drones. The manufacturers position the U.S. versions around Part 103 ultralight rules.",
+              "My verdict: Jetson and Pivotal show real purchase mechanisms; neither is a practical city commuter, and RYSE requires fresh first-party proof before consideration."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-availability",
+          "type": "header",
+          "data": {
+            "text": "The Current Availability Check",
+            "level": 2
+          }
+        },
+        {
+          "id": "table-current-availability",
+          "type": "html",
+          "data": {
+            "title": "First-party purchase evidence",
+            "html": "<table><caption>First-party purchase evidence checked August 14, 2026</caption><thead><tr><th scope=\"col\">Aircraft</th><th scope=\"col\">Current evidence</th><th scope=\"col\">Money requested</th><th scope=\"col\">Status</th></tr></thead><tbody><tr><th scope=\"row\">Jetson ONE</th><td>Active order form; estimated 2028 delivery; 2026 and 2027 production listed as sold out</td><td>$148,000 price; $8,000 non-refundable downpayment</td><td>Orderable, long wait</td></tr><tr><th scope=\"row\">Pivotal Helix</th><td>Active reservation path; advertised 2026 position needs written confirmation</td><td>From $190,000; $9,000 refundable reservation; then $50,000 deposit</td><td>Reservable, verify timing</td></tr><tr><th scope=\"row\">RYSE RECON</th><td>2023 reservation announcement and flight evidence; current first-party purchase path not verified</td><td>Do not rely on old pricing or delivery claims</td><td>Needs fresh proof</td></tr></tbody></table>"
+          }
+        },
+        {
+          "id": "availability-current-word",
+          "type": "paragraph",
+          "data": {
+            "text": "The key word is <strong>current</strong>. A press release can prove what a company said on a date. It cannot prove that the same checkout, factory schedule, refund policy, or business condition exists three years later."
+          }
+        },
+        {
+          "id": "image-order-check",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/passenger-drones-for-sale-2026-inline-order-check.webp",
+            "alt": "Laptop and printed comparison sheets used to check generic personal aircraft order claims",
+            "caption": "AI-generated editorial illustration of a purchase-page comparison workflow. It does not show any manufacturer’s actual checkout or prove that an aircraft was ordered.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "heading-jetson",
+          "type": "header",
+          "data": {
+            "text": "Jetson ONE: The Clearest Active Order—and the Longest Wait",
+            "level": 2
+          }
+        },
+        {
+          "id": "jetson-order",
+          "type": "paragraph",
+          "data": {
+            "text": "Jetson has the cleanest answer to “Can I place an order?” Its <a href=\"https://jetson.com/order\">current order page</a> lists a $148,000 full price before taxes and other fees, an $8,000 non-refundable downpayment due now, and estimated 2028 delivery. The page says 2026 and 2027 production are sold out."
+          }
+        },
+        {
+          "id": "jetson-delivery",
+          "type": "paragraph",
+          "data": {
+            "text": "The company also <a href=\"https://jetson.com/news/jetson-palmer-luckey\">announced its first global delivery in September 2025</a>, to Palmer Luckey in California. Delivery is stronger evidence than a reservation counter. It is still one company-announced delivery, not proof of mass production or an ordinary buyer’s delivery time."
+          }
+        },
+        {
+          "id": "stats-jetson",
+          "type": "stats",
+          "data": {
+            "title": "Jetson ONE at a glance",
+            "caption": "Current manufacturer price and specifications checked August 14, 2026; these are not Colin’s test results.",
+            "stats": [
+              {
+                "label": "Price",
+                "value": "$148,000",
+                "caption": "Before taxes and fees"
+              },
+              {
+                "label": "Due now",
+                "value": "$8,000",
+                "caption": "Non-refundable downpayment"
+              },
+              {
+                "label": "Est. delivery",
+                "value": "2028",
+                "caption": "Current order-page estimate"
+              },
+              {
+                "label": "Flight time",
+                "value": "Approx. 20 min",
+                "caption": "Manufacturer specification"
+              },
+              {
+                "label": "Top speed",
+                "value": "63 mph",
+                "caption": "Software-limited level speed"
+              },
+              {
+                "label": "Max pilot",
+                "value": "210 lb",
+                "caption": "Manufacturer specification"
+              }
+            ]
+          }
+        },
+        {
+          "id": "jetson-risk",
+          "type": "paragraph",
+          "data": {
+            "text": "The catch is larger than the price. An $8,000 non-refundable payment today buys a distant production position in a category where hardware, company schedules, training, regulations, insurance, support, and the buyer’s own circumstances can all change before 2028."
+          }
+        },
+        {
+          "id": "jetson-status",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "Genuinely orderable, visually the closest match to what people mean by “passenger drone,” and far too speculative for an impulse deposit.",
+            "attribution": "Jetson ONE status"
+          }
+        },
+        {
+          "id": "heading-pivotal",
+          "type": "header",
+          "data": {
+            "text": "Pivotal Helix: More Enclosed, More Expensive, More Structured",
+            "level": 2
+          }
+        },
+        {
+          "id": "pivotal-order",
+          "type": "paragraph",
+          "data": {
+            "text": "The Pivotal Helix is a fixed-rotor tilt-aircraft with tandem wings and an enclosed cockpit. <a href=\"https://www.pivotal.aero/personal\">Pivotal’s current personal page</a> lists a $190,000 starting price and describes a fully refundable $9,000 reservation, followed by a $50,000 production deposit, final payment, training, and delivery or pickup."
+          }
+        },
+        {
+          "id": "pivotal-date-catch",
+          "type": "paragraph",
+          "data": {
+            "text": "The page also says the reservation secures a 2026 delivery position. On an August 2026 check, that promise needs a conversation, a written delivery estimate, current terms, and a refund review before money moves."
+          }
+        },
+        {
+          "id": "stats-pivotal",
+          "type": "stats",
+          "data": {
+            "title": "Pivotal Helix at a glance",
+            "caption": "Current manufacturer price and specifications checked August 14, 2026; these are not Colin’s test results.",
+            "stats": [
+              {
+                "label": "Starting price",
+                "value": "$190,000",
+                "caption": "Before options and fees"
+              },
+              {
+                "label": "Reservation",
+                "value": "$9,000",
+                "caption": "Advertised as refundable"
+              },
+              {
+                "label": "Production deposit",
+                "value": "$50,000",
+                "caption": "After reservation stage"
+              },
+              {
+                "label": "Max endurance",
+                "value": "20 min",
+                "caption": "Manufacturer specification"
+              },
+              {
+                "label": "Max range",
+                "value": "20 miles",
+                "caption": "Manufacturer specification"
+              },
+              {
+                "label": "Payload",
+                "value": "220 lb",
+                "caption": "Manufacturer specification"
+              }
+            ]
+          }
+        },
+        {
+          "id": "pivotal-claims",
+          "type": "paragraph",
+          "data": {
+            "text": "Pivotal also advertises triple-redundant controls, automated takeoff and landing, an aircraft parachute, emergency floats, and required training. Those are manufacturer specifications and safety claims, not my test results, and they do not change Part 103’s operating limits."
+          }
+        },
+        {
+          "id": "pivotal-status",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The most structured active U.S. reservation and training story here, with a price and use case that still make it specialist recreational aviation.",
+            "attribution": "Pivotal Helix status"
+          }
+        },
+        {
+          "id": "heading-ryse",
+          "type": "header",
+          "data": {
+            "text": "RYSE RECON: The Useful Warning About Old Headlines",
+            "level": 2
+          }
+        },
+        {
+          "id": "ryse-old-claims",
+          "type": "paragraph",
+          "data": {
+            "text": "RYSE <a href=\"https://www.prnewswire.com/news-releases/ryse-aero-technologies-announces-opening-of-reservation-system-allowing-customers-to-reserve-the-future-of-flight-301714671.html\">opened RECON reservations in January 2023</a> and said it expected production deliveries later that year. A separate August 2023 company announcement described RYSE as pre-revenue while also saying the aircraft was available for purchase in the United States."
+          }
+        },
+        {
+          "id": "ryse-flight-versus-sale",
+          "type": "paragraph",
+          "data": {
+            "text": "The RECON did fly: Robb Report’s aviation editor piloted one in the 2023 video above, and the company published test and demonstration milestones. What I could not verify in August 2026 was a functioning current first-party product and order path with current price, deposit, terms, and delivery timing."
+          }
+        },
+        {
+          "id": "ryse-careful-boundary",
+          "type": "paragraph",
+          "data": {
+            "text": "That does not prove RYSE is gone, that no private sales conversation exists, or that nobody ever received an aircraft. It means the public evidence available to a buyer did not clear the same bar as the active Jetson and Pivotal pages."
+          }
+        },
+        {
+          "id": "ryse-status",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "Interesting aircraft, real historic flight evidence, no recommendation until RYSE supplies fresh first-party purchase and delivery proof.",
+            "attribution": "RYSE RECON status"
+          }
+        },
+        {
+          "id": "heading-part-103",
+          "type": "header",
+          "data": {
+            "text": "They Are Not Passenger Drones in the Part 107 Sense",
+            "level": 2
+          }
+        },
+        {
+          "id": "part-103-not-107",
+          "type": "paragraph",
+          "data": {
+            "text": "Part 107 governs small <strong>unmanned</strong> aircraft. These vehicles put one pilot in the aircraft. The manufacturers are instead using the U.S. <a href=\"https://www.ecfr.gov/current/title-14/chapter-I/subchapter-F/part-103\">Part 103 ultralight route</a>."
+          }
+        },
+        {
+          "id": "part-103-definition",
+          "type": "paragraph",
+          "data": {
+            "text": "Under the current eCFR text, a Part 103 ultralight vehicle is for a single occupant and sport or recreation only. A powered ultralight must weigh less than 254 pounds empty, excluding specified floats and deployable safety devices; it also has speed and stall limits. The operator does not need an airman or medical certificate under Part 103, and the vehicle does not need aircraft registration or an airworthiness certificate under that part."
+          }
+        },
+        {
+          "id": "part-103-operating-limits",
+          "type": "paragraph",
+          "data": {
+            "text": "Part 103 generally restricts operation to daylight, prohibits flying over a congested city, town, settlement, or open-air assembly, and requires prior ATC authorization in Class A, B, C, or D airspace and certain surface Class E airspace. The operator must see and avoid other aircraft. Local property, launch, noise, environmental, and insurance constraints can still matter."
+          }
+        },
+        {
+          "id": "image-part-103",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/passenger-drones-for-sale-2026-inline-part-103.webp",
+            "alt": "Pilot in a generic electric multicopter above an open rural field with an airport and town in the distance",
+            "caption": "AI-generated editorial illustration of the open rural environment these aircraft are marketed around. It is not an official airspace chart or a statement that the depicted location is legal.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "part-103-picture",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "The picture in the rule is closer to daylight recreation over open rural property than silent door-to-door commuting over a neighborhood.",
+            "attribution": "Flight and legal boundary"
+          }
+        },
+        {
+          "id": "heading-before-deposit",
+          "type": "header",
+          "data": {
+            "text": "Before Anyone Sends a Deposit",
+            "level": 2
+          }
+        },
+        {
+          "id": "list-before-deposit",
+          "type": "list",
+          "data": {
+            "items": [
+              "Confirm the exact aircraft configuration qualifies for the legal category the seller describes in the place you intend to fly it.",
+              "Get the current total price, deposit refundability, production position, delivery window, training, freight, taxes, warranty, spare-parts, battery, and cancellation terms in writing.",
+              "Ask for customer delivery evidence, not only reservation counts, prototype flights, or influencer footage.",
+              "Map the actual operating area against airspace, congested-area, property, daylight, and local restrictions.",
+              "Price storage, a trailer or transport system, charging, battery replacement, maintenance, insurance, and a safe practice area.",
+              "Review the company’s current financial and production risk with a qualified adviser before making a large or non-refundable payment.",
+              "Treat a viral driveway or coastline flight as a production, not as a template for an ordinary legal flight."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "buyer-verification-worksheet",
+          "type": "paragraph",
+          "data": {
+            "text": "Use the <a href=\"https://colinmichaels.com/resources/personal-aircraft-buyer-verification\">Personal Aircraft Buyer Verification guide and printable worksheet</a> to capture the offer, deposit terms, claimed legal category, operating reality, support answers, and evidence before treating any checkout page as a purchase decision. It is a research organizer, not financial, legal, aviation, safety, or purchase advice."
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "My Verdict",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-real-money",
+          "type": "paragraph",
+          "data": {
+            "text": "Yes, you can place money behind a personal multicopter in 2026. Jetson presents a real $148,000 order page and a 2028 estimate. Pivotal presents a real Helix reservation path from $190,000. That makes this category more than vaporware. It does not make the category mature."
+          }
+        },
+        {
+          "id": "verdict-specialist",
+          "type": "paragraph",
+          "data": {
+            "text": "The short endurance, single-seat limit, rural operating reality, training, transport, ownership cost, long production timeline, and non-refundable risk turn these into specialist recreational aircraft for unusually prepared buyers. Pivotal’s refundable first step is materially less aggressive than Jetson’s non-refundable one, but neither should be entered from a thumbnail-induced adrenaline spike."
+          }
+        },
+        {
+          "id": "verdict-ryse",
+          "type": "paragraph",
+          "data": {
+            "text": "RYSE is the cleanest reminder that a launch announcement ages. Until a current first-party order path and delivery evidence are easy to verify, I would watch the RECON and keep my wallet closed."
+          }
+        },
+        {
+          "id": "takeaway-final",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The future is real enough to have a checkout page. It is not yet simple enough to call transportation.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "poll-next-investigation",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Which follow-up should I investigate next?",
+            "description": "Choose the evidence that would be most useful before anyone considers a purchase or flight plan.",
+            "pollOptions": [
+              {
+                "id": "jetson-delivery-training",
+                "label": "Jetson ONE delivery and training"
+              },
+              {
+                "id": "pivotal-ownership-costs",
+                "label": "Pivotal Helix ownership costs"
+              },
+              {
+                "id": "ryse-current-status",
+                "label": "RYSE RECON current status"
+              },
+              {
+                "id": "part-103-planning",
+                "label": "Part 103 flight planning"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T02:30:00.000Z",
+      "updatedAt": "2026-08-15T02:30:00.000Z",
+      "publishedAt": null
+    }
+  ]
+}

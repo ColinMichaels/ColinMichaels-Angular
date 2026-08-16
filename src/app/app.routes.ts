@@ -6,7 +6,11 @@ import {osRoutes} from './core-os/os.routes';
 import {publicRoutes} from './features/public/public.routes';
 import {labRoutes} from './labs/lab.routes';
 import {AuthGuard} from './guards/auth.guard';
-import {LOGOUT_SEO_METADATA, PROFILE_SEO_METADATA} from './shared/seo/seo.metadata';
+import {
+  LOGOUT_SEO_METADATA,
+  NOT_FOUND_SEO_METADATA,
+  PROFILE_SEO_METADATA,
+} from './shared/seo/seo.metadata';
 
 export const routes: Routes = [
   ...publicRoutes,
@@ -26,6 +30,7 @@ export const routes: Routes = [
   ...osRoutes,
   {
     path: '**',
+    data: {seo: NOT_FOUND_SEO_METADATA},
     loadComponent: () => import('./shared/not-found/not-found.component').then(m => m.NotFoundComponent)
   },
 ];

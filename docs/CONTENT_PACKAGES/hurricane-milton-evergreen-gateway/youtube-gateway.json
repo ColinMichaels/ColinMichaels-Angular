@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "status": "local-review-only",
+  "capturedAt": "2026-08-15",
+  "externalActions": {
+    "youtubeEdited": false,
+    "thumbnailUploaded": false,
+    "commentPosted": false,
+    "commentReplied": false,
+    "commentLikedOrHearted": false,
+    "playlistChanged": false,
+    "endScreenChanged": false,
+    "shortCreated": false
+  },
+  "video": {
+    "channelId": "UCKZ3E88t-BoUqPgZygJw6bA",
+    "videoId": "CBQ1iMhJLUY",
+    "url": "https://www.youtube.com/watch?v=CBQ1iMhJLUY",
+    "durationSeconds": 992,
+    "publishedAt": "2024-11-17",
+    "currentTitle": "Driving through Florida during hurricane Milton is madness",
+    "preserveTitle": true,
+    "preserveVideoId": true
+  },
+  "publicSnapshot": {
+    "views": 14920,
+    "likes": 158,
+    "comments": 6,
+    "channelSubscribers": 602,
+    "description": "Experience the chaos of Hurricane Milton in this raw footage from Jupiter, FL to St. Petersburg, FL. Witness driving through the storm, roof damage, and tornados firsthand. Don't miss this intense look at nature's power!",
+    "thumbnailObservation": "Synthetic-looking hurricane scene with distorted road signs, fabricated weather imagery, and visual claims beyond the documentary footage.",
+    "visibleAudienceSignals": [
+      "safety concern",
+      "first-person family storm account",
+      "AI THUMBNAIL criticism"
+    ]
+  },
+  "accuracyBoundary": {
+    "filmedTornado": false,
+    "tornadoWarningInAudio": true,
+    "preparationShown": true,
+    "evacuationTrafficShown": true,
+    "postStormReturnShown": true,
+    "roofAndWaterDamageShown": true,
+    "emergencyOrTravelAdvice": false
+  },
+  "recommended": {
+    "title": "Driving through Florida during hurricane Milton is madness",
+    "description": "I drove from Jupiter to St. Petersburg before Hurricane Milton to help family prepare, then returned after the storm to check damage and move belongings. This is a first-person record of the evacuation traffic, storm preparation, an emergency tornado warning, and the recovery trip—not footage of a tornado.\n\nThis video is a personal documentary, not emergency or travel advice. Do not drive into dangerous weather. Follow evacuation orders and current guidance from local officials, the National Weather Service, and Florida emergency management.\n\nChapters:\n0:00 Leaving Jupiter to help family\n2:10 Evacuation traffic heading the other way\n2:28 I-275 and the Skyway approach\n3:41 Boarding up and loading the cars\n4:19 The day of Hurricane Milton\n5:19 Emergency tornado warning\n8:00 The morning after\n9:55 Returning with a U-Haul\n10:37 Post-storm drive into St. Petersburg\n12:57 Roof and water damage\n13:46 Packing belongings for the return\n15:16 Final thoughts from the drive\n\nWatch next — Farmers Paradise: a quieter Florida drone flight\nhttps://youtu.be/aiA2hlRcVpk\n\nMore first-person Florida flights, sources, and field notes:\nhttps://colinmichaels.com/topics/drones-fpv?utm_source=youtube&utm_medium=video_description&utm_campaign=hurricane_milton_gateway&utm_content=cbq1imhjluy\n\nHurricane safety — National Weather Service:\nhttps://www.weather.gov/safety/hurricane\n\nFlorida planning, evacuation, shelter, and alert resources:\nhttps://www.floridadisaster.org/planprepare/\n\nRecorded in Florida around Hurricane Milton in October 2024. Published November 17, 2024.",
+    "chapters": [
+      {"seconds": 0, "label": "Leaving Jupiter to help family"},
+      {"seconds": 130, "label": "Evacuation traffic heading the other way"},
+      {"seconds": 148, "label": "I-275 and the Skyway approach"},
+      {"seconds": 221, "label": "Boarding up and loading the cars"},
+      {"seconds": 259, "label": "The day of Hurricane Milton"},
+      {"seconds": 319, "label": "Emergency tornado warning"},
+      {"seconds": 480, "label": "The morning after"},
+      {"seconds": 595, "label": "Returning with a U-Haul"},
+      {"seconds": 637, "label": "Post-storm drive into St. Petersburg"},
+      {"seconds": 777, "label": "Roof and water damage"},
+      {"seconds": 826, "label": "Packing belongings for the return"},
+      {"seconds": 916, "label": "Final thoughts from the drive"}
+    ],
+    "officialSafetyUrls": [
+      "https://www.weather.gov/safety/hurricane",
+      "https://www.floridadisaster.org/planprepare/"
+    ],
+    "continuation": {
+      "videoId": "aiA2hlRcVpk",
+      "title": "Farmers Paradise | Golden Hour Over the Farm | Peaceful Drone Flight",
+      "placement": "final-20-second-end-screen-after-review",
+      "websiteUrl": "https://colinmichaels.com/topics/drones-fpv?utm_source=youtube&utm_medium=video_description&utm_campaign=hurricane_milton_gateway&utm_content=cbq1imhjluy"
+    },
+    "thumbnail": {
+      "status": "source-frame-export-required",
+      "width": 1280,
+      "height": 720,
+      "actualVideoFramesRequired": true,
+      "syntheticMediaAllowed": false,
+      "primaryFramesSeconds": [130, 777],
+      "primaryText": "MILTON: THERE & BACK",
+      "secondaryText": "JUPITER → ST. PETE",
+      "forbidden": [
+        "stock hurricane",
+        "fake lightning",
+        "synthetic vehicle",
+        "fabricated road sign",
+        "simulated flooding",
+        "damage not visible in the video"
+      ]
+    },
+    "pinnedComment": {
+      "state": "not-posted",
+      "text": "A quick accuracy note: the video captures an emergency tornado warning, not footage of a tornado. I drove from Jupiter to St. Petersburg to help family prepare, sheltered back in Jupiter, then returned after Milton to check the damage and move belongings.\n\nThis is a personal record—not advice to travel during a hurricane. Follow official evacuation orders and local emergency guidance. If Milton affected you, I hope you and your family are safe.\n\nWhat part of Florida's recovery do you think people overlooked?"
+    },
+    "commentReplies": [
+      {
+        "context": "thumbnail criticism",
+        "state": "not-posted",
+        "text": "Fair call. The current thumbnail is synthetic and oversells what the footage shows. I am replacing it with an actual frame from the trip so the packaging matches the video."
+      },
+      {
+        "context": "safety concern",
+        "state": "not-posted",
+        "text": "Thank you. Everyone in our group made it through. This was to help family prepare and document the aftermath, not to encourage anyone to drive during a storm."
+      }
+    ],
+    "optionalShort": {
+      "state": "source-master-required",
+      "sourceStartSeconds": 130,
+      "sourceEndSeconds": 156,
+      "title": "Miles of Evacuation Traffic Before Hurricane Milton",
+      "countsTowardMainShortsRow": false
+    }
+  },
+  "measurement": {
+    "minimumComparisonDays": 28,
+    "compareCountsBeforePercentages": true,
+    "metrics": [
+      "impressions by surface",
+      "impression click-through rate by surface",
+      "YouTube Search terms",
+      "first-30-second retention",
+      "average view duration",
+      "key-moment retention",
+      "end-screen impressions and clicks",
+      "substantive comments and replies",
+      "tagged website sessions after receipt verification"
+    ]
+  },
+  "rollback": {
+    "preserveCurrentDescription": true,
+    "preserveCurrentThumbnail": true,
+    "preserveCurrentCardsAndEndScreen": true,
+    "preserveCurrentPlaylistMembership": true,
+    "preserveCurrentComments": true,
+    "deleteOrUnlistVideo": false,
+    "reuploadVideo": false
+  }
+}

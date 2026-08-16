@@ -8,9 +8,24 @@ Primary domain: `https://colinmichaels.com`.
 
 ## Current Implementation Snapshot
 
-Updated: July 2, 2026.
+Updated: August 15, 2026.
+
+The cross-channel growth baseline, current editorial decision, measurable 90-day targets, and blog/YouTube operating cadence now live in `docs/SEO/CREATOR_GROWTH_OPERATING_SYSTEM.md`. That plan extends this technical SEO foundation without replacing completed route, sitemap, fallback-rendering, or topic-hub work.
 
 Completed in code and documentation:
+
+- August creator-growth refresh: sharper gadget/tech/internet-find homepage identity, YouTube/Instagram entity links, Captain Colin channel positioning, and privacy-bounded site-to-YouTube selection measurement.
+- YouTube archive gateway: live-audited the `14,920`-view Hurricane Milton video and prepared a local accuracy-and-continuation package that preserves its earned URL/title, replaces the unsupported tornado claim, adds twelve evidenced chapters and official safety paths, rejects another synthetic thumbnail, and requires source-video frames before any image change. Review this package before channel-layout mutation; no live YouTube edit has occurred.
+- YouTube archive gateway selection: scored the `55K` Hurricane Wilma clip, `6K` Stuart Inlet story, `2.7K` BetaFPV 95X flight, and `2,328`-view Ace Pro FPV test on evidence and continuation instead of views alone. Selected Ace Pro at `46/50`; its local package converts visible settings, stabilization, raw-footage, low-light, and weight questions into an honest field-test entry point with transcript-grounded chapters, a staged title test, related next watch, official references, and the Gadget Usefulness Scorecard path. No title, description, thumbnail, comment, playlist, card, end screen, or production surface changed.
+- Ace Pro reciprocal article: created the missing canonical site destination as one zero-warning CMS draft with the exact public video, a mixed-evidence disclosure, direct answers to the audience's settings questions, three real in-body frames, separate cover/card/social crops, an eight-step controlled-retest checklist, official Insta360/FAA paths, and a non-sensitive test-priority poll. A read-only production preflight now records an unpublished `404`/`noindex,nofollow` route, zero public published-slug matches, sitemap exclusion, and the exact `OFeCTH2LP9s` Captain Colin oEmbed identity; protected import-time reservation remains required because anonymous direct-document reads are denied. The staged YouTube link remains gated behind editorial approval, authenticated Production Preview, publication, and exact public `200`/canonical verification; no CMS import or external mutation occurred.
+- Release sequencing: scored all eight evidence-ready packages on one 50-point audience/evidence/promise/readiness/continuation/utility/risk model and separated score rank from release order. Ace Pro is the strongest new flagship at `47/50`; the first operational action is the existing Temu stable-ID refresh because it repairs the clearest measured site/search leak, followed by Ace Pro and the non-drone Laundry Chair audience-expansion test. A live preflight found that HOVERAir AQUA already has a complete indexed article under a different canonical, so its staged package is consolidation-only. Repository gates confirm package coverage, score math, duplicate-topic handling, Temu public identity preservation, activation gates, measurement windows, and zero external actions.
+- BetaFPV reciprocal continuation: converted the selected Ace Pro next watch into a second zero-warning Captain Colin Flies draft using Colin's own public ISO 100, automatic-settings, Log/DaVinci, 450mAh 4S, windy 2.5-3-minute, and VelociDrone answers. The package distinguishes the cinematic flight from a controlled review, range test, waterproofing claim, complete build record, and retrospective legal verdict; adds current official BETAFPV/FAA context, nine retest steps, a poll, disclosed editorial illustrations, and a separately measurable YouTube title/description/comment draft with no invented chapters. It remains entirely local.
+- Editorial runway: four complete local practical-curiosity article/video packages now cover a waterproof follow-drone, current passenger-aircraft purchase evidence, the Unitree R1's $4,900 tier-versus-developer-feature catch, and Simone Giertz's $1,100 Laundry Chair preorder. The Laundry Chair package adds a non-drone, non-AI **One Annoying Problem, One Useful Fix** subject with a dated preorder boundary, cheaper-alternative test, six original assets, and a complete companion-video rollout. The staged records remain drafts pending editorial review and explicit publication approval; the HOVERAir topic itself already has a live article, so that draft must be merged into the live record or retired rather than published separately.
+- High-opportunity page refresh: audited the live Temu mega-drone article, prepared a stable-ID title/description/content update with two inline editorial images and clearer evidence/regulatory framing, and added intrinsic image dimensions plus fetch priority to the crawler fallback. The package remains local and requires a fresh production-state check and explicit import approval.
+- Fresh demand decision: the July 18-August 14 GA4 table now shows the Temu story leading with `159` views and `142` active users versus the homepage's `138` views and `57` active users, so its reviewed stable-ID refresh is staged as `featured: true` for the existing automatic homepage policy.
+- Channel consolidation gate: a signed-in Studio recheck exposed a separate eight-subscriber **Colin Michaels** channel alongside the established 602-subscriber Captain Colin archive. The site and packages remain locked to Captain Colin until the owner explicitly selects the long-term primary channel; no redirect, duplicate upload, or cross-post is authorized.
+- Trust authority: added a crawlable `/editorial-standards` page with explicit experience, research, source, synthetic-media, relationship, AI-assistance, high-stakes, and correction boundaries; linked it from author and reader journeys; aligned `Person.sameAs` with Colin's four canonical public profiles; and kept the change additive and migration-free.
+- Corpus operations: added a protected read-only Discovery & trust queue that makes the audit's missing-source, contextual-continuation, supporting-artifact, and evidence-adoption work filterable and published-first without bulk content writes or inferred claims.
 
 - Week 1 route classification and soft-404 behavior.
 - Week 2 sitemap pruning with taxonomy thresholds.
@@ -25,10 +40,9 @@ Completed in code and documentation:
 Validated locally:
 
 - `npm --prefix functions run build` passed.
-- `npm run build` passed with existing bundle/CommonJS warnings.
-- Focused SEO specs passed.
-- Changed-file lint passed.
-- Full `npm run lint` still fails with `262` existing game/OS/Firebase and accessibility errors (`0` warnings), reconfirmed under Node `24.15.0` on July 13, 2026.
+- `npm run build` passed with a `1.52 MB` raw / `345.42 kB` estimated-transfer initial bundle and no Angular optimization warnings on August 15, 2026.
+- Focused SEO, Functions, and content-package validation passed, including the Unitree and Laundry Chair imports with zero warnings.
+- Full `npm run lint` passed on August 15, 2026.
 
 Still pending outside local code:
 
@@ -164,7 +178,10 @@ Implementation status:
   - `/topics/angular-firebase-architecture`
   - `/topics/labs-projects`
 - Firebase SEO fallback content now exposes the same asset summaries before JavaScript runs.
-- Longer downloadable or printable assets remain optional future content work.
+- The Drones & FPV lane now includes the first full printable artifact at `/downloads/captain-colin-drone-flight-field-notes.pdf`. The source-controlled builder produces one US Letter field sheet, the hydrated hub treats it as a same-origin download, and Functions fallback HTML exposes the same download plus official FAA recreational-flyer and airspace references.
+- The Temu/passenger-aircraft cluster now has a source-controlled printable at `/downloads/captain-colin-personal-aircraft-buyer-verification.pdf` and a substantive landing page at `/resources/personal-aircraft-buyer-verification`. The two-page PDF organizes seller identity, deposits, exact configuration, legal-category claims, operating reality, support, and evidence; the crawlable guide adds current official starting points and descriptive article/topic continuations. Both related CMS packages and the hub link the guide, Angular and Functions share its canonical identity, sitemap/search/`llms.txt` expose it, and PDF choices emit a privacy-bounded `resource_page` selection event.
+- The Gadgets & Toys lane now has a source-controlled one-page scorecard at `/downloads/captain-colin-gadget-usefulness-scorecard.pdf` and a substantive landing page at `/resources/gadget-usefulness-scorecard`. The framework connects the hub, HOVERAir AQUA, Unitree R1, Laundry Chair, and their staged Captain Colin descriptions around the same evidence-led verdict loop; the route has matching Angular/Functions content, sitemap/search/`llms.txt` discovery, and bounded `resource_page` download measurement.
+- Longer downloadable assets for the remaining broad legacy topics stay optional; gadgets and drone/FPV resources are the active outreach priorities.
 
 ### Week 10, Sep 7-13: Prospect Lists
 
@@ -181,8 +198,10 @@ Implementation status:
 Implementation status:
 
 - Outreach/prospecting operating doc created at `docs/SEO/LINK_BUILDING_OUTREACH.md`.
-- Seed prospect collection started with `48` researched candidates: `12` per pillar.
-- Remaining target: expand each pillar from `12` candidates to `25-40` qualified prospects after deployment checks confirm the target assets are live.
+- The July seed collection of `48` candidates is retained as legacy research, but its four broad pillars no longer lead outreach.
+- The active queue now contains `25` qualified drone/FPV target pages for the printable field sheet and Drones hub plus `25` gadget/creator-tech target pages for the scorecard and flagship series.
+- The two exact-page cohorts total `18` release-gated ready rows, `12` relationship, rights, reporting, or evidence decisions, `20` holds, and `0` contacted. Paid dofollow placement, commercial product listing, and self-publication remain holds rather than authority wins.
+- Every prospect still requires exact-page fit, current contact-path review, and live verification of both the landing page and supporting asset before outreach.
 
 ### Week 11, Sep 14-20: Outreach
 
@@ -195,7 +214,7 @@ Implementation status:
 Implementation status:
 
 - Outreach templates and guardrails are documented in `docs/SEO/LINK_BUILDING_OUTREACH.md`.
-- Sending outreach remains pending until named prospects are collected and live URLs are verified.
+- Sending outreach remains pending until the relevant public landing/PDF URLs are verified, each current route is rechecked, the exact ready rows are approved, and personalized pitches are authorized.
 
 ### Week 12, Sep 21-27: Measure And Iterate
 
@@ -255,9 +274,11 @@ Implementation status:
 
 ## Next Execution Queue
 
-1. Deploy the SEO changes.
-2. Run the live-style checks listed in the test plan.
-3. Recheck contact paths and fit for the 48 seed prospects in `docs/SEO/LINK_BUILDING_OUTREACH.md`.
-4. Expand the prospect tracker to 25-40 qualified prospects per pillar.
-5. Send personalized pitches only where the live asset genuinely helps that audience.
-6. Review Search Console after indexing and update titles, descriptions, and internal links for pages with impressions but weak CTR.
+1. Use `docs/CONTENT_PACKAGES/RELEASE_RUNWAY.md` for final source, voice, imagery, rights, and duplicate-topic review. The first operational sequence is the Temu stable-ID refresh, the Ace Pro reciprocal article/video loop, and the Laundry Chair audience-expansion test; stop or reorder only with newly recorded evidence. Treat HOVERAir AQUA as an existing-live-record consolidation, never a second URL.
+2. Deploy the SEO changes.
+3. Run the live-style checks listed in the test plan.
+4. Publish only the approved article first, verify its public URL, and then add that canonical URL to the companion YouTube package.
+5. Deploy and verify `/topics/drones-fpv`, `/topics/gadgets-toys`, both crawlable resource pages, and all three supporting PDFs before using any worksheet in outreach.
+6. Review both validated 25-page research cohorts. Drone/FPV has 10 ready after the public release gate, 5 relationship or rights decisions, and 10 holds; gadget/creator-tech has 8 ready after the public release gate, 7 relationship or evidence decisions, and 10 holds. All 50 remain uncontacted. Expand either cohort only with pages that clear the same exact-page, contact-route, evidence, and earned-authority standard; treat the 48 July prospects as legacy research unless deliberately requalified.
+7. After explicit authorization, prepare personalized pitches only for approved ready rows where the live asset genuinely helps that audience; preserve relationship, rights, and hold blockers instead of treating them as volume targets.
+8. Review Search Console after indexing and update titles, descriptions, and internal links for pages with impressions but weak CTR.

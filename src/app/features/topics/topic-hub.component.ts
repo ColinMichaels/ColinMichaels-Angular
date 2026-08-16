@@ -8,6 +8,7 @@ import {PATH_NAMES} from '../../app-route-paths';
 import {SeoService} from '../../shared/seo/seo.service';
 import {BlogPostListingComponent} from '../blog/components/post-listing/blog-post-listing.component';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
+import {YouTubeLatestVideosComponent} from '../youtube/components/latest-videos/youtube-latest-videos.component';
 import {TopicGuideComponent} from './components/topic-guide/topic-guide.component';
 import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
 import {
@@ -27,6 +28,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
     RouterLink,
     BlogPostListingComponent,
     TopicGuideComponent,
+    YouTubeLatestVideosComponent,
   ],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -138,6 +140,18 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
               [regionLabel]="pageCopy().archiveHeading"
             ></app-blog-post-listing>
           </section>
+        }
+
+        @if (hub().slug === 'drones-fpv') {
+          <app-youtube-latest-videos
+            class="topic-hub-youtube"
+            [maxResults]="3"
+            sectionId="topic-drones-youtube"
+            eyebrow="Captain Colin on YouTube"
+            heading="Watch the flights behind the field notes."
+            description="See the newest FPV flights, Florida locations, and drone experiments, then subscribe for the next pack."
+            analyticsSourceComponent="topic_drones_youtube"
+          ></app-youtube-latest-videos>
         }
 
         <section id="topic-guide" class="topic-hub-section topic-hub-guide-section" aria-label="About this topic">
@@ -419,6 +433,11 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
 
     .topic-hub-archive {
       padding-top: clamp(2.75rem, 6vw, 4.75rem);
+    }
+
+    .topic-hub-youtube {
+      display: block;
+      border-top: 1px solid var(--site-border);
     }
 
     .topic-hub-guide-section {

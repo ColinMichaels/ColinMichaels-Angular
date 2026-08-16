@@ -60,6 +60,7 @@ describe('BlogChartComponent', () => {
     expect(chart?.data.datasets[0].data).toEqual([18, 22.6, 28.2]);
     expect(chart?.data.datasets[1].data).toEqual([5.3, 4.7, 3]);
     expect(canvas?.getAttribute('aria-label')).toContain('One-word titles rose');
+    expect(element.querySelector('.sr-only table')).not.toBeNull();
     expect(element.textContent).toContain('One-word titles');
     expect(element.textContent).toContain('Titles containing love');
     expect(element.textContent).toContain('28.2%');

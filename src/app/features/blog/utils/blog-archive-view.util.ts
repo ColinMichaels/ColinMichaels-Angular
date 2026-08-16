@@ -24,6 +24,8 @@ export function resolveBlogArchiveListingLayout(view: BlogArchiveView): BlogPost
       return 'compact';
     case 'grid':
       return 'grid';
+    case 'image-title':
+      return 'editorial';
     default:
       return 'list';
   }

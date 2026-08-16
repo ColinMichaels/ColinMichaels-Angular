@@ -20,6 +20,10 @@
       "host": "127.0.0.1",
       "port": 9099
     },
+    "hosting": {
+      "host": "127.0.0.1",
+      "port": 5500
+    },
     "functions": {
       "host": "127.0.0.1",
       "port": 5001
@@ -83,7 +87,7 @@
           },
           {
             "key": "Content-Security-Policy-Report-Only",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://firebasestorage.googleapis.com https://storage.googleapis.com; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://firebasestorage.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src 'self' https://www.googletagmanager.com https://www.youtube.com https://suno.com https://hear-the-hook.captaincolin.chatgpt.site; media-src 'self' https://firebasestorage.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self' https://forms.gle https://docs.google.com"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://firebasestorage.googleapis.com https://storage.googleapis.com; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://firebasestorage.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src 'self' https://colinmichaels.firebaseapp.com https://www.googletagmanager.com https://www.youtube.com https://suno.com https://hear-the-hook.captaincolin.chatgpt.site; media-src 'self' https://firebasestorage.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self' https://forms.gle https://docs.google.com"
           }
         ]
       },
@@ -125,6 +129,36 @@
       }
     ],
     "redirects": [
+      {
+        "source": "/blog/",
+        "destination": "/blog",
+        "type": 301
+      },
+      {
+        "source": "/blog/category/cat-corner",
+        "destination": "/blog/category/cats-and-pets",
+        "type": 301
+      },
+      {
+        "source": "/blog/category/health",
+        "destination": "/blog/category/health-and-recovery",
+        "type": 301
+      },
+      {
+        "source": "/blog/category/recovery",
+        "destination": "/blog/category/health-and-recovery",
+        "type": 301
+      },
+      {
+        "source": "/blog/tag/recovery",
+        "destination": "/blog/category/health-and-recovery",
+        "type": 301
+      },
+      {
+        "source": "/blog/tag/personal-growth",
+        "destination": "/blog/category/personal-growth",
+        "type": 301
+      },
       {
         "source": "/labs",
         "destination": "/blog",

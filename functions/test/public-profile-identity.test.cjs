@@ -1,0 +1,52 @@
+const assert = require('node:assert/strict');
+const {readFileSync} = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const {
+  CREATOR_PROFILE_URLS,
+  PERSON_SAME_AS,
+  YOUTUBE_CHANNEL_ID,
+  YOUTUBE_CHANNEL_URL,
+  YOUTUBE_SUBSCRIBE_URL,
+} = require('../lib/seo-site.js');
+
+const indexPath = path.resolve(__dirname, '../../src/index.html');
+const angularIdentityPath = path.resolve(__dirname, '../../src/app/shared/seo/site-identity.ts');
+
+test('keeps one canonical YouTube identity across Functions and Angular', () => {
+  const angularIdentity = readFileSync(angularIdentityPath, 'utf8');
+
+  assert.equal(YOUTUBE_CHANNEL_ID, 'UCKZ3E88t-BoUqPgZygJw6bA');
+  assert.equal(YOUTUBE_CHANNEL_URL, `https://www.youtube.com/channel/${YOUTUBE_CHANNEL_ID}`);
+  assert.equal(YOUTUBE_SUBSCRIBE_URL, `${YOUTUBE_CHANNEL_URL}?sub_confirmation=1`);
+  assert.match(
+    angularIdentity,
+    new RegExp(`YOUTUBE_CHANNEL_ID = '${YOUTUBE_CHANNEL_ID.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`),
+  );
+});
+
+test('uses the verified active Instagram identity in the Functions entity graph', () => {
+  assert.equal(CREATOR_PROFILE_URLS.instagram, 'https://www.instagram.com/colinmichaels/');
+  assert.deepEqual(PERSON_SAME_AS, [
+    'https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA',
+    'https://www.instagram.com/colinmichaels/',
+    'https://github.com/ColinMichaels',
+    'https://www.linkedin.com/in/colinmichaels',
+  ]);
+  assert.ok(PERSON_SAME_AS.every(url => new URL(url).protocol === 'https:'));
+});
+
+test('keeps the physical homepage Person graph aligned with the active profile contract', () => {
+  const indexHtml = readFileSync(indexPath, 'utf8');
+  const jsonLdMatch = indexHtml.match(
+    /<script id="seo-json-ld" type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/,
+  );
+
+  assert.ok(jsonLdMatch, 'physical homepage JSON-LD must exist');
+  const graph = JSON.parse(jsonLdMatch[1])['@graph'];
+  const person = graph.find(node => node['@type'] === 'Person');
+
+  assert.deepEqual(person.sameAs, [...PERSON_SAME_AS]);
+  assert.doesNotMatch(indexHtml, /captaincolinfpv/i);
+});

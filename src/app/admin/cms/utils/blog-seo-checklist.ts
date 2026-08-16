@@ -1,5 +1,10 @@
-import {BlogContentBlock} from '../../../features/blog/models/blog-post.model';
+import {BlogContentBlock, BlogEditorialMetadata} from '../../../features/blog/models/blog-post.model';
 import {SITE_URL} from '../../../shared/seo/seo.metadata';
+import {BLOG_EVIDENCE_BASIS_LABELS} from '../../../features/blog/utils/blog-editorial-metadata.util';
+import {
+  analyzeBlogContentTrustSignals,
+  BlogContentTrustSignals,
+} from './blog-content-trust-signals.util';
 
 export type SeoChecklistStatus = 'pass' | 'warning' | 'fail';
 
@@ -16,6 +21,7 @@ export interface SeoChecklistInput {
   generatedCanonicalUrl: string;
   openGraphImage: string;
   blocks: readonly BlogContentBlock[];
+  editorial?: BlogEditorialMetadata;
 }
 
 export interface SeoChecklistItem {
@@ -39,6 +45,7 @@ const IDEAL_DESCRIPTION_MIN_LENGTH = 120;
 const IDEAL_DESCRIPTION_MAX_LENGTH = 160;
 
 export function createSeoChecklist(input: SeoChecklistInput): SeoChecklistSummary {
+  const trustSignals = analyzeBlogContentTrustSignals(input.blocks, input.slug);
   const items: readonly SeoChecklistItem[] = [
     createTitleCheck(input.seoTitle || input.title),
     createDescriptionCheck(input.seoDescription || input.excerpt),
@@ -50,6 +57,10 @@ export function createSeoChecklist(input: SeoChecklistInput): SeoChecklistSummar
     createTagCheck(input.tags),
     createInlineImageAltCheck(input.blocks),
     createHeadingCheck(input.blocks),
+    createEditorialEvidenceCheck(input.editorial),
+    createExternalReferenceCheck(trustSignals),
+    createContextualArticleLinkCheck(trustSignals),
+    createSupportingEvidenceCheck(trustSignals),
   ];
 
   return {
@@ -58,6 +69,35 @@ export function createSeoChecklist(input: SeoChecklistInput): SeoChecklistSummar
     failCount: items.filter(item => item.status === 'fail').length,
     items,
   };
+}
+
+function createEditorialEvidenceCheck(editorial: BlogEditorialMetadata | undefined): SeoChecklistItem {
+  if (!editorial?.evidenceBasis) {
+    return createItem(
+      'editorial-evidence',
+      'Evidence classification',
+      'Choose the article’s primary evidence basis. Unclassified posts show readers a legacy review notice instead of implying hands-on testing or verification.',
+      'fail'
+    );
+  }
+
+  if (!editorial.evidenceSummary?.trim()) {
+    return createItem(
+      'editorial-evidence',
+      'Evidence classification',
+      'Add a concise evidence summary that tells readers what was personally experienced, researched, or supplied by a manufacturer.',
+      'warning',
+      BLOG_EVIDENCE_BASIS_LABELS[editorial.evidenceBasis]
+    );
+  }
+
+  return createItem(
+    'editorial-evidence',
+    'Evidence classification',
+    'The article has a reader-visible evidence basis and explanation.',
+    'pass',
+    BLOG_EVIDENCE_BASIS_LABELS[editorial.evidenceBasis]
+  );
 }
 
 export function createSearchPreviewTitle(input: Pick<SeoChecklistInput, 'seoTitle' | 'title'>): string {
@@ -231,6 +271,74 @@ function createHeadingCheck(blocks: readonly BlogContentBlock[]): SeoChecklistIt
   }
 
   return createItem('headings', 'Headings', 'Section headings are available for article navigation.', 'pass', `${headingCount} heading${headingCount === 1 ? '' : 's'}`);
+}
+
+function createExternalReferenceCheck(signals: BlogContentTrustSignals): SeoChecklistItem {
+  const referenceCount = signals.externalReferenceUrls.length;
+
+  if (referenceCount > 0) {
+    return createItem(
+      'external-references',
+      'Usable references',
+      'The article includes at least one usable external reference. Confirm the source is authoritative and the link text names what readers will open.',
+      'pass',
+      `${referenceCount} external reference${referenceCount === 1 ? '' : 's'}`
+    );
+  }
+
+  if (signals.hasSourcesHeading) {
+    return createItem(
+      'external-references',
+      'Usable references',
+      'The Sources or References section has no usable external link. Add descriptive source links instead of publisher names alone.',
+      'warning'
+    );
+  }
+
+  return createItem(
+    'external-references',
+    'Usable references',
+    'Add an authoritative source link when the story makes verifiable claims. A first-person journal entry can remain source-free when that is genuinely appropriate.',
+    'warning'
+  );
+}
+
+function createContextualArticleLinkCheck(signals: BlogContentTrustSignals): SeoChecklistItem {
+  const linkCount = signals.contextualArticleUrls.length;
+
+  return linkCount > 0
+    ? createItem(
+      'contextual-article-links',
+      'Contextual next read',
+      'The article body links to a relevant ColinMichaels story.',
+      'pass',
+      `${linkCount} article link${linkCount === 1 ? '' : 's'}`
+    )
+    : createItem(
+      'contextual-article-links',
+      'Contextual next read',
+      'Add one in-body link to a genuinely relevant article when it advances the reader’s question. The automatic Read next list does not replace editorial context.',
+      'warning'
+    );
+}
+
+function createSupportingEvidenceCheck(signals: BlogContentTrustSignals): SeoChecklistItem {
+  const artifactCount = signals.supportingArtifactCount;
+
+  return artifactCount > 0
+    ? createItem(
+      'supporting-evidence',
+      'Supporting evidence',
+      'The article includes in-body media or a structured artifact. Confirm it is relevant, rights-cleared, accurately labeled, and not decorative filler.',
+      'pass',
+      `${artifactCount} supporting artifact${artifactCount === 1 ? '' : 's'}`
+    )
+    : createItem(
+      'supporting-evidence',
+      'Supporting evidence',
+      'When available, add an original photo, screenshot, measured result, comparison table, code sample, or relevant video. Do not add filler just to pass this check.',
+      'warning'
+    );
 }
 
 function createItem(

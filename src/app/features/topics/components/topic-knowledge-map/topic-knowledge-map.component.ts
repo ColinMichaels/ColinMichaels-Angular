@@ -147,6 +147,16 @@ function clamp(value: number, minimum: number, maximum: number): number {
             <path d="M32 22h.01M36 26h.01"></path>
           </svg>
         }
+        @case ('flight') {
+          <svg viewBox="0 0 48 48" focusable="false" aria-hidden="true">
+            <path d="M13 15h22M13 33h22M15 13v22M33 13v22"></path>
+            <circle cx="10" cy="10" r="5"></circle>
+            <circle cx="38" cy="10" r="5"></circle>
+            <circle cx="10" cy="38" r="5"></circle>
+            <circle cx="38" cy="38" r="5"></circle>
+            <path d="M17 24l7-5 7 5-7 5-7-5z"></path>
+          </svg>
+        }
       }
     </ng-template>
   `,

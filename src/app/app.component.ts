@@ -10,6 +10,7 @@ import {ReaderToolsComponent} from './shared/reader-preferences/reader-tools.com
 import {SeoService} from './shared/seo/seo.service';
 import {SitePreloaderService} from './shared/site-loader/site-preloader.service';
 import {SiteHeaderComponent} from './shared/site-header/site-header.component';
+import {SiteFooterComponent} from './shared/site-footer/site-footer.component';
 import {SiteThemeService} from './shared/theme/site-theme.service';
 import {ShareAttributionService} from './features/blog/services/share-attribution.service';
 import {PwaStatusComponent} from './shared/pwa/pwa-status.component';
@@ -103,6 +104,7 @@ export function isBlogArticleRoute(url: string): boolean {
     ReaderToolsComponent,
     ScreenSaverLauncherComponent,
     SiteHeaderComponent,
+    SiteFooterComponent,
     UserViewBannerComponent,
     BlogMembershipCampaignComponent,
     SiteSearchHighlightDirective,

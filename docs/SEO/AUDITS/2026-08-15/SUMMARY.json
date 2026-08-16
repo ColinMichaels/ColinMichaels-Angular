@@ -1,0 +1,34 @@
+{
+  "audit_type": "homepage-performance",
+  "analyzed_at": "2026-08-15T13:09:21Z",
+  "url": "https://colinmichaels.com/",
+  "score": null,
+  "score_status": "not_assigned_without_lighthouse_or_field_cwv",
+  "baseline": {
+    "source": "repeated_live_mobile_lab_check",
+    "viewport": "390x844",
+    "cls": 0.189
+  },
+  "release_candidate": {
+    "source": "local_chromium_buffered_layout_shift_entries",
+    "mobile": {
+      "viewport": "390x844",
+      "cls": 0.0031,
+      "rating": "good"
+    },
+    "desktop": {
+      "viewport": "1440x1000",
+      "cls": 0.0097,
+      "rating": "good"
+    }
+  },
+  "core_web_vitals": {
+    "lcp": "not measured",
+    "inp": "field data unavailable",
+    "cls": "0.0031 mobile lab; 0.0097 desktop lab"
+  },
+  "issues": [
+    "Production field CWV remains unverified until the exact release is deployed and sufficient real-user data is available.",
+    "LCP, INP, TBT, and Lighthouse performance scores were not measured in this focused regression check."
+  ]
+}

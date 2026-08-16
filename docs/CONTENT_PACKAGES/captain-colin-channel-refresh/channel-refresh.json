@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "status": "local-review-only",
+  "sourceReviewDate": "2026-08-15",
+  "channel": {
+    "name": "Captain Colin",
+    "handle": "@CaptainColin",
+    "channelId": "UCKZ3E88t-BoUqPgZygJw6bA",
+    "url": "https://www.youtube.com/@CaptainColin"
+  },
+  "currentPublicSnapshot": {
+    "subscribers": 602,
+    "videos": 394,
+    "views": 124185,
+    "description": "FPV drone pilot, and real-life applications developer.  I like playing with my toys because I'm just a 'big' kid at the end of the day.   Just want to share my experiences, learn from others, and hopefully help others by knowledge sharing.   Have a question, or suggestion, or just want to say hello feel free to message me, visit my website, and message me directly or comment on one of my videos.",
+    "trailerVideoId": "pvXak3YGEjk",
+    "trailerTitle": "My FPV Compilation",
+    "homeSectionTitles": [
+      "Videos",
+      "Playlists",
+      "Drones",
+      "Channels to check out",
+      "Popular videos",
+      "Posts"
+    ],
+    "profileLinks": [
+      {
+        "title": "My Website",
+        "url": "http://colinmichaels.com"
+      },
+      {
+        "title": "Instagram",
+        "url": "https://www.instagram.com/colinmichaels/"
+      },
+      {
+        "title": "Facebook",
+        "url": "https://www.facebook.com/colinmichaels/"
+      },
+      {
+        "title": "TikTok",
+        "url": "https://www.tiktok.com/@dacaptaincolin"
+      }
+    ],
+    "sourceUrls": [
+      "https://www.youtube.com/@CaptainColin",
+      "https://www.youtube.com/feeds/videos.xml?channel_id=UCKZ3E88t-BoUqPgZygJw6bA"
+    ]
+  },
+  "secondaryChannelAudit": {
+    "observedAt": "2026-08-15",
+    "name": "Colin Michaels",
+    "channelId": "UCCJMwxuUIb6S4aoZiZeAVeQ",
+    "studioDefault": true,
+    "subscribers": 8,
+    "last28Days": {
+      "views": 47,
+      "watchHours": 0.6
+    },
+    "decision": "do-not-redirect-or-cross-post-without-owner-review",
+    "reason": "The website, structured identity, content packages, and larger public archive currently point to Captain Colin. Splitting new uploads across two channels weakens subscriber, recommendation, and returning-viewer signals."
+  },
+  "recommended": {
+    "description": "FPV flights, unusual gadgets, useful technology, and internet finds—tested when I can and researched honestly when I cannot.\n\nI am Colin Michaels: an FPV pilot, applications developer, builder, and lifelong big kid. On Captain Colin, I fly Florida, dig into strange gear, and ask the question that matters after the thumbnail: is it actually useful?\n\nExpect:\n• Captain Colin Flies—FPV, drone tours, and the story behind the shot\n• Is It Actually Useful?—gadgets, robots, marketplace finds, and practical verdicts\n• One Annoying Problem, One Useful Fix—compact technology solutions\n\nSome stories are hands-on. Some are first-person footage. Some are research. I will tell you which and link the sources, field notes, and updates at:\nhttps://colinmichaels.com\n\nPick a playlist, then tell me what I should fly, test, or investigate next.",
+    "profileLinks": [
+      {
+        "title": "Articles, Sources & Field Notes",
+        "url": "https://colinmichaels.com/?utm_source=youtube&utm_medium=profile&utm_campaign=captain_colin_channel"
+      },
+      {
+        "title": "Drones & FPV",
+        "url": "https://colinmichaels.com/topics/drones-fpv?utm_source=youtube&utm_medium=profile&utm_campaign=captain_colin_channel"
+      },
+      {
+        "title": "Instagram",
+        "url": "https://www.instagram.com/colinmichaels/"
+      }
+    ],
+    "banner": {
+      "path": "src/assets/social/youtube/captain-colin-channel-banner.jpg",
+      "width": 2560,
+      "height": 1440,
+      "safeAreaWidth": 1546,
+      "safeAreaHeight": 423,
+      "maxBytes": 6291456,
+      "generatedEditorialArtwork": true
+    },
+    "trailer": {
+      "status": "record-before-switch",
+      "title": "Welcome to Captain Colin: Gadgets, FPV & Internet Finds",
+      "targetSeconds": 58,
+      "script": "Hey, I am Colin. I fly FPV drones, chase weird technology, and I am still enough of a big kid to ask the question most adults stop asking: what happens if we try this?\n\nHere you will find Florida flights, unusual gadgets, internet finds, and practical technology that solves an actual problem.\n\nSome stories are hands-on. Some are field footage. Some are research. I will always tell you which—and I will tell you what the evidence does not prove.\n\nThe point is not to pretend everything is amazing. It is to find what is fun, what is useful, and what deserves a second look.\n\nPick the playlist that sounds like you, then tell me what I should fly, test, or investigate next. I am Captain Colin. Let us go find something worth talking about.",
+      "thirdPartyFootageAllowed": false
+    },
+    "returningSubscriberSpotlight": {
+      "temporaryVideoId": "aiA2hlRcVpk",
+      "applyAfterReviewedMetadata": true,
+      "rotateOnlyAfterVerifiedFlagshipRelease": true
+    },
+    "homeSections": [
+      {
+        "order": 1,
+        "title": "For you",
+        "state": "enable-last-12-months"
+      },
+      {
+        "order": 2,
+        "title": "Captain Colin Flies | FPV & Drone Flights",
+        "state": "curate-before-publish"
+      },
+      {
+        "order": 3,
+        "title": "Is It Actually Useful? | Gadgets & Internet Finds",
+        "state": "gate-until-two-public-episodes"
+      },
+      {
+        "order": 4,
+        "title": "Florida Adventures | Flights, Places & Events",
+        "state": "curate-before-publish"
+      },
+      {
+        "order": 5,
+        "title": "Latest videos",
+        "state": "keep"
+      },
+      {
+        "order": 6,
+        "title": "Shorts",
+        "state": "gate-until-three-on-promise-shorts"
+      },
+      {
+        "order": 7,
+        "title": "Popular videos",
+        "state": "keep-below-primary-series"
+      },
+      {
+        "order": 8,
+        "title": "Posts",
+        "state": "keep-when-current"
+      },
+      {
+        "order": 9,
+        "title": "Channels to check out",
+        "state": "keep-only-if-deliberately-curated"
+      }
+    ],
+    "channelKeywords": [
+      "Captain Colin",
+      "Colin Michaels",
+      "FPV",
+      "FPV drone",
+      "drone flights",
+      "Florida FPV",
+      "unusual gadgets",
+      "useful technology",
+      "internet finds",
+      "practical tech",
+      "future tech"
+    ]
+  }
+}

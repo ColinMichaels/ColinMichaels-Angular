@@ -1,0 +1,473 @@
+{
+  "schemaVersion": 1,
+  "status": "local-review-only",
+  "capturedAt": "2026-08-15T21:50:09Z",
+  "purpose": "Choose the next ColinMichaels article and Captain Colin releases from the complete local evidence-ready inventory without treating draft volume as audience growth.",
+  "decisionRule": "Score every candidate on the same seven factors. Use the score as the evidence baseline, then allow a different release order only when the runway records a concrete sequencing reason such as repairing an existing search leak, avoiding two same-lane releases in a row, or establishing a repeatable series.",
+  "weights": {
+    "provenAudienceDemand": 2,
+    "firstPartyEvidence": 2,
+    "currentPromiseFit": 2,
+    "packageReadiness": 1,
+    "crossChannelContinuation": 1,
+    "saveShareUtility": 1,
+    "riskControl": 1
+  },
+  "scale": {
+    "minimum": 0,
+    "maximum": 5,
+    "maximumWeightedTotal": 50,
+    "higherRiskControlScoreMeans": "Fewer unresolved accuracy, safety, rights, privacy, or production-record risks."
+  },
+  "candidates": [
+    {
+      "id": "insta360-ace-pro-fpv-sunset-test",
+      "scoreRank": 1,
+      "title": "Insta360 Ace Pro on an FPV Drone: What My Sunset Test Actually Showed",
+      "series": "Captain Colin Flies",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/insta360-ace-pro-fpv-sunset-test/insta360-ace-pro-fpv-sunset-test-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/insta360-ace-pro-fpv-sunset-test/POST_PACKAGE.md",
+        "productionPreflight": "docs/CONTENT_PACKAGES/insta360-ace-pro-fpv-sunset-test/PRODUCTION_PREFLIGHT_2026-08-15.json",
+        "liveVerifier": "scripts/verify-ace-pro-production-live.mjs",
+        "crossChannelDocs": [
+          "docs/CONTENT_PACKAGES/insta360-ace-pro-fpv-evergreen-gateway/YOUTUBE_GATEWAY.md",
+          "docs/CONTENT_PACKAGES/insta360-ace-pro-fpv-evergreen-gateway/youtube-gateway.json"
+        ]
+      },
+      "audienceSignal": {
+        "kind": "exact_first_party_video",
+        "capturedAt": "2026-08-15",
+        "views": 2328,
+        "likes": 70,
+        "comments": 30,
+        "qualitativeSignal": "Visible questions repeatedly ask for settings, stabilization, raw footage, low-light performance, and camera weight."
+      },
+      "scores": {
+        "provenAudienceDemand": 4,
+        "firstPartyEvidence": 5,
+        "currentPromiseFit": 5,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 5,
+        "saveShareUtility": 5,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The existing video has 2,328 views, 70 likes, 30 comments, and specific unresolved viewer questions.",
+        "firstPartyEvidence": "Colin's complete video, transcript, frames, mount, flight sequence, and stated uncertainty support the article.",
+        "currentPromiseFit": "FPV, camera gear, a real field session, and an honest usefulness verdict sit directly inside the creator promise.",
+        "packageReadiness": "The draft import, three first-party inline frames, separate cover/card/social assets, sources, disclosures, checklist, and poll are complete.",
+        "crossChannelContinuation": "The exact existing YouTube upload is selected as the article companion and already has a staged reciprocal gateway.",
+        "saveShareUtility": "The article answers recurring questions and gives readers an eight-step controlled-retest checklist.",
+        "riskControl": "The package distinguishes a first flight from a controlled review and lists unknown settings rather than inventing them."
+      },
+      "weightedTotal": 47
+    },
+    {
+      "id": "betafpv-95x-v3-over-water-flight-notes",
+      "scoreRank": 2,
+      "title": "BetaFPV 95X V3 Over Water: The Settings, Battery, and Retest Plan",
+      "series": "Captain Colin Flies",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/betafpv-95x-v3-over-water-flight-notes",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/betafpv-95x-v3-over-water-flight-notes/betafpv-95x-v3-over-water-flight-notes-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/betafpv-95x-v3-over-water-flight-notes/POST_PACKAGE.md",
+        "crossChannelDocs": [
+          "docs/CONTENT_PACKAGES/betafpv-95x-v3-over-water-flight-notes/YOUTUBE_GATEWAY.md",
+          "docs/CONTENT_PACKAGES/betafpv-95x-v3-over-water-flight-notes/youtube-gateway.json"
+        ]
+      },
+      "audienceSignal": {
+        "kind": "exact_first_party_video",
+        "capturedAt": "2026-08-15",
+        "views": 2765,
+        "likes": 70,
+        "comments": 46,
+        "countsAreVolatile": true,
+        "qualitativeSignal": "Visible questions ask about ISO, automatic settings, battery, flight time, acro mode, and learning to fly."
+      },
+      "scores": {
+        "provenAudienceDemand": 4,
+        "firstPartyEvidence": 4,
+        "currentPromiseFit": 5,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 5,
+        "saveShareUtility": 5,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The archive video has 2,765 views, 70 likes, 46 comments, and the strongest visible conversation of the two FPV candidates.",
+        "firstPartyEvidence": "Colin's footage and public replies preserve bounded settings, battery, runtime, wind, and simulator-practice details, but no transcript or complete build record exists.",
+        "currentPromiseFit": "The story is a direct FPV flight, camera, practice, and field-learning fit.",
+        "packageReadiness": "The canonical draft, images, disclosures, references, retest plan, poll, and exact companion selection are complete.",
+        "crossChannelContinuation": "The exact source upload has a staged gateway and is the natural closest next watch after the Ace Pro story.",
+        "saveShareUtility": "The article turns recurring setup questions into a nine-step retest plan.",
+        "riskControl": "Unknown aircraft, camera, raw-file, route, voltage, and controlled-test details stay visible."
+      },
+      "weightedTotal": 45
+    },
+    {
+      "id": "they-bought-a-full-size-temu-mega-drone",
+      "scoreRank": 3,
+      "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
+      "series": "Is It Actually Useful?",
+      "recordMode": "update_existing_published_record",
+      "canonicalUrl": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/temu-mega-drone-seo-refresh/temu-mega-drone-seo-refresh-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/temu-mega-drone-seo-refresh/SEO_REFRESH.md",
+        "productionPreflight": "docs/CONTENT_PACKAGES/temu-mega-drone-seo-refresh/PRODUCTION_BASELINE_2026-08-15.json",
+        "liveVerifier": "scripts/verify-temu-production-live.mjs",
+        "crossChannelDocs": [
+          "docs/CONTENT_PACKAGES/temu-mega-drone-seo-refresh/CAPTAIN_COLIN_VIDEO_PACKAGE.md"
+        ]
+      },
+      "audienceSignal": {
+        "kind": "exact_first_party_site_and_search",
+        "capturedAt": "2026-08-15",
+        "ga4Window": "2026-07-18/2026-08-14",
+        "views": 159,
+        "activeUsers": 142,
+        "events": 544,
+        "bounceRatePercent": 56.6,
+        "searchConsoleWindow": "2026-07-17/2026-08-13",
+        "searchImpressions": 105,
+        "searchClicks": 1,
+        "searchCtrPercent": 0.95,
+        "averagePosition": 9.9,
+        "qualitativeSignal": "This is the clearest existing site bridge between unusual internet finds, gadgets, and Colin's drone identity."
+      },
+      "scores": {
+        "provenAudienceDemand": 5,
+        "firstPartyEvidence": 2,
+        "currentPromiseFit": 5,
+        "packageReadiness": 4,
+        "crossChannelContinuation": 3,
+        "saveShareUtility": 5,
+        "riskControl": 3
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The article led the visible 28-day GA4 page table and already has first-page-adjacent search visibility with a measurable CTR leak.",
+        "firstPartyEvidence": "The story is a source-led analysis of Goonzquad footage; Colin did not buy, inspect, assemble, or fly the aircraft.",
+        "currentPromiseFit": "An oversized marketplace drone with real flight evidence is the strongest known expression of the current promise.",
+        "packageReadiness": "The exact-ID refresh and read-only drift verifier are complete; the live legacy record matches effective revision 0, but editorial approval and authenticated preview remain.",
+        "crossChannelContinuation": "A Captain Colin video package exists, but no exact public Captain Colin companion upload exists yet.",
+        "saveShareUtility": "The article links a practical buyer-verification guide and makes deposits, proof, legal claims, support, and operating reality checkable.",
+        "riskControl": "The refresh improves proof and Part 103 boundaries, but the existing published record and third-party media increase update and rights-review risk."
+      },
+      "weightedTotal": 39
+    },
+    {
+      "id": "passenger-drones-for-sale-2026",
+      "scoreRank": 4,
+      "title": "Passenger Drones for Sale in 2026? I Checked the Real Order Pages",
+      "series": "Is It Actually Useful?",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/passenger-drones-for-sale-2026",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/passenger-drones-for-sale-2026/passenger-drones-for-sale-2026-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/passenger-drones-for-sale-2026/POST_PACKAGE.md",
+        "crossChannelDocs": []
+      },
+      "audienceSignal": {
+        "kind": "adjacent_first_party_site_and_search",
+        "capturedAt": "2026-08-15",
+        "sourceCandidateId": "they-bought-a-full-size-temu-mega-drone",
+        "qualitativeSignal": "The exact article has no first-party performance yet; its demand case comes from the proven full-size-drone page and its search visibility."
+      },
+      "scores": {
+        "provenAudienceDemand": 3,
+        "firstPartyEvidence": 2,
+        "currentPromiseFit": 5,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 4,
+        "saveShareUtility": 5,
+        "riskControl": 3
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The topic extends a demonstrated site/search signal, but the exact draft has no performance history.",
+        "firstPartyEvidence": "This is current source-led purchase research, not a flight, order, inspection, or hands-on test by Colin.",
+        "currentPromiseFit": "Real order pages for personal multicopters directly extend the site's strongest unusual-drone curiosity.",
+        "packageReadiness": "The import, six visual assets, comparison, current order evidence, disclosures, guide, checklist, poll, and video script are complete.",
+        "crossChannelContinuation": "A complete companion-video script and thumbnail exist, but no public video exists yet.",
+        "saveShareUtility": "The buyer-verification worksheet turns seller, deposit, configuration, legal, support, and evidence questions into a reusable decision aid.",
+        "riskControl": "Pricing, delivery, legal characterization, and company status are volatile and must be rechecked immediately before publication."
+      },
+      "weightedTotal": 37
+    },
+    {
+      "id": "drone-tour-farm-golden-hour-garden-rows",
+      "scoreRank": 5,
+      "title": "Drone Tour of the Farm: From Golden Hour to Garden Rows",
+      "series": "Captain Colin Flies",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/drone-tour-farm-golden-hour-garden-rows",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/farmers-paradise-drone-tour/farmers-paradise-drone-tour-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/farmers-paradise-drone-tour/POST_PACKAGE.md",
+        "crossChannelDocs": [
+          "docs/CONTENT_PACKAGES/farmers-paradise-youtube-refresh/YOUTUBE_REFRESH.md",
+          "docs/CONTENT_PACKAGES/farmers-paradise-youtube-refresh/youtube-refresh.json"
+        ]
+      },
+      "audienceSignal": {
+        "kind": "exact_first_party_video",
+        "capturedAt": "2026-08-15",
+        "views": 37,
+        "countsAreVolatile": true,
+        "qualitativeSignal": "The new upload provides complete first-party footage but only an early low-volume public snapshot."
+      },
+      "scores": {
+        "provenAudienceDemand": 1,
+        "firstPartyEvidence": 5,
+        "currentPromiseFit": 4,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 5,
+        "saveShareUtility": 3,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The captured public count is 37 views, too little to claim demonstrated demand.",
+        "firstPartyEvidence": "Colin's exact 2:38 upload and timestamped frames support the visible farm-to-garden story.",
+        "currentPromiseFit": "A Florida drone journey is strongly on-brand, though it has less gadget decision value than the leading candidates.",
+        "packageReadiness": "The draft, five documentary frames, separate cover/card/social crops, disclosures, FAA context, field-notes path, and poll are complete.",
+        "crossChannelContinuation": "The article selects the exact upload and the staged YouTube package contains reciprocal copy, playlist, and end-screen decisions.",
+        "saveShareUtility": "The story offers a field-notes continuation but is primarily experiential rather than a purchase or setup guide.",
+        "riskControl": "The package avoids inferring exact location, aircraft, permission, airspace, weather, or compliance from the edit."
+      },
+      "weightedTotal": 37
+    },
+    {
+      "id": "laundry-chair-half-dirty-clothes",
+      "scoreRank": 6,
+      "title": "The $1,100 Laundry Chair Solves a Real Problem—But Is It Worth It?",
+      "series": "One Annoying Problem, One Useful Fix",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/laundry-chair-half-dirty-clothes",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/laundry-chair-half-dirty-clothes/laundry-chair-half-dirty-clothes-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/laundry-chair-half-dirty-clothes/POST_PACKAGE.md",
+        "crossChannelDocs": [
+          "docs/CONTENT_PACKAGES/laundry-chair-half-dirty-clothes/YOUTUBE_PACKAGE.md"
+        ]
+      },
+      "audienceSignal": {
+        "kind": "no_exact_first_party_performance",
+        "capturedAt": "2026-08-15",
+        "qualitativeSignal": "The problem is broadly recognizable, but the exact topic has no ColinMichaels or Captain Colin performance history."
+      },
+      "scores": {
+        "provenAudienceDemand": 1,
+        "firstPartyEvidence": 2,
+        "currentPromiseFit": 5,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 4,
+        "saveShareUtility": 5,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "No exact first-party article or video performance exists yet.",
+        "firstPartyEvidence": "This is source-led preorder research; Colin has not owned or used the chair.",
+        "currentPromiseFit": "The product is unusual, visual, lightly funny, and aimed at one ordinary household annoyance.",
+        "packageReadiness": "The import, six visuals, alternatives, current preorder evidence, disclosures, poll, full video package, Shorts, and measurement plan are complete.",
+        "crossChannelContinuation": "A complete YouTube package exists, but no public video exists yet.",
+        "saveShareUtility": "The article compares lower-cost wear-again zones and gives readers a useful decision framework even if they never buy the chair.",
+        "riskControl": "The no-hands-on, preorder, estimated-shipping, material, price, and alternative boundaries are explicit."
+      },
+      "weightedTotal": 34
+    },
+    {
+      "id": "unitree-r1-4900-humanoid-robot",
+      "scoreRank": 7,
+      "title": "Unitree R1: What the $4,900 Humanoid Robot Actually Includes",
+      "series": "Is It Actually Useful?",
+      "recordMode": "create_draft",
+      "canonicalUrl": "https://colinmichaels.com/blog/unitree-r1-4900-humanoid-robot",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/unitree-r1-4900-humanoid-robot/unitree-r1-4900-humanoid-robot-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/unitree-r1-4900-humanoid-robot/POST_PACKAGE.md",
+        "crossChannelDocs": []
+      },
+      "audienceSignal": {
+        "kind": "no_exact_first_party_performance",
+        "capturedAt": "2026-08-15",
+        "qualitativeSignal": "The exact topic has no first-party performance history and robotics risks drifting toward generic AI unless the article stays product-specific."
+      },
+      "scores": {
+        "provenAudienceDemand": 1,
+        "firstPartyEvidence": 2,
+        "currentPromiseFit": 5,
+        "packageReadiness": 5,
+        "crossChannelContinuation": 4,
+        "saveShareUtility": 4,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "No exact first-party article or video performance exists yet.",
+        "firstPartyEvidence": "The package is source-led and Colin has not owned, programmed, or tested an R1.",
+        "currentPromiseFit": "A real purchasable humanoid robot is tangible and visually surprising, but the piece must avoid broad AI-news framing.",
+        "packageReadiness": "The import, six visuals, tier comparison, current sources, disclosures, poll, and companion-video package are complete.",
+        "crossChannelContinuation": "A companion script and thumbnail exist, but no public video exists yet.",
+        "saveShareUtility": "The tier and buyer-question structure is useful, though less immediately reusable than the flight and household checklists.",
+        "riskControl": "The Air, R1, and quote-only EDU distinctions and manufacturer safety boundary remain explicit."
+      },
+      "weightedTotal": 33
+    },
+    {
+      "id": "hoverair-aqua-waterproof-drone",
+      "scoreRank": 8,
+      "title": "HOVERAir AQUA Takes Off From Water—Here’s the $1,299 Catch",
+      "series": "Is It Actually Useful?",
+      "recordMode": "resolve_existing_live_topic_conflict",
+      "canonicalUrl": "https://colinmichaels.com/blog/hoverair-aqua-waterproof-drone",
+      "artifactPaths": {
+        "importFile": "docs/CONTENT_PACKAGES/hoverair-aqua-waterproof-drone/hoverair-aqua-waterproof-drone-import.json",
+        "packageBrief": "docs/CONTENT_PACKAGES/hoverair-aqua-waterproof-drone/POST_PACKAGE.md",
+        "crossChannelDocs": []
+      },
+      "liveTopicConflict": {
+        "status": "confirmed",
+        "detectedAt": "2026-08-15",
+        "liveCanonical": "https://colinmichaels.com/blog/hoverair-aqua-waterproof-drone-clever-or-1299-overkill",
+        "liveDocumentTitle": "HOVERAir AQUA Beginner Guide: Worth $1,299?",
+        "liveArticleHeading": "HOVERAir AQUA: Clever Waterproof Drone or $1,299 Overkill?",
+        "livePublishedAt": "2026-08-09T12:21:03.859Z",
+        "liveModifiedAt": "2026-08-09T12:21:03.973Z",
+        "liveDisplayedWordCount": 1191,
+        "liveContentEvidence": "The indexed live article already covers the $1,299 bundle, water-launch checks, setup video, obstacle limitation, saltwater care, buyer test, FAA context, sources, images, feedback, and related reading.",
+        "safeToPublishStagedDraftAsNewUrl": false,
+        "requiredResolution": "Audit the exact live CMS record and either merge uniquely useful staged material into that stable record or retire the staged draft. Do not publish a second HOVERAir AQUA URL."
+      },
+      "audienceSignal": {
+        "kind": "existing_live_topic_without_performance_export",
+        "capturedAt": "2026-08-15",
+        "qualitativeSignal": "A complete HOVERAir AQUA article is already live under a different canonical, but no exact GA4 or Search Console performance export was captured for it."
+      },
+      "scores": {
+        "provenAudienceDemand": 1,
+        "firstPartyEvidence": 2,
+        "currentPromiseFit": 5,
+        "packageReadiness": 3,
+        "crossChannelContinuation": 4,
+        "saveShareUtility": 5,
+        "riskControl": 4
+      },
+      "scoreReasons": {
+        "provenAudienceDemand": "The live page proves the topic exists in the public corpus, but no exact page or video performance export supports a demand claim.",
+        "firstPartyEvidence": "Both versions are source-led research; Colin has not flown or owned the product, and the live article relies mainly on official sources.",
+        "currentPromiseFit": "A floating waterproof camera drone sits directly at the intersection of unusual gadget, practical use, and Captain Colin.",
+        "packageReadiness": "The staged package is complete, but it cannot be released safely until its unique material is mapped against the exact live record and consolidated.",
+        "crossChannelContinuation": "A full companion-video script and thumbnail exist, but no public Captain Colin video exists and no second article URL is allowed.",
+        "saveShareUtility": "The staged checklist and scorecard could improve the live article if an authenticated comparison proves they add distinct reader value.",
+        "riskControl": "The live canonical is now recorded as authority and the runway forbids a duplicate URL, but exact-record export and merge review still remain."
+      },
+      "weightedTotal": 32
+    }
+  ],
+  "recommendedReleaseOrder": [
+    {
+      "priority": 1,
+      "candidateId": "they-bought-a-full-size-temu-mega-drone",
+      "releaseType": "existing_page_growth_refresh",
+      "sequencingReason": "Repair the largest proven site opportunity first: an existing page leads the visible GA4 table and sits near page one while converting only 1 of 105 search impressions. This is an update, not another new URL.",
+      "activationGate": "Run npm run verify:temu-production and stop on fingerprint drift; approve the editorial and featured-state changes, inspect authenticated Production Preview, and deploy the matching Angular/Functions release before import."
+    },
+    {
+      "priority": 2,
+      "candidateId": "insta360-ace-pro-fpv-sunset-test",
+      "releaseType": "first_party_cross_channel_flagship",
+      "sequencingReason": "Publish the highest-scoring new package next so the site and an existing proven Captain Colin video can form the first exact reciprocal article/video loop.",
+      "activationGate": "Approve Colin's first-person voice and frame rights, import as a draft, inspect Production Preview, publish and verify the canonical, then add the reciprocal YouTube link and measure from a recorded baseline."
+    },
+    {
+      "priority": 3,
+      "candidateId": "laundry-chair-half-dirty-clothes",
+      "releaseType": "audience_expansion_test",
+      "sequencingReason": "Test the curiosity-and-utility promise beyond drones with a recognizable household problem, a visual mechanism, and practical lower-cost alternatives after the first-party flight story.",
+      "activationGate": "Recheck price, estimated shipping, material, preorder terms, and product status; obtain editorial and image-rights approval, import as a draft, and inspect Production Preview before publication."
+    },
+    {
+      "priority": 4,
+      "candidateId": "betafpv-95x-v3-over-water-flight-notes",
+      "releaseType": "first_party_archive_follow_up",
+      "sequencingReason": "It has the second-highest evidence score, but spacing it after one gadget installment avoids publishing two FPV archive stories back to back.",
+      "activationGate": "Approve the bounded settings claims and image rights, import as a draft, verify the exact companion metadata, then activate reciprocal video copy only after the article is public."
+    },
+    {
+      "priority": 5,
+      "candidateId": "passenger-drones-for-sale-2026",
+      "releaseType": "search_cluster_expansion",
+      "sequencingReason": "Extend the Temu/full-size-drone demand only after the refresh has a clean post-release baseline, so the new page can be evaluated as a distinct follow-up instead of competing with the update.",
+      "activationGate": "Recheck every order, deposit, delivery, specification, company-status, and regulatory source immediately before import; keep the research-organizer and non-advisory boundaries."
+    },
+    {
+      "priority": 6,
+      "candidateId": "drone-tour-farm-golden-hour-garden-rows",
+      "releaseType": "first_party_place_story",
+      "sequencingReason": "Use this complete first-party story to keep Colin visible between research-heavy gadget posts, but do not elevate it over candidates with stronger demonstrated demand.",
+      "activationGate": "Approve the first-person narrative and frame privacy/rights, publish and verify the article, then activate the existing video description, pinned-comment, playlist, and end-screen package separately."
+    },
+    {
+      "priority": 7,
+      "candidateId": "unitree-r1-4900-humanoid-robot",
+      "releaseType": "tangible_ai_test",
+      "sequencingReason": "Keep the tangible robotics story in reserve until the earlier releases establish whether readers follow the usefulness format beyond drones and one household-product test.",
+      "activationGate": "Recheck every model tier, price, availability, feature, and safety source and retain the explicit no-hands-on boundary."
+    },
+    {
+      "priority": 8,
+      "candidateId": "hoverair-aqua-waterproof-drone",
+      "releaseType": "existing_topic_consolidation_gate",
+      "sequencingReason": "Do not release the staged draft as a new page because a complete indexed HOVERAir AQUA article already exists under a different canonical. Consolidation protects one stable search identity.",
+      "activationGate": "Export and audit the exact live HOVERAir record, map every staged claim and asset against it, merge only distinct approved value into the live canonical, or retire the staged draft. Never publish both URLs."
+    }
+  ],
+  "firstThirtyDaySequence": [
+    "Deploy and verify the shared SEO, topic, reader-friction, resource-page, and measurement foundation as one reviewed release.",
+    "Apply the Temu stable-ID refresh only after the live-record and authenticated-preview gates.",
+    "Publish the Ace Pro article, verify its exact companion schema and public canonical, then activate the staged reciprocal link on the existing video.",
+    "Publish the Laundry Chair article only after volatile preorder facts are refreshed; produce or publish its companion video only after separate channel approval.",
+    "Measure each release at 7 and 28 days before treating the title, media, series, or interaction pattern as a winner."
+  ],
+  "measurementGate": {
+    "baselineTiming": "Record raw site, search, and video counts immediately before each production mutation.",
+    "windows": [
+      "7 days",
+      "28 days"
+    ],
+    "siteMetrics": [
+      "organic clicks and impressions",
+      "article progress at 75% and 95%",
+      "article completes",
+      "saves",
+      "shares and attributed share landings",
+      "approved comments and poll votes",
+      "related-article and companion-video selections"
+    ],
+    "videoMetrics": [
+      "impressions by surface",
+      "click-through rate by surface",
+      "first-30-second retention",
+      "average view duration and watch time",
+      "end-screen continuation",
+      "comments, likes, and net subscribers"
+    ],
+    "decisionBoundary": "Compare raw counts and denominators among similar formats. Do not call a draft, impression, view, account, subscriber, or low-volume percentage proof of popularity or trust."
+  },
+  "externalActions": {
+    "cmsImported": false,
+    "firestoreWritten": false,
+    "articlePublishedOrUpdated": false,
+    "siteDeployed": false,
+    "youtubeEdited": false,
+    "videoUploaded": false,
+    "commentPosted": false,
+    "playlistOrEndScreenChanged": false,
+    "outreachSent": false,
+    "commitCreated": false,
+    "pushPerformed": false
+  }
+}

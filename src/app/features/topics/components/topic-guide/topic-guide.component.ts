@@ -1,5 +1,6 @@
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
 
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {TopicHub} from '../../topic-hubs.data';
 
 function normalizeTitle(value: string): string {
@@ -94,7 +95,13 @@ function normalizeTitle(value: string): string {
           <h2 id="topic-guide-resources-heading">Resources</h2>
           <div class="topic-guide-resource-list">
             @for (resource of hub().resources; track $index) {
-              <a [attr.href]="resource.href">
+              <a
+                [attr.href]="resource.href"
+                [attr.download]="resourceDownloadName(resource.href)"
+                [attr.target]="isExternalResource(resource.href) ? '_blank' : null"
+                [attr.rel]="isExternalResource(resource.href) ? 'noopener noreferrer' : null"
+                (click)="trackResourceSelection(resource.href)"
+              >
                 <span>
                   <strong>{{ resource.label }}</strong>
                   <span class="topic-guide-resource-description">{{ resource.description }}</span>
@@ -445,6 +452,7 @@ function normalizeTitle(value: string): string {
 })
 export class TopicGuideComponent {
   readonly hub = input.required<TopicHub>();
+  private readonly analytics = inject(SiteAnalyticsService);
 
   protected readonly featuredProject = computed(() => {
     const hub = this.hub();
@@ -466,5 +474,26 @@ export class TopicGuideComponent {
 
   protected itemNumber(index: number): string {
     return String(index + 1).padStart(2, '0');
+  }
+
+  protected isExternalResource(href: string): boolean {
+    return /^https?:\/\//i.test(href);
+  }
+
+  protected resourceDownloadName(href: string): string | null {
+    if (!href.startsWith('/') || !href.toLowerCase().endsWith('.pdf')) {
+      return null;
+    }
+
+    return href.split('/').pop() || 'download.pdf';
+  }
+
+  protected trackResourceSelection(href: string): void {
+    const downloadName = this.resourceDownloadName(href);
+    if (!downloadName) {
+      return;
+    }
+
+    this.analytics.trackResourceDownload(downloadName);
   }
 }

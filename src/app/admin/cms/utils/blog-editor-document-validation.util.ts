@@ -13,6 +13,7 @@ import {
   BlogJsonValue,
 } from '../../../features/blog/models/blog-post.model';
 import {getBlogSunoEmbedUrls} from '../../../features/blog/utils/blog-suno-embed.util';
+import {isVideoUploadDate} from '../../../features/blog/utils/blog-youtube-journey.util';
 
 export const BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE = 'unsupported';
 
@@ -52,7 +53,8 @@ export type BlogEditorDocumentDiagnosticCode =
   | 'invalid-editor-block'
   | 'preserved-unsupported-block'
   | 'markdown-heading-outside-toc'
-  | 'repeated-post-title-heading';
+  | 'repeated-post-title-heading'
+  | 'multiple-companion-videos';
 
 export interface BlogEditorDocumentValidationContext {
   postTitle?: string;
@@ -151,6 +153,25 @@ export function validateEditorDocumentForBlog(
       });
     }
   });
+
+  const companionVideoIndexes = document.blocks.flatMap((block, blockIndex) => (
+    block.type === YOUTUBE_EDITOR_BLOCK_TYPE
+    && isJsonObject(block.data)
+    && block.data['isCompanionVideo'] === true
+      ? [blockIndex]
+      : []
+  ));
+
+  if (companionVideoIndexes.length > 1) {
+    const duplicateIndex = companionVideoIndexes[1];
+    diagnostics.push({
+      severity: 'error',
+      code: 'multiple-companion-videos',
+      blockIndex: duplicateIndex,
+      blockType: YOUTUBE_EDITOR_BLOCK_TYPE,
+      message: `Block ${duplicateIndex + 1} selects a second companion video. Keep exactly one companion YouTube block per article.`,
+    });
+  }
 
   const firstHeadingIndex = document.blocks.findIndex(block => block.type === 'header');
   const firstHeading = document.blocks[firstHeadingIndex];
@@ -304,7 +325,7 @@ function getKnownBlockValidationError(type: string, data: BlogJsonObject): strin
         height: isFiniteNumber,
       });
     case YOUTUBE_EDITOR_BLOCK_TYPE:
-      return validateFields(data, {url: isString});
+      return validateYouTubeEmbedData(data);
     case SUNO_EDITOR_BLOCK_TYPE: {
       const fieldsError = validateFields(data, {url: isString, caption: isString});
       const url = data['url'];
@@ -340,6 +361,25 @@ function getKnownBlockValidationError(type: string, data: BlogJsonObject): strin
     default:
       return null;
   }
+}
+
+function validateYouTubeEmbedData(data: BlogJsonObject): string | null {
+  const fieldsError = validateFields(data, {
+    url: isString,
+    isCompanionVideo: isBoolean,
+    videoTitle: isString,
+    videoDescription: isString,
+    videoUploadDate: value => typeof value === 'string' && isVideoUploadDate(value),
+    videoDurationSeconds: value => typeof value === 'number' && Number.isFinite(value) && value > 0,
+  });
+  const hasVideoMetadata = data['videoTitle'] !== undefined
+    || data['videoDescription'] !== undefined
+    || data['videoUploadDate'] !== undefined
+    || data['videoDurationSeconds'] !== undefined;
+
+  return fieldsError ?? (hasVideoMetadata && data['isCompanionVideo'] !== true
+    ? 'can store video metadata only when it is selected as the companion video.'
+    : null);
 }
 
 function getKnownBlockTuneValidationError(type: string, data: BlogJsonObject, tunes: unknown): string | null {

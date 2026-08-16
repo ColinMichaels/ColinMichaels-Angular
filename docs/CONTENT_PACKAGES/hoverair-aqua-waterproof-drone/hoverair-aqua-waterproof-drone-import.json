@@ -1,0 +1,497 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-08-15T01:35:52.000Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "post-hoverair-aqua-waterproof-drone",
+      "revision": 0,
+      "slug": "hoverair-aqua-waterproof-drone",
+      "title": "HOVERAir AQUA Takes Off From Water—Here’s the $1,299 Catch",
+      "excerpt": "The HOVERAir AQUA can float, right itself, and launch from water. Here is what that solves, what independent testing found, and why its $1,299 price only makes sense for a narrow kind of creator.",
+      "coverImage": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-cover.webp",
+      "thumbnailImage": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Gadgets & Gear",
+        "Creative Technology"
+      ],
+      "subcategories": [],
+      "tags": [
+        "HOVERAir AQUA",
+        "Waterproof Drone",
+        "Flying Camera",
+        "Drone Safety",
+        "Paddleboarding",
+        "Water Sports",
+        "FPV",
+        "Creator Gear",
+        "Gadgets",
+        "Is It Actually Useful"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based pre-buy analysis using current HOVERAir product documentation, FAA guidance, and an independent TechRadar coastal test. Colin has not owned, received, or flown the product.",
+        "sourceReviewedAt": "2026-08-14",
+        "relationshipDisclosure": "HOVERAir did not send Colin the product or pay for this article. No hands-on access is claimed.",
+        "aiAssistanceDisclosure": "AI assistance was used to research, structure, and draft this package. Colin must verify every claim and source before publication.",
+        "syntheticMediaDisclosure": "All package visuals are AI-generated editorial illustrations, not product photographs, test evidence, or proof that Colin handled the product."
+      },
+      "seo": {
+        "title": "HOVERAir AQUA: The $1,299 Waterproof Drone Catch",
+        "description": "The HOVERAir AQUA floats, rights itself, and launches from water. See the real benefits, independent test catches, U.S. drone rules, and who it suits.",
+        "canonical": "https://colinmichaels.com/blog/hoverair-aqua-waterproof-drone",
+        "openGraphImage": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "HOVERAir AQUA Takes Off From Water—Here’s the $1,299 Catch",
+        "description": "A research-based look at the waterproof drone’s real advantages, independent test catches, flight rules, and narrow best use.",
+        "image": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-og.jpg",
+        "imageAlt": "Orange guarded flying camera lifting above a Florida inlet with a paddleboarder behind it",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead-water-fear",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "HOVERAir built a flying camera around the one thing most drone pilots spend every over-water flight trying to prevent: touching the water.",
+            "attribution": "Is It Actually Useful?"
+          }
+        },
+        {
+          "id": "intro-two-kinds",
+          "type": "paragraph",
+          "data": {
+            "text": "There are two kinds of drone pilots over water: the ones pretending to be calm and the ones whose hands have already informed the rest of the body that the aircraft is currently flying above a very large grave."
+          }
+        },
+        {
+          "id": "intro-product",
+          "type": "paragraph",
+          "data": {
+            "text": "The <a href=\"https://hoverair.com/pages/aqua\">HOVERAir AQUA</a> is rated IP67, floats, can right itself after landing upside down, and is designed to take off directly from the water. That sounds like somebody finally read the drone-pilot anxiety manual and turned it into a product. It also starts at $1,299."
+          }
+        },
+        {
+          "id": "disclosure-research",
+          "type": "typography",
+          "data": {
+            "variant": "aside",
+            "text": "I have not flown the HOVERAir AQUA, and the company did not send me one or pay for this story. This is a research-based look at the current product, checked on August 14, 2026, using HOVERAir’s documentation, the FAA’s current guidance, and an independent hands-on coastal test.",
+            "attribution": "Research and relationship disclosure"
+          }
+        },
+        {
+          "id": "video-official-overview",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=NQ9SqKMweCk",
+            "embedUrl": "https://www.youtube.com/embed/NQ9SqKMweCk",
+            "caption": "HOVERAir’s official AQUA overview demonstrates the manufacturer’s intended water-sports use and features."
+          }
+        },
+        {
+          "id": "heading-tldr",
+          "type": "header",
+          "data": {
+            "text": "TLDR",
+            "level": 2
+          }
+        },
+        {
+          "id": "list-tldr",
+          "type": "list",
+          "data": {
+            "items": [
+              "HOVERAir says AQUA is IP67-rated, positively buoyant, capable of water takeoffs and landings, and able to right itself with Turtle Flip.",
+              "It weighs about 249 grams and records up to 4K/100 fps, with up to 23 minutes of advertised flight time.",
+              "The Standard bundle was listed at $1,299 on the U.S. store and marked out of stock when I checked on August 14, 2026.",
+              "An independent reviewer found that the water takeoff, landing, and Turtle Flip worked, but also reported inconsistent framing, connection interruptions, and footage spoiled by a lens droplet.",
+              "AQUA does not actively fly around obstacles. Open water helps, but the pilot still owns the flight path.",
+              "My verdict: fascinating specialist gear for solo water-sports creators, but too expensive and compromised to recommend as somebody’s only drone."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "heading-what-changes",
+          "type": "header",
+          "data": {
+            "text": "What AQUA Actually Changes",
+            "level": 2
+          }
+        },
+        {
+          "id": "changes-launch-pad",
+          "type": "paragraph",
+          "data": {
+            "text": "Most camera drones treat water as scenery with consequences. The AQUA treats it as a launch pad."
+          }
+        },
+        {
+          "id": "changes-features",
+          "type": "paragraph",
+          "data": {
+            "text": "HOVERAir says the sealed aircraft has positive buoyancy, water-surface takeoff and landing, a self-righting Turtle Flip mode, and more than fifteen waterproof or anti-corrosion design measures. The aircraft pairs with a wearable device called Lighthouse, which helps it track a surfer, paddler, kayaker, or foiler even when spray and movement make camera-only tracking difficult."
+          }
+        },
+        {
+          "id": "changes-real-problem",
+          "type": "paragraph",
+          "data": {
+            "text": "The concept is clever because it solves a real filming problem. A solo paddleboarder cannot comfortably hold a controller, frame a shot, watch the sky, and continue paddleboarding without eventually becoming a very expensive instructional video. A wearable tracker and automatic modes can make a useful third-person camera possible."
+          }
+        },
+        {
+          "id": "image-self-righting",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-inline-01.webp",
+            "alt": "Orange guarded drone floating upright in calm shallow coastal water",
+            "caption": "AI-generated editorial illustration of a buoyant guarded drone after righting itself on calm water; it is not documentary product evidence.",
+            "width": 1600,
+            "height": 900,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "heading-numbers",
+          "type": "header",
+          "data": {
+            "text": "The Numbers That Matter",
+            "level": 2
+          }
+        },
+        {
+          "id": "stats-manufacturer",
+          "type": "stats",
+          "data": {
+            "title": "HOVERAir AQUA at a glance",
+            "caption": "Manufacturer specifications and current U.S. storefront price checked August 14, 2026; these are not Colin’s test results.",
+            "stats": [
+              {
+                "label": "Weight",
+                "value": "249 g",
+                "caption": "Approximate aircraft weight"
+              },
+              {
+                "label": "Water rating",
+                "value": "IP67",
+                "caption": "Manufacturer rating"
+              },
+              {
+                "label": "Flight time",
+                "value": "Up to 23 min",
+                "caption": "Advertised maximum"
+              },
+              {
+                "label": "Video",
+                "value": "4K/100 fps",
+                "caption": "Maximum listed combination"
+              },
+              {
+                "label": "Top speed",
+                "value": "55 km/h",
+                "caption": "Manufacturer listing"
+              },
+              {
+                "label": "U.S. price",
+                "value": "$1,299",
+                "caption": "Standard bundle; out of stock when checked"
+              }
+            ]
+          }
+        },
+        {
+          "id": "numbers-source",
+          "type": "paragraph",
+          "data": {
+            "text": "Those values come from HOVERAir’s <a href=\"https://hoverair.com/pages/specs-comparison\">current specification comparison</a> and <a href=\"https://us.hoverair.com/products/hoverair-aqua\">U.S. storefront</a>, not my testing. The Standard bundle includes the aircraft, one battery, a USB-C cable, the Lighthouse and armband, a repair kit, and a waterproof battery bag. HOVERAir’s global store lists an extra battery at $149, which matters when a best-case 23-minute battery is attached to an activity that may last an afternoon."
+          }
+        },
+        {
+          "id": "heading-independent-test",
+          "type": "header",
+          "data": {
+            "text": "The Independent Test Is Where It Gets Interesting",
+            "level": 2
+          }
+        },
+        {
+          "id": "test-context",
+          "type": "paragraph",
+          "data": {
+            "text": "Sam Kieldsen <a href=\"https://www.techradar.com/cameras/drones/hoverair-aqua-review\">tested an early AQUA review unit for TechRadar</a> during stand-up paddleboarding sessions and dry-land flying on the UK coast. He reported that water-surface operation and Turtle Flip worked, and that the SUP mode tracked reliably in calm, bright conditions."
+          }
+        },
+        {
+          "id": "test-good-part",
+          "type": "paragraph",
+          "data": {
+            "text": "That is the encouraging part."
+          }
+        },
+        {
+          "id": "test-catches",
+          "type": "paragraph",
+          "data": {
+            "text": "The less encouraging part is exactly what a $1,299 buyer needs to hear. His Lighthouse connection dropped repeatedly before reconnecting. Orbit mode sometimes framed the wearable tracker instead of the person, cutting off his head. One water droplet stayed on the hydrophobic lens and spoiled several minutes of footage. He also found that the aircraft needed a fresh-water rinse and careful drying after salt-water use."
+          }
+        },
+        {
+          "id": "test-limits",
+          "type": "paragraph",
+          "data": {
+            "text": "One reviewer and one sample cannot settle the reliability of every unit. It can, however, identify the tests that matter more than a beautiful launch reel: connection stability, framing, lens clearing, low-battery behavior, salt-water maintenance, and recovery after a real tumble."
+          }
+        },
+        {
+          "id": "heading-maintenance",
+          "type": "header",
+          "data": {
+            "text": "Waterproof Does Not Mean Maintenance-Free",
+            "level": 2
+          }
+        },
+        {
+          "id": "maintenance-system",
+          "type": "paragraph",
+          "data": {
+            "text": "A waterproof drone is still a flying camera, a battery system, and a salt-corrosion experiment sharing the same orange body."
+          }
+        },
+        {
+          "id": "maintenance-official",
+          "type": "paragraph",
+          "data": {
+            "text": "HOVERAir says the removed battery is not waterproof and that the battery, connectors, and battery cavity must remain completely dry during swaps. Its <a href=\"https://hoverair.com/pages/aqua\">current AQUA FAQ</a> also tells owners to rinse the aircraft with fresh water after salt-water use. That is not an unreasonable routine, but it changes the ownership experience."
+          }
+        },
+        {
+          "id": "image-maintenance",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/hoverair-aqua-waterproof-drone-inline-02.webp",
+            "alt": "Gloved hands rinsing an orange guarded drone at an outdoor wash station",
+            "caption": "AI-generated editorial illustration of a careful post-flight fresh-water rinse; follow the manufacturer’s current manual rather than treating this scene as an instruction sheet.",
+            "width": 1600,
+            "height": 900,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "maintenance-punchline",
+          "type": "paragraph",
+          "data": {
+            "text": "This is the part product videos rarely linger on. The fun ends, everyone else walks back from the beach, and you begin aircraft desalination."
+          }
+        },
+        {
+          "id": "heading-flight-catch",
+          "type": "header",
+          "data": {
+            "text": "The Biggest Flight Catch Is Not Water",
+            "level": 2
+          }
+        },
+        {
+          "id": "flight-no-avoidance",
+          "type": "paragraph",
+          "data": {
+            "text": "AQUA does not have active obstacle avoidance that can route it around a tree, piling, mast, bridge, person, or power line. HOVERAir specifically recommends open water with clear GPS and says the user remains responsible for the surroundings and safe operation."
+          }
+        },
+        {
+          "id": "flight-open-water",
+          "type": "paragraph",
+          "data": {
+            "text": "That boundary makes sense. Open water removes many obstacles. It does not remove boats, birds, low aircraft, changing weather, people, restricted airspace, or the need to see the aircraft."
+          }
+        },
+        {
+          "id": "flight-faa-rules",
+          "type": "paragraph",
+          "data": {
+            "text": "The marketing also makes the 249-gram weight sound simpler than the U.S. rules actually are. For a purely recreational flight, the <a href=\"https://www.faa.gov/uas/recreational_flyers\">FAA says registration is required at 250 grams or more</a>. The same FAA page still requires recreational pilots to complete TRUST, keep the drone within visual line of sight, give way to other aircraft, follow airspace authorization and altitude rules, and operate safely. Under Part 107, registration applies regardless of weight."
+          }
+        },
+        {
+          "id": "warning-flight-rules",
+          "type": "typography",
+          "data": {
+            "variant": "warning",
+            "text": "Under 250 grams can change one U.S. recreational registration condition. It does not remove TRUST, visual-line-of-sight, airspace, safety, local launch rules, or Part 107 obligations. Confirm the current rules for the exact flight.",
+            "attribution": "Flight and legal boundary"
+          }
+        },
+        {
+          "id": "heading-who-for",
+          "type": "header",
+          "data": {
+            "text": "Who This Is Actually For",
+            "level": 2
+          }
+        },
+        {
+          "id": "who-ideal",
+          "type": "paragraph",
+          "data": {
+            "text": "The ideal AQUA buyer is unusually specific:"
+          }
+        },
+        {
+          "id": "list-ideal-buyer",
+          "type": "list",
+          "data": {
+            "items": [
+              "You regularly surf, foil, kayak, sail, wakeboard, or paddleboard.",
+              "You often need footage without a second person operating a conventional drone.",
+              "Water recovery matters more than getting the best general-purpose camera for the money.",
+              "You are comfortable planning airspace, maintaining batteries, rinsing salt, and checking firmware and seals.",
+              "You can accept early-product friction in exchange for a shot other drones cannot safely attempt."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "who-not-for",
+          "type": "paragraph",
+          "data": {
+            "text": "If you mainly film landscapes, houses, travel, or dry-land action, this is probably the wrong first drone. You would be paying a large water tax for a capability you rarely use while accepting no active obstacle avoidance and middling battery duration."
+          }
+        },
+        {
+          "id": "heading-checklist",
+          "type": "header",
+          "data": {
+            "text": "My Before-Buying Checklist",
+            "level": 2
+          }
+        },
+        {
+          "id": "list-before-buying",
+          "type": "list",
+          "data": {
+            "items": [
+              "Confirm current U.S. stock, warranty, return terms, firmware, and Remote ID details directly with HOVERAir.",
+              "Decide whether the intended flights are recreational or fall under Part 107; do not decide based only on whether money changes hands.",
+              "Check the airspace and local launch or landing rules for the exact beach, lake, park, or waterway.",
+              "Plan visual line of sight from shore or with a co-located visual observer; automatic tracking is not permission to stop watching the aircraft.",
+              "Budget for enough batteries, waterproof battery storage, transport protection, and post-salt-water maintenance.",
+              "Test connection recovery, return behavior, framing, lens droplets, and the complete rinse and dry routine in controlled conditions before trusting an important shoot.",
+              "Keep the first flights in open, calm water with room for a conservative exit."
+            ],
+            "ordered": true,
+            "listStyle": "ordered",
+            "listPresentation": "steps"
+          }
+        },
+        {
+          "id": "heading-verdict",
+          "type": "header",
+          "data": {
+            "text": "My Verdict",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-real-problem",
+          "type": "paragraph",
+          "data": {
+            "text": "The HOVERAir AQUA is one of the few 2026 gadgets whose strangest feature solves a real problem. Floating is not a party trick when the alternative is watching a four-figure camera disappear into a lake."
+          }
+        },
+        {
+          "id": "verdict-premature",
+          "type": "paragraph",
+          "data": {
+            "text": "But the same product can be ingenious and premature. At $1,299, I would want the tracking, lens, connection, and maintenance experience to be boringly dependable. The independent testing I found says the core water idea works while several v1-style frustrations remain."
+          }
+        },
+        {
+          "id": "verdict-buy",
+          "type": "paragraph",
+          "data": {
+            "text": "So I would not buy it as a general drone. I would put it high on the list for a serious solo water-sports creator who understands exactly what shot it unlocks—and exactly how much work begins after landing."
+          }
+        },
+        {
+          "id": "takeaway-final",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The question is not whether a drone that floats is cool. It obviously is. The question is whether you spend enough time on the water for floating to be worth $1,299.",
+            "attribution": "Bottom line"
+          }
+        },
+        {
+          "id": "related-scorecard",
+          "type": "paragraph",
+          "data": {
+            "text": "Use the printable <a href=\"https://colinmichaels.com/resources/gadget-usefulness-scorecard\">Is It Actually Useful? Gadget Scorecard</a> to compare the AQUA's problem fit, evidence, true cost, everyday friction, and support without turning a research-only verdict into a hands-on claim."
+          }
+        },
+        {
+          "id": "poll-first-test",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "If I get legitimate access to an AQUA, what should I test first?",
+            "description": "Choose the result that would matter most before a buying recommendation.",
+            "pollOptions": [
+              {
+                "id": "water-launch-landing",
+                "label": "Water takeoff and landing"
+              },
+              {
+                "id": "turtle-flip-recovery",
+                "label": "Turtle Flip recovery"
+              },
+              {
+                "id": "tracking-framing",
+                "label": "Tracking and framing"
+              },
+              {
+                "id": "saltwater-cleanup",
+                "label": "Salt-water cleanup"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-08-15T01:35:52.000Z",
+      "updatedAt": "2026-08-15T01:35:52.000Z",
+      "publishedAt": null
+    }
+  ]
+}

@@ -22,9 +22,10 @@ This work supports external platform review, including Meta app approval, by pro
   - Routes both forms through a trusted callable instead of allowing direct client database writes.
 - `src/app/components/main/socials/socials.component.*`
   - Retains only the fixed social icon bar.
+  - Uses real HTTPS anchors from the canonical creator-profile contract, `rel="me"`, visible keyboard focus, explicit platform labels, and privacy-bounded outbound selection measurement.
   - Does not own primary navigation, legal links, contact links, or copyright content.
 - `src/app/features/blog/pages/blog-detail/blog-detail.component.ts`
-  - Links the article footer to the privacy policy alongside other public resources.
+  - Links the article footer to the privacy policy and editorial standards alongside other public resources.
 
 ## Route and SEO Contract
 
@@ -62,13 +63,16 @@ CAPTCHA, automatic submitter acknowledgements, and contributor provisioning rema
 
 - The homepage information footer uses existing public-site tokens and responsive grid primitives.
 - Footer navigation has an explicit accessible label and uses real links for every destination.
+- The Information and Resources groups link to the separate editorial-standards policy; corrections reuse the existing contact and privacy boundaries rather than creating another submission system.
 - Topics and About use Angular fragment navigation, which is already supported by router anchor scrolling.
 - The fixed social bar stays separate from the information footer and Reader Assistance control.
+- Its five icon controls are real `44 × 44` links rather than router-controlled buttons, so keyboard users, assistive technology, crawlers, and browser link behavior receive the same destination.
 - The policy page uses semantic headings, labelled sections, visible keyboard focus styles through shared link primitives, and a direct mail link.
 
 ## Migration and Compatibility
 
 - No existing content or data migration is required; the submission collections and routes are additive.
+- Correcting the retired Instagram handle is a source-level identity update only; it does not change or migrate an Instagram account.
 - Existing public routes are preserved; `/privacy` is additive.
 - The Labs redirect, OS guards, admin boundaries, and blog URL contracts are unchanged.
 - The previous email contact remains available inside the privacy policy for verified deletion requests.

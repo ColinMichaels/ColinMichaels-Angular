@@ -1,4 +1,5 @@
-import {ApplicationConfig, isDevMode, provideZoneChangeDetection} from '@angular/core';
+import {ViewportScroller} from '@angular/common';
+import {ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
 import {provideRouter, withInMemoryScrolling, withViewTransitions} from '@angular/router';
 import {provideServiceWorker} from '@angular/service-worker';
 
@@ -31,6 +32,9 @@ export const appConfig: ApplicationConfig = {
         scrollPositionRestoration: 'top'
       })
     ),
+    provideAppInitializer(() => {
+      inject(ViewportScroller).setOffset([0, 80]);
+    }),
     provideServiceWorker('pwa-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

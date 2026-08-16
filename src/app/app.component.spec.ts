@@ -30,6 +30,7 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
     expect(fixture.nativeElement.classList).toContain('site-theme-scope');
     expect(fixture.nativeElement.classList).not.toContain('core-os-scope');
+    expect(fixture.nativeElement.querySelector('app-site-footer')).not.toBeNull();
   });
 
   it('uses the dedicated shell for admin routes without enabling OS notifications', () => {

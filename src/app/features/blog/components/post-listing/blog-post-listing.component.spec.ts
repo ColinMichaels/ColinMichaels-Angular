@@ -125,6 +125,8 @@ describe('BlogPostListingComponent', () => {
     const secondPost = element.querySelector<HTMLElement>('[data-post-id="post-two"]');
     expect(secondPost?.querySelector('img')?.getAttribute('src')).toBe('/assets/images/blog/second-cover.webp');
     expect(secondPost?.querySelector('time')?.getAttribute('datetime')).toBe('2026-07-06T12:00:00.000Z');
+    expect(secondPost?.querySelector('a[href="/blog/category/health-and-recovery"]')).not.toBeNull();
+    expect(secondPost?.querySelector('a[href="/blog/tag/recovery"]')).toBeNull();
   });
 
   it('can hide optional excerpt, tag, and metadata presentation', () => {

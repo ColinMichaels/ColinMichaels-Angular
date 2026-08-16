@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "status": "local-review-only",
+  "capturedAt": "2026-08-15",
+  "source": "Captain Colin public Videos tab sorted by Popular plus each public watch page",
+  "weights": {
+    "discoveryProof": 1,
+    "currentPromiseFit": 2,
+    "firstPartyEvidence": 2,
+    "evergreenUtility": 2,
+    "continuationFit": 1,
+    "audienceConversation": 1,
+    "riskControl": 1
+  },
+  "scale": {
+    "minimum": 0,
+    "maximum": 5,
+    "higherRiskControlScoreMeans": "Lower unresolved safety, privacy, rights, or claim risk"
+  },
+  "candidates": [
+    {
+      "videoId": "oc8eNA9EQ0s",
+      "title": "A view from the Hurricane Wilma on a boat",
+      "url": "https://www.youtube.com/watch?v=oc8eNA9EQ0s",
+      "durationSeconds": 21,
+      "publicSnapshot": {
+        "views": 55000,
+        "viewsAreApproximate": true,
+        "likes": 18,
+        "comments": null,
+        "ageLabel": "20 years ago"
+      },
+      "scores": {
+        "discoveryProof": 5,
+        "currentPromiseFit": 1,
+        "firstPartyEvidence": 2,
+        "evergreenUtility": 1,
+        "continuationFit": 2,
+        "audienceConversation": 1,
+        "riskControl": 1
+      },
+      "weightedTotal": 17,
+      "decision": "defer",
+      "reason": "The largest view count belongs to a 21-second severe-weather archive clip whose description sends viewers to an external full film. Rights, provenance, safety context, and the original master need review before repackaging."
+    },
+    {
+      "videoId": "5641Ua1RtDs",
+      "title": "Stuart Inlet Sandbar - Hutchinson Island - Stuart Florida",
+      "url": "https://www.youtube.com/watch?v=5641Ua1RtDs",
+      "durationSeconds": 340,
+      "publicSnapshot": {
+        "views": 6000,
+        "viewsAreApproximate": true,
+        "likes": 79,
+        "comments": null,
+        "ageLabel": "6 years ago"
+      },
+      "scores": {
+        "discoveryProof": 3,
+        "currentPromiseFit": 3,
+        "firstPartyEvidence": 3,
+        "evergreenUtility": 2,
+        "continuationFit": 4,
+        "audienceConversation": 1,
+        "riskControl": 3
+      },
+      "weightedTotal": 27,
+      "decision": "keep-for-florida-adventures",
+      "reason": "The location-led family outing fits Florida Adventures, but the visible description is primarily a personal recap and needs privacy-aware source review before a larger gateway refresh."
+    },
+    {
+      "videoId": "IJjZir1qM1Y",
+      "title": "BetaFpv 95x V3 - Over Water Cinematic Insta360 4K SMO",
+      "url": "https://www.youtube.com/watch?v=IJjZir1qM1Y",
+      "durationSeconds": 387,
+      "publicSnapshot": {
+        "views": 2700,
+        "viewsAreApproximate": true,
+        "likes": 70,
+        "comments": 46,
+        "ageLabel": "5 years ago"
+      },
+      "scores": {
+        "discoveryProof": 2,
+        "currentPromiseFit": 5,
+        "firstPartyEvidence": 3,
+        "evergreenUtility": 3,
+        "continuationFit": 5,
+        "audienceConversation": 4,
+        "riskControl": 3
+      },
+      "weightedTotal": 36,
+      "decision": "next-watch",
+      "reason": "The cinematic flight has the strongest visible archive conversation and direct FPV fit, but no public transcript or useful settings record was visible. It is the closest next watch for the selected camera test."
+    },
+    {
+      "videoId": "OFeCTH2LP9s",
+      "title": "Camera ‘sham’ era! Insta360 Ace Pro First Reaction and FPV Flights video",
+      "url": "https://www.youtube.com/watch?v=OFeCTH2LP9s",
+      "durationSeconds": 609,
+      "publicSnapshot": {
+        "views": 2328,
+        "viewsAreApproximate": false,
+        "likes": 70,
+        "comments": 30,
+        "premieredAt": "2023-12-13"
+      },
+      "scores": {
+        "discoveryProof": 2,
+        "currentPromiseFit": 5,
+        "firstPartyEvidence": 5,
+        "evergreenUtility": 5,
+        "continuationFit": 5,
+        "audienceConversation": 5,
+        "riskControl": 4
+      },
+      "weightedTotal": 46,
+      "decision": "selected",
+      "reason": "The complete public transcript documents a real Ace Pro first flight, Active HDR and PureVideo tests, an improvised mount, and uncertainty. Comments repeatedly ask about settings, stabilization, raw footage, low light, and weight, creating a clear usefulness refresh."
+    }
+  ],
+  "selectedVideoId": "OFeCTH2LP9s",
+  "externalActions": {
+    "youtubeEdited": false,
+    "commentPosted": false,
+    "playlistChanged": false,
+    "videoDeletedOrUnlisted": false
+  }
+}

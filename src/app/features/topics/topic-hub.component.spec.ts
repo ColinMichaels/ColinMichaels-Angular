@@ -5,6 +5,8 @@ import {BehaviorSubject, of} from 'rxjs';
 
 import type {BlogPostSummary} from '../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
+import {YouTubeFeedService} from '../youtube/services/youtube-feed.service';
+import {SiteAnalyticsService} from '../../shared/analytics/site-analytics.service';
 import {SeoService} from '../../shared/seo/seo.service';
 import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
 import {TOPIC_HUBS} from './topic-hubs.data';
@@ -38,8 +40,11 @@ describe('TopicHubComponent', () => {
     createPost(4),
   ]);
   const seo = jasmine.createSpyObj<SeoService>('SeoService', ['apply']);
+  const routeParamsSubject = new BehaviorSubject(convertToParamMap({slug: 'ai-setup'}));
 
   beforeEach(async () => {
+    routeParamsSubject.next(convertToParamMap({slug: 'ai-setup'}));
+
     await TestBed.configureTestingModule({
       imports: [TopicHubComponent],
       providers: [
@@ -47,7 +52,7 @@ describe('TopicHubComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            paramMap: of(convertToParamMap({slug: 'ai-setup'})),
+            paramMap: routeParamsSubject.asObservable(),
             snapshot: {paramMap: convertToParamMap({slug: 'ai-setup'})},
           },
         },
@@ -68,6 +73,23 @@ describe('TopicHubComponent', () => {
           },
         },
         {provide: SeoService, useValue: seo},
+        {
+          provide: YouTubeFeedService,
+          useValue: {
+            getLatestVideos$: () => of({
+              fetchedAt: '2026-08-14T00:00:00.000Z',
+              source: 'youtube-api',
+              channelId: 'channel-id',
+              channelTitle: 'Captain Colin',
+              channelUrl: 'https://www.youtube.com/CaptainColin',
+              videos: [],
+            }),
+          },
+        },
+        {
+          provide: SiteAnalyticsService,
+          useValue: jasmine.createSpyObj<SiteAnalyticsService>('SiteAnalyticsService', ['trackYouTubeOutbound']),
+        },
       ],
     }).compileComponents();
 
@@ -115,5 +137,17 @@ describe('TopicHubComponent', () => {
   it('applies topic-specific SEO metadata', () => {
     expect(seo.apply).toHaveBeenCalled();
     expect(seo.apply.calls.mostRecent().args[0].image).toBe('/assets/images/topics/ai-setup.webp');
+  });
+
+  it('connects the Drones and FPV hub to a topic-attributed YouTube feed', () => {
+    routeParamsSubject.next(convertToParamMap({slug: 'drones-fpv'}));
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const youtubeSection = element.querySelector<HTMLElement>('#topic-drones-youtube');
+
+    expect(element.querySelector('h1')?.textContent?.trim()).toBe('Drones & FPV');
+    expect(youtubeSection).not.toBeNull();
+    expect(youtubeSection?.textContent).toContain('Watch the flights behind the field notes.');
   });
 });

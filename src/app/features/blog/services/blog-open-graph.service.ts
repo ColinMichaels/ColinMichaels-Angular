@@ -14,6 +14,9 @@ import {SeoService} from '../../../shared/seo/seo.service';
 import {BlogPost, isPublicBlogListingPost} from '../models/blog-post.model';
 import {htmlToPlainText} from '../utils/blog-html.util';
 import {resolveBlogPostImage} from '../utils/blog-image-url.util';
+import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
+import {collectBlogReferenceUrls} from '../utils/blog-reference-urls.util';
+import {selectBlogCompanionVideoSchema} from '../utils/blog-youtube-journey.util';
 
 export interface BlogShareMetadata {
   title: string;
@@ -38,6 +41,7 @@ export class BlogOpenGraphService {
   applyBlogPost(post: BlogPost): BlogShareMetadata {
     const metadata = this.createBlogPostMetadata(post);
     const publishedAt = post.publishedAt ?? post.updatedAt;
+    const companionVideo = selectBlogCompanionVideoSchema(post.blocks);
 
     this.seo.apply({
       title: metadata.title,
@@ -53,7 +57,7 @@ export class BlogOpenGraphService {
         publishedAt,
         modifiedAt: post.updatedAt,
         author: post.author.name,
-        section: post.categories[0],
+        section: getBlogTaxonomyTerms(post)[0],
         tags: post.tags,
       },
       structuredData: this.seo.createBlogPostingJsonLd({
@@ -65,6 +69,8 @@ export class BlogOpenGraphService {
         authorUrl: `/authors/${post.author.slug || 'colin-michaels'}`,
         publishedAt: post.publishedAt,
         modifiedAt: post.updatedAt,
+        citations: collectBlogReferenceUrls(post.blocks, post.slug).externalReferenceUrls,
+        ...(companionVideo ? {video: companionVideo} : {}),
       }),
     });
 

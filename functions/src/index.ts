@@ -32,9 +32,63 @@ import {
   SITE_NAME,
   SITE_SEARCH_DESCRIPTION,
   SITE_URL,
+  YOUTUBE_CHANNEL_URL,
   createPreviewImageAlt,
   createSiteTitle,
 } from './seo-site';
+import {
+  assertCanonicalYoutubeApiChannelId,
+  parseCanonicalYoutubeChannelId,
+} from './youtube-channel-identity';
+import {
+  SeoFallbackCollectionItem,
+  createCollectionPageStructuredData,
+  createWebPageStructuredData,
+  replaceAppRootFallback,
+  renderSeoArticleContinuationFallbackHtml,
+  renderSeoCollectionFallbackHtml,
+  renderSeoFallbackLinkList,
+  renderSeoStaticFallbackHtml,
+} from './seo-fallback-pages';
+import {renderSeoImageMarkup} from './seo-image-markup';
+import {createBlogFeedItemUrl} from './blog-feed-url';
+import {collectExternalBlogCitationUrls} from './blog-citations';
+import {BlogVideoObjectJsonLd, createBlogCompanionVideoJsonLd} from './blog-video-schema';
+import {
+  createBlogCategorySlug,
+  createBlogCategoryTitle,
+  createBlogTagSlug,
+  createBlogTagTaxonomyRoute,
+  getCanonicalBlogCategoryTerms,
+} from './blog-taxonomy';
+import {
+  scoreBlogPostForTopicHub,
+  selectPrimaryBlogTopicHub,
+} from './blog-topic-matching';
+import {applySeoResponseSecurityHeaders} from './seo-response-headers';
+import {
+  PublicTopicHubSlug,
+  createPublicTopicSitemapPaths,
+  getPublicTopicHubIdentity,
+} from './topic-hub-public-identity';
+import {
+  EDITORIAL_STANDARDS_DESCRIPTION,
+  EDITORIAL_STANDARDS_HEADING,
+  EDITORIAL_STANDARDS_PATH,
+  EDITORIAL_STANDARDS_SECTIONS,
+} from './editorial-standards';
+import {
+  GADGET_USEFULNESS_SCORECARD_DESCRIPTION,
+  GADGET_USEFULNESS_SCORECARD_HEADING,
+  GADGET_USEFULNESS_SCORECARD_PATH,
+  GADGET_USEFULNESS_SCORECARD_SECTIONS,
+} from './gadget-usefulness-scorecard';
+import {
+  PERSONAL_AIRCRAFT_BUYER_VERIFICATION_DESCRIPTION,
+  PERSONAL_AIRCRAFT_BUYER_VERIFICATION_HEADING,
+  PERSONAL_AIRCRAFT_BUYER_VERIFICATION_PATH,
+  PERSONAL_AIRCRAFT_BUYER_VERIFICATION_SECTIONS,
+} from './personal-aircraft-buyer-verification';
 import {
   COMMENT_BODY_MAX_LENGTH,
   COMMENT_BODY_UNSAFE_CONTENT_MESSAGE,
@@ -204,7 +258,7 @@ const DEFAULT_OG_IMAGE_HEIGHT = 630;
 const SEO_INDEX_TEMPLATE_PATH = resolve(__dirname, '../seo-index.html');
 const SITEMAP_CACHE_CONTROL = 'public, max-age=300, s-maxage=3600';
 const FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800';
-const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|ogg|otf|png|svg|ttf|txt|wav|webmanifest|webp|woff2?)$/i;
+const STATIC_ASSET_PATH_PATTERN = /\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|ogg|otf|pdf|png|svg|ttf|txt|wav|webmanifest|webp|woff2?)$/i;
 const TAXONOMY_SITEMAP_MIN_POSTS = 3;
 const TAG_SITEMAP_MIN_POSTS = 5;
 const SITEMAP_REVIEW_URL_LIMIT = 180;
@@ -225,15 +279,21 @@ const BLOG_FALLBACK_RELATED_ARTICLES: Readonly<Record<string, {
 const OS_ROUTE_PREFIXES = ['/os', '/external'] as const;
 const OS_ROUTES = ['/login', '/boot', '/sleep'] as const;
 const ADMIN_ROUTE_PREFIXES = ['/admin'] as const;
+
+function createTopicHubIdentity(slug: PublicTopicHubSlug) {
+  const identity = getPublicTopicHubIdentity(slug);
+
+  return {
+    ...identity,
+    title: createSiteTitle(identity.heading),
+  };
+}
+
 const TOPIC_HUBS = [
   {
-    slug: 'ai-setup',
-    title: createSiteTitle('AI Setup Guides'),
-    heading: 'AI Setup Guides',
-    description: 'Practical setup guides for ChatGPT, Claude, Copilot, Gemini, prompting, projects, and AI-assisted workflows.',
+    ...createTopicHubIdentity('ai-setup'),
     image: '/assets/images/topics/ai-setup.webp',
     imageAlt: 'A modular AI workspace connected by a precise cyan workflow path.',
-    terms: ['ai', 'chatgpt', 'claude', 'copilot', 'gemini', 'prompting', 'ai tools', 'ai workflow', 'productivity'],
     assetTitle: 'AI Setup Checklist',
     assetIntro: 'A practical starting checklist for setting up AI tools so they support real work instead of becoming another tab to babysit.',
     assetItems: [
@@ -245,13 +305,9 @@ const TOPIC_HUBS = [
     ],
   },
   {
-    slug: 'recovery-planning',
-    title: createSiteTitle('Recovery & Medical Planning Resources'),
-    heading: 'Recovery & Medical Planning Resources',
-    description: 'Personal recovery notes, emergency planning resources, and practical lessons from open-heart surgery recovery.',
+    ...createTopicHubIdentity('recovery-planning'),
     image: '/assets/images/topics/recovery-planning.webp',
     imageAlt: 'A calm recovery-planning journal beside a gentle teal route line.',
-    terms: ['recovery', 'health', 'medical', 'heart surgery', 'open heart surgery', 'cardiac', 'insurance', 'planning'],
     assetTitle: 'Recovery And Emergency Planning Checklist',
     assetIntro: 'A patient-perspective organizer for practical details that become hard to find when appointments, recovery limits, and paperwork all collide.',
     assetItems: [
@@ -263,13 +319,9 @@ const TOPIC_HUBS = [
     ],
   },
   {
-    slug: 'angular-firebase-architecture',
-    title: createSiteTitle('Angular & Firebase Architecture Notes'),
-    heading: 'Angular & Firebase Architecture Notes',
-    description: 'Implementation notes on Angular, Firebase, CMS workflows, route SEO, and reusable frontend architecture.',
+    ...createTopicHubIdentity('angular-firebase-architecture'),
     image: '/assets/images/topics/angular-firebase-architecture.webp',
     imageAlt: 'Layered blue architecture plans connecting routes, interfaces, and data nodes.',
-    terms: ['angular', 'firebase', 'architecture', 'cms', 'editor.js', 'typescript', 'web development'],
     assetTitle: 'Angular And Firebase Architecture Note',
     assetIntro: 'A compact architecture reference for keeping a public Angular/Firebase site crawlable, maintainable, and safe to evolve.',
     assetItems: [
@@ -281,13 +333,9 @@ const TOPIC_HUBS = [
     ],
   },
   {
-    slug: 'labs-projects',
-    title: createSiteTitle('Labs & Project Demos'),
-    heading: 'Labs & Project Demos',
-    description: `Interactive demos, browser experiments, UI systems, and public notes from ${PERSON_NAME} project labs.`,
+    ...createTopicHubIdentity('labs-projects'),
     image: '/assets/images/topics/labs-projects.webp',
     imageAlt: 'A violet-lit prototype workbench filled with modular browser experiments.',
-    terms: ['labs', 'projects', 'game development', 'browser game', 'creative coding', 'music tools', 'web app'],
     assetTitle: 'Labs And Demo Showcase Checklist',
     assetIntro: 'A simple publishing checklist for turning experiments into useful public demos without blurring them into production page logic.',
     assetItems: [
@@ -299,35 +347,70 @@ const TOPIC_HUBS = [
     ],
   },
   {
-    slug: 'gadgets-toys',
-    title: createSiteTitle('Gadgets & Toys'),
-    heading: 'Gadgets & Toys',
-    description: 'Hands-on reviews, wish-list notes, and interesting gadgets, toys, and technology found online.',
+    ...createTopicHubIdentity('gadgets-toys'),
     image: '/assets/images/topics/gadgets-toys.webp',
     imageAlt: 'A curated amber-lit workbench with a handheld game device, desk robot, toy drone, puzzle, and pocket gadget.',
-    terms: [
-      'gadget',
-      'gadgets',
-      'toy',
-      'toys',
-      'tech gear',
-      'cool tech',
-      'consumer tech',
-      'product review',
-      'product reviews',
-      'electronics',
-      'smart home',
-      'wearables',
-      'gaming hardware',
-    ],
-    assetTitle: 'Gadget Review Field Notes',
-    assetIntro: 'A simple way to separate what I own, what I want to try, and what merely caught my eye while keeping each recommendation useful and honest.',
+    assetTitle: 'Is It Actually Useful? Gadget Scorecard',
+    assetIntro: 'A repeatable way to separate what an object promises from the evidence, complete cost, everyday friction, support, and the person it may genuinely help.',
     assetItems: [
-      'State whether I own it, borrowed it, tried it briefly, want it, or simply found it interesting online.',
-      'Explain the problem it solves, the playful idea behind it, or the design detail that makes it stand out.',
-      'Share setup, build quality, daily use, limitations, and surprises when hands-on experience is available.',
-      'Treat prices, stock, crowdfunding promises, and release dates as time-sensitive details.',
-      'Disclose gifts, review units, sponsorships, and affiliate links while separating enthusiasm from the verdict.',
+      'Name the user, recurring problem, frequency, and current workaround before deciding the object is useful.',
+      'Label the item as owned, tried, borrowed, or research-only and separate direct evidence from marketing claims.',
+      'Count true cost, including accessories, subscriptions, consumables, replacement parts, and failed experiments.',
+      'Check whether setup, charging, accounts, storage, cleanup, compatibility, learning, or noise erases convenience.',
+      'Review returns, warranty, parts, privacy, cloud dependence, service history, resale, and the exit path.',
+    ],
+    resourceLinks: [
+      {
+        label: 'Printable Gadget Usefulness Scorecard',
+        description: 'Open the evidence-led guide and download the one-page Is It Actually Useful? worksheet.',
+        href: GADGET_USEFULNESS_SCORECARD_PATH,
+      },
+      {
+        label: 'Editorial Standards & Corrections',
+        description: 'See how experience, research, relationships, synthetic media, sources, and updates are labeled.',
+        href: EDITORIAL_STANDARDS_PATH,
+      },
+    ],
+  },
+  {
+    ...createTopicHubIdentity('drones-fpv'),
+    image: '/assets/images/topics/drones-fpv.webp',
+    imageAlt: 'An FPV quadcopter banking over a turquoise Florida inlet beside mangroves and pale sand.',
+    assetTitle: 'Drone Flight Field Notes',
+    assetIntro: 'A repeatable preflight and debrief framework for turning each flight into safer practice, better footage, and a more useful story.',
+    assetItems: [
+      'Define one purpose before launch: practice, test, scouting, or one clear filming sequence.',
+      'Review airspace, local restrictions, people, property, weather, launch space, recovery options, and signal obstacles.',
+      'Record the aircraft, camera, battery, rates, filters, safety settings, and the change being tested.',
+      'Keep enough battery, visibility, room, and attention for a calm return.',
+      'Review the evidence, name one success and one correction, then carry one improvement into the next pack.',
+    ],
+    resourceLinks: [
+      {
+        label: 'Printable Drone Flight Field Notes',
+        description: 'Download the one-page purpose, setup, exit-plan, shot-plan, and debrief worksheet.',
+        href: '/downloads/captain-colin-drone-flight-field-notes.pdf',
+      },
+      {
+        label: 'Personal Aircraft Buyer Verification',
+        description: 'Use the two-page offer, deposit, legal-category, support, and evidence worksheet before treating a viral aircraft as a purchase.',
+        href: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_PATH,
+      },
+      {
+        label: 'FAA Recreational Flyers',
+        description: 'Check the current federal rules and responsibilities for recreational drone flying.',
+        href: 'https://www.faa.gov/uas/recreational_flyers',
+      },
+      {
+        label: 'FAA Where Can I Fly?',
+        description: 'Use the FAA starting point for current airspace and B4UFLY service information.',
+        href: 'https://www.faa.gov/uas/getting_started/where_can_i_fly',
+      },
+      {
+        label: 'FAA Remote ID',
+        description: 'Review the current Remote ID compliance paths for registered or registration-required drones.',
+        href: 'https://www.faa.gov/uas/getting_started/remote_id',
+      },
     ],
   },
 ] as const;
@@ -892,6 +975,7 @@ interface SeoBlogPostDocument {
   authorSlug: string;
   authorUrl: string;
   categories: readonly string[];
+  subcategories: readonly string[];
   tags: readonly string[];
   seoTitle: string;
   seoDescription: string;
@@ -909,6 +993,19 @@ interface SeoBlogPostDocument {
   publishedAt: string | null;
   imageAlt: string;
   blocks: readonly BlogContentBlock[];
+  editorial: SeoBlogEditorialMetadata | null;
+}
+
+type SeoBlogEvidenceBasis = 'hands-on' | 'first-person' | 'researched' | 'manufacturer-supplied' | 'mixed';
+
+interface SeoBlogEditorialMetadata {
+  evidenceBasis: SeoBlogEvidenceBasis | null;
+  evidenceSummary: string;
+  sourceReviewedAt: string;
+  relationshipDisclosure: string;
+  aiAssistanceDisclosure: string;
+  syntheticMediaDisclosure: string;
+  updateNote: string;
 }
 
 type HomepageFeaturedPostMode = 'featured' | 'selected';
@@ -958,6 +1055,11 @@ interface BlogBlockData {
   caption?: string;
   provider?: string;
   embedUrl?: string;
+  isCompanionVideo?: boolean;
+  videoTitle?: string;
+  videoDescription?: string;
+  videoUploadDate?: string;
+  videoDurationSeconds?: number;
   items?: readonly string[];
   ordered?: boolean;
   listStyle?: 'unordered' | 'ordered' | 'checklist';
@@ -1338,6 +1440,8 @@ export const renderSeoHtml = onRequest(
     invoker: 'public',
   },
   async (request, response) => {
+    applySeoResponseSecurityHeaders(response);
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.status(405).send('Method Not Allowed');
       return;
@@ -1385,6 +1489,8 @@ export const sitemapXml = onRequest(
     invoker: 'public',
   },
   async (request, response) => {
+    applySeoResponseSecurityHeaders(response);
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.status(405).send('Method Not Allowed');
       return;
@@ -1419,6 +1525,8 @@ export const rssFeed = onRequest(
     invoker: 'public',
   },
   async (request, response) => {
+    applySeoResponseSecurityHeaders(response);
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.status(405).send('Method Not Allowed');
       return;
@@ -1453,6 +1561,8 @@ export const jsonFeed = onRequest(
     invoker: 'public',
   },
   async (request, response) => {
+    applySeoResponseSecurityHeaders(response);
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.status(405).send('Method Not Allowed');
       return;
@@ -3342,10 +3452,15 @@ function parseYoutubeMaxResults(value: unknown): number {
 }
 
 async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedResponse> {
-  const channelId = youtubeChannelId.value().trim();
+  let channelId: string;
 
-  if (!channelId) {
-    throw new HttpsError('failed-precondition', 'YOUTUBE_CHANNEL_ID is not configured for the YouTube feed.');
+  try {
+    channelId = parseCanonicalYoutubeChannelId(youtubeChannelId.value());
+  } catch (error) {
+    throw new HttpsError(
+      'failed-precondition',
+      error instanceof Error ? error.message : 'The YouTube channel configuration is invalid.'
+    );
   }
 
   const cacheKey = `${channelId}:${maxResults}`;
@@ -3356,13 +3471,21 @@ async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedR
   }
 
   const channel = await fetchYoutubeChannelDetails(channelId);
+  try {
+    assertCanonicalYoutubeApiChannelId(channel.channelId);
+  } catch (error) {
+    throw new HttpsError(
+      'failed-precondition',
+      error instanceof Error ? error.message : 'The YouTube API returned an unexpected channel.'
+    );
+  }
   const videos = await fetchYoutubeUploads(channel.uploadsPlaylistId, maxResults);
   const response = {
     fetchedAt: new Date().toISOString(),
     source: 'youtube-api',
     channelId: channel.channelId,
     channelTitle: channel.channelTitle,
-    channelUrl: `https://www.youtube.com/channel/${channel.channelId}`,
+    channelUrl: YOUTUBE_CHANNEL_URL,
     videos,
   } satisfies YoutubeFeedResponse;
 
@@ -3410,30 +3533,139 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     return createSiteSearchSeoMetadata();
   }
 
+  if (normalizedPath === EDITORIAL_STANDARDS_PATH) {
+    return createPublicStaticSeoMetadata({
+      title: createSiteTitle(EDITORIAL_STANDARDS_HEADING),
+      heading: EDITORIAL_STANDARDS_HEADING,
+      description: EDITORIAL_STANDARDS_DESCRIPTION,
+      path: EDITORIAL_STANDARDS_PATH,
+      imageAlt: createPreviewImageAlt('editorial standards and corrections'),
+      eyebrow: 'Trust & transparency',
+      sections: EDITORIAL_STANDARDS_SECTIONS,
+    });
+  }
+
+  if (normalizedPath === GADGET_USEFULNESS_SCORECARD_PATH) {
+    return createPublicStaticSeoMetadata({
+      title: createSiteTitle(GADGET_USEFULNESS_SCORECARD_HEADING),
+      heading: GADGET_USEFULNESS_SCORECARD_HEADING,
+      description: GADGET_USEFULNESS_SCORECARD_DESCRIPTION,
+      path: GADGET_USEFULNESS_SCORECARD_PATH,
+      imageAlt: createPreviewImageAlt('gadget usefulness scorecard'),
+      eyebrow: 'Is It Actually Useful?',
+      sections: GADGET_USEFULNESS_SCORECARD_SECTIONS,
+    });
+  }
+
+  if (normalizedPath === PERSONAL_AIRCRAFT_BUYER_VERIFICATION_PATH) {
+    return createPublicStaticSeoMetadata({
+      title: createSiteTitle(PERSONAL_AIRCRAFT_BUYER_VERIFICATION_HEADING),
+      heading: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_HEADING,
+      description: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_DESCRIPTION,
+      path: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_PATH,
+      imageAlt: createPreviewImageAlt('personal aircraft buyer verification worksheet'),
+      eyebrow: 'Captain Colin field resource',
+      sections: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_SECTIONS,
+    });
+  }
+
   if (normalizedPath === '/privacy') {
-    return createStaticSeoMetadata({
+    const description = `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`;
+
+    return createPublicStaticSeoMetadata({
       title: createSiteTitle('Privacy Policy'),
-      description: `How ${SITE_NAME} handles personal information, protects it from sale, and responds to deletion requests.`,
+      heading: 'Privacy Policy',
+      description,
       path: '/privacy',
       imageAlt: createPreviewImageAlt('privacy policy'),
+      eyebrow: 'Trust & privacy',
+      sections: [
+        {
+          heading: 'Our privacy commitment',
+          paragraphs: [
+            'Effective August 4, 2026. ColinMichaels.com does not collect personal information for the purpose of selling it. The site does not sell, rent, or trade personal information. Information is handled only when a visitor chooses to provide it or when it is reasonably needed to operate, secure, and improve the site.',
+          ],
+        },
+        {
+          heading: 'Information the site may handle',
+          paragraphs: [
+            'Depending on the features used, the site may handle account details supplied through Firebase sign-in, profile information, comments, notification settings, and other submitted content. The site and its service providers may also process contact messages, article proposals, prospective author-profile details, and limited technical information needed for hosting, security, abuse prevention, error diagnosis, and reliable delivery. Some preferences, saved articles, and offline data are stored only on the visitor\'s device.',
+          ],
+        },
+        {
+          heading: 'How information is used',
+          paragraphs: [
+            'Information is used to provide the requested feature, maintain accounts and preferences, moderate submitted content, review contact messages and author proposals, protect the site from misuse, and keep the service working. Prospective author details are not published or used to create publishing access automatically. Trusted service providers such as Firebase and Google may process information only as needed to deliver these functions. External websites and embedded services have their own privacy practices.',
+          ],
+        },
+        {
+          heading: 'Your right to removal',
+          paragraphs: [
+            'Visitors may ask at any time to have personal information associated with them removed. After a request is verified, the associated information is deleted from active systems except for limited records that must be kept for security, fraud prevention, legal obligations, or normal backup cycles.',
+          ],
+          links: [
+            {href: 'mailto:colin@colinmichaels.com', label: 'Email a privacy or removal request'},
+            {href: createAbsoluteUrl('/contact'), label: 'Use the public contact form'},
+          ],
+        },
+        {
+          heading: 'Policy updates',
+          paragraphs: [
+            'This policy may be updated when site features or privacy practices change. The effective date is revised when material changes are published.',
+          ],
+        },
+      ],
     });
   }
 
   if (normalizedPath === '/contact') {
-    return createStaticSeoMetadata({
+    const description = `Contact ${PERSON_NAME} with a question, project note, correction, media request, or privacy request.`;
+
+    return createPublicStaticSeoMetadata({
       title: createSiteTitle('Contact'),
-      description: `Contact ${PERSON_NAME} with a question, project note, correction, media request, or privacy request.`,
+      heading: 'Contact Colin',
+      description,
       path: '/contact',
       imageAlt: createPreviewImageAlt('contact form'),
+      eyebrow: 'Contact',
+      sections: [
+        {
+          heading: 'What happens next',
+          paragraphs: [
+            'Messages are stored in a private review queue. Colin replies by email when a response is appropriate, and privacy or removal requests are handled using the information supplied through the form.',
+          ],
+          links: [
+            {href: createAbsoluteUrl('/write-for-us'), label: 'Pitch an article instead'},
+            {href: createAbsoluteUrl('/privacy'), label: 'Read the Privacy Policy'},
+          ],
+        },
+      ],
     });
   }
 
   if (normalizedPath === '/write-for-us') {
-    return createStaticSeoMetadata({
+    const description = `Propose an article and submit prospective author-profile details for editorial review on ${SITE_NAME}.`;
+
+    return createPublicStaticSeoMetadata({
       title: createSiteTitle('Write for Us'),
-      description: `Propose an article and submit prospective author-profile details for editorial review on ${SITE_NAME}.`,
+      heading: `Write for ${SITE_NAME}`,
+      description,
       path: '/write-for-us',
       imageAlt: createPreviewImageAlt('author and post proposal form'),
+      eyebrow: 'Contributor proposals',
+      sections: [
+        {
+          heading: 'What happens next',
+          paragraphs: [
+            'The idea, sources, writing background, and proposed public credit are reviewed. If the proposal fits the publication, Colin replies by email about scope and next steps.',
+            'Submitting the form does not create an author profile, publishing access, or a promise of publication. Those decisions happen only after editorial approval.',
+          ],
+          links: [
+            {href: createAbsoluteUrl('/contact'), label: 'Send a general message instead'},
+            {href: createAbsoluteUrl('/privacy'), label: 'Review submission privacy'},
+          ],
+        },
+      ],
     });
   }
 
@@ -3463,16 +3695,16 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
 
   if (normalizedPath.startsWith('/blog/category/')) {
     const category = decodeSlugSegment(normalizedPath.slice('/blog/category/'.length));
-    const posts = await fetchPublishedSitemapBlogPosts();
+    const posts = await fetchPublishedFeedBlogPosts();
 
-    return createBlogCategorySeoMetadata(category, getTaxonomyPostCount(posts, category));
+    return createBlogCategorySeoMetadata(category, posts);
   }
 
   if (normalizedPath.startsWith('/blog/tag/')) {
     const tag = decodeSlugSegment(normalizedPath.slice('/blog/tag/'.length));
-    const posts = await fetchPublishedSitemapBlogPosts();
+    const posts = await fetchPublishedFeedBlogPosts();
 
-    return createBlogTagSeoMetadata(tag, getTagPostCount(posts, tag));
+    return createBlogTagSeoMetadata(tag, posts);
   }
 
   if (normalizedPath.startsWith('/topics/')) {
@@ -3480,7 +3712,9 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     const topicHub = getTopicHubBySlug(slug);
 
     if (topicHub) {
-      return createTopicHubSeoMetadata(topicHub);
+      const posts = await fetchPublishedFeedBlogPosts();
+
+      return createTopicHubSeoMetadata(topicHub, posts);
     }
   }
 
@@ -3527,11 +3761,26 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
   }
 
   if (normalizedPath === '/background') {
-    return createStaticSeoMetadata({
+    return createPublicStaticSeoMetadata({
       title: createSiteTitle('Full Screen Background Lab'),
+      heading: 'A Very Serious Full-Screen Background Study',
       description: BACKGROUND_LAB_DESCRIPTION,
       path: '/background',
       imageAlt: createPreviewImageAlt('visual background lab'),
+      eyebrow: 'Background Lab',
+      sections: [
+        {
+          heading: 'What the experiment demonstrates',
+          paragraphs: [
+            'This interactive browser lab explores full-screen imagery, video backgrounds, overlays, parallax, contrast, scroll progress, and maintaining readable foreground content across changing scenes.',
+            'The visual and interaction layers require a browser with JavaScript. Project notes and other public experiments remain available through the Labs & Projects topic hub.',
+          ],
+          links: [
+            {href: createAbsoluteUrl('/topics/labs-projects'), label: 'Explore Labs & Projects'},
+            {href: createAbsoluteUrl('/'), label: `Return to ${SITE_NAME}`},
+          ],
+        },
+      ],
     });
   }
 
@@ -3618,10 +3867,6 @@ async function createSitemapXml(): Promise<string> {
     ...createSitemapTaxonomyUrls(posts),
     ...createSitemapTagUrls(posts),
     ...createSitemapAuthorUrls(posts, authors),
-    ...TOPIC_HUBS.map(topicHub => ({
-      path: `/topics/${topicHub.slug}`,
-      lastmod: latestPostUpdate,
-    } satisfies SitemapUrl)),
     ...posts.map(post => ({
       path: `/blog/${createSeoSlug(post.slug)}`,
       lastmod: getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString)),
@@ -3676,6 +3921,15 @@ function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string):
       path: '/privacy',
     },
     {
+      path: EDITORIAL_STANDARDS_PATH,
+    },
+    {
+      path: GADGET_USEFULNESS_SCORECARD_PATH,
+    },
+    {
+      path: PERSONAL_AIRCRAFT_BUYER_VERIFICATION_PATH,
+    },
+    {
       path: '/contact',
     },
     {
@@ -3688,6 +3942,10 @@ function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string):
     {
       path: '/background',
     },
+    ...createPublicTopicSitemapPaths().map(path => ({
+      path,
+      lastmod: blogLastmod,
+    } satisfies SitemapUrl)),
   ];
 }
 
@@ -3725,7 +3983,13 @@ function createSitemapTagUrls(posts: readonly SitemapBlogPostDocument[]): readon
     const lastmod = getLatestIsoDate([post.updatedAt, post.publishedAt].filter(isNonEmptyString));
 
     for (const tag of post.tags) {
-      const slug = createBlogTagSlug(tag);
+      const route = createBlogTagTaxonomyRoute(tag);
+
+      if (route.kind !== 'tag') {
+        continue;
+      }
+
+      const slug = route.slug;
       const existingLastmod = tagLastmod.get(slug);
       const latestLastmod = getLatestIsoDate([existingLastmod, lastmod].filter(isNonEmptyString));
 
@@ -3785,7 +4049,7 @@ function toSitemapBlogPostDocument(value: unknown): SitemapBlogPostDocument | nu
 }
 
 function getSitemapTaxonomyTerms(post: SitemapBlogPostDocument): readonly string[] {
-  return uniqueStrings([...post.categories, ...post.subcategories]);
+  return getCanonicalBlogCategoryTerms(post);
 }
 
 async function fetchPublishedFeedBlogPosts(): Promise<readonly SeoBlogPostDocument[]> {
@@ -3914,7 +4178,7 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
   const image = createAbsoluteUrl(toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE));
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
-  const url = post.seoCanonical || createAbsoluteUrl(`/blog/${post.slug}`);
+  const url = createBlogFeedItemUrl(post.seoCanonical, post.slug, SITE_URL);
   const publishedAt = post.publishedAt ?? post.updatedAt;
 
   return {
@@ -3926,7 +4190,7 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
     imageHeight,
     author: post.authorName,
     authorUrl: post.authorUrl,
-    tags: uniqueStrings([...post.categories, ...post.tags]),
+    tags: uniqueStrings([...getCanonicalBlogCategoryTerms(post), ...post.tags]),
     publishedAt,
     modifiedAt: post.updatedAt,
   };
@@ -4091,28 +4355,82 @@ function createSiteSearchSeoMetadata(): SeoMetadata {
   });
 }
 
-function createBlogCategorySeoMetadata(category: string, postCount: number): SeoMetadata {
-  const categoryTitle = createTitleFromSlug(category || 'blog-category');
+function createBlogCategorySeoMetadata(
+  category: string,
+  posts: readonly SeoBlogPostDocument[]
+): SeoMetadata {
+  const categoryTitle = createBlogCategoryTitle(category || 'blog-category');
+  const matchingPosts = getPostsForCategory(posts, categoryTitle);
+  const heading = `${categoryTitle} Posts`;
+  const description = `Published ${PERSON_NAME} blog posts in the ${categoryTitle} category.`;
+  const path = `/blog/category/${createBlogCategorySlug(categoryTitle)}`;
+  const items = createSeoFallbackCollectionItems(matchingPosts);
 
-  return createStaticSeoMetadata({
-    title: createSiteTitle(`${categoryTitle} Posts`),
-    description: `Published ${PERSON_NAME} blog posts in the ${categoryTitle} category.`,
-    path: `/blog/category/${createSeoSlug(categoryTitle)}`,
-    imageAlt: `${categoryTitle} blog category preview card`,
-    robots: postCount >= TAXONOMY_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
-  });
+  return {
+    ...createStaticSeoMetadata({
+      title: createSiteTitle(heading),
+      description,
+      path,
+      imageAlt: `${categoryTitle} blog category preview card`,
+      robots: matchingPosts.length >= TAXONOMY_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
+    }),
+    structuredData: createCollectionPageStructuredData({
+      siteName: SITE_NAME,
+      siteUrl: SITE_URL,
+      publisherName: PERSON_NAME,
+      url: createAbsoluteUrl(path),
+      name: heading,
+      description,
+      items,
+    }),
+    fallbackHtml: renderSeoCollectionFallbackHtml({
+      eyebrow: 'Blog category',
+      heading,
+      description,
+      totalItems: matchingPosts.length,
+      items,
+      emptyMessage: `No published posts are available in ${categoryTitle}.`,
+    }),
+  };
 }
 
-function createBlogTagSeoMetadata(tag: string, postCount: number): SeoMetadata {
+function createBlogTagSeoMetadata(
+  tag: string,
+  posts: readonly SeoBlogPostDocument[]
+): SeoMetadata {
   const tagTitle = createTitleFromSlug(tag || 'blog-tag');
+  const matchingPosts = getPostsForTag(posts, tagTitle);
+  const heading = `${tagTitle} Articles`;
+  const description = `Published ${PERSON_NAME} blog posts tagged ${tagTitle}.`;
+  const path = `/blog/tag/${createBlogTagSlug(tagTitle)}`;
+  const items = createSeoFallbackCollectionItems(matchingPosts);
 
-  return createStaticSeoMetadata({
-    title: createSiteTitle(`${tagTitle} Articles`),
-    description: `Published ${PERSON_NAME} blog posts tagged ${tagTitle}.`,
-    path: `/blog/tag/${createBlogTagSlug(tagTitle)}`,
-    imageAlt: `${tagTitle} blog tag preview card`,
-    robots: postCount >= TAG_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
-  });
+  return {
+    ...createStaticSeoMetadata({
+      title: createSiteTitle(heading),
+      description,
+      path,
+      imageAlt: `${tagTitle} blog tag preview card`,
+      robots: matchingPosts.length >= TAG_SITEMAP_MIN_POSTS ? undefined : 'noindex,follow',
+    }),
+    structuredData: createCollectionPageStructuredData({
+      siteName: SITE_NAME,
+      siteUrl: SITE_URL,
+      publisherName: PERSON_NAME,
+      url: createAbsoluteUrl(path),
+      name: heading,
+      description,
+      items,
+    }),
+    fallbackHtml: renderSeoCollectionFallbackHtml({
+      eyebrow: 'Blog tag',
+      heading,
+      description,
+      totalItems: matchingPosts.length,
+      items,
+      emptyMessage: `No published posts are available for ${tagTitle}.`,
+    }),
+  };
 }
 
 function createMissingBlogPostSeoMetadata(slug: string): SeoMetadata {
@@ -4195,16 +4513,63 @@ function createStaticSeoMetadata(options: {
   };
 }
 
-function createTopicHubSeoMetadata(topicHub: typeof TOPIC_HUBS[number]): SeoMetadata {
+function createPublicStaticSeoMetadata(options: {
+  title: string;
+  heading: string;
+  description: string;
+  path: string;
+  imageAlt: string;
+  eyebrow: string;
+  sections: Parameters<typeof renderSeoStaticFallbackHtml>[0]['sections'];
+}): SeoMetadata {
+  return {
+    ...createStaticSeoMetadata({
+      title: options.title,
+      description: options.description,
+      path: options.path,
+      imageAlt: options.imageAlt,
+    }),
+    structuredData: createWebPageStructuredData({
+      siteName: SITE_NAME,
+      siteUrl: SITE_URL,
+      publisherName: PERSON_NAME,
+      url: createAbsoluteUrl(options.path),
+      name: options.heading,
+      description: options.description,
+    }),
+    fallbackHtml: renderSeoStaticFallbackHtml({
+      eyebrow: options.eyebrow,
+      heading: options.heading,
+      description: options.description,
+      sections: options.sections,
+    }),
+  };
+}
+
+function createTopicHubSeoMetadata(
+  topicHub: typeof TOPIC_HUBS[number],
+  posts: readonly SeoBlogPostDocument[]
+): SeoMetadata {
+  const path = `/topics/${topicHub.slug}`;
+  const items = createSeoFallbackCollectionItems(getPostsForTopicHub(posts, topicHub));
+
   return {
     title: topicHub.title,
     description: topicHub.description,
-    path: `/topics/${topicHub.slug}`,
+    path,
     image: topicHub.image,
     imageAlt: topicHub.imageAlt,
     type: 'website',
-    structuredData: createTopicHubJsonLd(topicHub),
-    fallbackHtml: renderTopicHubFallbackHtml(topicHub),
+    structuredData: createCollectionPageStructuredData({
+      siteName: SITE_NAME,
+      siteUrl: SITE_URL,
+      publisherName: PERSON_NAME,
+      url: createAbsoluteUrl(path),
+      name: topicHub.heading,
+      description: topicHub.description,
+      items,
+    }),
+    fallbackHtml: renderTopicHubFallbackHtml(topicHub, items),
   };
 }
 
@@ -4223,16 +4588,43 @@ function isAdminRoute(path: string): boolean {
   return ADMIN_ROUTE_PREFIXES.some(prefix => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-function getTaxonomyPostCount(posts: readonly SitemapBlogPostDocument[], category: string): number {
+function getPostsForCategory(
+  posts: readonly SeoBlogPostDocument[],
+  category: string
+): readonly SeoBlogPostDocument[] {
   const slug = createBlogCategorySlug(category);
 
-  return posts.filter(post => getSitemapTaxonomyTerms(post).some(term => createBlogCategorySlug(term) === slug)).length;
+  return posts.filter(post => (
+    getCanonicalBlogCategoryTerms(post)
+      .some(term => createBlogCategorySlug(term) === slug)
+  ));
 }
 
-function getTagPostCount(posts: readonly SitemapBlogPostDocument[], tag: string): number {
+function getPostsForTag(
+  posts: readonly SeoBlogPostDocument[],
+  tag: string
+): readonly SeoBlogPostDocument[] {
   const slug = createBlogTagSlug(tag);
 
-  return posts.filter(post => post.tags.some(postTag => createBlogTagSlug(postTag) === slug)).length;
+  return posts.filter(post => post.tags.some(postTag => createBlogTagSlug(postTag) === slug));
+}
+
+function createSeoFallbackCollectionItems(
+  posts: readonly SeoBlogPostDocument[]
+): readonly SeoFallbackCollectionItem[] {
+  return posts.map(post => ({
+    title: stripHtml(post.ogTitle || post.seoTitle || post.title),
+    url: createAbsoluteUrl(`/blog/${post.slug}`),
+    description: truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt)),
+    publishedAt: post.publishedAt ?? post.updatedAt,
+  }));
+}
+
+function getPostsForTopicHub(
+  posts: readonly SeoBlogPostDocument[],
+  topicHub: typeof TOPIC_HUBS[number]
+): readonly SeoBlogPostDocument[] {
+  return posts.filter(post => scoreBlogPostForTopicHub(post, topicHub) > 0);
 }
 
 function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
@@ -4241,14 +4633,16 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
   const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
+  const imageAlt = post.ogImageAlt || post.imageAlt || `${title} preview image`;
   const url = createAbsoluteUrl(`/blog/${post.slug}`);
+  const companionVideo = createBlogCompanionVideoJsonLd(post.blocks);
 
   return {
     title,
     description,
     path: `/blog/${post.slug}`,
     image,
-    imageAlt: post.ogImageAlt || post.imageAlt || `${title} preview image`,
+    imageAlt,
     imageWidth,
     imageHeight,
     type: 'article',
@@ -4257,7 +4651,7 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
       publishedAt: post.publishedAt ?? post.updatedAt,
       modifiedAt: post.updatedAt,
       author: post.authorName,
-      section: post.categories[0],
+      section: getCanonicalBlogCategoryTerms(post)[0],
       tags: post.tags,
     },
     structuredData: createBlogPostingJsonLd({
@@ -4269,8 +4663,17 @@ function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
       authorUrl: post.authorUrl,
       publishedAt: post.publishedAt,
       modifiedAt: post.updatedAt,
+      citations: collectExternalBlogCitationUrls(post.blocks, SITE_URL),
+      ...(companionVideo ? {video: companionVideo} : {}),
     }),
-    fallbackHtml: renderBlogPostFallbackHtml(post, {title, description, image}),
+    fallbackHtml: renderBlogPostFallbackHtml(post, {
+      title,
+      description,
+      image,
+      imageAlt,
+      imageWidth,
+      imageHeight,
+    }),
   };
 }
 
@@ -4352,7 +4755,7 @@ function createBlogPreviewSeoMetadata(post: SeoBlogPostDocument, previewToken: s
     article: {
       modifiedAt: post.updatedAt,
       author: post.authorName,
-      section: post.categories[0],
+      section: getCanonicalBlogCategoryTerms(post)[0],
       tags: post.tags,
     },
   };
@@ -4545,6 +4948,7 @@ function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocu
     authorSlug: getPostAuthorSlug(value),
     authorUrl: getPostAuthorUrl(value),
     categories: getStringArrayValue(value['categories']),
+    subcategories: getStringArrayValue(value['subcategories']),
     tags: getStringArrayValue(value['tags']),
     seoTitle: getTrimmedString(seo['title']) || getTrimmedString(seo['metaTitle']),
     seoDescription: getTrimmedString(seo['description']) || getTrimmedString(seo['metaDescription']),
@@ -4561,6 +4965,7 @@ function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocu
     updatedAt: getIsoString(value['updatedAt']) || new Date(0).toISOString(),
     publishedAt: getIsoString(value['publishedAt']) || null,
     imageAlt: getFirstImageAlt(blocks),
+    editorial: toSeoBlogEditorialMetadata(value['editorial']),
     blocks: blocks
       .filter(isBlogContentBlock)
       .map(block => ({
@@ -4569,6 +4974,68 @@ function toSeoBlogPostDocument(value: unknown, fallbackId = ''): SeoBlogPostDocu
         data: block.data,
       })),
   };
+}
+
+const SEO_BLOG_EVIDENCE_BASES = new Set<SeoBlogEvidenceBasis>([
+  'hands-on',
+  'first-person',
+  'researched',
+  'manufacturer-supplied',
+  'mixed',
+]);
+
+const SEO_BLOG_EVIDENCE_LABELS: Readonly<Record<SeoBlogEvidenceBasis, string>> = {
+  'hands-on': 'Hands-on test',
+  'first-person': 'First-person field notes',
+  'researched': 'Researched analysis',
+  'manufacturer-supplied': 'Manufacturer-supplied evidence',
+  'mixed': 'Mixed evidence',
+};
+
+const SEO_BLOG_EVIDENCE_DESCRIPTIONS: Readonly<Record<SeoBlogEvidenceBasis, string>> = {
+  'hands-on': 'Colin personally used the product, process, aircraft, software, or location described.',
+  'first-person': 'The article is based on Colin\'s own project, flight, recovery experience, media, or documented workflow.',
+  'researched': 'The article compares public evidence and does not claim hands-on testing unless a section says otherwise.',
+  'manufacturer-supplied': 'Material claims or demonstrations came from the company responsible for the product and are not independent results.',
+  'mixed': 'The article combines more than one evidence type; the evidence summary identifies which claims come from which basis.',
+};
+
+function toSeoBlogEditorialMetadata(value: unknown): SeoBlogEditorialMetadata | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const rawBasis = getTrimmedString(value['evidenceBasis']);
+  const evidenceBasis = SEO_BLOG_EVIDENCE_BASES.has(rawBasis as SeoBlogEvidenceBasis)
+    ? rawBasis as SeoBlogEvidenceBasis
+    : null;
+  const sourceReviewedAt = isDateOnly(value['sourceReviewedAt'])
+    ? getTrimmedString(value['sourceReviewedAt'])
+    : '';
+  const editorial: SeoBlogEditorialMetadata = {
+    evidenceBasis,
+    evidenceSummary: getTrimmedString(value['evidenceSummary']),
+    sourceReviewedAt,
+    relationshipDisclosure: getTrimmedString(value['relationshipDisclosure']),
+    aiAssistanceDisclosure: getTrimmedString(value['aiAssistanceDisclosure']),
+    syntheticMediaDisclosure: getTrimmedString(value['syntheticMediaDisclosure']),
+    updateNote: getTrimmedString(value['updateNote']),
+  };
+
+  return Object.values(editorial).some(Boolean) ? editorial : null;
+}
+
+function isDateOnly(value: unknown): boolean {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
 }
 
 function injectSeoMetadata(template: string, metadata: SeoMetadata): string {
@@ -4583,11 +5050,7 @@ function injectSeoMetadata(template: string, metadata: SeoMetadata): string {
 }
 
 function injectFallbackHtml(template: string, fallbackHtml: string | undefined): string {
-  if (!fallbackHtml) {
-    return template;
-  }
-
-  return template.replace(/<app-root>\s*<\/app-root>/i, `<app-root>\n${fallbackHtml}\n</app-root>`);
+  return replaceAppRootFallback(template, fallbackHtml ?? '');
 }
 
 function renderSeoTags(metadata: SeoMetadata): string {
@@ -4841,8 +5304,13 @@ function createBlogPostingJsonLd(options: {
   authorUrl: string;
   publishedAt: string | null;
   modifiedAt: string;
+  citations?: readonly string[];
+  video?: BlogVideoObjectJsonLd;
 }): Record<string, unknown> {
   const url = createAbsoluteUrl(options.url);
+  const citations = [...new Set((options.citations ?? [])
+    .map(createOptionalAbsoluteHttpUrl)
+    .filter(Boolean))];
 
   return {
     '@context': 'https://schema.org',
@@ -4853,6 +5321,8 @@ function createBlogPostingJsonLd(options: {
     image: [options.image],
     datePublished: options.publishedAt ?? options.modifiedAt,
     dateModified: options.modifiedAt,
+    ...(citations.length > 0 ? {citation: citations} : {}),
+    ...(options.video ? {video: options.video} : {}),
     author: {
       '@type': 'Person',
       name: options.author,
@@ -4913,28 +5383,6 @@ function createAuthorProfileJsonLd(
   };
 }
 
-function createTopicHubJsonLd(topicHub: typeof TOPIC_HUBS[number]): Record<string, unknown> {
-  const url = createAbsoluteUrl(`/topics/${topicHub.slug}`);
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: topicHub.heading,
-    description: topicHub.description,
-    url,
-    isPartOf: {
-      '@type': 'WebSite',
-      name: SITE_NAME,
-      url: SITE_URL,
-    },
-    publisher: {
-      '@type': 'Person',
-      name: PERSON_NAME,
-      url: SITE_URL,
-    },
-  };
-}
-
 function renderHomeFallbackHtml(): string {
   const primaryLinks = [
     {
@@ -4956,6 +5404,11 @@ function renderHomeFallbackHtml(): string {
       href: '/topics/angular-firebase-architecture',
       label: 'Angular and Firebase notes',
       description: 'Architecture notes for the public site, CMS, routing, and SEO renderer.'
+    },
+    {
+      href: EDITORIAL_STANDARDS_PATH,
+      label: EDITORIAL_STANDARDS_HEADING,
+      description: 'How stories distinguish hands-on experience, research, sources, synthetic media, and corrections.'
     },
   ];
   const topicLinks = TOPIC_HUBS.map(topicHub => (
@@ -5010,20 +5463,67 @@ function renderBlogIndexFallbackHtml(posts: readonly SeoBlogPostDocument[]): str
   });
 }
 
+function renderBlogEditorialEvidenceFallbackHtml(post: SeoBlogPostDocument): string {
+  const editorial = post.editorial;
+  const evidenceBasis = editorial?.evidenceBasis ?? null;
+  const citationCount = collectExternalBlogCitationUrls(post.blocks, SITE_URL).length;
+  const details = [
+    editorial?.sourceReviewedAt
+      ? `<p><strong>Sources checked:</strong> ${escapeHtml(formatFallbackDate(editorial.sourceReviewedAt))}</p>`
+      : '',
+    citationCount > 0
+      ? `<p><strong>Linked references:</strong> ${citationCount} explicit source${citationCount === 1 ? '' : 's'} in the article.</p>`
+      : '',
+    editorial?.relationshipDisclosure
+      ? `<p><strong>Relationship disclosure:</strong> ${escapeHtml(editorial.relationshipDisclosure)}</p>`
+      : '',
+    editorial?.aiAssistanceDisclosure
+      ? `<p><strong>AI assistance:</strong> ${escapeHtml(editorial.aiAssistanceDisclosure)}</p>`
+      : '',
+    editorial?.syntheticMediaDisclosure
+      ? `<p><strong>Synthetic media:</strong> ${escapeHtml(editorial.syntheticMediaDisclosure)}</p>`
+      : '',
+    editorial?.updateNote
+      ? `<p><strong>Latest substantive update:</strong> ${escapeHtml(editorial.updateNote)}</p>`
+      : '',
+  ].filter(Boolean).join('\n');
+  const evidenceSummary = editorial?.evidenceSummary
+    ? `<p>${escapeHtml(editorial.evidenceSummary)}</p>`
+    : '';
+  const classification = evidenceBasis
+    ? `<p><strong>Evidence basis:</strong> ${escapeHtml(SEO_BLOG_EVIDENCE_LABELS[evidenceBasis])}. ${escapeHtml(SEO_BLOG_EVIDENCE_DESCRIPTIONS[evidenceBasis])}</p>`
+    : '<p><strong>Not yet classified.</strong> This article has not yet been classified under the current editorial standard. It may predate the policy; do not assume a product was owned, tested, supplied, or independently verified unless the article says so.</p>';
+
+  return [
+    '<section class="seo-fallback-article" aria-labelledby="article-evidence-heading">',
+    '  <p class="seo-fallback-eyebrow">Trust &amp; transparency</p>',
+    '  <h2 id="article-evidence-heading">Evidence &amp; disclosures</h2>',
+    `  ${classification}`,
+    evidenceSummary ? `  ${evidenceSummary}` : '',
+    details ? `  ${details}` : '',
+    `  <p><a href="${escapeHtml(createAbsoluteUrl(EDITORIAL_STANDARDS_PATH))}">How evidence labels and corrections work</a></p>`,
+    '</section>',
+  ].filter(Boolean).join('\n');
+}
+
 function renderBlogPostFallbackHtml(
   post: SeoBlogPostDocument,
   metadata: {
     title: string;
     description: string;
     image: string;
+    imageAlt: string;
+    imageWidth: number;
+    imageHeight: number;
   }
 ): string {
-  const categoryLinks = post.categories.map(category => (
+  const categoryLinks = getCanonicalBlogCategoryTerms(post).map(category => (
     `<a href="${escapeHtml(createAbsoluteUrl(`/blog/category/${createBlogCategorySlug(category)}`))}">${escapeHtml(category)}</a>`
   )).join(' ');
-  const tagLinks = post.tags.map(tag => (
-    `<a href="${escapeHtml(createAbsoluteUrl(`/blog/tag/${createBlogTagSlug(tag)}`))}">${escapeHtml(tag)}</a>`
-  )).join(' ');
+  const tagLinks = post.tags.map(tag => {
+    const route = createBlogTagTaxonomyRoute(tag);
+    return `<a href="${escapeHtml(createAbsoluteUrl(`/blog/${route.kind}/${route.slug}`))}">${escapeHtml(tag)}</a>`;
+  }).join(' ');
   const body = post.blocks
     .map(block => renderBlogContentBlockFallbackHtml(block, metadata.title))
     .filter(Boolean)
@@ -5037,6 +5537,15 @@ function renderBlogPostFallbackHtml(
       '  </aside>',
     ].join('\n')
     : '';
+  const topicHub = selectPrimaryBlogTopicHub(post, TOPIC_HUBS);
+  const topicContinuationHtml = topicHub
+    ? renderSeoArticleContinuationFallbackHtml({
+      heading: 'Continue exploring this topic',
+      href: createAbsoluteUrl(`/topics/${topicHub.slug}`),
+      label: topicHub.heading,
+      description: topicHub.description,
+    })
+    : '';
 
   return renderFallbackShell({
     eyebrow: 'Article',
@@ -5046,8 +5555,17 @@ function renderBlogPostFallbackHtml(
       '<article class="seo-fallback-article">',
       `  <p class="seo-fallback-meta">By <a href="${escapeHtml(post.authorUrl)}">${escapeHtml(post.authorName)}</a> - ${escapeHtml(formatFallbackDate(post.publishedAt ?? post.updatedAt))}</p>`,
       categoryLinks ? `  <nav aria-label="Article categories" class="seo-fallback-taxonomy">${categoryLinks}</nav>` : '',
-      `  <img src="${escapeHtml(createAbsoluteUrl(metadata.image))}" alt="${escapeHtml(post.imageAlt || `${metadata.title} preview image`)}" loading="eager">`,
+      `  ${renderSeoImageMarkup({
+        src: createAbsoluteUrl(metadata.image),
+        alt: metadata.imageAlt,
+        width: metadata.imageWidth,
+        height: metadata.imageHeight,
+        loading: 'eager',
+        fetchPriority: 'high',
+      })}`,
+      renderBlogEditorialEvidenceFallbackHtml(post),
       body || `  <p>${escapeHtml(metadata.description)}</p>`,
+      topicContinuationHtml,
       relatedArticleHtml,
       tagLinks ? `  <nav aria-label="Article tags" class="seo-fallback-taxonomy">${tagLinks}</nav>` : '',
       '</article>',
@@ -5115,12 +5633,21 @@ function renderAuthorsIndexFallbackHtml(authors: readonly SeoAuthorDocument[]): 
   });
 }
 
-function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string {
+function renderTopicHubFallbackHtml(
+  topicHub: typeof TOPIC_HUBS[number],
+  items: readonly SeoFallbackCollectionItem[]
+): string {
   const assetItems = [
     '<ol>',
     ...topicHub.assetItems.map(item => `  <li>${escapeHtml(item)}</li>`),
     '</ol>',
   ].join('\n');
+  const postItems = items.map(item => [
+    '<article class="seo-fallback-card">',
+    `  <h3><a href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a></h3>`,
+    item.description ? `  <p>${escapeHtml(item.description)}</p>` : '',
+    '</article>',
+  ].filter(Boolean).join('\n')).join('\n');
   const quickLinks = [
     '<ul class="seo-fallback-list">',
     ...topicHub.terms.slice(0, 8).map(term => (
@@ -5128,6 +5655,12 @@ function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string
     )),
     '</ul>',
   ].join('\n');
+  const resources = 'resourceLinks' in topicHub
+    ? renderSeoFallbackLinkList(topicHub.resourceLinks.map(resource => ({
+      ...resource,
+      href: createAbsoluteUrl(resource.href),
+    })))
+    : '';
 
   return renderFallbackShell({
     eyebrow: 'Topic Hub',
@@ -5137,9 +5670,13 @@ function renderTopicHubFallbackHtml(topicHub: typeof TOPIC_HUBS[number]): string
       '<section class="seo-fallback-article">',
       '  <h2>Start here</h2>',
       `  <p>${escapeHtml(topicHub.description)}</p>`,
+      '  <h2>Related articles</h2>',
+      postItems || '  <p>No matching published articles are available yet.</p>',
       `  <h2>${escapeHtml(topicHub.assetTitle)}</h2>`,
       `  <p>${escapeHtml(topicHub.assetIntro)}</p>`,
       assetItems,
+      resources ? '  <h2>Flight and buyer resources</h2>' : '',
+      resources,
       '  <h2>Related searches</h2>',
       quickLinks,
       '</section>',
@@ -5252,11 +5789,16 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
 
     case 'embed': {
       const caption = stripHtml(data.caption ?? data.provider ?? '');
-      const url = data.embedUrl?.trim() || data.url?.trim() || '';
+      const isCompanionVideo = data.provider === 'youtube' && data.isCompanionVideo === true;
+      const url = isCompanionVideo
+        ? data.url?.trim() || data.embedUrl?.trim() || ''
+        : data.embedUrl?.trim() || data.url?.trim() || '';
       const safeUrl = createOptionalAbsoluteHttpUrl(url);
 
       return safeUrl
-        ? `<p><a href="${escapeHtml(safeUrl)}">${escapeHtml(caption || url)}</a></p>`
+        ? `<p><a href="${escapeHtml(safeUrl)}">${escapeHtml(
+          isCompanionVideo ? 'Watch the companion video on Captain Colin YouTube' : caption || url
+        )}</a></p>`
         : '';
     }
 
@@ -5427,14 +5969,6 @@ function createSeoSlug(value: string): string {
     .replace(/['"]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'untitled';
-}
-
-function createBlogCategorySlug(value: string): string {
-  return createSeoSlug(value) || 'uncategorized';
-}
-
-function createBlogTagSlug(value: string): string {
-  return createSeoSlug(value) || 'untagged';
 }
 
 function getImageMimeType(imageUrl: string): string {

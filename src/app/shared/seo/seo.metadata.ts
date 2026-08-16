@@ -10,8 +10,10 @@ import {
   HOMEPAGE_TITLE,
   LABS_DESCRIPTION,
   PERSON_NAME,
+  SEO_ENTITY_IDS,
   SITE_NAME,
   SITE_SEARCH_DESCRIPTION,
+  SITE_URL,
   createPreviewImageAlt,
   createSiteTitle,
 } from './site-identity';
@@ -20,6 +22,7 @@ export {
   BACKGROUND_LAB_DESCRIPTION,
   BLOG_FEED_DESCRIPTION,
   BLOG_SEARCH_DESCRIPTION,
+  CREATOR_PROFILE_URLS,
   DEFAULT_LOCALE,
   HOME_JSON_LD,
   HOMEPAGE_DESCRIPTION,
@@ -98,6 +101,60 @@ export const PRIVACY_SEO_METADATA: SeoMetadata = {
   image: HOMEPAGE_OG_IMAGE,
   imageAlt: createPreviewImageAlt('privacy policy'),
   type: 'website',
+};
+
+export const EDITORIAL_STANDARDS_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Editorial Standards & Corrections'),
+  description: `How ${SITE_NAME} labels hands-on experience, research, sources, synthetic media, relationships, and meaningful corrections.`,
+  path: '/editorial-standards',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('editorial standards and corrections'),
+  type: 'website',
+  structuredData: {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Editorial Standards & Corrections - ${SITE_NAME}`,
+    description: `How ${SITE_NAME} labels hands-on experience, research, sources, synthetic media, relationships, and meaningful corrections.`,
+    url: `${SITE_URL}/editorial-standards`,
+    isPartOf: {'@id': SEO_ENTITY_IDS.website},
+    publisher: {'@id': SEO_ENTITY_IDS.person},
+  },
+};
+
+export const PERSONAL_AIRCRAFT_BUYER_VERIFICATION_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Personal Aircraft Buyer Verification'),
+  description: 'Download a two-page worksheet for checking a personal aircraft offer, deposit terms, legal-category claims, support, and evidence before paying.',
+  path: '/resources/personal-aircraft-buyer-verification',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('personal aircraft buyer verification worksheet'),
+  type: 'website',
+  structuredData: {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Personal Aircraft Buyer Verification - ${SITE_NAME}`,
+    description: 'A printable research worksheet for checking a personal aircraft offer, deposit terms, legal-category claims, operating reality, support, and evidence.',
+    url: `${SITE_URL}/resources/personal-aircraft-buyer-verification`,
+    isPartOf: {'@id': SEO_ENTITY_IDS.website},
+    publisher: {'@id': SEO_ENTITY_IDS.person},
+  },
+};
+
+export const GADGET_USEFULNESS_SCORECARD_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Gadget Usefulness Scorecard'),
+  description: 'Score a gadget on problem fit, evidence, true cost, everyday friction, and support with the printable Is It Actually Useful? worksheet.',
+  path: '/resources/gadget-usefulness-scorecard',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('gadget usefulness scorecard'),
+  type: 'website',
+  structuredData: {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `Gadget Usefulness Scorecard - ${SITE_NAME}`,
+    description: 'A printable evidence-led scorecard for evaluating a gadget\'s problem fit, proof, true cost, everyday friction, support, and honest verdict.',
+    url: `${SITE_URL}/resources/gadget-usefulness-scorecard`,
+    isPartOf: {'@id': SEO_ENTITY_IDS.website},
+    publisher: {'@id': SEO_ENTITY_IDS.person},
+  },
 };
 
 export const CONTACT_SEO_METADATA: SeoMetadata = {
@@ -248,6 +305,16 @@ export const PROFILE_SEO_METADATA: SeoMetadata = {
   imageAlt: createPreviewImageAlt('profile page'),
   type: 'website',
   robots: 'noindex,nofollow',
+};
+
+export const NOT_FOUND_SEO_METADATA: SeoMetadata = {
+  title: createSiteTitle('Page not found'),
+  description: `This page could not be found on ${SITE_NAME}.`,
+  path: '/404',
+  image: HOMEPAGE_OG_IMAGE,
+  imageAlt: createPreviewImageAlt('page not found'),
+  type: 'website',
+  robots: 'noindex,follow',
 };
 
 export function createBlogCategorySeoMetadata(category: string, postCount = TAXONOMY_INDEX_MIN_POSTS): SeoMetadata {

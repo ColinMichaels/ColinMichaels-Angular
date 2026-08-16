@@ -27,6 +27,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
     },
     contentFormat: 'editorjs',
     blocks: overrides.blocks ?? [],
+    editorial: overrides.editorial,
     createdAt: overrides.createdAt ?? '2026-01-01T12:00:00.000Z',
     updatedAt: overrides.updatedAt ?? '2026-01-01T12:00:00.000Z',
     publishedAt: overrides.publishedAt ?? null,
@@ -71,6 +72,26 @@ describe('CmsPostListComponent', () => {
     slug: 'draft-post',
     title: 'Draft Post',
     status: 'draft',
+    editorial: {
+      evidenceBasis: 'first-person',
+      evidenceSummary: 'This post is limited to Colin’s own documented experience.',
+    },
+    blocks: [
+      {
+        id: 'next-read',
+        type: 'paragraph',
+        data: {text: '<a href="https://colinmichaels.com/blog/related-story">Read the related field story</a>.'},
+      },
+      {
+        id: 'field-photo',
+        type: 'image',
+        data: {
+          url: '/assets/images/field-photo.webp',
+          alt: 'Colin preparing the documented project',
+          caption: 'First-person field photo.',
+        },
+      },
+    ],
   });
   const publishedPost = createPost({
     id: 'published-post',
@@ -123,6 +144,102 @@ describe('CmsPostListComponent', () => {
     expect(bulkSection).toBeNull();
     expect(element.querySelector('thead')?.textContent).toContain('Author');
     expect(element.querySelector('tbody')?.textContent).toContain('Colin Michaels');
+    expect(element.querySelector<HTMLSelectElement>('select[aria-label="Rows per page"]')?.value).toBe('10');
+  });
+
+  it('summarizes evidence review work without assigning evidence in bulk', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const queue = element.querySelector<HTMLElement>('section[aria-label="Evidence review queue"]');
+    const table = element.querySelector('tbody');
+
+    expect(queue?.textContent).toContain('Published needs review');
+    expect(queue?.textContent).toContain('Total needs review');
+    expect(queue?.textContent).toContain('Reviewed');
+    expect(queue?.textContent).toContain('1');
+    expect(table?.textContent).toContain('Needs classification');
+    expect(table?.textContent).toContain('Published priority');
+    expect(table?.textContent).toContain('First-person field notes');
+    expect(queue?.querySelectorAll('button').length).toBe(1);
+  });
+
+  it('filters directly to published posts that need an individual evidence review', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    findButton(element, 'Review published posts').click();
+    fixture.detectChanges();
+
+    const tableText = element.querySelector('tbody')?.textContent ?? '';
+    expect(tableText).toContain('Published Post');
+    expect(tableText).not.toContain('Draft Post');
+    expect(element.textContent).toContain('of 1 posts');
+  });
+
+  it('filters reviewed posts through the evidence selector', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const evidenceFilter = element.querySelector<HTMLSelectElement>('select[aria-label="Evidence filter"]');
+
+    if (!evidenceFilter) {
+      throw new Error('Evidence filter was not found.');
+    }
+
+    evidenceFilter.value = 'reviewed';
+    evidenceFilter.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const tableText = element.querySelector('tbody')?.textContent ?? '';
+    expect(tableText).toContain('Draft Post');
+    expect(tableText).not.toContain('Published Post');
+  });
+
+  it('summarizes discovery and trust work without rewriting post content', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const queue = element.querySelector<HTMLElement>(
+      'section[aria-label="Discovery and trust review queue"]'
+    );
+    const tableText = element.querySelector('tbody')?.textContent ?? '';
+
+    expect(queue?.textContent).toContain('Published discovery review');
+    expect(queue?.textContent).toContain('Total discovery review');
+    expect(queue?.textContent).toContain('Discovery-ready');
+    expect(queue?.textContent).toContain('1');
+    expect(tableText).toContain('Discovery-ready');
+    expect(tableText).toContain('Needs classification');
+    expect(blogRepository.updatePostStatuses).not.toHaveBeenCalled();
+  });
+
+  it('filters and prioritizes published discovery gaps from one read-only action', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    findButton(element, 'Review published discovery gaps').click();
+    fixture.detectChanges();
+
+    const tableText = element.querySelector('tbody')?.textContent ?? '';
+    const sortSelect = Array.from(element.querySelectorAll<HTMLSelectElement>('select'))
+      .find(select => select.value === 'discovery-priority');
+
+    expect(tableText).toContain('Published Post');
+    expect(tableText).not.toContain('Draft Post');
+    expect(element.textContent).toContain('of 1 posts');
+    expect(sortSelect?.value).toBe('discovery-priority');
+  });
+
+  it('filters discovery-ready posts through the dedicated selector', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const discoveryFilter = element.querySelector<HTMLSelectElement>(
+      'select[aria-label="Discovery and trust filter"]'
+    );
+
+    if (!discoveryFilter) {
+      throw new Error('Discovery and trust filter was not found.');
+    }
+
+    discoveryFilter.value = 'ready';
+    discoveryFilter.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const tableText = element.querySelector('tbody')?.textContent ?? '';
+    expect(tableText).toContain('Draft Post');
+    expect(tableText).not.toContain('Published Post');
   });
 
   it('groups maintenance actions behind a native disclosure', () => {

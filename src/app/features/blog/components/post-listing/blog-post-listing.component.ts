@@ -4,7 +4,11 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostSummary} from '../../models/blog-post.model';
-import {createBlogCategorySlug, createBlogTagSlug} from '../../utils/blog-category-url.util';
+import {
+  createBlogCategorySlug,
+  createBlogTagTaxonomyRoute,
+  getBlogTaxonomyTerms,
+} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 
 export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact' | 'editorial';
@@ -120,7 +124,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                       >
                         {{ post.author.name }}
                       </a>
-                      @for (category of post.categories; track category) {
+                      @for (category of canonicalCategories(post); track category) {
                         <span class="post-listing__separator" aria-hidden="true">/</span>
                         <a
                           [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
@@ -173,7 +177,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                       @for (tag of post.tags; track tag) {
                         <li>
                           <a
-                            [routerLink]="['/', pathNames.BLOG, 'tag', tagSlug(tag)]"
+                            [routerLink]="tagRouteCommands(tag)"
                             class="post-listing__tag"
                           >
                             {{ tag }}
@@ -520,8 +524,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__article {
-      grid-template-columns: minmax(15rem, 1.05fr) minmax(0, 0.95fr);
-      min-height: clamp(19rem, 34vw, 25rem);
+      grid-template-columns: minmax(14rem, 0.92fr) minmax(0, 1.08fr);
+      min-height: clamp(17.5rem, 27vw, 22rem);
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__content {
@@ -529,8 +533,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__title {
-      font-size: clamp(2rem, 3.2vw, 3rem);
-      line-height: 1.04;
+      font-size: clamp(1.9rem, 2.6vw, 2.55rem);
+      line-height: 1.08;
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__excerpt {
@@ -1043,8 +1047,13 @@ export class BlogPostListingComponent {
     return createBlogCategorySlug(category);
   }
 
-  protected tagSlug(tag: string): string {
-    return createBlogTagSlug(tag);
+  protected canonicalCategories(post: BlogPostSummary): readonly string[] {
+    return getBlogTaxonomyTerms(post);
+  }
+
+  protected tagRouteCommands(tag: string): readonly string[] {
+    const route = createBlogTagTaxonomyRoute(tag);
+    return ['/', this.pathNames.BLOG, route.kind, route.slug];
   }
 
   protected appearanceLabel(post: BlogPostSummary): string | null {
