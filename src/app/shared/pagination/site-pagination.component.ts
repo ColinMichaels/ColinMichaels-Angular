@@ -34,7 +34,11 @@ export interface SitePaginationViewOption {
         }
 
         @if (showViewOptions && viewOptions.length) {
-          <nav class="site-pagination__views" [attr.aria-label]="viewAriaLabel">
+          <nav
+            class="site-pagination__views"
+            [class.site-pagination__views--icon-only]="iconOnlyViewOptions"
+            [attr.aria-label]="viewAriaLabel"
+          >
             @for (option of viewOptions; track option.value) {
               <a
                 [routerLink]="routeCommands"
@@ -43,9 +47,10 @@ export interface SitePaginationViewOption {
                 [fragment]="fragment"
                 class="site-pagination__view"
                 [class.site-pagination__view--current]="option.value === resolvedActiveView"
+                [class.site-pagination__view--icon-only]="iconOnlyViewOptions"
                 [attr.aria-current]="option.value === resolvedActiveView ? 'true' : null"
                 [attr.aria-label]="'Show ' + itemLabel + ' in ' + option.label.toLowerCase() + ' view'"
-                [attr.title]="option.label + ' view'"
+                [attr.data-tooltip]="iconOnlyViewOptions ? option.label + ' view' : null"
               >
                 @switch (option.icon) {
                   @case ('grid') {
@@ -75,7 +80,7 @@ export interface SitePaginationViewOption {
                     </svg>
                   }
                 }
-                <span>{{ option.label }}</span>
+                <span [class.site-pagination__view-label--sr-only]="iconOnlyViewOptions">{{ option.label }}</span>
               </a>
             }
           </nav>
@@ -177,6 +182,7 @@ export interface SitePaginationViewOption {
     }
 
     .site-pagination__view {
+      position: relative;
       display: inline-flex;
       min-height: 2.35rem;
       align-items: center;
@@ -190,6 +196,24 @@ export interface SitePaginationViewOption {
       line-height: 1;
       text-decoration: none;
       transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+
+    .site-pagination__view--icon-only {
+      width: 2.35rem;
+      min-width: 2.35rem;
+      padding-inline: 0.45rem;
+    }
+
+    .site-pagination__view-label--sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     .site-pagination__view svg {
@@ -211,6 +235,45 @@ export interface SitePaginationViewOption {
     .site-pagination__view:focus-visible {
       outline: 2px solid var(--pagination-accent);
       outline-offset: 0.18rem;
+    }
+
+    .site-pagination__view--icon-only::after {
+      position: absolute;
+      z-index: 20;
+      left: 50%;
+      bottom: calc(100% + 0.55rem);
+      width: max-content;
+      max-width: 12rem;
+      padding: 0.38rem 0.55rem;
+      border: 1px solid var(--site-border);
+      border-radius: 0.35rem;
+      background: var(--site-panel-soft);
+      box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 0.2);
+      color: var(--site-text);
+      content: attr(data-tooltip);
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.2;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 0.2rem);
+      transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+      visibility: hidden;
+      white-space: nowrap;
+    }
+
+    @media (hover: hover) {
+      .site-pagination__view--icon-only:hover::after {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        visibility: visible;
+      }
+    }
+
+    .site-pagination__view--icon-only:focus-visible::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      visibility: visible;
     }
 
     .site-pagination__view--current,
@@ -345,6 +408,7 @@ export class SitePaginationComponent {
   @Input() showPageNavigation = true;
   @Input() showViewOptions = true;
   @Input() viewOptions: readonly SitePaginationViewOption[] = [];
+  @Input() iconOnlyViewOptions = false;
   @Input() activeView = '';
   @Input() defaultView = '';
   @Input() viewQueryParamName = 'view';

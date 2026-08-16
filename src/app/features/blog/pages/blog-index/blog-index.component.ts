@@ -120,14 +120,37 @@ const MAX_POPULAR_TAGS = 10;
               [showSummary]="false"
               [showPageNavigation]="false"
               [viewOptions]="archiveViewOptions"
+              [iconOnlyViewOptions]="true"
               [activeView]="archiveView()"
               defaultView="image-title"
               viewAriaLabel="Blog post view options"
             ></app-site-pagination>
 
             <div class="blog-index-feed-links" aria-label="Blog feeds">
-              <a href="/feed.xml" class="site-inline-link">RSS</a>
-              <a href="/feed.json" class="site-inline-link">JSON feed</a>
+              <a
+                href="/feed.xml"
+                class="blog-index-utility-link"
+                aria-label="Open RSS feed"
+                data-tooltip="RSS feed"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="6" cy="18" r="1.5"></circle>
+                  <path d="M4 11.5a8.5 8.5 0 0 1 8.5 8.5"></path>
+                  <path d="M4 4a16 16 0 0 1 16 16"></path>
+                </svg>
+              </a>
+              <a
+                href="/feed.json"
+                class="blog-index-utility-link"
+                aria-label="Open JSON feed"
+                data-tooltip="JSON feed"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 4H7.5A2.5 2.5 0 0 0 5 6.5v2A3.5 3.5 0 0 1 3 12a3.5 3.5 0 0 1 2 3.5v2A2.5 2.5 0 0 0 7.5 20H9"></path>
+                  <path d="M15 4h1.5A2.5 2.5 0 0 1 19 6.5v2a3.5 3.5 0 0 0 2 3.5 3.5 3.5 0 0 0-2 3.5v2a2.5 2.5 0 0 1-2.5 2.5H15"></path>
+                  <path d="M10 12h4"></path>
+                </svg>
+              </a>
             </div>
           </div>
         </section>
@@ -262,8 +285,82 @@ const MAX_POPULAR_TAGS = 10;
     .blog-index-feed-links {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.35rem;
       white-space: nowrap;
+    }
+
+    .blog-index-utility-link {
+      position: relative;
+      display: inline-grid;
+      width: 2.35rem;
+      min-height: 2.35rem;
+      place-items: center;
+      border: 1px solid var(--site-border);
+      color: var(--site-muted);
+      text-decoration: none;
+      transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+
+    .blog-index-utility-link svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+    }
+
+    .blog-index-utility-link:hover,
+    .blog-index-utility-link:focus-visible {
+      border-color: var(--site-accent-strong);
+      color: var(--site-accent-strong);
+      outline: none;
+    }
+
+    .blog-index-utility-link:focus-visible {
+      outline: 2px solid var(--site-accent-strong);
+      outline-offset: 0.18rem;
+    }
+
+    .blog-index-utility-link::after {
+      position: absolute;
+      z-index: 20;
+      left: 50%;
+      bottom: calc(100% + 0.55rem);
+      width: max-content;
+      max-width: 12rem;
+      padding: 0.38rem 0.55rem;
+      border: 1px solid var(--site-border);
+      border-radius: 0.35rem;
+      background: var(--site-panel-soft);
+      box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 0.2);
+      color: var(--site-text);
+      content: attr(data-tooltip);
+      font-family: var(--font-accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.2;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 0.2rem);
+      transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+      visibility: hidden;
+      white-space: nowrap;
+    }
+
+    @media (hover: hover) {
+      .blog-index-utility-link:hover::after {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        visibility: visible;
+      }
+    }
+
+    .blog-index-utility-link:focus-visible::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      visibility: visible;
     }
 
     .blog-topic-chip {

@@ -183,6 +183,9 @@ describe('BlogIndexComponent', () => {
     expect(element.querySelector('.blog-infinite-scroll__progress')?.textContent).toContain('10 of 23 posts shown');
     expect(element.querySelectorAll('.site-pagination__views').length).toBe(1);
     expect(element.querySelector('.blog-index-display-controls .site-pagination__views')).not.toBeNull();
+    expect(element.querySelector('.blog-index-display-controls .site-pagination__views')?.classList).toContain('site-pagination__views--icon-only');
+    expect([...element.querySelectorAll<HTMLAnchorElement>('.blog-index-utility-link')].map(link => link.getAttribute('data-tooltip')))
+      .toEqual(['RSS feed', 'JSON feed']);
     expect(element.querySelector('[aria-label="Blog posts pagination"]')).toBeNull();
     expect(element.querySelector('.blog-page-title')).toBeNull();
     expect(element.querySelector('app-blog-category-nav')).toBeNull();

@@ -98,4 +98,25 @@ describe('SitePaginationComponent', () => {
     expect(element.querySelector('.site-pagination__summary')).toBeNull();
     expect(element.querySelector('.site-pagination')).toBeNull();
   });
+
+  it('supports icon-only view controls with hover and keyboard tooltips', () => {
+    fixture.componentRef.setInput('viewOptions', [
+      {value: 'list', label: 'List', icon: 'list'},
+      {value: 'grid', label: 'Grid', icon: 'grid'},
+    ]);
+    fixture.componentRef.setInput('iconOnlyViewOptions', true);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const viewLinks = [...element.querySelectorAll<HTMLAnchorElement>('.site-pagination__view')];
+
+    expect(element.querySelector('.site-pagination__views')?.classList).toContain('site-pagination__views--icon-only');
+    expect(viewLinks.every(link => link.classList.contains('site-pagination__view--icon-only'))).toBeTrue();
+    expect(viewLinks.map(link => link.getAttribute('data-tooltip'))).toEqual(['List view', 'Grid view']);
+    expect(viewLinks.map(link => link.getAttribute('aria-label'))).toEqual([
+      'Show articles in list view',
+      'Show articles in grid view',
+    ]);
+    expect(viewLinks.every(link => link.querySelector('.site-pagination__view-label--sr-only'))).toBeTrue();
+  });
 });
