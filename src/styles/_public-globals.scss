@@ -391,20 +391,10 @@ app-site-header :is(h1, a, button),
 .public-reader-scope :is(
   .blog-page-title,
   .heading-display,
-  .home-hero-title,
-  .home-hero-post-title
+  .home-hero-title
 ) {
   font-size: clamp(2.25rem, calc(2.9rem * var(--reader-font-scale)), 5.25rem) !important;
   line-height: 1.08 !important;
-}
-
-.public-reader-scope .home-hero-post-title {
-  font-size: clamp(
-    2.65rem,
-    calc(4.8vw * var(--reader-font-scale)),
-    calc(5.35rem * var(--reader-font-scale))
-  ) !important;
-  line-height: .99 !important;
 }
 
 .public-reader-scope .blog-article-title {

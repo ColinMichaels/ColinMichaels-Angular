@@ -396,28 +396,26 @@ interface EditorialMediaSet {
       --home-hero-topic-rgb: 34 211 238;
       display: grid;
       gap: clamp(2rem, 4vw, 4.25rem);
-      align-items: stretch;
+      align-items: start;
     }
 
     .home-hero-copy {
       display: flex;
       min-width: 0;
-      /* Keep featured story layout compact so it doesn't dominate viewport height. */
-      min-block-size: clamp(8.75rem, 26svh, 13.5rem);
-      max-block-size: clamp(11.5rem, 30svh, 14.5rem);
+      /* The copy must grow with a real title so the discovery rail never overlaps it. */
       flex-direction: column;
       padding-block: clamp(0.5rem, 2vw, 1.5rem);
     }
 
     .home-hero-post-title {
       margin: 0;
-      max-width: 13ch;
+      max-width: 18ch;
       color: #ffffff;
       font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
-      font-size: clamp(2.05rem, 3.4vw, 3.95rem);
+      font-size: clamp(1.9rem, calc(2.5vw * var(--reader-font-scale, 1)), 3rem);
       font-weight: 500;
       letter-spacing: -0.045em;
-      line-height: 0.99;
+      line-height: 1.06;
       overflow-wrap: break-word;
       text-wrap: balance;
       text-shadow: 0 0.12rem 1.2rem rgba(0, 0, 0, 0.72);
@@ -680,12 +678,7 @@ interface EditorialMediaSet {
       }
 
       .home-hero-story {
-        grid-template-columns: minmax(22rem, 0.8fr) minmax(30rem, 1.2fr);
-      }
-
-      .home-hero-copy {
-        min-block-size: clamp(10rem, 18vw, 13rem);
-        max-block-size: clamp(12rem, 24vw, 15rem);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       }
     }
 
@@ -736,11 +729,6 @@ interface EditorialMediaSet {
         gap: 1.35rem;
       }
 
-      .home-hero-copy {
-        min-block-size: min(14rem, 36svh);
-        max-block-size: min(15.5rem, 42svh);
-      }
-
       .home-hero-panel {
         max-height: min(13.5rem, 30svh);
         margin-inline: 0;
@@ -749,7 +737,7 @@ interface EditorialMediaSet {
       }
 
       .home-hero-post-title {
-        font-size: clamp(2rem, 10vw, 3rem);
+        font-size: clamp(1.85rem, 9vw, 2.65rem);
       }
 
       .home-hero-post-excerpt {
