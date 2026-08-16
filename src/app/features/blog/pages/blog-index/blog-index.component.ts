@@ -536,6 +536,43 @@ const MAX_POPULAR_TAGS = 10;
       }
     }
 
+    @media (min-width: 76rem) {
+      .blog-index-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.9rem 1.25rem;
+      }
+
+      .blog-topic-filters {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+
+      .blog-topic-filters__row {
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+      }
+
+      .blog-topic-chip {
+        flex: 0 0 auto;
+        gap: 0.3rem;
+        padding: 0.38rem 0.55rem;
+        font-size: 0.76rem;
+      }
+
+      .blog-topic-chip__count {
+        min-width: 1.2rem;
+        padding-inline: 0.28rem;
+        font-size: 0.68rem;
+      }
+
+      .blog-index-display-controls {
+        grid-column: 2;
+        justify-self: end;
+      }
+    }
+
     @media (max-width: 63.99rem) {
       .blog-index-controls {
         align-items: start;
