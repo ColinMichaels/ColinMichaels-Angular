@@ -1,6 +1,6 @@
 import type {BlogPostSummary} from '../../blog/models/blog-post.model';
 import {TOPIC_HUBS} from '../topic-hubs.data';
-import {postMatchesTopicHub} from './topic-post-matching.util';
+import {postMatchesTopicHub, selectPrimaryTopicHubForPost} from './topic-post-matching.util';
 
 function createPost(overrides: Partial<BlogPostSummary> = {}): BlogPostSummary {
   return {
@@ -66,5 +66,37 @@ describe('topic post matching', () => {
 
     expect(postMatchesTopicHub(gadgetReview, gadgetsTopic)).toBeTrue();
     expect(postMatchesTopicHub(genericTechnologyPost, gadgetsTopic)).toBeFalse();
+  });
+
+  it('selects the strongest topic from explicit taxonomy before incidental title mentions', () => {
+    const post = createPost({
+      slug: 'ai-powered-desk-robot-review',
+      title: 'An AI-Powered Desk Robot Review',
+      excerpt: 'A playful product with a conversational feature.',
+      categories: ['Gadgets & Toys'],
+      tags: ['Product Review'],
+    });
+
+    expect(selectPrimaryTopicHubForPost(post, TOPIC_HUBS)?.slug).toBe('gadgets-toys');
+  });
+
+  it('returns no primary topic when the post has no exact topic match', () => {
+    const post = createPost({
+      slug: 'bread-recipe',
+      title: 'A Weekend Bread Recipe',
+      excerpt: 'Flour, water, salt, and time.',
+      categories: ['Cooking'],
+      tags: ['Recipe'],
+    });
+
+    expect(selectPrimaryTopicHubForPost(post, TOPIC_HUBS)).toBeUndefined();
+  });
+
+  it('breaks equal topic scores by stable public display order', () => {
+    const post = createPost({title: 'A shared topic note'});
+    const laterTopic = {slug: 'later', title: 'Later', displayOrder: 20, terms: ['shared']};
+    const earlierTopic = {slug: 'earlier', title: 'Earlier', displayOrder: 10, terms: ['shared']};
+
+    expect(selectPrimaryTopicHubForPost(post, [laterTopic, earlierTopic])?.slug).toBe('earlier');
   });
 });

@@ -4,7 +4,11 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostSummary} from '../../models/blog-post.model';
-import {createBlogCategorySlug, createBlogTagSlug} from '../../utils/blog-category-url.util';
+import {
+  createBlogCategorySlug,
+  createBlogTagTaxonomyRoute,
+  getBlogTaxonomyTerms,
+} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 
 export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact' | 'editorial';
@@ -120,7 +124,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                       >
                         {{ post.author.name }}
                       </a>
-                      @for (category of post.categories; track category) {
+                      @for (category of canonicalCategories(post); track category) {
                         <span class="post-listing__separator" aria-hidden="true">/</span>
                         <a
                           [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
@@ -173,7 +177,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                       @for (tag of post.tags; track tag) {
                         <li>
                           <a
-                            [routerLink]="['/', pathNames.BLOG, 'tag', tagSlug(tag)]"
+                            [routerLink]="tagRouteCommands(tag)"
                             class="post-listing__tag"
                           >
                             {{ tag }}
@@ -1043,8 +1047,13 @@ export class BlogPostListingComponent {
     return createBlogCategorySlug(category);
   }
 
-  protected tagSlug(tag: string): string {
-    return createBlogTagSlug(tag);
+  protected canonicalCategories(post: BlogPostSummary): readonly string[] {
+    return getBlogTaxonomyTerms(post);
+  }
+
+  protected tagRouteCommands(tag: string): readonly string[] {
+    const route = createBlogTagTaxonomyRoute(tag);
+    return ['/', this.pathNames.BLOG, route.kind, route.slug];
   }
 
   protected appearanceLabel(post: BlogPostSummary): string | null {

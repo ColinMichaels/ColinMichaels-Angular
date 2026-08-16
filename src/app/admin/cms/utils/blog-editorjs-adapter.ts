@@ -34,6 +34,11 @@ import {
 } from '../../../features/blog/models/blog-post.model';
 import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../../features/blog/utils/blog-suno-embed.util';
 import {
+  createYouTubeEmbedUrl,
+  createYouTubeWatchUrl,
+  getYouTubeVideoId,
+} from '../../../features/youtube/utils/youtube-url.util';
+import {
   BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE,
   isJsonObject,
   validateEditorDocumentForBlog,
@@ -175,56 +180,8 @@ function toEditorListItem(item: BlogListItem): Record<string, unknown> {
   };
 }
 
-function parseHttpUrl(value: string | undefined): URL | null {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url : null;
-  } catch {
-    return null;
-  }
-}
-
-function getYouTubeVideoId(value: string | undefined): string {
-  const url = parseHttpUrl(value);
-
-  if (!url) {
-    return '';
-  }
-
-  if (url.hostname === 'youtu.be') {
-    return url.pathname.split('/').filter(Boolean)[0] ?? '';
-  }
-
-  if (!['youtube.com', 'www.youtube.com', 'm.youtube.com', 'www.youtube-nocookie.com'].includes(url.hostname)) {
-    return '';
-  }
-
-  if (url.pathname === '/watch') {
-    return url.searchParams.get('v') ?? '';
-  }
-
-  const pathParts = url.pathname.split('/').filter(Boolean);
-  const embedIndex = pathParts.findIndex(part => ['embed', 'shorts', 'live'].includes(part));
-
-  return embedIndex >= 0 ? pathParts[embedIndex + 1] ?? '' : '';
-}
-
-function createYouTubeEmbedUrl(value: string | undefined): string {
-  const videoId = getYouTubeVideoId(value);
-  return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
-}
-
-function createYouTubeWatchUrl(value: string | undefined): string {
-  const videoId = getYouTubeVideoId(value);
-  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : '';
-}
-
 function isYouTubeUrl(value: string | undefined): boolean {
-  return getYouTubeVideoId(value).length > 0;
+  return getYouTubeVideoId(value) !== null;
 }
 
 function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
@@ -274,13 +231,26 @@ function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
       };
     case 'embed':
       if (isYouTubeUrl(block.data.url) || isYouTubeUrl(block.data.embedUrl)) {
-        const youtubeUrl = createYouTubeWatchUrl(block.data.url) || createYouTubeWatchUrl(block.data.embedUrl);
+        const youtubeUrl = createYouTubeWatchUrl(block.data.url) ?? createYouTubeWatchUrl(block.data.embedUrl) ?? '';
 
         return {
           id: block.id,
           type: YOUTUBE_EDITOR_BLOCK_TYPE,
           data: {
             url: youtubeUrl,
+            ...(block.data.isCompanionVideo === true ? {isCompanionVideo: true} : {}),
+            ...(block.data.isCompanionVideo === true && block.data.videoTitle
+              ? {videoTitle: block.data.videoTitle}
+              : {}),
+            ...(block.data.isCompanionVideo === true && block.data.videoDescription
+              ? {videoDescription: block.data.videoDescription}
+              : {}),
+            ...(block.data.isCompanionVideo === true && block.data.videoUploadDate
+              ? {videoUploadDate: block.data.videoUploadDate}
+              : {}),
+            ...(block.data.isCompanionVideo === true && block.data.videoDurationSeconds !== undefined
+              ? {videoDurationSeconds: block.data.videoDurationSeconds}
+              : {}),
           },
         };
       }
@@ -894,6 +864,15 @@ export function createEditorDocument(post: BlogPost): OutputData {
 }
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
+  const documentValidation = validateEditorDocumentForBlog(document);
+  const companionSelectionError = documentValidation.diagnostics.find(
+    diagnostic => diagnostic.code === 'multiple-companion-videos'
+  );
+
+  if (companionSelectionError) {
+    throw new Error(companionSelectionError.message);
+  }
+
   return document.blocks.map((block, index) => {
     const id = block.id ?? `block-${Date.now().toString(36)}-${index}`;
     const data = block.data;
@@ -977,7 +956,18 @@ export function createBlogBlocksFromEditorDocument(document: OutputData): readon
         data: {
           provider: 'youtube',
           url,
-          embedUrl: createYouTubeEmbedUrl(url),
+          embedUrl: createYouTubeEmbedUrl(url) ?? '',
+          ...(getBoolean(block.data, 'isCompanionVideo') ? {isCompanionVideo: true} : {}),
+          ...(getString(block.data, 'videoTitle') ? {videoTitle: getString(block.data, 'videoTitle')} : {}),
+          ...(getString(block.data, 'videoDescription')
+            ? {videoDescription: getString(block.data, 'videoDescription')}
+            : {}),
+          ...(getString(block.data, 'videoUploadDate')
+            ? {videoUploadDate: getString(block.data, 'videoUploadDate')}
+            : {}),
+          ...(getNumber(block.data, 'videoDurationSeconds') !== undefined
+            ? {videoDurationSeconds: getNumber(block.data, 'videoDurationSeconds')}
+            : {}),
         },
       }, originalTunes);
     }

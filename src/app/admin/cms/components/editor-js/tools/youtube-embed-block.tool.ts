@@ -1,17 +1,18 @@
 import type {BlockTool, BlockToolConstructorOptions, SanitizerConfig} from '@editorjs/editorjs';
 
+import {isVideoUploadDate} from '../../../../../features/blog/utils/blog-youtube-journey.util';
+import {getYouTubeVideoId} from '../../../../../features/youtube/utils/youtube-url.util';
+
 export interface YouTubeEmbedBlockData {
   url?: string;
+  isCompanionVideo?: boolean;
+  videoTitle?: string;
+  videoDescription?: string;
+  videoUploadDate?: string;
+  videoDurationSeconds?: number;
 }
 
 const plainTextSanitizer: SanitizerConfig = {};
-const YOUTUBE_HOSTS = new Set([
-  'youtube.com',
-  'www.youtube.com',
-  'm.youtube.com',
-  'youtube-nocookie.com',
-  'www.youtube-nocookie.com',
-]);
 
 export class YouTubeEmbedBlockTool implements BlockTool {
   static get toolbox(): {title: string; icon: string} {
@@ -22,19 +23,41 @@ export class YouTubeEmbedBlockTool implements BlockTool {
   }
 
   static get sanitize(): Record<string, SanitizerConfig> {
-    return {url: plainTextSanitizer};
+    return {
+      url: plainTextSanitizer,
+      isCompanionVideo: plainTextSanitizer,
+      videoTitle: plainTextSanitizer,
+      videoDescription: plainTextSanitizer,
+      videoUploadDate: plainTextSanitizer,
+      videoDurationSeconds: plainTextSanitizer,
+    };
   }
 
   static get isReadOnlySupported(): boolean {
     return true;
   }
 
-  private readonly data: Required<YouTubeEmbedBlockData>;
+  private readonly data: {
+    url: string;
+    isCompanionVideo: boolean;
+    videoTitle: string;
+    videoDescription: string;
+    videoUploadDate: string;
+    videoDurationSeconds: number | null;
+  };
   private readonly readOnly: boolean;
 
   constructor(options: BlockToolConstructorOptions<YouTubeEmbedBlockData>) {
     this.data = {
       url: typeof options.data?.url === 'string' ? options.data.url : '',
+      isCompanionVideo: options.data?.isCompanionVideo === true,
+      videoTitle: typeof options.data?.videoTitle === 'string' ? options.data.videoTitle : '',
+      videoDescription: typeof options.data?.videoDescription === 'string' ? options.data.videoDescription : '',
+      videoUploadDate: typeof options.data?.videoUploadDate === 'string' ? options.data.videoUploadDate : '',
+      videoDurationSeconds: typeof options.data?.videoDurationSeconds === 'number'
+      && Number.isFinite(options.data.videoDurationSeconds)
+        ? options.data.videoDurationSeconds
+        : null,
     };
     this.readOnly = options.readOnly;
   }
@@ -81,22 +104,204 @@ export class YouTubeEmbedBlockTool implements BlockTool {
     const updatePreview = (): void => renderPreview(preview, input.value);
     input.addEventListener('input', updatePreview);
 
+    const companionLabel = document.createElement('label');
+    companionLabel.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-top:12px;border:1px solid #d4d4d8;background:#fff;padding:11px 12px';
+
+    const companionInput = document.createElement('input');
+    companionInput.type = 'checkbox';
+    companionInput.checked = this.data.isCompanionVideo;
+    companionInput.disabled = this.readOnly;
+    companionInput.dataset['youtubeCompanionVideo'] = 'true';
+    companionInput.style.cssText = 'margin-top:2px';
+
+    const companionCopy = document.createElement('span');
+    companionCopy.style.cssText = 'display:grid;gap:3px';
+
+    const companionTitle = document.createElement('strong');
+    companionTitle.textContent = 'Use as this article\'s companion video';
+    companionTitle.style.cssText = 'font-size:13px;color:#27272a';
+
+    const companionDescription = document.createElement('span');
+    companionDescription.textContent = 'Adds an exact Watch next card after the article. Select only one YouTube block per post.';
+    companionDescription.style.cssText = 'font-size:12px;line-height:1.45;color:#71717a';
+
+    companionCopy.append(companionTitle, companionDescription);
+    companionLabel.append(companionInput, companionCopy);
+
+    const metadataPanel = document.createElement('section');
+    metadataPanel.hidden = !companionInput.checked;
+    metadataPanel.dataset['youtubeVideoMetadata'] = 'true';
+    metadataPanel.style.cssText = 'margin-top:12px;border:1px solid #d4d4d8;background:#fff;padding:12px;display:grid;gap:12px';
+
+    const metadataHeading = document.createElement('strong');
+    metadataHeading.textContent = 'Companion video search metadata';
+    metadataHeading.style.cssText = 'font-size:13px;color:#27272a';
+
+    const metadataDescription = document.createElement('p');
+    metadataDescription.textContent = 'Copy the exact public YouTube title, description, upload date, and runtime. Complete metadata can qualify the article for video structured data; incomplete fields are never guessed.';
+    metadataDescription.style.cssText = 'margin:-7px 0 0;font-size:12px;line-height:1.45;color:#71717a';
+
+    const titleField = createMetadataTextField({
+      label: 'Public video title',
+      value: this.data.videoTitle,
+      placeholder: 'Exact title shown on YouTube',
+      dataAttribute: 'youtubeVideoTitle',
+      readOnly: this.readOnly,
+    });
+    const descriptionField = createMetadataTextAreaField({
+      label: 'Public video description',
+      value: this.data.videoDescription,
+      placeholder: 'A factual description of this exact video',
+      dataAttribute: 'youtubeVideoDescription',
+      readOnly: this.readOnly,
+    });
+    const uploadDateField = createMetadataTextField({
+      label: 'Upload date',
+      value: this.data.videoUploadDate,
+      placeholder: '2026-08-13 or 2026-08-13T13:43:21Z',
+      dataAttribute: 'youtubeVideoUploadDate',
+      readOnly: this.readOnly,
+    });
+
+    const durationLabel = document.createElement('label');
+    durationLabel.style.cssText = 'display:block';
+    const durationLabelText = document.createElement('span');
+    durationLabelText.textContent = 'Runtime in seconds';
+    durationLabelText.style.cssText = metadataLabelStyle;
+    const durationInput = document.createElement('input');
+    durationInput.type = 'number';
+    durationInput.min = '0.001';
+    durationInput.step = '0.001';
+    durationInput.value = this.data.videoDurationSeconds === null ? '' : String(this.data.videoDurationSeconds);
+    durationInput.placeholder = '158';
+    durationInput.readOnly = this.readOnly;
+    durationInput.dataset['youtubeVideoDurationSeconds'] = 'true';
+    durationInput.style.cssText = metadataInputStyle;
+    durationLabel.append(durationLabelText, durationInput);
+
+    companionInput.addEventListener('change', () => {
+      metadataPanel.hidden = !companionInput.checked;
+    });
+
+    metadataPanel.append(
+      metadataHeading,
+      metadataDescription,
+      titleField,
+      descriptionField,
+      uploadDateField,
+      durationLabel
+    );
+
     label.append(labelText, input);
-    wrapper.append(heading, description, label, preview);
+    wrapper.append(heading, description, label, companionLabel, metadataPanel, preview);
     updatePreview();
 
     return wrapper;
   }
 
   save(block: HTMLElement): YouTubeEmbedBlockData {
-    return {
+    const data: YouTubeEmbedBlockData = {
       url: block.querySelector<HTMLInputElement>('[data-youtube-embed-url]')?.value.trim() ?? '',
     };
+
+    const isCompanionVideo = block.querySelector<HTMLInputElement>('[data-youtube-companion-video]')?.checked === true;
+
+    if (isCompanionVideo) {
+      data.isCompanionVideo = true;
+    }
+
+    const videoTitle = block.querySelector<HTMLInputElement>('[data-youtube-video-title]')?.value.trim() ?? '';
+    const videoDescription = block.querySelector<HTMLTextAreaElement>('[data-youtube-video-description]')?.value.trim() ?? '';
+    const videoUploadDate = block.querySelector<HTMLInputElement>('[data-youtube-video-upload-date]')?.value.trim() ?? '';
+    const durationValue = block.querySelector<HTMLInputElement>('[data-youtube-video-duration-seconds]')?.value.trim() ?? '';
+    const videoDurationSeconds = Number(durationValue);
+
+    if (isCompanionVideo) {
+      if (videoTitle) {
+        data.videoTitle = videoTitle;
+      }
+      if (videoDescription) {
+        data.videoDescription = videoDescription;
+      }
+      if (videoUploadDate) {
+        data.videoUploadDate = videoUploadDate;
+      }
+      if (durationValue && Number.isFinite(videoDurationSeconds) && videoDurationSeconds > 0) {
+        data.videoDurationSeconds = videoDurationSeconds;
+      }
+    }
+
+    return data;
   }
 
   validate(data: YouTubeEmbedBlockData): boolean {
-    return getYouTubeVideoId(data.url ?? '') !== null;
+    const hasVideoMetadata = data.videoTitle !== undefined
+      || data.videoDescription !== undefined
+      || data.videoUploadDate !== undefined
+      || data.videoDurationSeconds !== undefined;
+
+    return (!hasVideoMetadata || data.isCompanionVideo === true)
+      && getYouTubeVideoId(data.url ?? '') !== null
+      && (data.videoTitle === undefined || typeof data.videoTitle === 'string')
+      && (data.videoDescription === undefined || typeof data.videoDescription === 'string')
+      && (data.videoUploadDate === undefined
+        || (typeof data.videoUploadDate === 'string' && isVideoUploadDate(data.videoUploadDate)))
+      && (data.videoDurationSeconds === undefined
+        || (typeof data.videoDurationSeconds === 'number'
+          && Number.isFinite(data.videoDurationSeconds)
+          && data.videoDurationSeconds > 0));
   }
+}
+
+const metadataLabelStyle = 'display:block;margin-bottom:5px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#71717a';
+const metadataInputStyle = 'display:block;width:100%;box-sizing:border-box;border:1px solid #d4d4d8;background:#fff;padding:9px 10px;font:inherit;font-size:14px;color:#18181b;outline:none';
+
+function createMetadataTextField(options: {
+  label: string;
+  value: string;
+  placeholder: string;
+  dataAttribute: string;
+  readOnly: boolean;
+}): HTMLLabelElement {
+  const label = document.createElement('label');
+  label.style.cssText = 'display:block';
+  const labelText = document.createElement('span');
+  labelText.textContent = options.label;
+  labelText.style.cssText = metadataLabelStyle;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = options.value;
+  input.placeholder = options.placeholder;
+  input.readOnly = options.readOnly;
+  input.dataset[options.dataAttribute] = 'true';
+  input.style.cssText = metadataInputStyle;
+  label.append(labelText, input);
+
+  return label;
+}
+
+function createMetadataTextAreaField(options: {
+  label: string;
+  value: string;
+  placeholder: string;
+  dataAttribute: string;
+  readOnly: boolean;
+}): HTMLLabelElement {
+  const label = document.createElement('label');
+  label.style.cssText = 'display:block';
+  const labelText = document.createElement('span');
+  labelText.textContent = options.label;
+  labelText.style.cssText = metadataLabelStyle;
+  const input = document.createElement('textarea');
+  input.value = options.value;
+  input.placeholder = options.placeholder;
+  input.readOnly = options.readOnly;
+  input.rows = 3;
+  input.dataset[options.dataAttribute] = 'true';
+  input.style.cssText = `${metadataInputStyle};resize:vertical;line-height:1.45`;
+  label.append(labelText, input);
+
+  return label;
 }
 
 function renderPreview(container: HTMLElement, url: string): void {
@@ -120,26 +325,4 @@ function renderPreview(container: HTMLElement, url: string): void {
   frame.referrerPolicy = 'strict-origin-when-cross-origin';
   frame.style.cssText = 'display:block;width:100%;aspect-ratio:16/9;border:0;background:#18181b';
   container.append(frame);
-}
-
-function getYouTubeVideoId(value: string): string | null {
-  try {
-    const url = new URL(value.trim());
-    let videoId = '';
-
-    if (url.hostname === 'youtu.be') {
-      videoId = url.pathname.split('/').filter(Boolean)[0] ?? '';
-    } else if (YOUTUBE_HOSTS.has(url.hostname)) {
-      const pathParts = url.pathname.split('/').filter(Boolean);
-      videoId = url.searchParams.get('v') ?? '';
-
-      if (!videoId && ['embed', 'shorts', 'live'].includes(pathParts[0] ?? '')) {
-        videoId = pathParts[1] ?? '';
-      }
-    }
-
-    return /^[A-Za-z0-9_-]{6,20}$/.test(videoId) ? videoId : null;
-  } catch {
-    return null;
-  }
 }

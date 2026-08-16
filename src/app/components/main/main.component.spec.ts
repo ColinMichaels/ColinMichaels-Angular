@@ -235,6 +235,9 @@ describe('MainComponent', () => {
     expect(element.querySelector('#work')).not.toBeNull();
     expect(element.querySelector('#about')).not.toBeNull();
     expect(element.querySelector('#home-article-hero')).not.toBeNull();
+    expect(element.querySelectorAll('h1')).toHaveSize(1);
+    expect(element.querySelector('h1')?.textContent?.trim())
+      .toBe('Cool gadgets, useful tech, and internet finds');
     expect(element.querySelector('app-daily-discovery-rail')).not.toBeNull();
     expect(element.querySelector('#blog')).not.toBeNull();
     expect(element.querySelector('#topic-guides')).not.toBeNull();
@@ -259,7 +262,7 @@ describe('MainComponent', () => {
     fixture.detectChanges();
 
     const image = TestBed.inject(Meta).getTag("property='og:image'")?.content ?? '';
-    expect(image).toContain('/assets/images/backgrounds/night.jpg?ogv=');
+    expect(image).toContain('/assets/images/backgrounds/day.jpg?ogv=');
   });
 
   it('embeds published blog content on the homepage', async () => {
@@ -270,12 +273,12 @@ describe('MainComponent', () => {
     expect(element.textContent).not.toContain('A Life of Curiosity.');
     expect(element.textContent).not.toContain('A Journey of Growth.');
     expect(element.textContent).toContain('More to read');
-    expect(element.querySelector('#home-article-hero')?.textContent).toContain('Open heart surgery weekly update');
+    expect(element.querySelector('#home-article-hero')?.textContent).toContain('Architecture Boundaries for the Site and OS');
 
     const moreWritingSection = element.querySelector('#blog');
-    expect(moreWritingSection?.textContent).toContain('Architecture Boundaries for the Site and OS');
+    expect(moreWritingSection?.textContent).toContain('Open heart surgery weekly update');
     expect(moreWritingSection?.textContent).toContain('Open heart surgery medical information');
-    expect(moreWritingSection?.textContent).not.toContain('Open heart surgery weekly update');
+    expect(moreWritingSection?.textContent).not.toContain('Architecture Boundaries for the Site and OS');
   });
 
   it('shares one published post feed across homepage blog sections', async () => {
@@ -303,5 +306,22 @@ describe('MainComponent', () => {
 
     expect(element.querySelector('#health-recovery')?.textContent).toContain('Open heart surgery weekly update');
     expect(element.querySelector('#medical-information')?.textContent).toContain('Open heart surgery medical information');
+  });
+
+  it('continues from topic discovery into Captain Colin before recovery collections', async () => {
+    await renderDeferredHomepageContent(fixture);
+
+    const element = fixture.nativeElement as HTMLElement;
+    const youtube = element.querySelector('#youtube');
+    const recovery = element.querySelector('#health-recovery');
+
+    expect(youtube).not.toBeNull();
+    expect(recovery).not.toBeNull();
+    if (!youtube || !recovery) {
+      fail('Expected both YouTube and recovery homepage sections.');
+      return;
+    }
+    expect(youtube.compareDocumentPosition(recovery) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
   });
 });

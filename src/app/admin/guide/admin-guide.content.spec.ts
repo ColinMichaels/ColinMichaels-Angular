@@ -13,6 +13,7 @@ describe('admin guide content', () => {
 
     expect(viewerEntries.map(entry => entry.id)).toEqual(['find-your-way-around']);
     expect(editorEntries.some(entry => entry.id === 'create-and-publish-a-post')).toBeTrue();
+    expect(editorEntries.some(entry => entry.id === 'review-article-evidence')).toBeTrue();
     expect(editorEntries.some(entry => entry.id === 'review-public-submissions')).toBeTrue();
     expect(editorEntries.some(entry => entry.id === 'upload-and-reuse-media')).toBeFalse();
     expect(mediaEntries.map(entry => entry.id)).toEqual(['find-your-way-around', 'upload-and-reuse-media']);
@@ -65,6 +66,29 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'multi image gallery')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'slideshow gallery')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'wide image layout')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'youtube companion watch next').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'video upload date runtime structured data').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'youtube companion watch next')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'video upload date runtime structured data')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'exact video pairing')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'discovery trust checklist').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post', 'review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'usable references supporting evidence').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'published needs classification').map(entry => entry.id))
+      .toEqual(['review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'published discovery gaps required advisory').map(entry => entry.id))
+      .toEqual(['review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'required advisory source links').map(entry => entry.id))
+      .toEqual(['review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'published needs classification')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'published discovery gaps required advisory')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'evidence review queue')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'discovery trust review queue')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'contextual next read')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'external source links')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'trusted publishing idempotent retry').map(entry => entry.id))
       .toEqual(['create-and-publish-a-post']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'image signature responsive variants').map(entry => entry.id))
@@ -126,5 +150,12 @@ describe('admin guide content', () => {
     expect(homepageFeature?.links[0].route).toBe('/admin/cms/homepage');
     expect(canViewAdminGuideEntry(homepageFeature!, ['contentEditor'])).toBeTrue();
     expect(canViewAdminGuideEntry(homepageFeature!, ['viewer'])).toBeFalse();
+
+    const articleEvidence = ADMIN_GUIDE_ENTRIES.find(entry => entry.id === 'review-article-evidence');
+
+    expect(articleEvidence).toBeDefined();
+    expect(articleEvidence?.links[0].route).toBe('/admin/cms');
+    expect(canViewAdminGuideEntry(articleEvidence!, ['contentEditor'])).toBeTrue();
+    expect(canViewAdminGuideEntry(articleEvidence!, ['viewer'])).toBeFalse();
   });
 });

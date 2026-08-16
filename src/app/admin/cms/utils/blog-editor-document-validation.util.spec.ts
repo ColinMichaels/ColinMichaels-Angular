@@ -38,6 +38,81 @@ describe('blog editor document validation', () => {
     }]);
   });
 
+  it('accepts one companion YouTube block and rejects an ambiguous second selection', () => {
+    const oneCompanion = validateEditorDocumentForBlog({
+      blocks: [{
+        id: 'youtube-1',
+        type: 'youtubeEmbed',
+        data: {
+          url: 'https://youtu.be/L229QDxDakU',
+          isCompanionVideo: true,
+          videoTitle: 'Field flight',
+          videoDescription: 'The exact public companion video.',
+          videoUploadDate: '2026-08-13T13:43:21Z',
+          videoDurationSeconds: 158.4,
+        },
+      }],
+    });
+    const twoCompanions = validateEditorDocumentForBlog({
+      blocks: [
+        {
+          id: 'youtube-1',
+          type: 'youtubeEmbed',
+          data: {url: 'https://youtu.be/L229QDxDakU', isCompanionVideo: true},
+        },
+        {
+          id: 'youtube-2',
+          type: 'youtubeEmbed',
+          data: {url: 'https://youtu.be/abcdefghijk', isCompanionVideo: true},
+        },
+      ],
+    });
+
+    expect(oneCompanion.isValid).toBeTrue();
+    expect(twoCompanions.isValid).toBeFalse();
+    expect(twoCompanions.diagnostics).toContain(jasmine.objectContaining({
+      severity: 'error',
+      code: 'multiple-companion-videos',
+      blockIndex: 1,
+      blockType: 'youtubeEmbed',
+    }));
+  });
+
+  it('rejects malformed companion video upload dates and runtimes', () => {
+    const result = validateEditorDocumentForBlog({
+      blocks: [{
+        id: 'youtube-1',
+        type: 'youtubeEmbed',
+        data: {
+          url: 'https://youtu.be/L229QDxDakU',
+          isCompanionVideo: true,
+          videoUploadDate: '2026-08-13T13:43:21',
+          videoDurationSeconds: 0,
+        },
+      }],
+    });
+
+    expect(result.isValid).toBeFalse();
+    expect(result.diagnostics).toContain(jasmine.objectContaining({
+      severity: 'error',
+      code: 'invalid-known-block',
+      blockType: 'youtubeEmbed',
+    }));
+
+    const hiddenMetadata = validateEditorDocumentForBlog({
+      blocks: [{
+        id: 'youtube-2',
+        type: 'youtubeEmbed',
+        data: {
+          url: 'https://youtu.be/L229QDxDakU',
+          videoTitle: 'Hidden stale metadata',
+        },
+      }],
+    });
+
+    expect(hiddenMetadata.isValid).toBeFalse();
+  });
+
   it('continues reporting preserved warnings after an unsupported block is wrapped', () => {
     const result = validateEditorDocumentForBlog({
       blocks: [{

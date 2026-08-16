@@ -14,9 +14,17 @@ outside `core-os`.
 
 ## Public Runtime Contract
 
-- The article title is the homepage `h1`. The original personal headline and summary are no longer rendered publicly.
-- The lead is a valid CMS-selected post override, then the newest published post marked `featured`, then the newest
-  published post when no feature flags exist. Remaining unique published posts follow in reverse chronological order.
+- The stable creator promise is the homepage `h1`; the active article title is a visible `h2`.
+- A valid CMS-selected post remains an explicit editorial override. Automatic mode otherwise limits the lead and
+  rotation to published stories whose title, excerpt, slug, or taxonomy matches the gadget, useful-tech, creator,
+  software, camera, project, robotics, or FPV promise. The newest matching featured post leads, then the newest
+  matching post when no matching feature flag exists. If the corpus has no promise-matched post, the selector falls
+  back to the existing published-post order instead of leaving the hero empty.
+- The rotation contains at most six unique promise-matched stories. The complete corpus remains available through
+  More to read and the blog archive; unrelated recovery posts do not automatically replace the first-screen promise.
+- The first-screen exploration row links to the two core topic journeys, the canonical Captain Colin subscription
+  confirmation flow, and Colin's profile. Subscription selection records only the fixed channel ID, bounded
+  `subscribe` method, and `homepage_youtube` source; it sends no visitor identity or article copy.
 - The public feature renders one post at a time with its excerpt, date, calculated reading time, and article link.
   Non-wrapping previous and next controls preserve the existing post gallery and focus handoff. The redundant curator
   row is omitted because authorship remains available on the article and its other listing surfaces.
@@ -41,7 +49,7 @@ outside `core-os`.
   is also eager and retains a stable aspect ratio to avoid layout shift.
 - Legacy slides no longer rotate inside the homepage feature. The independent, opt-in Screen Saver launcher remains
   in the application shell and can still present those same published slides in its full-viewport viewer.
-- The active post remains excluded by ID from More to read. Other posts in the feature gallery may still appear there.
+- The active post remains excluded by ID from More to read. Other posts in the focused feature gallery may still appear there.
 - Daily Discovery remains immediately below the feature and continues to transfer active play into the persistent
   public-shell overlay.
 
@@ -77,9 +85,9 @@ The public route now reads as an editorial publication rather than a personal sp
 2. compact Daily Discovery prompt;
 3. More to read article listing with the existing Continue Reading state;
 4. compact topic directory;
-5. existing recovery collections;
-6. concise Colin Michaels professional profile and project/contact links;
-7. existing video, recommendations, social sharing, and footer surfaces.
+5. latest Captain Colin videos with channel and subscription actions;
+6. existing recovery collections;
+7. recommendations, concise Colin Michaels profile, social sharing, and footer surfaces.
 
 The `HomeEditorialAboutComponent` is homepage-specific UI. Shared post cards remain in
 `BlogPostListingComponent`, whose additive `editorial` layout changes presentation without changing repositories,

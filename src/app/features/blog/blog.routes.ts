@@ -15,6 +15,31 @@ export const blogRoutes: Routes = [
     loadComponent: () => import('../search/pages/site-search-page.component').then(m => m.SiteSearchPageComponent),
   },
   {
+    path: `${PATH_NAMES.BLOG}/category/cat-corner`,
+    redirectTo: `${PATH_NAMES.BLOG}/category/cats-and-pets`,
+    pathMatch: 'full',
+  },
+  {
+    path: `${PATH_NAMES.BLOG}/category/health`,
+    redirectTo: `${PATH_NAMES.BLOG}/category/health-and-recovery`,
+    pathMatch: 'full',
+  },
+  {
+    path: `${PATH_NAMES.BLOG}/category/recovery`,
+    redirectTo: `${PATH_NAMES.BLOG}/category/health-and-recovery`,
+    pathMatch: 'full',
+  },
+  {
+    path: `${PATH_NAMES.BLOG}/tag/recovery`,
+    redirectTo: `${PATH_NAMES.BLOG}/category/health-and-recovery`,
+    pathMatch: 'full',
+  },
+  {
+    path: `${PATH_NAMES.BLOG}/tag/personal-growth`,
+    redirectTo: `${PATH_NAMES.BLOG}/category/personal-growth`,
+    pathMatch: 'full',
+  },
+  {
     path: `${PATH_NAMES.BLOG}/category/:category`,
     loadComponent: () => import('./pages/blog-category/blog-category.component').then(m => m.BlogCategoryComponent),
   },

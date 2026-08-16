@@ -11,6 +11,14 @@
 
 ## Audit Findings
 
+### Public SEO response-header boundary
+
+Firebase Hosting defines the public baseline for `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and `Content-Security-Policy-Report-Only`. The crawler-facing `renderSeoHtml`, `sitemapXml`, `rssFeed`, and `jsonFeed` Functions apply the same values before method, route, or rendering branches. Normal responses, true 404s, method errors, and temporary feed failures therefore retain the policy even when Hosting does not add headers after a rewrite.
+
+`functions/src/seo-response-headers.ts` is the Functions runtime boundary. Its test compares the complete exported policy with the global `firebase.json` Hosting entry so either side cannot change silently. The report-only `frame-src` now includes only the current Firebase Auth helper origin, `https://colinmichaels.firebaseapp.com`, rather than a Firebase Hosting wildcard. This removes the known legitimate iframe violation without allowing unrelated projects.
+
+CSP deliberately remains report-only. Before introducing an enforcing `Content-Security-Policy` header, verify email/password plus Google and Facebook popup/redirect sign-in on the exact deployed preview and production origins, along with every approved article embed. Firebase recommends using the custom Hosting domain as `authDomain` for redirect sign-in on a custom-domain Firebase Hosting app, but that migration also requires the Google/Facebook authorized redirect URI `https://colinmichaels.com/__/auth/handler` and authorized-domain configuration. Do not change the production `FIREBASE_AUTH_DOMAIN` variable until those provider-side prerequisites are confirmed. The current allowlist change requires matching Hosting and Functions releases and no Firebase data migration, rule change, or secret.
+
 ## 1) XSS Surface
 
 Current sinks include:

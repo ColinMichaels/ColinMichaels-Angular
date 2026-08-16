@@ -5,6 +5,7 @@ import {catchError, map} from 'rxjs/operators';
 
 import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
 import {YouTubeFeedRequest, YouTubeFeedResponse} from '../models/youtube-video.model';
+import {assertCanonicalYouTubeFeed} from '../utils/youtube-feed-identity.util';
 
 interface FirebaseCallableResult<T> {
   data: T;
@@ -28,7 +29,7 @@ export class YouTubeFeedService {
     );
 
     return from(callable({maxResults}) as Promise<FirebaseCallableResult<YouTubeFeedResponse>>).pipe(
-      map(result => result.data),
+      map(result => assertCanonicalYouTubeFeed(result.data)),
       catchError(error => throwError(() => new Error(this.getFeedErrorMessage(error))))
     );
   }

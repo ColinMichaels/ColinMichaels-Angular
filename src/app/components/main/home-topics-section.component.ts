@@ -35,6 +35,12 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
                   @case ('flask') {
                     <svg viewBox="0 0 32 32"><path d="M11 4h10M13 4v8L6 25a2 2 0 0 0 1.8 3h16.4a2 2 0 0 0 1.8-3l-7-13V4M10 22h12"></path></svg>
                   }
+                  @case ('gamepad') {
+                    <svg viewBox="0 0 32 32"><path d="M10 10h12a7 7 0 0 1 7 7v5c0 3-3.5 4.5-5.4 2.4L20 21h-8l-3.6 3.4C6.5 26.5 3 25 3 22v-5a7 7 0 0 1 7-7Z"></path><path d="M9 16h6M12 13v6M21 15h.01M25 18h.01"></path></svg>
+                  }
+                  @case ('flight') {
+                    <svg viewBox="0 0 32 32"><path d="M8 10h16M8 22h16M10 8v16M22 8v16"></path><circle cx="6" cy="8" r="3"></circle><circle cx="26" cy="8" r="3"></circle><circle cx="6" cy="24" r="3"></circle><circle cx="26" cy="24" r="3"></circle><path d="m12 16 4-3 4 3-4 3-4-3Z"></path></svg>
+                  }
                   @default {
                     <svg viewBox="0 0 32 32"><path d="M16 3 27 9v14l-11 6-11-6V9l11-6Z"></path><path d="m5 9 11 6 11-6M16 15v14"></path></svg>
                   }
@@ -57,6 +63,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
     }
 
     .home-topic-strip {
+      scroll-margin-top: calc(var(--site-header-sticky-height) + 0.75rem);
       border-block: 1px solid var(--site-border);
       background: #020811;
       color: #f8fafc;
@@ -136,7 +143,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
 
     @media (min-width: 52rem) {
       .home-topic-strip__links {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .home-topic-strip__links a {
@@ -145,12 +152,31 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
         padding-inline: 1rem;
       }
 
-      .home-topic-strip__links a:first-child {
+      .home-topic-strip__links a:nth-child(3n + 1) {
         padding-left: 0;
       }
 
-      .home-topic-strip__links a + a {
+      .home-topic-strip__links a:not(:nth-child(3n + 1)) {
         border-left: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .home-topic-strip__links a:nth-child(-n + 3) {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+    }
+
+    @media (min-width: 80rem) {
+      .home-topic-strip__links {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      .home-topic-strip__links a:not(:first-child) {
+        border-left: 1px solid rgba(148, 163, 184, 0.2);
+        padding-left: 1rem;
+      }
+
+      .home-topic-strip__links a:nth-child(-n + 3) {
+        border-bottom: 0;
       }
     }
   `],

@@ -4,7 +4,7 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostSummary} from '../../models/blog-post.model';
-import {createBlogCategorySlug} from '../../utils/blog-category-url.util';
+import {createBlogCategorySlug, getBlogTaxonomyTerms} from '../../utils/blog-category-url.util';
 import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
 import {BlogTagListComponent} from '../tag-list/tag-list.component';
 
@@ -43,7 +43,7 @@ import {BlogTagListComponent} from '../tag-list/tag-list.component';
           <span>{{ post.publishedAt ? (post.publishedAt | date: 'MMM d, y') : (post.updatedAt | date: 'MMM d, y') }}</span>
           <span aria-hidden="true">/</span>
           <a [routerLink]="['/', pathNames.AUTHORS, post.author.slug || 'colin-michaels']" class="font-medium hover:text-cyan-700 dark:hover:text-cyan-300">{{ post.author.name }}</a>
-          @for (category of post.categories; track category) {
+          @for (category of canonicalCategories(post); track category) {
             <span aria-hidden="true">/</span>
             <a
               [routerLink]="['/', pathNames.BLOG, 'category', categorySlug(category)]"
@@ -132,6 +132,10 @@ export class BlogPostCardComponent {
 
   protected categorySlug(category: string): string {
     return createBlogCategorySlug(category);
+  }
+
+  protected canonicalCategories(post: BlogPostSummary): readonly string[] {
+    return getBlogTaxonomyTerms(post);
   }
 
   protected postImage(post: BlogPostSummary): string {

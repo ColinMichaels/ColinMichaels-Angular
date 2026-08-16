@@ -1,17 +1,24 @@
-<div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 bg-gradient-to-t from-teal-950/50 to-transparent px-4 py-4 text-gray-400">
-  <ng-container *ngFor="let link of links">
-    <div class="group hover:scale-[1.5] hover:-translate-y-4">
-      <button
-        [routerLink]="(link.type === 'external') ? ['/external/' + encodeUrl(link.link)] : link.link"
+<nav
+  aria-label="Follow Colin Michaels"
+  class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-gradient-to-t from-teal-950/50 to-transparent px-4 py-3 text-gray-400"
+>
+  @for (link of links; track link.id) {
+    <div class="group transition hover:-translate-y-2 hover:scale-125">
+      <a
+        [href]="link.href"
+        target="_blank"
+        rel="noopener noreferrer me"
+        [attr.aria-label]="link.label"
         [title]="link.title"
-        [class]="['group', link.class]"
+        [class]="['group', 'inline-flex', 'h-11', 'w-11', 'items-center', 'justify-center', 'rounded-full', 'focus:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-cyan-300', link.class]"
         [appTooltip]="link.tooltip"
         [tooltipfadeDuration]="0"
         [tooltipAutoDismiss]="0"
         [tooltipCssClass]="[link.tooltipClass,'rounded-full text-sm p-1 mb-2'].join(' ')"
+        (click)="recordSelection(link.id)"
       >
-        <fa-icon [icon]="link.icon"></fa-icon>
-      </button>
+        <fa-icon [icon]="link.icon" aria-hidden="true"></fa-icon>
+      </a>
     </div>
-  </ng-container>
-</div>
+  }
+</nav>

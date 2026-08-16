@@ -129,8 +129,26 @@ export class SeoService {
     authorUrl?: string;
     publishedAt: string | null;
     modifiedAt: string;
+    citations?: readonly string[];
+    video?: {
+      name: string;
+      description: string;
+      thumbnailUrl: readonly string[];
+      uploadDate: string;
+      embedUrl: string;
+      url: string;
+      duration?: string;
+    };
   }): SeoStructuredDataObject {
     const url = this.toAbsoluteUrl(options.url);
+    const citations = [...new Set((options.citations ?? []).filter(value => {
+      try {
+        const citationUrl = new URL(value);
+        return citationUrl.protocol === 'https:' || citationUrl.protocol === 'http:';
+      } catch {
+        return false;
+      }
+    }))];
 
     return {
       '@context': 'https://schema.org',
@@ -141,6 +159,19 @@ export class SeoService {
       image: [options.image],
       datePublished: options.publishedAt ?? options.modifiedAt,
       dateModified: options.modifiedAt,
+      ...(citations.length > 0 ? {citation: citations} : {}),
+      ...(options.video ? {
+        video: {
+          '@type': 'VideoObject',
+          name: options.video.name,
+          description: options.video.description,
+          thumbnailUrl: options.video.thumbnailUrl,
+          uploadDate: options.video.uploadDate,
+          embedUrl: options.video.embedUrl,
+          url: options.video.url,
+          ...(options.video.duration ? {duration: options.video.duration} : {}),
+        },
+      } : {}),
       author: {
         '@type': 'Person',
         name: options.author,

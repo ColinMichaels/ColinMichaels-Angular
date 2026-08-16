@@ -55,6 +55,57 @@ test('accepts the complete backward-compatible Editor.js post contract', () => {
   assert.doesNotThrow(() => validateTrustedBlogPost(createPost(), new Date('2026-08-03T13:00:00.000Z')));
 });
 
+test('accepts evidence-backed companion video metadata and rejects malformed or misplaced fields', () => {
+  const companion = {
+    id: 'youtube-companion',
+    type: 'embed',
+    data: {
+      provider: 'youtube',
+      url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+      embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+      isCompanionVideo: true,
+      videoTitle: 'Field flight',
+      videoDescription: 'The exact public companion video.',
+      videoUploadDate: '2026-08-13T13:43:21Z',
+      videoDurationSeconds: 158.4,
+    },
+  };
+
+  assert.doesNotThrow(() => validateTrustedBlogPost(createPost({blocks: [companion]})));
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{...companion, data: {...companion.data, videoUploadDate: '2026-08-13T13:43:21'}}],
+  })), /Block data fields/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{...companion, data: {...companion.data, videoDurationSeconds: 0}}],
+  })), /Block data fields/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{...companion, data: {...companion.data, isCompanionVideo: false}}],
+  })), /selected YouTube companion/);
+});
+
+test('accepts bounded editorial evidence metadata and rejects unsupported claims data', () => {
+  assert.doesNotThrow(() => validateTrustedBlogPost(createPost({
+    editorial: {
+      evidenceBasis: 'mixed',
+      evidenceSummary: 'Hands-on observations are separated from linked manufacturer specifications.',
+      sourceReviewedAt: '2026-08-15',
+      relationshipDisclosure: 'No product access or compensation was supplied.',
+      aiAssistanceDisclosure: 'AI assisted with transcript organization.',
+      syntheticMediaDisclosure: 'The cover is an editorial illustration.',
+      updateNote: 'Clarified the evidence boundary.',
+    },
+  })));
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    editorial: {evidenceBasis: 'guaranteed-verified'},
+  })), /evidence basis/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    editorial: {sourceReviewedAt: '2026-02-30'},
+  })), /YYYY-MM-DD/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    editorial: {evidenceBasis: 'researched', authorityScore: 100},
+  })), /unsupported fields/);
+});
+
 test('accepts bounded trusted galleries and rejects malformed nested image data', () => {
   const gallery = {
     id: 'gallery-1',

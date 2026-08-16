@@ -99,6 +99,23 @@ describe('AuthorPageComponent', () => {
     expect(element.querySelector('.site-pagination')).not.toBeNull();
     expect(element.querySelectorAll('.site-pagination__views').length).toBe(1);
     expect(element.querySelector('.author-section-heading + app-site-pagination .site-pagination__views')).not.toBeNull();
+    expect(element.querySelector<HTMLAnchorElement>('.author-quick-facts a')?.getAttribute('href'))
+      .toBe('/editorial-standards');
+  });
+
+  it('connects the ProfilePage Person entity to the author\'s verified public profiles', () => {
+    const seo = TestBed.inject(SeoService) as jasmine.SpyObj<SeoService>;
+    const metadata = seo.apply.calls.mostRecent().args[0];
+    const structuredData = metadata.structuredData as {
+      mainEntity?: { sameAs?: readonly string[] };
+    };
+
+    expect(structuredData.mainEntity?.sameAs).toEqual([
+      'https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA',
+      'https://www.instagram.com/colinmichaels/',
+      'https://github.com/ColinMichaels',
+      'https://www.linkedin.com/in/colinmichaels',
+    ]);
   });
 
   it('updates the rendered posts and current-page state from the page query parameter', () => {

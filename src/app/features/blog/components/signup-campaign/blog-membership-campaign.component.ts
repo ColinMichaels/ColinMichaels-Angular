@@ -768,19 +768,13 @@ export class BlogMembershipCampaignComponent {
     {initialValue: null}
   );
   private completionUid: string | null = null;
-  private promptTimer: ReturnType<typeof setTimeout> | undefined;
   private originalBodyOverflow = '';
-  private promptScheduled = false;
 
   constructor() {
     effect(() => {
       const authState = this.authState();
       const account = this.account();
       const pending = this.pending();
-
-      if (authState.status !== 'unauthenticated') {
-        this.cancelPendingPrompt();
-      }
 
       if (authState.status === 'authenticated') {
         if (this.isOpen() && this.stage() === 'offer') {
@@ -790,31 +784,6 @@ export class BlogMembershipCampaignComponent {
         if (account && pending && this.completionUid !== authState.user.uid) {
           void this.completeAccountPreferences(authState.user.uid, pending);
         }
-
-        return;
-      }
-
-      if (authState.status !== 'unauthenticated') {
-        return;
-      }
-
-      if (!pending && !this.promptScheduled && this.campaignState.shouldPromptAnonymousReader()) {
-        this.promptScheduled = true;
-        this.promptTimer = setTimeout(() => {
-          this.promptTimer = undefined;
-
-          if (
-            this.authState().status !== 'unauthenticated'
-            || this.pending()
-            || !this.campaignState.shouldPromptAnonymousReader()
-          ) {
-            this.promptScheduled = false;
-            return;
-          }
-
-          this.stage.set('offer');
-          this.openDialog();
-        }, 3200);
       }
     });
 
@@ -828,7 +797,6 @@ export class BlogMembershipCampaignComponent {
     });
 
     this.destroyRef.onDestroy(() => {
-      this.cancelPendingPrompt();
       this.document.body.style.overflow = this.originalBodyOverflow;
     });
   }
@@ -942,15 +910,6 @@ export class BlogMembershipCampaignComponent {
 
   private openDialog(): void {
     this.isOpen.set(true);
-  }
-
-  private cancelPendingPrompt(): void {
-    if (this.promptTimer) {
-      clearTimeout(this.promptTimer);
-      this.promptTimer = undefined;
-    }
-
-    this.promptScheduled = false;
   }
 
   private focusDialog(): void {

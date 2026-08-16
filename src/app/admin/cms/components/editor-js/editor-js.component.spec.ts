@@ -126,6 +126,27 @@ describe('EditorJsComponent', () => {
     expect(element.textContent).not.toContain('Cannot read properties of undefined');
     expect(element.textContent).not.toContain('Unable to load YouTube Embed Editor.js tool.');
     expect(element.querySelector('iframe')?.getAttribute('src')).toContain('https://www.youtube.com/embed/L229QDxDakU');
+    expect(element.textContent).toContain('Use as this article\'s companion video');
+    expect(element.querySelector<HTMLInputElement>('[data-youtube-companion-video]')?.checked).toBeFalse();
+  });
+
+  it('restores the explicit companion-video selection in the YouTube tool', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{
+        id: 'youtube-companion',
+        type: 'youtubeEmbed',
+        data: {
+          url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+          isCompanionVideo: true,
+        },
+      }],
+    });
+
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+
+    expect((fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLInputElement>('[data-youtube-companion-video]')?.checked).toBeTrue();
   });
 
   it('initializes saved Suno blocks with the dedicated song tool', async () => {

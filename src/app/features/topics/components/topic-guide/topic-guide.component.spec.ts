@@ -1,12 +1,17 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
+import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {TopicHub, TOPIC_HUBS} from '../../topic-hubs.data';
 import {TopicGuideComponent} from './topic-guide.component';
 
 describe('TopicGuideComponent', () => {
-  async function createComponent(hub: TopicHub): Promise<ComponentFixture<TopicGuideComponent>> {
+  async function createComponent(
+    hub: TopicHub,
+    analytics: Pick<SiteAnalyticsService, 'trackResourceDownload'> = {trackResourceDownload: () => undefined}
+  ): Promise<ComponentFixture<TopicGuideComponent>> {
     await TestBed.configureTestingModule({
       imports: [TopicGuideComponent],
+      providers: [{provide: SiteAnalyticsService, useValue: analytics}],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TopicGuideComponent);
@@ -30,6 +35,11 @@ describe('TopicGuideComponent', () => {
           label: 'External resource',
           description: 'A resource on another site.',
           href: 'https://example.com/reference',
+        },
+        {
+          label: 'Printable resource',
+          description: 'A same-site PDF download.',
+          href: '/downloads/printable-resource.pdf',
         },
       ],
     });
@@ -62,11 +72,20 @@ describe('TopicGuideComponent', () => {
     expect(resourceLinks.map(link => link.getAttribute('href'))).toEqual([
       '/blog/tag/internal',
       'https://example.com/reference',
+      '/downloads/printable-resource.pdf',
     ]);
+    expect(resourceLinks[0].hasAttribute('target')).toBeFalse();
+    expect(resourceLinks[0].hasAttribute('download')).toBeFalse();
+    expect(resourceLinks[1].getAttribute('target')).toBe('_blank');
+    expect(resourceLinks[1].getAttribute('rel')).toBe('noopener noreferrer');
+    expect(resourceLinks[2].getAttribute('download')).toBe('printable-resource.pdf');
+    expect(resourceLinks[2].hasAttribute('target')).toBeFalse();
     expect(element.textContent).toContain('Internal resource');
     expect(element.textContent).toContain('A resource within the site.');
     expect(element.textContent).toContain('External resource');
     expect(element.textContent).toContain('A resource on another site.');
+    expect(element.textContent).toContain('Printable resource');
+    expect(element.textContent).toContain('A same-site PDF download.');
   });
 
   it('suppresses an empty or normalized duplicate featured project', async () => {
@@ -94,6 +113,28 @@ describe('TopicGuideComponent', () => {
     });
 
     expect(emptyFixture.nativeElement.querySelector('.topic-guide-featured')).toBeNull();
+  });
+
+  it('tracks local PDF downloads without tracking internal or external navigation', async () => {
+    const analytics = jasmine.createSpyObj<SiteAnalyticsService>('SiteAnalyticsService', ['trackResourceDownload']);
+    const hub = TOPIC_HUBS[0];
+    const fixture = await createComponent({
+      ...hub,
+      resources: [
+        {label: 'Internal', description: 'Internal page.', href: '/blog'},
+        {label: 'External', description: 'External page.', href: 'https://example.com'},
+        {label: 'Worksheet', description: 'Printable worksheet.', href: '/downloads/buyer-check.pdf'},
+      ],
+    }, analytics);
+    const element = fixture.nativeElement as HTMLElement;
+    const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('.topic-guide-resources a'));
+
+    links.forEach(link => {
+      link.addEventListener('click', event => event.preventDefault());
+      link.click();
+    });
+
+    expect(analytics.trackResourceDownload).toHaveBeenCalledOnceWith('buyer-check.pdf');
   });
 
   it('renders a complete featured project when its title is distinct', async () => {

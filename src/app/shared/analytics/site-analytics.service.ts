@@ -2,6 +2,7 @@ import {DOCUMENT, isPlatformBrowser} from '@angular/common';
 import {Injectable, PLATFORM_ID, inject} from '@angular/core';
 
 import {PATH_NAMES} from '../../app-route-paths';
+import type {CreatorProfileId} from '../seo/site-identity';
 
 export const SITE_ANALYTICS_MEASUREMENT_ID = 'G-6V5GQRZFBH';
 
@@ -14,6 +15,12 @@ export interface SiteAnalyticsContent {
 
 type AnalyticsPrimitive = string | number | boolean;
 type AnalyticsParameters = Readonly<Record<string, AnalyticsPrimitive | null | undefined>>;
+export type YouTubeAnalyticsSourceComponent =
+  | 'homepage_youtube'
+  | 'blog_index_youtube'
+  | 'topic_drones_youtube'
+  | 'article_drones_youtube'
+  | 'article_companion_youtube';
 
 interface AnalyticsWindow extends Window {
   dataLayer?: unknown[];
@@ -181,6 +188,84 @@ export class SiteAnalyticsService {
       ...this.contentParameters(content),
       source_component: sourceComponent,
       ...(searchTerm.trim() ? {search_term: sanitizeAnalyticsSearchTerm(searchTerm)} : {}),
+    });
+  }
+
+  trackYouTubeOutbound(
+    contentId: string,
+    action: 'video_thumbnail' | 'video_title' | 'video_watch' | 'channel' | 'subscribe',
+    sourceComponent: YouTubeAnalyticsSourceComponent = 'homepage_youtube'
+  ): void {
+    const normalizedContentId = contentId.trim().slice(0, 64);
+    if (!normalizedContentId) {
+      return;
+    }
+
+    this.trackEvent('select_content', {
+      content_type: action.startsWith('video_') ? 'video' : 'channel',
+      content_id: normalizedContentId,
+      content_group: 'youtube',
+      source_component: sourceComponent,
+      method: action,
+    });
+  }
+
+  trackCreatorProfileOutbound(profileId: CreatorProfileId): void {
+    this.trackEvent('select_content', {
+      content_type: 'profile',
+      content_id: profileId,
+      content_group: 'creator_profile',
+      source_component: 'homepage_social',
+      method: 'outbound',
+    });
+  }
+
+  trackResourceDownload(
+    resourceId: string,
+    sourceComponent: 'topic_guide' | 'resource_page' = 'topic_guide'
+  ): void {
+    const normalizedResourceId = resourceId
+      .trim()
+      .toLowerCase()
+      .replace(/\.pdf$/i, '')
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 64);
+
+    if (!normalizedResourceId) {
+      return;
+    }
+
+    this.trackEvent('select_content', {
+      content_type: 'resource',
+      content_id: normalizedResourceId,
+      content_group: 'download',
+      source_component: sourceComponent,
+      method: 'download',
+    });
+  }
+
+  trackReaderMembershipInvite(
+    postSlug: string,
+    action: 'view' | 'register' | 'login' | 'dismiss'
+  ): void {
+    const normalizedPostSlug = postSlug
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 100);
+
+    if (!normalizedPostSlug) {
+      return;
+    }
+
+    this.trackEvent('reader_membership_invite', {
+      content_type: 'article',
+      content_slug: normalizedPostSlug,
+      source_component: 'after_article',
+      method: action,
+      auth_state: 'anonymous',
     });
   }
 

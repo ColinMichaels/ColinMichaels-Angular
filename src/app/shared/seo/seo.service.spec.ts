@@ -46,6 +46,11 @@ describe('SeoService', () => {
       author: 'Colin Michaels',
       publishedAt: '2026-07-19T12:00:00.000Z',
       modifiedAt: '2026-07-19T12:00:00.000Z',
+      citations: [
+        'https://www.faa.gov/uas',
+        'https://www.faa.gov/uas',
+        'javascript:alert(1)',
+      ],
     });
 
     expect(String(structuredData['url'])).toBe(`${SITE_URL}/blog/canonical-article`);
@@ -53,5 +58,37 @@ describe('SeoService', () => {
       '@type': 'WebPage',
       '@id': `${SITE_URL}/blog/canonical-article`,
     }));
+    expect(JSON.stringify(structuredData['citation'])).toBe(JSON.stringify(['https://www.faa.gov/uas']));
+  });
+
+  it('nests a complete YouTube VideoObject without claiming a direct content URL', () => {
+    const structuredData = service.createBlogPostingJsonLd({
+      title: 'Field flight',
+      description: 'Article description.',
+      url: '/blog/field-flight',
+      image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
+      author: 'Colin Michaels',
+      publishedAt: '2026-08-15T12:00:00Z',
+      modifiedAt: '2026-08-15T12:00:00Z',
+      video: {
+        name: 'Field flight video',
+        description: 'The exact public companion video.',
+        thumbnailUrl: ['https://i.ytimg.com/vi/L229QDxDakU/hqdefault.jpg'],
+        uploadDate: '2026-08-13T13:43:21Z',
+        embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+        url: 'https://www.youtube.com/watch?v=L229QDxDakU',
+        duration: 'PT2M38S',
+      },
+    });
+    const video = structuredData['video'];
+
+    expect(JSON.parse(JSON.stringify(video))).toEqual(jasmine.objectContaining({
+      '@type': 'VideoObject',
+      name: 'Field flight video',
+      uploadDate: '2026-08-13T13:43:21Z',
+      embedUrl: 'https://www.youtube.com/embed/L229QDxDakU',
+      duration: 'PT2M38S',
+    }));
+    expect(JSON.stringify(video)).not.toContain('contentUrl');
   });
 });

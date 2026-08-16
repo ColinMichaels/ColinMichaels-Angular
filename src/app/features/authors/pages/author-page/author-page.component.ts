@@ -104,6 +104,9 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
                   <span><fa-icon [icon]="faLocationDot" aria-hidden="true"></fa-icon>{{ profile.location }}</span>
                 }
                 <span><fa-icon [icon]="faPenNib" aria-hidden="true"></fa-icon>Writer &amp; maker</span>
+                <a [routerLink]="['/', pathNames.EDITORIAL_STANDARDS]">
+                  <fa-icon [icon]="faBookOpen" aria-hidden="true"></fa-icon>Editorial standards
+                </a>
               </div>
 
               @if (stats(); as authorStats) {
@@ -378,10 +381,25 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
       font-weight: 600;
     }
 
-    .author-quick-facts span {
+    .author-quick-facts span,
+    .author-quick-facts a {
       display: inline-flex;
       align-items: center;
       gap: 0.55rem;
+    }
+
+    .author-quick-facts a {
+      color: var(--author-cyan-deep);
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 0.2rem;
+      transition: color 160ms ease, text-decoration-color 160ms ease;
+    }
+
+    .author-quick-facts a:hover,
+    .author-quick-facts a:focus-visible {
+      color: var(--site-heading);
+      text-decoration-color: currentColor;
     }
 
     .author-quick-facts fa-icon {
@@ -744,7 +762,14 @@ export class AuthorPageComponent {
         imageAlt: author.imageAlt, type: 'website',
         structuredData: {
           '@context': 'https://schema.org', '@type': 'ProfilePage', url,
-          mainEntity: {'@type': 'Person', name: author.name, url, image: author.avatarUrl, jobTitle: author.title},
+          mainEntity: {
+            '@type': 'Person',
+            name: author.name,
+            url,
+            image: author.avatarUrl,
+            jobTitle: author.title,
+            sameAs: author.externalProfiles.map(profile => profile.url),
+          },
         },
       });
     });

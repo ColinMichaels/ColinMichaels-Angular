@@ -3,6 +3,7 @@ import {RouterLink} from '@angular/router';
 
 import {COLIN_AUTHOR_PROFILE} from './author-profile.data';
 import {AuthorProfile as CanonicalAuthorProfile} from '../../features/authors/models/author.model';
+import {PATH_NAMES} from '../../app-route-paths';
 
 export type AuthorBioVariant = 'home' | 'blog';
 
@@ -122,6 +123,12 @@ export type AuthorBioVariant = 'home' | 'blog';
                   {{ externalProfile.label }}
                 </a>
               }
+              <a
+                [routerLink]="['/', pathNames.EDITORIAL_STANDARDS]"
+                class="text-sm font-semibold text-cyan-800 hover:text-cyan-600"
+              >
+                Editorial Standards
+              </a>
             </div>
           </div>
           <p class="max-w-2xl border-l-2 border-rose-500 pl-4 text-sm leading-7 text-neutral-600">
@@ -157,6 +164,12 @@ export type AuthorBioVariant = 'home' | 'blog';
             <p class="mt-1 text-sm text-cyan-700 dark:text-cyan-200">{{ blogProfile.title }}</p>
             <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ blogProfile.shortBio }}</p>
             <div class="mt-4 flex flex-wrap gap-2">
+              <a
+                [routerLink]="['/', pathNames.EDITORIAL_STANDARDS]"
+                class="rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-600 hover:text-cyan-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-cyan-300 dark:hover:text-cyan-200"
+              >
+                Editorial Standards
+              </a>
               @for (externalProfile of blogProfile.externalProfiles; track externalProfile.href) {
                 <a
                   [href]="externalProfile.href"
@@ -185,6 +198,7 @@ export class AuthorBioComponent {
   @Input() author: CanonicalAuthorProfile | null = null;
 
   protected readonly profile = COLIN_AUTHOR_PROFILE;
+  protected readonly pathNames = PATH_NAMES;
   protected get blogProfile(): {
     name: string;
     slug: string;

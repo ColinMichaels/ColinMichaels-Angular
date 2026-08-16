@@ -1,17 +1,17 @@
-import {Component, ChangeDetectionStrategy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
-import {NgForOf} from '@angular/common';
+import type {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 import {TooltipDirective} from '../../game/directives/tooltip.directive';
-import {RouterLink} from '@angular/router';
+import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
+import {CREATOR_PROFILE_URLS} from '../../../shared/seo/site-identity';
+import type {CreatorProfileId} from '../../../shared/seo/site-identity';
 
 @Component({
   selector: 'app-socials',
   imports: [
     FontAwesomeModule,
-    NgForOf,
     TooltipDirective,
-    RouterLink
   ],
   templateUrl: './socials.component.html',
   standalone: true,
@@ -24,65 +24,71 @@ import {RouterLink} from '@angular/router';
 })
 export class SocialsComponent {
   // Keep this fixed bar social-only; legal, contact, and primary navigation belong in the page footer.
-  links = [
+  readonly links: readonly {
+    id: CreatorProfileId;
+    href: string;
+    label: string;
+    title: string;
+    class: string;
+    icon: IconDefinition;
+    tooltip: string;
+    tooltipClass: string;
+  }[] = [
     {
-      link: "youtube.com/CaptainColin",
-      target: "_blank",
-      type: 'external',
-      title: "Youtube CaptainColin",
-      class: "hover:text-red-600",
+      id: 'youtube',
+      href: CREATOR_PROFILE_URLS.youtube,
+      label: 'Follow Captain Colin on YouTube',
+      title: 'YouTube: @CaptainColin',
+      class: 'hover:text-red-600',
       icon: faYoutube,
       tooltip: 'YouTube: @CaptainColin',
       tooltipClass: 'bg-red-600 font-mono'
     },
     {
-      link: "twitter.com/colinmichaels",
-      target: "_blank",
-      type: 'external',
-      title: "X",
-      class: "hover:text-white",
+      id: 'x',
+      href: CREATOR_PROFILE_URLS.x,
+      label: 'Follow Colin Michaels on X',
+      title: 'X: @colinmichaels',
+      class: 'hover:text-white',
       icon: faXTwitter,
       tooltip: 'X: @colinmichaels',
       tooltipClass: 'bg-white text-black font-mono'
     },
     {
-      link: "github.com/ColinMichaels",
-      target: "_blank",
-      type: 'external',
-      title: "GitHub",
-      class: "hover:text-white",
+      id: 'github',
+      href: CREATOR_PROFILE_URLS.github,
+      label: 'View Colin Michaels on GitHub',
+      title: 'GitHub: @ColinMichaels',
+      class: 'hover:text-white',
       icon: faGithub,
-      tooltip: 'GitHub: @colinmichaels',
+      tooltip: 'GitHub: @ColinMichaels',
       tooltipClass: 'text-black bg-white font-mono'
     },
     {
-      link: "instagram.com/captaincolinfpv",
-      target: "_blank",
-      type: 'external',
-      title: "Instagram",
-      class: "hover:text-pink-600",
+      id: 'instagram',
+      href: CREATOR_PROFILE_URLS.instagram,
+      label: 'Follow Colin Michaels on Instagram',
+      title: 'Instagram: @colinmichaels',
+      class: 'hover:text-pink-600',
       icon: faInstagram,
-      tooltip: 'Instagram: @captaincolinfpv',
+      tooltip: 'Instagram: @colinmichaels',
       tooltipClass: 'bg-pink-600 text-white font-mono'
     },
     {
-      link: "linkedin.com/in/colinmichaels/",
-      target: "_blank",
-      type: 'external',
-      title: "LinkedIn",
-      class: "hover:text-blue-700",
+      id: 'linkedin',
+      href: CREATOR_PROFILE_URLS.linkedin,
+      label: 'Connect with Colin Michaels on LinkedIn',
+      title: 'LinkedIn: Colin Michaels',
+      class: 'hover:text-blue-700',
       icon: faLinkedin,
-      tooltip: 'LinkedIn: @colinmichaels',
+      tooltip: 'LinkedIn: Colin Michaels',
       tooltipClass: 'bg-blue-700 text-white font-mono'
     },
   ];
 
-  protected encodeUrl(url: string,): string {
-    try {
-      return encodeURIComponent('https://' + url);
-    } catch (error) {
-      console.error("Error encoding URL:", error);
-      return url; // Return the original URL if encoding fails
-    }
+  private readonly analytics = inject(SiteAnalyticsService);
+
+  protected recordSelection(profileId: CreatorProfileId): void {
+    this.analytics.trackCreatorProfileOutbound(profileId);
   }
 }

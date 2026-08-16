@@ -15,6 +15,7 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
   let authState: BehaviorSubject<AuthState>;
   let users: BehaviorSubject<User | null>;
   let campaignState: jasmine.SpyObj<BlogMembershipCampaignStateService>;
+  let userAccounts: jasmine.SpyObj<UserAccountService>;
 
   const signedInUser = {uid: 'reader-uid'} as User;
 
@@ -35,11 +36,12 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     campaignState.getPendingPreferences.and.returnValue(null);
     campaignState.shouldPromptAnonymousReader.and.returnValue(true);
 
-    const userAccounts = jasmine.createSpyObj<UserAccountService>(
+    userAccounts = jasmine.createSpyObj<UserAccountService>(
       'UserAccountService',
       ['listenToUserAccount', 'updateCommunicationPreferences']
     );
     userAccounts.listenToUserAccount.and.returnValue(of(null));
+    userAccounts.updateCommunicationPreferences.and.resolveTo();
 
     await TestBed.configureTestingModule({
       imports: [BlogMembershipCampaignComponent, RouterTestingModule],
@@ -75,61 +77,64 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     tick(6400);
     fixture.detectChanges();
 
-    expect(campaignState.shouldPromptAnonymousReader).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).toBeNull();
   }));
 
-  it('opens only after Firebase resolves the reader as unauthenticated', fakeAsync(() => {
+  it('does not interrupt an anonymous reader on a wall-clock timer', fakeAsync(() => {
     fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
     fixture.detectChanges();
 
     authState.next({status: 'unauthenticated', user: null});
     fixture.detectChanges();
-    tick(3199);
+    tick(10000);
     fixture.detectChanges();
 
+    expect(campaignState.shouldPromptAnonymousReader).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).toBeNull();
-
-    tick(1);
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).not.toBeNull();
+    expect(document.body.style.overflow).not.toBe('hidden');
   }));
 
-  it('captures focus inside the modal and restores the previous control after dismissal', fakeAsync(() => {
+  it('keeps the modal focus trap for a signed-in preference follow-up', fakeAsync(() => {
     const previousControl = document.createElement('button');
     previousControl.type = 'button';
     document.body.append(previousControl);
     previousControl.focus();
+    campaignState.getPendingPreferences.and.returnValue({
+      browserNotifications: false,
+      newPostEmails: true,
+      newsletter: false,
+      createdAt: '2026-08-15T00:00:00.000Z',
+    });
+    userAccounts.listenToUserAccount.and.returnValue(of({uid: signedInUser.uid} as never));
 
     fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
     fixture.detectChanges();
-    authState.next({status: 'unauthenticated', user: null});
+    users.next(signedInUser);
+    authState.next({status: 'authenticated', user: signedInUser});
     fixture.detectChanges();
-    tick(3200);
+    tick();
     fixture.detectChanges();
     tick();
 
     const element = fixture.nativeElement as HTMLElement;
     const dialog = element.querySelector<HTMLElement>('[data-testid="blog-membership-campaign"]');
-    const closeButton = element.querySelector<HTMLButtonElement>(
-      'button[aria-label="Close account benefits"]'
-    );
+    const closeButton = element.querySelector<HTMLButtonElement>('button[aria-label="Close account benefits"]');
 
     expect(dialog?.hasAttribute('cdktrapfocus')).toBeTrue();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(closeButton);
+    expect(userAccounts.updateCommunicationPreferences).toHaveBeenCalled();
 
     closeButton?.click();
     fixture.detectChanges();
     tick();
 
-    expect(campaignState.snooze).toHaveBeenCalledWith(7);
+    expect(campaignState.markCompleted).toHaveBeenCalled();
     expect(document.activeElement).toBe(previousControl);
     previousControl.remove();
   }));
 
-  it('cancels an anonymous offer when a delayed signed-in session resolves', fakeAsync(() => {
+  it('does not open an offer when a delayed signed-in session resolves', fakeAsync(() => {
     fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
     fixture.detectChanges();
 
@@ -146,21 +151,4 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).toBeNull();
   }));
 
-  it('closes an open anonymous offer if Firebase later restores a signed-in reader', fakeAsync(() => {
-    fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
-    fixture.detectChanges();
-
-    authState.next({status: 'unauthenticated', user: null});
-    fixture.detectChanges();
-    tick(3200);
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).not.toBeNull();
-
-    users.next(signedInUser);
-    authState.next({status: 'authenticated', user: signedInUser});
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="blog-membership-campaign"]')).toBeNull();
-  }));
 });

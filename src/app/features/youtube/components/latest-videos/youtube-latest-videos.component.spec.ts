@@ -86,6 +86,7 @@ describe('YouTubeLatestVideosComponent', () => {
     fixture.componentRef.setInput('sectionId', 'article-drone-youtube');
     fixture.componentRef.setInput('heading', 'Watch the flights behind the field notes.');
     fixture.componentRef.setInput('analyticsSourceComponent', 'article_drones_youtube');
+    fixture.componentRef.setInput('compact', true);
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
@@ -103,5 +104,6 @@ describe('YouTubeLatestVideosComponent', () => {
       'channel',
       'article_drones_youtube'
     );
+    expect(element.querySelector('.youtube-latest-videos--compact')).not.toBeNull();
   });
 });

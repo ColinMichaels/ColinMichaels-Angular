@@ -1,10 +1,36 @@
 # Link Building Outreach Operating Doc
 
-Updated: July 2, 2026.
+Updated: August 15, 2026.
 
 This document starts Month 3 execution for the 90-day SEO plan. It defines the linkable assets, prospect criteria, tracker format, outreach guardrails, and the first researched prospect seed list. Contact paths and final fit should be rechecked after deployment verifies the target URLs.
 
-## Linkable Assets
+## Active Creator-Growth Campaign
+
+The outreach focus now follows the public creator promise: unusual gadgets, useful technology, internet finds, and Captain Colin drone/FPV stories. The one-page **Drone Flight Field Notes** worksheet supports flight-practice audiences. The two-page **Personal Aircraft Buyer Verification** guide turns the strongest full-size-drone search opportunity into a practical offer, deposit, legal-category, support, and evidence organizer. The one-page **Gadget Usefulness Scorecard** gives **Is It Actually Useful?** a broader evidence-led resource for gadget, product-research, creator-tech, and practical-curiosity audiences. All are local release candidates with crawler-visible context; none is approved for outreach until its exact public landing and download URLs are verified.
+
+Do not send a pitch until the exact release is deployed and the relevant landing page plus supporting PDF return `200` publicly. Recommend `/topics/drones-fpv` for general flight practice, `/resources/personal-aircraft-buyer-verification` for the buyer-verification use case, and `/resources/gadget-usefulness-scorecard` for evidence-led gadget evaluation. Direct PDFs are supporting downloads, not substitutes for the context, cautions, sources, and related stories on those pages.
+
+| Priority | Lane             | Linkable Asset                       | Landing Page                                      | Supporting URL                                                      | Best-Fit Audience                                                                               | Readiness                   |
+|----------|------------------|--------------------------------------|---------------------------------------------------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------|
+| 1        | Drones & FPV     | Drone Flight Field Notes             | `/topics/drones-fpv`                              | `/downloads/captain-colin-drone-flight-field-notes.pdf`             | FPV clubs, drone educators, field-practice guides, creator flight groups                        | Local release ready         |
+| 2        | Drones & Gadgets | Personal Aircraft Buyer Verification | `/resources/personal-aircraft-buyer-verification` | `/downloads/captain-colin-personal-aircraft-buyer-verification.pdf` | experimental-aircraft communities, buyer guides, practical-tech editors                         | Local release ready         |
+| 3        | Gadgets & Toys   | Gadget Usefulness Scorecard          | `/resources/gadget-usefulness-scorecard`          | `/downloads/captain-colin-gadget-usefulness-scorecard.pdf`          | gadget newsletters, product-research guides, creator-tech educators, practical-tech communities | Local release ready         |
+| 4        | Gadgets & Toys   | Evidence-led unusual-gadget hub      | `/topics/gadgets-toys`                            | `/blog/they-bought-a-full-size-temu-mega-drone`                     | gadget newsletters, curiosity roundups, practical-tech communities                              | Live-page refresh pending   |
+| 5        | Cross-channel    | Captain Colin flight stories         | `/topics/drones-fpv`                              | YouTube companion links selected per published article              | drone-video roundups, Florida creator communities, FPV viewers                                  | Pairing is article-specific |
+
+### Active Prospect Targets
+
+- Maintain the validated `25`-page Drones & FPV cohort, one relevant target page per row.
+- Maintain the validated `25`-page gadget and creator-tech cohort; prepare its ready rows only after the approved flagship article and scorecard are public.
+- Treat the buyer guide and worksheet as a supporting authority asset until experimental-aircraft and consumer-aviation target pages are live-verified; do not turn them into a purchase recommendation or imply legal classification expertise.
+- Position the gadget scorecard as a transparent conversation and editorial framework, not an objective lab score, certification, endorsement, or automatic buying recommendation.
+- Prefer pages that already help beginners prepare, document, or learn from flights; local clubs and small editorial communities can be a better fit than high-volume directories.
+- Record the exact page, its audience, why the worksheet helps, the current contact route, and the date the landing page and supporting PDF were verified live.
+- Pause broad AI, recovery, Angular/Firebase, and labs outreach unless a substantial audience-specific artifact makes one of those older lanes timely again.
+
+## Legacy Asset Inventory
+
+The four original topic assets and their researched seed prospects are retained below as historical research. They are not the active campaign because they no longer match the site's sharper gadgets/FPV creator promise closely enough to justify immediate outreach.
 
 | Pillar            | Asset                                     | URL                                     | Primary Audience                                                                         |
 |-------------------|-------------------------------------------|-----------------------------------------|------------------------------------------------------------------------------------------|
@@ -22,9 +48,9 @@ This document starts Month 3 execution for the 90-day SEO plan. It defines the l
 - Prefer pages that already curate helpful external resources, tutorials, checklists, project writeups, or recovery/patient support resources.
 - Record why the asset is relevant before sending a pitch.
 
-## Prospect Targets
+## Legacy Prospect Targets
 
-Target volume for Week 10:
+Original target volume for Week 10:
 
 - AI setup: 25-40 qualified prospects.
 - Recovery planning: 25-40 qualified prospects.
@@ -45,16 +71,124 @@ Prospect sources to research:
 
 Use this table as the working tracker. Add one row per target page, not just per domain.
 
-| Pillar            | Prospect Name | Target URL | Contact Path | Fit Reason | Asset URL                               | Status      | Last Contact | Notes |
-|-------------------|---------------|------------|--------------|------------|-----------------------------------------|-------------|--------------|-------|
-| AI setup          |               |            |              |            | `/topics/ai-setup`                      | Researching |              |       |
-| Recovery planning |               |            |              |            | `/topics/recovery-planning`             | Researching |              |       |
-| Angular/Firebase  |               |            |              |            | `/topics/angular-firebase-architecture` | Researching |              |       |
-| Labs/projects     |               |            |              |            | `/topics/labs-projects`                 | Researching |              |       |
+| Lane           | Prospect Name | Exact Target URL | Contact Path | Audience-Fit Reason | Landing Page           | Live Verified | Status      | Last Contact | Notes |
+|----------------|---------------|------------------|--------------|---------------------|------------------------|---------------|-------------|--------------|-------|
+| Drones & FPV   |               |                  |              |                     | `/topics/drones-fpv`   | No            | Researching |              |       |
+| Gadgets & Toys |               |                  |              |                     | `/topics/gadgets-toys` | No            | Researching |              |       |
 
-## Researched Seed Prospects
+## First Drone And FPV Cohort
 
-This is the first pass toward the Week 10 target of 25-40 prospects per pillar. These are intentionally marked `Researching` until the SEO changes are deployed, live URLs are verified, and each contact path is confirmed.
+Research captured: August 15, 2026. These are exact live pages, not domain-only ideas. They remain research records until the local worksheet release is deployed, its public landing page and PDF both return `200`, Colin reviews the relationship angle, and the contact/submission path is rechecked at action time. No message has been drafted in an external system or sent.
+
+The first research cohort now contains **25 exact target pages**. The machine-readable source of truth is [`AUDITS/2026-08-15/DRONE-FPV-PROSPECTS.json`](./AUDITS/2026-08-15/DRONE-FPV-PROSPECTS.json), validated by `npm run test:outreach-prospects`.
+
+- **10 ready after live verification:** six previously qualified pages plus Safety Third Racing, Flite Test, Fly Tribe Magazine, and UAS Weekly.
+- **5 relationship or rights decisions:** Tampa Bay Drone Club, Model Aviation, RChobby Lab, FAU's STEM Drone Club, and Infinity Aero Club.
+- **10 hold or recheck:** missing editorial routes, support-only channels, stale program evidence, a not-yet-earned authority threshold, or audience/paid-placement mismatch.
+- **0 contacted:** no pitch, form, email, forum post, comment, account creation, or external draft was sent or created.
+
+This is a qualified **research cohort**, not a claim that all 25 are immediately pitchable. Only the 10 ready rows can enter message preparation after the production gate below. A relationship or rights decision must be affirmative and specific; a hold remains a hold until its blocker is removed with fresh evidence.
+
+### Tier A: Direct Editorial Or Resource Submission
+
+| Priority | Prospect              | Exact Target Page                               | Verified Path                                                    | Why The Worksheet Fits                                                                                                                                                                                                   | Suggested First Ask                                                                                                                                                    | Status                        |
+|----------|-----------------------|-------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| 1        | FPV Freedom Coalition | `https://fpvfc.org/checklists`                  | `https://fpvfc.org/contact-us`                                   | The page already curates printable FPV preparation, racing, group, travel, and frequency resources. Colin's sheet adds a purpose, shot-plan, exit-plan, and debrief loop rather than replacing their preflight material. | Ask whether a complementary creator field/debrief sheet is useful to their education collection; invite factual feedback and accept a no-link answer.                  | Ready after live verification |
+| 2        | GetFPV Learn          | `https://www.getfpv.com/learn/submit-content/`  | The same page links explicit article and video submission forms. | GetFPV explicitly accepts community FPV articles/videos, and its existing checklist article establishes audience fit.                                                                                                    | Pitch a short original field-notes article with the printable as the companion resource; follow its compensation and editorial terms instead of requesting a backlink. | Ready after live verification |
+| 3        | Oscar Liang           | `https://oscarliang.com/become-a-guest-writer/` | On-page guest-writer contact form.                               | The page explicitly accepts FPV tutorials, practical tips, and projects from hobbyists.                                                                                                                                  | Propose a concise post-flight debrief workflow and disclose Colin's experience, aircraft, and evidence exactly as the form requests.                                   | Ready after live verification |
+
+### Tier B: Community And Training Relationships
+
+| Priority | Prospect                        | Exact Target Page                                                   | Verified Path                                                                                       | Why The Worksheet Fits                                                                                                      | Suggested First Ask                                                                                                                             | Status                                 |
+|----------|---------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| 4        | PSL RC Hobby Group              | `https://pslrchobbygroup.com/groups/fpv-multirotor`                 | `https://pslrchobbygroup.com/contact`                                                               | The Port St. Lucie club has a dedicated beginner-to-advanced FPV area plus an existing Downloads & Resources section.       | Offer the printable to the multirotor lead for member/training feedback; ask about usefulness before asking for any resource-page inclusion.    | Ready after live verification          |
+| 5        | Drone Flyers Club, The Villages | `https://droneflyersthevillagesfl.com/`                             | `https://droneflyersthevillagesfl.com/contact/` mentor form.                                        | The Florida club runs a monthly training meeting and already publishes a before-arrival preparation list.                   | Ask whether the field sheet would help a training meeting; invite instructors to mark missing or misleading fields.                             | Ready after live verification          |
+| 6        | Florida Tech Drone Club         | `https://floridatech.campuslabs.com/engage/organization/drone-club` | Public club contact on the same Engage page.                                                        | The club has FPV, photography, and engineering branches, weekly workshops, flight outings, and community education.         | Offer a student-friendly copy for a workshop test and request practical feedback, not promotion.                                                | Ready after live verification          |
+| 7        | Tampa Bay Drone Club            | `https://www.tampabaydroneclub.com/join/sponsor`                    | On-page organization/partnership form; the same site exposes member resources and a support center. | The club runs FPV racing, freestyle, night racing, open-fly events, and a member-resources area.                            | Use only if Colin wants a genuine local collaboration or event-resource relationship; lead with usefulness to pilots, not sponsorship or links. | Colin relationship decision required   |
+| 8        | Drone Talk                      | `https://www.dronetalk.org/`                                        | Public Contact Us path plus member articles/blogs after its guidelines are reviewed.                | The community explicitly serves beginner pilots and FPV racers and maintains beginner, flight, regulation, and club guides. | Ask staff which editorial/community surface accepts a free field worksheet; do not drop it into a forum without context.                        | Recheck contact route after deployment |
+
+### Tier C: Recheck Before Qualification
+
+| Prospect             | Exact Target Page                                                                     | What Is Promising                                                                                               | Why It Is Not Ready                                                                                                                   |
+|----------------------|---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| WikiFPV              | `https://wikifpv.com/`                                                                | The site advertises a Submit Content path for new material and suggested improvements.                          | The live page timed out during direct verification, so the submission UI and ownership/contact path must be confirmed again.          |
+| FPV Recycling        | `https://www.fpvrecycling.com/guides/getting-started/first-fpv-drone-beginners-guide` | Its current beginner guide covers simulators, gear, where to fly, TRUST, registration, and local-club practice. | A general contact path exists, but no editorial/resource submission policy was verified.                                              |
+| MultiGP              | `https://www.multigp.com/contact-us/`                                                 | Large FPV racing/chapter network with community and STEM reach.                                                 | The verified path is a general support ticket, not a resource or editorial submission route; identify a relevant program owner first. |
+| Rotor Riot           | `https://rotorriot.com/pages/learn-to-fly-drones`                                     | Strong beginner-learning audience and an existing downloads area.                                               | The only verified contact is customer support for orders and technical problems. Do not use that channel for outreach.                |
+| Markham Park RC Club | `https://markhamrcc.com/`                                                             | South Florida club with free flight training and a public contact route.                                        | The current page does not establish a drone/FPV resource section, so audience fit needs direct confirmation before pitching.          |
+
+### Cohort Expansion: Exact Pages 14-25
+
+The following pages expand the initial 13-page seed into the validated 25-page cohort. Their ordering does not override the release gate or the statuses recorded in the machine-readable tracker.
+
+#### Ready After Live Verification
+
+| Priority | Prospect            | Exact Target Page                                                | Verified Path                                                                                     | Why The Worksheet Fits                                                                                                  | Suggested First Ask                                                                                            |
+|----------|---------------------|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| 14       | Safety Third Racing | `https://sites.google.com/view/safetythirdracing/home`           | The page invites email contact and links its FPV wiki, academy, and regional Meetup.              | The AMA-chartered club welcomes beginners through veterans and maintains build, flight, event, and reference resources. | Invite a coach or maintainer to test the sheet and say whether it complements the wiki or academy.             |
+| 15       | Flite Test          | `https://www.flitetest.com/articles/get-your-articles-published` | Member article submission flow after login; current site still exposes Articles and registration. | Its guidelines ask for complete, repeatable educational articles and explicitly reject video-only FPV showcases.        | Submit a reproducible field-notes/debrief method with real examples, stills, and the printable as a companion. |
+| 16       | Fly Tribe Magazine  | `https://www.flytribemagazine.com/submission`                    | On-page article instructions and `content@flytribemagazine.com`.                                  | The pilot-made magazine explicitly requests FPV stories, community coverage, original photos, and articles.             | Pitch a first-person Florida flight-practice story whose practical takeaway is the field-notes loop.           |
+| 17       | UAS Weekly          | `https://uasweekly.com/writeforus/`                              | On-page pitch form with title, teaser/full text, author bio, headshot, and social links.          | It accepts original UAS, aerial-video, photography, and drone-racing contributions.                                     | Pitch a new field-practice and post-flight learning article; do not ask to republish the owned site article.   |
+
+#### Relationship Or Rights Decision Required
+
+| Priority | Prospect                          | Exact Target Page                                                                                        | Decision Before Contact                                                                        | Why It Is Not Action-Ready                                                                                                                                                                   |
+|----------|-----------------------------------|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 18       | Model Aviation                    | `https://www.modelaviation.com/basic-page/author-guidelines`                                             | Decide whether a distinct paid first-person article and its rights assignment are acceptable.  | The official AMA publication is relevant and current, but its page states that accepted paid work is assigned to Model Aviation and some submission mechanics are dated.                     |
+| 19       | RChobby Lab                       | `https://rchobbylab.com/write-for-us/`                                                                   | Decide whether Colin wants a recurring paid contributor role separate from his owned campaign. | The role expects three articles per month and exclusive ownership of submitted writing and media; direct rendering also failed during verification, so this is not a one-off resource pitch. |
+| 20       | FAU STEM Education Lab Drone Club | `https://www.fau.edu/education/academicdepartments/curriculum-instruction/resources/stemlab/drone-club/` | Choose whether to build a real education-feedback relationship with the named faculty sponsor. | The club has unusually strong resource fit, but it is specifically for College of Education students and should not receive a generic promotion request.                                     |
+| 21       | Infinity Aero Club Tampa Bay      | `https://infinityaeroclub.org/`                                                                          | Choose whether Colin can support an ongoing local youth/community-education relationship.      | The nonprofit runs weekly drone and aviation training for youth and adults; the appropriate opening is instructor feedback and service, not a link request.                                  |
+
+#### Added Holds
+
+| Priority | Prospect                                    | Exact Target Page                                    | Why It Stays On Hold                                                                                                                                                                                      |
+|----------|---------------------------------------------|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 22       | DRONELIFE                                   | `https://dronelife.com/want-to-write-for-dronelife/` | It explicitly requires established authority. Revisit only after Colin has a public series of original flight debriefs; direct page rendering also failed during verification.                            |
+| 23       | Fastech Club Drone Pilot Program            | `https://fastechclub.com/drone-pilot/`               | The live page still says **Coming Spring 2022** and contains dated claims, so current program operation must be confirmed first.                                                                          |
+| 24       | Unified Scholastic Drone Racing Association | `https://www.usdra.io/`                              | The audience fit is real, but the visible route is league and paid-program support rather than independent curriculum/resource submissions.                                                               |
+| 25       | Women Who Drone                             | `https://www.womenwhodrone.co/writeforus`            | The current asset is not specifically built for the publication's mission, and the page mixes contributor opportunities with paid guest-post and promotion routes. Do not force the fit or buy placement. |
+
+## First Gadget And Creator-Tech Cohort
+
+Research captured: August 15, 2026. The machine-readable source of truth is [`AUDITS/2026-08-15/GADGET-CREATOR-PROSPECTS.json`](./AUDITS/2026-08-15/GADGET-CREATOR-PROSPECTS.json), validated with the FPV cohort by `npm run test:outreach-prospects`.
+
+- **8 ready after live verification:** current editorial or contributor routes whose audience can plausibly use an evidence-led gadget, camera, filmmaking, or regional creator story.
+- **7 relationship or evidence decisions:** routes that require an original hack, long-term product use, a real workshop, a speaking or exhibit commitment, or deeper independent reporting.
+- **10 hold or recheck:** wrong-audience, missing-evidence, closed-contributor, self-publishing, commercial-listing, and paid-placement routes.
+- **0 contacted:** no pitch, form, email, comment, account, external draft, or event application was sent or created.
+
+Only the eight rows below can enter message preparation after the public guide and PDF both return `200`, rights and relationships are disclosed, and the current contact path is rechecked on outreach day.
+
+| Priority | Prospect                             | Exact Target Page                                                      | Audience-Led First Angle                                                                    |
+|----------|--------------------------------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| 1        | Make: article proposals              | `https://make.co/submit-an-article-or-book-idea/`                      | A visual, functional skill-builder using one documented gadget evaluation.                  |
+| 2        | Core77 website submissions           | `https://www.core77.com/contact`                                       | A product-evaluation framework offered for design-minded editorial critique.                |
+| 3        | PetaPixel story pitches              | `https://petapixel.com/contact/`                                       | A rights-cleared camera or FPV field-test story that separates evidence from unknowns.      |
+| 4        | Fstoppers article suggestions        | `https://fstoppers.com/contact`                                        | A technique-led camera field-session article whose value stands without promotion.          |
+| 5        | DIY Photography guest posts          | `https://www.diyphotography.net/write-for-diyp/`                       | An original image-led field test that distinguishes a first flight from a final review.     |
+| 6        | Laptop Mag freelance pitches         | `https://www.laptopmag.com/news/how-to-pitch-your-ideas-to-laptop-mag` | A reported consumer-tech angle about the evidence buyers should demand after a gadget demo. |
+| 7        | No Film School pitches               | `https://nofilmschool.com/pitch-to-no-film-school`                     | A first-person production-gear lesson grounded in an actual filmmaking session.             |
+| 8        | South Florida Venture Tech Chronicle | `https://www.vtchronicle.com/about`                                    | A regional creator-tech case study about transparent evaluation and measurement.            |
+
+The seven decision-gated rows are Hackaday, Cool Tools, Tampa Hackerspace, Tampa Devs, TechFlo, Maker Faire Orlando, and Popular Mechanics. Their blockers are substantive: Colin must have the required artifact or experience and must affirm the time, reporting, speaking, teaching, or exhibit commitment before any submission.
+
+The ten holds include three deliberate negative controls. Instructables and Hackster are owned self-publication rather than independently earned authority; Gadget Flow is a product-listing route that does not fit a scorecard; ArabTechGate advertises paid dofollow placement. These routes stay on hold and do not count as backlinks, editorial validation, or creator trust.
+
+### Two Allowed Pitch Angles
+
+Community/training note:
+
+> I made a one-page field sheet for planning one flight goal, recording the setup, protecting the return, and writing down one lesson before the next pack. Your group already helps pilots learn in the field, so I would value a trainer's honest feedback. If it is useful, you are welcome to share the public link; if not, the corrections are still helpful.
+
+Editorial submission note:
+
+> I would like to propose an original field-notes article for your FPV audience: a repeatable purpose, place, setup, exit, and debrief loop, with a printable companion sheet and links to current official FAA guidance. I can adapt it to your editorial requirements and will disclose my actual experience and evidence. I am not asking for specific anchor text or guaranteed placement.
+
+Do not send either template unchanged. Add one sentence proving familiarity with the exact target page and remove any claim Colin cannot support from first-hand experience.
+
+## Legacy Researched Seed Prospects
+
+This July research is preserved for possible later requalification. These prospects remain `Researching`; none should be contacted from this list until the asset is substantial, the target URL is live, the audience fit is current, and the contact path is reconfirmed.
 
 ### AI Setup
 
@@ -191,13 +325,31 @@ Colin
 - Week 11: Send the first personalized pitches to the strongest fits.
 - Week 12: Review responses, Search Console impressions, indexed pages, CTR, and internal-link opportunities.
 
-## Measurement
+## Measurement And Release Gate
 
-Track these weekly after deployment:
+Do not begin outreach until one release record confirms all of the following on production:
 
-- Search Console indexed status for each asset URL.
-- Impressions and clicks for each topic hub.
-- Queries that trigger impressions.
-- CTR by page and query.
-- New referring domains or editorial inclusions.
-- Internal links added from homepage, blog posts, topic hubs, and related pages.
+- `/topics/drones-fpv` returns `200` and visibly links the worksheet plus the cited FAA resources in both initial crawler HTML and the hydrated page.
+- `/downloads/captain-colin-drone-flight-field-notes.pdf` returns `200` with a PDF content type and opens as the reviewed one-page artifact.
+- `/resources/personal-aircraft-buyer-verification` returns `200` with matching canonical, heading, cautions, official starting points, related paths, and downloadable two-page PDF in both initial crawler HTML and the hydrated page.
+- `/downloads/captain-colin-personal-aircraft-buyer-verification.pdf` returns `200` with a PDF content type and opens as the reviewed two-page artifact.
+- `/resources/gadget-usefulness-scorecard` returns `200` with matching canonical, heading, evidence labels, five scoring criteria, cautions, related paths, and downloadable one-page PDF in both initial crawler HTML and the hydrated page.
+- `/downloads/captain-colin-gadget-usefulness-scorecard.pdf` returns `200` with a PDF content type and opens as the reviewed one-page artifact.
+- The exact deployment date, landing-page URLs, PDF URLs, and verification evidence are recorded in the tracker.
+- Every Tier A or Tier B contact path is rechecked on the day a personalized message is prepared.
+
+After explicit authorization to contact anyone, record only actions that actually happened:
+
+- personalized messages sent, their exact target pages, and the relationship or editorial angle used
+- substantive replies and useful corrections, including replies that decline a link
+- accepted contributor articles, approved resource inclusions, and the final live referring pages
+- self-posts in forums or social feeds separately; do not count them as earned referring-domain wins
+
+At the first 30-day review, record observed counts rather than promised growth:
+
+- Search Console impressions, clicks, queries, and indexing status for the Drones & FPV hub and buyer-verification guide
+- download events only if production analytics has a verified worksheet-download event; otherwise mark download measurement unavailable
+- new referring pages verified directly or through an available backlink provider, with the source and check date
+- internal links added from relevant published articles, the homepage, topic hubs, or related-page surfaces
+
+Treat the first three carefully personalized sends as an early learning cohort. One substantive response is useful evidence, not a guaranteed target. One earned editorial inclusion or accepted original article is more valuable than multiple low-context directory links.

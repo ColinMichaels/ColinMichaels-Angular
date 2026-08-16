@@ -1,3 +1,5 @@
+import {CREATOR_PROFILE_URLS} from '../seo/site-identity';
+
 export interface AuthorBioSection {
   heading: string;
   paragraphs: readonly string[];
@@ -91,12 +93,20 @@ export const COLIN_AUTHOR_PROFILE: AuthorProfile = {
   ],
   externalProfiles: [
     {
+      label: 'YouTube',
+      href: CREATOR_PROFILE_URLS.youtube,
+    },
+    {
+      label: 'Instagram',
+      href: CREATOR_PROFILE_URLS.instagram,
+    },
+    {
       label: 'GitHub',
-      href: 'https://github.com/ColinMichaels',
+      href: CREATOR_PROFILE_URLS.github,
     },
     {
       label: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/colinmichaels',
+      href: CREATOR_PROFILE_URLS.linkedin,
     },
   ],
   healthDisclaimer: 'Anything health-related on this site is personal experience only and should not be taken as medical advice.',

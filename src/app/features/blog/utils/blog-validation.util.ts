@@ -1,6 +1,7 @@
 import {
   BLOG_BLOCK_PLACEMENTS,
   BLOG_CHART_TYPES,
+  BLOG_EVIDENCE_BASES,
   BLOG_GALLERY_LAYOUTS,
   BLOG_IMAGE_LAYOUTS,
   BLOG_IMAGE_SIZES,
@@ -10,6 +11,8 @@ import {
   BLOG_TYPOGRAPHY_VARIANTS,
   BlogBlockType,
   BlogContentBlock,
+  BlogEditorialMetadata,
+  BlogEvidenceBasis,
   BlogJsonObject,
   BlogJsonValue,
   BlogListItem,
@@ -27,6 +30,8 @@ import {
   BlogSocialPostFormat,
 } from '../models/blog-social-promotion.model';
 import {isSocialPostFormatAllowed} from './blog-social-promotion.util';
+import {isBlogEditorialSourceDate} from './blog-editorial-metadata.util';
+import {isVideoUploadDate} from './blog-youtube-journey.util';
 import {
   hasDisallowedInlineUrlProtocol,
   isBlogHttpUrl,
@@ -38,6 +43,7 @@ import {
 
 export const BLOG_POST_STATUSES: readonly BlogPostStatus[] = ['draft', 'scheduled', 'published', 'archived'];
 const blogPostStatusSet = new Set<string>(BLOG_POST_STATUSES);
+const blogEvidenceBasisSet = new Set<BlogEvidenceBasis>(BLOG_EVIDENCE_BASES);
 const blogBlockTypeSet = new Set<BlogBlockType>([
   'paragraph',
   'header',
@@ -100,6 +106,17 @@ function isBlogBlockData(type: BlogBlockType, value: unknown): boolean {
     return false;
   }
 
+  const hasVideoMetadata = value['videoTitle'] !== undefined
+    || value['videoDescription'] !== undefined
+    || value['videoUploadDate'] !== undefined
+    || value['videoDurationSeconds'] !== undefined;
+
+  if (hasVideoMetadata && (type !== 'embed'
+    || value['provider'] !== 'youtube'
+    || value['isCompanionVideo'] !== true)) {
+    return false;
+  }
+
   if (type === 'list') {
     return (value['items'] === undefined || isStringArray(value['items']))
       && (value['listItems'] === undefined || (
@@ -138,15 +155,29 @@ function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
   const stringFields = [
     'title', 'text', 'url', 'alt', 'caption', 'provider', 'embedUrl', 'language', 'code', 'markdown',
     'attribution', 'unit', 'xAxisTitle', 'yAxisTitle', 'valueSuffix', 'sourceLabel', 'sourceUrl',
-    'accessibilitySummary', 'question', 'description', 'html',
+    'accessibilitySummary', 'question', 'description', 'html', 'videoTitle', 'videoDescription',
+    'videoUploadDate',
   ];
-  const numberFields = ['width', 'height', 'yMax', 'decimals'];
-  const booleanFields = ['ordered', 'stretched', 'withBorder', 'withBackground', 'showLegend'];
+  const numberFields = ['width', 'height', 'yMax', 'decimals', 'videoDurationSeconds'];
+  const booleanFields = [
+    'ordered',
+    'stretched',
+    'withBorder',
+    'withBackground',
+    'showLegend',
+    'isCompanionVideo',
+  ];
 
   return stringFields.every(field => value[field] === undefined || typeof value[field] === 'string')
     && numberFields.every(field => value[field] === undefined
       || (typeof value[field] === 'number' && Number.isFinite(value[field])))
     && booleanFields.every(field => value[field] === undefined || typeof value[field] === 'boolean')
+    && (value['videoUploadDate'] === undefined
+      || (typeof value['videoUploadDate'] === 'string' && isVideoUploadDate(value['videoUploadDate'])))
+    && (value['videoDurationSeconds'] === undefined
+      || (typeof value['videoDurationSeconds'] === 'number'
+        && Number.isFinite(value['videoDurationSeconds'])
+        && value['videoDurationSeconds'] > 0))
     && (value['placement'] === undefined || (BLOG_BLOCK_PLACEMENTS as readonly unknown[]).includes(value['placement']))
     && (value['level'] === undefined || value['level'] === 2 || value['level'] === 3)
     && (value['imageLayout'] === undefined || (BLOG_IMAGE_LAYOUTS as readonly unknown[]).includes(value['imageLayout']))
@@ -375,6 +406,30 @@ function isBlogSocialPromotion(value: unknown): boolean {
   );
 }
 
+export function isBlogEditorialMetadata(value: unknown): value is BlogEditorialMetadata | undefined {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!isRecord(value) || Array.isArray(value)) {
+    return false;
+  }
+
+  const stringFields = [
+    'evidenceSummary',
+    'relationshipDisclosure',
+    'aiAssistanceDisclosure',
+    'syntheticMediaDisclosure',
+    'updateNote',
+  ];
+
+  return (value['evidenceBasis'] === undefined
+      || (typeof value['evidenceBasis'] === 'string'
+        && blogEvidenceBasisSet.has(value['evidenceBasis'] as BlogEvidenceBasis)))
+    && (value['sourceReviewedAt'] === undefined || isBlogEditorialSourceDate(value['sourceReviewedAt']))
+    && stringFields.every(field => value[field] === undefined || typeof value[field] === 'string');
+}
+
 export function isBlogPost(value: unknown): value is BlogPost {
   if (!isRecord(value)) {
     return false;
@@ -397,6 +452,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && isBlogPostStatus(value['status'])
     && isBlogSeo(value['seo'])
     && isBlogOpenGraphMetadata(value['og'])
+    && isBlogEditorialMetadata(value['editorial'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
     && value['blocks'].every(isBlogContentBlock)

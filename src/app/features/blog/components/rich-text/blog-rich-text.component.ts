@@ -13,6 +13,47 @@ import {parseInertHtmlFragment} from '../../utils/blog-html.util';
 
 export type BlogRichTextMode = 'inline' | 'block' | 'markdown';
 
+const PLAIN_HTTP_URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/gi;
+const TRAILING_URL_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?']);
+const URL_BRACKET_PAIRS: Readonly<Record<string, string>> = {
+  ')': '(',
+  ']': '[',
+  '}': '{',
+};
+
+function splitPlainHttpUrl(value: string): { url: string; trailingText: string } {
+  let urlEnd = value.length;
+
+  while (urlEnd > 0) {
+    const finalCharacter = value[urlEnd - 1];
+
+    if (TRAILING_URL_PUNCTUATION.has(finalCharacter)) {
+      urlEnd -= 1;
+      continue;
+    }
+
+    const openingBracket = URL_BRACKET_PAIRS[finalCharacter];
+
+    if (openingBracket) {
+      const candidate = value.slice(0, urlEnd);
+      const openingCount = candidate.split(openingBracket).length - 1;
+      const closingCount = candidate.split(finalCharacter).length - 1;
+
+      if (closingCount > openingCount) {
+        urlEnd -= 1;
+        continue;
+      }
+    }
+
+    break;
+  }
+
+  return {
+    url: value.slice(0, urlEnd),
+    trailingText: value.slice(urlEnd),
+  };
+}
+
 @Component({
   selector: 'app-blog-rich-text',
   template: '',
@@ -42,6 +83,7 @@ export class BlogRichTextComponent implements OnChanges {
       this.enhanceImages(fragment);
     }
 
+    this.linkifyPlainHttpUrls(fragment);
     this.enhanceAnchors(fragment);
     hostElement.replaceChildren(fragment);
   }
@@ -95,6 +137,68 @@ export class BlogRichTextComponent implements OnChanges {
       image.setAttribute('decoding', image.getAttribute('decoding') ?? 'async');
       image.classList.add('blog-image-reveal');
     });
+  }
+
+  private linkifyPlainHttpUrls(fragment: DocumentFragment): void {
+    const hostElement = this.host.nativeElement;
+
+    // Heading links render rich text inside an existing anchor. Avoid creating
+    // invalid nested anchors in that context.
+    if (hostElement.closest('a')) {
+      return;
+    }
+
+    const ownerDocument = hostElement.ownerDocument;
+    const showText = ownerDocument.defaultView?.NodeFilter.SHOW_TEXT ?? 4;
+    const walker = ownerDocument.createTreeWalker(fragment, showText);
+    const textNodes: Text[] = [];
+    let currentNode = walker.nextNode();
+
+    while (currentNode) {
+      textNodes.push(currentNode as Text);
+      currentNode = walker.nextNode();
+    }
+
+    for (const textNode of textNodes) {
+      const parentElement = textNode.parentElement;
+
+      if (!parentElement || parentElement.closest('a, code, pre, kbd, samp')) {
+        continue;
+      }
+
+      PLAIN_HTTP_URL_PATTERN.lastIndex = 0;
+      const matches = Array.from(textNode.data.matchAll(PLAIN_HTTP_URL_PATTERN));
+
+      if (matches.length === 0) {
+        continue;
+      }
+
+      const replacement = ownerDocument.createDocumentFragment();
+      let cursor = 0;
+
+      for (const match of matches) {
+        const matchIndex = match.index ?? 0;
+        const matchedText = match[0];
+        const {url, trailingText} = splitPlainHttpUrl(matchedText);
+
+        replacement.append(textNode.data.slice(cursor, matchIndex));
+
+        if (url) {
+          const anchor = ownerDocument.createElement('a');
+          anchor.href = url;
+          anchor.textContent = url;
+          replacement.append(anchor);
+        } else {
+          replacement.append(matchedText);
+        }
+
+        replacement.append(trailingText);
+        cursor = matchIndex + matchedText.length;
+      }
+
+      replacement.append(textNode.data.slice(cursor));
+      textNode.replaceWith(replacement);
+    }
   }
 
   private enhanceAnchors(fragment: DocumentFragment): void {

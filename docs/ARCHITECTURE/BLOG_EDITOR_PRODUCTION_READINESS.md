@@ -21,6 +21,17 @@ This foundation should be preserved. New presentation fields must be optional, h
 
 The additive `gallery` extension supplies manual slideshow, responsive grid, and mosaic layouts for two to twenty images while reusing the trusted media pipeline and public lightbox. Its server allowlist, canonical hydration boundary, deployment sequence, and rollback requirements are documented in `EDITORJS_IMAGE_GALLERIES.md`.
 
+## Discovery And Trust Authoring Review
+
+The post editor's existing metadata checklist is now the **Discovery & Trust Checklist**. It preserves all ten search/share checks and adds four advisory content checks over the current canonical Editor.js blocks and optional post metadata:
+
+1. **Usable references** recognizes external HTTP(S) links in rich text, lists, Markdown, HTML, and chart source fields. It deduplicates the same destination and warns more specifically when a Sources or References heading has no usable link. Embed destinations are not silently counted as citations.
+2. **Contextual next read** recognizes a non-self ColinMichaels `/blog/{slug}` link in the article body. Automatic topic and Read next rails remain useful fallbacks but do not replace an editor explaining why a particular story advances the reader's question.
+3. **Supporting evidence** recognizes in-body images, gallery items, embeds, charts, stats, code samples, and HTML or Markdown tables. A passing signal does not prove that an artifact is original, accurate, rights-cleared, or material; the operator guidance requires human confirmation.
+4. **Evidence classification** asks the editor to choose a supported article-level evidence basis and explain its boundary. Missing classification or explanation stays visible without creating a false automatic quality score.
+
+These checks are warnings rather than publishing blockers. A first-person journal entry can legitimately be source-free, and weak filler should never be added to satisfy a counter. The analysis itself remains local; the separate optional `BlogPost.editorial` object preserves editor-reviewed evidence and disclosures through the trusted publishing boundary. The protected Posts screen projects a read-only Evidence review queue over those existing records, prioritizes published incomplete articles, and routes every decision through the individual editor; it adds no bulk mutation or automatic classification. No backfill occurs. `CMS_ACCESS_ROLES` remains the route and guide boundary. Rollback removes the queue projection, additive checklist item, authoring controls, reader evidence card, and matching Functions support; existing posts without metadata remain unaffected. The complete contract is documented in `ARTICLE_EVIDENCE_AND_DISCLOSURES.md`.
+
 ## Findings And Risk Register
 
 The investigation identified the following boundaries. Items described as resolved in Phase 1 are covered by the compatibility implementation and focused tests; all other items remain planned.
