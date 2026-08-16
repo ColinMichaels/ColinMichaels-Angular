@@ -16,6 +16,7 @@ test.describe('blog archive layout', () => {
 
       return {
         archiveOverflow: Math.max(0, (contentRect?.right ?? 0) - window.innerWidth),
+        pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
         mainWidth: main?.getBoundingClientRect().width ?? 0,
         sidebarWidth: sidebar?.getBoundingClientRect().width ?? 0,
         template: content ? getComputedStyle(content).gridTemplateColumns : '',
@@ -23,6 +24,7 @@ test.describe('blog archive layout', () => {
     });
 
     expect(metrics.archiveOverflow).toBeLessThanOrEqual(0);
+    expect(metrics.pageOverflow).toBeLessThanOrEqual(0);
     expect(metrics.template).toContain('px');
     expect(metrics.mainWidth).toBeGreaterThan(640);
     expect(metrics.sidebarWidth).toBeGreaterThanOrEqual(304);
@@ -47,12 +49,14 @@ test.describe('blog archive layout', () => {
 
       return {
         archiveOverflow: Math.max(0, (contentRect?.right ?? 0) - window.innerWidth),
+        pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
         mainBottom: mainRect?.bottom ?? 0,
         sidebarTop: sidebarRect?.top ?? 0,
       };
     });
 
     expect(metrics.archiveOverflow).toBeLessThanOrEqual(0);
+    expect(metrics.pageOverflow).toBeLessThanOrEqual(0);
     expect(metrics.sidebarTop).toBeGreaterThanOrEqual(metrics.mainBottom);
   });
 });

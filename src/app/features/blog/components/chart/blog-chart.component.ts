@@ -51,8 +51,8 @@ interface RenderableBlogChart {
           <h3 class="text-lg font-semibold text-slate-950 dark:text-zinc-50">{{ renderedChart.title }}</h3>
         }
         <div
-          class="overflow-x-auto rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
-          <div class="relative h-72 min-w-[540px] sm:h-80">
+          class="overflow-hidden rounded border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5 dark:border-zinc-800 dark:bg-zinc-950/60 dark:shadow-none">
+          <div class="relative h-72 min-w-0 sm:h-80">
             <canvas
               baseChart
               data-testid="blog-chart-canvas"
@@ -63,27 +63,29 @@ interface RenderableBlogChart {
               [options]="renderedChart.options"
             ></canvas>
           </div>
-          <table class="sr-only">
-            <caption>{{ renderedChart.accessibilitySummary }}</caption>
-            <thead>
-            <tr>
-              <th scope="col">Category</th>
-              @for (datasetLabel of renderedChart.datasetLabels; track $index) {
-                <th scope="col">{{ datasetLabel }}</th>
-              }
-            </tr>
-            </thead>
-            <tbody>
-              @for (tableRow of renderedChart.tableRows; track $index) {
-                <tr>
-                  <th scope="row">{{ tableRow.label }}</th>
-                  @for (value of tableRow.values; track $index) {
-                    <td>{{ value }}</td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="sr-only">
+            <table>
+              <caption>{{ renderedChart.accessibilitySummary }}</caption>
+              <thead>
+              <tr>
+                <th scope="col">Category</th>
+                @for (datasetLabel of renderedChart.datasetLabels; track $index) {
+                  <th scope="col">{{ datasetLabel }}</th>
+                }
+              </tr>
+              </thead>
+              <tbody>
+                @for (tableRow of renderedChart.tableRows; track $index) {
+                  <tr>
+                    <th scope="row">{{ tableRow.label }}</th>
+                    @for (value of tableRow.values; track $index) {
+                      <td>{{ value }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
         @if (renderedChart.accessibilitySummary) {
           <p class="text-sm leading-6 text-slate-600 dark:text-zinc-400">{{ renderedChart.accessibilitySummary }}</p>

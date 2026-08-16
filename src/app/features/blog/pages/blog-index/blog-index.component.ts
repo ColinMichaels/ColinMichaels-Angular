@@ -409,6 +409,7 @@ const MAX_POPULAR_TAGS = 10;
     .blog-index-sidebar {
       min-width: 0;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       align-content: start;
       gap: 1.5rem;
     }
@@ -452,6 +453,8 @@ const MAX_POPULAR_TAGS = 10;
     .blog-index-sidebar app-blog-topic-guide,
     .blog-index-sidebar app-blog-next-read,
     .blog-index-sidebar app-continue-reading-shelf {
+      min-width: 0;
+      max-width: 100%;
       width: 100%;
     }
   `],

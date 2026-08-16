@@ -81,6 +81,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       z-index: 4;
       display: block;
       width: 100%;
+      container-type: inline-size;
     }
 
     :host(.is-playing) {
@@ -229,6 +230,45 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
 
     @media (max-width: 720px) {
       .daily-discovery-shell {
+        min-height: 10.5rem;
+        grid-template-columns: 3.5rem minmax(0, 1fr);
+        gap: 0.7rem 1rem;
+        padding-block: 0.9rem 1rem;
+      }
+
+      .daily-discovery-mark {
+        width: 3.5rem;
+        height: 3.5rem;
+      }
+
+      .daily-discovery-mark svg {
+        width: 2.3rem;
+        height: 2.3rem;
+      }
+
+      .daily-discovery-question-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .daily-discovery-answer-toggle {
+        width: 100%;
+      }
+    }
+
+    @container (max-width: 42rem) {
+      .daily-discovery-shell {
+        grid-template-columns: 4rem minmax(0, 1fr);
+      }
+
+      .daily-discovery-points {
+        display: none;
+      }
+    }
+
+    @container (max-width: 26rem) {
+      .daily-discovery-shell {
+        min-height: 10.5rem;
         grid-template-columns: 3.5rem minmax(0, 1fr);
         gap: 0.7rem 1rem;
         padding-block: 0.9rem 1rem;
