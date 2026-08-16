@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "public-collision-and-video-identity-verified",
+  "capturedAt": "2026-08-15T22:27:27.676Z",
+  "candidate": {
+    "id": "insta360-ace-pro-fpv-sunset-test",
+    "slug": "insta360-ace-pro-fpv-sunset-test",
+    "canonical": "https://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test",
+    "status": "draft",
+    "publishedAt": null
+  },
+  "publicBoundary": {
+    "routeHttpStatus": 404,
+    "robots": "noindex,nofollow",
+    "canonical": "https://colinmichaels.com/blog/insta360-ace-pro-fpv-sunset-test",
+    "title": "Post not found | ColinMichaels.com",
+    "publishedSlugQueryHttpStatus": 200,
+    "publishedSlugMatchCount": 0,
+    "sitemapHttpStatus": 200,
+    "sitemapContainsCandidateRoute": false,
+    "interpretation": "The proposed canonical is not a public article, is excluded from indexing, is absent from the sitemap, and has no anonymously queryable published Firestore record with the same slug. These checks establish the public collision boundary only; they do not prove that a protected draft with another document ID is absent."
+  },
+  "firestoreBoundary": {
+    "directDocumentHttpStatus": 403,
+    "directDocumentVisibility": "not-observable-anonymously",
+    "documentResolvedAnonymously": false,
+    "interpretation": "Anonymous direct-document inspection is denied by the production rules. A 403 is not evidence that the draft ID is unreserved. The protected importer must perform its normal trusted slug and document-ID reservation checks before any save."
+  },
+  "youtube": {
+    "verificationMethod": "public-youtube-oembed",
+    "httpStatus": 200,
+    "videoId": "OFeCTH2LP9s",
+    "watchUrl": "https://www.youtube.com/watch?v=OFeCTH2LP9s",
+    "title": "Camera ‘sham’ era! Insta360 Ace Pro First Reaction and FPV Flights video",
+    "authorName": "Captain Colin",
+    "authorUrl": "https://www.youtube.com/@CaptainColin",
+    "interpretation": "The exact companion upload remains publicly resolvable under the expected Captain Colin identity. oEmbed verifies public identity and availability, not transcript accuracy, current counts, Studio analytics, rights, settings, or editorial approval."
+  },
+  "readiness": {
+    "state": "blocked_editorial_approval_authenticated_preview_and_trusted_reservation",
+    "safeToImport": false,
+    "requiredGates": [
+      "Run npm run verify:ace-pro-production immediately before import and stop on any public-route, published-slug, sitemap, or video-identity drift.",
+      "Use the protected CMS importer to check the trusted document-ID and slug reservation state; anonymous production reads cannot rule out private drafts.",
+      "Colin approves the first-person account, settings uncertainty, flight context, relationship disclosure, and all six documentary frame derivatives.",
+      "Recheck the exact public edit, transcript-grounded timestamps, official Insta360 specifications, and current FAA recreational guidance.",
+      "Import as a draft with publishedAt null; do not create or update a published record during import.",
+      "Inspect the complete authenticated Production Preview on mobile and desktop, including the companion embed, three inline frames, evidence surface, table, checklist, links, and poll.",
+      "Publish only after the foundation release is deployed and verified and the exact canonical can return public 200 with matching title, canonical, media, and disclosures.",
+      "Capture the YouTube Studio baseline and preserve current metadata before any separately approved description, title, thumbnail, playlist, end-screen, or comment change."
+    ]
+  },
+  "externalActions": {
+    "cmsImported": false,
+    "firestoreWritten": false,
+    "articlePreviewed": false,
+    "articlePublished": false,
+    "siteDeployed": false,
+    "youtubeEdited": false,
+    "youtubeCommentPosted": false,
+    "outreachSent": false,
+    "gitCommitted": false,
+    "gitPushed": false
+  }
+}

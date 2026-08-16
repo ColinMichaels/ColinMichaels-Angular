@@ -27,13 +27,49 @@ function createPost(index: number): BlogPostSummary {
   };
 }
 
+function createTopicHub(overrides: Partial<{
+  slug: string;
+  title: string;
+  terms: readonly string[];
+}> = {}): Record<string, unknown> {
+  return {
+    id: `topic-${overrides.slug}`,
+    slug: overrides.slug ?? 'topic',
+    eyebrow: 'Mock topic',
+    title: overrides.title ?? 'Mock topic',
+    description: 'Mock topic description',
+    summary: 'Mock topic summary',
+    status: 'published',
+    displayOrder: 10,
+    terms: overrides.terms ?? ['engineering'],
+    theme: {
+      shortLabel: 'Mock',
+      accent: '#22d3ee',
+      accentStrong: '#67e8f9',
+      accentRgb: '34 211 238',
+      mapPlacement: {xPercent: 50, yPercent: 50, depth: 1, scale: 1, floatDelayMs: 0},
+      icon: 'spark',
+      heroMotifs: [],
+    },
+    asset: {title: 'Mock', intro: '', items: []},
+    featuredProject: {label: 'Featured', title: '', description: '', href: '', ctaLabel: 'Open'},
+    learningPath: [],
+    checklist: [],
+    resources: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
 describe('BlogIndexComponent', () => {
   let fixture: ComponentFixture<BlogIndexComponent>;
   const queryParamMap = new BehaviorSubject(convertToParamMap({}));
+  const topicHubSubject = new BehaviorSubject<readonly Record<string, unknown>[]>([]);
   const posts = Array.from({length: 23}, (_, index) => createPost(index + 1));
 
   beforeEach(async () => {
     queryParamMap.next(convertToParamMap({}));
+    topicHubSubject.next([]);
 
     await TestBed.configureTestingModule({
       imports: [BlogIndexComponent],
@@ -57,8 +93,8 @@ describe('BlogIndexComponent', () => {
         {
           provide: TopicHubRepositoryService,
           useValue: {
-            getPublishedTopicHubs$: () => of([]),
-            getPublishedTopicHubs: () => [],
+            getPublishedTopicHubs$: () => topicHubSubject.asObservable(),
+            getPublishedTopicHubs: () => topicHubSubject.getValue(),
           },
         },
         {
@@ -80,7 +116,7 @@ describe('BlogIndexComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
 
-    expect(element.querySelector('.site-layout.site-layout-reading')).not.toBeNull();
+    expect(element.querySelector('.site-layout.site-layout-wide')).not.toBeNull();
     expect(element.textContent).not.toContain('Notes on frontend engineering');
     expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE);
     expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');
@@ -114,6 +150,30 @@ describe('BlogIndexComponent', () => {
 
     expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('grid');
     expect(element.querySelector('.site-pagination__view[aria-current="true"]')?.textContent?.trim()).toBe('Grid');
+  });
+
+  it('renders quick topic filters and includes a high-signal active topic', () => {
+    topicHubSubject.next([
+      createTopicHub({slug: 'engineering', title: 'Engineering', terms: ['engineering']}),
+      createTopicHub({slug: 'tutorials', title: 'Tutorials', terms: ['tutorials']}),
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const topicChips = [...element.querySelectorAll<HTMLElement>('.blog-topic-chip')];
+    const topicLabels = topicChips.map(chip => chip.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+
+    expect(topicLabels).toEqual([
+      'All 23',
+      'Engineering 23',
+      'Tutorials 5',
+    ]);
+
+    queryParamMap.next(convertToParamMap({topic: 'engineering'}));
+    fixture.detectChanges();
+
+    const activeChip = element.querySelector('.blog-topic-chip--active')?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(activeChip).toBe('Engineering 23');
   });
 
   it('filters posts that match every selected category chip', () => {

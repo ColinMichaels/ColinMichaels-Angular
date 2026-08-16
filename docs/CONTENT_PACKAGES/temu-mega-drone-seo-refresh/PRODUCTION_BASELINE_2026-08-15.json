@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "status": "production-record-verified-editorial-gates-open",
+  "capturedAt": "2026-08-15T22:09:16Z",
+  "route": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
+  "captureScope": "Anonymous public page plus one read-only public Firestore document request. No CMS import, Firestore write, deployment, or YouTube mutation was performed.",
+  "publicIdentity": {
+    "slug": "they-bought-a-full-size-temu-mega-drone",
+    "documentTitle": "They Bought a Full-Size Temu Mega Drone—and Flew It",
+    "articleHeading": "They Bought a Full-Size Temu Mega Drone. Of Course They Flew It.",
+    "description": "Goonzquad ordered a full-size human-carrying mega drone through Temu, assembled it from crates, translated the controls, and actually flew it.",
+    "canonical": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
+    "robots": "index,follow",
+    "publishedAt": "2026-07-11T01:11:53.159Z",
+    "modifiedAt": "2026-07-11T01:11:53.159Z",
+    "displayedDate": "Jul 10, 2026",
+    "displayedWordCount": 1426,
+    "displayedReadingMinutes": 7,
+    "categories": [
+      "Drones & FPV",
+      "Creative Technology",
+      "Opinion"
+    ],
+    "coverStorageObject": "cms/blog-media/they-bought-a-full-size-temu-mega-drone/cover/1783732242450-45938d58-ef28-4234-b6f5-122c795f518c.webp",
+    "openGraphStorageObject": "cms/blog-media/they-bought-a-full-size-temu-mega-drone/open-graph/1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg"
+  },
+  "hydratedDesktop": {
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "settleMilliseconds": 4500,
+    "canonicalMatchesRoute": true,
+    "dialogCount": 0,
+    "bodyScrollLocked": false,
+    "horizontalOverflow": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "contentMarkers": {
+      "hasCurrentTldr": true,
+      "has2026RealityCheck": false,
+      "hasVisibleEvidenceDisclosure": false,
+      "hasEcfrPart103Link": false,
+      "hasDroneTopicLink": false,
+      "hasBuyerVerificationLink": false,
+      "hasGoonzquadVideo": true,
+      "hasReaderFeedback": true,
+      "inlineEditorialImageCount": 0
+    }
+  },
+  "hydratedMobile": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "settleMilliseconds": 5200,
+    "canonicalMatchesRoute": true,
+    "dialogCount": 0,
+    "bodyScrollLocked": false,
+    "horizontalOverflow": false,
+    "contentsToggleExpanded": true,
+    "consoleErrors": 0,
+    "consoleWarnings": 0
+  },
+  "productionRecord": {
+    "id": "post-041c74e0-31f7-460a-8e85-4be3d62d9622",
+    "revision": 0,
+    "revisionFieldPresent": false,
+    "createdAt": "2026-07-11T01:10:09.398Z",
+    "updatedAt": "2026-07-11T01:11:53.159Z",
+    "featured": false,
+    "thumbnail": null,
+    "blockCount": 61,
+    "fingerprintSha256": "0639d07c41b4ef0f4e764d81827eaf778de2c8a0274c0b75b6510bb9f84e001f",
+    "readAt": "2026-08-15T22:21:47Z",
+    "verificationSurface": "public-firestore-rest-read",
+    "note": "The published document has no stored revision field. The trusted publishing contract normalizes that legacy state to effective revision 0, matching the staged package. The fingerprint covers the complete decoded public document and must be rechecked immediately before import."
+  },
+  "packageComparison": {
+    "preserved": [
+      "slug",
+      "canonical",
+      "status",
+      "createdAt",
+      "publishedAt",
+      "categories",
+      "tags",
+      "cover media object",
+      "open graph media object",
+      "Goonzquad video evidence",
+      "all 61 original block IDs with no removals"
+    ],
+    "plannedChanges": [
+      "article title and search title",
+      "excerpt and meta description",
+      "open graph title and description",
+      "featured state from false to true",
+      "visible evidence and no-hands-on disclosure",
+      "2026 Reality Check section",
+      "eCFR Part 103 source link",
+      "Drones & FPV topic continuation",
+      "personal-aircraft buyer-verification continuation",
+      "two disclosed editorial illustrations",
+      "reader poll",
+      "editorial metadata and substantive update note"
+    ],
+    "verifiedDiff": {
+      "productionBlockCount": 61,
+      "packageBlockCount": 71,
+      "commonBlockCount": 61,
+      "changedCommonBlockIds": [
+        "h1",
+        "Dgv4htzux_",
+        "l1",
+        "p46"
+      ],
+      "addedBlockIds": [
+        "research-disclosure-2026",
+        "image-evidence-check",
+        "h-2026-reality",
+        "p-2026-proof",
+        "l-2026-proof-boundaries",
+        "p-2026-part-103",
+        "p-2026-buyer-verification",
+        "image-part-103-planning",
+        "p-2026-cluster-link",
+        "poll-next-drone-check"
+      ],
+      "removedBlockIds": [],
+      "categoriesMatch": true,
+      "tagsMatch": true,
+      "canonicalMatches": true,
+      "coverObjectMatches": true,
+      "openGraphObjectMatches": true
+    },
+    "remainingUnverifiedGates": [
+      "authenticated Production Preview rendering",
+      "CMS role authorization and trusted Function acceptance",
+      "Colin's final source, rights, voice, title, featured-state, and editorial approval",
+      "immediate pre-import production fingerprint recheck"
+    ]
+  },
+  "readiness": {
+    "state": "blocked_editorial_approval_and_authenticated_preview",
+    "safeToImport": false,
+    "requiredGates": [
+      "Run npm run verify:temu-production immediately before import and stop on any fingerprint drift.",
+      "Recheck all volatile sources and third-party media immediately before import.",
+      "Obtain Colin's final approval for voice, title, disclosures, rights, new illustrations, poll, and featured-state change.",
+      "Load the exact record through the authenticated CMS and inspect Production Preview at desktop and mobile widths.",
+      "Confirm the trusted publishing workflow accepts effective revision 0 and will commit revision 1.",
+      "Preserve the fingerprinted production record as the rollback authority.",
+      "After approval, re-run all package, live-record, build, lint, and responsive public verification gates."
+    ]
+  },
+  "externalActions": {
+    "cmsImport": false,
+    "firestoreWrite": false,
+    "articleUpdate": false,
+    "siteDeployment": false,
+    "youtubeMutation": false,
+    "outreach": false,
+    "commit": false,
+    "push": false
+  }
+}
