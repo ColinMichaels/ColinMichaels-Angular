@@ -12,6 +12,7 @@ describe('ReaderMembershipInviteComponent', () => {
   let authState: BehaviorSubject<AuthState>;
   let campaignState: jasmine.SpyObj<BlogMembershipCampaignStateService>;
   let analytics: jasmine.SpyObj<SiteAnalyticsService>;
+  let scrollYSpy: jasmine.Spy<() => number>;
 
   beforeEach(async () => {
     authState = new BehaviorSubject<AuthState>(INITIAL_AUTH_STATE);
@@ -38,15 +39,48 @@ describe('ReaderMembershipInviteComponent', () => {
 
     fixture = TestBed.createComponent(ReaderMembershipInviteComponent);
     fixture.componentRef.setInput('postSlug', 'a-useful-story');
-    fixture.detectChanges();
   });
 
   afterEach(() => fixture.destroy());
 
-  it('waits for a confirmed anonymous session before showing the inline offer', () => {
-    expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).toBeNull();
+  const setWindowScrollState = (scrollY: number): void => {
+    scrollYSpy.and.returnValue(scrollY);
+    window.dispatchEvent(new Event('scroll'));
+  };
 
+  const setScrollHeights = (documentHeight = 2000, viewportHeight = 800): void => {
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      configurable: true,
+      value: documentHeight,
+      writable: false,
+    });
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      configurable: true,
+      value: viewportHeight,
+      writable: false,
+    });
+    Object.defineProperty(document.body, 'scrollHeight', {
+      configurable: true,
+      value: documentHeight,
+      writable: false,
+    });
+    scrollYSpy = spyOnProperty(window, 'scrollY', 'get').and.returnValue(0);
+  };
+
+  it('waits for a confirmed anonymous session with scroll engagement before showing the inline offer', () => {
+    setScrollHeights();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).toBeNull();
     authState.next({status: 'unauthenticated', user: null});
+    fixture.detectChanges();
+    setWindowScrollState(0);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).toBeNull();
+    expect(analytics.trackReaderMembershipInvite).not.toHaveBeenCalled();
+
+    setWindowScrollState(520);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).not.toBeNull();
@@ -57,7 +91,10 @@ describe('ReaderMembershipInviteComponent', () => {
   });
 
   it('keeps every account action visible with the article redirect', () => {
+    setScrollHeights();
     authState.next({status: 'unauthenticated', user: null});
+    fixture.detectChanges();
+    setWindowScrollState(1000);
     fixture.detectChanges();
 
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
@@ -77,7 +114,10 @@ describe('ReaderMembershipInviteComponent', () => {
   });
 
   it('snoozes and removes the inline offer without blocking reading', () => {
+    setScrollHeights();
     authState.next({status: 'unauthenticated', user: null});
+    fixture.detectChanges();
+    setWindowScrollState(1000);
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('button') as HTMLButtonElement).click();

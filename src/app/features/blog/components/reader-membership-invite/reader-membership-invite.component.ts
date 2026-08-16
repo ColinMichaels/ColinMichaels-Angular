@@ -1,4 +1,15 @@
-import {ChangeDetectionStrategy, Component, computed, effect, inject, input, signal} from '@angular/core';
+import {DOCUMENT} from '@angular/common';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  input,
+  signal
+} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
@@ -162,26 +173,30 @@ import {BlogMembershipCampaignStateService} from '../../services/blog-membership
     }
   `],
 })
-export class ReaderMembershipInviteComponent {
+export class ReaderMembershipInviteComponent implements AfterViewInit {
   readonly postSlug = input.required<string>();
 
   private readonly auth = inject(AuthService);
   private readonly analytics = inject(SiteAnalyticsService);
   private readonly campaignState = inject(BlogMembershipCampaignStateService);
+  private readonly document = inject(DOCUMENT);
   private readonly authState = toSignal(this.auth.authState$, {initialValue: INITIAL_AUTH_STATE});
   private readonly dismissed = signal(false);
+  private readonly hasMeaningfulEngagement = signal(false);
   private impressionTracked = false;
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly visible = computed(() => (
     !this.dismissed()
       && this.authState().status === 'unauthenticated'
+    && this.hasMeaningfulEngagement()
       && this.campaignState.shouldPromptAnonymousReader()
   ));
 
   constructor() {
     effect(() => {
       const postSlug = this.postSlug().trim();
+      this.hasMeaningfulEngagement.set(false);
 
       if (!this.visible() || !postSlug || this.impressionTracked) {
         return;
@@ -190,6 +205,15 @@ export class ReaderMembershipInviteComponent {
       this.impressionTracked = true;
       this.analytics.trackReaderMembershipInvite(postSlug, 'view');
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.refreshEngagementVisibility();
+  }
+
+  @HostListener('window:scroll')
+  protected onScroll(): void {
+    this.refreshEngagementVisibility();
   }
 
   protected accountQueryParams(mode: 'login' | 'register'): Record<string, string> {
@@ -208,5 +232,30 @@ export class ReaderMembershipInviteComponent {
     this.analytics.trackReaderMembershipInvite(this.postSlug(), 'dismiss');
     this.campaignState.snooze(30);
     this.dismissed.set(true);
+  }
+
+  private refreshEngagementVisibility(): void {
+    const view = this.document.defaultView;
+    if (!view) {
+      return;
+    }
+
+    const documentHeight = Math.max(
+      view.document.documentElement?.scrollHeight ?? 0,
+      view.document.body?.scrollHeight ?? 0,
+      0
+    );
+    const viewportHeight = view.document.documentElement?.clientHeight ?? view.innerHeight ?? 0;
+    const maxScroll = documentHeight - viewportHeight;
+    const scrollThreshold = Math.min(700, Math.max(260, maxScroll * 0.4));
+
+    if (maxScroll <= 0) {
+      this.hasMeaningfulEngagement.set(true);
+      return;
+    }
+
+    if (view.scrollY >= scrollThreshold) {
+      this.hasMeaningfulEngagement.set(true);
+    }
   }
 }
