@@ -1,6 +1,7 @@
 import {Injectable, computed, inject, signal} from '@angular/core';
 
 import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
+import {CelebrationService} from '../../../shared/celebration/celebration.service';
 import {DailyDiscoveryAnswerResult, DailyDiscoveryChallenge} from '../models/daily-discovery.model';
 import {DailyDiscoveryService} from './daily-discovery.service';
 import {DailyDiscoveryStateService} from './daily-discovery-state.service';
@@ -16,6 +17,7 @@ export class DailyDiscoveryPlayService {
   private readonly dailyDiscoveryService = inject(DailyDiscoveryService);
   private readonly localState = inject(DailyDiscoveryStateService);
   private readonly analytics = inject(SiteAnalyticsService);
+  private readonly celebration = inject(CelebrationService);
   private returnFocus: HTMLElement | null = null;
 
   readonly challenge = signal<DailyDiscoveryChallenge | null>(null);
@@ -119,6 +121,12 @@ export class DailyDiscoveryPlayService {
       if (result.correct) {
         this.localState.markCompleted(challenge.dateKey, challenge.id);
         this.isCompleted.set(true);
+
+        if (result.awarded && (result.points ?? 0) > 0) {
+          this.celebration.celebratePointsAwarded(result.points ?? 0);
+        } else {
+          this.celebration.celebrateCorrectAnswer();
+        }
 
         if (result.dailyComplete) {
           this.analytics.trackDailyDiscoveryComplete(

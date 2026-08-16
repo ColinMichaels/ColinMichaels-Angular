@@ -95,7 +95,7 @@ export class SiteAnalyticsService {
   trackShare(
     content: SiteAnalyticsContent | null,
     method: string,
-    sourceComponent: 'article' | 'homepage',
+    sourceComponent: 'article' | 'homepage' | 'site_footer',
     signedIn: boolean
   ): void {
     this.trackEvent('share', {

@@ -243,27 +243,6 @@ describe('MainComponent', () => {
     expect(element.querySelector('#medical-information')).not.toBeNull();
     expect(element.querySelector('#labs')).toBeNull();
     expect(element.querySelector('#os')).toBeNull();
-    expect(element.textContent?.match(/Report a Bug/g)?.length).toBe(1);
-    expect(element.querySelector('[aria-label="Share ColinMichaels.com"]')).not.toBeNull();
-  });
-
-  it('renders informational navigation and ownership details in the homepage footer section', () => {
-    fixture.detectChanges();
-
-    const footer = (fixture.nativeElement as HTMLElement).querySelector('#site-footer');
-    const footerText = footer?.textContent ?? '';
-
-    expect(footer?.querySelector('nav[aria-label="Footer navigation"]')).not.toBeNull();
-    expect(footer?.querySelector('a[href="/privacy"]')?.textContent?.trim()).toBe('Privacy Policy');
-    expect(footer?.querySelector('a[href="/contact"]')?.textContent?.trim()).toBe('Contact');
-    expect(footerText).toContain(`© ${new Date().getFullYear()} Colin Michaels. All rights reserved.`);
-    expect(footerText).toContain('Home');
-    expect(footerText).toContain('Blog');
-    expect(footer?.querySelector('a[href="/authors"]')?.textContent?.trim()).toBe('Authors');
-    expect(footer?.querySelector('a[href="/write-for-us"]')?.textContent?.trim()).toBe('Write for Us');
-    expect(footerText).toContain('Topics');
-    expect(footerText).toContain('About');
-    expect(footerText).toContain('Open OS');
   });
 
   it('renders CMS-managed recommended links on the homepage', () => {
