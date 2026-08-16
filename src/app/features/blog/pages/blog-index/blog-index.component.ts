@@ -1,13 +1,10 @@
 import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {faCode, faRss} from '@fortawesome/free-solid-svg-icons';
 import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogArticleLibraryService} from '../../services/blog-article-library.service';
-import {BlogCategoryNavComponent} from '../../components/category-nav/blog-category-nav.component';
 import {ContinueReadingShelfComponent} from '../../components/continue-reading-shelf.component';
 import {BlogNextReadComponent} from '../../components/next-read/blog-next-read.component';
 import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
@@ -64,8 +61,6 @@ const MAX_POPULAR_TAGS = 10;
   selector: 'app-blog-index',
   imports: [
     RouterLink,
-    FontAwesomeModule,
-    BlogCategoryNavComponent,
     ContinueReadingShelfComponent,
     BlogNextReadComponent,
     ArticleLibraryControlComponent,
@@ -80,34 +75,47 @@ const MAX_POPULAR_TAGS = 10;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
+      <h1 class="sr-only">Blog</h1>
       <section class="site-layout site-layout-wide blog-index-shell">
-        <header class="blog-section-rule blog-page-header">
-          <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 class="blog-page-title">Blog</h1>
-            </div>
-            <div class="flex flex-wrap gap-2">
+        <section class="blog-index-controls" aria-label="Browse posts">
+          <div class="blog-topic-filters" aria-label="Popular topic filters">
+            <p class="blog-topic-filters__label">Most popular topics</p>
+            <div class="blog-topic-filters__row">
               <a
-                href="/feed.xml"
-                class="blog-action-icon"
-                aria-label="Open RSS feed"
-                title="RSS feed"
+                [routerLink]="['/', pathNames.BLOG]"
+                [queryParams]="topicFilterQueryParams(null)"
+                queryParamsHandling="merge"
+                class="blog-topic-chip"
+                [class.blog-topic-chip--active]="!topicSlug()"
+                [attr.aria-current]="!topicSlug() ? 'page' : null"
               >
-                <fa-icon [icon]="faRss"></fa-icon>
+                All
+                <span class="blog-topic-chip__count" [class.blog-topic-chip__count--active]="!topicSlug()">
+                  {{ allPosts().length }}
+                </span>
               </a>
-              <a
-                href="/feed.json"
-                class="blog-action-icon"
-                aria-label="Open JSON Feed"
-                title="JSON Feed"
-              >
-                <fa-icon [icon]="faCode"></fa-icon>
-              </a>
+
+              @for (topic of popularTopics(); track topic.slug) {
+                <a
+                  [routerLink]="['/', pathNames.BLOG]"
+                  [queryParams]="topicFilterQueryParams(topic.slug)"
+                  queryParamsHandling="merge"
+                  class="blog-topic-chip"
+                  [class.blog-topic-chip--active]="isActiveTopic(topic.slug)"
+                  [attr.aria-current]="isActiveTopic(topic.slug) ? 'page' : null"
+                >
+                  {{ topic.title }}
+                  <span class="blog-topic-chip__count" [class.blog-topic-chip__count--active]="isActiveTopic(topic.slug)">
+                    {{ topic.count }}
+                  </span>
+                </a>
+              } @empty {
+                <span class="blog-topic-chip__empty" aria-hidden="true">No matching topic suggestions yet.</span>
+              }
             </div>
           </div>
-          <div class="blog-archive-toolbar">
-            <app-blog-category-nav [selectedSlugs]="selectedCategorySlugs()"></app-blog-category-nav>
 
+          <div class="blog-index-display-controls">
             <app-site-pagination
               [totalItems]="posts().length"
               [routeCommands]="['/', pathNames.BLOG]"
@@ -120,43 +128,11 @@ const MAX_POPULAR_TAGS = 10;
               defaultView="image-title"
               viewAriaLabel="Blog post view options"
             ></app-site-pagination>
-          </div>
-        </header>
 
-        <section class="blog-topic-filters" aria-label="Popular topic filters">
-          <p class="blog-topic-filters__label">Most popular topics</p>
-          <div class="blog-topic-filters__row">
-            <a
-              [routerLink]="['/', pathNames.BLOG]"
-              [queryParams]="topicFilterQueryParams(null)"
-              queryParamsHandling="merge"
-              class="blog-topic-chip"
-              [class.blog-topic-chip--active]="!topicSlug()"
-              [attr.aria-current]="!topicSlug() ? 'page' : null"
-            >
-              All
-              <span class="blog-topic-chip__count" [class.blog-topic-chip__count--active]="!topicSlug()">
-                {{ allPosts().length }}
-              </span>
-            </a>
-
-            @for (topic of popularTopics(); track topic.slug) {
-              <a
-                [routerLink]="['/', pathNames.BLOG]"
-                [queryParams]="topicFilterQueryParams(topic.slug)"
-                queryParamsHandling="merge"
-                class="blog-topic-chip"
-                [class.blog-topic-chip--active]="isActiveTopic(topic.slug)"
-                [attr.aria-current]="isActiveTopic(topic.slug) ? 'page' : null"
-              >
-                {{ topic.title }}
-                <span class="blog-topic-chip__count" [class.blog-topic-chip__count--active]="isActiveTopic(topic.slug)">
-                  {{ topic.count }}
-                </span>
-              </a>
-            } @empty {
-              <span class="blog-topic-chip__empty" aria-hidden="true">No matching topic suggestions yet.</span>
-            }
+            <div class="blog-index-feed-links" aria-label="Blog feeds">
+              <a href="/feed.xml" class="site-inline-link">RSS</a>
+              <a href="/feed.json" class="site-inline-link">JSON feed</a>
+            </div>
           </div>
         </section>
 
@@ -200,7 +176,7 @@ const MAX_POPULAR_TAGS = 10;
             }
 
             @if (sidebarNextReadPost(); as nextReadPost) {
-              <app-blog-next-read [post]="nextReadPost"></app-blog-next-read>
+              <app-blog-next-read [post]="nextReadPost" [compact]="true"></app-blog-next-read>
             }
 
             <app-daily-discovery-rail></app-daily-discovery-rail>
@@ -251,8 +227,18 @@ const MAX_POPULAR_TAGS = 10;
     </main>
   `,
   styles: [`
-    .blog-topic-filters {
+    .blog-index-controls {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem 2rem;
       margin: 0.35rem 0 1.75rem;
+      padding-bottom: 1.1rem;
+      border-bottom: 1px solid var(--site-border);
+    }
+
+    .blog-topic-filters {
+      min-width: 0;
     }
 
     .blog-topic-filters__label {
@@ -270,6 +256,21 @@ const MAX_POPULAR_TAGS = 10;
       flex-wrap: wrap;
       align-items: center;
       gap: 0.62rem;
+    }
+
+    .blog-index-display-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.85rem;
+      flex: 0 0 auto;
+    }
+
+    .blog-index-feed-links {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      white-space: nowrap;
     }
 
     .blog-topic-chip {
@@ -408,18 +409,38 @@ const MAX_POPULAR_TAGS = 10;
     .blog-index-sidebar {
       min-width: 0;
       display: grid;
-      gap: 1.1rem;
+      align-content: start;
+      gap: 1.5rem;
     }
 
     @media (min-width: 1024px) {
       .blog-index-content {
-        grid-template-columns: minmax(0, 1fr) minmax(24rem, 30rem);
-        gap: clamp(1.6rem, 3.2vw, 2.75rem);
+        grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
+        gap: clamp(1.5rem, 2.6vw, 2.25rem);
       }
 
       .blog-index-sidebar {
         position: sticky;
         top: 1rem;
+      }
+    }
+
+    @media (max-width: 63.99rem) {
+      .blog-index-controls {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .blog-index-display-controls {
+        justify-content: space-between;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 39.99rem) {
+      .blog-index-display-controls {
+        align-items: start;
+        flex-direction: column;
       }
     }
 
@@ -445,8 +466,6 @@ export class BlogIndexComponent {
   protected readonly pathNames = PATH_NAMES;
   protected readonly postsPageSize = DEFAULT_PAGINATION_PAGE_SIZE;
   protected readonly archiveViewOptions = BLOG_ARCHIVE_VIEW_OPTIONS;
-  protected readonly faCode = faCode;
-  protected readonly faRss = faRss;
   protected readonly allPosts = toSignal(this.blogRepository.getPublishedPosts$(), {initialValue: []});
   protected readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});

@@ -44,4 +44,25 @@ describe('BlogNextReadComponent', () => {
 
     expect(analytics.trackContentSelection).toHaveBeenCalledWith(post, 'related_reading');
   });
+
+  it('uses the compact rail treatment when embedded in an archive sidebar', async () => {
+    const analytics = jasmine.createSpyObj<SiteAnalyticsService>(
+      'SiteAnalyticsService',
+      ['trackContentSelection']
+    );
+    await TestBed.configureTestingModule({
+      imports: [BlogNextReadComponent, RouterTestingModule],
+      providers: [{provide: SiteAnalyticsService, useValue: analytics}],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BlogNextReadComponent);
+    fixture.componentRef.setInput('post', post);
+    fixture.componentRef.setInput('compact', true);
+    fixture.detectChanges();
+
+    const panel = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="blog-next-read"]');
+
+    expect(panel?.classList.contains('blog-next-read--compact')).toBeTrue();
+    expect(panel?.classList.contains('mt-10')).toBeFalse();
+  });
 });

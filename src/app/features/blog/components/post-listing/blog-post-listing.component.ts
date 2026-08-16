@@ -520,8 +520,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__article {
-      grid-template-columns: minmax(15rem, 1.05fr) minmax(0, 0.95fr);
-      min-height: clamp(19rem, 34vw, 25rem);
+      grid-template-columns: minmax(14rem, 0.92fr) minmax(0, 1.08fr);
+      min-height: clamp(17.5rem, 27vw, 22rem);
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__content {
@@ -529,8 +529,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__title {
-      font-size: clamp(2rem, 3.2vw, 3rem);
-      line-height: 1.04;
+      font-size: clamp(1.9rem, 2.6vw, 2.55rem);
+      line-height: 1.08;
     }
 
     .post-listing--editorial .post-listing__item:first-child .post-listing__excerpt {

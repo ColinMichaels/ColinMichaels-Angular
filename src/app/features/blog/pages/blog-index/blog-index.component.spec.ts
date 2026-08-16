@@ -178,11 +178,13 @@ describe('BlogIndexComponent', () => {
     expect(renderedPosts.length).toBe(DEFAULT_PAGINATION_PAGE_SIZE);
     expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');
     expect(renderedPosts[DEFAULT_PAGINATION_PAGE_SIZE - 1].getAttribute('data-post-id')).toBe('post-10');
-    expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('list');
+    expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('editorial');
     expect(element.querySelector('.site-pagination__view[aria-current="true"]')?.textContent?.trim()).toBe('Image + title');
     expect(element.querySelector('.site-pagination__summary')?.textContent).toContain('Showing 1–10 of 23 posts');
     expect(element.querySelectorAll('.site-pagination__views').length).toBe(1);
-    expect(element.querySelector('.blog-page-header .site-pagination__views')).not.toBeNull();
+    expect(element.querySelector('.blog-index-display-controls .site-pagination__views')).not.toBeNull();
+    expect(element.querySelector('.blog-page-title')).toBeNull();
+    expect(element.querySelector('app-blog-category-nav')).toBeNull();
   });
 
   it('updates the rendered blog slice from the page query parameter', () => {
@@ -273,17 +275,16 @@ describe('BlogIndexComponent', () => {
     expect(suggestedLinks.includes(continueReadHref)).toBeFalse();
   });
 
-  it('filters posts that match every selected category chip', () => {
+  it('honors direct category filters without rendering a redundant category search control', () => {
     queryParamMap.next(convertToParamMap({categories: 'engineering,tutorials'}));
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
     const renderedPosts = element.querySelectorAll('[data-post-id]');
-    const selectedChips = [...element.querySelectorAll<HTMLElement>('.category-filter__chip')];
 
     expect(renderedPosts.length).toBe(5);
     expect(renderedPosts[0].getAttribute('data-post-id')).toBe('post-1');
     expect(renderedPosts[4].getAttribute('data-post-id')).toBe('post-5');
-    expect(selectedChips.map(chip => chip.textContent?.trim())).toEqual(['Engineering', 'Tutorials']);
+    expect(element.querySelector('app-blog-category-nav')).toBeNull();
   });
 });
