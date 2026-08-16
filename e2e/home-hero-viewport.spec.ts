@@ -21,6 +21,7 @@ test.describe('homepage hero viewport fit', () => {
       const discoveryRail = document.querySelector<HTMLElement>('app-daily-discovery-rail');
       const panelRect = panel?.getBoundingClientRect();
       const imageRect = storyImage?.getBoundingClientRect();
+      const imageStyle = storyImage ? getComputedStyle(storyImage) : null;
       const shellRect = hero?.querySelector<HTMLElement>('.home-hero-shell')?.getBoundingClientRect();
       const copyRect = copy?.getBoundingClientRect();
       const discoveryRailRect = discoveryRail?.getBoundingClientRect();
@@ -34,6 +35,7 @@ test.describe('homepage hero viewport fit', () => {
         panelRight: Math.round((panelRect?.right ?? 0) * 100) / 100,
         panelHeight: Math.round((panelRect?.height ?? 0) * 100) / 100,
         imageHeight: Math.round((imageRect?.height ?? 0) * 100) / 100,
+        imageObjectFit: imageStyle?.objectFit ?? '',
         copyHeight: Math.round((copyRect?.height ?? 0) * 100) / 100,
         copyBottom: Math.round((copyRect?.bottom ?? 0) * 100) / 100,
         discoveryRailTop: Math.round((discoveryRailRect?.top ?? 0) * 100) / 100,
@@ -46,6 +48,7 @@ test.describe('homepage hero viewport fit', () => {
     expect(metrics.panelRight).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.panelHeight).toBeLessThanOrEqual(metrics.viewportHeight * 0.85);
     expect(metrics.imageHeight).toBeLessThanOrEqual(metrics.viewportHeight * 0.85);
+    expect(metrics.imageObjectFit).toBe('contain');
     expect(metrics.copyHeight).toBeLessThanOrEqual(metrics.viewportHeight * 0.9);
     expect(metrics.copyBottom).toBeLessThanOrEqual(metrics.discoveryRailTop);
   });

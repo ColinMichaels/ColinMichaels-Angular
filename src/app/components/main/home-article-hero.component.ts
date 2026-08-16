@@ -569,14 +569,13 @@ interface EditorialMediaSet {
       position: relative;
       display: block;
       min-width: 0;
-      /* Constrain media to the hero container width so images never overflow the viewport. */
+      /* Keep a stable landscape frame so featured artwork is never squeezed into a cropped strip. */
       max-width: 100%;
       width: 100%;
-      max-height: clamp(11.25rem, 26svh, 15.5rem);
       overflow: hidden;
       border: 1px solid rgb(var(--home-hero-topic-rgb) / 0.27);
       background: #020617;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 16 / 9;
       text-decoration: none;
     }
 
@@ -592,15 +591,14 @@ interface EditorialMediaSet {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       filter: saturate(0.98) contrast(1.03);
-      transition: filter 240ms ease, transform 360ms ease;
+      transition: filter 240ms ease;
     }
 
     .home-hero-panel:hover .home-hero-panel-image,
     .home-hero-panel:focus-visible .home-hero-panel-image {
       filter: saturate(1.04) contrast(1.04);
-      transform: scale(1.018);
     }
 
     app-daily-discovery-rail {
@@ -730,10 +728,8 @@ interface EditorialMediaSet {
       }
 
       .home-hero-panel {
-        max-height: min(13.5rem, 30svh);
         margin-inline: 0;
         border-inline: 0;
-        aspect-ratio: 4 / 3;
       }
 
       .home-hero-post-title {
