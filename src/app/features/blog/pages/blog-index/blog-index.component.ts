@@ -11,6 +11,8 @@ import {BlogCategoryNavComponent} from '../../components/category-nav/blog-categ
 import {ContinueReadingShelfComponent} from '../../components/continue-reading-shelf.component';
 import {BlogNextReadComponent} from '../../components/next-read/blog-next-read.component';
 import {BlogPostListingComponent} from '../../components/post-listing/blog-post-listing.component';
+import {ArticleLibraryControlComponent} from '../../components/article-library-control/article-library-control.component';
+import {BlogPostRailComponent} from '../../components/post-rail/blog-post-rail.component';
 import {BlogOpenGraphService} from '../../services/blog-open-graph.service';
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
@@ -23,6 +25,7 @@ import {
   parsePaginationPage,
 } from '../../../../shared/pagination/pagination.util';
 import {SitePaginationComponent} from '../../../../shared/pagination/site-pagination.component';
+import {YouTubeLatestVideosComponent} from '../../../youtube/components/latest-videos/youtube-latest-videos.component';
 import {
   BLOG_ARCHIVE_VIEW_OPTIONS,
   parseBlogArchiveView,
@@ -30,9 +33,14 @@ import {
 } from '../../utils/blog-archive-view.util';
 import {
   createBlogCategorySlug,
+  createBlogCategoryTitle,
+  createBlogTagTaxonomyRoute,
   getBlogTaxonomyTerms,
   parseBlogCategoryFilterSlugs,
 } from '../../utils/blog-category-url.util';
+import {BlogTopicGuideComponent} from '../../components/topic-guide/blog-topic-guide.component';
+
+type BlogTagRouteKind = ReturnType<typeof createBlogTagTaxonomyRoute>['kind'];
 
 interface PopularTopicFilter {
   slug: string;
@@ -40,7 +48,15 @@ interface PopularTopicFilter {
   count: number;
 }
 
+interface PopularTagFilter {
+  slug: string;
+  label: string;
+  kind: BlogTagRouteKind;
+  count: number;
+}
+
 const MAX_POPULAR_TOPICS = 6;
+const MAX_POPULAR_TAGS = 10;
 
 @Component({
   selector: 'app-blog-index',
@@ -50,13 +66,17 @@ const MAX_POPULAR_TOPICS = 6;
     BlogCategoryNavComponent,
     ContinueReadingShelfComponent,
     BlogNextReadComponent,
+    ArticleLibraryControlComponent,
+    BlogPostRailComponent,
+    BlogTopicGuideComponent,
     BlogPostListingComponent,
+    YouTubeLatestVideosComponent,
     SitePaginationComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="blog-page">
-      <section class="site-layout site-layout-wide">
+      <section class="site-layout site-layout-wide blog-index-shell">
         <header class="blog-section-rule blog-page-header">
           <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -171,11 +191,52 @@ const MAX_POPULAR_TOPICS = 6;
           </section>
 
           <aside class="blog-index-sidebar" aria-label="Reading suggestions">
+            @if (activeTopic(); as topic) {
+              <app-blog-topic-guide [topic]="topic"></app-blog-topic-guide>
+            }
+
             @if (sidebarNextReadPost(); as nextReadPost) {
               <app-blog-next-read [post]="nextReadPost"></app-blog-next-read>
             }
 
+            <app-article-library-control surface="menu"></app-article-library-control>
+
             <app-continue-reading-shelf surface="blog" [maxRecords]="3"></app-continue-reading-shelf>
+
+            @if (sidebarPopularTags().length > 0) {
+              <section class="blog-index-sidebar-panel" aria-label="Popular tags">
+                <p class="blog-index-sidebar-panel__heading">Popular tags</p>
+                <div class="blog-index-sidebar-tags">
+                  @for (tag of sidebarPopularTags(); track tag.slug) {
+                    <a
+                      [routerLink]="['/', pathNames.BLOG, tag.kind, tag.slug]"
+                      class="blog-tag-chip blog-index-sidebar-tags__chip"
+                    >
+                      {{ tag.label }}
+                      <span class="blog-index-sidebar-tags__count">{{ tag.count }}</span>
+                    </a>
+                  }
+                </div>
+              </section>
+            }
+
+            @if (sidebarSuggestedPosts().length > 0) {
+              <app-blog-post-rail
+                class="blog-index-sidebar-rail"
+                [suggestedPosts]="sidebarSuggestedPosts()"
+                [postTitle]="'Suggested reading'"
+              ></app-blog-post-rail>
+            }
+
+            <app-youtube-latest-videos
+              class="mt-4"
+              [maxResults]="2"
+              sectionId="blog-index-youtube"
+              heading="Latest from Colin Michaels"
+              description="Watch what I’m testing, building, and flying now."
+              analyticsSourceComponent="blog_index_youtube"
+              [compact]="true"
+            ></app-youtube-latest-videos>
           </aside>
         </div>
       </section>
@@ -200,7 +261,7 @@ const MAX_POPULAR_TOPICS = 6;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.62rem;
     }
 
     .blog-topic-chip {
@@ -211,7 +272,7 @@ const MAX_POPULAR_TOPICS = 6;
       border-radius: 999px;
       background: var(--site-panel);
       color: var(--site-text);
-      padding: 0.4rem 0.72rem;
+      padding: 0.46rem 0.86rem;
       font-size: 0.82rem;
       font-weight: 600;
       line-height: 1.2;
@@ -275,6 +336,63 @@ const MAX_POPULAR_TOPICS = 6;
       grid-template-columns: minmax(0, 1fr);
     }
 
+    .blog-index-shell {
+      max-width: min(88rem, calc(100vw - (var(--site-gutter) * 2)));
+    }
+
+    .blog-index-sidebar-panel {
+      border: 1px solid var(--site-border);
+      background: color-mix(in srgb, var(--site-panel) 66%, var(--site-panel-soft));
+      border-radius: var(--site-radius-surface, 0.75rem);
+      padding: 0.95rem;
+    }
+
+    .blog-index-sidebar-panel__heading {
+      margin: 0 0 0.65rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--site-muted);
+      font-weight: 700;
+      font-family: var(--font-accent);
+    }
+
+    .blog-index-sidebar-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .blog-index-sidebar-tags__chip {
+      align-items: center;
+      border-radius: 999px;
+      font-size: 0.71rem;
+      line-height: 1.15;
+      min-height: 1.95rem;
+      padding-inline: 0.72rem;
+      text-transform: none;
+      letter-spacing: 0.03em;
+      gap: 0.35rem;
+    }
+
+    .blog-index-sidebar-tags__count {
+      display: inline-flex;
+      min-width: 1.22rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--site-accent-strong) 22%, transparent);
+      color: var(--site-accent-strong);
+      font-weight: 700;
+      font-size: 0.62rem;
+      padding: 0.08rem 0.35rem;
+    }
+
+    .blog-index-sidebar-panel + app-blog-post-rail,
+    .blog-index-sidebar-panel + .blog-index-sidebar-rail {
+      border-top: 0;
+    }
+
     .blog-index-main-column {
       min-width: 0;
     }
@@ -287,13 +405,23 @@ const MAX_POPULAR_TOPICS = 6;
 
     @media (min-width: 1024px) {
       .blog-index-content {
-        grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+        grid-template-columns: minmax(0, 1fr) minmax(21rem, 28rem);
+        gap: clamp(1.6rem, 3.2vw, 2.75rem);
       }
 
       .blog-index-sidebar {
         position: sticky;
         top: 1rem;
       }
+    }
+
+    .blog-index-sidebar app-blog-post-rail,
+    .blog-index-sidebar app-article-library-control,
+    .blog-index-sidebar app-youtube-latest-videos,
+    .blog-index-sidebar app-blog-topic-guide,
+    .blog-index-sidebar app-blog-next-read,
+    .blog-index-sidebar app-continue-reading-shelf {
+      width: 100%;
     }
   `],
 })
@@ -392,6 +520,56 @@ export class BlogIndexComponent {
     }
 
     return this.posts()[0] ?? null;
+  });
+  protected readonly sidebarSuggestedPosts = computed(() => {
+    const nextReadSlug = this.sidebarNextReadPost()?.slug;
+
+    return this.posts().filter(post => post.slug !== nextReadSlug).slice(0, 4);
+  });
+  protected readonly sidebarPopularTags = computed((): readonly PopularTagFilter[] => {
+    const tagCounts = new Map<string, {label: string; routeKind: BlogTagRouteKind; count: number}>();
+
+    for (const post of this.posts()) {
+      for (const rawTag of post.tags) {
+        const trimmed = rawTag.trim();
+
+        if (!trimmed) {
+          continue;
+        }
+
+        const route = createBlogTagTaxonomyRoute(trimmed);
+        const routeKey = `${route.kind}:${route.slug}`;
+        const previous = tagCounts.get(routeKey);
+
+        if (previous) {
+          previous.count += 1;
+          continue;
+        }
+
+        tagCounts.set(routeKey, {
+          label: route.kind === 'category' ? createBlogCategoryTitle(route.slug) : trimmed,
+          routeKind: route.kind,
+          count: 1,
+        });
+      }
+    }
+
+    return Array.from(tagCounts.entries())
+      .map(([key, value]) => {
+        const [routeKind, slug] = key.split(':', 2);
+
+        return {
+          slug,
+          label: value.label,
+          kind: routeKind as BlogTagRouteKind,
+          count: value.count,
+        };
+      })
+      .sort((left, right) => (
+        right.count - left.count
+        || left.label.localeCompare(right.label, undefined, {sensitivity: 'base'})
+      ))
+      .slice(0, MAX_POPULAR_TAGS);
   });
   protected readonly totalPages = computed(() => getPaginationPageCount(this.posts().length, this.postsPageSize));
   protected readonly currentPage = computed(() => clampPaginationPage(this.requestedPage(), this.totalPages()));

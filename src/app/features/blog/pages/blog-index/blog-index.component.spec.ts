@@ -11,7 +11,7 @@ import {BlogArticleLibraryService} from '../../services/blog-article-library.ser
 import {BlogRepositoryService} from '../../services/blog-repository.service';
 import {BlogIndexComponent} from './blog-index.component';
 
-function createPost(index: number): BlogPostSummary {
+function createPost(index: number, options: {tags?: readonly string[]} = {}): BlogPostSummary {
   return {
     id: `post-${index}`,
     slug: `post-${index}`,
@@ -21,7 +21,7 @@ function createPost(index: number): BlogPostSummary {
     author: {name: 'Colin Michaels', slug: 'colin-michaels'},
     categories: index <= 5 ? ['Engineering', 'Tutorials'] : ['Engineering'],
     subcategories: [],
-    tags: [],
+    tags: [...(options.tags ?? [])],
     publishedAt: `2026-07-${String(31 - index).padStart(2, '0')}T12:00:00.000Z`,
     updatedAt: `2026-07-${String(31 - index).padStart(2, '0')}T12:00:00.000Z`,
   };
@@ -65,11 +65,65 @@ describe('BlogIndexComponent', () => {
   let fixture: ComponentFixture<BlogIndexComponent>;
   const queryParamMap = new BehaviorSubject(convertToParamMap({}));
   const topicHubSubject = new BehaviorSubject<readonly Record<string, unknown>[]>([]);
-  const posts = Array.from({length: 23}, (_, index) => createPost(index + 1));
+  const posts = Array.from({length: 23}, (_, index) => {
+    const postIndex = index + 1;
+
+    if (postIndex <= 4) {
+      return createPost(postIndex, {tags: ['drone', 'pilot notes']});
+    }
+
+    if (postIndex <= 8) {
+      return createPost(postIndex, {tags: ['recovery']});
+    }
+
+    return createPost(postIndex);
+  });
+  const articleLibraryInProgress = signal<readonly {
+    version: 2;
+    post: {
+      id: string;
+      slug: string;
+      title: string;
+      excerpt: string;
+      coverImage: string;
+      publishedAt: string | null;
+    updatedAt: string | null;
+    };
+    favorite: boolean;
+    readLater: boolean;
+    progressPercent: number;
+    lastReadAt: null;
+    lastHeadingId: null;
+    lastHeadingText: null;
+    completedAt: null;
+    modifiedAt: string;
+  }[]>([]);
+
+  const readingRecord = (post: BlogPostSummary) => ({
+    version: 2 as const,
+    post: {
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      coverImage: post.coverImage,
+      publishedAt: post.publishedAt,
+      updatedAt: post.updatedAt,
+    },
+    favorite: false,
+    readLater: false,
+    progressPercent: 5,
+    lastReadAt: null,
+    lastHeadingId: null,
+    lastHeadingText: null,
+    completedAt: null,
+    modifiedAt: '2026-01-01T00:00:00.000Z',
+  });
 
   beforeEach(async () => {
     queryParamMap.next(convertToParamMap({}));
     topicHubSubject.next([]);
+    articleLibraryInProgress.set([]);
 
     await TestBed.configureTestingModule({
       imports: [BlogIndexComponent],
@@ -103,7 +157,10 @@ describe('BlogIndexComponent', () => {
         },
         {
           provide: BlogArticleLibraryService,
-          useValue: {inProgress: signal([]).asReadonly()},
+          useValue: {
+            inProgress: articleLibraryInProgress.asReadonly(),
+            records: signal([]).asReadonly(),
+          },
         },
       ],
     }).compileComponents();
@@ -174,6 +231,44 @@ describe('BlogIndexComponent', () => {
 
     const activeChip = element.querySelector('.blog-topic-chip--active')?.textContent?.replace(/\s+/g, ' ').trim();
     expect(activeChip).toBe('Engineering 23');
+    expect(element.textContent).toContain('More in Engineering');
+  });
+
+  it('shows reading suggestion modules in the sidebar', () => {
+    articleLibraryInProgress.set([readingRecord(posts[0])]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('app-blog-next-read')).not.toBeNull();
+    expect(element.querySelector('app-article-library-control')).not.toBeNull();
+    expect(element.querySelector('app-continue-reading-shelf')).not.toBeNull();
+    expect(element.querySelector('app-blog-post-rail')).not.toBeNull();
+    expect(element.querySelector('app-youtube-latest-videos')).not.toBeNull();
+  });
+
+  it('shows popular tag suggestion chips in the sidebar', () => {
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const popularTagLinks = [...element.querySelectorAll('.blog-index-sidebar-tags a')];
+    const popularTagLabels = popularTagLinks.map(tag => (tag.textContent ?? '').replace(/\s+/g, ' ').trim());
+
+    expect(popularTagLinks.length).toBeGreaterThan(0);
+    expect(popularTagLabels).toContain('drone 4');
+    expect(popularTagLabels).toContain('Health & Recovery 4');
+    expect(popularTagLabels).toContain('pilot notes 4');
+  });
+
+  it('excludes the next-read post from suggested reading sidebar cards', () => {
+    articleLibraryInProgress.set([readingRecord(posts[0])]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const continueReadHref = '/blog/post-1';
+    const suggestedLinks = [...element.querySelectorAll('app-blog-post-rail a[href]')].map(link => (link as HTMLAnchorElement).getAttribute('href'));
+
+    expect(suggestedLinks.includes(continueReadHref)).toBeFalse();
   });
 
   it('filters posts that match every selected category chip', () => {
