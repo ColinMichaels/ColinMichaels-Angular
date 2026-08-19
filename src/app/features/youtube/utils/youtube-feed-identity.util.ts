@@ -1,20 +1,22 @@
 import {
-  YOUTUBE_CHANNEL_ID,
-  YOUTUBE_CHANNEL_URL,
+  getYouTubeChannelIdentity,
+  type YouTubeChannelKey,
 } from '../../../shared/seo/site-identity';
 import {YouTubeFeedResponse} from '../models/youtube-video.model';
 
-export const YOUTUBE_FEED_IDENTITY_ERROR =
-  'The YouTube feed does not match the canonical Captain Colin channel.';
+export function assertCanonicalYouTubeFeed(
+  feed: YouTubeFeedResponse,
+  channelKey: YouTubeChannelKey,
+): YouTubeFeedResponse {
+  const channel = getYouTubeChannelIdentity(channelKey);
 
-export function assertCanonicalYouTubeFeed(feed: YouTubeFeedResponse): YouTubeFeedResponse {
-  if (feed.channelId.trim() !== YOUTUBE_CHANNEL_ID) {
-    throw new Error(YOUTUBE_FEED_IDENTITY_ERROR);
+  if (feed.channelId.trim() !== channel.id) {
+    throw new Error(`The YouTube feed does not match the canonical ${channel.name} channel.`);
   }
 
   return {
     ...feed,
-    channelId: YOUTUBE_CHANNEL_ID,
-    channelUrl: YOUTUBE_CHANNEL_URL,
+    channelId: channel.id,
+    channelUrl: channel.url,
   };
 }

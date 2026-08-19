@@ -209,8 +209,8 @@ const SCORECARD_FILENAME = 'captain-colin-gadget-usefulness-scorecard.pdf';
                 rel="noopener noreferrer"
                 class="border border-slate-200 p-5 transition-colors hover:border-cyan-600 hover:bg-cyan-50/50 dark:border-zinc-800 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/20"
               >
-                <strong class="text-slate-950 dark:text-zinc-100">Captain Colin on YouTube</strong>
-                <span class="mt-2 block text-sm leading-6 text-slate-600 dark:text-zinc-400">Continue with FPV flights, unusual finds, demonstrations, and creator experiments.</span>
+                <strong class="text-slate-950 dark:text-zinc-100">Colin Michaels on YouTube</strong>
+                <span class="mt-2 block text-sm leading-6 text-slate-600 dark:text-zinc-400">Continue with useful finds, demonstrations, creator builds, and new experiments.</span>
               </a>
             </div>
           </section>

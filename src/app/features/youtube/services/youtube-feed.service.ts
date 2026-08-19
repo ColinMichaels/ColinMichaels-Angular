@@ -4,6 +4,7 @@ import {Observable, from, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 
 import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
+import {PRIMARY_YOUTUBE_CHANNEL_KEY, type YouTubeChannelKey} from '../../../shared/seo/site-identity';
 import {YouTubeFeedRequest, YouTubeFeedResponse} from '../models/youtube-video.model';
 import {assertCanonicalYouTubeFeed} from '../utils/youtube-feed-identity.util';
 
@@ -15,7 +16,10 @@ interface FirebaseCallableResult<T> {
 export class YouTubeFeedService {
   private readonly functions = inject(FIREBASE_FUNCTIONS, {optional: true});
 
-  getLatestVideos$(maxResults = 3): Observable<YouTubeFeedResponse> {
+  getLatestVideos$(
+    maxResults = 3,
+    channel: YouTubeChannelKey = PRIMARY_YOUTUBE_CHANNEL_KEY,
+  ): Observable<YouTubeFeedResponse> {
     const functions = this.getFunctions();
 
     if (!functions) {
@@ -28,8 +32,8 @@ export class YouTubeFeedService {
       {timeout: 30000}
     );
 
-    return from(callable({maxResults}) as Promise<FirebaseCallableResult<YouTubeFeedResponse>>).pipe(
-      map(result => assertCanonicalYouTubeFeed(result.data)),
+    return from(callable({maxResults, channel}) as Promise<FirebaseCallableResult<YouTubeFeedResponse>>).pipe(
+      map(result => assertCanonicalYouTubeFeed(result.data, channel)),
       catchError(error => throwError(() => new Error(this.getFeedErrorMessage(error))))
     );
   }

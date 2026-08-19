@@ -2,8 +2,8 @@ import {ChangeDetectionStrategy, Component, Input, inject} from '@angular/core';
 
 import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {
-  YOUTUBE_CHANNEL_ID,
-  YOUTUBE_SUBSCRIBE_URL,
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+  CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL,
 } from '../../../../shared/seo/site-identity';
 
 @Component({
@@ -76,7 +76,7 @@ export class YouTubeCompanionVideoComponent {
   @Input({required: true}) thumbnailUrl = '';
   @Input({required: true}) articleTitle = '';
 
-  protected readonly subscribeUrl = YOUTUBE_SUBSCRIBE_URL;
+  protected readonly subscribeUrl = CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL;
 
   private readonly analytics = inject(SiteAnalyticsService);
 
@@ -85,6 +85,10 @@ export class YouTubeCompanionVideoComponent {
   }
 
   protected recordSubscriptionSelection(): void {
-    this.analytics.trackYouTubeOutbound(YOUTUBE_CHANNEL_ID, 'subscribe', 'article_companion_youtube');
+    this.analytics.trackYouTubeOutbound(
+      CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+      'subscribe',
+      'article_companion_youtube'
+    );
   }
 }

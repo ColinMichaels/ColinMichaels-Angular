@@ -10,6 +10,7 @@ export interface YouTubeVideo {
 
 export interface YouTubeFeedRequest {
   maxResults?: number;
+  channel?: YouTubeChannelKey;
 }
 
 export interface YouTubeFeedResponse {
@@ -20,3 +21,5 @@ export interface YouTubeFeedResponse {
   channelUrl: string;
   videos: readonly YouTubeVideo[];
 }
+
+import type {YouTubeChannelKey} from '../../../shared/seo/site-identity';

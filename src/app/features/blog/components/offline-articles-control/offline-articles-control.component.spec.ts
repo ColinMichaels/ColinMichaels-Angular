@@ -99,6 +99,43 @@ describe('OfflineArticlesControlComponent', () => {
     expect(element.textContent).not.toContain('Saved offline');
   });
 
+  it('paginates the profile surface into pages of ten without growing the page', () => {
+    const manyRecords = Array.from({length: 23}, (_, index) =>
+      createRecord(`offline-post-${index}`, `Offline Post ${index}`));
+    records.set(manyRecords);
+    fixture.componentRef.setInput('surface', 'profile');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelectorAll('a[href^="/blog/offline-post-"]').length).toBe(10);
+    expect(element.textContent).toContain('Page 1 of 3');
+
+    const nextButton = [...element.querySelectorAll('button')]
+      .find(button => button.textContent?.includes('Next')) as HTMLButtonElement | undefined;
+    nextButton?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('a[href^="/blog/offline-post-"]').length).toBe(10);
+    expect(element.textContent).toContain('Page 2 of 3');
+
+    nextButton?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('a[href^="/blog/offline-post-"]').length).toBe(3);
+    expect(element.textContent).toContain('Page 3 of 3');
+  });
+
+  it('does not paginate the menu surface', () => {
+    const manyRecords = Array.from({length: 15}, (_, index) =>
+      createRecord(`menu-offline-post-${index}`, `Menu Offline Post ${index}`));
+    records.set(manyRecords);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelectorAll('a[href^="/blog/menu-offline-post-"]').length).toBe(15);
+    expect(element.textContent).not.toContain('Page 1 of');
+  });
+
   it('shows an empty offline manager on the profile surface', () => {
     records.set([]);
     fixture.componentRef.setInput('surface', 'profile');

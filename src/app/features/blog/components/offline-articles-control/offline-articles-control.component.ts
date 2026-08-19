@@ -1,7 +1,13 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, inject, signal} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
+import {
+  DEFAULT_PAGINATION_PAGE_SIZE,
+  clampPaginationPage,
+  getPaginationPageCount,
+  paginateItems,
+} from '../../../../shared/pagination/pagination.util';
 import {OfflineBlogPostService} from '../../services/offline-blog-post.service';
 
 @Component({
@@ -26,7 +32,7 @@ import {OfflineBlogPostService} from '../../services/offline-blog-post.service';
           </div>
 
           <div class="grid gap-1">
-            @for (record of records; track record.post.id) {
+            @for (record of visibleRecords(); track record.post.id) {
               <div class="grid min-h-11 grid-cols-[minmax(0,1fr)_2.75rem] items-stretch rounded-lg border border-transparent transition hover:border-cyan-200 hover:bg-cyan-50 dark:hover:border-cyan-300/30 dark:hover:bg-zinc-900">
                 <a
                   [routerLink]="['/', pathNames.BLOG, record.post.slug]"
@@ -61,6 +67,31 @@ import {OfflineBlogPostService} from '../../services/offline-blog-post.service';
             }
           </div>
 
+          @if (surface === 'profile' && pageCount() > 1) {
+            <nav class="mt-2 flex items-center justify-between gap-3 px-2" aria-label="Saved offline pages">
+              <button
+                type="button"
+                class="inline-flex h-8 items-center gap-1 rounded px-2 text-[0.7rem] font-semibold text-slate-600 transition hover:text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-600 dark:text-zinc-400 dark:hover:text-cyan-200 dark:disabled:hover:text-zinc-400"
+                [disabled]="currentPage() === 1"
+                (click)="goToPreviousPage()"
+              >
+                <span aria-hidden="true">‹</span> Prev
+              </button>
+              <span class="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-zinc-500"
+                    aria-live="polite">
+                Page {{ currentPage() }} of {{ pageCount() }}
+              </span>
+              <button
+                type="button"
+                class="inline-flex h-8 items-center gap-1 rounded px-2 text-[0.7rem] font-semibold text-slate-600 transition hover:text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-600 dark:text-zinc-400 dark:hover:text-cyan-200 dark:disabled:hover:text-zinc-400"
+                [disabled]="currentPage() === pageCount()"
+                (click)="goToNextPage()"
+              >
+                Next <span aria-hidden="true">›</span>
+              </button>
+            </nav>
+          }
+
           @if (records.length > 1) {
             <button
               type="button"
@@ -91,6 +122,29 @@ export class OfflineArticlesControlComponent {
   protected readonly busySlug = signal<string | null>(null);
   protected readonly clearing = signal(false);
   protected readonly statusMessage = signal<string | null>(null);
+  protected readonly pageSize = DEFAULT_PAGINATION_PAGE_SIZE;
+  protected readonly page = signal(1);
+  protected readonly pageCount = computed(() =>
+    getPaginationPageCount(this.offlinePosts.records().length, this.pageSize)
+  );
+  protected readonly currentPage = computed(() =>
+    clampPaginationPage(this.page(), this.pageCount())
+  );
+  protected readonly visibleRecords = computed(() => {
+    const records = this.offlinePosts.records();
+
+    return this.surface === 'profile'
+      ? paginateItems(records, this.currentPage(), this.pageSize)
+      : records;
+  });
+
+  protected goToPreviousPage(): void {
+    this.page.set(Math.max(1, this.currentPage() - 1));
+  }
+
+  protected goToNextPage(): void {
+    this.page.set(Math.min(this.pageCount(), this.currentPage() + 1));
+  }
 
   protected async remove(slug: string): Promise<void> {
     if (this.busySlug() || this.clearing()) {
