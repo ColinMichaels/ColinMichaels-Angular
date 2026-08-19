@@ -2,8 +2,8 @@ import {TestBed} from '@angular/core/testing';
 
 import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {
-  YOUTUBE_CHANNEL_ID,
-  YOUTUBE_SUBSCRIBE_URL,
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+  CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL,
 } from '../../../../shared/seo/site-identity';
 import {YouTubeCompanionVideoComponent} from './youtube-companion-video.component';
 
@@ -33,7 +33,7 @@ describe('YouTubeCompanionVideoComponent', () => {
       .find(link => link.textContent?.trim() === 'Subscribe');
 
     expect(watchLink?.href).toBe('https://www.youtube.com/watch?v=L229QDxDakU');
-    expect(subscribeLink?.href).toBe(YOUTUBE_SUBSCRIBE_URL);
+    expect(subscribeLink?.href).toBe(CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL);
     expect(element.querySelector('img')?.alt).toBe('Companion video for A Florida FPV flight');
 
     watchLink?.click();
@@ -45,7 +45,7 @@ describe('YouTubeCompanionVideoComponent', () => {
       'article_companion_youtube'
     );
     expect(analytics.trackYouTubeOutbound).toHaveBeenCalledWith(
-      YOUTUBE_CHANNEL_ID,
+      CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
       'subscribe',
       'article_companion_youtube'
     );

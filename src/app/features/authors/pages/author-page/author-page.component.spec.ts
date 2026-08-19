@@ -111,7 +111,7 @@ describe('AuthorPageComponent', () => {
     };
 
     expect(structuredData.mainEntity?.sameAs).toEqual([
-      'https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA',
+      'https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ',
       'https://www.instagram.com/colinmichaels/',
       'https://github.com/ColinMichaels',
       'https://www.linkedin.com/in/colinmichaels',

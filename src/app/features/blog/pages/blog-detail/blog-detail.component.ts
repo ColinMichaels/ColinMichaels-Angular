@@ -312,6 +312,7 @@ function normalizeHealthTerm(value: string): string {
                   @defer (on viewport) {
                     <app-youtube-latest-videos
                       class="mt-12 block overflow-hidden rounded-2xl"
+                      channel="captain-colin"
                       [maxResults]="3"
                       sectionId="article-drone-youtube"
                       eyebrow="Continue with Captain Colin"

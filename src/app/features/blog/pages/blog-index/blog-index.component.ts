@@ -230,6 +230,7 @@ const MAX_POPULAR_TAGS = 10;
 
             <app-youtube-latest-videos
               class="mt-4"
+              channel="colin-michaels"
               [maxResults]="2"
               sectionId="blog-index-youtube"
               heading="Latest from Colin Michaels"

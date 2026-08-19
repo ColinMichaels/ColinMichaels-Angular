@@ -20,7 +20,7 @@ describe('AuthorBioComponent', () => {
 
     expect(hrefs).toContain('/authors/colin-michaels');
     expect(hrefs).toContain('/editorial-standards');
-    expect(hrefs).toContain('https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA');
+    expect(hrefs).toContain('https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ');
     expect(hrefs).toContain('https://www.instagram.com/colinmichaels/');
     expect(hrefs).toContain('https://github.com/ColinMichaels');
     expect(hrefs).toContain('https://www.linkedin.com/in/colinmichaels');

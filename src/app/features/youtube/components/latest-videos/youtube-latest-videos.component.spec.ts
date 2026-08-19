@@ -3,6 +3,7 @@ import {of} from 'rxjs';
 
 import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
   YOUTUBE_CHANNEL_ID,
   YOUTUBE_SUBSCRIBE_URL,
 } from '../../../../shared/seo/site-identity';
@@ -47,8 +48,9 @@ describe('YouTubeLatestVideosComponent', () => {
     const watchLink = [...element.querySelectorAll<HTMLAnchorElement>('a')]
       .find(link => link.textContent?.includes('Watch on YouTube'));
 
-    expect(element.textContent).toContain('FPV flights, Florida places, and creator experiments.');
+    expect(element.textContent).toContain('What I’m testing, building, and sharing now.');
     expect(subscribeLink?.href).toBe(YOUTUBE_SUBSCRIBE_URL);
+    expect(youtubeFeed.getLatestVideos$).toHaveBeenCalledWith(3, 'colin-michaels');
 
     watchLink?.click();
     subscribeLink?.click();
@@ -84,6 +86,7 @@ describe('YouTubeLatestVideosComponent', () => {
 
     const fixture = TestBed.createComponent(YouTubeLatestVideosComponent);
     fixture.componentRef.setInput('sectionId', 'article-drone-youtube');
+    fixture.componentRef.setInput('channel', 'captain-colin');
     fixture.componentRef.setInput('heading', 'Watch the flights behind the field notes.');
     fixture.componentRef.setInput('analyticsSourceComponent', 'article_drones_youtube');
     fixture.componentRef.setInput('compact', true);
@@ -99,8 +102,9 @@ describe('YouTubeLatestVideosComponent', () => {
     expect(section?.id).toBe('article-drone-youtube');
     expect(section?.getAttribute('aria-labelledby')).toBe('article-drone-youtube-heading');
     expect(element.textContent).toContain('Watch the flights behind the field notes.');
+    expect(youtubeFeed.getLatestVideos$).toHaveBeenCalledWith(3, 'captain-colin');
     expect(analytics.trackYouTubeOutbound).toHaveBeenCalledWith(
-      YOUTUBE_CHANNEL_ID,
+      CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
       'channel',
       'article_drones_youtube'
     );

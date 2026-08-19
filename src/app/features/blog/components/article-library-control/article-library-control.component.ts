@@ -1,7 +1,13 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Output, computed, inject, input, signal} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
+import {
+  DEFAULT_PAGINATION_PAGE_SIZE,
+  clampPaginationPage,
+  getPaginationPageCount,
+  paginateItems,
+} from '../../../../shared/pagination/pagination.util';
 import {BlogArticleLibraryRecord, BlogArticleLibraryService} from '../../services/blog-article-library.service';
 
 @Component({
@@ -10,10 +16,10 @@ import {BlogArticleLibraryRecord, BlogArticleLibraryService} from '../../service
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (library.records(); as records) {
-      @if (records.length > 0 || surface === 'profile') {
+      @if (records.length > 0 || surface() === 'profile') {
         <section
           class="border-slate-200 px-1 pt-2 dark:border-zinc-800"
-          [class.border-t]="surface === 'menu'"
+          [class.border-t]="surface() === 'menu'"
           aria-labelledby="article-library-title"
         >
           <div class="flex items-center justify-between gap-3 px-2 pb-1.5">
@@ -26,7 +32,7 @@ import {BlogArticleLibraryRecord, BlogArticleLibraryService} from '../../service
           </div>
 
           <div class="grid gap-1">
-            @for (record of records; track record.post.slug) {
+            @for (record of visibleRecords(); track record.post.slug) {
               <article class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-2 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                   <a
@@ -92,6 +98,31 @@ import {BlogArticleLibraryRecord, BlogArticleLibraryService} from '../../service
             }
           </div>
 
+          @if (surface() === 'profile' && pageCount() > 1) {
+            <nav class="mt-2 flex items-center justify-between gap-3 px-2" aria-label="Reading library pages">
+              <button
+                type="button"
+                class="inline-flex h-8 items-center gap-1 rounded px-2 text-[0.7rem] font-semibold text-slate-600 transition hover:text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-600 dark:text-zinc-400 dark:hover:text-cyan-200 dark:disabled:hover:text-zinc-400"
+                [disabled]="currentPage() === 1"
+                (click)="goToPreviousPage()"
+              >
+                <span aria-hidden="true">‹</span> Prev
+              </button>
+              <span class="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-zinc-500"
+                    aria-live="polite">
+                Page {{ currentPage() }} of {{ pageCount() }}
+              </span>
+              <button
+                type="button"
+                class="inline-flex h-8 items-center gap-1 rounded px-2 text-[0.7rem] font-semibold text-slate-600 transition hover:text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-600 dark:text-zinc-400 dark:hover:text-cyan-200 dark:disabled:hover:text-zinc-400"
+                [disabled]="currentPage() === pageCount()"
+                (click)="goToNextPage()"
+              >
+                Next <span aria-hidden="true">›</span>
+              </button>
+            </nav>
+          }
+
           @if (statusMessage()) {
             <p class="px-2 pb-1 pt-1 text-[0.7rem] leading-4 text-slate-600 dark:text-zinc-400" role="status" aria-live="polite">
               {{ statusMessage() }}
@@ -112,13 +143,36 @@ import {BlogArticleLibraryRecord, BlogArticleLibraryService} from '../../service
   `,
 })
 export class ArticleLibraryControlComponent {
-  @Input() surface: 'menu' | 'profile' = 'menu';
+  readonly surface = input<'menu' | 'profile'>('menu');
   @Output() navigate = new EventEmitter<void>();
 
   protected readonly library = inject(BlogArticleLibraryService);
   protected readonly pathNames = PATH_NAMES;
   protected readonly busyAction = signal<string | null>(null);
   protected readonly statusMessage = signal<string | null>(null);
+  protected readonly pageSize = DEFAULT_PAGINATION_PAGE_SIZE;
+  protected readonly page = signal(1);
+  protected readonly pageCount = computed(() =>
+    getPaginationPageCount(this.library.records().length, this.pageSize)
+  );
+  protected readonly currentPage = computed(() =>
+    clampPaginationPage(this.page(), this.pageCount())
+  );
+  protected readonly visibleRecords = computed(() => {
+    const records = this.library.records();
+
+    return this.surface() === 'profile'
+      ? paginateItems(records, this.currentPage(), this.pageSize)
+      : records;
+  });
+
+  protected goToPreviousPage(): void {
+    this.page.set(Math.max(1, this.currentPage() - 1));
+  }
+
+  protected goToNextPage(): void {
+    this.page.set(Math.min(this.pageCount(), this.currentPage() + 1));
+  }
 
   protected readingLabel(record: BlogArticleLibraryRecord): string {
     if (record.completedAt) {

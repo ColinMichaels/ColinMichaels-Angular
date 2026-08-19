@@ -2,7 +2,7 @@ import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {User, UserCredential} from 'firebase/auth';
-import {Observable, of} from 'rxjs';
+import {Observable, of, throwError} from 'rxjs';
 
 import {AuthService} from '../../services/auth.service';
 import {BlogArticleLibraryService} from '../../features/blog/services/blog-article-library.service';
@@ -252,5 +252,24 @@ describe('UserProfileComponent', () => {
 
     expect(element.textContent).toContain('Cat Corner Addict');
     expect(element.querySelector('[aria-label="Cat Corner Addict badge"]')).not.toBeNull();
+  });
+
+  it('keeps rendering the rest of the page when the point events listener errors', () => {
+    const userAccountService = TestBed.inject(UserAccountService) as unknown as {
+      listenToPointEvents: jasmine.Spy;
+    };
+    userAccountService.listenToPointEvents.and.returnValue(
+      throwError(() => new Error('FirebaseError: The query requires an index.'))
+    );
+    fixture.destroy();
+    fixture = TestBed.createComponent(UserProfileComponent);
+
+    expect(() => fixture.detectChanges()).not.toThrow();
+
+    const textContent = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(textContent).toContain('Reader Example');
+    expect(textContent).toContain('Reading library');
+    expect(textContent).toContain('No point activity yet.');
   });
 });
