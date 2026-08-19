@@ -21,3 +21,5 @@ export interface YouTubeFeedResponse {
   channelUrl: string;
   videos: readonly YouTubeVideo[];
 }
+
+import type {YouTubeChannelKey} from '../../../shared/seo/site-identity';

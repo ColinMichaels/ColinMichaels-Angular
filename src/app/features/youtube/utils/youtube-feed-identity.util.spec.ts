@@ -12,7 +12,7 @@ function createFeed(channelId: string, channelUrl: string): YouTubeFeedResponse 
     fetchedAt: '2026-08-15T00:00:00.000Z',
     source: 'youtube-api',
     channelId,
-    channelTitle: 'Captain Colin',
+    channelTitle: 'Colin Michaels',
     channelUrl,
     videos: [],
   };
