@@ -145,6 +145,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
         @if (hub().slug === 'drones-fpv') {
           <app-youtube-latest-videos
             class="topic-hub-youtube"
+            channel="captain-colin"
             [maxResults]="3"
             sectionId="topic-drones-youtube"
             eyebrow="Captain Colin on YouTube"

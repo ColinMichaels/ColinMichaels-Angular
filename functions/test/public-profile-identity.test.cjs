@@ -6,6 +6,8 @@ const test = require('node:test');
 const {
   CREATOR_PROFILE_URLS,
   PERSON_SAME_AS,
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_URL,
   YOUTUBE_CHANNEL_ID,
   YOUTUBE_CHANNEL_URL,
   YOUTUBE_SUBSCRIBE_URL,
@@ -14,22 +16,25 @@ const {
 const indexPath = path.resolve(__dirname, '../../src/index.html');
 const angularIdentityPath = path.resolve(__dirname, '../../src/app/shared/seo/site-identity.ts');
 
-test('keeps one canonical YouTube identity across Functions and Angular', () => {
+test('keeps the primary Colin Michaels and Captain Colin identities aligned across builds', () => {
   const angularIdentity = readFileSync(angularIdentityPath, 'utf8');
 
-  assert.equal(YOUTUBE_CHANNEL_ID, 'UCKZ3E88t-BoUqPgZygJw6bA');
+  assert.equal(YOUTUBE_CHANNEL_ID, 'UCCJMwxuUIb6S4aoZiZeAVeQ');
   assert.equal(YOUTUBE_CHANNEL_URL, `https://www.youtube.com/channel/${YOUTUBE_CHANNEL_ID}`);
   assert.equal(YOUTUBE_SUBSCRIBE_URL, `${YOUTUBE_CHANNEL_URL}?sub_confirmation=1`);
-  assert.match(
-    angularIdentity,
-    new RegExp(`YOUTUBE_CHANNEL_ID = '${YOUTUBE_CHANNEL_ID.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`),
+  assert.equal(CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID, 'UCKZ3E88t-BoUqPgZygJw6bA');
+  assert.equal(
+    CAPTAIN_COLIN_YOUTUBE_CHANNEL_URL,
+    `https://www.youtube.com/channel/${CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID}`,
   );
+  assert.match(angularIdentity, /UCCJMwxuUIb6S4aoZiZeAVeQ/);
+  assert.match(angularIdentity, /UCKZ3E88t-BoUqPgZygJw6bA/);
 });
 
 test('uses the verified active Instagram identity in the Functions entity graph', () => {
   assert.equal(CREATOR_PROFILE_URLS.instagram, 'https://www.instagram.com/colinmichaels/');
   assert.deepEqual(PERSON_SAME_AS, [
-    'https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA',
+    'https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ',
     'https://www.instagram.com/colinmichaels/',
     'https://github.com/ColinMichaels',
     'https://www.linkedin.com/in/colinmichaels',

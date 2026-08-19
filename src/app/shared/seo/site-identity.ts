@@ -10,9 +10,58 @@ export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = `Cool Gadgets, Useful Tech & Internet Finds | ${PERSON_NAME}`;
 export const HOMEPAGE_DESCRIPTION = `Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with ${PERSON_NAME}—plus honest recovery stories and creator projects.`;
 export const HOMEPAGE_IMAGE_ALT = `${PERSON_NAME} personal site preview card`;
-export const YOUTUBE_CHANNEL_ID = 'UCKZ3E88t-BoUqPgZygJw6bA';
-export const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${YOUTUBE_CHANNEL_ID}`;
-export const YOUTUBE_SUBSCRIBE_URL = `${YOUTUBE_CHANNEL_URL}?sub_confirmation=1`;
+export type YouTubeChannelKey = 'colin-michaels' | 'captain-colin';
+
+export interface YouTubeChannelIdentity {
+  readonly key: YouTubeChannelKey;
+  readonly name: string;
+  readonly id: string;
+  readonly url: string;
+  readonly subscribeUrl: string;
+}
+
+function createYouTubeChannel(
+  key: YouTubeChannelKey,
+  name: string,
+  id: string,
+): YouTubeChannelIdentity {
+  const url = `https://www.youtube.com/channel/${id}`;
+
+  return {key, name, id, url, subscribeUrl: `${url}?sub_confirmation=1`};
+}
+
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL = createYouTubeChannel(
+  'colin-michaels',
+  'Colin Michaels',
+  'UCCJMwxuUIb6S4aoZiZeAVeQ',
+);
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL = createYouTubeChannel(
+  'captain-colin',
+  'Captain Colin',
+  'UCKZ3E88t-BoUqPgZygJw6bA',
+);
+export const PRIMARY_YOUTUBE_CHANNEL_KEY = COLIN_MICHAELS_YOUTUBE_CHANNEL.key;
+export const YOUTUBE_CHANNELS = {
+  'colin-michaels': COLIN_MICHAELS_YOUTUBE_CHANNEL,
+  'captain-colin': CAPTAIN_COLIN_YOUTUBE_CHANNEL,
+} as const satisfies Readonly<Record<YouTubeChannelKey, YouTubeChannelIdentity>>;
+
+export function getYouTubeChannelIdentity(
+  key: YouTubeChannelKey = PRIMARY_YOUTUBE_CHANNEL_KEY,
+): YouTubeChannelIdentity {
+  return YOUTUBE_CHANNELS[key];
+}
+
+// General ColinMichaels.com creator surfaces use Colin Michaels. Drone and FPV modules opt into Captain Colin.
+export const YOUTUBE_CHANNEL_ID = COLIN_MICHAELS_YOUTUBE_CHANNEL.id;
+export const YOUTUBE_CHANNEL_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.url;
+export const YOUTUBE_SUBSCRIBE_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.subscribeUrl;
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL_ID = COLIN_MICHAELS_YOUTUBE_CHANNEL.id;
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.url;
+export const COLIN_MICHAELS_YOUTUBE_SUBSCRIBE_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.subscribeUrl;
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID = CAPTAIN_COLIN_YOUTUBE_CHANNEL.id;
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL_URL = CAPTAIN_COLIN_YOUTUBE_CHANNEL.url;
+export const CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL = CAPTAIN_COLIN_YOUTUBE_CHANNEL.subscribeUrl;
 export const CREATOR_PROFILE_URLS = {
   youtube: YOUTUBE_CHANNEL_URL,
   x: 'https://x.com/colinmichaels',

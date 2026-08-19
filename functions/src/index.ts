@@ -32,13 +32,17 @@ import {
   SITE_NAME,
   SITE_SEARCH_DESCRIPTION,
   SITE_URL,
-  YOUTUBE_CHANNEL_URL,
+  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+  COLIN_MICHAELS_YOUTUBE_CHANNEL_ID,
+  getYoutubeChannelIdentity,
+  type YoutubeChannelKey,
   createPreviewImageAlt,
   createSiteTitle,
 } from './seo-site';
 import {
   assertCanonicalYoutubeApiChannelId,
   parseCanonicalYoutubeChannelId,
+  parseYoutubeChannelKey,
 } from './youtube-channel-identity';
 import {
   SeoFallbackCollectionItem,
@@ -418,7 +422,10 @@ const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const youtubeApiKey = defineSecret('YOUTUBE_API_KEY');
 const openAiTextModel = defineString('OPENAI_TEXT_MODEL', {default: 'gpt-5.5'});
 const openAiImageModel = defineString('OPENAI_IMAGE_MODEL', {default: 'gpt-image-2'});
-const youtubeChannelId = defineString('YOUTUBE_CHANNEL_ID', {default: ''});
+const youtubeChannelId = defineString('YOUTUBE_CHANNEL_ID', {default: CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID});
+const colinMichaelsYoutubeChannelId = defineString('COLIN_MICHAELS_YOUTUBE_CHANNEL_ID', {
+  default: COLIN_MICHAELS_YOUTUBE_CHANNEL_ID,
+});
 const webPushPublicKey = defineString('WEB_PUSH_PUBLIC_KEY', {default: ''});
 const webPushSubject = defineString('WEB_PUSH_SUBJECT', {default: 'mailto:hello@colinmichaels.com'});
 const webPushPrivateKey = defineSecret('WEB_PUSH_PRIVATE_KEY');
@@ -1600,8 +1607,9 @@ export const getLatestYouTubeVideos = onCall(
   },
   async request => {
     const maxResults = parseYoutubeMaxResults(request.data);
+    const channelKey = parseYoutubeChannelKeyFromRequest(request.data);
 
-    return await loadLatestYoutubeVideos(maxResults);
+    return await loadLatestYoutubeVideos(channelKey, maxResults);
   }
 );
 
@@ -1897,7 +1905,10 @@ export const getLatestYouTubeVideosHttp = onRequest(
     }
 
     try {
-      const feed = await loadLatestYoutubeVideos(parseYoutubeMaxResults(request.query['maxResults']));
+      const feed = await loadLatestYoutubeVideos(
+        parseYoutubeChannelKeyFromRequest(request.query['channel']),
+        parseYoutubeMaxResults(request.query['maxResults']),
+      );
       response.status(200).json(feed);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load latest YouTube videos.';
@@ -3451,11 +3462,35 @@ function parseYoutubeMaxResults(value: unknown): number {
   return Math.min(YOUTUBE_MAX_RESULTS, Math.max(1, Math.trunc(parsedMaxResults)));
 }
 
-async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedResponse> {
+function parseYoutubeChannelKeyFromRequest(value: unknown): YoutubeChannelKey {
+  const channelKey = isRecord(value) ? value['channel'] : value;
+
+  try {
+    return parseYoutubeChannelKey(channelKey);
+  } catch (error) {
+    throw new HttpsError(
+      'invalid-argument',
+      error instanceof Error ? error.message : 'The requested YouTube channel is invalid.'
+    );
+  }
+}
+
+function getConfiguredYoutubeChannelId(channelKey: YoutubeChannelKey): string {
+  const configuredChannelId = channelKey === 'captain-colin'
+    ? youtubeChannelId.value()
+    : colinMichaelsYoutubeChannelId.value();
+
+  return parseCanonicalYoutubeChannelId(channelKey, configuredChannelId);
+}
+
+async function loadLatestYoutubeVideos(
+  channelKey: YoutubeChannelKey,
+  maxResults: number,
+): Promise<YoutubeFeedResponse> {
   let channelId: string;
 
   try {
-    channelId = parseCanonicalYoutubeChannelId(youtubeChannelId.value());
+    channelId = getConfiguredYoutubeChannelId(channelKey);
   } catch (error) {
     throw new HttpsError(
       'failed-precondition',
@@ -3463,7 +3498,7 @@ async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedR
     );
   }
 
-  const cacheKey = `${channelId}:${maxResults}`;
+  const cacheKey = `${channelKey}:${channelId}:${maxResults}`;
   const now = Date.now();
 
   if (youtubeFeedCache?.key === cacheKey && youtubeFeedCache.expiresAt > now) {
@@ -3472,7 +3507,7 @@ async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedR
 
   const channel = await fetchYoutubeChannelDetails(channelId);
   try {
-    assertCanonicalYoutubeApiChannelId(channel.channelId);
+    assertCanonicalYoutubeApiChannelId(channelKey, channel.channelId);
   } catch (error) {
     throw new HttpsError(
       'failed-precondition',
@@ -3485,7 +3520,7 @@ async function loadLatestYoutubeVideos(maxResults: number): Promise<YoutubeFeedR
     source: 'youtube-api',
     channelId: channel.channelId,
     channelTitle: channel.channelTitle,
-    channelUrl: YOUTUBE_CHANNEL_URL,
+    channelUrl: getYoutubeChannelIdentity(channelKey).url,
     videos,
   } satisfies YoutubeFeedResponse;
 

@@ -13,9 +13,58 @@ export const LABS_DESCRIPTION = `Interactive demos, frontend experiments, reusab
 export const BACKGROUND_LAB_DESCRIPTION = 'A visual lab for image, video, overlay, and parallax background experiments.';
 export const BLOG_SEARCH_DESCRIPTION = `Search ${PERSON_NAME} blog posts by title, excerpt, category, tag, and article body text.`;
 export const SITE_SEARCH_DESCRIPTION = `Search ${PERSON_NAME} blog posts, categories, tags, article body text, and public site pages.`;
-export const YOUTUBE_CHANNEL_ID = 'UCKZ3E88t-BoUqPgZygJw6bA';
-export const YOUTUBE_CHANNEL_URL = `https://www.youtube.com/channel/${YOUTUBE_CHANNEL_ID}`;
-export const YOUTUBE_SUBSCRIBE_URL = `${YOUTUBE_CHANNEL_URL}?sub_confirmation=1`;
+export type YoutubeChannelKey = 'colin-michaels' | 'captain-colin';
+
+export interface YoutubeChannelIdentity {
+  readonly key: YoutubeChannelKey;
+  readonly name: string;
+  readonly id: string;
+  readonly url: string;
+  readonly subscribeUrl: string;
+}
+
+function createYoutubeChannel(
+  key: YoutubeChannelKey,
+  name: string,
+  id: string,
+): YoutubeChannelIdentity {
+  const url = `https://www.youtube.com/channel/${id}`;
+
+  return {key, name, id, url, subscribeUrl: `${url}?sub_confirmation=1`};
+}
+
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL = createYoutubeChannel(
+  'colin-michaels',
+  'Colin Michaels',
+  'UCCJMwxuUIb6S4aoZiZeAVeQ',
+);
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL = createYoutubeChannel(
+  'captain-colin',
+  'Captain Colin',
+  'UCKZ3E88t-BoUqPgZygJw6bA',
+);
+export const PRIMARY_YOUTUBE_CHANNEL_KEY = COLIN_MICHAELS_YOUTUBE_CHANNEL.key;
+export const YOUTUBE_CHANNELS = {
+  'colin-michaels': COLIN_MICHAELS_YOUTUBE_CHANNEL,
+  'captain-colin': CAPTAIN_COLIN_YOUTUBE_CHANNEL,
+} as const satisfies Readonly<Record<YoutubeChannelKey, YoutubeChannelIdentity>>;
+
+export function getYoutubeChannelIdentity(
+  key: YoutubeChannelKey = PRIMARY_YOUTUBE_CHANNEL_KEY,
+): YoutubeChannelIdentity {
+  return YOUTUBE_CHANNELS[key];
+}
+
+// General ColinMichaels.com creator surfaces use Colin Michaels. Drone and FPV modules opt into Captain Colin.
+export const YOUTUBE_CHANNEL_ID = COLIN_MICHAELS_YOUTUBE_CHANNEL.id;
+export const YOUTUBE_CHANNEL_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.url;
+export const YOUTUBE_SUBSCRIBE_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.subscribeUrl;
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL_ID = COLIN_MICHAELS_YOUTUBE_CHANNEL.id;
+export const COLIN_MICHAELS_YOUTUBE_CHANNEL_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.url;
+export const COLIN_MICHAELS_YOUTUBE_SUBSCRIBE_URL = COLIN_MICHAELS_YOUTUBE_CHANNEL.subscribeUrl;
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID = CAPTAIN_COLIN_YOUTUBE_CHANNEL.id;
+export const CAPTAIN_COLIN_YOUTUBE_CHANNEL_URL = CAPTAIN_COLIN_YOUTUBE_CHANNEL.url;
+export const CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL = CAPTAIN_COLIN_YOUTUBE_CHANNEL.subscribeUrl;
 
 export const SEO_ENTITY_IDS = {
   person: `${SITE_URL}/#person`,

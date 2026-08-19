@@ -9,9 +9,9 @@ import {
   YouTubeAnalyticsSourceComponent,
 } from '../../../../shared/analytics/site-analytics.service';
 import {
-  YOUTUBE_CHANNEL_ID,
-  YOUTUBE_CHANNEL_URL,
-  YOUTUBE_SUBSCRIBE_URL,
+  getYouTubeChannelIdentity,
+  PRIMARY_YOUTUBE_CHANNEL_KEY,
+  type YouTubeChannelKey,
 } from '../../../../shared/seo/site-identity';
 
 @Component({
@@ -214,9 +214,10 @@ import {
 export class YouTubeLatestVideosComponent implements OnInit {
   @Input() maxResults = 3;
   @Input() sectionId = 'youtube';
-  @Input() eyebrow = 'Captain Colin on YouTube';
-  @Input() heading = 'FPV flights, Florida places, and creator experiments.';
-  @Input() description = 'Watch the newest videos, then subscribe for the next flight, build, or interesting thing worth sharing.';
+  @Input() channel: YouTubeChannelKey = PRIMARY_YOUTUBE_CHANNEL_KEY;
+  @Input() eyebrow = 'Colin Michaels on YouTube';
+  @Input() heading = 'What I’m testing, building, and sharing now.';
+  @Input() description = 'Watch the newest videos, then subscribe for the next useful find, build, story, or experiment.';
   @Input() analyticsSourceComponent: YouTubeAnalyticsSourceComponent = 'homepage_youtube';
   @Input() compact = false;
 
@@ -230,7 +231,7 @@ export class YouTubeLatestVideosComponent implements OnInit {
   private readonly youtubeFeed = inject(YouTubeFeedService);
 
   ngOnInit(): void {
-    this.youtubeFeed.getLatestVideos$(this.maxResults)
+    this.youtubeFeed.getLatestVideos$(this.maxResults, this.channel)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: feed => {
@@ -251,16 +252,16 @@ export class YouTubeLatestVideosComponent implements OnInit {
   }
 
   protected get channelUrl(): string {
-    return YOUTUBE_CHANNEL_URL;
+    return getYouTubeChannelIdentity(this.channel).url;
   }
 
   protected get subscribeUrl(): string {
-    return YOUTUBE_SUBSCRIBE_URL;
+    return getYouTubeChannelIdentity(this.channel).subscribeUrl;
   }
 
   protected recordChannelSelection(action: 'channel' | 'subscribe'): void {
     this.analytics.trackYouTubeOutbound(
-      YOUTUBE_CHANNEL_ID,
+      getYouTubeChannelIdentity(this.channel).id,
       action,
       this.analyticsSourceComponent
     );

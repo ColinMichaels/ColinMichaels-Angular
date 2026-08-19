@@ -10,6 +10,7 @@ export interface YouTubeVideo {
 
 export interface YouTubeFeedRequest {
   maxResults?: number;
+  channel?: YouTubeChannelKey;
 }
 
 export interface YouTubeFeedResponse {

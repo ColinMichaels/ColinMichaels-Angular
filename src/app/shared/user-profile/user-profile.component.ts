@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
-import {firstValueFrom, of, shareReplay, switchMap, tap} from 'rxjs';
+import {catchError, firstValueFrom, of, shareReplay, switchMap, tap} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {ArticleLibraryControlComponent} from '../../features/blog/components/article-library-control/article-library-control.component';
@@ -50,47 +50,58 @@ interface LinkedProviderView {
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="dark min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
-      <section class="mx-auto max-w-5xl space-y-8">
+      <div class="mx-auto max-w-6xl space-y-8">
         <nav class="flex items-center justify-between text-sm text-zinc-400">
           <a routerLink="/" class="hover:text-zinc-100">Home</a>
           <a routerLink="/logout" class="hover:text-rose-200">Sign Out</a>
         </nav>
 
         @if (profile(); as account) {
-          <header class="grid gap-5 border-b border-zinc-800 pb-8 sm:grid-cols-[auto_1fr] sm:items-center">
-            <div class="grid h-20 w-20 place-items-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 text-2xl font-semibold text-cyan-100">
-              @if (account.photoURL) {
-                <img [src]="account.photoURL" [alt]="displayName() + ' avatar'" class="h-full w-full object-cover" loading="lazy">
-              } @else {
-                {{ initials() }}
+          <div class="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
+            <aside class="space-y-4 lg:sticky lg:top-8" aria-label="Profile summary">
+              <header class="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center">
+                <div
+                  class="mx-auto grid h-24 w-24 place-items-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-950 text-3xl font-semibold text-cyan-100">
+                  @if (account.photoURL) {
+                    <img [src]="account.photoURL" [alt]="displayName() + ' avatar'" class="h-full w-full object-cover"
+                         loading="lazy">
+                  } @else {
+                    {{ initials() }}
+                  }
+                </div>
+                <p class="mt-4 text-xs uppercase tracking-[0.3em] text-cyan-300">Profile</p>
+                <h1 class="mt-2 break-words text-2xl font-semibold text-zinc-50">{{ displayName() }}</h1>
+                <p class="mt-1 break-all text-sm text-zinc-400">{{ account.email || 'Signed in account' }}</p>
+              </header>
+
+              <section class="grid grid-cols-2 gap-3" aria-label="Account overview">
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p class="text-xs uppercase tracking-wide text-zinc-500">Account</p>
+                  <p class="mt-2 text-lg font-semibold">{{ account.emailVerified ? 'Verified' : 'Unverified' }}</p>
+                </div>
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p class="text-xs uppercase tracking-wide text-zinc-500">Providers</p>
+                  <p class="mt-2 text-lg font-semibold">{{ linkedProviderIds().length || 0 }}</p>
+                </div>
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p class="text-xs uppercase tracking-wide text-zinc-500">Roles</p>
+                  <p class="mt-2 text-lg font-semibold">{{ assignedRoleViews().length }}</p>
+                </div>
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+                  <p class="text-xs uppercase tracking-wide text-zinc-500">Points</p>
+                  <p class="mt-2 text-lg font-semibold">{{ accountDocument()?.points?.total ?? 0 }}</p>
+                </div>
+              </section>
+
+              @if (canEnterAdmin()) {
+                <a routerLink="/admin"
+                   class="block rounded-xl border border-cyan-400/60 px-4 py-3 text-center text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
+                  Open Admin
+                </a>
               }
-            </div>
-            <div class="min-w-0 space-y-2">
-              <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Profile</p>
-              <h1 class="break-words text-4xl font-semibold text-zinc-50">{{ displayName() }}</h1>
-              <p class="break-all text-zinc-400">{{ account.email || 'Signed in account' }}</p>
-            </div>
-          </header>
+            </aside>
 
-          <section class="grid gap-4 md:grid-cols-4">
-            <div class="border border-zinc-800 bg-zinc-900 p-4">
-              <p class="text-sm text-zinc-500">Account</p>
-              <p class="mt-2 text-lg font-semibold">{{ account.emailVerified ? 'Verified' : 'Unverified' }}</p>
-            </div>
-            <div class="border border-zinc-800 bg-zinc-900 p-4">
-              <p class="text-sm text-zinc-500">Providers</p>
-              <p class="mt-2 text-lg font-semibold">{{ linkedProviderIds().length || 0 }}</p>
-            </div>
-            <div class="border border-zinc-800 bg-zinc-900 p-4">
-              <p class="text-sm text-zinc-500">Roles</p>
-              <p class="mt-2 text-lg font-semibold">{{ assignedRoleViews().length }}</p>
-            </div>
-            <div class="border border-zinc-800 bg-zinc-900 p-4">
-              <p class="text-sm text-zinc-500">Points</p>
-              <p class="mt-2 text-lg font-semibold">{{ accountDocument()?.points?.total ?? 0 }}</p>
-            </div>
-          </section>
-
+            <div class="min-w-0 space-y-8">
           @if (linkStatusMessage()) {
             <p
               class="border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-100">{{ linkStatusMessage() }}</p>
@@ -181,14 +192,7 @@ interface LinkedProviderView {
             </section>
 
             <section class="space-y-4 border border-zinc-800 bg-zinc-900 p-5">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-zinc-50">Roles And Permissions</h2>
-                @if (canEnterAdmin()) {
-                  <a routerLink="/admin" class="border border-cyan-400 px-3 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950">
-                    Open Admin
-                  </a>
-                }
-              </div>
+              <h2 class="text-xl font-semibold text-zinc-50">Roles And Permissions</h2>
 
               <div class="grid gap-3">
                 @for (role of assignedRoleViews(); track role.id) {
@@ -276,6 +280,8 @@ interface LinkedProviderView {
               </div>
             </section>
           </section>
+            </div>
+          </div>
         } @else {
           <section class="space-y-5 border border-amber-500/40 bg-amber-950/20 p-6">
             <p class="text-sm uppercase tracking-[0.3em] text-amber-200">Signed Out</p>
@@ -290,7 +296,7 @@ interface LinkedProviderView {
             </a>
           </section>
         }
-      </section>
+      </div>
     </main>
   `,
 })
@@ -332,13 +338,21 @@ export class UserProfileComponent {
   });
   protected readonly accountDocument = toSignal(
     this.profile$.pipe(
-      switchMap(profile => profile ? this.userAccountService.listenToUserAccount(profile.uid) : of(null))
+      switchMap(profile => profile ? this.userAccountService.listenToUserAccount(profile.uid) : of(null)),
+      catchError(error => {
+        this.debugProfile('account document listener failed', this.createErrorDebugSummary(error));
+        return of(null);
+      })
     ),
     {initialValue: null}
   );
   protected readonly pointEvents = toSignal(
     this.profile$.pipe(
-      switchMap(profile => profile ? this.userAccountService.listenToPointEvents(profile.uid) : of([]))
+      switchMap(profile => profile ? this.userAccountService.listenToPointEvents(profile.uid) : of([])),
+      catchError(error => {
+        this.debugProfile('point events listener failed', this.createErrorDebugSummary(error));
+        return of([]);
+      })
     ),
     {initialValue: []}
   );

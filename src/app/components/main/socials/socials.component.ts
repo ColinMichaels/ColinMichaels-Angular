@@ -37,11 +37,11 @@ export class SocialsComponent {
     {
       id: 'youtube',
       href: CREATOR_PROFILE_URLS.youtube,
-      label: 'Follow Captain Colin on YouTube',
-      title: 'YouTube: @CaptainColin',
+      label: 'Follow Colin Michaels on YouTube',
+      title: 'YouTube: Colin Michaels',
       class: 'hover:text-red-600',
       icon: faYoutube,
-      tooltip: 'YouTube: @CaptainColin',
+      tooltip: 'YouTube: Colin Michaels',
       tooltipClass: 'bg-red-600 font-mono'
     },
     {

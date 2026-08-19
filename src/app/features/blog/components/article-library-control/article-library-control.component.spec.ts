@@ -80,6 +80,60 @@ describe('ArticleLibraryControlComponent', () => {
     expect(setFavorite).toHaveBeenCalledWith(jasmine.objectContaining({slug: 'library-post'}), false);
   });
 
+  it('paginates the profile surface into pages of ten without growing the page', () => {
+    const manyRecords = Array.from({length: 23}, (_, index) => createRecord({
+      post: {
+        id: `library-post-${index}`,
+        slug: `library-post-${index}`,
+        title: `Library Post ${index}`,
+        excerpt: 'A saved library post.',
+        coverImage: '/assets/library.webp',
+        publishedAt: '2026-07-10T12:00:00.000Z',
+        updatedAt: '2026-07-10T12:00:00.000Z',
+      },
+    }));
+    records.set(manyRecords);
+    fixture.componentRef.setInput('surface', 'profile');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelectorAll('article').length).toBe(10);
+    expect(element.textContent).toContain('Page 1 of 3');
+
+    const nextButton = [...element.querySelectorAll('button')]
+      .find(button => button.textContent?.includes('Next')) as HTMLButtonElement | undefined;
+    nextButton?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('article').length).toBe(10);
+    expect(element.textContent).toContain('Page 2 of 3');
+
+    // Last page holds the remainder without any extra scroll region.
+    nextButton?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('article').length).toBe(3);
+    expect(element.textContent).toContain('Page 3 of 3');
+  });
+
+  it('renders every article without a limit on the menu surface', () => {
+    const manyRecords = Array.from({length: 15}, (_, index) => createRecord({
+      post: {
+        id: `menu-post-${index}`,
+        slug: `menu-post-${index}`,
+        title: `Menu Post ${index}`,
+        excerpt: 'A saved menu post.',
+        coverImage: '/assets/library.webp',
+        publishedAt: '2026-07-10T12:00:00.000Z',
+        updatedAt: '2026-07-10T12:00:00.000Z',
+      },
+    }));
+    records.set(manyRecords);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('article').length).toBe(15);
+  });
+
   it('shows an empty-state manager on the profile surface', () => {
     records.set([]);
     fixture.componentRef.setInput('surface', 'profile');
