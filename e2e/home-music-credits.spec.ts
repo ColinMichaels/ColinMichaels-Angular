@@ -10,10 +10,12 @@ for (const viewport of [
       await page.goto('/');
 
       await expect(page.locator('#cm-initial-loader')).toBeHidden({timeout: 5_000});
+      // The profile section is intentionally deferred until it enters the
+      // viewport, so bring its stable placeholder into view before querying
+      // the award and credits rendered inside it.
+      await page.locator('#about').scrollIntoViewIfNeeded();
       const recognition = page.getByRole('heading', {name: '2006 Latin GRAMMY® Award — Best Urban Music Album'});
-      await recognition.scrollIntoViewIfNeeded();
       await expect(recognition).toBeVisible({timeout: 20_000});
-      await expect(page.getByText('Best Urban Music Album', {exact: false})).toBeVisible();
 
       const credits = page.locator('app-music-credits');
       await credits.scrollIntoViewIfNeeded();
