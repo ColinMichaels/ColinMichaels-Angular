@@ -1863,6 +1863,20 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
       const manifest = manifestCandidates[0];
       const originalPost = postCandidate.imported.post;
+      const requestedSlug = originalPost.slug || createBlogSlug(originalPost.title);
+      const existingPost = this.blogRepository.getAdminPostBySlug(requestedSlug);
+      if (existingPost) {
+        const publishedWarning = existingPost.status === 'published'
+          ? `\n\n"${existingPost.title}" is currently published.`
+          : '';
+        const confirmed = window.confirm(
+          `A post already uses the slug "${existingPost.slug}".${publishedWarning}\n\n`
+          + 'This package will not update or overwrite that post. Continue by importing a separate draft with a unique slug?'
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
       const declaredReferences = new Set(manifest.images.map(entry => entry.reference));
       const unresolvedReferences = getUnresolvedBlogPostMediaPackageReferences(originalPost);
       const undeclaredReferences = unresolvedReferences.filter(reference => !declaredReferences.has(reference));
@@ -1899,7 +1913,12 @@ export class CmsPostEditorComponent implements AfterViewInit {
         uploadedCount += 1;
       }
 
-      const resolvedPost = replaceBlogPostMediaPackageReferences(originalPost, uploadedUrls);
+      const resolvedPost = {
+        ...replaceBlogPostMediaPackageReferences(originalPost, uploadedUrls),
+        status: 'draft' as const,
+        publishedAt: null,
+        preview: undefined,
+      };
       const remainingReferences = getUnresolvedBlogPostMediaPackageReferences(resolvedPost);
 
       if (remainingReferences.length > 0) {
@@ -2419,6 +2438,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       ...this.currentPost,
       ...importedPost,
       id: this.currentPost.id,
+      revision: this.currentPost.revision,
       title: importedTitle,
       slug: importedSlug,
       excerpt: importedPost.excerpt.trim(),

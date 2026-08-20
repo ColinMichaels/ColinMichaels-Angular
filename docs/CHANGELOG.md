@@ -9,6 +9,7 @@
 ### Changed
 
 - Post-package image imports now reuse existing finalized media when the trusted SHA-256 source checksum matches, while changed source bytes receive a new immutable asset and URL.
+- New Post package imports now preserve the new post’s identity and revision, force imported content to a draft, and require explicit confirmation before a conflicting existing slug can become a separate draft. Published posts cannot be overwritten by this flow.
 - Fixed the after-article reader invitation so reaching its meaningful-reading threshold now keeps the inline offer visible. Its engagement reset is scoped to an article change, preventing the visibility tracker from immediately hiding the offer before readers can choose an action.
 - Recorded the current creator-channel decision in the growth operating system: Colin Michaels is the site’s primary general-creator YouTube channel, while Captain Colin remains reserved for explicit FPV and drone journeys. Historical Captain Colin performance snapshots remain dated context only and cannot silently redirect future broad creator work.
 - Refined the blog archive’s editorial image treatment so every cover remains fully visible while a subtle blurred backdrop fills taller text-led cards. This removes the severe letterbox bands that made the featured cover look incorrectly cropped, preserving image integrity in both light and dark modes.

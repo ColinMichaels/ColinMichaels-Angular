@@ -49,6 +49,8 @@ The manifest can be embedded as `imageManifest` or `mediaManifest` in the post J
 
 Each upload is fingerprinted by the trusted finalization service with SHA-256. When an identical image has already been finalized, the package import reuses its existing immutable Storage variants and download URLs instead of creating copies. Different source bytes always receive a new immutable asset; imports never overwrite a previously finalized image.
 
+Package import is intentionally a **New Post** workflow. It preserves the current new-post identity and revision, always stages the package as a draft, and never updates an existing post. If its requested slug already belongs to a post—especially a published article—the editor asks for explicit approval before uploading media and clearly states that continuing creates a separate draft with a unique slug.
+
 ## Discovery And Trust Authoring Review
 
 The post editor's existing metadata checklist is now the **Discovery & Trust Checklist**. It preserves all ten search/share checks and adds four advisory content checks over the current canonical Editor.js blocks and optional post metadata:
