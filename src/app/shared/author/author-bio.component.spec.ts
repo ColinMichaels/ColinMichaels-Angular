@@ -46,4 +46,24 @@ describe('AuthorBioComponent', () => {
     expect(hrefs).toContain('https://writer.example');
     expect(hrefs).not.toContain('https://github.com/ColinMichaels');
   });
+
+  it('renders the verified Calle 13 Latin GRAMMY recognition and the home music credits only on the home variant', () => {
+    const fixture = TestBed.createComponent(AuthorBioComponent);
+    fixture.componentRef.setInput('variant', 'home');
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const text = element.textContent ?? '';
+    const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('a'));
+
+    expect(text).toContain('2006 Latin GRAMMY® Award — Best Urban Music Album');
+    expect(text).toContain('Best Urban Music Album');
+    expect(text).not.toContain('Album of the Year');
+    expect(text).toContain('I was the mixing engineer on Calle 13’s self-titled debut');
+    expect(text).not.toContain('identifies me as');
+    expect(text).toContain('Studio credits');
+    expect(text).toContain('33 album credits');
+    expect(element.querySelector('img[alt*="Latin GRAMMY plaque"]')?.getAttribute('src'))
+      .toBe('/assets/images/about/colin-michaels-2006-latin-grammy-calle-13.png');
+    expect(links.map(link => link.href)).toContain('https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/');
+  });
 });

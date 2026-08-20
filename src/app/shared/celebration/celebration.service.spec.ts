@@ -62,6 +62,14 @@ describe('CelebrationService', () => {
     }));
   });
 
+  it('celebrates only a newly confirmed positive point award', () => {
+    expect(service.celebrateConfirmedPointAward({awarded: false, points: 5})).toBeFalse();
+    expect(service.celebrateConfirmedPointAward({awarded: true, points: 0})).toBeFalse();
+    expect(service.celebrateConfirmedPointAward({awarded: true, points: 5})).toBeTrue();
+
+    expect(launchConfetti).toHaveBeenCalledTimes(2);
+  });
+
   it('does not animate when a reader enables reduced motion', () => {
     reduceMotion.set(true);
 

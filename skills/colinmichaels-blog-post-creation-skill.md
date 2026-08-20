@@ -11,6 +11,7 @@ A complete package usually includes:
 3. A square post thumbnail prompt or generated image.
 4. An optional 16:9 hero / Open Graph image prompt or generated image.
 5. Optional social sharing copy for Facebook or other platforms.
+6. When generated images are included, an image manifest that lets the CMS upload and attach them in one New Post package import.
 
 ---
 
@@ -51,6 +52,25 @@ Every new blog post should be created with the following deliverables unless the
 When the user asks specifically for a JSON file, create a valid downloadable `.json` file.
 
 When the user asks specifically for a Markdown reference, prompt, or skill file, create a downloadable `.md` file.
+
+### Generated image package contract
+
+For a post package with generated images, keep the post JSON, images, and `image-manifest.json` in one folder. Use `media://` placeholders in the post JSON for every generated media field, then list the same placeholder and relative file path in the manifest:
+
+```json
+{
+  "images": [
+    {
+      "file": "images/post-cover.webp",
+      "reference": "media://images/post-cover.webp",
+      "role": "cover",
+      "altText": "Accurate descriptive alt text"
+    }
+  ]
+}
+```
+
+Use only safe relative paths. Valid roles are `cover`, `post-background`, `open-graph`, `thumbnail`, `inline-image`, and `editor-image`. The CMS New Post **Import post package** action uploads every manifest file through the trusted media workflow, replaces only declared media placeholders, and leaves the result as an unsaved draft for review. Exact duplicate source files reuse an existing finalized media asset; changed source bytes create a new immutable asset rather than replacing an old one. Package import cannot update an existing article: an already-used slug triggers an explicit warning and confirmation before a separate draft with a unique slug is imported. Do not put `media://` values in prose, links, embeds, or other non-image fields.
 
 ---
 

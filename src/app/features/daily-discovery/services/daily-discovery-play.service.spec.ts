@@ -15,7 +15,7 @@ describe('DailyDiscoveryPlayService', () => {
   let getCompletedChallengeIds: jasmine.Spy;
   let getCompletedChallengeIdsForToday: jasmine.Spy;
   let celebrateCorrectAnswer: jasmine.Spy;
-  let celebratePointsAwarded: jasmine.Spy;
+  let celebrateConfirmedPointAward: jasmine.Spy;
 
   beforeEach(() => {
     getChallenge = jasmine.createSpy('getChallenge');
@@ -25,7 +25,7 @@ describe('DailyDiscoveryPlayService', () => {
     getCompletedChallengeIds = jasmine.createSpy('getCompletedChallengeIds').and.returnValue([]);
     getCompletedChallengeIdsForToday = jasmine.createSpy('getCompletedChallengeIdsForToday').and.returnValue([]);
     celebrateCorrectAnswer = jasmine.createSpy('celebrateCorrectAnswer');
-    celebratePointsAwarded = jasmine.createSpy('celebratePointsAwarded');
+    celebrateConfirmedPointAward = jasmine.createSpy('celebrateConfirmedPointAward').and.returnValue(false);
 
     TestBed.configureTestingModule({
       providers: [
@@ -36,7 +36,7 @@ describe('DailyDiscoveryPlayService', () => {
         },
         {
           provide: CelebrationService,
-          useValue: {celebrateCorrectAnswer, celebratePointsAwarded},
+          useValue: {celebrateCorrectAnswer, celebrateConfirmedPointAward},
         },
       ],
     });
@@ -84,11 +84,12 @@ describe('DailyDiscoveryPlayService', () => {
     expect(markCompleted).toHaveBeenCalledWith('2026-08-09', 'question-1');
     expect(service.isCompleted()).toBeTrue();
     expect(service.completedCount()).toBe(1);
+    expect(celebrateConfirmedPointAward).toHaveBeenCalled();
     expect(celebrateCorrectAnswer).toHaveBeenCalledTimes(1);
-    expect(celebratePointsAwarded).not.toHaveBeenCalled();
   });
 
   it('uses the points celebration once a signed-in correct answer earns points', async () => {
+    celebrateConfirmedPointAward.and.returnValue(true);
     submitAnswer.and.resolveTo({
       correct: true,
       message: 'Correct.',
@@ -110,7 +111,10 @@ describe('DailyDiscoveryPlayService', () => {
 
     await service.checkAnswer();
 
-    expect(celebratePointsAwarded).toHaveBeenCalledOnceWith(5);
+    expect(celebrateConfirmedPointAward).toHaveBeenCalledOnceWith(jasmine.objectContaining({
+      awarded: true,
+      points: 5,
+    }));
     expect(celebrateCorrectAnswer).not.toHaveBeenCalled();
   });
 

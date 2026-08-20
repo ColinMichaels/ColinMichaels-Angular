@@ -24,17 +24,17 @@ export interface AuthorProfile {
 
 export const COLIN_AUTHOR_PROFILE: AuthorProfile = {
   name: 'Colin Michaels',
-  title: 'Application developer, creative problem solver, FPV drone pilot, and photographer',
+  title: 'Application developer, recording and mixing engineer, creative problem solver, FPV drone pilot, and photographer',
   location: 'Florida',
   imageUrl: 'https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fmedia-library%2Flibrary%2F1781710307542-26de032d-9418-4c44-8953-d5f4efdadeec.webp?alt=media&token=03c80fbe-8339-48cb-a150-0dbcf9cadff6',
   imageAlt: 'Colin Michaels site preview image',
   profileFragment: 'about',
-  shortBio: 'Colin Michaels is an application developer, creative problem solver, FPV drone pilot, photographer, and builder of software, AI workflows, websites, drones, videos, and new ideas.',
+  shortBio: 'Colin Michaels is an application developer, recording and mixing engineer, creative problem solver, FPV drone pilot, photographer, and builder of software, AI workflows, websites, drones, videos, and new ideas.',
   homeBioSections: [
     {
       heading: 'About Me',
       paragraphs: [
-        'Hi, I’m Colin Michaels—an application developer, creative problem solver, FPV drone pilot, photographer, and someone who’s always building something.',
+        'Hi, I’m Colin Michaels—an application developer, recording and mixing engineer, creative problem solver, FPV drone pilot, photographer, and someone who’s always building something.',
         'Whether it’s software, AI workflows, websites, drones, videos, or entirely new ideas, I enjoy figuring out how things work—and then making them better. I believe the best projects are the ones that solve real problems while teaching you something along the way.',
         'ColinMichaels.com started as a simple portfolio, but over time it became something much more personal. Today it’s a place where I share the projects I’m building, the lessons I’m learning, experiments that succeed (and plenty that don’t), and the occasional life challenge that ends up teaching me something unexpected.',
       ],
@@ -53,6 +53,7 @@ export const COLIN_AUTHOR_PROFILE: AuthorProfile = {
       paragraphs: [
         'When I’m not writing code, you’ll usually find me flying FPV drones, capturing photos and videos, exploring creative AI projects, working on electronics, or dreaming up another project that probably didn’t need to exist—but sounded like fun.',
         'Creativity has always been a huge part of who I am. I enjoy blending technology with photography, filmmaking, design, music, and storytelling to create projects that are both useful and entertaining.',
+        'Before I focused on software, I spent years in recording studios working on albums as an engineer, mixer, assistant, arranger, and production assistant. Those sessions taught me to listen closely, solve problems under pressure, and make room for the people doing the creative work.',
       ],
       bullets: [],
     },

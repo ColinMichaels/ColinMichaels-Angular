@@ -21,6 +21,36 @@ This foundation should be preserved. New presentation fields must be optional, h
 
 The additive `gallery` extension supplies manual slideshow, responsive grid, and mosaic layouts for two to twenty images while reusing the trusted media pipeline and public lightbox. Its server allowlist, canonical hydration boundary, deployment sequence, and rollback requirements are documented in `EDITORJS_IMAGE_GALLERIES.md`.
 
+### Generated post packages
+
+The New Post editor accepts a single selected folder as a **post package**. It combines one normal CMS post JSON document, one image manifest, and the generated image files without bypassing the existing Storage staging/finalization path. Each declared image is uploaded first; the editor then replaces only the matching `media://…` placeholders in known media fields—cover, background, thumbnail, Open Graph, social image, image blocks, and gallery items. Article prose and external links are never rewritten. The imported draft remains unsaved and unpublished until the editor reviews and explicitly chooses **Save Post**.
+
+The manifest can be embedded as `imageManifest` or `mediaManifest` in the post JSON, or supplied as a separate JSON file in the selected folder. Its portable v1 shape is:
+
+```json
+{
+  "images": [
+    {
+      "file": "images/cover.webp",
+      "reference": "media://images/cover.webp",
+      "role": "cover",
+      "altText": "Describe the image for readers"
+    },
+    {
+      "file": "images/intro.webp",
+      "role": "inline-image",
+      "altText": "Describe the inline image"
+    }
+  ]
+}
+```
+
+`reference` defaults to `media://` plus `file`. The post JSON must use that exact placeholder in a supported media field. The import fails before it uploads anything if a path is unsafe, a declared image is absent or ambiguous, a placeholder has no manifest entry, or the manifest includes an image with no supported post-media target. If an individual upload fails after earlier uploads succeeded, the post remains unchanged and already-finished images remain available in the Media Library for a safe retry.
+
+Each upload is fingerprinted by the trusted finalization service with SHA-256. When an identical image has already been finalized, the package import reuses its existing immutable Storage variants and download URLs instead of creating copies. Different source bytes always receive a new immutable asset; imports never overwrite a previously finalized image.
+
+Package import is intentionally a **New Post** workflow. It preserves the current new-post identity and revision, always stages the package as a draft, and never updates an existing post. If its requested slug already belongs to a post—especially a published article—the editor asks for explicit approval before uploading media and clearly states that continuing creates a separate draft with a unique slug.
+
 ## Discovery And Trust Authoring Review
 
 The post editor's existing metadata checklist is now the **Discovery & Trust Checklist**. It preserves all ten search/share checks and adds four advisory content checks over the current canonical Editor.js blocks and optional post metadata:

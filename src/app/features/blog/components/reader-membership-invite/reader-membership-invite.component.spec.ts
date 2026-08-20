@@ -45,7 +45,10 @@ describe('ReaderMembershipInviteComponent', () => {
 
   const setWindowScrollState = (scrollY: number): void => {
     scrollYSpy.and.returnValue(scrollY);
-    window.dispatchEvent(new Event('scroll'));
+    // Call the HostListener target directly. Angular's test renderer does not
+    // consistently route synthetic global scroll events through HostListener,
+    // but this still exercises the exact visibility work the listener runs.
+    fixture.componentInstance['onScroll']();
   };
 
   const setScrollHeights = (documentHeight = 2000, viewportHeight = 800): void => {
@@ -67,12 +70,13 @@ describe('ReaderMembershipInviteComponent', () => {
     scrollYSpy = spyOnProperty(window, 'scrollY', 'get').and.returnValue(0);
   };
 
-  it('waits for a confirmed anonymous session with scroll engagement before showing the inline offer', () => {
+  it('waits for a confirmed anonymous session with scroll engagement before showing the inline offer', async () => {
     setScrollHeights();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).toBeNull();
     authState.next({status: 'unauthenticated', user: null});
+    await fixture.whenStable();
     fixture.detectChanges();
     setWindowScrollState(0);
     fixture.detectChanges();
@@ -81,6 +85,7 @@ describe('ReaderMembershipInviteComponent', () => {
     expect(analytics.trackReaderMembershipInvite).not.toHaveBeenCalled();
 
     setWindowScrollState(520);
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-membership-invite"]')).not.toBeNull();
@@ -90,11 +95,13 @@ describe('ReaderMembershipInviteComponent', () => {
     expect(analytics.trackReaderMembershipInvite).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps every account action visible with the article redirect', () => {
+  it('keeps every account action visible with the article redirect', async () => {
     setScrollHeights();
     authState.next({status: 'unauthenticated', user: null});
+    await fixture.whenStable();
     fixture.detectChanges();
     setWindowScrollState(1000);
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
@@ -113,11 +120,13 @@ describe('ReaderMembershipInviteComponent', () => {
     expect(analytics.trackReaderMembershipInvite).toHaveBeenCalledWith('a-useful-story', 'register');
   });
 
-  it('snoozes and removes the inline offer without blocking reading', () => {
+  it('snoozes and removes the inline offer without blocking reading', async () => {
     setScrollHeights();
     authState.next({status: 'unauthenticated', user: null});
+    await fixture.whenStable();
     fixture.detectChanges();
     setWindowScrollState(1000);
+    await fixture.whenStable();
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('button') as HTMLButtonElement).click();

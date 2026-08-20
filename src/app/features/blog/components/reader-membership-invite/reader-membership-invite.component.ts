@@ -194,10 +194,17 @@ export class ReaderMembershipInviteComponent implements AfterViewInit {
   ));
 
   constructor() {
+    // A new article starts with a fresh engagement threshold and may earn one
+    // new impression. This deliberately does not depend on `visible()`:
+    // resetting here after a scroll update would hide the offer immediately.
+    effect(() => {
+      this.hasMeaningfulEngagement.set(false);
+      this.impressionTracked = false;
+      this.postSlug();
+    });
+
     effect(() => {
       const postSlug = this.postSlug().trim();
-      this.hasMeaningfulEngagement.set(false);
-
       if (!this.visible() || !postSlug || this.impressionTracked) {
         return;
       }

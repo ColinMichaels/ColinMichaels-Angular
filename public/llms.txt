@@ -1,6 +1,6 @@
 # ColinMichaels.com
 
-> The personal site of Colin Michaels, a Florida-based applications developer, FPV drone pilot, creative technologist, and writer publishing Angular/Firebase architecture notes, practical AI workflow guides, media projects, interactive experiments, gadget writing, and patient-perspective recovery notes.
+> The personal site of Colin Michaels, a Florida-based applications developer, recording and mixing engineer, FPV drone pilot, creative technologist, and writer publishing Angular/Firebase architecture notes, practical AI workflow guides, media projects, interactive experiments, gadget writing, and patient-perspective recovery notes.
 
 This is a curated index for AI tools and readers. It supplements the canonical HTML pages, `robots.txt`, sitemap, and feeds; it does not define crawler permissions or content licensing. When citing an article, prefer its canonical URL, page title, author, and on-page publication or update date. Health and recovery content describes personal experience and is not medical, legal, insurance, or financial advice.
 
@@ -9,6 +9,10 @@ This is a curated index for AI tools and readers. It supplements the canonical H
 - [Homepage](https://colinmichaels.com/): Overview of Colin Michaels, current featured writing, projects, media, and topic guides.
 - [Blog](https://colinmichaels.com/blog): Published articles and recent writing across technology, creative projects, and recovery.
 - [Editorial Standards and Corrections](https://colinmichaels.com/editorial-standards): Definitions for hands-on, researched, manufacturer-supplied, and synthetic material plus sourcing, disclosure, and correction practices.
+
+## Background and credentials
+
+- [Music credits and 2006 Latin GRAMMY Award](https://colinmichaels.com/#about): Colin was the mixing engineer on Calle 13's self-titled debut, the 2006 Latin GRAMMY Award winner for Best Urban Music Album. The [Latin Recording Academy category record](https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/) is the award source.
 
 ## Topic guides
 

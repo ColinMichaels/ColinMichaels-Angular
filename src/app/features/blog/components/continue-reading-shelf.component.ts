@@ -121,7 +121,7 @@ import {
 
     .continue-reading-shelf--home-editorial .heading-section {
       margin-top: 0;
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(1.75rem, 2.5vw, 2.2rem);
       font-weight: 500;
       letter-spacing: -0.025em;
@@ -150,7 +150,7 @@ import {
     }
 
     .continue-reading-shelf--home-editorial .continue-reading-card__title {
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: 1.35rem;
       font-weight: 500;
     }

@@ -602,3 +602,23 @@ app-site-header :is(h1, a, button),
   color: #111827;
   text-decoration-color: #9a3412;
 }
+
+/* Editorial listings retain the full cover while this subtle duplicate avoids
+   blank bands beside a longer text column. */
+app-blog-post-listing .post-listing--editorial .post-listing__editorial-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: -1.5rem;
+  display: block;
+  width: calc(100% + 3rem);
+  height: calc(100% + 3rem);
+  max-width: none;
+  object-fit: cover !important;
+  filter: blur(1.45rem) brightness(.6) saturate(.72);
+  transform: scale(1.06);
+}
+
+app-blog-post-listing .post-listing--editorial .post-listing__image {
+  position: relative;
+  z-index: 1;
+}

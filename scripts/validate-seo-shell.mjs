@@ -22,10 +22,13 @@ for (const relativePath of expectedFiles) {
   assert.match(appRoot, /href="\/blog"/i);
   assert.match(appRoot, /href="\/topics\/gadgets-toys"/i);
   assert.match(appRoot, /href="\/topics\/drones-fpv"/i);
-  assert.match(appRoot, /youtube\.com\/channel\/UCKZ3E88t-BoUqPgZygJw6bA/i);
+  assert.match(appRoot, /youtube\.com\/channel\/UCCJMwxuUIb6S4aoZiZeAVeQ/i);
   assert.match(html, /instagram\.com\/colinmichaels\//i);
   assert.doesNotMatch(html, /captaincolinfpv/i);
-  assert.match(html, /<noscript><style>#cm-initial-loader\{display:none!important\}<\/style><\/noscript>/i);
+  assert.match(
+    html,
+    /<noscript>\s*<style>\s*#cm-initial-loader\s*\{\s*display:\s*none\s*!important\s*\}\s*<\/style>\s*<\/noscript>/i,
+  );
 }
 
 console.log(`Validated semantic homepage fallback in ${expectedFiles.length} SEO shells.`);

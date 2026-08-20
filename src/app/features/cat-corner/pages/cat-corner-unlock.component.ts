@@ -129,7 +129,7 @@ type UnlockState = 'loading' | 'success' | 'error';
     h1 {
       margin: 0;
       color: var(--cat-sage);
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(4.2rem, calc(8vw * var(--reader-font-scale, 1)), 9.5rem);
       font-weight: 400;
       letter-spacing: calc(-.065em + var(--reader-letter-spacing, 0));
