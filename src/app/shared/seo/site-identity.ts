@@ -95,6 +95,7 @@ export const SITE_ALTERNATE_NAMES = [
 ] as const;
 
 export const PERSON_KNOWS_ABOUT = [
+  'Recording engineering, mixing, album production, and music production workflows',
   'Consumer gadgets, unusual internet finds, and hands-on product reviews',
   'FPV drone flying, aerial video, and Florida locations',
   'Practical technology and creator workflows',
@@ -103,6 +104,12 @@ export const PERSON_KNOWS_ABOUT = [
   'CMS publishing workflows and SEO implementation',
   'Interactive browser labs and reusable OS-style UI systems',
   'Open-heart surgery recovery from a patient perspective',
+] as const;
+
+// Kept as plain text because Schema.org's Person.award expects a text value.
+// The visible homepage award section links to the Latin Recording Academy source.
+export const PERSON_AWARDS = [
+  '2006 Latin GRAMMY Award — Best Urban Music Album for Calle 13 (mixing engineer)',
 ] as const;
 
 export const HOME_JSON_LD: SeoStructuredDataObject = {
@@ -116,6 +123,7 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       jobTitle: PERSON_JOB_TITLE,
       image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
       description: PERSON_PROFILE_DESCRIPTION,
+      award: PERSON_AWARDS,
       knowsAbout: PERSON_KNOWS_ABOUT,
       sameAs: PERSON_SAME_AS,
     },

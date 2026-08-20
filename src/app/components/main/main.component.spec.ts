@@ -295,7 +295,9 @@ describe('MainComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
 
     expect(element.querySelector('#about')?.textContent).toContain('About Me');
-    expect(element.querySelector('#about')?.textContent).toContain('application developer, creative problem solver');
+    expect(element.querySelector('#about')?.textContent).toContain('application developer, recording and mixing engineer');
+    expect(element.querySelector('#about')?.textContent).toContain('2006 Latin GRAMMY® Award — Best Urban Music Album');
+    expect(element.querySelector('#about')?.textContent).toContain('Studio credits');
     expect(element.querySelector('#about img')?.getAttribute('src')).toBe(COLIN_AUTHOR_PROFILE.imageUrl);
   });
 

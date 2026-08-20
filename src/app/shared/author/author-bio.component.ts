@@ -4,12 +4,13 @@ import {RouterLink} from '@angular/router';
 import {COLIN_AUTHOR_PROFILE} from './author-profile.data';
 import {AuthorProfile as CanonicalAuthorProfile} from '../../features/authors/models/author.model';
 import {PATH_NAMES} from '../../app-route-paths';
+import {MusicCreditsComponent} from './music-credits.component';
 
 export type AuthorBioVariant = 'home' | 'blog';
 
 @Component({
   selector: 'app-author-bio',
-  imports: [RouterLink],
+  imports: [RouterLink, MusicCreditsComponent],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
@@ -79,6 +80,38 @@ export type AuthorBioVariant = 'home' | 'blog';
             </button>
           </div>
         </div>
+
+        <section aria-labelledby="latin-grammy-recognition-heading" class="border-y border-neutral-300 py-8 sm:py-10">
+          <div class="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.36fr)] lg:items-center">
+            <div class="max-w-2xl">
+              <p class="text-sm uppercase tracking-[0.28em] text-neutral-500">Award recognition</p>
+              <h2 id="latin-grammy-recognition-heading" class="mt-3 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
+                2006 Latin GRAMMY® Award — Best Urban Music Album
+              </h2>
+              <p class="mt-4 text-lg leading-8 text-neutral-800">
+                I was the mixing engineer on Calle 13’s self-titled debut, the 2006 winner for Best Urban Music Album.
+              </p>
+              <a
+                href="https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-5 inline-flex text-sm font-semibold text-cyan-800 underline decoration-cyan-700/40 underline-offset-4 transition hover:text-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600"
+              >
+                View the official award listing
+              </a>
+            </div>
+            <figure class="mx-auto w-full max-w-[12rem] overflow-hidden border border-neutral-300 bg-white sm:max-w-[15rem]">
+              <img
+                src="/assets/images/about/colin-michaels-2006-latin-grammy-calle-13.png"
+                alt="Colin Michaels holding a 2006 Latin GRAMMY plaque for Calle 13 that names him as mixing engineer"
+                class="aspect-square w-full object-contain"
+                loading="lazy"
+              >
+            </figure>
+          </div>
+        </section>
+
+        <app-music-credits></app-music-credits>
 
         @if (findHereSection; as section) {
           <section class="border-y border-neutral-300 py-6">

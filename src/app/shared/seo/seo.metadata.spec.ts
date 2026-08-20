@@ -4,6 +4,8 @@ import {
   CREATOR_PROFILE_URLS,
   GADGET_USEFULNESS_SCORECARD_SEO_METADATA,
   HOME_SEO_METADATA,
+  PERSON_AWARDS,
+  PERSON_KNOWS_ABOUT,
   NOT_FOUND_SEO_METADATA,
   PERSON_SAME_AS,
   PERSONAL_AIRCRAFT_BUYER_VERIFICATION_SEO_METADATA,
@@ -17,13 +19,23 @@ import {
 describe('SEO metadata policy', () => {
   it('uses one verified creator-profile contract in the homepage Person graph', () => {
     const graph = (HOME_SEO_METADATA.structuredData as {
-      '@graph'?: readonly { '@type'?: string; sameAs?: readonly string[] }[];
+      '@graph'?: readonly {
+        '@type'?: string;
+        award?: readonly string[];
+        knowsAbout?: readonly string[];
+        sameAs?: readonly string[];
+      }[];
     })['@graph'];
     const person = graph?.find(node => node['@type'] === 'Person');
 
     expect(CREATOR_PROFILE_URLS.instagram).toBe('https://www.instagram.com/colinmichaels/');
     expect(person?.sameAs).toEqual(PERSON_SAME_AS);
     expect(person?.sameAs).not.toContain('https://www.instagram.com/captaincolinfpv');
+    expect(person?.award).toEqual(PERSON_AWARDS);
+    expect(person?.knowsAbout).toEqual(PERSON_KNOWS_ABOUT);
+    expect(person?.knowsAbout).toContain(
+      'Recording engineering, mixing, album production, and music production workflows',
+    );
   });
 
   it('marks low-count category pages noindex while preserving higher-count category canonicals', () => {

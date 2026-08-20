@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added a responsive home-bio music section with a filterable, searchable list of Colin Michaels’s album credits and compact Spotify and Apple Music discovery icons with hover/focus labels.
+- Added the supplied plaque photograph as a compact supporting image and an accurately labeled 2006 Latin GRAMMY® Award for Calle 13’s *Best Urban Music Album* win, naming Colin as the mixing engineer. The matching client, Functions, and static homepage `Person` graphs now expose the verified award and music-production expertise for crawlers.
+- Placed the award text before its supporting photograph so desktop biography sections do not visually repeat the preceding image-led layout.
+
 - Split the site’s YouTube identity into two verified, fail-closed channels: Colin Michaels (`UCCJMwxuUIb6S4aoZiZeAVeQ`) is now the primary general-creator profile for the blog sidebar, homepage subscription path, author profiles, social bar, and static homepage fallback; Captain Colin (`UCKZ3E88t-BoUqPgZygJw6bA`) remains explicit for FPV/drone topic surfaces and selected companion videos. The callable and HTTP feed endpoints now accept a bounded channel key and verify the requested configured channel and YouTube API response before rendering; feed caches are isolated by channel. Added Angular and Functions identity coverage plus deployment guidance for the new `COLIN_MICHAELS_YOUTUBE_CHANNEL_ID` parameter. No Firebase parameter, deployment, YouTube upload, subscription, analytics destination, or live-site mutation occurred.
 
 - Moved the complete Captain Colin video section directly after homepage topic discovery and ahead of the secondary recovery collections. Visitors now move from the gadget/FPV promise into current videos, channel access, and subscription before the page branches into personal recovery writing; no content, feed, analytics payload, Firestore record, YouTube surface, deployment, commit, or push changed.

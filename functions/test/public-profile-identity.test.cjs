@@ -5,6 +5,8 @@ const test = require('node:test');
 
 const {
   CREATOR_PROFILE_URLS,
+  PERSON_AWARDS,
+  PERSON_KNOWS_ABOUT,
   PERSON_SAME_AS,
   CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
   CAPTAIN_COLIN_YOUTUBE_CHANNEL_URL,
@@ -53,5 +55,10 @@ test('keeps the physical homepage Person graph aligned with the active profile c
   const person = graph.find(node => node['@type'] === 'Person');
 
   assert.deepEqual(person.sameAs, [...PERSON_SAME_AS]);
+  assert.deepEqual(person.award, [...PERSON_AWARDS]);
+  assert.deepEqual(person.knowsAbout, [...PERSON_KNOWS_ABOUT]);
+  assert.ok(person.knowsAbout.includes(
+    'Recording engineering, mixing, album production, and music production workflows',
+  ));
   assert.doesNotMatch(indexHtml, /captaincolinfpv/i);
 });
