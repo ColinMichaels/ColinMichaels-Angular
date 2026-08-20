@@ -106,6 +106,16 @@ export const PERSON_KNOWS_ABOUT = [
   'Open-heart surgery recovery from a patient perspective',
 ] as const;
 
+// Complements the broader developer job title with the music role documented
+// in the homepage biography and official Latin GRAMMY recognition.
+export const PERSON_OCCUPATIONS = [
+  {
+    '@type': 'Occupation',
+    name: 'Recording and mixing engineer',
+    skills: 'Recording engineering, audio mixing, and album production',
+  },
+] as const;
+
 // Kept as plain text because Schema.org's Person.award expects a text value.
 // The visible homepage award section links to the Latin Recording Academy source.
 export const PERSON_AWARDS = [
@@ -124,6 +134,7 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
       description: PERSON_PROFILE_DESCRIPTION,
       award: PERSON_AWARDS,
+      hasOccupation: PERSON_OCCUPATIONS,
       knowsAbout: PERSON_KNOWS_ABOUT,
       sameAs: PERSON_SAME_AS,
     },

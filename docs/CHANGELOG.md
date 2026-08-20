@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a structured `Person.hasOccupation` record for Colin's recording and mixing-engineer work, aligned across the Angular graph, Functions crawler rendering, and static fallback alongside the existing verified Latin GRAMMY award and music-production expertise.
 - Corrected article companion-video channel attribution: general creator articles now identify and subscribe to Colin Michaels, while explicitly classified drone and FPV articles keep Captain Colin. Companion labels, links, and outbound analytics now use the same selected channel without implying that a selected third-party companion video belongs to either channel; no YouTube account, video, playlist, subscription, deployment, or other external surface changed.
 - Added Colin's recording and mixing-engineer identity plus the verified Calle 13 / 2006 Latin GRAMMY credential to the shared crawler profile description and curated AI-reader index, while keeping the homepage's primary gadget, useful-tech, and creator promise intact.
 - Switched the general homepage video shelf from Captain Colin to the active Colin Michaels channel, with matching loading copy and a regression contract for the configured channel key. Captain Colin remains reserved for FPV-specific journeys; no YouTube account, video, playlist, subscription, deployment, or other external surface changed.

@@ -7,6 +7,7 @@ const {
   CREATOR_PROFILE_URLS,
   PERSON_AWARDS,
   PERSON_KNOWS_ABOUT,
+  PERSON_OCCUPATIONS,
   PERSON_PROFILE_DESCRIPTION,
   PERSON_SAME_AS,
   CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
@@ -59,6 +60,7 @@ test('keeps the physical homepage Person graph aligned with the active profile c
   assert.deepEqual(person.award, [...PERSON_AWARDS]);
   assert.equal(person.description, PERSON_PROFILE_DESCRIPTION);
   assert.match(person.description, /recording and mixing engineer/i);
+  assert.deepEqual(person.hasOccupation, [...PERSON_OCCUPATIONS]);
   assert.deepEqual(person.knowsAbout, [...PERSON_KNOWS_ABOUT]);
   assert.ok(person.knowsAbout.includes(
     'Recording engineering, mixing, album production, and music production workflows',

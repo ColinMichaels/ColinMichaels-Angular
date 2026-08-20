@@ -103,6 +103,16 @@ export const PERSON_KNOWS_ABOUT = [
   'Open-heart surgery recovery from a patient perspective',
 ] as const;
 
+// Complements the broader developer job title with the music role documented
+// in the homepage biography and official Latin GRAMMY recognition.
+export const PERSON_OCCUPATIONS = [
+  {
+    '@type': 'Occupation',
+    name: 'Recording and mixing engineer',
+    skills: 'Recording engineering, audio mixing, and album production',
+  },
+] as const;
+
 // Kept as plain text because Schema.org's Person.award expects a text value.
 // The visible homepage award section links to the Latin Recording Academy source.
 export const PERSON_AWARDS = [

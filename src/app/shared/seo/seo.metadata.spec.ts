@@ -6,6 +6,7 @@ import {
   HOME_SEO_METADATA,
   PERSON_AWARDS,
   PERSON_KNOWS_ABOUT,
+  PERSON_OCCUPATIONS,
   PERSON_PROFILE_DESCRIPTION,
   NOT_FOUND_SEO_METADATA,
   PERSON_SAME_AS,
@@ -24,6 +25,7 @@ describe('SEO metadata policy', () => {
         '@type'?: string;
         award?: readonly string[];
         description?: string;
+        hasOccupation?: typeof PERSON_OCCUPATIONS;
         knowsAbout?: readonly string[];
         sameAs?: readonly string[];
       }[];
@@ -36,6 +38,7 @@ describe('SEO metadata policy', () => {
     expect(person?.award).toEqual(PERSON_AWARDS);
     expect(person?.description).toBe(PERSON_PROFILE_DESCRIPTION);
     expect(person?.description).toContain('recording and mixing engineer');
+    expect(person?.hasOccupation).toEqual(PERSON_OCCUPATIONS);
     expect(person?.knowsAbout).toEqual(PERSON_KNOWS_ABOUT);
     expect(person?.knowsAbout).toContain(
       'Recording engineering, mixing, album production, and music production workflows',
