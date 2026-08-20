@@ -8,6 +8,23 @@ import {BlogMediaUploaderComponent} from '../media-uploader/blog-media-uploader.
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {SocialPromotionEditorComponent} from './social-promotion-editor.component';
 
+function installClipboardSpy(writeText: jasmine.Spy): () => void {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: {writeText},
+  });
+
+  return () => {
+    if (originalDescriptor) {
+      Object.defineProperty(navigator, 'clipboard', originalDescriptor);
+      return;
+    }
+
+    Reflect.deleteProperty(navigator, 'clipboard');
+  };
+}
+
 function createPost(overrides: Partial<BlogPost> = {}): BlogPost {
   return {
     id: 'post-1',
@@ -154,6 +171,24 @@ describe('SocialPromotionEditorComponent', () => {
 
     expect(latestMessage).toBe('A native-first version written for Facebook.');
     expect(fixture.nativeElement.textContent).toContain('Unsaved social changes');
+  });
+
+  it('copies a native publishing pack with the stored tagged article link', async () => {
+    const writeText = jasmine.createSpy('writeText').and.resolveTo();
+    const restoreClipboard = installClipboardSpy(writeText);
+
+    try {
+      findButton(fixture, 'Copy publishing pack').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(writeText).toHaveBeenCalledWith(jasmine.stringMatching(
+        /Article link for the first comment: https:\/\/colinmichaels\.com\/blog\/a-useful-story\?utm_source=facebook&utm_medium=organic_social&utm_campaign=article_launch&utm_content=a-useful-story/
+      ));
+      expect(fixture.nativeElement.textContent).toContain('Copied the Facebook publishing pack.');
+    } finally {
+      restoreClipboard();
+    }
   });
 
   it('preserves existing announcements while switching channels and drafting another one', () => {

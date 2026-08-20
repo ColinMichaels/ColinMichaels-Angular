@@ -287,6 +287,7 @@ export class SocialPromotionEditorComponent {
   protected readonly aiNotice = signal('');
   protected readonly aiInstruction = signal('');
   protected readonly aiSuggestions = signal<readonly BlogSocialAiSuggestion[]>([]);
+  protected readonly publishingPackNotice = signal('');
 
   protected readonly activeChannelOption = computed(
     () => channelById.get(this.activeChannel()) ?? socialChannelOptions[0]
@@ -573,6 +574,23 @@ export class SocialPromotionEditorComponent {
     this.clearAiSuggestions();
   }
 
+  protected async copyPublishingPack(): Promise<void> {
+    const announcement = this.activeAnnouncement();
+    if (!announcement?.message.trim()) {
+      return;
+    }
+
+    this.publishingPackNotice.set('');
+    try {
+      await this.copyTextToClipboard(this.createPublishingPack(announcement));
+      this.publishingPackNotice.set(
+        `Copied the ${this.activeChannelOption().label} publishing pack. Open the native app and paste it when you are ready.`
+      );
+    } catch {
+      this.publishingPackNotice.set('Clipboard access is unavailable in this browser. Copy the draft manually.');
+    }
+  }
+
   protected onStatusChange(event: Event): void {
     const status = (event.target as HTMLSelectElement).value as EditableSocialStatus;
     if (status !== 'scheduled') {
@@ -852,6 +870,42 @@ export class SocialPromotionEditorComponent {
 
   private campaignArticleUrl(channel: BlogSocialChannel): string {
     return createBlogSocialCampaignUrl(channel, this.post(), SITE_URL);
+  }
+
+  private createPublishingPack(announcement: BlogSocialAnnouncement): string {
+    const message = announcement.message.trim();
+    const linkUrl = announcement.linkUrl?.trim();
+    if (!linkUrl || message.includes(linkUrl)) {
+      return message;
+    }
+
+    const placement = announcement.linkPlacement === 'first-comment'
+      ? 'Article link for the first comment'
+      : announcement.linkPlacement === 'profile'
+        ? 'Article link for the profile'
+        : 'Article link';
+    return `${message}\n\n${placement}: ${linkUrl}`;
+  }
+
+  private async copyTextToClipboard(value: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const didCopy = document.execCommand('copy');
+    textarea.remove();
+
+    if (!didCopy) {
+      throw new Error('Clipboard access is unavailable.');
+    }
   }
 
   private commitAndCreatePromotion(active: BlogSocialAnnouncement): BlogSocialPromotion {

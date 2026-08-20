@@ -259,14 +259,23 @@
               <p class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-cyan-300">3 · Copy</p>
               <h3 id="social-copy-heading" class="mt-1 text-base font-semibold text-zinc-100">Write the post people see first</h3>
             </div>
-            <button
-              type="button"
-              class="border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
-              [disabled]="isLifecycleReadOnly()"
-              (click)="regenerateStarterCopy()"
-            >
-              Regenerate starter copy
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-100 hover:border-cyan-300 hover:bg-cyan-300 hover:text-zinc-950"
+                (click)="copyPublishingPack()"
+              >
+                Copy publishing pack
+              </button>
+              <button
+                type="button"
+                class="border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:border-cyan-400 hover:text-cyan-200"
+                [disabled]="isLifecycleReadOnly()"
+                (click)="regenerateStarterCopy()"
+              >
+                Regenerate starter copy
+              </button>
+            </div>
           </div>
 
           <label class="block space-y-2">
@@ -288,6 +297,11 @@
               {{ characterCount() | number }} / {{ activeChannelOption().characterLimit | number }}
             </p>
           </div>
+          @if (publishingPackNotice()) {
+            <p class="border border-cyan-500/30 bg-cyan-950/20 px-3 py-2 text-xs leading-5 text-cyan-100" role="status">
+              {{ publishingPackNotice() }}
+            </p>
+          }
         </section>
 
         <section class="space-y-4 border border-violet-500/30 bg-violet-950/10 p-4 sm:p-5" aria-labelledby="social-ai-heading">
