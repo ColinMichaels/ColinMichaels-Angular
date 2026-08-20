@@ -6,6 +6,7 @@ import {
   HOME_SEO_METADATA,
   PERSON_AWARDS,
   PERSON_KNOWS_ABOUT,
+  PERSON_PROFILE_DESCRIPTION,
   NOT_FOUND_SEO_METADATA,
   PERSON_SAME_AS,
   PERSONAL_AIRCRAFT_BUYER_VERIFICATION_SEO_METADATA,
@@ -22,6 +23,7 @@ describe('SEO metadata policy', () => {
       '@graph'?: readonly {
         '@type'?: string;
         award?: readonly string[];
+        description?: string;
         knowsAbout?: readonly string[];
         sameAs?: readonly string[];
       }[];
@@ -32,6 +34,8 @@ describe('SEO metadata policy', () => {
     expect(person?.sameAs).toEqual(PERSON_SAME_AS);
     expect(person?.sameAs).not.toContain('https://www.instagram.com/captaincolinfpv');
     expect(person?.award).toEqual(PERSON_AWARDS);
+    expect(person?.description).toBe(PERSON_PROFILE_DESCRIPTION);
+    expect(person?.description).toContain('recording and mixing engineer');
     expect(person?.knowsAbout).toEqual(PERSON_KNOWS_ABOUT);
     expect(person?.knowsAbout).toContain(
       'Recording engineering, mixing, album production, and music production workflows',
