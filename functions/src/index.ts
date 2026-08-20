@@ -5836,7 +5836,7 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
 
       return safeUrl
         ? `<p><a href="${escapeHtml(safeUrl)}">${escapeHtml(
-          isCompanionVideo ? 'Watch the companion video on Captain Colin YouTube' : caption || url
+          isCompanionVideo ? 'Watch the companion video on YouTube' : caption || url
         )}</a></p>`
         : '';
     }
