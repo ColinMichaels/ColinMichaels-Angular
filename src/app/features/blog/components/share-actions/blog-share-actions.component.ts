@@ -17,6 +17,7 @@ import {faEnvelope, faLink, faShareNodes} from '@fortawesome/free-solid-svg-icon
 import {BlogShareEvent, BlogShareProvider} from '../../services/blog-engagement.service';
 import {createOpaqueShareId} from '../../services/share-attribution.service';
 import {htmlToPlainText} from '../../utils/blog-html.util';
+import {createCampaignUrl} from '../../../../shared/analytics/campaign-url.util';
 
 type BlogShareVariant = 'compact' | 'panel' | 'toolbar';
 
@@ -169,6 +170,9 @@ export class BlogShareActionsComponent implements OnDestroy {
   @Input() groupLabel = 'Share this post';
   @Input() linkLabel = 'post';
   @Input() trackingEnabled = false;
+  /** Identifies the on-site share surface without exposing reader identity. */
+  @Input() utmCampaign = 'reader_share';
+  @Input() utmContent = '';
   @Output() shared = new EventEmitter<BlogShareEvent>();
 
   protected readonly copied = signal(false);
@@ -350,12 +354,31 @@ export class BlogShareActionsComponent implements OnDestroy {
   }
 
   private createShareUrl(provider: BlogShareProvider): string {
+    const campaignUrl = createCampaignUrl(this.shareUrl, {
+      source: provider === 'copy' ? 'direct_share' : provider,
+      medium: this.shareMedium(provider),
+      campaign: this.utmCampaign,
+      content: this.utmContent,
+    });
+
     if (!this.trackingEnabled) {
-      return this.shareUrl;
+      return campaignUrl;
     }
 
-    const separator = this.shareUrl.includes('?') ? '&' : '?';
-    return `${this.shareUrl}${separator}share=${encodeURIComponent(this.getShareId(provider))}`;
+    const parsedUrl = new URL(campaignUrl);
+    parsedUrl.searchParams.set('share', this.getShareId(provider));
+    return parsedUrl.toString();
+  }
+
+  private shareMedium(provider: BlogShareProvider): string {
+    switch (provider) {
+      case 'email':
+        return 'email';
+      case 'copy':
+        return 'share_link';
+      default:
+        return 'social_share';
+    }
   }
 
   private getShareId(provider: BlogShareProvider): string {

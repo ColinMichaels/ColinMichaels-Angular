@@ -61,6 +61,8 @@ import {BlogShareActionsComponent} from '../share-actions/blog-share-actions.com
             [path]="sharePath"
             [url]="shareUrl"
             [trackingEnabled]="trackingEnabled"
+            utmCampaign="reader_share"
+            [utmContent]="shareUtmContent"
             variant="toolbar"
             label="Share"
             groupLabel="Share this post"
@@ -236,6 +238,7 @@ export class BlogStickyPostToolbarComponent implements AfterViewInit, OnDestroy 
   @Input() shareTitle = '';
   @Input() excerpt = '';
   @Input() shareUrl = '';
+  @Input() shareUtmContent = '';
   @Input() trackingEnabled = false;
   @Input() showComments = true;
   @Input() showLibraryControls = false;
