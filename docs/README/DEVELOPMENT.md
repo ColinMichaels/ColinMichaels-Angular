@@ -52,6 +52,14 @@ Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATI
 
 `npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.
 
+For a repeatable local source-release gate, run:
+
+```bash
+npm run test:release
+```
+
+It runs lint, the production application build, the complete Angular suite, content-package validation, and every non-emulator Functions suite. It does not deploy, access production data, start Firebase emulators, or prove live behavior; run emulator and production verification separately when a change needs them.
+
 Current verified baseline (July 16, 2026, Node `24.15.0`; Functions build/tests also verified on Node `22.15.0`):
 
 - `npm run build`: passes with `0` optimization warnings and no `allowedCommonJsDependencies` exemptions after replacing the legacy Day.js, audio, and Editor.js YouTube runtime paths.
