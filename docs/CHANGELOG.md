@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Removed inactive email and newsletter promises from reader signup and Profile. The existing preference records are preserved for a future real delivery system, but the active return path is now accurately limited to explicit per-device browser alerts.
 - Post-package image imports now reuse existing finalized media when the trusted SHA-256 source checksum matches, while changed source bytes receive a new immutable asset and URL.
 - New Post package imports now preserve the new post’s identity and revision, force imported content to a draft, and require explicit confirmation before a conflicting existing slug can become a separate draft. Published posts cannot be overwritten by this flow.
 - Fixed the after-article reader invitation so reaching its meaningful-reading threshold now keeps the inline offer visible. Its engagement reset is scoped to an article change, preventing the visibility tracker from immediately hiding the offer before readers can choose an action.
