@@ -86,6 +86,16 @@ For printable-resource demand, filter `select_content` to `content_group = downl
 
 For the account-invitation baseline, filter `reader_membership_invite` to `source_component = after_article` and compare `register`, `login`, and `dismiss` counts with `view` by article slug. Treat these as directional interface choices, not completed registrations; Firebase Auth remains authoritative for account creation and sign-in outcomes.
 
+### Share campaign reporting
+
+Public sharing uses standard UTM fields, with no reader identity in the URL:
+
+- Reader controls use `utm_campaign=reader_share`; the selected service is `utm_source` and the action class is `utm_medium` (`social_share`, `email`, or `share_link`).
+- The global footer uses `utm_campaign=site_share` and `utm_content=homepage`.
+- CMS Social Shares drafts use `utm_campaign=article_launch`, the intended channel as `utm_source`, the article slug as `utm_content`, and a channel-appropriate medium (`organic_social`, `video_description`, or `push`).
+
+In **Reports → Acquisition → Traffic acquisition**, compare `Session source / medium` and `Session campaign`; use `Session manual ad content` to distinguish individual promoted articles. Validate a newly published channel link in **DebugView** before drawing conclusions from standard reports. UTM values identify the link that brought a session, not whether the visitor is a human or whether the provider completed a post.
+
 ## Validation
 
 1. Run unit tests for the analytics service and each instrumented flow.
