@@ -6,6 +6,10 @@ Build a recognizable Colin Michaels creator brand that earns discovery, holds at
 
 The north star is a growing **monthly engaged audience**: people who read, watch, react, share, subscribe, and return. Raw page views and subscriber totals remain supporting measures because neither proves attention or loyalty on its own.
 
+## Current channel decision
+
+Colin Michaels is the primary general-creator YouTube channel for ColinMichaels.com. Homepage, blog, author, and broad creator journeys should direct viewers there. Captain Colin is deliberately reserved for FPV and drone-specific stories, field notes, and companion videos. The historical channel figures below remain useful as a dated baseline, but they do not override this routing decision or authorize a channel migration.
+
 ## Evidence Snapshot
 
 Captured August 14, 2026 from the production GA4 property, its linked Search Console reports, and Captain Colin YouTube Studio. These are directional, time-bound baselines rather than promises of future performance.
@@ -33,7 +37,7 @@ GA4 live 28-day recheck, July 18 through August 14, read August 15:
 - Visible session-source leaders included Direct (`148`), Facebook referrals (`90` plus `74` mobile), ChatGPT (`52`), YouTube (`39`), Bing organic (`34`), and Google organic (`34`).
 - The seven-day property card still showed `0` key events. The application has local interaction instrumentation, but production event receipt and GA4 key-event configuration remain separate release gates.
 
-### Captain Colin on YouTube
+### Captain Colin on YouTube (historical FPV baseline)
 
 YouTube Studio, July 17 through August 13:
 
@@ -43,11 +47,11 @@ YouTube Studio, July 17 through August 13:
 - Video content received `763` impressions, a `7.3%` click-through rate, and `1:10` average view duration.
 - Discovery came primarily from YouTube Search (`37.6%`), Direct or unknown (`24.8%`), Browse (`14.4%`), and External (`12.8%`).
 
-Channel-identity recheck on August 15:
+Channel-identity recheck on August 15 (superseded as a routing decision):
 
 - The signed-in Studio default opened a different **Colin Michaels** channel (`UCCJMwxuUIb6S4aoZiZeAVeQ`) with `8` subscribers, `47` views, and `0.6` watch hours in the last 28 days.
-- ColinMichaels.com and the growth packages continue to designate the established **Captain Colin** channel (`UCKZ3E88t-BoUqPgZygJw6bA`), whose captured public baseline was `602` subscribers, `394` videos, and `124,185` views.
-- Do not split new releases, redirects, or reciprocal links across both identities. Confirm the intended primary channel and exact Studio channel ID before any live YouTube mutation; the current evidence favors consolidating on Captain Colin's existing audience and archive.
+- The established **Captain Colin** channel (`UCKZ3E88t-BoUqPgZygJw6bA`) captured a public baseline of `602` subscribers, `394` videos, and `124,185` views.
+- The owner subsequently selected **Colin Michaels** as the primary general creator channel. Do not split a general release across both identities: reserve Captain Colin links and uploads for explicit drone/FPV work, and confirm the exact Studio channel ID before any live YouTube mutation.
 
 ## Strategic Decision
 
@@ -75,9 +79,9 @@ flowchart LR
 
 The website and channel should exchange audiences deliberately:
 
-- Each flagship article gets a companion video when the subject benefits from motion, demonstration, place, or personality.
+- Each flagship article gets a companion video when the subject benefits from motion, demonstration, place, or personality. General work leads to Colin Michaels; explicit drone/FPV work may lead to Captain Colin.
 - Each companion video links to one canonical article for sources, details, photos, or updates.
-- Article endings promote one relevant next article and, when available, one relevant Captain Colin video.
+- Article endings promote one relevant next article and, when available, one relevant video from the channel selected for that subject.
 - Videos use playlists, end screens, and a spoken next-watch cue rather than a generic subscribe request alone.
 
 ## Repeatable Series
