@@ -6,6 +6,7 @@ import {
   createYouTubeWatchUrl,
   getYouTubeVideoId,
 } from '../../youtube/utils/youtube-url.util';
+import type {YouTubeChannelKey} from '../../../shared/seo/site-identity';
 
 export interface BlogCompanionVideo {
   videoId: string;
@@ -74,6 +75,19 @@ export function shouldShowDroneYouTubeJourney(
   return explicitTerms.some(value => (
     DRONE_YOUTUBE_TERMS.some(term => explicitTermMatches(value, term))
   ));
+}
+
+/**
+ * General articles build the Colin Michaels channel. Captain Colin remains
+ * reserved for explicitly classified drone and FPV work.
+ */
+export function selectBlogCompanionVideoChannel(
+  post: Pick<BlogPostSummary, 'categories' | 'subcategories' | 'tags'>,
+  primaryTopicSlug = ''
+): YouTubeChannelKey {
+  return shouldShowDroneYouTubeJourney(post, primaryTopicSlug)
+    ? 'captain-colin'
+    : 'colin-michaels';
 }
 
 export function selectBlogCompanionVideo(

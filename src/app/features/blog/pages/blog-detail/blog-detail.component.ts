@@ -68,6 +68,7 @@ import {
 } from '../../../youtube/components/companion-video/youtube-companion-video.component';
 import {
   selectBlogCompanionVideo,
+  selectBlogCompanionVideoChannel,
   shouldShowDroneYouTubeJourney,
 } from '../../utils/blog-youtube-journey.util';
 
@@ -301,11 +302,12 @@ function normalizeHealthTerm(value: string): string {
                       [videoUrl]="video.videoUrl"
                       [thumbnailUrl]="video.thumbnailUrl"
                       [articleTitle]="currentPost.title"
+                      [channel]="companionVideoChannel()"
                     ></app-youtube-companion-video>
                   } @placeholder {
                     <section
                       class="site-skeleton-card mt-12 h-64"
-                      aria-label="Loading the companion Captain Colin video"
+                      aria-label="Loading the companion YouTube video"
                     ></section>
                   }
                 } @else if (showDroneYouTubeJourney()) {
@@ -731,6 +733,13 @@ export class BlogDetailComponent {
   protected readonly companionVideo = computed(() => (
     selectBlogCompanionVideo(this.post()?.blocks ?? [])
   ));
+  protected readonly companionVideoChannel = computed(() => {
+    const post = this.post();
+
+    return post
+      ? selectBlogCompanionVideoChannel(post, this.primaryTopicHub()?.slug)
+      : 'colin-michaels';
+  });
   protected readonly showDroneYouTubeJourney = computed(() => {
     const post = this.post();
 

@@ -2,6 +2,7 @@ import type {BlogPostSummary} from '../models/blog-post.model';
 import {
   createIsoVideoDuration,
   selectBlogCompanionVideo,
+  selectBlogCompanionVideoChannel,
   selectBlogCompanionVideoSchema,
   shouldShowDroneYouTubeJourney,
 } from './blog-youtube-journey.util';
@@ -43,6 +44,13 @@ describe('shouldShowDroneYouTubeJourney', () => {
       categories: ['Health & Recovery'],
       tags: ['Recovery'],
     }))).toBeFalse();
+  });
+});
+
+describe('selectBlogCompanionVideoChannel', () => {
+  it('uses Colin Michaels for general article companions and reserves Captain Colin for drone work', () => {
+    expect(selectBlogCompanionVideoChannel(createPost())).toBe('colin-michaels');
+    expect(selectBlogCompanionVideoChannel(createPost({categories: ['Drones & FPV']}))).toBe('captain-colin');
   });
 });
 

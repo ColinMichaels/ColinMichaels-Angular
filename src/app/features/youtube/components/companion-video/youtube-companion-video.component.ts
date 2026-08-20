@@ -2,8 +2,9 @@ import {ChangeDetectionStrategy, Component, Input, inject} from '@angular/core';
 
 import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
 import {
-  CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
-  CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL,
+  getYouTubeChannelIdentity,
+  PRIMARY_YOUTUBE_CHANNEL_KEY,
+  type YouTubeChannelKey,
 } from '../../../../shared/seo/site-identity';
 
 @Component({
@@ -43,7 +44,7 @@ import {
             Watch the story behind this article.
           </h2>
           <p class="mt-4 text-sm leading-6 text-zinc-300">
-            Continue with the selected Captain Colin video for the footage, demonstration, or place behind this write-up.
+            Watch the selected video for the footage, demonstration, or place behind this write-up, then follow {{ channelName }} for future work.
           </p>
           <div class="mt-6 flex flex-wrap gap-3">
             <a
@@ -75,10 +76,17 @@ export class YouTubeCompanionVideoComponent {
   @Input({required: true}) videoUrl = '';
   @Input({required: true}) thumbnailUrl = '';
   @Input({required: true}) articleTitle = '';
-
-  protected readonly subscribeUrl = CAPTAIN_COLIN_YOUTUBE_SUBSCRIBE_URL;
+  @Input() channel: YouTubeChannelKey = PRIMARY_YOUTUBE_CHANNEL_KEY;
 
   private readonly analytics = inject(SiteAnalyticsService);
+
+  protected get subscribeUrl(): string {
+    return getYouTubeChannelIdentity(this.channel).subscribeUrl;
+  }
+
+  protected get channelName(): string {
+    return getYouTubeChannelIdentity(this.channel).name;
+  }
 
   protected recordVideoSelection(action: 'video_thumbnail' | 'video_watch'): void {
     this.analytics.trackYouTubeOutbound(this.videoId, action, 'article_companion_youtube');
@@ -86,7 +94,7 @@ export class YouTubeCompanionVideoComponent {
 
   protected recordSubscriptionSelection(): void {
     this.analytics.trackYouTubeOutbound(
-      CAPTAIN_COLIN_YOUTUBE_CHANNEL_ID,
+      getYouTubeChannelIdentity(this.channel).id,
       'subscribe',
       'article_companion_youtube'
     );
