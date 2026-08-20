@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Updated the crawler-facing homepage answer summary to promote Colin Michaels as the general creator channel and reserve Captain Colin for FPV/drone content.
 - Corrected stale creator-channel documentation so general ColinMichaels.com journeys consistently use Colin Michaels, while Captain Colin remains explicit to drone/FPV material. Historical Captain Colin performance records are retained as dated context.
 - Removed inactive email and newsletter promises from reader signup and Profile. The existing preference records are preserved for a future real delivery system, but the active return path is now accurately limited to explicit per-device browser alerts.
 - Post-package image imports now reuse existing finalized media when the trusted SHA-256 source checksum matches, while changed source bytes receive a new immutable asset and URL.
