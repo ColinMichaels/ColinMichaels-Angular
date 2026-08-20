@@ -64,6 +64,11 @@ CMS Social Shares drafts use `utm_campaign=article_launch`, the intended channel
 slug as `utm_content`. This separates Facebook, YouTube, X, LinkedIn, email, copy-link, and site-notification
 visits from untagged Direct traffic in GA4 without embedding a user ID or changing the canonical URL.
 
+The CMS Social Shares editor also provides a **Copy publishing pack** action. It copies the reviewed native copy
+and, when the channel needs one, its saved tagged article URL with a first-comment or profile-link label. The
+operator pastes that pack into the native platform workflow; this remains an explicit human publishing step and
+does not grant the application provider posting access.
+
 `recordSiteShare` and `recordPostShare` register the ID server-side and award the existing share points at most once for their current event scope. A tracked share record includes:
 
 - owner UID;
