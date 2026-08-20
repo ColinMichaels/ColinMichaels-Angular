@@ -4,6 +4,7 @@
 
 ### Added
 
+- Removed Georgia/Times New Roman fallback typography from public home, blog, Daily Discovery, and Cat Corner editorial surfaces. Every affected heading now falls back to the established local Source Sans 3 stack if Lexend has not loaded, preserving a consistent sans-serif interface under slow or failed font loads.
 - Added a structured `Person.hasOccupation` record for Colin's recording and mixing-engineer work, aligned across the Angular graph, Functions crawler rendering, and static fallback alongside the existing verified Latin GRAMMY award and music-production expertise.
 - Corrected article companion-video channel attribution: general creator articles now identify and subscribe to Colin Michaels, while explicitly classified drone and FPV articles keep Captain Colin. Companion labels, links, and outbound analytics now use the same selected channel without implying that a selected third-party companion video belongs to either channel; no YouTube account, video, playlist, subscription, deployment, or other external surface changed.
 - Added Colin's recording and mixing-engineer identity plus the verified Calle 13 / 2006 Latin GRAMMY credential to the shared crawler profile description and curated AI-reader index, while keeping the homepage's primary gadget, useful-tech, and creator promise intact.

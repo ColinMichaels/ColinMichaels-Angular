@@ -346,7 +346,7 @@ interface EditorialMediaSet {
       max-width: 19ch;
       margin: 0;
       color: #ffffff;
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(2.15rem, 4vw, 4rem);
       font-weight: 500;
       letter-spacing: -0.042em;
@@ -437,7 +437,7 @@ interface EditorialMediaSet {
       margin: 0;
       max-width: 18ch;
       color: #ffffff;
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(1.9rem, calc(2.5vw * var(--reader-font-scale, 1)), 3rem);
       font-weight: 500;
       letter-spacing: -0.045em;
