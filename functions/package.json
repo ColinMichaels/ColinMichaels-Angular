@@ -21,6 +21,7 @@
     "test:seo": "npm run build && node --test test/blog-citations.test.cjs test/blog-feed-url.test.cjs test/blog-taxonomy.test.cjs test/blog-topic-matching.test.cjs test/blog-video-schema.test.cjs test/editorial-standards.test.cjs test/hosting-url-contract.test.cjs test/public-profile-identity.test.cjs test/seo-fallback-pages.test.cjs test/seo-image-markup.test.cjs test/seo-response-headers.test.cjs test/topic-hub-public-identity.test.cjs test/youtube-channel-identity.test.cjs",
     "test:phase7": "npm run build && node --test test/blog-publishing.test.cjs test/blog-media.test.cjs test/content-package-publishing.test.cjs test/temu-companion-video-package.test.cjs test/captain-colin-channel-refresh.test.cjs test/hurricane-milton-evergreen-gateway.test.cjs test/insta360-ace-pro-evergreen-gateway.test.cjs test/insta360-ace-pro-article-package.test.cjs test/betafpv-95x-v3-article-package.test.cjs",
     "test:public-submissions": "npm run build && node --test test/public-submissions.test.cjs test/public-submission-email.test.cjs",
+    "test:all": "npm run test:comment-safety && npm run test:blog-social-ai && npm run test:push-notifications && npm run test:social-connections && npm run test:social-delivery && npm run test:public-submissions && npm run test:seo && npm run test:phase7",
     "serve": "npm run build && cd .. && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",

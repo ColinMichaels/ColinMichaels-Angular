@@ -107,11 +107,11 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   `YouTubeLatestVideosComponent` on the public homepage.
 - Audience and measurement boundary:
-  the section presents the channel's FPV, Florida, and creator focus with separate channel/subscription actions. Public video and channel selections reuse the privacy-aware `select_content` event; no YouTube account access, title/description copy, or viewer identity is sent to GA4.
+  general homepage and blog surfaces present the Colin Michaels creator channel with separate channel/subscription actions. Explicit drone and FPV journeys opt into Captain Colin. Public video and channel selections reuse the privacy-aware `select_content` event; no YouTube account access, title/description copy, or viewer identity is sent to GA4.
 - Identity boundary:
-  `YOUTUBE_CHANNEL_ID` must match the canonical Captain Colin channel exported by both isolated site-identity modules. The Function validates configuration and YouTube's channel response; the Angular service validates the callable payload and replaces any returned channel URL with the canonical channel URL before components render links or record channel analytics.
+  `COLIN_MICHAELS_YOUTUBE_CHANNEL_ID` must match the canonical Colin Michaels channel for general creator surfaces. `YOUTUBE_CHANNEL_ID` remains the Captain Colin parameter for explicit drone/FPV surfaces. The Function validates the selected configuration and YouTube's channel response; the Angular service validates the callable payload and replaces any returned channel URL with the selected canonical channel URL before components render links or record channel analytics.
 - Current risks:
-  the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching. A deliberate primary-channel migration still requires a coordinated code, runtime-parameter, schema, content-package, and rollback review because Angular and Functions compile separately.
+  the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching. Any future channel-identity change still requires a coordinated code, runtime-parameter, schema, content-package, and rollback review because Angular and Functions compile separately.
 - Planned cleanup:
   add Firebase App Check enforcement when App Check is configured for the public site.
 

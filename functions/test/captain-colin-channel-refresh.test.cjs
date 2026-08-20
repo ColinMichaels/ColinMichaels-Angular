@@ -66,7 +66,7 @@ test('keeps the Captain Colin channel refresh local and reversible', () => {
   assert.match(guide, /## Rollback/);
 });
 
-test('fails closed against the observed secondary-channel split', () => {
+test('keeps the drone package bound to Captain Colin', () => {
   const document = JSON.parse(readFileSync(packagePath, 'utf8'));
   const guide = readFileSync(guidePath, 'utf8');
 
@@ -77,7 +77,7 @@ test('fails closed against the observed secondary-channel split', () => {
     document.secondaryChannelAudit.decision,
     'do-not-redirect-or-cross-post-without-owner-review',
   );
-  assert.match(guide, /Do not redirect the site, duplicate new releases, or apply this package to the smaller channel/);
+  assert.match(guide, /Do not redirect the site, duplicate new releases, or apply this drone-specific package to the Colin Michaels channel/);
 });
 
 test('uses an HTTPS first-party continuation without identity data', () => {

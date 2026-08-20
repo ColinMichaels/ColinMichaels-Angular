@@ -226,8 +226,6 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
       browserNotifications: [true],
-      newPostEmails: [false],
-      newsletter: [false],
     }, {validators: this.passwordMatchValidator});
 
     this.form = this.fb.group({
@@ -586,16 +584,14 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
     this.registerForm.patchValue({
       browserNotifications: pending.browserNotifications,
-      newPostEmails: pending.newPostEmails,
-      newsletter: pending.newsletter,
     });
   }
 
   private rememberRegistrationCommunicationChoices(): void {
     this.membershipCampaign.rememberPendingPreferences({
       browserNotifications: this.registerForm.get('browserNotifications')?.value === true,
-      newPostEmails: this.registerForm.get('newPostEmails')?.value === true,
-      newsletter: this.registerForm.get('newsletter')?.value === true,
+      newPostEmails: false,
+      newsletter: false,
     });
   }
 

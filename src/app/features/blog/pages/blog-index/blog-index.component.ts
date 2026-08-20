@@ -234,7 +234,7 @@ const MAX_POPULAR_TAGS = 10;
               [maxResults]="2"
               sectionId="blog-index-youtube"
               heading="Latest from Colin Michaels"
-              description="Watch what I’m testing, building, and flying now."
+              description="Watch what I’m testing, building, and sharing now."
               analyticsSourceComponent="blog_index_youtube"
               [compact]="true"
             ></app-youtube-latest-videos>

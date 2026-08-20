@@ -4,10 +4,16 @@
 
 ### Added
 
+- Added `npm run test:release`, a local-only release gate for lint, production build, complete Angular tests, content-package validation, and all non-emulator Functions tests. It fails fast outside the supported Node runtime and never deploys or accesses production data.
+- Added a conservative `active_reader` GA4 quality signal: one query-free event per route/session after 15 seconds and browser-trusted pointer, keyboard, or touch input. It creates a practical likely-active-reader segment for post-launch traffic reviews without collecting interaction detail, claiming human verification, or trying to block traffic by geography. Known bots remain Google Analytics' responsibility; comments, authenticated actions, and server-authorized rewards remain stronger evidence of real reader activity.
 - Added a New Post package import for generated article assets. Selecting one folder now validates a normal post JSON plus an image manifest, uploads every declared image through the existing trusted media pipeline, replaces only declared `media://` references in supported media fields, and leaves the resulting draft unsaved for editorial review. The manifest contract fails closed on unsafe paths, missing/ambiguous files, unpaired placeholders, and unused declarations; existing JSON-only import remains unchanged.
 
 ### Changed
 
+- Aligned the public Gadget Usefulness Scorecard and its crawler fallback with the general Colin Michaels YouTube channel; the legacy Captain-branded PDF filename remains stable.
+- Updated the crawler-facing homepage answer summary to promote Colin Michaels as the general creator channel and reserve Captain Colin for FPV/drone content.
+- Corrected stale creator-channel documentation so general ColinMichaels.com journeys consistently use Colin Michaels, while Captain Colin remains explicit to drone/FPV material. Historical Captain Colin performance records are retained as dated context.
+- Removed inactive email and newsletter promises from reader signup and Profile. The existing preference records are preserved for a future real delivery system, but the active return path is now accurately limited to explicit per-device browser alerts.
 - Post-package image imports now reuse existing finalized media when the trusted SHA-256 source checksum matches, while changed source bytes receive a new immutable asset and URL.
 - New Post package imports now preserve the new post’s identity and revision, force imported content to a draft, and require explicit confirmation before a conflicting existing slug can become a separate draft. Published posts cannot be overwritten by this flow.
 - Fixed the after-article reader invitation so reaching its meaningful-reading threshold now keeps the inline offer visible. Its engagement reset is scoped to an article change, preventing the visibility tracker from immediately hiding the offer before readers can choose an action.

@@ -19,7 +19,9 @@ import type {CreatorProfileId} from '../../../shared/seo/site-identity';
   styles: `:host {
     position: fixed;
     bottom: 0;
+    pointer-events: none;
     width: 100%;
+    z-index: 60;
   }`
 })
 export class SocialsComponent {

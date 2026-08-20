@@ -16,6 +16,7 @@ GA4 remains aggregate directional evidence. It cannot prove that every event cam
 - `AppComponent` sends one query-free `page_view` per Angular path through `SiteAnalyticsService`. Query values and fragments are excluded so search text or share tokens cannot enter page-location reports.
 - The retired `GTM-Q6BN` loader is no longer part of the application shell. That removes the legacy Universal Analytics destination, extra Google tag, click-listener tag, and Facebook Pixel from the deployed runtime without publishing or deleting the external GTM container.
 - `SiteAnalyticsService` sends explicit GA4 events only to `G-6V5GQRZFBH` using `send_to`.
+- A page can produce one `active_reader` signal only after 15 seconds on that same visible route and a browser-trusted pointer, keyboard, or touch interaction. This is a useful quality segment, not a human-verification or bot-blocking mechanism.
 - The service is disabled during server rendering, on localhost and `.local` hosts, and on `/admin` routes.
 - Components report an action only after the corresponding user action succeeds where success matters, such as saving an article or submitting a comment.
 - Existing Firebase callable Functions remain authoritative for points, comments, and share attribution. GA4 is not an authorization, reward, or accounting source.
@@ -25,6 +26,7 @@ GA4 remains aggregate directional evidence. It cannot prove that every event cam
 | Event                      | Trigger                                                                                                                                     | Important parameters                                                                |
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | `page_view`                | First render of each distinct Angular route path                                                                                            | query-free `page_location`, `page_path`, `page_title`                               |
+| `active_reader`            | At least 15 seconds on one visible route plus browser-trusted pointer, keyboard, or touch input, once per route/session                   | query-free `page_path`, fixed `active_seconds=15`, fixed `interaction_type`         |
 | `article_progress`         | First crossing of 25%, 50%, 75%, and 95% per article and browser session                                                                    | `content_id`, `content_slug`, `content_group`, `progress_percent`, `auth_state`     |
 | `article_complete`         | First 95% reading milestone                                                                                                                 | article parameters, `progress_percent`                                              |
 | `article_saved`            | Favorite, Read Later, or offline copy is added successfully                                                                                 | article parameters, `save_type`, `auth_state`                                       |
@@ -49,6 +51,7 @@ GA4 Enhanced Measurement should collect 90% page scrolls, outbound clicks, form 
 - Comment bodies, poll questions and option labels, Daily Discovery questions and answers, email addresses, user IDs, share IDs, and profile names are never sent.
 - Search text is whitespace-normalized and capped at 80 characters. Values that resemble an email address, phone number, or URL become `[redacted]`.
 - Public content IDs, slugs, categories, action state, and coarse signed-in/anonymous state are allowed.
+- `active_reader` contains only a query-free path, a fixed 15-second threshold, and the broad input class (`pointer`, `keyboard`, or `touch`). It does not send event timing, key values, pointer coordinates, scroll position, device identity, or an assertion that the visitor is human.
 - Site-to-YouTube selections send only the public video/channel ID, `content_type`, `content_group=youtube`, one bounded source (`homepage_youtube`, `topic_drones_youtube`, `article_drones_youtube`, or `article_companion_youtube`), and a fixed action code. Video titles, descriptions, viewer identity, and YouTube account data are omitted.
 - Homepage creator-profile selections send only one fixed platform code (`youtube`, `x`, `github`, `instagram`, or `linkedin`) with `content_group=creator_profile`, `source_component=homepage_social`, and `method=outbound`. Profile URLs, labels, referrers, account data, and visitor identity are omitted.
 - Printable-resource selections send only a normalized filename stem capped at 64 characters with `content_type=resource`, `content_group=download`, `source_component=topic_guide` or `resource_page`, and `method=download`. The full URL, link label, referrer text, and reader identity are omitted.
@@ -63,9 +66,9 @@ The production property now has these event-scoped custom dimensions registered:
 
 - `content_type`, `content_slug`, `content_group`
 - `source_component`, `auth_state`, `method`, `save_type`
-- `moderation_status`, `challenge_type`, `correct`, `daily_complete`
+- `moderation_status`, `challenge_type`, `correct`, `daily_complete`, `interaction_type`
 
-It also has `progress_percent`, `result_count`, and `total_questions` registered as event-scoped custom metrics. After the application instrumentation is deployed and the new events first appear in GA4, mark `article_complete`, `article_saved`, `share`, `comment_submit`, and `daily_discovery_complete` as key events. These changes affect future reports and do not backfill historical data.
+It also has `progress_percent`, `result_count`, and `total_questions` registered as event-scoped custom metrics. After the application instrumentation is deployed and the new events first appear in GA4, register `active_seconds` as an event-scoped custom metric. Do not mark `active_reader` as a key event; use it as the conservative denominator for traffic-quality comparisons. These changes affect future reports and do not backfill historical data.
 
 After the reaction and poll events are deployed, register `reaction_type`, `reaction_updated`, `vote_updated`, and `results_visible` as event-scoped custom dimensions. Keep `poll_id` and `option_id` available in raw event diagnostics rather than custom definitions by default; their growing cardinality makes them poor primary report dimensions. Reactions and poll votes are editorial feedback, not conversion key events.
 
@@ -95,6 +98,12 @@ Public sharing uses standard UTM fields, with no reader identity in the URL:
 - CMS Social Shares drafts use `utm_campaign=article_launch`, the intended channel as `utm_source`, the article slug as `utm_content`, and a channel-appropriate medium (`organic_social`, `video_description`, or `push`).
 
 In **Reports → Acquisition → Traffic acquisition**, compare `Session source / medium` and `Session campaign`; use `Session manual ad content` to distinguish individual promoted articles. Validate a newly published channel link in **DebugView** before drawing conclusions from standard reports. UTM values identify the link that brought a session, not whether the visitor is a human or whether the provider completed a post.
+
+### Traffic-quality reading
+
+Google Analytics automatically excludes known bots and spiders, but its remaining sessions should still be treated as **likely traffic**, not a verified-person count. Use `active_reader` as a more useful second lens: compare each source, campaign, country, and landing page's `active_reader` count with its sessions and `article_complete` count. A high page-view count with few active readers is suspicious or low-intent; it is not enough evidence by itself to label a source as bot traffic. Comments, authenticated votes, successful saves, and server-authorized points remain stronger evidence of a real reader action.
+
+Before making an irreversible GA4 filter, use a report or Exploration filter first. The only native GA4 data filters are for internal and developer traffic; test any internal-IP rule before activating it, because exclusion is permanent for future processed data. Do not attempt to filter locations wholesale: legitimate mobile carriers, VPNs, crawlers, and readers can share or rotate geography.
 
 ## Validation
 

@@ -2,11 +2,10 @@ import {signal} from '@angular/core';
 import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {User} from 'firebase/auth';
-import {BehaviorSubject, of} from 'rxjs';
+import {BehaviorSubject} from 'rxjs';
 
 import {AuthService, AuthState, INITIAL_AUTH_STATE} from '../../../../services/auth.service';
 import {PwaPushService} from '../../../../shared/pwa/pwa-push.service';
-import {UserAccountService} from '../../../../shared/user-account/user-account.service';
 import {BlogMembershipCampaignStateService} from '../../services/blog-membership-campaign-state.service';
 import {BlogMembershipCampaignComponent} from './blog-membership-campaign.component';
 
@@ -15,7 +14,6 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
   let authState: BehaviorSubject<AuthState>;
   let users: BehaviorSubject<User | null>;
   let campaignState: jasmine.SpyObj<BlogMembershipCampaignStateService>;
-  let userAccounts: jasmine.SpyObj<UserAccountService>;
 
   const signedInUser = {uid: 'reader-uid'} as User;
 
@@ -36,13 +34,6 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     campaignState.getPendingPreferences.and.returnValue(null);
     campaignState.shouldPromptAnonymousReader.and.returnValue(true);
 
-    userAccounts = jasmine.createSpyObj<UserAccountService>(
-      'UserAccountService',
-      ['listenToUserAccount', 'updateCommunicationPreferences']
-    );
-    userAccounts.listenToUserAccount.and.returnValue(of(null));
-    userAccounts.updateCommunicationPreferences.and.resolveTo();
-
     await TestBed.configureTestingModule({
       imports: [BlogMembershipCampaignComponent, RouterTestingModule],
       providers: [
@@ -54,7 +45,6 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
           },
         },
         {provide: BlogMembershipCampaignStateService, useValue: campaignState},
-        {provide: UserAccountService, useValue: userAccounts},
         {
           provide: PwaPushService,
           useValue: {
@@ -105,7 +95,6 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
       newsletter: false,
       createdAt: '2026-08-15T00:00:00.000Z',
     });
-    userAccounts.listenToUserAccount.and.returnValue(of({uid: signedInUser.uid} as never));
 
     fixture = TestBed.createComponent(BlogMembershipCampaignComponent);
     fixture.detectChanges();
@@ -123,7 +112,7 @@ describe('BlogMembershipCampaignComponent auth readiness', () => {
     expect(dialog?.hasAttribute('cdktrapfocus')).toBeTrue();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(closeButton);
-    expect(userAccounts.updateCommunicationPreferences).toHaveBeenCalled();
+    expect(element.textContent).toContain('Browser alerts remain off on this device.');
 
     closeButton?.click();
     fixture.detectChanges();

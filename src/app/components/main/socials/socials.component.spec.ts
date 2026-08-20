@@ -41,6 +41,16 @@ describe('SocialsComponent', () => {
     expect(element.textContent).not.toContain('Contact');
   });
 
+  it('only captures pointer events on the actual profile links', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const navigation = host.querySelector<HTMLElement>('nav');
+    const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('nav a'));
+
+    expect(getComputedStyle(host).pointerEvents).toBe('none');
+    expect(navigation?.classList).toContain('pointer-events-none');
+    expect(links.every(link => link.classList.contains('pointer-events-auto'))).toBeTrue();
+  });
+
   it('uses canonical, accessible creator-profile links and tracks the selected platform', () => {
     const element = fixture.nativeElement as HTMLElement;
     const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Follow Colin Michaels"] a'));
