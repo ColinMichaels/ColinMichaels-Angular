@@ -58,6 +58,12 @@ https://colinmichaels.com/blog/{slug}?share={opaqueId}
 
 Anonymous share controls continue to use the clean canonical URL without an attribution parameter.
 
+Every public share URL also carries standard, non-identifying campaign parameters. Reader controls use
+`utm_campaign=reader_share` (or `site_share` in the footer) and identify the selected provider as the source.
+CMS Social Shares drafts use `utm_campaign=article_launch`, the intended channel as the source, and the article
+slug as `utm_content`. This separates Facebook, YouTube, X, LinkedIn, email, copy-link, and site-notification
+visits from untagged Direct traffic in GA4 without embedding a user ID or changing the canonical URL.
+
 `recordSiteShare` and `recordPostShare` register the ID server-side and award the existing share points at most once for their current event scope. A tracked share record includes:
 
 - owner UID;

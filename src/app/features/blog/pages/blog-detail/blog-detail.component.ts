@@ -234,6 +234,7 @@ function normalizeHealthTerm(value: string): string {
                 [sharePath]="createSharePath(currentPost.slug)"
                 [shareTitle]="share.title"
                 [shareUrl]="isPreviewRoute() ? '' : share.url"
+                [shareUtmContent]="currentPost.slug"
                 [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
                 [showComments]="!isPreviewRoute() && !isOfflineCopy()"
                 [showLibraryControls]="!isPreviewRoute() && articleLibrary.supported()"
@@ -387,6 +388,8 @@ function normalizeHealthTerm(value: string): string {
                         [path]="createSharePath(currentPost.slug)"
                         [url]="isPreviewRoute() ? '' : share.url"
                         [trackingEnabled]="isSignedIn() && !isPreviewRoute()"
+                        utmCampaign="reader_share"
+                        [utmContent]="currentPost.slug"
                         variant="panel"
                         (shared)="recordShare(currentPost, $event)"
                       ></app-blog-share-actions>

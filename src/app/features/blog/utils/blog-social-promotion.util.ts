@@ -5,6 +5,7 @@ import {
   BlogSocialLinkPlacement,
   BlogSocialPostFormat,
 } from '../models/blog-social-promotion.model';
+import {createCampaignUrl} from '../../../shared/analytics/campaign-url.util';
 
 type SocialMessagePost = Pick<BlogPost, 'excerpt' | 'slug' | 'tags' | 'title'>;
 
@@ -80,7 +81,7 @@ export function createBlogSocialMessage(
 ): string {
   const title = post.title.trim();
   const excerpt = post.excerpt.trim();
-  const articleUrl = `${siteUrl.replace(/\/$/, '')}/blog/${post.slug}`;
+  const articleUrl = createBlogSocialCampaignUrl(channel, post, siteUrl);
   const message = channel === 'threads' || channel === 'x'
     ? createCompactMessage(title, excerpt, angle)
     : createFullMessage(title, excerpt, angle);
@@ -88,6 +89,38 @@ export function createBlogSocialMessage(
   const hashtags = channel === 'instagram' ? createHashtags(post.tags) : '';
 
   return [message, linkCallToAction, hashtags].filter(Boolean).join('\n\n');
+}
+
+/**
+ * Produces the canonical article URL for a scheduled social share with a
+ * channel-specific, non-identifying GA4 campaign attribution contract.
+ */
+export function createBlogSocialCampaignUrl(
+  channel: BlogSocialChannel,
+  post: Pick<BlogPost, 'slug'>,
+  siteUrl: string
+): string {
+  return createCampaignUrl(`${siteUrl.replace(/\/$/, '')}/blog/${post.slug}`, {
+    source: socialUtmSource(channel),
+    medium: socialUtmMedium(channel),
+    campaign: 'article_launch',
+    content: post.slug,
+  });
+}
+
+function socialUtmSource(channel: BlogSocialChannel): string {
+  return channel === 'notify' ? 'site_notification' : channel;
+}
+
+function socialUtmMedium(channel: BlogSocialChannel): string {
+  switch (channel) {
+    case 'notify':
+      return 'push';
+    case 'youtube':
+      return 'video_description';
+    default:
+      return 'organic_social';
+  }
 }
 
 function createFullMessage(title: string, excerpt: string, angle: BlogSocialContentAngle): string {

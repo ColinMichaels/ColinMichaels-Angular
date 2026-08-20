@@ -66,6 +66,8 @@ import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../seo/seo.metadat
             [path]="''"
             [url]="siteUrl"
             [trackingEnabled]="isSignedIn()"
+            utmCampaign="site_share"
+            utmContent="homepage"
             label="Share site"
             groupLabel="Share ColinMichaels.com"
             linkLabel="site"
