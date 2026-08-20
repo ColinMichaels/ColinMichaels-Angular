@@ -30,6 +30,9 @@ interface AnalyticsWindow extends Window {
 const ARTICLE_PROGRESS_THRESHOLDS = [25, 50, 75, 95] as const;
 const REDACTED_SEARCH_TERM = '[redacted]';
 const MAX_SEARCH_TERM_LENGTH = 80;
+const ACTIVE_READER_MINIMUM_SECONDS = 15;
+const ACTIVE_READER_MINIMUM_MILLISECONDS = ACTIVE_READER_MINIMUM_SECONDS * 1_000;
+type ReaderInteractionType = 'pointer' | 'keyboard' | 'touch';
 
 @Injectable({providedIn: 'root'})
 export class SiteAnalyticsService {
@@ -37,7 +40,15 @@ export class SiteAnalyticsService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly recordedArticleThresholds = new Map<string, Set<number>>();
   private readonly recordedCompletedDays = new Set<string>();
+  private readonly recordedActiveReaderPaths = new Set<string>();
   private lastPagePath = '';
+  private activeReaderPath = '';
+  private activeReaderVisibleMilliseconds = 0;
+  private activeReaderBecameVisibleAt = 0;
+  private activeReaderInteraction: ReaderInteractionType | null = null;
+  private activeReaderTimer: number | null = null;
+  private activeReaderWindow: AnalyticsWindow | null = null;
+  private activeReaderTrackingInitialized = false;
 
   trackPageView(routeUrl: string): void {
     const pagePath = normalizeAnalyticsPagePath(routeUrl);
@@ -56,6 +67,7 @@ export class SiteAnalyticsService {
       page_path: pagePath,
       page_title: this.document.title,
     });
+    this.startActiveReaderTracking(pagePath, analyticsWindow);
   }
 
   trackArticleProgress(content: SiteAnalyticsContent, progressPercent: number, signedIn: boolean): void {
@@ -340,6 +352,113 @@ export class SiteAnalyticsService {
     }
 
     return analyticsWindow;
+  }
+
+  /**
+   * Records a deliberately conservative quality signal for report segmentation.
+   * It is not a bot verdict: it requires a browser-originated input and at least
+   * 15 seconds on the same visible page, but capable automation can imitate both.
+   */
+  private startActiveReaderTracking(pagePath: string, analyticsWindow: AnalyticsWindow): void {
+    this.clearActiveReaderTimer();
+    this.activeReaderPath = pagePath;
+    this.activeReaderVisibleMilliseconds = 0;
+    this.activeReaderBecameVisibleAt = this.isDocumentVisible() ? Date.now() : 0;
+    this.activeReaderInteraction = null;
+    this.activeReaderWindow = analyticsWindow;
+
+    if (!this.activeReaderTrackingInitialized && typeof this.document.addEventListener === 'function') {
+      this.activeReaderTrackingInitialized = true;
+      this.document.addEventListener('pointerdown', event => this.recordActiveReaderInteraction(event, 'pointer'), {passive: true});
+      this.document.addEventListener('keydown', event => this.recordActiveReaderInteraction(event, 'keyboard'));
+      this.document.addEventListener('touchstart', event => this.recordActiveReaderInteraction(event, 'touch'), {passive: true});
+      this.document.addEventListener('visibilitychange', () => this.handleActiveReaderVisibilityChange());
+    }
+
+    this.scheduleActiveReaderCheck(pagePath);
+  }
+
+  private recordActiveReaderInteraction(event: Event, interactionType: ReaderInteractionType): void {
+    if (!event.isTrusted || !this.activeReaderPath || this.recordedActiveReaderPaths.has(this.activeReaderPath)) {
+      return;
+    }
+
+    this.activeReaderInteraction ??= interactionType;
+    this.trackActiveReader(this.activeReaderPath);
+  }
+
+  private trackActiveReader(pagePath: string): void {
+    if (
+      pagePath !== this.activeReaderPath
+      || this.recordedActiveReaderPaths.has(pagePath)
+      || !this.activeReaderInteraction
+      || !this.isDocumentVisible()
+    ) {
+      return;
+    }
+
+    if (this.activeReaderVisibleDuration() < ACTIVE_READER_MINIMUM_MILLISECONDS) {
+      this.scheduleActiveReaderCheck(pagePath);
+      return;
+    }
+
+    this.recordedActiveReaderPaths.add(pagePath);
+    this.clearActiveReaderTimer();
+    this.trackEvent('active_reader', {
+      page_path: pagePath,
+      active_seconds: ACTIVE_READER_MINIMUM_SECONDS,
+      interaction_type: this.activeReaderInteraction,
+    });
+  }
+
+  private isDocumentVisible(): boolean {
+    return this.document.visibilityState !== 'hidden';
+  }
+
+  private handleActiveReaderVisibilityChange(): void {
+    if (!this.activeReaderPath) {
+      return;
+    }
+
+    if (this.isDocumentVisible()) {
+      this.activeReaderBecameVisibleAt = Date.now();
+      this.scheduleActiveReaderCheck(this.activeReaderPath);
+      return;
+    }
+
+    this.activeReaderVisibleMilliseconds = this.activeReaderVisibleDuration();
+    this.activeReaderBecameVisibleAt = 0;
+    this.clearActiveReaderTimer();
+  }
+
+  private activeReaderVisibleDuration(): number {
+    return this.activeReaderVisibleMilliseconds
+      + (this.activeReaderBecameVisibleAt ? Date.now() - this.activeReaderBecameVisibleAt : 0);
+  }
+
+  private scheduleActiveReaderCheck(pagePath: string): void {
+    const analyticsWindow = this.activeReaderWindow;
+    if (
+      !analyticsWindow
+      || !this.isDocumentVisible()
+      || this.recordedActiveReaderPaths.has(pagePath)
+      || typeof analyticsWindow.setTimeout !== 'function'
+    ) {
+      return;
+    }
+
+    this.clearActiveReaderTimer();
+    const waitMilliseconds = Math.max(0, ACTIVE_READER_MINIMUM_MILLISECONDS - this.activeReaderVisibleDuration());
+    this.activeReaderTimer = analyticsWindow.setTimeout(() => this.trackActiveReader(pagePath), waitMilliseconds);
+  }
+
+  private clearActiveReaderTimer(): void {
+    const analyticsWindow = this.activeReaderWindow;
+    if (this.activeReaderTimer !== null && typeof analyticsWindow?.clearTimeout === 'function') {
+      analyticsWindow.clearTimeout(this.activeReaderTimer);
+    }
+
+    this.activeReaderTimer = null;
   }
 
   private contentParameters(content: SiteAnalyticsContent): AnalyticsParameters {
