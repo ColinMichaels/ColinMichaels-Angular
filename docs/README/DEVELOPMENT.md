@@ -58,7 +58,7 @@ For a repeatable local source-release gate, run:
 npm run test:release
 ```
 
-It runs lint, the production application build, the complete Angular suite, content-package validation, and every non-emulator Functions suite. It does not deploy, access production data, start Firebase emulators, or prove live behavior; run emulator and production verification separately when a change needs them.
+It first verifies a supported Node runtime; run `nvm use` if it asks you to switch to the pinned Node `24.15.0`. It then runs lint, the production application build, the complete Angular suite, content-package validation, and every non-emulator Functions suite. It does not deploy, access production data, start Firebase emulators, or prove live behavior; run emulator and production verification separately when a change needs them.
 
 Current verified baseline (July 16, 2026, Node `24.15.0`; Functions build/tests also verified on Node `22.15.0`):
 

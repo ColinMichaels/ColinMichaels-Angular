@@ -13,6 +13,7 @@
     "test:temu-preflight": "node scripts/validate-temu-production-preflight.mjs",
     "test:ace-pro-preflight": "node scripts/validate-ace-pro-production-preflight.mjs",
     "test:foundation-release": "node scripts/validate-seo-foundation-release.mjs",
+    "pretest:release": "node scripts/verify-supported-node.mjs",
     "test:release": "npm run lint && npm run build && npm test -- --watch=false && npm run test:content-packages && npm --prefix functions run test:all",
     "verify:temu-production": "node scripts/verify-temu-production-live.mjs",
     "verify:ace-pro-production": "node scripts/verify-ace-pro-production-live.mjs",
