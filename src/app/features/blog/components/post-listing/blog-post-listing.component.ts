@@ -100,7 +100,16 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
                   [attr.aria-label]="'Read ' + post.title"
                 >
+                  @if (layout === 'editorial') {
+                    <img
+                      class="post-listing__editorial-backdrop"
+                      [src]="postImage(post)"
+                      alt=""
+                      aria-hidden="true"
+                    >
+                  }
                   <img
+                    class="post-listing__image"
                     [src]="postImage(post)"
                     [alt]="post.title + ' cover image'"
                     [style.object-fit]="layout === 'editorial' ? 'contain' : null"
@@ -518,7 +527,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     .post-listing--editorial .post-listing__title {
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(1.35rem, 2vw, 1.85rem);
       font-weight: 500;
     }

@@ -189,7 +189,7 @@ import {DailyDiscoveryStateService} from '../services/daily-discovery-state.serv
       min-width: 0;
       margin: 0;
       color: #f8fafc;
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(1.25rem, 1.75vw, 1.75rem);
       font-weight: 500;
       line-height: 1.18;

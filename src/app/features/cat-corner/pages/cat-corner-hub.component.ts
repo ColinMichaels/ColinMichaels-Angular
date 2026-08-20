@@ -209,7 +209,7 @@ import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
     .latest-copy h3,
     .section-intro,
     .cat-status h2 {
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-weight: 400;
     }
 
@@ -224,7 +224,7 @@ import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
     .cat-hero-intro {
       max-width: 37rem;
       margin: max(clamp(1.5rem, 3vw, 2.5rem), var(--reader-block-gap, 1.5rem)) 0 0;
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(
         1.45rem,
         calc(2.4vw * var(--reader-font-scale, 1)),
@@ -552,7 +552,7 @@ import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
 
     .cat-footer strong {
       color: var(--cat-ink);
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: calc(1.15rem * var(--reader-font-scale, 1));
       font-weight: 400;
     }

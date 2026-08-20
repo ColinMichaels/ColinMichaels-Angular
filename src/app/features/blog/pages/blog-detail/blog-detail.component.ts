@@ -21,6 +21,7 @@ import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService} from '../../../../services/auth.service';
 import {CMS_ACCESS_ROLES} from '../../../../shared/user-account/user-account.model';
 import {SiteAnalyticsService} from '../../../../shared/analytics/site-analytics.service';
+import {CelebrationService} from '../../../../shared/celebration/celebration.service';
 import {PwaNetworkService} from '../../../../shared/pwa/pwa-network.service';
 import {BlogBlockRendererComponent} from '../../components/block-renderer/blog-block-renderer.component';
 import {BlogCommentsComponent} from '../../components/comments/blog-comments.component';
@@ -68,6 +69,7 @@ import {
 } from '../../../youtube/components/companion-video/youtube-companion-video.component';
 import {
   selectBlogCompanionVideo,
+  selectBlogCompanionVideoChannel,
   shouldShowDroneYouTubeJourney,
 } from '../../utils/blog-youtube-journey.util';
 
@@ -301,11 +303,12 @@ function normalizeHealthTerm(value: string): string {
                       [videoUrl]="video.videoUrl"
                       [thumbnailUrl]="video.thumbnailUrl"
                       [articleTitle]="currentPost.title"
+                      [channel]="companionVideoChannel()"
                     ></app-youtube-companion-video>
                   } @placeholder {
                     <section
                       class="site-skeleton-card mt-12 h-64"
-                      aria-label="Loading the companion Captain Colin video"
+                      aria-label="Loading the companion YouTube video"
                     ></section>
                   }
                 } @else if (showDroneYouTubeJourney()) {
@@ -622,6 +625,7 @@ export class BlogDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly engagementService = inject(BlogEngagementService);
+  private readonly celebration = inject(CelebrationService);
   private readonly analytics = inject(SiteAnalyticsService);
   private readonly blogRepository = inject(BlogRepositoryService);
   private readonly authorRepository = inject(AuthorRepositoryService);
@@ -731,6 +735,13 @@ export class BlogDetailComponent {
   protected readonly companionVideo = computed(() => (
     selectBlogCompanionVideo(this.post()?.blocks ?? [])
   ));
+  protected readonly companionVideoChannel = computed(() => {
+    const post = this.post();
+
+    return post
+      ? selectBlogCompanionVideoChannel(post, this.primaryTopicHub()?.slug)
+      : 'colin-michaels';
+  });
   protected readonly showDroneYouTubeJourney = computed(() => {
     const post = this.post();
 
@@ -1172,6 +1183,8 @@ export class BlogDetailComponent {
       postSlug: post.slug,
       provider: event.provider,
       ...(event.shareId ? {shareId: event.shareId} : {}),
+    }).then(result => {
+      this.celebration.celebrateConfirmedPointAward(result);
     }).catch(() => {
       // Sharing should never block outbound share actions or copy feedback.
     });
@@ -1185,11 +1198,12 @@ export class BlogDetailComponent {
     this.recordedReadPostIds.add(post.id);
 
     try {
-      await this.engagementService.recordPostRead({
+      const result = await this.engagementService.recordPostRead({
         postId: post.id,
         postSlug: post.slug,
         progressPercent,
       });
+      this.celebration.celebrateConfirmedPointAward(result);
     } catch {
       this.recordedReadPostIds.delete(post.id);
       // Anonymous readers and transient Function failures should not affect reading.

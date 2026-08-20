@@ -83,6 +83,12 @@ import {
 import {CmsAuthorFormComponent} from '../../components/author-form/author-form.component';
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
 import {PostScheduleCalendarComponent} from './post-schedule-calendar.component';
+import {
+  getEmbeddedBlogPostMediaPackageManifest,
+  getUnresolvedBlogPostMediaPackageReferences,
+  matchBlogPostPackageImageFiles,
+  replaceBlogPostMediaPackageReferences,
+} from '../../utils/blog-post-media-package.util';
 
 type PostEditorWorkspace = 'post' | 'social' | 'preview';
 
@@ -469,6 +475,26 @@ function getErrorMessage(error: unknown): string {
                 accept=".json,application/json"
                 (change)="importPostJson($event)"
               >
+              <input
+                #postPackageImportInput
+                type="file"
+                class="hidden"
+                accept=".json,application/json,image/jpeg,image/png,image/webp,image/avif,image/gif"
+                multiple
+                webkitdirectory
+                (change)="importPostPackage($event)"
+              >
+              @if (isNewPost) {
+                <button
+                  type="button"
+                  class="inline-flex h-9 items-center justify-center border border-cyan-500/70 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
+                  [disabled]="isPackageImportInProgress"
+                  title="Choose a folder containing the post JSON, image manifest, and generated images"
+                  (click)="postPackageImportInput.click()"
+                >
+                  {{ isPackageImportInProgress ? 'Importing package...' : 'Import post package' }}
+                </button>
+              }
               <button
                 type="button"
                 class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
@@ -1299,6 +1325,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
   protected isDeleteInProgress = false;
+  protected isPackageImportInProgress = false;
   protected assistantResult: BlogAssistantResult | null = null;
   protected assistantMessage = '';
   protected assistantError = '';
@@ -1774,6 +1801,139 @@ export class CmsPostEditorComponent implements AfterViewInit {
       this.toast.success(`Imported ${importedDocument.sourceLabel} from ${file.name}. Review and save to persist it.`);
     } catch (error) {
       this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Imports one generated post package without auto-saving it. A package keeps
+   * ordinary post JSON plus an image manifest and image files in one folder;
+   * images are uploaded through the same trusted CMS path as manual uploads.
+   */
+  protected async importPostPackage(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const files = Array.from(input?.files ?? []);
+
+    if (input) {
+      input.value = '';
+    }
+
+    if (files.length === 0) {
+      return;
+    }
+
+    this.isPackageImportInProgress = true;
+    let uploadedCount = 0;
+
+    try {
+      const jsonFiles = files.filter(file => file.name.toLowerCase().endsWith('.json'));
+
+      if (jsonFiles.length === 0) {
+        throw new Error('Choose a package folder containing a post JSON file and an image manifest.');
+      }
+
+      const parsedFiles = await Promise.all(jsonFiles.map(async file => ({
+        file,
+        value: JSON.parse(await file.text()) as unknown,
+      })));
+      const postCandidates = parsedFiles.flatMap(({file, value}) => {
+        try {
+          return [{file, value, imported: this.createImportedPostDocument(value)}];
+        } catch {
+          return [];
+        }
+      });
+
+      if (postCandidates.length !== 1) {
+        throw new Error('A post package must contain exactly one importable post JSON document.');
+      }
+
+      const postCandidate = postCandidates[0];
+      const manifestCandidates = parsedFiles.flatMap(({value}) => {
+        try {
+          const manifest = getEmbeddedBlogPostMediaPackageManifest(value);
+          return manifest ? [manifest] : [];
+        } catch (error) {
+          throw new Error(`Unable to read the image manifest: ${getErrorMessage(error)}`, {cause: error});
+        }
+      });
+
+      if (manifestCandidates.length !== 1) {
+        throw new Error('A post package must contain exactly one image manifest, either embedded in the post JSON or as a separate manifest JSON file.');
+      }
+
+      const manifest = manifestCandidates[0];
+      const originalPost = postCandidate.imported.post;
+      const requestedSlug = originalPost.slug || createBlogSlug(originalPost.title);
+      const existingPost = this.blogRepository.getAdminPostBySlug(requestedSlug);
+      if (existingPost) {
+        const publishedWarning = existingPost.status === 'published'
+          ? `\n\n"${existingPost.title}" is currently published.`
+          : '';
+        const confirmed = window.confirm(
+          `A post already uses the slug "${existingPost.slug}".${publishedWarning}\n\n`
+          + 'This package will not update or overwrite that post. Continue by importing a separate draft with a unique slug?'
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+      const declaredReferences = new Set(manifest.images.map(entry => entry.reference));
+      const unresolvedReferences = getUnresolvedBlogPostMediaPackageReferences(originalPost);
+      const undeclaredReferences = unresolvedReferences.filter(reference => !declaredReferences.has(reference));
+      const unusedReferences = manifest.images
+        .map(entry => entry.reference)
+        .filter(reference => !unresolvedReferences.includes(reference));
+
+      if (undeclaredReferences.length > 0) {
+        throw new Error(`The post uses media placeholder${undeclaredReferences.length === 1 ? '' : 's'} missing from the manifest: ${undeclaredReferences.join(', ')}.`);
+      }
+      if (unusedReferences.length > 0) {
+        throw new Error(`The manifest declares image${unusedReferences.length === 1 ? '' : 's'} not used by known post media fields: ${unusedReferences.join(', ')}.`);
+      }
+      if (unresolvedReferences.length === 0) {
+        throw new Error(`Use ${'media://'} placeholders in the post JSON for the package images.`);
+      }
+
+      const fileMatches = matchBlogPostPackageImageFiles(manifest, files.filter(file => !jsonFiles.includes(file)));
+      const uploadSlug = createBlogSlug(originalPost.slug || originalPost.title) || this.mediaUploadSlug;
+      const uploadedUrls = new Map<string, string>();
+
+      for (const {entry, file} of fileMatches) {
+        const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
+          slug: uploadSlug,
+          role: entry.role,
+          altText: entry.altText,
+        }));
+
+        if (!upload.downloadUrl) {
+          throw new Error(`The upload for ${entry.file} completed without a media URL.`);
+        }
+
+        uploadedUrls.set(entry.reference, upload.downloadUrl);
+        uploadedCount += 1;
+      }
+
+      const resolvedPost = {
+        ...replaceBlogPostMediaPackageReferences(originalPost, uploadedUrls),
+        status: 'draft' as const,
+        publishedAt: null,
+        preview: undefined,
+      };
+      const remainingReferences = getUnresolvedBlogPostMediaPackageReferences(resolvedPost);
+
+      if (remainingReferences.length > 0) {
+        throw new Error(`The imported post still has unresolved media placeholders: ${remainingReferences.join(', ')}.`);
+      }
+
+      await this.applyImportedPost(resolvedPost);
+      this.toast.success(`Imported ${postCandidate.imported.sourceLabel} and uploaded ${uploadedCount} generated image${uploadedCount === 1 ? '' : 's'}. Review and save the draft to persist it.`);
+    } catch (error) {
+      const uploadedMediaNotice = uploadedCount > 0
+        ? ` ${uploadedCount} image${uploadedCount === 1 ? '' : 's'} already uploaded remain available in the Media Library.`
+        : '';
+      this.toast.error(`Unable to import post package: ${getErrorMessage(error)}${uploadedMediaNotice}`);
+    } finally {
+      this.isPackageImportInProgress = false;
     }
   }
 
@@ -2278,6 +2438,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       ...this.currentPost,
       ...importedPost,
       id: this.currentPost.id,
+      revision: this.currentPost.revision,
       title: importedTitle,
       slug: importedSlug,
       excerpt: importedPost.excerpt.trim(),

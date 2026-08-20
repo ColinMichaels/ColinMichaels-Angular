@@ -78,7 +78,7 @@ import {postMatchesHubTerms} from './home-blog-section.utils';
 
     .home-topic-strip h2 {
       margin: 0;
-      font-family: var(--font-editorial, Georgia, 'Times New Roman', serif);
+      font-family: var(--font-editorial, 'Source Sans 3', system-ui, sans-serif);
       font-size: clamp(2rem, 3.5vw, 3rem);
       font-weight: 500;
       letter-spacing: -0.035em;

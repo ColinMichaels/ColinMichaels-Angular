@@ -1,11 +1,12 @@
 import {SeoStructuredDataObject} from './seo.model';
+import {COLIN_MUSIC_CREDITS, COLIN_MUSIC_CREDIT_COUNT, MusicCredit} from '../author/music-credits.data';
 
 export const SITE_URL = 'https://colinmichaels.com';
 export const SITE_NAME = 'ColinMichaels.com';
 export const DEFAULT_LOCALE = 'en_US';
 export const PERSON_NAME = 'Colin Michaels';
 export const PERSON_JOB_TITLE = 'Applications Developer';
-export const PERSON_PROFILE_DESCRIPTION = 'Florida creator, applications developer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.';
+export const PERSON_PROFILE_DESCRIPTION = 'Florida creator, applications developer, recording and mixing engineer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.';
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = `Cool Gadgets, Useful Tech & Internet Finds | ${PERSON_NAME}`;
 export const HOMEPAGE_DESCRIPTION = `Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with ${PERSON_NAME}—plus honest recovery stories and creator projects.`;
@@ -80,7 +81,12 @@ export const SEO_ENTITY_IDS = {
   person: `${SITE_URL}/#person`,
   website: `${SITE_URL}/#website`,
   homepage: `${SITE_URL}/#homepage`,
+  musicCredits: `${SITE_URL}/#music-credits`,
+  calle13Album: `${SITE_URL}/#calle-13-2005-album`,
 } as const;
+
+export const LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL =
+  'https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/';
 
 export const PERSON_SAME_AS = [
   CREATOR_PROFILE_URLS.youtube,
@@ -95,6 +101,7 @@ export const SITE_ALTERNATE_NAMES = [
 ] as const;
 
 export const PERSON_KNOWS_ABOUT = [
+  'Recording engineering, mixing, album production, and music production workflows',
   'Consumer gadgets, unusual internet finds, and hands-on product reviews',
   'FPV drone flying, aerial video, and Florida locations',
   'Practical technology and creator workflows',
@@ -104,6 +111,80 @@ export const PERSON_KNOWS_ABOUT = [
   'Interactive browser labs and reusable OS-style UI systems',
   'Open-heart surgery recovery from a patient perspective',
 ] as const;
+
+// Complements the broader developer job title with the music role documented
+// in the homepage biography and official Latin GRAMMY recognition.
+export const PERSON_OCCUPATIONS = [
+  {
+    '@type': 'Occupation',
+    name: 'Recording and mixing engineer',
+    skills: 'Recording engineering, audio mixing, and album production',
+  },
+] as const;
+
+// Kept as plain text because Schema.org's Person.award expects a text value.
+// The visible homepage award section links to the Latin Recording Academy source.
+export const PERSON_AWARDS = [
+  '2006 Latin GRAMMY Award — Best Urban Music Album for Calle 13 (mixing engineer)',
+] as const;
+
+function createMusicAlbumStructuredData(credit: MusicCredit): SeoStructuredDataObject {
+  return {
+    '@type': 'MusicAlbum',
+    name: credit.album,
+    ...(credit.artist ? {
+      byArtist: {
+        '@type': 'MusicGroup',
+        name: credit.artist,
+      },
+    } : {}),
+    ...(credit.year ? {datePublished: credit.year} : {}),
+    contributor: {
+      '@id': SEO_ENTITY_IDS.person,
+    },
+    creditText: `${PERSON_NAME} — ${credit.credit}`,
+  };
+}
+
+// This list mirrors the visible credit list. It exposes the precise work and
+// role for general crawlers without treating music-service search pages as
+// canonical release URLs.
+export const MUSIC_CREDITS_ITEM_LIST: SeoStructuredDataObject = {
+  '@type': 'ItemList',
+  '@id': SEO_ENTITY_IDS.musicCredits,
+  name: `${PERSON_NAME} studio credits`,
+  description: `${COLIN_MUSIC_CREDIT_COUNT} album credits for ${PERSON_NAME}'s recording, mixing, engineering, production, and arrangement work.`,
+  numberOfItems: COLIN_MUSIC_CREDIT_COUNT,
+  itemListOrder: 'https://schema.org/ItemListOrderDescending',
+  itemListElement: COLIN_MUSIC_CREDITS.map((credit, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    item: credit.album === 'Calle 13' && credit.artist === 'Calle 13' && credit.year === '2005'
+      ? {'@id': SEO_ENTITY_IDS.calle13Album}
+      : createMusicAlbumStructuredData(credit),
+  })),
+};
+
+export const CALLE_13_AWARD_ALBUM: SeoStructuredDataObject = {
+  '@type': 'MusicAlbum',
+  '@id': SEO_ENTITY_IDS.calle13Album,
+  name: 'Calle 13',
+  byArtist: {
+    '@type': 'MusicGroup',
+    name: 'Calle 13',
+  },
+  datePublished: '2005',
+  contributor: {
+    '@id': SEO_ENTITY_IDS.person,
+  },
+  creditText: 'Colin Michaels — Mixing Engineer',
+  award: '2006 Latin GRAMMY Award — Best Urban Music Album',
+  subjectOf: {
+    '@type': 'WebPage',
+    name: '7th Annual Latin GRAMMY Awards — Best Urban Music Album',
+    url: LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL,
+  },
+};
 
 export const HOME_JSON_LD: SeoStructuredDataObject = {
   '@context': 'https://schema.org',
@@ -116,6 +197,8 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       jobTitle: PERSON_JOB_TITLE,
       image: `${SITE_URL}${HOMEPAGE_OG_IMAGE}`,
       description: PERSON_PROFILE_DESCRIPTION,
+      award: PERSON_AWARDS,
+      hasOccupation: PERSON_OCCUPATIONS,
       knowsAbout: PERSON_KNOWS_ABOUT,
       sameAs: PERSON_SAME_AS,
     },
@@ -148,7 +231,13 @@ export const HOME_JSON_LD: SeoStructuredDataObject = {
       about: {
         '@id': SEO_ENTITY_IDS.person,
       },
+      mentions: [
+        {'@id': SEO_ENTITY_IDS.musicCredits},
+        {'@id': SEO_ENTITY_IDS.calle13Album},
+      ],
     },
+    CALLE_13_AWARD_ALBUM,
+    MUSIC_CREDITS_ITEM_LIST,
   ],
 };
 

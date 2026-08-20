@@ -3,7 +3,7 @@ export const SITE_NAME = 'ColinMichaels.com';
 export const DEFAULT_LOCALE = 'en_US';
 export const PERSON_NAME = 'Colin Michaels';
 export const PERSON_JOB_TITLE = 'Applications Developer';
-export const PERSON_PROFILE_DESCRIPTION = 'Florida creator, applications developer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.';
+export const PERSON_PROFILE_DESCRIPTION = 'Florida creator, applications developer, recording and mixing engineer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.';
 export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
 export const HOMEPAGE_TITLE = `Cool Gadgets, Useful Tech & Internet Finds | ${PERSON_NAME}`;
 export const HOMEPAGE_DESCRIPTION = `Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with ${PERSON_NAME}—plus honest recovery stories and creator projects.`;
@@ -70,7 +70,12 @@ export const SEO_ENTITY_IDS = {
   person: `${SITE_URL}/#person`,
   website: `${SITE_URL}/#website`,
   homepage: `${SITE_URL}/#homepage`,
+  musicCredits: `${SITE_URL}/#music-credits`,
+  calle13Album: `${SITE_URL}/#calle-13-2005-album`,
 } as const;
+
+export const LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL =
+  'https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/';
 
 export const CREATOR_PROFILE_URLS = {
   youtube: YOUTUBE_CHANNEL_URL,
@@ -92,6 +97,7 @@ export const SITE_ALTERNATE_NAMES = [
 ] as const;
 
 export const PERSON_KNOWS_ABOUT = [
+  'Recording engineering, mixing, album production, and music production workflows',
   'Consumer gadgets, unusual internet finds, and hands-on product reviews',
   'FPV drone flying, aerial video, and Florida locations',
   'Practical technology and creator workflows',
@@ -100,6 +106,22 @@ export const PERSON_KNOWS_ABOUT = [
   'CMS publishing workflows and SEO implementation',
   'Interactive browser labs and reusable OS-style UI systems',
   'Open-heart surgery recovery from a patient perspective',
+] as const;
+
+// Complements the broader developer job title with the music role documented
+// in the homepage biography and official Latin GRAMMY recognition.
+export const PERSON_OCCUPATIONS = [
+  {
+    '@type': 'Occupation',
+    name: 'Recording and mixing engineer',
+    skills: 'Recording engineering, audio mixing, and album production',
+  },
+] as const;
+
+// Kept as plain text because Schema.org's Person.award expects a text value.
+// The visible homepage award section links to the Latin Recording Academy source.
+export const PERSON_AWARDS = [
+  '2006 Latin GRAMMY Award — Best Urban Music Album for Calle 13 (mixing engineer)',
 ] as const;
 
 export function createSiteTitle(title: string): string {

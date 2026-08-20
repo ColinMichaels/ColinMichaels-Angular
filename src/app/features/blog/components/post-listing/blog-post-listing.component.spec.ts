@@ -185,17 +185,22 @@ describe('BlogPostListingComponent', () => {
     fixture.detectChanges();
 
     let image = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
-      '.post-listing__media img'
+      '.post-listing__image'
     );
     expect(image?.style.objectFit).toBe('contain');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.post-listing__editorial-backdrop').length)
+      .toBe(posts.length);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.post-listing__editorial-backdrop[alt=""]').length)
+      .toBe(posts.length);
 
     fixture.componentRef.setInput('layout', 'grid');
     fixture.detectChanges();
 
     image = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
-      '.post-listing__media img'
+      '.post-listing__image'
     );
     expect(image?.style.objectFit).toBe('');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.post-listing__editorial-backdrop')).toBeNull();
   });
 
   it('supports background fan media and word-aware visible title truncation without losing the full title', () => {

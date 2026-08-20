@@ -5,10 +5,17 @@ import {of} from 'rxjs';
 import {AuthService} from '../../services/auth.service';
 import {BlogEngagementService} from '../../features/blog/services/blog-engagement.service';
 import {SiteAnalyticsService} from '../analytics/site-analytics.service';
+import {CelebrationService} from '../celebration/celebration.service';
 import {SiteFooterComponent} from './site-footer.component';
 
 describe('SiteFooterComponent', () => {
+  let recordSiteShare: jasmine.Spy;
+  let celebrateConfirmedPointAward: jasmine.Spy;
+
   beforeEach(async () => {
+    recordSiteShare = jasmine.createSpy('recordSiteShare').and.resolveTo({awarded: false, points: 0, total: 0});
+    celebrateConfirmedPointAward = jasmine.createSpy('celebrateConfirmedPointAward');
+
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, SiteFooterComponent],
       providers: [
@@ -18,7 +25,11 @@ describe('SiteFooterComponent', () => {
         },
         {
           provide: BlogEngagementService,
-          useValue: {recordSiteShare: jasmine.createSpy('recordSiteShare').and.resolveTo({awarded: false, points: 0, total: 0})},
+          useValue: {recordSiteShare},
+        },
+        {
+          provide: CelebrationService,
+          useValue: {celebrateConfirmedPointAward},
         },
         {
           provide: SiteAnalyticsService,
@@ -48,5 +59,21 @@ describe('SiteFooterComponent', () => {
     expect(footerText).toContain('About');
     expect(footerText).toContain('Open OS');
     expect(footer.querySelector('[aria-label="Share ColinMichaels.com"]')).not.toBeNull();
+  });
+
+  it('celebrates only the server-confirmed site-share award', async () => {
+    recordSiteShare.and.resolveTo({awarded: true, points: 5, total: 5});
+    const fixture = TestBed.createComponent(SiteFooterComponent);
+    fixture.detectChanges();
+
+    (fixture.componentInstance as unknown as {recordSiteShare(event: unknown): void}).recordSiteShare({
+      provider: 'copy',
+      shareId: null,
+      shareUrl: 'https://colinmichaels.com',
+    });
+    await Promise.resolve();
+
+    expect(recordSiteShare).toHaveBeenCalledWith({provider: 'copy'});
+    expect(celebrateConfirmedPointAward).toHaveBeenCalledOnceWith({awarded: true, points: 5, total: 5});
   });
 });
