@@ -54,7 +54,12 @@ describe('BlogEditorialEvidenceComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     const text = element.textContent ?? '';
+    const details = element.querySelector<HTMLDetailsElement>('details');
+    const summary = element.querySelector<HTMLElement>('summary');
 
+    expect(details?.open).toBeFalse();
+    expect(window.getComputedStyle(element.querySelector<HTMLElement>('.evidence-toggle-closed')!).display).not.toBe('none');
+    expect(window.getComputedStyle(element.querySelector<HTMLElement>('.evidence-toggle-open')!).display).toBe('none');
     expect(text).toContain('Mixed evidence');
     expect(text).toContain('The flight notes are hands-on');
     expect(text).toContain('1 explicit source in the article');
@@ -63,6 +68,13 @@ describe('BlogEditorialEvidenceComponent', () => {
     expect(text).toContain('The cover is an editorial illustration.');
     expect(text).toContain('Separated observed flight behavior from specifications.');
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/editorial-standards');
+
+    summary?.click();
+    fixture.detectChanges();
+
+    expect(details?.open).toBeTrue();
+    expect(window.getComputedStyle(element.querySelector<HTMLElement>('.evidence-toggle-closed')!).display).toBe('none');
+    expect(window.getComputedStyle(element.querySelector<HTMLElement>('.evidence-toggle-open')!).display).not.toBe('none');
   });
 
   it('renders an honest unclassified notice for legacy posts', () => {
