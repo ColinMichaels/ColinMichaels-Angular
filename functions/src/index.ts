@@ -22,6 +22,7 @@ import {
   HOMEPAGE_DESCRIPTION,
   HOMEPAGE_OG_IMAGE,
   HOMEPAGE_TITLE,
+  LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL,
   PERSON_AWARDS,
   PERSON_JOB_TITLE,
   PERSON_KNOWS_ABOUT,
@@ -41,6 +42,7 @@ import {
   createPreviewImageAlt,
   createSiteTitle,
 } from './seo-site';
+import {MUSIC_CREDIT_SCHEMA_ENTRIES, MusicCreditSchemaEntry} from './music-credits';
 import {
   assertCanonicalYoutubeApiChannelId,
   parseCanonicalYoutubeChannelId,
@@ -5329,8 +5331,73 @@ function createHomeJsonLd(): Record<string, unknown> {
         about: {
           '@id': SEO_ENTITY_IDS.person,
         },
+        mentions: [
+          {'@id': SEO_ENTITY_IDS.musicCredits},
+          {'@id': SEO_ENTITY_IDS.calle13Album},
+        ],
       },
+      createCalle13AwardAlbumJsonLd(),
+      createMusicCreditsItemListJsonLd(),
     ],
+  };
+}
+
+function createMusicAlbumJsonLd(credit: MusicCreditSchemaEntry): Record<string, unknown> {
+  return {
+    '@type': 'MusicAlbum',
+    name: credit.album,
+    ...(credit.artist ? {
+      byArtist: {
+        '@type': 'MusicGroup',
+        name: credit.artist,
+      },
+    } : {}),
+    ...(credit.year ? {datePublished: credit.year} : {}),
+    contributor: {
+      '@id': SEO_ENTITY_IDS.person,
+    },
+    creditText: `${PERSON_NAME} — ${credit.role}`,
+  };
+}
+
+function createCalle13AwardAlbumJsonLd(): Record<string, unknown> {
+  return {
+    '@type': 'MusicAlbum',
+    '@id': SEO_ENTITY_IDS.calle13Album,
+    name: 'Calle 13',
+    byArtist: {
+      '@type': 'MusicGroup',
+      name: 'Calle 13',
+    },
+    datePublished: '2005',
+    contributor: {
+      '@id': SEO_ENTITY_IDS.person,
+    },
+    creditText: 'Colin Michaels — Mixing Engineer',
+    award: '2006 Latin GRAMMY Award — Best Urban Music Album',
+    subjectOf: {
+      '@type': 'WebPage',
+      name: '7th Annual Latin GRAMMY Awards — Best Urban Music Album',
+      url: LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL,
+    },
+  };
+}
+
+function createMusicCreditsItemListJsonLd(): Record<string, unknown> {
+  return {
+    '@type': 'ItemList',
+    '@id': SEO_ENTITY_IDS.musicCredits,
+    name: `${PERSON_NAME} studio credits`,
+    description: `${MUSIC_CREDIT_SCHEMA_ENTRIES.length} album credits for ${PERSON_NAME}'s recording, mixing, engineering, production, and arrangement work.`,
+    numberOfItems: MUSIC_CREDIT_SCHEMA_ENTRIES.length,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    itemListElement: MUSIC_CREDIT_SCHEMA_ENTRIES.map((credit, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: credit.album === 'Calle 13' && credit.artist === 'Calle 13' && credit.year === '2005'
+        ? {'@id': SEO_ENTITY_IDS.calle13Album}
+        : createMusicAlbumJsonLd(credit),
+    })),
   };
 }
 

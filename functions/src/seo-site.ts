@@ -70,7 +70,12 @@ export const SEO_ENTITY_IDS = {
   person: `${SITE_URL}/#person`,
   website: `${SITE_URL}/#website`,
   homepage: `${SITE_URL}/#homepage`,
+  musicCredits: `${SITE_URL}/#music-credits`,
+  calle13Album: `${SITE_URL}/#calle-13-2005-album`,
 } as const;
+
+export const LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL =
+  'https://www.latingrammy.com/en/awards/categories/best-urban-music-album/2006/';
 
 export const CREATOR_PROFILE_URLS = {
   youtube: YOUTUBE_CHANNEL_URL,

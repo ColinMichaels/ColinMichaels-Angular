@@ -17,6 +17,11 @@ import {
   createBlogTagSeoMetadata,
   createMissingBlogPostSeoMetadata,
 } from './seo.metadata';
+import {
+  CALLE_13_AWARD_ALBUM,
+  LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL,
+  MUSIC_CREDITS_ITEM_LIST,
+} from './site-identity';
 
 describe('SEO metadata policy', () => {
   it('uses one verified creator-profile contract in the homepage Person graph', () => {
@@ -43,6 +48,28 @@ describe('SEO metadata policy', () => {
     expect(person?.knowsAbout).toContain(
       'Recording engineering, mixing, album production, and music production workflows',
     );
+  });
+
+  it('connects the award-winning Calle 13 album and the visible studio credits to the profile graph', () => {
+    const graph = (HOME_SEO_METADATA.structuredData as {
+      '@graph'?: readonly {
+        '@id'?: string;
+        '@type'?: string | readonly string[];
+        creditText?: string;
+        itemListElement?: readonly unknown[];
+        numberOfItems?: number;
+        subjectOf?: {url?: string};
+      }[];
+    })['@graph'];
+    const calle13Album = graph?.find(node => node['@id'] === CALLE_13_AWARD_ALBUM['@id']);
+    const credits = graph?.find(node => node['@id'] === MUSIC_CREDITS_ITEM_LIST['@id']);
+
+    expect(calle13Album?.['@type']).toBe('MusicAlbum');
+    expect(calle13Album?.creditText).toBe('Colin Michaels — Mixing Engineer');
+    expect(calle13Album?.subjectOf?.url).toBe(LATIN_GRAMMY_2006_BEST_URBAN_MUSIC_ALBUM_URL);
+    expect(credits?.['@type']).toBe('ItemList');
+    expect(credits?.numberOfItems).toBe(33);
+    expect(credits?.itemListElement?.length).toBe(33);
   });
 
   it('marks low-count category pages noindex while preserving higher-count category canonicals', () => {
