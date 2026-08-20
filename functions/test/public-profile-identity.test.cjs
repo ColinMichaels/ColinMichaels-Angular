@@ -17,6 +17,7 @@ const {
   YOUTUBE_SUBSCRIBE_URL,
 } = require('../lib/seo-site.js');
 const {MUSIC_CREDIT_SCHEMA_ENTRIES} = require('../lib/music-credits.js');
+const {GADGET_USEFULNESS_SCORECARD_SECTIONS} = require('../lib/gadget-usefulness-scorecard.js');
 
 const indexPath = path.resolve(__dirname, '../../src/index.html');
 const angularIdentityPath = path.resolve(__dirname, '../../src/app/shared/seo/site-identity.ts');
@@ -46,6 +47,16 @@ test('uses the verified active Instagram identity in the Functions entity graph'
     'https://www.linkedin.com/in/colinmichaels',
   ]);
   assert.ok(PERSON_SAME_AS.every(url => new URL(url).protocol === 'https:'));
+});
+
+test('keeps general gadget-resource video links on the Colin Michaels channel', () => {
+  const seriesSection = GADGET_USEFULNESS_SCORECARD_SECTIONS.find(
+    section => section.heading === 'One recognizable framework across site and channel',
+  );
+  const youtubeLink = seriesSection?.links?.find(link => link.href.includes('youtube.com'));
+
+  assert.equal(youtubeLink?.href, YOUTUBE_CHANNEL_URL);
+  assert.equal(youtubeLink?.label, 'Colin Michaels on YouTube');
 });
 
 test('keeps the physical homepage Person graph aligned with the active profile contract', () => {

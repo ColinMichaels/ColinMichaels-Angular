@@ -40,6 +40,7 @@ describe('GadgetUsefulnessScorecardComponent', () => {
     expect(downloads.every(link => link.getAttribute('href') === '/downloads/captain-colin-gadget-usefulness-scorecard.pdf')).toBeTrue();
     expect(downloads.every(link => link.getAttribute('download') === 'captain-colin-gadget-usefulness-scorecard.pdf')).toBeTrue();
     expect(scoreLink?.getAttribute('href')).toBe('/resources/gadget-usefulness-scorecard#five-scores');
+    expect(youtubeLink?.getAttribute('href')).toBe('https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ');
     expect(youtubeLink?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
