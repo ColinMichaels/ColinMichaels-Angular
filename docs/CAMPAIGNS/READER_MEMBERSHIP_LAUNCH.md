@@ -6,7 +6,7 @@ Turn engaged blog readers into signed-in community members by leading with three
 
 - comment on posts;
 - earn points for reading and sharing;
-- choose fast browser alerts and optional email/newsletter lists.
+- choose fast browser alerts.
 
 Primary destination: `https://colinmichaels.com/blog`
 
@@ -23,7 +23,7 @@ Creative line: **Read. Connect. Grow.**
 5. Reuse the launch creative when a new post goes live, but lead those posts with the article rather than the account feature.
 6. Review signup starts, completed registrations, preference selections, comments, and returning readers before increasing prompt frequency.
 
-Email delivery is not a launch dependency. Preferences can be collected now, but public copy must not claim that emails are being sent until the provider-backed delivery system is active.
+Email delivery is not a launch dependency. It is not offered until a provider-backed delivery system and fresh explicit consent are in place.
 
 ## Facebook
 

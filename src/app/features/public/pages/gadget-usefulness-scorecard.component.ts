@@ -74,7 +74,7 @@ const SCORECARD_FILENAME = 'captain-colin-gadget-usefulness-scorecard.pdf';
             <div class="grid gap-4 leading-7 text-slate-700 dark:text-zinc-300">
               <p>
                 <strong class="text-slate-950 dark:text-zinc-100">Is It Actually Useful?</strong> is the recurring
-                ColinMichaels.com and Captain Colin framework for unusual gadgets, clever problem-solvers,
+                ColinMichaels.com framework for unusual gadgets, clever problem-solvers,
                 marketplace finds, creator tools, robots, flying cameras, and objects that are too interesting to
                 ignore. It does not begin with a verdict. It begins by naming the relationship to the item and the
                 evidence available.

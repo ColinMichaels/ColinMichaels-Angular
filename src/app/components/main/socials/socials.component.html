@@ -1,6 +1,6 @@
 <nav
   aria-label="Follow Colin Michaels"
-  class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-gradient-to-t from-teal-950/50 to-transparent px-4 py-3 text-gray-400"
+  class="pointer-events-none flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-gradient-to-t from-teal-950/50 to-transparent px-4 py-3 text-gray-400"
 >
   @for (link of links; track link.id) {
     <div class="group transition hover:-translate-y-2 hover:scale-125">
@@ -10,7 +10,7 @@
         rel="noopener noreferrer me"
         [attr.aria-label]="link.label"
         [title]="link.title"
-        [class]="['group', 'inline-flex', 'h-11', 'w-11', 'items-center', 'justify-center', 'rounded-full', 'focus:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-cyan-300', link.class]"
+        [class]="['group', 'pointer-events-auto', 'inline-flex', 'h-11', 'w-11', 'items-center', 'justify-center', 'rounded-full', 'focus:outline-none', 'focus-visible:ring-2', 'focus-visible:ring-cyan-300', link.class]"
         [appTooltip]="link.tooltip"
         [tooltipfadeDuration]="0"
         [tooltipAutoDismiss]="0"

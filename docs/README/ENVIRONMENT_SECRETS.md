@@ -201,7 +201,7 @@ Optional runtime params:
 
 - `OPENAI_TEXT_MODEL`, default `gpt-5.5`
 - `OPENAI_IMAGE_MODEL`, default `gpt-image-2`
-- `YOUTUBE_CHANNEL_ID`, required for the homepage latest videos feed and currently required to equal the canonical Captain Colin ID `UCKZ3E88t-BoUqPgZygJw6bA`; it is public configuration, not a secret. The callable fails closed if it is missing or different. A primary-channel change must update both site-identity modules and the public profile/content/rollback contract before this parameter changes.
+- `COLIN_MICHAELS_YOUTUBE_CHANNEL_ID`, required for general homepage/blog latest-video feeds and currently required to equal `UCCJMwxuUIb6S4aoZiZeAVeQ`; it is public configuration, not a secret. `YOUTUBE_CHANNEL_ID` remains required for explicit Captain Colin drone/FPV feeds and must equal `UCKZ3E88t-BoUqPgZygJw6bA`. Each callable fails closed if its selected parameter is missing or different. Any identity change must update both site-identity modules and the public profile/content/rollback contract before its parameter changes.
 - `PUBLIC_SUBMISSION_SMTP_HOST`, default `smtp.gmail.com`
 - `PUBLIC_SUBMISSION_SMTP_PORT`, default `465`
 - `PUBLIC_SUBMISSION_SMTP_SECURE`, default `true`

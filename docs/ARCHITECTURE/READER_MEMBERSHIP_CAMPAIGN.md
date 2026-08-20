@@ -11,11 +11,11 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
 1. Firebase Auth first resolves the reader as signed out. Initialization and auth-listener failures never count as anonymous identity.
 2. After the article body, an eligible anonymous reader sees a non-blocking inline card explaining the account benefits. It does not use a wall-clock trigger, overlay the article, trap focus, or lock body scrolling.
 3. **Create free account**, **I already have an account**, and **Not now** are visible together. The account actions preserve the current article as the validated internal return URL; **Not now** removes the inline card and snoozes it for 30 days.
-4. The account and Profile flows own all notification choices. No email, newsletter, or browser-notification preference is preselected by the inline invitation.
+4. The account and Profile flows own the optional browser-alert choice. No notification permission is requested by the inline invitation.
 5. Popup sign-in remains the primary Google/Facebook path. Before a blocked-popup fallback starts redirect authentication, the app stores the validated internal return URL for at most 15 minutes. The callback restores that URL even when the provider round trip drops the `/login` query string, then clears it after successful navigation.
-6. After Firebase authentication and user-account bootstrap complete, any preferences explicitly selected in an existing signup flow are written to `users/{uid}.communicationPreferences`.
+6. After Firebase authentication, a reader who selected browser alerts receives the separate follow-up only when that browser supports alerts. Legacy email/newsletter preferences are not changed by this flow.
 7. If browser alerts were explicitly selected and the current browser supports them, a separate signed-in follow-up asks the reader to enable alerts. The native browser permission prompt is only opened from that button gesture.
-8. All three choices remain editable from the protected Profile page.
+8. Browser alerts remain editable from the protected Profile page.
 
 **Not now** snoozes the inline invitation for 30 days. Completing or closing a signed-in follow-up suppresses the campaign for 365 days on that browser. Pending signup choices use session storage so abandoned choices do not become durable account consent.
 
@@ -25,11 +25,10 @@ The campaign is limited to public `/blog` routes. Draft previews, admin routes, 
 - `BlogMembershipCampaignComponent` owns only saved-preference completion, browser-alert follow-up, CDK-backed modal focus containment/restoration, and responsive signed-in dialog presentation. The app shell defers this component so non-blog routes do not pay its initial bundle or artwork cost.
 - `BlogMembershipCampaignStateService` owns versioned dismissal and pending-preference browser storage.
 - `AuthService.authState$` distinguishes initialization, authenticated, unauthenticated, and unavailable states. Campaign eligibility uses this state; existing `user$` consumers receive only resolved identity results.
-- `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts and account-level email choices.
-- `LoginScreenComponent` recognizes `source=blog-membership`, opens the requested login/register mode, preserves preferences for email/password and social authentication, and provides a guest return path.
+- `CommunicationPreferencesComponent` owns signed-in Profile controls for per-device browser alerts.
+- `LoginScreenComponent` recognizes `source=blog-membership`, opens the requested login/register mode, preserves the browser-alert choice for email/password and social authentication, and provides a guest return path.
 - `AuthReturnUrlService` validates same-site destinations, keeps short-lived redirect state in session storage, rejects login/logout loops and external URLs, and clears state after successful navigation.
-- `UserAccountService.updateCommunicationPreferences` is the shared Firestore write boundary.
-- `UserCommunicationPreferences` and `normalizeCommunicationPreferences` define and validate the optional account document field.
+- `UserAccountService.updateCommunicationPreferences`, `UserCommunicationPreferences`, and `normalizeCommunicationPreferences` remain the preserved legacy account-preference boundary; the active campaign no longer writes or presents those inactive email options.
 - `PwaPushService` remains the sole browser permission and per-device Web Push adapter.
 
 Campaign media is separated from production UI logic:
@@ -41,7 +40,7 @@ Campaign media is separated from production UI logic:
 
 ## Data Contract
 
-The optional `communicationPreferences` field on `users/{uid}` is:
+The legacy optional `communicationPreferences` field on `users/{uid}` is:
 
 ```ts
 {
@@ -52,15 +51,15 @@ The optional `communicationPreferences` field on `users/{uid}` is:
 }
 ```
 
-The field is optional so existing user documents remain valid without a backfill. Firestore Rules allow an account owner to change only the existing profile-safe fields and this strictly shaped preference map. Roles, trust, points, and other protected account data remain outside the owner update boundary.
+The field is optional so existing user documents remain valid without a backfill. It is historical preference data, not a current mailing list or future consent source. Firestore Rules allow an account owner to change only the existing profile-safe fields and this strictly shaped preference map. Roles, trust, points, and other protected account data remain outside the owner update boundary.
 
 Browser subscriptions are not stored in this map. They remain per-device records behind the existing authenticated push registration Functions and backend-only `pushSubscriptions` collection.
 
 ## Consent And Delivery Boundaries
 
-Every preference is independently reversible. The anonymous inline invitation preselects no email, newsletter, or browser-notification choice. A signed-in reader can enable browser alerts only from an explicit **Enable browser alerts** gesture before the browser shows its native permission prompt.
+The anonymous inline invitation makes no notification request. A signed-in reader can enable browser alerts only from an explicit **Enable browser alerts** gesture before the browser shows its native permission prompt.
 
-The current application can save email and newsletter preferences, but it does not yet contain an email service, mailing provider, or new-post email worker. The UI therefore describes these controls as joining a delivery list and never reports an email as sent. Do not advertise email delivery as live until a provider, sender identity, unsubscribe endpoint, suppression handling, and audited publish trigger are connected.
+The current application has no email service, mailing provider, or new-post email worker. Email and newsletter controls are therefore hidden instead of collecting a promise that cannot be fulfilled. Any future provider-backed email launch must obtain fresh explicit consent rather than using legacy account values.
 
 Existing Web Push delivery is functional only when the public VAPID key, private VAPID secret, subject, deployed Functions, service worker, and Firestore Rules described in `MOBILE_PWA.md` are configured together.
 
@@ -82,10 +81,10 @@ Existing Web Push delivery is functional only when the public VAPID key, private
 - Auth-readiness, route-guard consolidation, and local logging require an Angular Hosting deployment only; they do not change Functions, Firestore Rules, or stored documents.
 - Focus containment, target sizing, and contrast hardening are Angular/CSS-only changes with no account, consent, route, Rules, or Functions migration.
 - The redirect-return record is tab-scoped, expires after 15 minutes, and needs no Firebase configuration or OAuth callback-domain change.
-- Deploy Angular Hosting and Firestore Rules together.
+- This correction requires an Angular Hosting deployment only; it does not change Functions, Firestore Rules, or stored documents.
 - Existing authentication providers, comments, points, and push Functions are reused without a Functions code change.
 - Browser-alert activation still requires the existing VAPID production configuration.
-- Email and newsletter delivery require a separate provider-backed implementation before sends can begin.
+- Email and newsletter delivery require a separate provider-backed implementation and fresh explicit consent before sends can begin.
 - Publish social assets only after the corresponding Hosting deployment is live and the `/blog` signup route has been smoke-tested.
 
 ## Rollback

@@ -176,15 +176,19 @@ import {SiteThemeService} from '../theme/site-theme.service';
     </div>
   `,
   styles: [`
-    .reader-tools {
+    :host {
       bottom: calc(1rem + env(safe-area-inset-bottom));
+      display: block;
+      position: fixed;
+      right: 1rem;
+      z-index: 70;
+    }
+
+    .reader-tools {
       display: grid;
       gap: .65rem;
       justify-items: end;
       pointer-events: none;
-      position: fixed;
-      right: 1rem;
-      z-index: 70;
     }
 
     .reader-tools > * {
@@ -375,7 +379,7 @@ import {SiteThemeService} from '../theme/site-theme.service';
     }
 
     @media (max-width: 640px) {
-      .reader-tools {
+      :host {
         bottom: calc(.75rem + env(safe-area-inset-bottom));
         left: .75rem;
         right: .75rem;

@@ -22,7 +22,7 @@ outside `core-os`.
   back to the existing published-post order instead of leaving the hero empty.
 - The rotation contains at most six unique promise-matched stories. The complete corpus remains available through
   More to read and the blog archive; unrelated recovery posts do not automatically replace the first-screen promise.
-- The first-screen exploration row links to the two core topic journeys, the canonical Captain Colin subscription
+- The first-screen exploration row links to the two core topic journeys, the canonical Colin Michaels subscription
   confirmation flow, and Colin's profile. Subscription selection records only the fixed channel ID, bounded
   `subscribe` method, and `homepage_youtube` source; it sends no visitor identity or article copy.
 - The public feature renders one post at a time with its excerpt, date, calculated reading time, and article link.

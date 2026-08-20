@@ -13,6 +13,8 @@ import {
 describe('SiteAnalyticsService', () => {
   let service: SiteAnalyticsService;
   let gtag: jasmine.Spy;
+  let documentEventListeners: Record<string, (event: Event) => void>;
+  let analyticsDocument: {visibilityState: 'visible' | 'hidden'};
 
   beforeEach(() => {
     gtag = jasmine.createSpy('gtag');
@@ -23,11 +25,27 @@ describe('SiteAnalyticsService', () => {
         origin: 'https://colinmichaels.com',
       },
       gtag,
+      setTimeout: jasmine.createSpy('setTimeout'),
+      clearTimeout: jasmine.createSpy('clearTimeout'),
     };
+    documentEventListeners = {};
+    analyticsDocument = {visibilityState: 'visible'};
 
     TestBed.configureTestingModule({
       providers: [
-        {provide: DOCUMENT, useValue: {defaultView: analyticsWindow, title: 'Test article'}},
+        {
+          provide: DOCUMENT,
+          useValue: {
+            defaultView: analyticsWindow,
+            title: 'Test article',
+            get visibilityState(): 'visible' | 'hidden' {
+              return analyticsDocument.visibilityState;
+            },
+            addEventListener: (type: string, listener: (event: Event) => void) => {
+              documentEventListeners[type] = listener;
+            },
+          },
+        },
         {provide: PLATFORM_ID, useValue: 'browser'},
       ],
     });
@@ -80,6 +98,70 @@ describe('SiteAnalyticsService', () => {
       page_title: 'Test article',
       send_to: SITE_ANALYTICS_MEASUREMENT_ID,
     }));
+  });
+
+  it('records one active-reader signal only after trusted input and fifteen seconds on the visible route', () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date('2026-08-20T12:00:00.000Z'));
+      service.trackPageView('/blog/test-post');
+      jasmine.clock().tick(15_000);
+      documentEventListeners['pointerdown']?.({isTrusted: true} as Event);
+      documentEventListeners['keydown']?.({isTrusted: true} as Event);
+
+      const activeReaderCalls = gtag.calls.allArgs().filter(args => args[1] === 'active_reader');
+      expect(activeReaderCalls).toEqual([[
+        'event',
+        'active_reader',
+        jasmine.objectContaining({
+          page_path: '/blog/test-post',
+          active_seconds: 15,
+          interaction_type: 'pointer',
+          send_to: SITE_ANALYTICS_MEASUREMENT_ID,
+        }),
+      ]]);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('does not call a visit human when input is synthetic or the page is hidden', () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date('2026-08-20T12:00:00.000Z'));
+      service.trackPageView('/blog/test-post');
+      jasmine.clock().tick(15_000);
+      documentEventListeners['pointerdown']?.({isTrusted: false} as Event);
+      analyticsDocument.visibilityState = 'hidden';
+      documentEventListeners['pointerdown']?.({isTrusted: true} as Event);
+
+      expect(gtag.calls.allArgs().map(args => args[1])).toEqual(['page_view']);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('counts only foreground time when a reader backgrounds and returns to a route', () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date('2026-08-20T12:00:00.000Z'));
+      service.trackPageView('/blog/test-post');
+      jasmine.clock().tick(5_000);
+      documentEventListeners['pointerdown']?.({isTrusted: true} as Event);
+
+      analyticsDocument.visibilityState = 'hidden';
+      documentEventListeners['visibilitychange']?.({isTrusted: true} as Event);
+      jasmine.clock().tick(30_000);
+
+      analyticsDocument.visibilityState = 'visible';
+      documentEventListeners['visibilitychange']?.({isTrusted: true} as Event);
+      jasmine.clock().tick(10_000);
+      documentEventListeners['keydown']?.({isTrusted: true} as Event);
+
+      expect(gtag.calls.allArgs().filter(args => args[1] === 'active_reader')).toHaveSize(1);
+    } finally {
+      jasmine.clock().uninstall();
+    }
   });
 
   it('tracks reactions and successful poll votes without sending labels or user ids', () => {

@@ -11,14 +11,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
+import {toSignal} from '@angular/core/rxjs-interop';
 import {Router, RouterLink} from '@angular/router';
-import {of, switchMap} from 'rxjs';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {AuthService, INITIAL_AUTH_STATE} from '../../../../services/auth.service';
 import {PwaPushService} from '../../../../shared/pwa/pwa-push.service';
-import {UserAccountService} from '../../../../shared/user-account/user-account.service';
 import {
   BlogMembershipCampaignStateService,
   PendingBlogMembershipPreferences,
@@ -115,7 +113,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
             </ul>
 
             <fieldset class="membership-preferences">
-              <legend>Start with your preferred updates</legend>
+              <legend>Optional reader updates</legend>
 
               <label>
                 <input
@@ -134,39 +132,6 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
                 </span>
               </label>
 
-              <label>
-                <input
-                  type="checkbox"
-                  [checked]="newPostEmails()"
-                  (change)="newPostEmails.set(!newPostEmails())"
-                >
-                <span class="membership-checkbox" aria-hidden="true">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m3.5 8 3 3 6-6"></path>
-                  </svg>
-                </span>
-                <span>
-                  <strong>New-post emails</strong>
-                  <small>Join the list for new-post email delivery.</small>
-                </span>
-              </label>
-
-              <label>
-                <input
-                  type="checkbox"
-                  [checked]="newsletter()"
-                  (change)="newsletter.set(!newsletter())"
-                >
-                <span class="membership-checkbox" aria-hidden="true">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m3.5 8 3 3 6-6"></path>
-                  </svg>
-                </span>
-                <span>
-                  <strong>Occasional newsletter</strong>
-                  <small>Periodic highlights and behind-the-scenes updates.</small>
-                </span>
-              </label>
             </fieldset>
 
             <p class="membership-consent-note">
@@ -202,7 +167,7 @@ type CampaignStage = 'offer' | 'browser-followup' | 'success';
               <div class="membership-followup-copy">
                 <h2 id="membership-followup-title">You’re in. Turn on browser alerts?</h2>
                 <p id="membership-followup-description">
-                  Your email choices are saved. Allow browser notifications now for the quickest new-post alerts.
+                  Allow browser notifications now for the quickest new-post alerts.
                 </p>
 
                 <div class="membership-actions">
@@ -744,13 +709,10 @@ export class BlogMembershipCampaignComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
-  private readonly userAccounts = inject(UserAccountService);
   protected readonly push = inject(PwaPushService);
 
   protected readonly pathNames = PATH_NAMES;
   protected readonly browserNotifications = signal(true);
-  protected readonly newPostEmails = signal(false);
-  protected readonly newsletter = signal(false);
   protected readonly stage = signal<CampaignStage>('offer');
   protected readonly isOpen = signal(false);
   protected readonly completionMessage = signal(
@@ -760,20 +722,12 @@ export class BlogMembershipCampaignComponent {
     this.campaignState.getPendingPreferences()
   );
   private readonly authState = toSignal(this.auth.authState$, {initialValue: INITIAL_AUTH_STATE});
-  private readonly account = toSignal(
-    this.auth.user$.pipe(
-      switchMap(user => user ? this.userAccounts.listenToUserAccount(user.uid) : of(null)),
-      takeUntilDestroyed(this.destroyRef)
-    ),
-    {initialValue: null}
-  );
   private completionUid: string | null = null;
   private originalBodyOverflow = '';
 
   constructor() {
     effect(() => {
       const authState = this.authState();
-      const account = this.account();
       const pending = this.pending();
 
       if (authState.status === 'authenticated') {
@@ -781,8 +735,8 @@ export class BlogMembershipCampaignComponent {
           this.isOpen.set(false);
         }
 
-        if (account && pending && this.completionUid !== authState.user.uid) {
-          void this.completeAccountPreferences(authState.user.uid, pending);
+        if (pending && this.completionUid !== authState.user.uid) {
+          this.completeAccountNotificationSetup(authState.user.uid, pending);
         }
       }
     });
@@ -823,8 +777,8 @@ export class BlogMembershipCampaignComponent {
   protected continueToAccount(mode: 'login' | 'register'): void {
     const pending = this.campaignState.rememberPendingPreferences({
       browserNotifications: this.browserNotifications(),
-      newPostEmails: this.newPostEmails(),
-      newsletter: this.newsletter(),
+      newPostEmails: false,
+      newsletter: false,
     });
     this.pending.set(pending);
     this.isOpen.set(false);
@@ -849,7 +803,7 @@ export class BlogMembershipCampaignComponent {
     this.campaignState.clearPendingPreferences();
     this.campaignState.markCompleted();
     this.pending.set(null);
-    this.completionMessage.set('Browser alerts and your email choices are set. Welcome to the conversation.');
+    this.completionMessage.set('Browser alerts are enabled. Welcome to the conversation.');
     this.stage.set('success');
     this.focusDialog();
   }
@@ -858,7 +812,7 @@ export class BlogMembershipCampaignComponent {
     this.campaignState.clearPendingPreferences();
     this.campaignState.markCompleted();
     this.pending.set(null);
-    this.completionMessage.set('Your email choices are saved. Browser alerts remain off on this device.');
+    this.completionMessage.set('Browser alerts remain off on this device. You can enable them anytime from your profile.');
     this.stage.set('success');
     this.focusDialog();
   }
@@ -870,42 +824,28 @@ export class BlogMembershipCampaignComponent {
     this.isOpen.set(false);
   }
 
-  private async completeAccountPreferences(
+  private completeAccountNotificationSetup(
     uid: string,
     pending: PendingBlogMembershipPreferences
-  ): Promise<void> {
+  ): void {
     this.completionUid = uid;
 
-    try {
-      await this.userAccounts.updateCommunicationPreferences(uid, {
-        newPostEmails: pending.newPostEmails,
-        newsletter: pending.newsletter,
-      }, 'signup-campaign');
-
-      if (pending.browserNotifications && this.push.available()) {
-        this.stage.set('browser-followup');
-        this.openDialog();
-        return;
-      }
-
-      this.campaignState.clearPendingPreferences();
-      this.campaignState.markCompleted();
-      this.pending.set(null);
-      this.completionMessage.set(
-        pending.browserNotifications
-          ? 'Your email choices are saved. Browser alerts are unavailable here, but you can try again from your profile.'
-          : 'Your email choices are saved. Browser alerts remain off on this device.'
-      );
-      this.stage.set('success');
+    if (pending.browserNotifications && this.push.available()) {
+      this.stage.set('browser-followup');
       this.openDialog();
-    } catch {
-      this.completionUid = null;
-      this.completionMessage.set(
-        'Your account is ready, but notification preferences could not be saved. You can retry from your profile.'
-      );
-      this.stage.set('success');
-      this.openDialog();
+      return;
     }
+
+    this.campaignState.clearPendingPreferences();
+    this.campaignState.markCompleted();
+    this.pending.set(null);
+    this.completionMessage.set(
+      pending.browserNotifications
+        ? 'Browser alerts are unavailable here, but you can try again from your profile.'
+        : 'Browser alerts remain off on this device. You can enable them anytime from your profile.'
+    );
+    this.stage.set('success');
+    this.openDialog();
   }
 
   private openDialog(): void {

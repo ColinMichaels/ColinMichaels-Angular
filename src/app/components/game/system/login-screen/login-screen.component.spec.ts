@@ -167,15 +167,13 @@ describe('LoginScreenComponent', () => {
     queryParams$.next({mode: 'register', source: 'blog-membership'});
     component.registerForm.patchValue({
       browserNotifications: true,
-      newPostEmails: true,
-      newsletter: false,
     });
 
     component.loginWithGoogle();
 
     expect(membershipCampaignMock.rememberPendingPreferences).toHaveBeenCalledWith({
       browserNotifications: true,
-      newPostEmails: true,
+      newPostEmails: false,
       newsletter: false,
     });
   });

@@ -19,7 +19,7 @@ export const GADGET_USEFULNESS_SCORECARD_SECTIONS: readonly GadgetScorecardSecti
   {
     heading: 'Download the one-page scorecard',
     paragraphs: [
-      'Is It Actually Useful? is the recurring ColinMichaels.com and Captain Colin framework for unusual gadgets, clever problem-solvers, marketplace finds, creator tools, robots, flying cameras, and objects that are too interesting to ignore. The printable keeps five practical questions and the evidence behind each answer on one page.',
+      'Is It Actually Useful? is the recurring ColinMichaels.com framework for unusual gadgets, clever problem-solvers, marketplace finds, creator tools, robots, flying cameras, and objects that are too interesting to ignore. The printable keeps five practical questions and the evidence behind each answer on one page.',
       'This worksheet organizes research and personal judgment. It is not a scientific rating, product test, safety assessment, financial recommendation, or buying instruction. A score should never erase a safety concern, privacy problem, unclear relationship, missing source, or unsupported claim. The written evidence and limitations matter more than the total.',
     ],
     links: [
@@ -79,9 +79,9 @@ export const GADGET_USEFULNESS_SCORECARD_SECTIONS: readonly GadgetScorecardSecti
     ],
     links: [
       {
-        href: 'https://www.youtube.com/channel/UCKZ3E88t-BoUqPgZygJw6bA',
-        label: 'Captain Colin on YouTube',
-        description: 'FPV flights, unusual finds, demonstrations, and creator experiments.',
+        href: 'https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ',
+        label: 'Colin Michaels on YouTube',
+        description: 'Useful finds, demonstrations, creator builds, and new experiments.',
       },
       {
         href: '/blog/they-bought-a-full-size-temu-mega-drone',

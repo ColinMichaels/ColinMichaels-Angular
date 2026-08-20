@@ -26,9 +26,7 @@ The public upload feed shows the channel's useful shape more clearly than the Ab
 
 A read-only YouTube Studio check on August 15 opened a separate **Colin Michaels** channel (`UCCJMwxuUIb6S4aoZiZeAVeQ`) rather than Captain Colin. That channel showed `8` current subscribers, `47` views, and `0.6` watch hours for the last 28 days, plus current AI, website, healthcare, and practical-tech uploads.
 
-The repository, structured creator identity, public video feed, archive-gateway packages, and this refresh all currently designate **Captain Colin** (`UCKZ3E88t-BoUqPgZygJw6bA`) as the primary channel. Its captured public baseline is `602` subscribers, `394` videos, and `124,185` views. Do not redirect the site, duplicate new releases, or apply this package to the smaller channel merely because Studio opened it by default. Before any live channel mutation, Colin must explicitly choose the long-term primary channel and confirm that the selected Studio channel ID matches the package target.
-
-The evidence currently favors consolidating on Captain Colin because it already owns the audience, archive, public links, and article/video gateway plan. That is a recommendation, not authorization to move, delete, re-upload, or cross-post anything.
+This package's Captain Colin baseline is historical: `602` subscribers, `394` videos, and `124,185` views at capture. Colin subsequently selected **Colin Michaels** (`UCCJMwxuUIb6S4aoZiZeAVeQ`) as the primary general-creator channel, while Captain Colin (`UCKZ3E88t-BoUqPgZygJw6bA`) remains for explicit drone/FPV work. Do not redirect the site, duplicate new releases, or apply this drone-specific package to the Colin Michaels channel merely because Studio opens it by default. Before any live channel mutation, confirm that the selected Studio channel ID matches the intended surface.
 
 ## Channel Promise
 
