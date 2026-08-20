@@ -4,6 +4,7 @@
 
 ### Added
 
+- Switched the general homepage video shelf from Captain Colin to the active Colin Michaels channel, with matching loading copy and a regression contract for the configured channel key. Captain Colin remains reserved for FPV-specific journeys; no YouTube account, video, playlist, subscription, deployment, or other external surface changed.
 - Added a responsive home-bio music section with a filterable, searchable list of Colin Michaels’s album credits and compact Spotify and Apple Music discovery icons with hover/focus labels.
 - Added the supplied plaque photograph as a compact supporting image and an accurately labeled 2006 Latin GRAMMY® Award for Calle 13’s *Best Urban Music Album* win, naming Colin as the mixing engineer. The matching client, Functions, and static homepage `Person` graphs now expose the verified award and music-production expertise for crawlers.
 - Placed the award text before its supporting photograph so desktop biography sections do not visually repeat the preceding image-led layout.

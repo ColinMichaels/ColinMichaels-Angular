@@ -150,6 +150,7 @@ describe('MainComponent', () => {
     BlogRepositoryService,
     'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'
   >;
+  let youtubeFeedService: Pick<YouTubeFeedService, 'getLatestVideos$'>;
 
   beforeEach(async () => {
     blogRepositoryService = {
@@ -159,13 +160,13 @@ describe('MainComponent', () => {
       loading$: of(false),
       error$: of(null),
     } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'>;
-    const youtubeFeedService = {
+    youtubeFeedService = {
       getLatestVideos$: jasmine.createSpy('getLatestVideos$').and.returnValue(of({
         fetchedAt: '2026-06-14T00:00:00.000Z',
         source: 'youtube-api',
-        channelId: 'channel-id',
-        channelTitle: 'Captain Colin',
-        channelUrl: 'https://www.youtube.com/CaptainColin',
+        channelId: 'UCCJMwxuUIb6S4aoZiZeAVeQ',
+        channelTitle: 'Colin Michaels',
+        channelUrl: 'https://www.youtube.com/channel/UCCJMwxuUIb6S4aoZiZeAVeQ',
         videos: [],
       })),
     } satisfies Pick<YouTubeFeedService, 'getLatestVideos$'>;
@@ -310,7 +311,7 @@ describe('MainComponent', () => {
     expect(element.querySelector('#medical-information')?.textContent).toContain('Open heart surgery medical information');
   });
 
-  it('continues from topic discovery into Captain Colin before recovery collections', async () => {
+  it('continues from topic discovery into Colin Michaels before recovery collections', async () => {
     await renderDeferredHomepageContent(fixture);
 
     const element = fixture.nativeElement as HTMLElement;
@@ -323,6 +324,8 @@ describe('MainComponent', () => {
       fail('Expected both YouTube and recovery homepage sections.');
       return;
     }
+    expect(youtube.textContent).toContain('Colin Michaels on YouTube');
+    expect(youtubeFeedService.getLatestVideos$).toHaveBeenCalledWith(3, 'colin-michaels');
     expect(youtube.compareDocumentPosition(recovery) & Node.DOCUMENT_POSITION_FOLLOWING)
       .toBeTruthy();
   });
