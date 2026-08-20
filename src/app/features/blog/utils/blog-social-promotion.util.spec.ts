@@ -1,4 +1,5 @@
 import {
+  createBlogSocialCampaignUrl,
   createBlogSocialMessage,
   defaultSocialContentAngle,
   defaultSocialLinkPlacement,
@@ -57,11 +58,11 @@ describe('blog social promotion utilities', () => {
     );
 
     expect(message).toContain('How would you approach it?');
-    expect(message).toContain('https://colinmichaels.com/blog/voice-cloning-safe-word');
+    expect(message).toContain('https://colinmichaels.com/blog/voice-cloning-safe-word?utm_source=x&utm_medium=organic_social&utm_campaign=article_launch&utm_content=voice-cloning-safe-word');
     expect(message).not.toContain('I\u2019m curious how other people would approach this.');
   });
 
-  it('can create an in-post educational share with a canonical article link', () => {
+  it('can create an in-post educational share with a channel-tagged article link', () => {
     const message = createBlogSocialMessage(
       'linkedin',
       post,
@@ -71,7 +72,18 @@ describe('blog social promotion utilities', () => {
     );
 
     expect(message).toContain('One useful takeaway');
-    expect(message).toContain('https://colinmichaels.com/blog/voice-cloning-safe-word');
+    expect(message).toContain('https://colinmichaels.com/blog/voice-cloning-safe-word?utm_source=linkedin&utm_medium=organic_social&utm_campaign=article_launch&utm_content=voice-cloning-safe-word');
+  });
+
+  it('stores the same tagged destination for first-comment and profile-link drafts', () => {
+    const facebookUrl = createBlogSocialCampaignUrl('facebook', post, 'https://colinmichaels.com');
+    const instagramUrl = createBlogSocialCampaignUrl('instagram', post, 'https://colinmichaels.com');
+
+    expect(facebookUrl).toBe(
+      'https://colinmichaels.com/blog/voice-cloning-safe-word?utm_source=facebook&utm_medium=organic_social&utm_campaign=article_launch&utm_content=voice-cloning-safe-word'
+    );
+    expect(instagramUrl).toContain('utm_source=instagram');
+    expect(instagramUrl).toContain('utm_medium=organic_social');
   });
 
   it('adds compact Instagram hashtags without adding an unavailable body link', () => {

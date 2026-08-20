@@ -41,8 +41,23 @@ describe('BlogShareActionsComponent', () => {
     expect(shareEvents).toEqual([{
       provider: 'facebook',
       shareId: null,
-      shareUrl: `${document.location.origin}/blog/shareable-post`,
+      shareUrl: `${document.location.origin}/blog/shareable-post?utm_source=facebook&utm_medium=social_share&utm_campaign=reader_share`,
     }]);
+  });
+
+  it('adds a stable source, medium, campaign, and article identity to every public share URL', () => {
+    fixture.componentRef.setInput('utmCampaign', 'reader_share');
+    fixture.componentRef.setInput('utmContent', 'shareable-post');
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const facebookLink = element.querySelector<HTMLAnchorElement>('a[title="Share on Facebook"]');
+    const sharedUrl = new URL(decodeURIComponent(new URL(facebookLink?.href ?? '').searchParams.get('u') ?? ''));
+
+    expect(sharedUrl.searchParams.get('utm_source')).toBe('facebook');
+    expect(sharedUrl.searchParams.get('utm_medium')).toBe('social_share');
+    expect(sharedUrl.searchParams.get('utm_campaign')).toBe('reader_share');
+    expect(sharedUrl.searchParams.get('utm_content')).toBe('shareable-post');
   });
 
   it('adds one opaque attribution id per provider when tracking is enabled', () => {
@@ -60,6 +75,7 @@ describe('BlogShareActionsComponent', () => {
     expect(facebookShareId).toMatch(/^[A-Za-z0-9_-]{20,80}$/);
     expect(linkedInShareId).toMatch(/^[A-Za-z0-9_-]{20,80}$/);
     expect(linkedInShareId).not.toBe(facebookShareId);
+    expect(new URL(decodedFacebookUrl).searchParams.get('utm_source')).toBe('facebook');
   });
 
   it('fans toolbar share providers out from one trigger', () => {

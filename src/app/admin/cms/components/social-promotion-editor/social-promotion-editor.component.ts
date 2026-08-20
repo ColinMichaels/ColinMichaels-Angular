@@ -34,6 +34,7 @@ import {
 } from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogPost} from '../../../../features/blog/models/blog-post.model';
 import {
+  createBlogSocialCampaignUrl,
   createBlogSocialMessage,
   defaultSocialContentAngle,
   defaultSocialLinkPlacement,
@@ -503,7 +504,9 @@ export class SocialPromotionEditorComponent {
     const linkPlacement = (event.target as HTMLSelectElement).value as BlogSocialLinkPlacement;
     this.updateActive({
       linkPlacement,
-      ...(linkPlacement === 'none' ? {linkUrl: undefined} : {linkUrl: this.articleUrl()}),
+      ...(linkPlacement === 'none'
+        ? {linkUrl: undefined}
+        : {linkUrl: this.campaignArticleUrl(this.activeChannel())}),
     });
   }
 
@@ -630,7 +633,7 @@ export class SocialPromotionEditorComponent {
       const postFormat = announcement.postFormat;
       const result = await this.aiFunctions.generateSocialPosts({
         context,
-        articleUrl: this.articleUrl(),
+        articleUrl: this.campaignArticleUrl(this.activeChannel()),
         targets: [{
           channel: this.activeChannel(),
           angle: announcement.contentAngle ?? defaultSocialContentAngle(this.activeChannel()),
@@ -821,7 +824,7 @@ export class SocialPromotionEditorComponent {
       contentAngle,
       linkPlacement,
       postFormat,
-      ...(linkPlacement === 'none' ? {} : {linkUrl: this.articleUrl()}),
+      ...(linkPlacement === 'none' ? {} : {linkUrl: this.campaignArticleUrl(channel)}),
       ...(shouldUseImage && image ? {mediaType: 'image', mediaUrl: image} : {}),
       ...(shouldUseVideo ? {mediaType: 'video'} : {}),
       ...(shouldSchedule ? {scheduledAt: publishDate ?? this.validCustomSchedule(undefined)} : {}),
@@ -845,6 +848,10 @@ export class SocialPromotionEditorComponent {
     this.activeAnnouncement.set(next);
     this.draftIdByChannel.set(this.activeChannel(), next.id);
     this.commitAndCreatePromotion(next);
+  }
+
+  private campaignArticleUrl(channel: BlogSocialChannel): string {
+    return createBlogSocialCampaignUrl(channel, this.post(), SITE_URL);
   }
 
   private commitAndCreatePromotion(active: BlogSocialAnnouncement): BlogSocialPromotion {
