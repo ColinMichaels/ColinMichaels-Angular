@@ -100,7 +100,16 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
                   [attr.aria-label]="'Read ' + post.title"
                 >
+                  @if (layout === 'editorial') {
+                    <img
+                      class="post-listing__editorial-backdrop"
+                      [src]="postImage(post)"
+                      alt=""
+                      aria-hidden="true"
+                    >
+                  }
                   <img
+                    class="post-listing__image"
                     [src]="postImage(post)"
                     [alt]="post.title + ' cover image'"
                     [style.object-fit]="layout === 'editorial' ? 'contain' : null"
