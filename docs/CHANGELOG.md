@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a New Post package import for generated article assets. Selecting one folder now validates a normal post JSON plus an image manifest, uploads every declared image through the existing trusted media pipeline, replaces only declared `media://` references in supported media fields, and leaves the resulting draft unsaved for editorial review. The manifest contract fails closed on unsafe paths, missing/ambiguous files, unpaired placeholders, and unused declarations; existing JSON-only import remains unchanged.
 - Fixed the after-article reader invitation so reaching its meaningful-reading threshold now keeps the inline offer visible. Its engagement reset is scoped to an article change, preventing the visibility tracker from immediately hiding the offer before readers can choose an action.
 - Recorded the current creator-channel decision in the growth operating system: Colin Michaels is the site’s primary general-creator YouTube channel, while Captain Colin remains reserved for explicit FPV and drone journeys. Historical Captain Colin performance snapshots remain dated context only and cannot silently redirect future broad creator work.
 - Refined the blog archive’s editorial image treatment so every cover remains fully visible while a subtle blurred backdrop fills taller text-led cards. This removes the severe letterbox bands that made the featured cover look incorrectly cropped, preserving image integrity in both light and dark modes.
