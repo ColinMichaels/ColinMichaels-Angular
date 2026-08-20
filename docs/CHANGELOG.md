@@ -4,6 +4,7 @@
 
 ### Added
 
+- Extended the reduced-motion-aware celebration system from Daily Discovery to completed article reads plus article and site shares, but only after the server confirms a new positive point award. Duplicate, zero-point, anonymous, failed, and later-moderated comment outcomes do not animate.
 - Added crawl-ready `MusicAlbum` and ordered `ItemList` metadata for Colin Michaels’s visible studio credits, including role-level credit text without treating Spotify or Apple Music search pages as canonical releases. The 2005 Calle 13 album now has a dedicated entity connected to the official 7th Latin GRAMMY Best Urban Music Album result and Colin’s mixing-engineer credit; client, Functions crawler, and static fallback markup are covered by alignment tests.
 - Corrected crawler fallback copy for companion videos so it no longer misattributes every selected YouTube video to Captain Colin. Fallback links now remain accurate for Colin Michaels, Captain Colin, and third-party references.
 - Removed Georgia/Times New Roman fallback typography from public home, blog, Daily Discovery, and Cat Corner editorial surfaces. Every affected heading now falls back to the established local Source Sans 3 stack if Lexend has not loaded, preserving a consistent sans-serif interface under slow or failed font loads.

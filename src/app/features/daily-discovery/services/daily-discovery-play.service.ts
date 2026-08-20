@@ -122,9 +122,7 @@ export class DailyDiscoveryPlayService {
         this.localState.markCompleted(challenge.dateKey, challenge.id);
         this.isCompleted.set(true);
 
-        if (result.awarded && (result.points ?? 0) > 0) {
-          this.celebration.celebratePointsAwarded(result.points ?? 0);
-        } else {
+        if (!this.celebration.celebrateConfirmedPointAward(result)) {
           this.celebration.celebrateCorrectAnswer();
         }
 

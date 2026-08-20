@@ -8,6 +8,7 @@ import {AuthService} from '../../services/auth.service';
 import {BlogShareActionsComponent} from '../../features/blog/components/share-actions/blog-share-actions.component';
 import {BlogEngagementService, BlogShareEvent} from '../../features/blog/services/blog-engagement.service';
 import {SiteAnalyticsService} from '../analytics/site-analytics.service';
+import {CelebrationService} from '../celebration/celebration.service';
 import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../seo/seo.metadata';
 
 @Component({
@@ -94,6 +95,7 @@ import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../seo/seo.metadat
 export class SiteFooterComponent {
   private readonly authService = inject(AuthService);
   private readonly engagement = inject(BlogEngagementService);
+  private readonly celebration = inject(CelebrationService);
   private readonly analytics = inject(SiteAnalyticsService);
 
   protected readonly isSignedIn = toSignal(this.authService.isAuthenticated(), {initialValue: false});
@@ -108,6 +110,8 @@ export class SiteFooterComponent {
     void this.engagement.recordSiteShare({
       provider: event.provider,
       ...(event.shareId ? {shareId: event.shareId} : {}),
+    }).then(result => {
+      this.celebration.celebrateConfirmedPointAward(result);
     }).catch(() => {
       // Sharing must remain available to anonymous readers and during transient Function failures.
     });

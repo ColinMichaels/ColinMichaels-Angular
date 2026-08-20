@@ -10,6 +10,11 @@ const CELEBRATION_Z_INDEX = 250;
 export type CelebrationLaunchOptions = NonNullable<Parameters<typeof confetti>[0]>;
 export type CelebrationLauncher = (options: CelebrationLaunchOptions) => ReturnType<typeof confetti>;
 
+export interface ConfirmedPointAward {
+  readonly awarded?: boolean;
+  readonly points?: number | null;
+}
+
 export const CELEBRATION_CONFETTI = new InjectionToken<CelebrationLauncher>('Celebration confetti launcher', {
   providedIn: 'root',
   factory: () => confetti,
@@ -52,6 +57,21 @@ export class CelebrationService {
       startVelocity: 38,
       origin: {x: 0.92, y: 0.72},
     });
+  }
+
+  /**
+   * Keeps reward callers from animating a duplicate, zero-point, or otherwise
+   * unconfirmed result. Returns whether a points celebration was displayed.
+   */
+  celebrateConfirmedPointAward(result: ConfirmedPointAward): boolean {
+    const points = result.points ?? 0;
+
+    if (!result.awarded || points <= 0) {
+      return false;
+    }
+
+    this.celebratePointsAwarded(points);
+    return true;
   }
 
   private launch(options: CelebrationLaunchOptions): void {
