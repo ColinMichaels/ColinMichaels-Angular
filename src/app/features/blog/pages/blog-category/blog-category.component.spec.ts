@@ -105,7 +105,7 @@ describe('BlogCategoryComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('list');
+    expect(element.querySelector('.post-listing-region')?.getAttribute('data-layout')).toBe('editorial');
     expect(element.querySelector('.site-pagination__view[aria-current="true"]')?.textContent?.trim()).toBe('Image + title');
   });
 });

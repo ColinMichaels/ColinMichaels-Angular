@@ -9,8 +9,10 @@ import {ScreenSaverModuleId} from './screen-saver.model';
 import {ScreenSaverPreferencesService} from './screen-saver-preferences.service';
 
 async function waitForScreenSaver(fixture: ComponentFixture<ScreenSaverLauncherComponent>): Promise<HTMLElement> {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    await new Promise(resolve => setTimeout(resolve, 0));
+  const deadline = Date.now() + 2_000;
+
+  while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 10));
     fixture.detectChanges();
 
     const screenSaver = document.querySelector<HTMLElement>('.screen-saver');
