@@ -70,7 +70,7 @@ For a post package with generated images, keep the post JSON, images, and `image
 }
 ```
 
-Use only safe relative paths. Valid roles are `cover`, `post-background`, `open-graph`, `thumbnail`, `inline-image`, and `editor-image`. The CMS New Post **Import post package** action uploads every manifest file through the trusted media workflow, replaces only declared media placeholders, and leaves the result as an unsaved draft for review. Do not put `media://` values in prose, links, embeds, or other non-image fields.
+Use only safe relative paths. Valid roles are `cover`, `post-background`, `open-graph`, `thumbnail`, `inline-image`, and `editor-image`. The CMS New Post **Import post package** action uploads every manifest file through the trusted media workflow, replaces only declared media placeholders, and leaves the result as an unsaved draft for review. Exact duplicate source files reuse an existing finalized media asset; changed source bytes create a new immutable asset rather than replacing an old one. Do not put `media://` values in prose, links, embeds, or other non-image fields.
 
 ---
 

@@ -153,6 +153,25 @@ export async function finalizeBlogMediaUpload(
       throw new HttpsError('invalid-argument', 'Image dimensions are unavailable or exceed the trusted pixel limit.');
     }
 
+    // Finalized variants are immutable. Reuse a ready asset only when the
+    // trusted source bytes are identical; a changed source naturally receives
+    // a fresh media id and a new set of immutable Storage URLs below.
+    const reusable = await findReadyMediaByChecksum(firestore, checksum);
+    if (reusable) {
+      await firestore.collection(MEDIA_AUDIT_COLLECTION).doc(`reuse-${request.mediaId}`).set({
+        operation: 'reuse',
+        actorUid,
+        mediaId: request.mediaId,
+        reusedMediaId: reusable.mediaId,
+        checksum,
+        storageObjectCount: 0,
+        occurredAt: now.toISOString(),
+        syncedAt: FieldValue.serverTimestamp(),
+      }, {merge: false});
+      await stagingFile.delete({ignoreNotFound: true}).catch(() => undefined);
+      return reusable;
+    }
+
     const variants: BlogMediaVariant[] = [];
     for (const width of getResponsiveVariantWidths(sourceWidth)) {
       for (const format of ['avif', 'webp', 'jpeg'] as const) {
@@ -419,6 +438,27 @@ function parseFinalizedMedia(value: unknown): FinalizedBlogMedia | null {
     return null;
   }
   return value as unknown as FinalizedBlogMedia;
+}
+
+async function findReadyMediaByChecksum(
+  firestore: Firestore,
+  checksum: string
+): Promise<FinalizedBlogMedia | null> {
+  const matches = await firestore.collection(MEDIA_COLLECTION)
+    .where('checksum', '==', checksum)
+    .get();
+
+  for (const snapshot of matches.docs) {
+    const data = snapshot.data();
+    if (data['status'] !== 'ready') {
+      continue;
+    }
+    const finalized = parseFinalizedMedia(data['result']);
+    if (finalized?.checksum === checksum) {
+      return finalized;
+    }
+  }
+  return null;
 }
 
 async function createVariant(

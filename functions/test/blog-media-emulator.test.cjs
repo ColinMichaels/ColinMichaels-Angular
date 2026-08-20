@@ -50,6 +50,25 @@ test('media finalization validates bytes, creates durable variants, replays safe
   assert.equal((await bucket.file(stagingPath).exists())[0], false);
   assert.equal((await firestore.doc(`blogMediaAssets/${mediaId}`).get()).get('status'), 'ready');
 
+  const duplicateId = '019fc788-730b-7982-91c8-055dcdb1a8c9';
+  const duplicatePath = `cms/blog-media-staging/${actorUid}/${duplicateId}/source.png`;
+  await bucket.file(duplicatePath).save(source, {metadata: {contentType: 'image/png'}});
+  const reused = await finalizeBlogMediaUpload(firestore, bucket, {
+    ...request,
+    mediaId: duplicateId,
+    stagingPath: duplicatePath,
+    slug: 'a-new-post',
+    role: 'cover',
+  }, actorUid);
+  assert.equal(reused.mediaId, result.mediaId);
+  assert.equal(reused.downloadUrl, result.downloadUrl);
+  assert.equal((await bucket.file(duplicatePath).exists())[0], false);
+  assert.equal((await firestore.doc(`blogMediaAssets/${duplicateId}`).get()).exists, false);
+  assert.equal(
+    (await firestore.doc(`blogMediaAudit/reuse-${duplicateId}`).get()).get('reusedMediaId'),
+    mediaId
+  );
+
   const replayed = await finalizeBlogMediaUpload(firestore, bucket, request, actorUid);
   assert.equal(replayed.checksum, result.checksum);
   assert.equal(replayed.downloadUrl, result.downloadUrl);

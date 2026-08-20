@@ -47,6 +47,8 @@ The manifest can be embedded as `imageManifest` or `mediaManifest` in the post J
 
 `reference` defaults to `media://` plus `file`. The post JSON must use that exact placeholder in a supported media field. The import fails before it uploads anything if a path is unsafe, a declared image is absent or ambiguous, a placeholder has no manifest entry, or the manifest includes an image with no supported post-media target. If an individual upload fails after earlier uploads succeeded, the post remains unchanged and already-finished images remain available in the Media Library for a safe retry.
 
+Each upload is fingerprinted by the trusted finalization service with SHA-256. When an identical image has already been finalized, the package import reuses its existing immutable Storage variants and download URLs instead of creating copies. Different source bytes always receive a new immutable asset; imports never overwrite a previously finalized image.
+
 ## Discovery And Trust Authoring Review
 
 The post editor's existing metadata checklist is now the **Discovery & Trust Checklist**. It preserves all ten search/share checks and adds four advisory content checks over the current canonical Editor.js blocks and optional post metadata:
