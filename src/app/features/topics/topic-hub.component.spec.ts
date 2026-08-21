@@ -26,6 +26,9 @@ function createPost(index: number): BlogPostSummary {
     },
     categories: ['AI'],
     tags: ['AI workflow'],
+    previewImages: [
+      {url: `/assets/post-${index}-interior.webp`, alt: `AI workflow ${index} interior`},
+    ],
     publishedAt: `2026-07-0${index}T00:00:00.000Z`,
     updatedAt: `2026-07-0${index}T00:00:00.000Z`,
   };
@@ -148,6 +151,9 @@ describe('TopicHubComponent', () => {
 
     expect(listingRegions.map(region => region.dataset['layout'])).toEqual(['fan', 'list']);
     expect(listingRegions.map(region => region.dataset['mediaPresentation'])).toEqual(['background', 'standard']);
+    expect(listingRegions.every(region => region.classList.contains('post-listing-region--image-preview')))
+      .toBeTrue();
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
     expect(element.querySelectorAll('[data-layout="fan"] [data-post-id]').length).toBe(3);
     expect(element.querySelectorAll('[data-layout="list"] [data-post-id]').length).toBe(1);
     expect(postImages.map(image => image.getAttribute('src'))).toEqual([

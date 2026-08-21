@@ -70,6 +70,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
             [posts]="featuredPosts()"
             layout="fan"
             mediaPresentation="background"
+            [enableImagePreview]="true"
             [loading]="isLoading()"
             [error]="loadError()"
             [headingLevel]="3"
@@ -91,6 +92,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
             <app-blog-post-listing
               [posts]="additionalPosts()"
               layout="list"
+              [enableImagePreview]="true"
               [headingLevel]="3"
               [showTags]="false"
               [appearance]="topicAppearance()"

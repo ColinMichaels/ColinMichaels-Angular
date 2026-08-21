@@ -45,7 +45,16 @@ This is a presentational, repository-free component. Its parent supplies already
 
 The component owns consistent post/category/tag links, image resolution, date metadata, heading level, excerpt/tag visibility, optional promotional excerpt clamping, topic appearance variables, and loading/error/empty states. Its default media treatment remains unchanged, while parents can opt a listing into `mediaPresentation="background"` to place each resolved post image behind that card's content. `titleMaxLength` bounds the displayed heading copy by character count, and `titleLineClamp` caps its rendered lines; both title controls are opt-in so archive consumers retain their full titles. Parents can expose the same code-native read action outside the `fan` layout with `showReadLink` and customize its label with `readLinkLabel`. `appearanceByPostId` supports mixed-topic feeds without moving topic lookup into the component.
 
+The shared listing enables its reusable image scrubber by default; a specialized parent can opt out with `enableImagePreview="false"`. The repository summary projection extracts at most five unique in-body Image or Image Gallery entries in reading order, omits the resolved cover/thumbnail, and copies URL, alt, caption, and intrinsic-dimension metadata only. Homepage feeds intentionally retain full posts for hero/editorial decisions, so the listing derives and memoizes the same bounded projection from their blocks when summary metadata is absent. The listing does not add those URLs to the DOM until a fine-pointer visitor intentionally rests on the linked thumbnail for 120 milliseconds or focuses it from the keyboard. The activated thumbnail expands above its existing layout position—modestly for list/grid/editorial cards and more strongly for the compact featured-fan thumbnail—while the cover softens and the bounded set buffers. The active interior image then replaces it inside that
+same enlarged frame. Horizontal pointer position changes the visible image, while leaving the thumbnail restores the normal artwork and exact original size. Keyboard readers use Left/Right Arrow for the same swaps and Escape to restore the cover; Enter and ordinary clicks retain the canonical article route. Coarse-pointer and no-hover devices keep the normal one-tap link and do not request preview image bytes. Failed image requests settle the buffer instead of leaving the cover in a permanent loading state.
+
 The original single-layout `BlogPostCardComponent` remains preserved for compatibility, but current public archive and homepage consumers use `BlogPostListingComponent`.
+
+### `PostImageScrubberComponent`
+
+Location: `src/app/features/blog/components/post-image-scrubber/post-image-scrubber.component.ts`
+
+This shared visual component owns the contained image-swap layer, active-frame transition, buffer treatment, load/error settlement events, and reduced-motion styling. `BlogPostListingComponent` retains interaction timing, pointer/keyboard state, article navigation, and the decision to instantiate it. Because homepage writing, recovery, topic, archive, taxonomy, and author surfaces already reuse the listing component, they receive one loading and accessibility contract without page-specific image-preview implementations.
 
 ### `HomeRecoveryBlogSectionsComponent`
 
@@ -73,7 +82,9 @@ The route component now composes the page in this order:
 
 Featured CMS posts sort ahead of the otherwise newest-first repository order. Topic membership still uses legacy normalized term matching through `topic-post-matching.util.ts`; explicit post-to-topic IDs remain a future data-model improvement.
 
-Topic listings keep each post visually identifiable. The featured `fan` opts into `mediaPresentation="background"`, pairing its readable linked thumbnail with a subdued atmospheric reuse of the same resolved post image on desktop. The remaining `list` rows retain their standard linked image. Both presentations use `resolveBlogPostImage`, so a post-specific thumbnail is preferred before its cover-image fallback.
+Topic listings keep each post visually identifiable. The featured `fan` opts into `mediaPresentation="background"`, pairing a full-width, center-cropped linked image panel with a subdued atmospheric reuse of the same resolved post image on desktop. The remaining `list` rows retain their standard linked image. Both presentations use `resolveBlogPostImage`, so a post-specific thumbnail is preferred before its cover-image fallback.
+
+Both topic listing presentations inherit the bounded interior-image scrubber. This is a progressive visual enhancement: posts without usable in-body images remain unchanged, and the initial topic render requests only the normal post artwork.
 
 ### `TopicHubHeroComponent`
 
@@ -143,11 +154,13 @@ The Topic Manager exposes the image path, alt text, dimensions, focal position, 
 
 No existing checklist, learning-path, featured-project, resource, route, or Firestore data is deleted. The redesign changes hierarchy and presentation only. Companion scenes are not yet editable in Topic Manager; replacing or expanding them is a code-and-asset change until a future bounded multi-image CMS field is designed.
 
+The optional `BlogPostSummary.previewImages` field is derived in memory from existing canonical Editor.js blocks; it is not stored as a new Firestore field and requires no backfill. Legacy posts, posts with only cover artwork, and posts whose in-body media repeats the cover continue to render normally without image scrubbing.
+
 ## SEO and Deployment
 
 Client topic metadata and Firebase Functions crawler metadata continue to use the resolved primary topic image. Companion scenes are decorative page media and do not change canonical or social-preview identity.
 
-This cinematic hero change requires a Hosting deployment only. It changes no Functions code, environment value, Firebase rule, Firestore document, or migration. The added companion assets and Angular bundle must ship together.
+The cinematic hero and shared post-image-scrubber changes require a Hosting deployment only. They change no Functions code, environment value, Firebase rule, Firestore document, or migration. The companion assets and Angular bundle must ship together.
 
 ## Accessibility and Responsive Contract
 
@@ -155,6 +168,8 @@ This cinematic hero change requires a Hosting deployment only. It changes no Fun
 - The active hero scene is exposed as one labeled image region; duplicate slideshow images remain hidden from assistive technology.
 - Parents select `h2` or `h3` card headings according to document context.
 - Fan order is DOM order; keyboard focus does not depend on visual overlap.
+- Interior-image previews are absent from the initial DOM, capped at five images after activation, announced as an indexed status to keyboard users, and controlled with Left/Right Arrow and Escape without replacing the article link.
+- The swap remains clipped to the existing thumbnail, leaving stacked and vertical post layouts intact. Coarse-pointer/no-hover devices never activate it, and reduced-motion mode removes its scan, cover-buffer, and frame-transition animation while retaining direct selection on supported desktop input.
 - At narrow widths the fan becomes normal media rows and the topic hero actions become full-width rule-separated links.
 - Bootstrap topics rotate between two scenes every eight seconds, expose 44-pixel direct-selection targets plus pause/resume, pause when the document is hidden, and stop automatic rotation under `prefers-reduced-motion`.
 - The homepage topic strip uses three readable columns on medium screens and six columns only when the viewport can support them; it remains a single-column list on narrow screens.
@@ -170,5 +185,7 @@ This cinematic hero change requires a Hosting deployment only. It changes no Fun
 ## Rollback
 
 Rollback is code-only: restore the previous topic hero template, remove the companion resolver and assets when no longer referenced, and redeploy Hosting. The optional Firestore fields remain backward-compatible. No Functions rollback or destructive Firestore migration is required.
+
+The shared scrubber can be rolled back independently by defaulting `enableImagePreview` to false (or disabling it on individual listing consumers) and removing the derived `previewImages` summary projection, then redeploying Hosting. No stored post block, media asset, route, or index requires cleanup.
 
 The homepage recovery promotion is also code-only. It requires no route, post, taxonomy, or Firestore migration; restoring the previous homepage template/list selections and redeploying Hosting is sufficient to roll it back.
