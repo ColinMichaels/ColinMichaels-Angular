@@ -11,6 +11,8 @@
 
 ### Changed
 
+- Restored each post's own resolved image throughout topic-page listings: featured desktop cards now use the shared image-backed fan presentation with a linked thumbnail, while remaining post rows retain their standard linked artwork.
+- Modernized all six public topic openings into cinematic full-bleed heroes that preserve the established copy and reading hierarchy while rotating between the original artwork and a new topic-specific companion scene. Added restrained crossfade/Ken Burns depth, scene progress and direct selection, explicit pause/resume, page-visibility suspension, reduced-motion and mobile fallbacks, targeted neutral readability fades, and a reusable feature-owned hero component without changing Firestore topic data, routes, Functions, or social-preview identity.
 - Hardened New Post package discovery so slugged provenance sidecars are ignored as posts, conflicting candidates name their files, failed imports reliably clear the busy state, and generated articles use a validated portable `cms-import` subfolder.
 - Aligned the public Gadget Usefulness Scorecard and its crawler fallback with the general Colin Michaels YouTube channel; the legacy Captain-branded PDF filename remains stable.
 - Updated the crawler-facing homepage answer summary to promote Colin Michaels as the general creator channel and reserve Captain Colin for FPV/drone content.

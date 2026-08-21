@@ -64,14 +64,22 @@ Location: `src/app/features/topics/topic-hub.component.ts`
 
 The route component now composes the page in this order:
 
-1. topic breadcrumb, title, concise summary, actions, and topic artwork;
-2. up to three prioritized posts in the `fan` layout;
+1. a cinematic topic hero with breadcrumb, title, concise summary, actions, and topic-specific scene rotation;
+2. up to three prioritized posts in the image-backed `fan` layout, with each resolved post image remaining visible as a linked thumbnail;
 3. remaining matching posts in the `list` layout;
 4. an optional topic-owned companion surface, currently the latest Captain Colin videos on `drones-fpv`;
 5. the supporting topic guide;
 6. image-led related-topic navigation.
 
 Featured CMS posts sort ahead of the otherwise newest-first repository order. Topic membership still uses legacy normalized term matching through `topic-post-matching.util.ts`; explicit post-to-topic IDs remain a future data-model improvement.
+
+Topic listings keep each post visually identifiable. The featured `fan` opts into `mediaPresentation="background"`, pairing its readable linked thumbnail with a subdued atmospheric reuse of the same resolved post image on desktop. The remaining `list` rows retain their standard linked image. Both presentations use `resolveBlogPostImage`, so a post-specific thumbnail is preferred before its cover-image fallback.
+
+### `TopicHubHeroComponent`
+
+Location: `src/app/features/topics/components/topic-hub-hero/topic-hub-hero.component.ts`
+
+The shared topic hero turns the existing topic artwork into a full-bleed editorial environment instead of a boxed side image. Each bootstrap topic receives its CMS-compatible primary artwork plus one checked-in companion scene. The component owns the crossfade, restrained Ken Burns drift, scene progress, direct scene selection, pause/resume control, page-visibility suspension, reduced-motion behavior, long-title scaling, mobile crop, and code-native section actions. `TopicHubComponent` retains route navigation and scroll ownership so the extraction does not change fragment behavior.
 
 ### `BlogTopicGuideComponent`
 
@@ -110,20 +118,20 @@ pageCopy?: {
 
 Default artwork is stored in `src/assets/images/topics/`:
 
-- `ai-setup.webp`
-- `recovery-planning.webp`
-- `angular-firebase-architecture.webp`
-- `labs-projects.webp`
-- `gadgets-toys.webp`
-- `drones-fpv.webp`
+- `ai-setup.webp` and `ai-setup-companion.webp`
+- `recovery-planning.webp` and `recovery-planning-companion.webp`
+- `angular-firebase-architecture.webp` and `angular-firebase-architecture-companion.webp`
+- `labs-projects.webp` and `labs-projects-companion.webp`
+- `gadgets-toys.webp` and `gadgets-toys-companion.webp`
+- `drones-fpv.webp` and `drones-fpv-companion.webp`
 
-The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions remain data, while UI labels stay code-native.
+The images are text-free 16:9 WebP assets. Alt text and intrinsic dimensions remain data, while UI labels stay code-native. `resolveTopicHubHeroImages` de-duplicates the resolved primary and stable bootstrap companion before the hero renders them.
 
 ## Firestore Migration
 
 The presentation fields are intentionally optional. Existing Firestore topic documents remain valid and are not rejected by `isTopicHub`.
 
-For the six bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. Unknown topics receive generic post-section copy and no forced image.
+For the six bootstrap topics, `resolveTopicHubHeroImage` and `resolveTopicHubPageCopy` fall back to checked-in defaults by stable topic ID and then slug. `resolveTopicHubHeroImages` adds the code-owned companion scene without changing the Firestore document shape. Unknown topics receive generic post-section copy and no forced companion image; a CMS-created topic with one hero image therefore keeps a static hero.
 
 When Firestore already contains some bootstrap topics, the repository merges only code defaults whose stable ID and slug are both absent. A matching default ID keeps its checked-in public slug, eyebrow, title, description, summary, short label, and matching terms so stale or renamed Firestore documents cannot change a crawlable route or reintroduce conflicting breadcrumb, CTA, guide, and archive labels after hydration. Firestore remains authoritative for publication status, ordering, theme colors/icons/map placement, artwork, guide content, and resources; an archived document therefore still stays out of public results. The Topic Manager's **Seed Missing Defaults** action refreshes the Firestore collection first and writes only the absent documents, so it can persist a new code default without resetting those supported customizations.
 
@@ -133,32 +141,34 @@ Bootstrap public slugs are code-owned canonical identities. An unexpected Firest
 
 The Topic Manager exposes the image path, alt text, dimensions, focal position, and topic-specific post-section language. Opening a legacy bootstrap topic populates the form from its fallback presentation data; saving the topic persists those fields to Firestore. Administrators can also use **Seed Missing Defaults** to persist only bootstrap documents that do not already exist.
 
-No existing checklist, learning-path, featured-project, or resource data is deleted. The redesign changes hierarchy and presentation only.
+No existing checklist, learning-path, featured-project, resource, route, or Firestore data is deleted. The redesign changes hierarchy and presentation only. Companion scenes are not yet editable in Topic Manager; replacing or expanding them is a code-and-asset change until a future bounded multi-image CMS field is designed.
 
 ## SEO and Deployment
 
-Client topic metadata uses the resolved topic image. Firebase Functions keeps its static route classification, but each default topic now maps to the same local image for server-rendered Open Graph and Twitter metadata.
+Client topic metadata and Firebase Functions crawler metadata continue to use the resolved primary topic image. Companion scenes are decorative page media and do not change canonical or social-preview identity.
 
-Because `functions/src/index.ts` changed, deployment requires both Hosting assets and Functions so crawler metadata cannot point at an image that is absent from the deployed asset set. The existing deploy-scope workflow already pairs a Functions deploy with Hosting.
+This cinematic hero change requires a Hosting deployment only. It changes no Functions code, environment value, Firebase rule, Firestore document, or migration. The added companion assets and Angular bundle must ship together.
 
 ## Accessibility and Responsive Contract
 
 - Real headings, lists, links, dates, and image alt text remain code-native.
+- The active hero scene is exposed as one labeled image region; duplicate slideshow images remain hidden from assistive technology.
 - Parents select `h2` or `h3` card headings according to document context.
 - Fan order is DOM order; keyboard focus does not depend on visual overlap.
 - At narrow widths the fan becomes normal media rows and the topic hero actions become full-width rule-separated links.
+- Bootstrap topics rotate between two scenes every eight seconds, expose 44-pixel direct-selection targets plus pause/resume, pause when the document is hidden, and stop automatic rotation under `prefers-reduced-motion`.
 - The homepage topic strip uses three readable columns on medium screens and six columns only when the viewport can support them; it remains a single-column list on narrow screens.
 - The application-level viewport scroller keeps fragment targets 80 pixels below the top edge so the sticky public header does not cover topic and section headings reached through navigation links.
 - The homepage update board keeps the same fan DOM/focus order; its rail and grid are decorative, and narrow viewports return the image-backed desktop cards to normal readable media rows while retaining the bounded title treatment.
 - Reader high-contrast mode removes optional fan-card background images and restores solid theme-token text colors and
   surfaces so information and actions do not depend on overlays or image contrast.
 - The Hospital lessons feature exposes one article action plus a separate Recovery Planning topic action, both with 44px minimum targets.
-- Topic artwork never sits behind text and receives no color overlay.
-- Layout motion is removed for `prefers-reduced-motion`.
+- Topic artwork sits behind the opening copy with targeted neutral black readability and edge fades; it receives no topic-color wash or full-image tint.
+- Crossfade, Ken Burns drift, control animation, and other layout motion are removed for `prefers-reduced-motion`; readers can still select a static scene directly.
 - Light mode derives a darker readable topic accent instead of using the pale dark-mode highlight directly.
 
 ## Rollback
 
-Rollback is code-only: restore the previous topic template and archive consumers, revert the Functions image mapping, and redeploy Hosting plus Functions. The optional Firestore fields and checked-in image assets are backward-compatible and can remain without affecting older code. No destructive Firestore migration is required.
+Rollback is code-only: restore the previous topic hero template, remove the companion resolver and assets when no longer referenced, and redeploy Hosting. The optional Firestore fields remain backward-compatible. No Functions rollback or destructive Firestore migration is required.
 
 The homepage recovery promotion is also code-only. It requires no route, post, taxonomy, or Firestore migration; restoring the previous homepage template/list selections and redeploying Hosting is sufficient to roll it back.
