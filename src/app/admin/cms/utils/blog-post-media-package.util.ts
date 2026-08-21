@@ -1,4 +1,5 @@
 import {BlogContentBlock, BlogPost} from '../../../features/blog/models/blog-post.model';
+import {isBlogPost} from '../../../features/blog/utils/blog-validation.util';
 import {BlogMediaAssetRole} from '../services/blog-media-upload.service';
 
 export const BLOG_POST_MEDIA_REFERENCE_PREFIX = 'media://';
@@ -39,6 +40,41 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function hasLoosePostDocumentShape(value: JsonRecord): boolean {
+  return Array.isArray(value['blocks'])
+    || Boolean(text(value['content']))
+    || Boolean(text(value['markdown']))
+    || (Boolean(text(value['title'])) && Boolean(text(value['slug'])));
+}
+
+/**
+ * Identifies JSON documents that are plausible post imports without treating
+ * provenance sidecars as posts merely because they carry a slug.
+ *
+ * The normal JSON-only importer intentionally remains permissive. Folder
+ * packages need a narrower discovery boundary because every JSON sidecar in
+ * the selected directory is inspected together.
+ */
+export function isBlogPostPackagePostDocument(value: unknown): boolean {
+  if (isBlogPost(value)) {
+    return true;
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const nestedPost = value['post'];
+  const hasNestedPost = isBlogPost(nestedPost)
+    || (isRecord(nestedPost) && hasLoosePostDocumentShape(nestedPost));
+  const hasPostCollection = Array.isArray(value['posts']) && value['posts'].some(post => (
+    isBlogPost(post)
+    || (isRecord(post) && hasLoosePostDocumentShape(post))
+  ));
+
+  return hasLoosePostDocumentShape(value) || hasNestedPost || hasPostCollection;
 }
 
 function normalizeRelativePath(value: string, label: string): string {

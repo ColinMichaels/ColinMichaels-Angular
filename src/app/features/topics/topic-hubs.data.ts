@@ -1000,11 +1000,74 @@ const DEFAULT_TOPIC_PAGE_COPY: TopicHubPageCopy = {
   archiveDescription: 'Browse the rest of the published writing collected here.',
 };
 
+// Companion scenes remain code-owned until the CMS gains a bounded multi-image topic contract.
+export const DEFAULT_TOPIC_HERO_COMPANION_IMAGES: Readonly<Record<string, TopicHubImage>> = {
+  'topic-ai-setup': {
+    src: '/assets/images/topics/ai-setup-companion.webp',
+    alt: 'A dark modular AI planning workspace with blank workflow tiles and precise cyan connections.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+  'topic-recovery-planning': {
+    src: '/assets/images/topics/recovery-planning-companion.webp',
+    alt: 'A blank recovery journal beside a quiet mountain path at sunrise.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+  'topic-angular-firebase-architecture': {
+    src: '/assets/images/topics/angular-firebase-architecture-companion.webp',
+    alt: 'A layered physical web architecture model built from dark platforms, glass planes, and blue connections.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+  'topic-labs-projects': {
+    src: '/assets/images/topics/labs-projects-companion.webp',
+    alt: 'A tactile project lab prototype assembled from blank interface plates and violet-lit modules.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+  'topic-gadgets-toys': {
+    src: '/assets/images/topics/gadgets-toys-companion.webp',
+    alt: 'A dark workbench arranged with an original pocket projector, inspection camera, multitool, robot, and kinetic gadget.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+  'topic-drones-fpv': {
+    src: '/assets/images/topics/drones-fpv-companion.webp',
+    alt: 'An FPV quadcopter banking over a Florida mangrove channel at golden hour.',
+    width: 1672,
+    height: 941,
+    objectPosition: 'center',
+  },
+};
+
 export function resolveTopicHubHeroImage(topicHub: TopicHub): TopicHubImage | undefined {
   return topicHub.heroImage
     ?? TOPIC_HUBS.find(defaultTopicHub => (
       defaultTopicHub.id === topicHub.id || defaultTopicHub.slug === topicHub.slug
     ))?.heroImage;
+}
+
+export function resolveTopicHubHeroImages(topicHub: TopicHub): readonly TopicHubImage[] {
+  const primaryImage = resolveTopicHubHeroImage(topicHub);
+  // Resolve by the locked bootstrap identity so a Firestore overlay cannot attach another topic's scene.
+  const defaultTopicHub = TOPIC_HUBS.find(defaultHub => (
+    defaultHub.id === topicHub.id || defaultHub.slug === topicHub.slug
+  ));
+  const companionImage = DEFAULT_TOPIC_HERO_COMPANION_IMAGES[
+    defaultTopicHub?.id ?? topicHub.id
+  ];
+
+  return [primaryImage, companionImage]
+    .filter((image): image is TopicHubImage => Boolean(image))
+    .filter((image, index, images) => (
+      images.findIndex(candidate => candidate.src === image.src) === index
+    ));
 }
 
 export function resolveTopicHubPageCopy(topicHub: TopicHub): TopicHubPageCopy {

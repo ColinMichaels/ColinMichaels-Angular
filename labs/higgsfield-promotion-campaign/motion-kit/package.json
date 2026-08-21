@@ -1,0 +1,36 @@
+{
+  "name": "colinmichaels-motion-kit",
+  "version": "1.0.0",
+  "description": "Editable ColinMichaels.com intros, outros, transitions, stingers, and reusable video slates",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.499",
+    "@remotion/fonts": "4.0.499",
+    "@remotion/media": "4.0.499",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.499"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.499",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "assets:sync": "node scripts/sync-assets.mjs",
+    "build": "npm run assets:sync && remotion bundle",
+    "dev": "npm run assets:sync && remotion studio",
+    "lint": "eslint src && tsc --noEmit",
+    "render": "node scripts/render-all.mjs",
+    "review": "node scripts/generate-review-sheet.mjs",
+    "sfx:local": "node scripts/generate-local-sfx.mjs",
+    "validate": "node scripts/validate-campaign.mjs"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

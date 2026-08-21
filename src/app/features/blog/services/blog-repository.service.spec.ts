@@ -211,6 +211,39 @@ describe('BlogRepositoryService', () => {
     expect(posts[0].slug).toBe('published-post');
   });
 
+  it('projects bounded in-body image metadata into public summaries without retaining blocks', () => {
+    storage.setPosts([createPost({
+      id: 'preview-post',
+      slug: 'preview-post',
+      status: 'published',
+      publishedAt: '2026-01-05T12:00:00.000Z',
+      coverImage: '/cover.webp',
+      blocks: [
+        {id: 'intro', type: 'paragraph', data: {text: 'Opening copy.'}},
+        {id: 'image-one', type: 'image', data: {url: '/inside-one.webp', alt: 'First interior image'}},
+        {
+          id: 'gallery',
+          type: 'gallery',
+          data: {
+            galleryImages: [
+              {url: '/inside-two.webp', alt: 'Second interior image'},
+              {url: '/inside-three.webp', alt: 'Third interior image'},
+            ],
+          },
+        },
+      ],
+    })]);
+
+    const summary = service.getPublishedPosts()[0];
+
+    expect(summary.previewImages?.map(image => image.url)).toEqual([
+      '/inside-one.webp',
+      '/inside-two.webp',
+      '/inside-three.webp',
+    ]);
+    expect('blocks' in summary).toBeFalse();
+  });
+
   it('defaults new posts to Colin with a stable author relationship', () => {
     const post = service.createNewPostTemplate();
 

@@ -2,6 +2,7 @@ import {BlogPost} from '../../../features/blog/models/blog-post.model';
 import {
   getEmbeddedBlogPostMediaPackageManifest,
   getUnresolvedBlogPostMediaPackageReferences,
+  isBlogPostPackagePostDocument,
   matchBlogPostPackageImageFiles,
   parseBlogPostMediaPackageManifest,
   replaceBlogPostMediaPackageReferences,
@@ -70,6 +71,23 @@ describe('blog post media package utilities', () => {
       });
     expect(manifest.images[0].reference).toBe('media://images/cover.webp');
     expect(manifest.images[0].role).toBe('cover');
+  });
+
+  it('distinguishes post imports from slugged image-provenance sidecars', () => {
+    expect(isBlogPostPackagePostDocument({
+      slug: 'package-post',
+      generatedAt: '2026-08-21T00:00:00.000Z',
+      assets: [{file: 'package-post.webp', role: 'thumbnail'}],
+    })).toBeFalse();
+
+    expect(isBlogPostPackagePostDocument({
+      version: 1,
+      source: 'colinmichaels-cms',
+      collection: 'posts',
+      posts: [createPost()],
+    })).toBeTrue();
+    expect(isBlogPostPackagePostDocument({blocks: []})).toBeTrue();
+    expect(isBlogPostPackagePostDocument({title: 'Loose post', slug: 'loose-post'})).toBeTrue();
   });
 
   it('rejects unsafe and ambiguous manifest definitions', () => {

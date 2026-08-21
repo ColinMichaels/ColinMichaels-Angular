@@ -1,7 +1,7 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 
-import {BlogPostSummary} from '../../models/blog-post.model';
+import {BlogPost, BlogPostSummary} from '../../models/blog-post.model';
 import {
   BlogPostListingComponent,
   BlogPostListingLayout,
@@ -22,6 +22,7 @@ function createPost(overrides: Partial<BlogPostSummary> = {}): BlogPostSummary {
     categories: overrides.categories ?? ['Angular Architecture'],
     subcategories: overrides.subcategories ?? [],
     tags: overrides.tags ?? ['Angular', 'Design systems'],
+    previewImages: overrides.previewImages,
     publishedAt: Object.prototype.hasOwnProperty.call(overrides, 'publishedAt')
       ? overrides.publishedAt ?? null
       : '2026-07-05T12:00:00.000Z',
@@ -176,6 +177,7 @@ describe('BlogPostListingComponent', () => {
 
     expect(region?.getAttribute('data-media-presentation')).toBe('standard');
     expect(region?.classList.contains('post-listing-region--background-media')).toBeFalse();
+    expect(region?.classList.contains('post-listing-region--image-preview')).toBeTrue();
     expect(region?.classList.contains('post-listing-region--title-clamped')).toBeFalse();
     expect(region?.style.getPropertyValue('--listing-title-lines')).toBe('');
   });
@@ -282,5 +284,117 @@ describe('BlogPostListingComponent', () => {
     expect(secondPost?.style.getPropertyValue('--post-accent-strong')).toBe('#5eead4');
     expect(secondPost?.style.getPropertyValue('--post-accent-rgb')).toBe('45 212 191');
     expect(secondPost?.querySelector('.post-listing__topic')?.textContent).toContain('Recovery planning');
+  });
+
+  it('defers interior image requests until intentional hover and maps pointer position to the visible frame', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.returnValue({matches: true} as MediaQueryList);
+    fixture.componentRef.setInput('enableImagePreview', true);
+    fixture.componentRef.setInput('posts', [createPost({
+      previewImages: [
+        {url: '/assets/images/blog/interior-one.webp', alt: 'Interior image one'},
+        {url: '/assets/images/blog/interior-two.webp', alt: 'Interior image two'},
+        {url: '/assets/images/blog/interior-three.webp', alt: 'Interior image three'},
+      ],
+    })]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const media = element.querySelector<HTMLElement>('.post-listing__media');
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
+    expect(element.querySelector('img[src*="interior-"]')).toBeNull();
+
+    spyOn(media!, 'getBoundingClientRect').and.returnValue({
+      left: 0,
+      width: 100,
+    } as DOMRect);
+    media?.dispatchEvent(new PointerEvent('pointerenter', {clientX: 5}));
+    tick(119);
+    fixture.detectChanges();
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
+
+    tick(1);
+    fixture.detectChanges();
+    expect(element.querySelectorAll('app-post-image-scrubber img').length).toBe(3);
+    expect(media?.classList).toContain('post-listing__media--scrubbing');
+    expect(element.querySelector('.post-listing__image')?.classList)
+      .toContain('post-image-scrubber-cover--buffering');
+
+    media?.dispatchEvent(new PointerEvent('pointermove', {clientX: 99}));
+    fixture.detectChanges();
+    const frames = element.querySelectorAll<HTMLElement>('.post-image-scrubber__frame');
+    expect(frames[2].classList).toContain('post-image-scrubber__frame--active');
+
+    media?.dispatchEvent(new PointerEvent('pointerleave'));
+    tick(60);
+    fixture.detectChanges();
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
+    expect(media?.classList).not.toContain('post-listing__media--scrubbing');
+    expect(element.querySelector('.post-listing__image')?.classList)
+      .not.toContain('post-image-scrubber-cover--active');
+  }));
+
+  it('derives the shared scrubber images from full posts used by homepage feeds', () => {
+    spyOn(window, 'matchMedia').and.returnValue({matches: true} as MediaQueryList);
+    const fullPost = {
+      ...createPost(),
+      status: 'published',
+      seo: {
+        title: 'A useful first post',
+        description: 'A practical description of the article.',
+      },
+      contentFormat: 'editorjs',
+      blocks: [{
+        id: 'homepage-interior-image',
+        type: 'image',
+        data: {
+          url: '/assets/images/blog/homepage-interior.webp',
+          alt: 'Homepage interior detail',
+        },
+      }],
+      createdAt: '2026-07-04T12:00:00.000Z',
+    } satisfies BlogPost;
+
+    fixture.componentRef.setInput('posts', [fullPost]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('img[src*="homepage-interior"]')).toBeNull();
+
+    element.querySelector<HTMLAnchorElement>('.post-listing__media')?.focus();
+    fixture.detectChanges();
+
+    expect(element.querySelector('app-post-image-scrubber img')?.getAttribute('src'))
+      .toBe('/assets/images/blog/homepage-interior.webp');
+  });
+
+  it('supports keyboard image scrubbing while preserving the article link', () => {
+    spyOn(window, 'matchMedia').and.returnValue({matches: true} as MediaQueryList);
+    fixture.componentRef.setInput('enableImagePreview', true);
+    fixture.componentRef.setInput('posts', [createPost({
+      previewImages: [
+        {url: '/assets/images/blog/interior-one.webp', alt: 'Workbench detail'},
+        {url: '/assets/images/blog/interior-two.webp', alt: 'Finished setup'},
+      ],
+    })]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const media = element.querySelector<HTMLAnchorElement>('.post-listing__media');
+    media?.focus();
+    fixture.detectChanges();
+
+    expect(media?.getAttribute('href')).toBe('/blog/first-post');
+    expect(media?.getAttribute('aria-describedby')).toBe('post-image-preview-status-post-one');
+    expect(element.querySelector('.sr-only[role="status"]')?.textContent)
+      .toContain('Preview 1 of 2: Workbench detail');
+
+    media?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight'}));
+    fixture.detectChanges();
+    expect(element.querySelector('.sr-only[role="status"]')?.textContent)
+      .toContain('Preview 2 of 2: Finished setup');
+
+    media?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
+    fixture.detectChanges();
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
   });
 });

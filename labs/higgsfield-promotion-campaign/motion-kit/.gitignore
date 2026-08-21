@@ -1,0 +1,10 @@
+# Installed dependencies and generated Remotion bundles.
+node_modules/
+build/
+
+# Working copies, renders, and review artifacts are reproducible from the lab sources.
+output/
+public/generated/
+
+# Never commit local environment overrides.
+.env*.local

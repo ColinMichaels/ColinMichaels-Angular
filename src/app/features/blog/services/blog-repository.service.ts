@@ -16,7 +16,10 @@ import {getBlogTaxonomyTerms} from '../utils/blog-category-url.util';
 import {BlogStorageService} from './blog-storage.service';
 import {normalizeBlogPostRevision} from '../models/blog-post-revision.model';
 import {DEFAULT_COVER_IMAGE} from '../blog.constants';
-import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
+import {
+  normalizeBlogImageFields,
+  resolveBlogPostPreviewImages,
+} from '../utils/blog-image-url.util';
 
 export interface BlogPostPreviewResult {
   post: BlogPost;
@@ -43,6 +46,7 @@ export interface BlogPostBulkActionResult {
 function toSummary(post: BlogPost): BlogPostSummary {
   const imageFields = normalizeBlogImageFields(post);
   const authorFields = normalizeBlogAuthor(post.author, post.authorId);
+  const previewImages = resolveBlogPostPreviewImages(post);
 
   return {
     id: post.id,
@@ -56,6 +60,7 @@ function toSummary(post: BlogPost): BlogPostSummary {
     categories: post.categories,
     subcategories: post.subcategories ?? [],
     tags: post.tags,
+    ...(previewImages.length ? {previewImages} : {}),
     catCorner: post.catCorner,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,

@@ -6,6 +6,7 @@ import {
   lockDefaultTopicHubIdentity,
   mergeMissingDefaultTopicHubs,
   resolveTopicHubHeroImage,
+  resolveTopicHubHeroImages,
   resolveTopicHubPageCopy,
   TOPIC_HUBS,
   type TopicHub,
@@ -17,6 +18,15 @@ describe('topic hub presentation data', () => {
 
     expect(imagePaths.every(path => path?.startsWith('/assets/images/topics/'))).toBeTrue();
     expect(new Set(imagePaths).size).toBe(TOPIC_HUBS.length);
+  });
+
+  it('pairs every default topic with a distinct local companion scene', () => {
+    const imageSets = TOPIC_HUBS.map(topic => resolveTopicHubHeroImages(topic));
+    const companionPaths = imageSets.map(images => images[1]?.src);
+
+    expect(imageSets.every(images => images.length === 2)).toBeTrue();
+    expect(companionPaths.every(path => path?.endsWith('-companion.webp'))).toBeTrue();
+    expect(new Set(companionPaths).size).toBe(TOPIC_HUBS.length);
   });
 
   it('falls back to default presentation fields for legacy Firestore topics', () => {

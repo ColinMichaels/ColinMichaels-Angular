@@ -1,15 +1,27 @@
-import {DatePipe, NgStyle} from '@angular/common';
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
+import {DOCUMENT, DatePipe, isPlatformBrowser, NgStyle} from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  Input,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../../../app-route-paths';
-import {BlogPostSummary} from '../../models/blog-post.model';
+import {BlogGalleryImage, BlogPost, BlogPostSummary} from '../../models/blog-post.model';
 import {
   createBlogCategorySlug,
   createBlogTagTaxonomyRoute,
   getBlogTaxonomyTerms,
 } from '../../utils/blog-category-url.util';
-import {resolveBlogPostImage} from '../../utils/blog-image-url.util';
+import {
+  resolveBlogPostImage,
+  resolveBlogPostPreviewImages,
+} from '../../utils/blog-image-url.util';
+import {PostImageScrubberComponent} from '../post-image-scrubber/post-image-scrubber.component';
 
 export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact' | 'editorial';
 export type BlogPostListingMediaPresentation = 'standard' | 'background';
@@ -25,12 +37,23 @@ export type BlogPostListingAppearanceByPostId = Readonly<
   Record<string, BlogPostListingAppearance | undefined>
 >;
 
+interface BlogPostImagePreviewState {
+  postId: string;
+  activeIndex: number;
+  settledUrls: ReadonlySet<string>;
+}
+
+const IMAGE_PREVIEW_OPEN_DELAY_MS = 120;
+const IMAGE_PREVIEW_CLOSE_DELAY_MS = 60;
+const EMPTY_PREVIEW_SETTLED_URLS: ReadonlySet<string> = new Set<string>();
+
 @Component({
   selector: 'app-blog-post-listing',
   standalone: true,
   imports: [
     DatePipe,
     NgStyle,
+    PostImageScrubberComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +68,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       [class.post-listing-region--clamped]="excerptLineClamp !== null"
       [class.post-listing-region--title-clamped]="titleLineClamp !== null"
       [class.post-listing-region--background-media]="mediaPresentation === 'background'"
+      [class.post-listing-region--image-preview]="enableImagePreview"
       [style.--listing-excerpt-lines]="excerptLineClamp"
       [style.--listing-title-lines]="titleLineClamp"
     >
@@ -97,25 +121,57 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
                 <a
                   class="blog-image-reveal post-listing__media"
+                  [class.post-listing__media--scrubbing]="isImagePreviewActive(post)"
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
                   [attr.aria-label]="'Read ' + post.title"
+                  [attr.aria-describedby]="isImagePreviewActive(post) ? imagePreviewStatusId(post) : null"
+                  (pointerenter)="queueImagePreview(post, $event)"
+                  (pointermove)="updateImagePreview(post, $event)"
+                  (pointerleave)="queueImagePreviewClose(post.id)"
+                  (focus)="openImagePreviewFromFocus(post)"
+                  (blur)="queueImagePreviewClose(post.id)"
+                  (keydown)="handleImagePreviewKeydown(post, $event)"
                 >
-                  @if (layout === 'editorial') {
+                  <span class="post-listing__media-viewport absolute inset-0 overflow-hidden">
+                    @if (layout === 'editorial') {
+                      <img
+                        class="post-listing__editorial-backdrop h-full w-full object-cover transition-[filter,transform] duration-300 motion-reduce:transition-none"
+                        [src]="postImage(post)"
+                        alt=""
+                        aria-hidden="true"
+                      >
+                    }
                     <img
-                      class="post-listing__editorial-backdrop"
+                      class="post-listing__image h-full w-full object-cover transition-[filter,transform] duration-300 motion-reduce:transition-none"
+                      [class.post-image-scrubber-cover--active]="isImagePreviewActive(post)"
+                      [class.post-image-scrubber-cover--buffering]="isImagePreviewBuffering(post)"
                       [src]="postImage(post)"
-                      alt=""
-                      aria-hidden="true"
+                      [alt]="post.title + ' cover image'"
+                      [style.object-fit]="layout === 'editorial' ? 'contain' : null"
+                      loading="lazy"
                     >
-                  }
-                  <img
-                    class="post-listing__image"
-                    [src]="postImage(post)"
-                    [alt]="post.title + ' cover image'"
-                    [style.object-fit]="layout === 'editorial' ? 'contain' : null"
-                    loading="lazy"
-                  >
+                    @if (enableImagePreview && isImagePreviewActive(post)) {
+                      <app-post-image-scrubber
+                        [images]="previewImages(post)"
+                        [activeIndex]="activePreviewIndex(post)"
+                        [settledUrls]="imagePreviewSettledUrls(post)"
+                        [buffering]="isImagePreviewBuffering(post)"
+                        (imageSettled)="settlePreviewImage(post.id, $event)"
+                      ></app-post-image-scrubber>
+                    }
+                  </span>
                 </a>
+
+                @if (enableImagePreview && isImagePreviewActive(post)) {
+                  <span
+                    [id]="imagePreviewStatusId(post)"
+                    class="sr-only"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {{ imagePreviewStatus(post) }}
+                  </span>
+                }
 
                 <div class="post-listing__content">
                   @if (showMeta) {
@@ -278,10 +334,12 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       display: block;
       aspect-ratio: 16 / 10;
       overflow: hidden;
+      scale: 1;
       border: 1px solid rgb(var(--post-accent-rgb) / 0.28);
       background:
         linear-gradient(145deg, rgb(var(--post-accent-rgb) / 0.13), transparent 58%),
         var(--site-panel);
+      transition: box-shadow 220ms ease, scale 240ms cubic-bezier(0.2, 0.75, 0.25, 1);
     }
 
     .post-listing__media::after {
@@ -290,13 +348,6 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       border: 1px solid rgb(var(--post-accent-rgb) / 0.1);
       content: '';
       pointer-events: none;
-    }
-
-    .post-listing__media img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: filter 220ms ease, transform 280ms ease;
     }
 
     .post-listing__content {
@@ -639,9 +690,10 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       .post-listing-region--background-media .post-listing--fan .post-listing__media {
         z-index: 2;
         display: block;
-        width: clamp(5.75rem, 7vw, 7rem);
+        align-self: stretch;
+        width: auto;
         margin: clamp(1.1rem, 2vw, 1.4rem) clamp(1.1rem, 2vw, 1.4rem) 0;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 16 / 9;
         border: 1px solid rgb(var(--post-accent-rgb) / 0.7);
         box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.42);
       }
@@ -690,8 +742,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
         text-shadow: 0 1px 0.45rem rgb(0 0 0 / 0.95);
       }
 
-      .post-listing-region--background-media .post-listing--fan .post-listing__item:hover .post-listing__media img,
-      .post-listing-region--background-media .post-listing--fan .post-listing__item:focus-within .post-listing__media img {
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:hover .post-listing__image,
+      .post-listing-region--background-media .post-listing--fan .post-listing__item:focus-within .post-listing__image {
         transform: scale(1.04);
       }
 
@@ -851,11 +903,12 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     @media (hover: hover) {
-      .post-listing__media:hover img,
-      .post-listing__media:focus-visible img {
+      .post-listing__media:hover .post-listing__image,
+      .post-listing__media:focus-visible .post-listing__image {
         filter: brightness(1.05);
         transform: scale(1.025);
       }
+
     }
 
     @media (max-width: 63.99rem) {
@@ -970,9 +1023,9 @@ export type BlogPostListingAppearanceByPostId = Readonly<
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .post-listing__media img,
       .post-listing__title svg,
       .post-listing__read-link svg,
+      .post-listing__media,
       .post-listing--grid .post-listing__article,
       .post-listing--fan .post-listing__item {
         transition: none;
@@ -980,7 +1033,6 @@ export type BlogPostListingAppearanceByPostId = Readonly<
 
       .post-listing-skeleton::after {
         animation: none;
-        transform: none;
       }
 
       .post-listing--fan .post-listing__item,
@@ -988,8 +1040,8 @@ export type BlogPostListingAppearanceByPostId = Readonly<
       .post-listing--fan .post-listing__item:focus-within,
       .post-listing--grid .post-listing__item:hover .post-listing__article,
       .post-listing--grid .post-listing__item:focus-within .post-listing__article,
-      .post-listing__media:hover img,
-      .post-listing__media:focus-visible img,
+      .post-listing__media:hover .post-listing__image,
+      .post-listing__media:focus-visible .post-listing__image,
       .post-listing__title a:hover svg,
       .post-listing__title a:focus-visible svg,
       .post-listing__read-link:hover svg,
@@ -1012,6 +1064,7 @@ export class BlogPostListingComponent {
   @Input() titleLineClamp: number | null = null;
   @Input() titleMaxLength: number | null = null;
   @Input() mediaPresentation: BlogPostListingMediaPresentation = 'standard';
+  @Input() enableImagePreview = true;
   @Input() loading = false;
   @Input() loadingLabel = 'Loading posts';
   @Input() loadingItemCount = 3;
@@ -1024,6 +1077,21 @@ export class BlogPostListingComponent {
   @Input() appearanceByPostId: BlogPostListingAppearanceByPostId = {};
 
   protected readonly pathNames = PATH_NAMES;
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly imagePreviewState = signal<BlogPostImagePreviewState | null>(null);
+  private readonly fullPostPreviewImages = new WeakMap<BlogPost, readonly BlogGalleryImage[]>();
+  private previewOpenTimer: number | undefined;
+  private previewCloseTimer: number | undefined;
+  private pendingPreviewIndex = 0;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.clearPreviewTimer('open');
+      this.clearPreviewTimer('close');
+    });
+  }
 
   protected get loadingItems(): readonly number[] {
     const count = Math.min(8, Math.max(1, Math.floor(this.loadingItemCount)));
@@ -1032,6 +1100,142 @@ export class BlogPostListingComponent {
 
   protected postImage(post: BlogPostSummary): string {
     return resolveBlogPostImage(post);
+  }
+
+  protected previewImages(post: BlogPostSummary): readonly BlogGalleryImage[] {
+    if (post.previewImages) {
+      return post.previewImages;
+    }
+
+    if (!isFullBlogPost(post)) {
+      return [];
+    }
+
+    const cachedImages = this.fullPostPreviewImages.get(post);
+
+    if (cachedImages) {
+      return cachedImages;
+    }
+
+    const previewImages = resolveBlogPostPreviewImages(post);
+    this.fullPostPreviewImages.set(post, previewImages);
+    return previewImages;
+  }
+
+  protected hasImagePreview(post: BlogPostSummary): boolean {
+    return this.enableImagePreview && this.previewImages(post).length > 0;
+  }
+
+  protected isImagePreviewActive(post: BlogPostSummary): boolean {
+    return this.imagePreviewState()?.postId === post.id;
+  }
+
+  protected isImagePreviewBuffering(post: BlogPostSummary): boolean {
+    const state = this.imagePreviewState();
+
+    return state?.postId === post.id
+      && state.settledUrls.size < this.previewImages(post).length;
+  }
+
+  protected queueImagePreview(post: BlogPostSummary, event: PointerEvent): void {
+    if (!this.canUseImagePreview(post)) {
+      return;
+    }
+
+    this.clearPreviewTimer('close');
+    this.pendingPreviewIndex = this.previewIndexFromPointer(post, event);
+
+    if (this.isImagePreviewActive(post)) {
+      this.updateActivePreviewIndex(post.id, this.pendingPreviewIndex);
+      return;
+    }
+
+    this.clearPreviewTimer('open');
+    this.previewOpenTimer = this.document.defaultView?.setTimeout(() => {
+      this.activateImagePreview(post, this.pendingPreviewIndex);
+    }, IMAGE_PREVIEW_OPEN_DELAY_MS);
+  }
+
+  protected updateImagePreview(post: BlogPostSummary, event: PointerEvent): void {
+    const nextIndex = this.previewIndexFromPointer(post, event);
+    this.pendingPreviewIndex = nextIndex;
+
+    if (this.isImagePreviewActive(post)) {
+      this.updateActivePreviewIndex(post.id, nextIndex);
+    }
+  }
+
+  protected queueImagePreviewClose(postId: string): void {
+    this.clearPreviewTimer('open');
+    this.clearPreviewTimer('close');
+    this.previewCloseTimer = this.document.defaultView?.setTimeout(() => {
+      if (this.imagePreviewState()?.postId === postId) {
+        this.imagePreviewState.set(null);
+      }
+    }, IMAGE_PREVIEW_CLOSE_DELAY_MS);
+  }
+
+  protected openImagePreviewFromFocus(post: BlogPostSummary): void {
+    if (!this.canUseImagePreview(post)) {
+      return;
+    }
+
+    this.clearPreviewTimer('open');
+    this.clearPreviewTimer('close');
+    this.activateImagePreview(post, 0);
+  }
+
+  protected handleImagePreviewKeydown(post: BlogPostSummary, event: KeyboardEvent): void {
+    if (!this.isImagePreviewActive(post)) {
+      return;
+    }
+
+    const imageCount = this.previewImages(post).length;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.imagePreviewState.set(null);
+      return;
+    }
+
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = this.imagePreviewState()?.activeIndex ?? 0;
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    this.updateActivePreviewIndex(post.id, (currentIndex + direction + imageCount) % imageCount);
+  }
+
+  protected settlePreviewImage(postId: string, url: string): void {
+    const state = this.imagePreviewState();
+
+    if (state?.postId !== postId || state.settledUrls.has(url)) {
+      return;
+    }
+
+    const settledUrls = new Set(state.settledUrls);
+    settledUrls.add(url);
+    this.imagePreviewState.set({...state, settledUrls});
+  }
+
+  protected imagePreviewStatusId(post: BlogPostSummary): string {
+    return `post-image-preview-status-${post.id}`;
+  }
+
+  protected imagePreviewStatus(post: BlogPostSummary): string {
+    const images = this.previewImages(post);
+    const index = this.activePreviewIndex(post);
+    const image = images[index];
+    const imageDescription = image?.alt.trim() || `${post.title} interior image`;
+
+    return `Preview ${index + 1} of ${images.length}: ${imageDescription}`;
+  }
+
+  protected imagePreviewSettledUrls(post: BlogPostSummary): ReadonlySet<string> {
+    const state = this.imagePreviewState();
+    return state?.postId === post.id ? state.settledUrls : EMPTY_PREVIEW_SETTLED_URLS;
   }
 
   protected postDate(post: BlogPostSummary): string {
@@ -1095,6 +1299,75 @@ export class BlogPostListingComponent {
     return this.appearanceByPostId[post.id] ?? this.appearance;
   }
 
+  private canUseImagePreview(post: BlogPostSummary): boolean {
+    return this.isBrowser
+      && this.hasImagePreview(post)
+      && this.document.defaultView?.matchMedia('(hover: hover) and (pointer: fine)').matches === true;
+  }
+
+  private previewIndexFromPointer(post: BlogPostSummary, event: PointerEvent): number {
+    const imageCount = this.previewImages(post).length;
+
+    if (!imageCount) {
+      return 0;
+    }
+
+    const target = event.currentTarget;
+
+    if (!(target instanceof HTMLElement)) {
+      return this.activePreviewIndex(post);
+    }
+
+    const bounds = target.getBoundingClientRect();
+
+    if (bounds.width <= 0) {
+      return this.activePreviewIndex(post);
+    }
+
+    const pointerProgress = Math.min(0.999, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+    return Math.floor(pointerProgress * imageCount);
+  }
+
+  private activateImagePreview(post: BlogPostSummary, imageIndex: number): void {
+    const imageCount = this.previewImages(post).length;
+
+    if (!imageCount) {
+      return;
+    }
+
+    this.imagePreviewState.set({
+      postId: post.id,
+      activeIndex: Math.min(imageCount - 1, Math.max(0, imageIndex)),
+      settledUrls: new Set<string>(),
+    });
+  }
+
+  private updateActivePreviewIndex(postId: string, imageIndex: number): void {
+    this.imagePreviewState.update((state) => state?.postId === postId
+      ? {...state, activeIndex: imageIndex}
+      : state);
+  }
+
+  protected activePreviewIndex(post: BlogPostSummary): number {
+    const state = this.imagePreviewState();
+    return state?.postId === post.id ? state.activeIndex : 0;
+  }
+
+  private clearPreviewTimer(timer: 'open' | 'close'): void {
+    const window = this.document.defaultView;
+    const timerId = timer === 'open' ? this.previewOpenTimer : this.previewCloseTimer;
+
+    if (timerId !== undefined) {
+      window?.clearTimeout(timerId);
+    }
+
+    if (timer === 'open') {
+      this.previewOpenTimer = undefined;
+    } else {
+      this.previewCloseTimer = undefined;
+    }
+  }
+
   private get normalizedTitleMaxLength(): number | null {
     if (this.titleMaxLength === null || !Number.isFinite(this.titleMaxLength)) {
       return null;
@@ -1102,6 +1375,10 @@ export class BlogPostListingComponent {
 
     return Math.max(1, Math.floor(this.titleMaxLength));
   }
+}
+
+function isFullBlogPost(post: BlogPostSummary): post is BlogPost {
+  return 'blocks' in post && Array.isArray(post.blocks);
 }
 
 function normalizeTitle(value: string): string {
