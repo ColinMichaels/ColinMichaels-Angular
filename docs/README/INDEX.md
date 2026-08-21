@@ -23,6 +23,7 @@ This folder is the entry point for project documentation.
 - [Admin User Management and View](../ARCHITECTURE/ADMIN_USER_VIEW.md)
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
 - [Blog Editor Production-Readiness Roadmap](../ARCHITECTURE/BLOG_EDITOR_PRODUCTION_READINESS.md)
+- [Higgsfield Promotion and Motion Lab](../ARCHITECTURE/HIGGSFIELD_MOTION_LAB.md)
 - [Editor.js Image Galleries](../ARCHITECTURE/EDITORJS_IMAGE_GALLERIES.md)
 - [Editor.js YouTube Companion Videos](../ARCHITECTURE/EDITORJS_YOUTUBE_COMPANION_VIDEOS.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)

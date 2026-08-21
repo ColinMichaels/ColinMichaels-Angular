@@ -1,0 +1,121 @@
+{
+  "manifestVersion": 1,
+  "pack": "ColinMichaels.com Motion Brand Pack",
+  "createdAt": "2026-08-21",
+  "status": "generated_local_review",
+  "account": {
+    "plan": "Plus",
+    "observedStartingCredits": 895,
+    "creditsPerItem": 36,
+    "actualCreditsSpent": 288,
+    "observedRemainingCredits": 607,
+    "pricingNote": "Observed in the signed-in Higgsfield UI on 2026-08-21; offers and model pricing can change."
+  },
+  "generation": {
+    "provider": "Higgsfield",
+    "model": "Seedance 2.5",
+    "mode": "text-to-video",
+    "durationSeconds": 4,
+    "resolution": "1080p",
+    "aspectRatio": "16:9",
+    "audio": false,
+    "bitrate": "high",
+    "commonPrompt": "Professional restrained editorial motion design for ColinMichaels.com. 16:9 cinematic composition, deep obsidian black #09090B and midnight blue, crisp cyan #22D3EE and pale cyan #67E8F9 light, occasional white highlights, subtle fine grid and optical glass depth, premium technology-publication aesthetic, smooth controlled motion, clean negative space, no people, no letters, no words, no captions, no logos, no watermark, no UI screenshots, no mockups, no audio."
+  },
+  "media": {
+    "videoMastersDirectory": "outputs/higgsfield-masters/motion-brand-pack",
+    "audioMastersDirectory": "outputs/local-sfx-masters/motion-brand-pack",
+    "workingCopiesDirectory": "motion-kit/public/generated",
+    "renderDirectory": "motion-kit/output",
+    "sourceMasterPolicy": "Preserve downloaded video and locally generated audio masters; Remotion reads disposable synchronized copies."
+  },
+  "review": {
+    "reviewedAt": "2026-08-21",
+    "result": "accepted_for_local_editing",
+    "checks": [
+      "No accidental text or logos",
+      "No people",
+      "No obvious generation debris",
+      "Stable framing for exact local typography and overlays"
+    ]
+  },
+  "items": [
+    {
+      "id": "intro-wave-horizon",
+      "jobId": "04880933-7d0d-43d8-9148-871ccce2f3db",
+      "file": "01-intro-wave-horizon.mp4",
+      "credits": 36,
+      "direction": "INTRO BACKGROUND: Begin nearly black. A single elegant cyan waveform line sweeps from left to right, briefly forming an abstract mountain-ridge silhouette at center, then settles into a calm luminous horizon. Tiny restrained particles resolve into focus. Slow subtle push-in. Preserve generous clean center and right-side title space. Strong opening beat during second 1, then stable hold by the final second."
+    },
+    {
+      "id": "outro-end-screen-background",
+      "jobId": "ddd1a204-3271-4941-8368-85dc1eced2c3",
+      "file": "02-outro-end-screen-background.mp4",
+      "credits": 36,
+      "direction": "OUTRO BACKGROUND: A calm luminous cyan horizon and fine wave line drift slowly across the lower third. Soft glass panels and tiny particles recede into depth, then the line gently resolves to a small cyan point near the lower center. Keep the left third and two large areas on the right visually quiet for YouTube end-screen text and video cards. Elegant continuous motion with a stable final two-second hold."
+    },
+    {
+      "id": "transition-signal-wipe",
+      "jobId": "d88b0c69-1828-434d-a24a-114b6f5436fe",
+      "file": "03-transition-signal-wipe.mp4",
+      "credits": 36,
+      "direction": "FULL-SCREEN TRANSITION A: A razor-thin cyan signal line enters from far left, rapidly expands into a translucent refractive sheet that wipes the entire screen left-to-right, briefly filling the frame with bright cyan-white glass, then reveals the same deep obsidian field behind it. Fast clean motion centered around seconds 1 to 2, no camera shake, no debris, stable dark start and stable dark finish so editors can trim it to one second."
+    },
+    {
+      "id": "transition-optical-iris",
+      "jobId": "02b06e37-eb25-437a-b22b-cb1366bbd2b6",
+      "file": "04-transition-optical-iris.mp4",
+      "credits": 36,
+      "direction": "FULL-SCREEN TRANSITION B: A precise circular optical aperture appears at center as a thin cyan ring, contracts to a point, then instantly expands past the camera as a smooth glass-and-light tunnel, landing on a clean dark field. Fast symmetrical iris transition centered around seconds 1 to 2, subtle photographic lens character, no literal camera, no clutter, stable dark start and stable dark finish."
+    },
+    {
+      "id": "stinger-wave-pulse",
+      "jobId": "b74b4c0f-44e2-42ed-a8b9-1e8d56295304",
+      "file": "05-stinger-wave-pulse.mp4",
+      "credits": 36,
+      "direction": "STINGER A: Start dark and quiet. A compact cyan wave glyph made only of light snaps on at exact center, sends one tight circular pulse outward, produces a refined white-cyan flash, then collapses back to darkness. The full action is punchy and complete between seconds 1 and 2; stable black before and after for easy trimming to a one-second stinger. No text."
+    },
+    {
+      "id": "stinger-prism-intersect",
+      "jobId": "80bdc432-2bca-4029-9a4b-06494e2574e4",
+      "file": "06-stinger-prism-intersect.mp4",
+      "credits": 36,
+      "direction": "STINGER B: Four hairline signals—cyan, blue, violet, and warm amber—race in from the frame edges, intersect at center in a precise luminous spark, briefly form a clean diamond-shaped energy prism, then vanish into a single cyan dot. The action peaks between seconds 1 and 2 with controlled editorial polish, stable dark before and after, no text, no explosion, no chaos."
+    },
+    {
+      "id": "youtube-cta-background",
+      "jobId": "49fb89b5-ef94-4e1a-9049-5bbeccb3c314",
+      "file": "07-youtube-cta-background.mp4",
+      "credits": 36,
+      "direction": "YOUTUBE CALL-TO-ACTION BACKGROUND: Begin on a calm dark field. Three subtle cyan pulse points appear in sequence along the lower center, and a clean translucent rounded glass strip gently rises behind them, ready for exact Subscribe, Like, and Share icons and text to be overlaid later. One soft outward glow confirms the action, then hold steady. Keep the central lower third clear, and keep the upper two-thirds quiet for an outro message. Do not generate any icons, hands, text, or interface labels."
+    },
+    {
+      "id": "outro-particle-signature",
+      "jobId": "8829a7d2-6ca6-423d-8d6f-fb85c5fd27cb",
+      "file": "08-outro-particle-signature.mp4",
+      "credits": 36,
+      "direction": "ALTERNATE OUTRO / SIGNATURE HOLD: Hundreds of extremely fine cyan particles drift in from depth and assemble into one elegant abstract flowing wave-and-mountain contour across the lower third, then continue breathing with barely perceptible motion. A restrained lens bloom travels once across the contour. Preserve large clean negative space in the center for a Colin Michaels wordmark and tagline added later, and quiet right-side areas for end-screen cards. Stable graceful final two-second hold."
+    }
+  ],
+  "deliverables": {
+    "compositionCount": 11,
+    "renderSpecification": "1920x1080, 30 fps, 4 seconds, H.264",
+    "localSfxFiles": [
+      "01-intro-wave-horizon.wav",
+      "02-outro-end-screen.wav",
+      "03-transition-signal-wipe.wav",
+      "04-transition-optical-iris.wav",
+      "05-stinger-wave-pulse.wav",
+      "06-stinger-prism-intersect.wav",
+      "07-youtube-cta.wav",
+      "08-outro-particle-signature.wav"
+    ],
+    "audioSpecification": "48 kHz stereo WAV",
+    "paidAudioProviderUsed": false
+  },
+  "publication": {
+    "approved": false,
+    "published": false,
+    "note": "Local review acceptance is not approval to copy media into production assets or publish it."
+  }
+}
