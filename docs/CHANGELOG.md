@@ -10,6 +10,7 @@
 
 ### Changed
 
+- Hardened New Post package discovery so slugged provenance sidecars are ignored as posts, conflicting candidates name their files, failed imports reliably clear the busy state, and generated articles use a validated portable `cms-import` subfolder.
 - Aligned the public Gadget Usefulness Scorecard and its crawler fallback with the general Colin Michaels YouTube channel; the legacy Captain-branded PDF filename remains stable.
 - Updated the crawler-facing homepage answer summary to promote Colin Michaels as the general creator channel and reserve Captain Colin for FPV/drone content.
 - Corrected stale creator-channel documentation so general ColinMichaels.com journeys consistently use Colin Michaels, while Captain Colin remains explicit to drone/FPV material. Historical Captain Colin performance records are retained as dated context.
