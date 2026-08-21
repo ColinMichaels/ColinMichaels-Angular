@@ -1,0 +1,3 @@
+# Preserve generated media masters locally; they are not production web assets.
+outputs/
+review/

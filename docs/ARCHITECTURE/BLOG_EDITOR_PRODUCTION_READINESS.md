@@ -51,6 +51,12 @@ Each upload is fingerprinted by the trusted finalization service with SHA-256. W
 
 Package import is intentionally a **New Post** workflow. It preserves the current new-post identity and revision, always stages the package as a draft, and never updates an existing post. If its requested slug already belongs to a post—especially a published article—the editor asks for explicit approval before uploading media and clearly states that continuing creates a separate draft with a unique slug.
 
+Folder discovery uses post structure rather than treating every JSON document with a `slug` as an article. A standalone provenance sidecar with fields such as `slug`, `generatedAt`, and `assets` is therefore ignored as a post candidate. When zero or multiple real post documents remain, the error names the inspected or conflicting files. Import progress is reactive and always resets after success or failure, so an error cannot leave the chooser stuck on **Importing package...**.
+
+Generated source packages should keep research notes, provenance manifests, source artwork, and unused derivatives in the article root, then place the upload-ready material in a dedicated `cms-import/` subfolder. That portable subfolder contains exactly one post JSON document, one literal `image-manifest.json`, and only the final referenced images. The post uses `media://` placeholders; the manifest uses the portable top-level `images` contract above. Operators select only `cms-import/` in New Post.
+
+This hardening changes only the Hosting client and requires no Firestore backfill, Function, Rule, index, Storage migration, or secret. Rolling back the Hosting artifact restores the earlier broad folder classifier and non-reactive busy flag; already-correct portable packages remain compatible with either build.
+
 ## Discovery And Trust Authoring Review
 
 The post editor's existing metadata checklist is now the **Discovery & Trust Checklist**. It preserves all ten search/share checks and adds four advisory content checks over the current canonical Editor.js blocks and optional post metadata:

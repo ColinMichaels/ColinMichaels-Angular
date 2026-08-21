@@ -86,6 +86,7 @@ import {PostScheduleCalendarComponent} from './post-schedule-calendar.component'
 import {
   getEmbeddedBlogPostMediaPackageManifest,
   getUnresolvedBlogPostMediaPackageReferences,
+  isBlogPostPackagePostDocument,
   matchBlogPostPackageImageFiles,
   replaceBlogPostMediaPackageReferences,
 } from '../../utils/blog-post-media-package.util';
@@ -488,11 +489,11 @@ function getErrorMessage(error: unknown): string {
                 <button
                   type="button"
                   class="inline-flex h-9 items-center justify-center border border-cyan-500/70 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                  [disabled]="isPackageImportInProgress"
+                  [disabled]="isPackageImportInProgress()"
                   title="Choose a folder containing the post JSON, image manifest, and generated images"
                   (click)="postPackageImportInput.click()"
                 >
-                  {{ isPackageImportInProgress ? 'Importing package...' : 'Import post package' }}
+                  {{ isPackageImportInProgress() ? 'Importing package...' : 'Import post package' }}
                 </button>
               }
               <button
@@ -1325,7 +1326,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
   protected isDeleteInProgress = false;
-  protected isPackageImportInProgress = false;
+  protected readonly isPackageImportInProgress = signal(false);
   protected assistantResult: BlogAssistantResult | null = null;
   protected assistantMessage = '';
   protected assistantError = '';
@@ -1821,7 +1822,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return;
     }
 
-    this.isPackageImportInProgress = true;
+    this.isPackageImportInProgress.set(true);
     let uploadedCount = 0;
 
     try {
@@ -1836,6 +1837,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
         value: JSON.parse(await file.text()) as unknown,
       })));
       const postCandidates = parsedFiles.flatMap(({file, value}) => {
+        if (!isBlogPostPackagePostDocument(value)) {
+          return [];
+        }
+
         try {
           return [{file, value, imported: this.createImportedPostDocument(value)}];
         } catch {
@@ -1844,24 +1849,30 @@ export class CmsPostEditorComponent implements AfterViewInit {
       });
 
       if (postCandidates.length !== 1) {
-        throw new Error('A post package must contain exactly one importable post JSON document.');
+        const candidateDetail = postCandidates.length === 0
+          ? `Found none among: ${jsonFiles.map(file => file.webkitRelativePath || file.name).join(', ')}.`
+          : `Found ${postCandidates.length}: ${postCandidates.map(({file}) => file.webkitRelativePath || file.name).join(', ')}.`;
+        throw new Error(`A post package must contain exactly one importable post JSON document. ${candidateDetail}`);
       }
 
       const postCandidate = postCandidates[0];
-      const manifestCandidates = parsedFiles.flatMap(({value}) => {
+      const manifestCandidates = parsedFiles.flatMap(({file, value}) => {
         try {
           const manifest = getEmbeddedBlogPostMediaPackageManifest(value);
-          return manifest ? [manifest] : [];
+          return manifest ? [{file, manifest}] : [];
         } catch (error) {
           throw new Error(`Unable to read the image manifest: ${getErrorMessage(error)}`, {cause: error});
         }
       });
 
       if (manifestCandidates.length !== 1) {
-        throw new Error('A post package must contain exactly one image manifest, either embedded in the post JSON or as a separate manifest JSON file.');
+        const manifestDetail = manifestCandidates.length === 0
+          ? 'Found none. Expected a top-level images array or an imageManifest/mediaManifest object.'
+          : `Found ${manifestCandidates.length}: ${manifestCandidates.map(({file}) => file.webkitRelativePath || file.name).join(', ')}.`;
+        throw new Error(`A post package must contain exactly one image manifest, either embedded in the post JSON or as a separate manifest JSON file. ${manifestDetail}`);
       }
 
-      const manifest = manifestCandidates[0];
+      const manifest = manifestCandidates[0].manifest;
       const originalPost = postCandidate.imported.post;
       const requestedSlug = originalPost.slug || createBlogSlug(originalPost.title);
       const existingPost = this.blogRepository.getAdminPostBySlug(requestedSlug);
@@ -1933,7 +1944,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         : '';
       this.toast.error(`Unable to import post package: ${getErrorMessage(error)}${uploadedMediaNotice}`);
     } finally {
-      this.isPackageImportInProgress = false;
+      this.isPackageImportInProgress.set(false);
     }
   }
 

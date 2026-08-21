@@ -23,6 +23,7 @@ This folder is the entry point for project documentation.
 - [Admin User Management and View](../ARCHITECTURE/ADMIN_USER_VIEW.md)
 - [Content Operations Bulk Editor](../ARCHITECTURE/CONTENT_OPERATIONS_BULK_EDITOR.md)
 - [Blog Editor Production-Readiness Roadmap](../ARCHITECTURE/BLOG_EDITOR_PRODUCTION_READINESS.md)
+- [Higgsfield Promotion and Motion Lab](../ARCHITECTURE/HIGGSFIELD_MOTION_LAB.md)
 - [Editor.js Image Galleries](../ARCHITECTURE/EDITORJS_IMAGE_GALLERIES.md)
 - [Editor.js YouTube Companion Videos](../ARCHITECTURE/EDITORJS_YOUTUBE_COMPANION_VIDEOS.md)
 - [Media Library](../ARCHITECTURE/MEDIA_LIBRARY.md)
@@ -49,6 +50,7 @@ This folder is the entry point for project documentation.
 
 ## Content Packages
 
+- [Editorial Writing Review Card](../CONTENT_PACKAGES/EDITORIAL_WRITING_REVIEW_CARD.md)
 - [HOVERAir AQUA Article and YouTube Package](../CONTENT_PACKAGES/hoverair-aqua-waterproof-drone/POST_PACKAGE.md)
 - [Passenger Drones for Sale in 2026 Article and YouTube Package](../CONTENT_PACKAGES/passenger-drones-for-sale-2026/POST_PACKAGE.md)
 - [Unitree R1 $4,900 Humanoid Robot Article and YouTube Package](../CONTENT_PACKAGES/unitree-r1-4900-humanoid-robot/POST_PACKAGE.md)

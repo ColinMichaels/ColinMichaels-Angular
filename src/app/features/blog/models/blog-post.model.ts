@@ -357,6 +357,8 @@ export interface BlogPostSummary {
   categories: readonly string[];
   subcategories?: readonly string[];
   tags: readonly string[];
+  /** Bounded in-body media metadata used by opt-in, interaction-triggered listing previews. */
+  previewImages?: readonly BlogGalleryImage[];
   catCorner?: BlogCatCornerSettings;
   publishedAt: string | null;
   updatedAt: string;

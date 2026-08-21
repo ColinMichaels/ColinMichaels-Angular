@@ -2,6 +2,7 @@ import {
   isLocalAssetImageUrl,
   normalizeBlogImageFields,
   resolveBlogPostImage,
+  resolveBlogPostPreviewImages,
 } from './blog-image-url.util';
 
 const FIREBASE_COVER_IMAGE =
@@ -45,5 +46,55 @@ describe('blog-image-url util', () => {
     expect(isLocalAssetImageUrl('assets/images/backgrounds/day.webp')).toBeTrue();
     expect(isLocalAssetImageUrl('https://colinmichaels.com/assets/images/backgrounds/day.webp')).toBeTrue();
     expect(isLocalAssetImageUrl('//colinmichaels.com/assets/images/backgrounds/day.webp')).toBeFalse();
+  });
+
+  it('extracts a bounded, de-duplicated set of in-body images in reading order', () => {
+    const images = resolveBlogPostPreviewImages({
+      coverImage: '/cover.webp',
+      thumbnailImage: '/thumbnail.webp',
+      blocks: [
+        {
+          id: 'image-one',
+          type: 'image',
+          data: {
+            url: '/inside-one.webp',
+            alt: 'First interior image',
+            caption: 'First caption',
+            width: 1200,
+            height: 800,
+          },
+        },
+        {
+          id: 'gallery',
+          type: 'gallery',
+          data: {
+            galleryImages: [
+              {url: '/inside-two.webp', alt: 'Second interior image'},
+              {url: '/inside-one.webp', alt: 'Duplicate interior image'},
+              {url: '/cover.webp', alt: 'Repeated cover image'},
+              {url: '/inside-three.webp', alt: 'Third interior image'},
+            ],
+          },
+        },
+      ],
+    }, 2);
+
+    expect(images).toEqual([
+      {
+        url: '/inside-one.webp',
+        alt: 'First interior image',
+        caption: 'First caption',
+        width: 1200,
+        height: 800,
+      },
+      {url: '/inside-two.webp', alt: 'Second interior image'},
+    ]);
+  });
+
+  it('does not expose preview images when the bounded limit is zero', () => {
+    expect(resolveBlogPostPreviewImages({
+      coverImage: '/cover.webp',
+      blocks: [{id: 'image-one', type: 'image', data: {url: '/inside.webp'}}],
+    }, 0)).toEqual([]);
   });
 });

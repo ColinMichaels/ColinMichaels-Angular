@@ -26,6 +26,9 @@ function createPost(index: number): BlogPostSummary {
     },
     categories: ['AI'],
     tags: ['AI workflow'],
+    previewImages: [
+      {url: `/assets/post-${index}-interior.webp`, alt: `AI workflow ${index} interior`},
+    ],
     publishedAt: `2026-07-0${index}T00:00:00.000Z`,
     updatedAt: `2026-07-0${index}T00:00:00.000Z`,
   };
@@ -99,12 +102,33 @@ describe('TopicHubComponent', () => {
 
   it('leads with topic-specific copy and artwork', () => {
     const element = fixture.nativeElement as HTMLElement;
-    const heroImage = element.querySelector<HTMLImageElement>('.topic-hub-artwork img');
+    const heroImages = [...element.querySelectorAll<HTMLImageElement>('.topic-hub-hero-media img')];
+    const heroFigure = element.querySelector<HTMLElement>('.topic-hub-hero-media');
 
     expect(element.querySelector('h1')?.textContent?.trim()).toBe('AI Setup Guides');
-    expect(heroImage?.getAttribute('src')).toBe('/assets/images/topics/ai-setup.webp');
-    expect(heroImage?.getAttribute('alt')).toContain('modular AI workspace');
+    expect(heroImages.map(image => image.getAttribute('src'))).toEqual([
+      '/assets/images/topics/ai-setup.webp',
+      '/assets/images/topics/ai-setup-companion.webp',
+    ]);
+    expect(heroFigure?.getAttribute('aria-label')).toContain('modular AI workspace');
     expect(element.textContent).toContain('AI workflows worth starting with');
+  });
+
+  it('offers direct, pausing controls for topic scene changes', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const sceneButtons = [...element.querySelectorAll<HTMLButtonElement>('.topic-hub-scene-button')];
+
+    expect(sceneButtons.length).toBe(2);
+    expect(sceneButtons[0].getAttribute('aria-current')).toBe('true');
+
+    sceneButtons[1].click();
+    fixture.detectChanges();
+
+    expect(sceneButtons[1].getAttribute('aria-current')).toBe('true');
+    expect(element.querySelector('.topic-hub-scene-controls')?.classList
+      .contains('topic-hub-scene-controls-paused')).toBeTrue();
+    expect(element.querySelector('.topic-hub-hero-image-active')?.getAttribute('src'))
+      .toBe('/assets/images/topics/ai-setup-companion.webp');
   });
 
   it('keeps hero title words intact when the heading wraps', () => {
@@ -121,12 +145,23 @@ describe('TopicHubComponent', () => {
   it('uses fan and list presentations to prioritize posts before the guide', () => {
     const element = fixture.nativeElement as HTMLElement;
     const listingRegions = [...element.querySelectorAll<HTMLElement>('[data-layout]')];
+    const postImages = [...element.querySelectorAll<HTMLImageElement>('.post-listing__image')];
     const featuredSection = element.querySelector('#topic-posts');
     const guideSection = element.querySelector('#topic-guide');
 
     expect(listingRegions.map(region => region.dataset['layout'])).toEqual(['fan', 'list']);
+    expect(listingRegions.map(region => region.dataset['mediaPresentation'])).toEqual(['background', 'standard']);
+    expect(listingRegions.every(region => region.classList.contains('post-listing-region--image-preview')))
+      .toBeTrue();
+    expect(element.querySelector('app-post-image-scrubber')).toBeNull();
     expect(element.querySelectorAll('[data-layout="fan"] [data-post-id]').length).toBe(3);
     expect(element.querySelectorAll('[data-layout="list"] [data-post-id]').length).toBe(1);
+    expect(postImages.map(image => image.getAttribute('src'))).toEqual([
+      '/assets/post-1.webp',
+      '/assets/post-2.webp',
+      '/assets/post-3.webp',
+      '/assets/post-4.webp',
+    ]);
     expect(Boolean(
       featuredSection
       && guideSection

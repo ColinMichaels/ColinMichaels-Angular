@@ -9,6 +9,10 @@ import {SeoService} from '../../shared/seo/seo.service';
 import {BlogPostListingComponent} from '../blog/components/post-listing/blog-post-listing.component';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
 import {YouTubeLatestVideosComponent} from '../youtube/components/latest-videos/youtube-latest-videos.component';
+import {
+  TopicHubHeroComponent,
+  TopicHubSectionNavigation,
+} from './components/topic-hub-hero/topic-hub-hero.component';
 import {TopicGuideComponent} from './components/topic-guide/topic-guide.component';
 import {TopicHubRepositoryService} from './services/topic-hub-repository.service';
 import {
@@ -27,6 +31,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
     NgStyle,
     RouterLink,
     BlogPostListingComponent,
+    TopicHubHeroComponent,
     TopicGuideComponent,
     YouTubeLatestVideosComponent,
   ],
@@ -34,63 +39,14 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="topic-hub-page" [ngStyle]="topicThemeStyle(hub())">
+      <app-topic-hub-hero
+        [hub]="hub()"
+        (sectionNavigate)="handleTopicSectionNavigation($event)"
+      ></app-topic-hub-hero>
+
       <div class="topic-hub-grid" aria-hidden="true"></div>
 
       <section class="topic-hub-shell">
-        <nav class="topic-hub-breadcrumb" aria-label="Topic navigation">
-          <a routerLink="/">Home</a>
-          <span aria-hidden="true">/</span>
-          <span>Topics</span>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">{{ hub().theme.shortLabel }}</span>
-        </nav>
-
-        <header class="topic-hub-hero">
-          <div class="topic-hub-hero-copy">
-            <h1>{{ hub().title }}</h1>
-            <p>{{ hub().summary }}</p>
-
-            <div class="topic-hub-actions">
-              <a
-                [attr.href]="topicSectionHref('topic-posts')"
-                class="topic-hub-action topic-hub-action-primary"
-                (click)="handleTopicSectionClick($event, 'topic-posts')"
-              >
-                Browse {{ hub().theme.shortLabel }} posts
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M5 12h14"></path>
-                  <path d="m14 6 6 6-6 6"></path>
-                </svg>
-              </a>
-              <a
-                [attr.href]="topicSectionHref('topic-guide')"
-                class="topic-hub-action topic-hub-action-secondary"
-                (click)="handleTopicSectionClick($event, 'topic-guide')"
-              >
-                About this topic
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <path d="M12 11v5"></path>
-                  <path d="M12 8h.01"></path>
-                </svg>
-              </a>
-            </div>
-          </div>
-
-          @if (heroImage(); as image) {
-            <figure class="topic-hub-artwork">
-              <img
-                [src]="image.src"
-                [alt]="image.alt"
-                [attr.width]="image.width"
-                [attr.height]="image.height"
-                [style.object-position]="image.objectPosition || 'center'"
-                fetchpriority="high"
-              >
-            </figure>
-          }
-        </header>
-
         <section id="topic-posts" class="topic-hub-section topic-hub-featured" aria-labelledby="topic-featured-heading">
           <header class="topic-hub-section-heading topic-hub-section-heading-row">
             <div>
@@ -113,6 +69,8 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
           <app-blog-post-listing
             [posts]="featuredPosts()"
             layout="fan"
+            mediaPresentation="background"
+            [enableImagePreview]="true"
             [loading]="isLoading()"
             [error]="loadError()"
             [headingLevel]="3"
@@ -134,6 +92,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
             <app-blog-post-listing
               [posts]="additionalPosts()"
               layout="list"
+              [enableImagePreview]="true"
               [headingLevel]="3"
               [showTags]="false"
               [appearance]="topicAppearance()"
@@ -210,107 +169,35 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       --topic-accent-readable: var(--topic-accent-strong);
       position: relative;
       min-height: 100vh;
-      overflow: hidden;
+      overflow: clip;
       isolation: isolate;
       background: var(--site-bg);
       color: var(--site-text);
-      padding-block: clamp(2.5rem, 6vw, 5.5rem);
-    }
-
-    .topic-hub-page::before {
-      content: '';
-      position: absolute;
-      z-index: -2;
-      top: 0;
-      left: 50%;
-      width: min(92rem, 100%);
-      height: 34rem;
-      transform: translateX(-50%);
-      background: radial-gradient(circle at 72% 28%, rgb(var(--topic-accent-rgb) / 0.1), transparent 32rem);
-      pointer-events: none;
+      padding-bottom: clamp(2.5rem, 6vw, 5.5rem);
     }
 
     .topic-hub-grid {
       position: absolute;
-      z-index: -1;
-      inset: 0;
+      z-index: 0;
+      top: clamp(35rem, 68svh, 42rem);
+      right: 0;
+      bottom: 0;
+      left: 0;
       background-image:
         linear-gradient(rgb(var(--topic-accent-rgb) / 0.055) 1px, transparent 1px),
         linear-gradient(90deg, rgb(var(--topic-accent-rgb) / 0.055) 1px, transparent 1px);
       background-size: 6.5rem 6.5rem;
-      mask-image: linear-gradient(to bottom, black, transparent 42rem);
+      mask-image: linear-gradient(to bottom, black, transparent 48rem);
       pointer-events: none;
     }
 
     .topic-hub-shell {
+      position: relative;
+      z-index: 1;
       width: min(100% - 2rem, 80rem);
       margin-inline: auto;
     }
 
-    .topic-hub-breadcrumb {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.6rem;
-      color: var(--site-muted);
-      font-family: var(--font-accent);
-      font-size: 0.92rem;
-    }
-
-    .topic-hub-breadcrumb a {
-      color: var(--site-text);
-      text-decoration: none;
-    }
-
-    .topic-hub-breadcrumb a:hover,
-    .topic-hub-breadcrumb a:focus-visible {
-      color: var(--topic-accent-readable);
-    }
-
-    .topic-hub-breadcrumb [aria-current='page'] {
-      color: var(--topic-accent-readable);
-    }
-
-    .topic-hub-hero {
-      display: grid;
-      gap: clamp(2rem, 5vw, 4.5rem);
-      align-items: center;
-      padding-block: clamp(2.25rem, 6vw, 5.75rem);
-    }
-
-    .topic-hub-hero-copy {
-      min-width: 0;
-    }
-
-    .topic-hub-hero-copy h1 {
-      max-width: 46rem;
-      color: var(--site-heading);
-      font-family: var(--font-heading);
-      font-size: clamp(2.65rem, 4.2vw, 3.9rem);
-      font-weight: 650;
-      hyphens: none;
-      letter-spacing: -0.045em;
-      line-height: 0.98;
-      overflow-wrap: normal;
-      word-break: normal;
-    }
-
-    .topic-hub-hero-copy > p {
-      max-width: 42rem;
-      margin-top: 1.45rem;
-      color: var(--site-muted);
-      font-size: clamp(1.05rem, 2vw, 1.28rem);
-      line-height: 1.7;
-    }
-
-    .topic-hub-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.9rem;
-      margin-top: 1.8rem;
-    }
-
-    .topic-hub-action,
     .topic-hub-text-link {
       display: inline-flex;
       align-items: center;
@@ -321,46 +208,21 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       font-size: 0.96rem;
       font-weight: 600;
       text-decoration: none;
-      transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, transform 180ms ease;
+      transition: color 180ms ease, transform 180ms ease;
     }
 
-    .topic-hub-action {
-      border: 1px solid rgb(var(--topic-accent-rgb) / 0.58);
-      padding: 0.78rem 1rem;
-    }
-
-    .topic-hub-action-primary {
-      background: var(--topic-accent);
-      color: #03131d;
-    }
-
-    .topic-hub-action-secondary {
-      background: color-mix(in srgb, var(--site-panel) 74%, transparent);
-      color: var(--site-text);
-    }
-
-    .topic-hub-action:hover,
-    .topic-hub-action:focus-visible,
     .topic-hub-text-link:hover,
     .topic-hub-text-link:focus-visible {
       color: var(--topic-accent-readable);
       transform: translateY(-0.1rem);
     }
 
-    .topic-hub-action-primary:hover,
-    .topic-hub-action-primary:focus-visible {
-      background: var(--topic-accent-strong);
-      color: #03131d;
-    }
-
-    .topic-hub-action:focus-visible,
     .topic-hub-text-link:focus-visible,
     .topic-hub-related-card:focus-visible {
       outline: 2px solid var(--topic-accent-readable);
       outline-offset: 0.24rem;
     }
 
-    .topic-hub-action svg,
     .topic-hub-text-link svg,
     .topic-hub-related-card > svg {
       width: 1.15rem;
@@ -373,25 +235,14 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       stroke-width: 1.8;
     }
 
-    .topic-hub-artwork {
-      position: relative;
-      aspect-ratio: 16 / 9;
-      overflow: hidden;
-      border: 1px solid rgb(var(--topic-accent-rgb) / 0.48);
-      background: var(--site-panel);
-      box-shadow: 0 2rem 5rem rgb(var(--topic-accent-rgb) / 0.08);
-    }
-
-    .topic-hub-artwork img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .topic-hub-section {
       scroll-margin-top: calc(var(--site-header-sticky-height) + 1.5rem);
       border-top: 1px solid var(--site-border);
       padding-block: clamp(3rem, 7vw, 5.75rem);
+    }
+
+    .topic-hub-featured {
+      border-top: 0;
     }
 
     .topic-hub-section-heading {
@@ -519,46 +370,15 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       --topic-accent-readable: color-mix(in srgb, var(--topic-accent) 52%, #0f172a);
     }
 
-    :host-context(.light) .topic-hub-artwork {
-      box-shadow: 0 2rem 4rem rgba(15, 23, 42, 0.11);
-    }
-
     @media (min-width: 920px) {
       .topic-hub-shell {
         width: min(100% - 3rem, 80rem);
       }
-
-      .topic-hub-hero {
-        grid-template-columns: minmax(0, 0.88fr) minmax(28rem, 1.12fr);
-      }
     }
 
     @media (max-width: 680px) {
-      .topic-hub-page {
-        padding-top: 2rem;
-      }
-
       .topic-hub-grid {
         background-size: 4.5rem 4.5rem;
-      }
-
-      .topic-hub-actions {
-        display: grid;
-        gap: 0;
-      }
-
-      .topic-hub-action {
-        justify-content: space-between;
-        border-width: 0 0 1px;
-        background: transparent;
-        color: var(--topic-accent-readable);
-        padding: 0.95rem 0;
-      }
-
-      .topic-hub-action-primary:hover,
-      .topic-hub-action-primary:focus-visible {
-        background: transparent;
-        color: var(--topic-accent-readable);
       }
 
       .topic-hub-section-heading-row {
@@ -573,7 +393,6 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .topic-hub-action,
       .topic-hub-text-link,
       .topic-hub-related-card,
       .topic-hub-related-media img {
@@ -608,7 +427,6 @@ export class TopicHubComponent {
       ?? this.topicHubRepository.getPublishedTopicHubs()[0]
       ?? TOPIC_HUBS[0]
   ));
-  protected readonly heroImage = computed(() => resolveTopicHubHeroImage(this.hub()));
   protected readonly pageCopy = computed(() => resolveTopicHubPageCopy(this.hub()));
   protected readonly topicAppearance = computed(() => ({
     label: this.hub().theme.shortLabel,
@@ -664,11 +482,7 @@ export class TopicHubComponent {
     return resolveTopicHubHeroImage(topicHub);
   }
 
-  protected topicSectionHref(fragment: string): string {
-    return `/${this.pathNames.TOPICS}/${this.hub().slug}#${fragment}`;
-  }
-
-  protected handleTopicSectionClick(event: MouseEvent, fragment: string): void {
+  protected handleTopicSectionNavigation({event, fragment}: TopicHubSectionNavigation): void {
     if (!this.isPrimaryNavigationClick(event)) {
       return;
     }
