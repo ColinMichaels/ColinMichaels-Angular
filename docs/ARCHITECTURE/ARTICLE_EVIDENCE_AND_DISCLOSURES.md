@@ -53,6 +53,22 @@ The check does not block publication because a truthful legacy or first-person p
 
 The protected Posts screen adds a read-only **Evidence review queue** over the posts already loaded for CMS administration. It reports published posts needing review, all posts needing review, and reviewed posts; the Evidence filter exposes **Published needs review**, **All needs review**, and **Reviewed** views. A post is incomplete when it lacks a basis or summary, or when source-dependent `researched`, `manufacturer-supplied`, or `mixed` evidence lacks a valid source-review date. `hands-on` and `first-person` evidence do not acquire an unrelated source-date requirement. The queue links to each post's existing Edit workflow and deliberately offers no bulk classification or disclosure mutation.
 
+### Legacy mutation safety
+
+The normal post-editor **Save Post** action remains a complete-document mutation. It collects the active Editor.js document and runs canonical block conversion before calling the trusted publishing Function. A legacy post with malformed, mismatched, or unsupported block JSON can therefore reject a full save before any Firestore update occurs.
+
+Existing posts now expose **Save evidence only** inside **Evidence & Disclosures**. The client sends only post identity, expected revision, a unique request ID, and normalized `editorial` metadata to the dedicated `updateEditorial` operation on `mutateBlogPost`. It never requests an Editor.js document or sends article blocks.
+
+The CMS-role-gated transaction:
+
+- accepts only the seven allowlisted editorial fields or `null`, trims optional text, rejects unknown fields, invalid evidence values, invalid dates, and oversized text;
+- requires the current post revision and returns the standard stale-revision conflict rather than overwriting a newer document;
+- updates only `editorial`, `revision`, `updatedAt`, and `syncedAt`; blocks, title, slug, status, publication dates, media, taxonomy, authorship, preview state, and unknown legacy fields are not validated or rewritten;
+- records a `blogPublishingAudit` event and a seven-day idempotency receipt, so the same uncertain request can replay without a second revision or audit event;
+- returns a bounded metadata result that the client merges into its already-loaded post instead of requiring the server to round-trip or revalidate legacy content.
+
+The button marks only the evidence controls as saved. Unsaved body, metadata, and Social Shares work remains dirty and stays in Recovery against the new revision. **Save Post** is still required for an intentional full-document change. Do not delete, normalize, reorder, or rewrite legacy blocks merely to make evidence metadata pass.
+
 ## Reference and Schema Contract
 
 `collectBlogReferenceUrls()` is the browser/CMS authority for explicit reference extraction. It recognizes literal URLs, Markdown links, safe HTML anchors, recursive list content, stats, chart points, and `sourceUrl` fields. It excludes same-site links from the external citation list, article self-links, images, galleries, embeds, and unsafe protocols.
@@ -66,13 +82,14 @@ The protected Posts screen adds a read-only **Evidence review queue** over the p
 - `src/app/features/blog/utils/blog-reference-urls.util.ts`: shared browser/CMS reference extraction.
 - `src/app/features/blog/components/editorial-evidence/blog-editorial-evidence.component.ts`: reader-facing reviewed and legacy states.
 - `src/app/features/blog/pages/blog-detail/blog-detail.component.ts`: article placement.
-- `src/app/admin/cms/pages/post-editor/post-editor.component.ts`: authoring controls and persistence.
+- `src/app/admin/cms/pages/post-editor/post-editor.component.ts`: full-document authoring plus the evidence-only control and selective dirty-state handling.
 - `src/app/admin/cms/pages/post-list/post-list.component.ts`: read-only counts, filters, evidence state, and individual Edit routing.
 - `src/app/admin/cms/utils/blog-evidence-review.util.ts`: deterministic unclassified, incomplete, reviewed, and published-priority projection.
 - `src/app/admin/cms/utils/blog-seo-checklist.ts`: advisory evidence review.
 - `src/app/admin/cms/models/post-recovery.model.ts`: backward-compatible local recovery shape.
 - `src/app/shared/seo/seo.service.ts` and `src/app/features/blog/services/blog-open-graph.service.ts`: Angular `BlogPosting.citation` output.
-- `functions/src/blog-publishing.ts`: trusted write validation.
+- `src/app/features/blog/services/blog-publishing.service.ts`, `blog-storage.service.ts`, and `blog-repository.service.ts`: bounded editorial-update request and local merge without block serialization.
+- `functions/src/blog-publishing.ts`: trusted full-write validation plus the revisioned, audited, idempotent `updateEditorial` transaction operation.
 - `functions/src/blog-citations.ts` and `functions/src/index.ts`: crawler citation extraction and visible fallback evidence.
 - `src/app/features/search/services/site-search.service.ts`: article evidence and disclosure text in internal search.
 
@@ -84,6 +101,7 @@ The protected Posts screen adds a read-only **Evidence review queue** over the p
 - Existing Editor.js blocks, routes, slugs, authors, dates, comments, points, media, analytics, and publication states are unchanged.
 - Classification requires human review. The system must not infer testing, ownership, sponsorship, supply, or verification from prose or media.
 - The queue is a client projection over existing CMS posts. It introduces no Firestore field, index, write path, route, or migration and disappears safely if the Hosting artifact is rolled back.
+- The evidence-only operation is additive and narrowly allowlisted. It must not accept general post fields or become a bypass around canonical block validation or trusted full-post publishing.
 
 Priority migration should start with high-impression articles, product comparisons, health/safety material, and posts paired with a YouTube video. Each review should add only supportable metadata and working source URLs; it should not bulk-label the corpus.
 
@@ -95,14 +113,18 @@ The first adoption batch is prepared locally in four source-led content packages
 
 Deploy Angular Hosting and the matching Functions renderer from the same tested commit. Verify reviewed and unclassified examples in hydrated HTML, initial crawler HTML, and JSON-LD before approving production.
 
+For the evidence-only workflow, deploy the updated `mutateBlogPost` Function before or with Hosting. It requires no Firestore rewrite, index, Rules change, Storage change, secret, or environment value. Verify one authorized update, one unauthorized rejection, one stale-revision rejection, and preservation of a legacy article body before using it for editorial migration. Local implementation does not prove that the Function or button is live.
+
 Rollback removes the reader component, CMS controls, citation output, and trusted-write validation together. Stored optional metadata can remain safely ignored by the prior reader. Do not delete or rewrite post documents during rollback.
 
 The queue itself can be rolled back independently by removing its Posts-screen projection and guide entry. Because it is read-only and stores no queue state, no data cleanup is required.
 
+The evidence-only control can be rolled back independently by removing the Hosting button first and then reverting the `updateEditorial` Function operation. Existing `editorial` metadata and audit records remain valid; no cleanup or reverse migration is required.
+
 ## Validation Contract
 
 - Focused model, normalizer, reference extractor, evidence component, CMS checklist, recovery, Open Graph, and SEO schema tests.
-- Functions publishing and citation tests.
+- Functions publishing and citation tests, including invalid editorial shape, stale revision, idempotent replay, and malformed legacy-block preservation.
 - `npm run build`
 - `npm run lint`
 - `npm run build:functions`

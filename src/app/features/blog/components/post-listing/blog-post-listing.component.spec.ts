@@ -360,7 +360,8 @@ describe('BlogPostListingComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('img[src*="homepage-interior"]')).toBeNull();
 
-    element.querySelector<HTMLAnchorElement>('.post-listing__media')?.focus();
+    element.querySelector<HTMLAnchorElement>('.post-listing__media')
+      ?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
 
     expect(element.querySelector('app-post-image-scrubber img')?.getAttribute('src'))
@@ -380,7 +381,7 @@ describe('BlogPostListingComponent', () => {
 
     const element = fixture.nativeElement as HTMLElement;
     const media = element.querySelector<HTMLAnchorElement>('.post-listing__media');
-    media?.focus();
+    media?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
 
     expect(media?.getAttribute('href')).toBe('/blog/first-post');

@@ -1,4 +1,6 @@
-# SEO Action Plan: colinmichaels.com
+# Historical SEO Action Plan: colinmichaels.com
+
+> July 2026 snapshot. This file preserves the July 3 audit follow-up and July 19 local remediation record. Use the [August 2026 Creator Discovery and Trust Action Plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md) for the current audit queue and the [project roadmap](docs/FUTURE_FEATURES/ROADMAP.md) for prioritized engineering work. Reverify production before treating any status below as current.
 
 ## Current Status
 

@@ -1,7 +1,7 @@
 import {TestBed} from '@angular/core/testing';
 import {BehaviorSubject, filter, firstValueFrom, of} from 'rxjs';
 
-import {BlogPost} from '../models/blog-post.model';
+import {BlogEditorialMetadata, BlogPost} from '../models/blog-post.model';
 import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../models/blog-post-revision.model';
 import {BlogStorageService} from './blog-storage.service';
 import {BlogRepositoryService} from './blog-repository.service';
@@ -76,6 +76,28 @@ class FakeBlogStorageService {
     }
 
     const nextPost = {...post, revision: expectedRevision + 1};
+    this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), nextPost]);
+    return nextPost;
+  }
+
+  async updatePostEditorial(
+    post: BlogPost,
+    editorial: BlogEditorialMetadata | undefined,
+    expectedRevision = normalizeBlogPostRevision(post.revision)
+  ): Promise<BlogPost> {
+    const existingPost = this.getPosts().find(savedPost => savedPost.id === post.id);
+    const actualRevision = existingPost ? normalizeBlogPostRevision(existingPost.revision) : null;
+
+    if (actualRevision !== expectedRevision) {
+      throw new BlogPostRevisionConflictError(post.id, expectedRevision, actualRevision, existingPost);
+    }
+
+    const nextPost = {
+      ...post,
+      editorial,
+      revision: expectedRevision + 1,
+      updatedAt: '2026-08-21T16:00:00.000Z',
+    };
     this.setPosts([...this.getPosts().filter(savedPost => savedPost.id !== post.id), nextPost]);
     return nextPost;
   }
@@ -414,6 +436,24 @@ describe('BlogRepositoryService', () => {
     expect(service.getAdminStats().total).toBe(3);
     expect(storage.getPosts().some(post => post.id === savedPost.id)).toBeTrue();
     expect(savedPost.revision).toBe(1);
+  });
+
+  it('updates editorial metadata without replacing article blocks or other post fields', async () => {
+    const originalBlocks = draftPost.blocks;
+    const savedPost = await service.updatePostEditorial(draftPost, {
+      evidenceBasis: 'researched',
+      evidenceSummary: 'Public sources were checked independently.',
+      sourceReviewedAt: '2026-08-21',
+    });
+
+    expect(savedPost.blocks).toBe(originalBlocks);
+    expect(savedPost.title).toBe(draftPost.title);
+    expect(savedPost.revision).toBe(1);
+    expect(savedPost.editorial).toEqual({
+      evidenceBasis: 'researched',
+      evidenceSummary: 'Public sources were checked independently.',
+      sourceReviewedAt: '2026-08-21',
+    });
   });
 
   it('rejects a stale canonical save without overwriting the newer revision', async () => {

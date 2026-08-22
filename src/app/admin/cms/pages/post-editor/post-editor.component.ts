@@ -822,6 +822,27 @@ function getErrorMessage(error: unknown): string {
                     <p class="border border-cyan-400/25 bg-cyan-400/5 px-3 py-2 text-xs leading-5 text-zinc-400 md:col-span-2">
                       Unclassified articles remain publishable for migration safety, but readers see that their evidence details have not yet been reviewed under the current editorial standard.
                     </p>
+                    <div
+                      class="flex flex-col gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between md:col-span-2">
+                      <div class="space-y-1">
+                        <p class="text-xs font-medium text-zinc-200">Legacy-safe evidence update</p>
+                        @if (isNewPost) {
+                          <p class="text-xs leading-5 text-zinc-500">Save the new post once before using the
+                            evidence-only update.</p>
+                        } @else {
+                          <p class="text-xs leading-5 text-zinc-500">Updates only Evidence & Disclosures. Article blocks
+                            and every other unsaved field stay untouched.</p>
+                        }
+                      </div>
+                      <button
+                        type="button"
+                        class="h-9 shrink-0 border border-cyan-400/70 px-3 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                        [disabled]="isNewPost || !hasUnsavedEditorialChanges || isEditorialSaveInProgress || isSaveInProgress || isDeleteInProgress"
+                        (click)="saveEditorialOnly()"
+                      >
+                        {{ isEditorialSaveInProgress ? 'Saving evidence' : 'Save evidence only' }}
+                      </button>
+                    </div>
                   </div>
                 </app-admin-control-module>
 
@@ -1224,7 +1245,7 @@ function getErrorMessage(error: unknown): string {
                   <button
                     type="button"
                     class="hidden h-9 border border-red-500/60 px-3 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent sm:inline-block"
-                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
+                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress || isEditorialSaveInProgress"
                     (click)="deleteCurrentPost()"
                   >
                     {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
@@ -1233,7 +1254,7 @@ function getErrorMessage(error: unknown): string {
                   <button
                     type="button"
                     class="h-9 border border-cyan-400 bg-cyan-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
-                    [disabled]="isSaveInProgress || isDeleteInProgress"
+                    [disabled]="isSaveInProgress || isDeleteInProgress || isEditorialSaveInProgress"
                     (click)="savePost()"
                   >
                     {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
@@ -1325,6 +1346,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected lastSaved: EditorSavedDocument | null = null;
   protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
+  protected isEditorialSaveInProgress = false;
   protected isDeleteInProgress = false;
   protected readonly isPackageImportInProgress = signal(false);
   protected assistantResult: BlogAssistantResult | null = null;
@@ -1533,6 +1555,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected get hasUnsavedChanges(): boolean {
     return this.postForm.dirty || this.hasUnsavedSocialChanges || this.hasUnsavedEditorChanges();
+  }
+
+  protected get hasUnsavedEditorialChanges(): boolean {
+    return this.editorialControls.some(control => control.dirty);
   }
 
   protected get recoverySummary(): string {
@@ -2110,6 +2136,11 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async savePost(): Promise<boolean> {
+    if (this.isEditorialSaveInProgress) {
+      this.toast.error('Wait for the evidence-only update to finish before saving the complete post.');
+      return false;
+    }
+
     if (!this.editorComponent) {
       this.toast.error('The editor is still loading. Try saving again in a moment.');
       return false;
@@ -2129,6 +2160,48 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return false;
     } finally {
       this.isSaveInProgress = false;
+    }
+  }
+
+  protected async saveEditorialOnly(): Promise<void> {
+    if (!this.currentPost || this.isNewPost) {
+      this.toast.error('Save this post once before using the evidence-only update.');
+      return;
+    }
+    if (!this.hasUnsavedEditorialChanges) {
+      this.toast.error('Change an Evidence & Disclosures field before saving evidence only.');
+      return;
+    }
+
+    this.isEditorialSaveInProgress = true;
+
+    try {
+      const savedPost = await this.blogRepository.updatePostEditorial(
+        this.currentPost,
+        createEditorialMetadataFromForm(this.postForm.getRawValue())
+      );
+
+      this.currentPost = savedPost;
+      this.setEditorialFormFromPost(savedPost);
+      this.editorialControls.forEach(control => control.markAsPristine());
+      this.saveConflict.set(null);
+      this.syncLastSavedBackupJson();
+
+      if (this.hasUnsavedChanges) {
+        this.requestRecoverySave();
+      } else {
+        await this.deleteRecoveryBestEffort(savedPost.id);
+      }
+
+      this.toast.success(`Saved evidence metadata for "${savedPost.title}" without rewriting article blocks.`);
+    } catch (error) {
+      if (error instanceof BlogPostRevisionConflictError) {
+        this.saveConflict.set(error);
+        this.requestRecoverySave();
+      }
+      this.toast.error(error instanceof Error ? error.message : 'Unable to save evidence metadata.');
+    } finally {
+      this.isEditorialSaveInProgress = false;
     }
   }
 
@@ -2717,6 +2790,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
   }
 
+  private get editorialControls() {
+    return [
+      this.postForm.controls.evidenceBasis,
+      this.postForm.controls.evidenceSummary,
+      this.postForm.controls.sourceReviewedAt,
+      this.postForm.controls.relationshipDisclosure,
+      this.postForm.controls.aiAssistanceDisclosure,
+      this.postForm.controls.syntheticMediaDisclosure,
+      this.postForm.controls.updateNote,
+    ] as const;
+  }
+
   private createForm(post: BlogPost): FormGroup<PostEditorForm> {
     const catCorner = createCmsCatCornerFormValue(post.catCorner);
 
@@ -2793,6 +2878,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
       updateNote: post.editorial?.updateNote ?? '',
     });
     this.syncCatCornerDiscoveryControl();
+  }
+
+  private setEditorialFormFromPost(post: BlogPost): void {
+    this.postForm.patchValue({
+      evidenceBasis: post.editorial?.evidenceBasis ?? '',
+      evidenceSummary: post.editorial?.evidenceSummary ?? '',
+      sourceReviewedAt: post.editorial?.sourceReviewedAt ?? '',
+      relationshipDisclosure: post.editorial?.relationshipDisclosure ?? '',
+      aiAssistanceDisclosure: post.editorial?.aiAssistanceDisclosure ?? '',
+      syntheticMediaDisclosure: post.editorial?.syntheticMediaDisclosure ?? '',
+      updateNote: post.editorial?.updateNote ?? '',
+    }, {emitEvent: false});
   }
 
   private createAuthorSnapshot(author: AuthorProfile): BlogPost['author'] {

@@ -6,6 +6,10 @@ This project combines a public portfolio and publishing site with a macOS-inspir
 
 The normal site routes share a global header/menu and persistent light/dark theme toggle. The OS desktop/login/boot/sleep routes remain outside that shared site shell so the reusable OS framework can preserve its own interface system.
 
+The protected Profile surface owns account identity, providers, roles, points, device settings, communication preferences, and a device-local Reading library. Reading records are ordered by recent modification and paginated 10 at a time; cross-device account synchronization is deliberately deferred.
+
+For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated audits and the root July SEO reports are evidence snapshots rather than live backlog authorities.
+
 ## Core Experience
 
 - Desktop shell with app windows and focus management.
@@ -31,6 +35,8 @@ The normal site routes share a global header/menu and persistent light/dark them
   reusable global site header, theme persistence, not-found UI, and shared primitives.
 - `src/app/features/blog`:
   public blog index, category listing, detail routes, typed post models, Firestore-backed repository/storage, and read-only block rendering.
+- `src/app/features/search`, `src/app/features/topics`, `src/app/features/authors`, and `src/app/features/youtube`:
+  public discovery, canonical topic journeys, bylines/profiles, and verified channel-aware video continuations.
 - `src/app/admin`:
   protected admin and CMS route boundary for post listing, creation, and editing.
 - `src/app/labs`:

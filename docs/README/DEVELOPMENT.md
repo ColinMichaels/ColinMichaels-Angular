@@ -60,7 +60,17 @@ npm run test:release
 
 It first verifies a supported Node runtime; run `nvm use` if it asks you to switch to the pinned Node `24.15.0`. It then runs lint, the production application build, the complete Angular suite, content-package validation, and every non-emulator Functions suite. It does not deploy, access production data, start Firebase emulators, or prove live behavior; run emulator and production verification separately when a change needs them.
 
-Current verified baseline (July 16, 2026, Node `24.15.0`; Functions build/tests also verified on Node `22.15.0`):
+The release gate also runs:
+
+```bash
+npm run test:docs
+```
+
+That check validates local links across tracked Markdown, requires every architecture document in the documentation index, preserves the historical labels on the root July SEO reports and completed tech-debt log, and requires the active roadmap to be reviewed at least every 120 days. It does not check external URL availability or prove that dated production claims remain current.
+
+Historical clean baseline (July 16, 2026, Node `24.15.0`; Functions build/tests were also verified on Node `22.15.0` at that time):
+
+The counts below explain a known good repository state; they are not a substitute for a current run. Use `npm run test:release` for the current checkout and report its exact counts and failures.
 
 - `npm run build`: passes with `0` optimization warnings and no `allowedCommonJsDependencies` exemptions after replacing the legacy Day.js, audio, and Editor.js YouTube runtime paths.
 - `npm run lint`: passes with `0` errors and `0` warnings after the accessibility and explicit-typing cleanup.
