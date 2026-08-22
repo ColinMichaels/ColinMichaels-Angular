@@ -3,6 +3,9 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Inject,
+  Input,
+  Optional,
   ViewChild,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
@@ -28,6 +31,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {BehaviorSubject} from 'rxjs';
 import {FinderWindowComponent} from '../finder-window/finder-window.component';
 import {FileEntry, FileSystemService, VIEW_MODES} from '../file-system.service';
+import {FINDER_FILE_OPENER, FinderFileOpener} from '../file-opener';
 
 type FinderDialogMode = 'new-folder' | 'rename' | 'move' | 'tags' | 'delete' | 'empty-trash' | 'reset';
 
@@ -117,6 +121,7 @@ export class FinderAppComponent {
   private readonly currentDirectorySubject: BehaviorSubject<FileEntry>;
   private readonly currentDirectory$;
 
+  @Input()
   set params(value: unknown) {
     this.pendingParams = this.parseParams(value);
     void this.openPendingPath();
@@ -189,6 +194,7 @@ export class FinderAppComponent {
 
   constructor(
     private readonly fileSystemService: FileSystemService,
+    @Optional() @Inject(FINDER_FILE_OPENER) private readonly fileOpener: FinderFileOpener | null,
     private readonly destroyRef: DestroyRef,
   ) {
     this.currentDirectorySubject = new BehaviorSubject<FileEntry>(
@@ -322,13 +328,39 @@ export class FinderAppComponent {
 
   activateEntry(entry: FileEntry): void {
     this.selectEntry(entry);
-    if (entry.isDir && !this.isTrashView) {
-      this.navigate(entry.path);
-      requestAnimationFrame(() => this.focusFirstEntryOrRoot());
+    if (entry.isDir) {
+      if (this.isTrashView) {
+        this.statusMessage = `${entry.name} must be put back before it can be opened.`;
+      } else {
+        this.navigate(entry.path);
+        requestAnimationFrame(() => this.focusFirstEntryOrRoot());
+      }
       return;
     }
-    if (!entry.isDir) {
-      this.statusMessage = `${entry.name} selected. File opening is planned for the next Finder integration phase.`;
+    const result = this.fileOpener?.open({
+      file: {
+        id: entry.id,
+        name: entry.name,
+        virtualPath: entry.path,
+        type: entry.type,
+        ...(entry.mimeType ? {mimeType: entry.mimeType} : {}),
+        ...(entry.size !== undefined ? {size: entry.size} : {}),
+      },
+      content: {kind: 'metadata-only'},
+    }) ?? {status: 'unsupported'};
+    switch (result.status) {
+      case 'content-opened':
+        this.statusMessage = `Opened ${entry.name} in ${result.appTitle}.`;
+        break;
+      case 'metadata-preview-launched':
+        this.statusMessage = `Opened a metadata preview for ${entry.name} in ${result.appTitle}. No file contents are attached.`;
+        break;
+      case 'failed':
+        this.statusMessage = `${result.appTitle ?? 'The selected application'} could not open ${entry.name}.`;
+        break;
+      case 'unsupported':
+        this.statusMessage = `No installed application can open ${entry.name}.`;
+        break;
     }
   }
 

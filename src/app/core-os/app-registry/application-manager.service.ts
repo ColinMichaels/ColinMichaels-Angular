@@ -2,7 +2,14 @@ import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import {ApplicationLifecycleService} from './application-lifecycle.service';
 import {ApplicationRegistryService} from './application-registry.service';
-import {AppEntry, ApplicationInstance, AppType} from './application-manager.models';
+import {
+  ApplicationFileOpenParams,
+  ApplicationFileOpenResult,
+  AppEntry,
+  ApplicationInstance,
+  AppType,
+} from './application-manager.models';
+import type {FinderFileOpenRequest} from '@core-os/filesystem/file-opener';
 
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
@@ -79,6 +86,32 @@ export class ApplicationManagerService {
   openApplication(id: string, args?: unknown): boolean {
     const app = this.applicationRegistry.getInstalledAppById(id);
     return this.applicationLifecycle.openApplication(id, app, args);
+  }
+
+  open(request: FinderFileOpenRequest): ApplicationFileOpenResult {
+    const app = this.applicationRegistry.getInstalledAppForFile(request.file);
+    if (!app) {
+      return {status: 'unsupported'};
+    }
+
+    const params: ApplicationFileOpenParams = {
+      source: 'finder',
+      content: request.content,
+      file: {
+        id: request.file.id,
+        name: request.file.name,
+        virtualPath: request.file.virtualPath,
+        type: request.file.type,
+        ...(request.file.mimeType ? {mimeType: request.file.mimeType} : {}),
+        ...(request.file.size !== undefined ? {size: request.file.size} : {}),
+      },
+    };
+    const opened = this.applicationLifecycle.openApplication(app.id, app, params);
+    return {
+      status: opened ? 'metadata-preview-launched' : 'failed',
+      appId: app.id,
+      appTitle: app.title,
+    };
   }
 
   closeApplication(id: string): void {

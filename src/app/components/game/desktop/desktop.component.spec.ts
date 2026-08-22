@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import {LogService} from '../services/log.service';
 import {GameLevel} from '../services/game-config.service';
+import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
 
 describe('DesktopComponent', () => {
   let component: DesktopComponent;
@@ -18,6 +19,7 @@ describe('DesktopComponent', () => {
 
   // Mocks for injected services
   const appManagerServiceMock = {
+    open: jasmine.createSpy('open'),
     openApplication: jasmine.createSpy('openApplication'),
     closeAllApps: jasmine.createSpy('closeAllApps'),
     setApplicationFocus: jasmine.createSpy('setApplicationFocus'),
@@ -96,6 +98,10 @@ describe('DesktopComponent', () => {
 
   it('should create the component', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('provides the application manager through the Finder file-opening port', () => {
+    expect(fixture.debugElement.injector.get(FINDER_FILE_OPENER)).toBe(appManagerServiceMock);
   });
 
   it('should call onBeginInvestigation when view initializes', () => {

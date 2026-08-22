@@ -1,5 +1,6 @@
 import {Type} from '@angular/core';
 import type {IconProp} from '@fortawesome/fontawesome-svg-core';
+import type {FinderFileDescriptor, FinderFileOpenResult} from '@core-os/filesystem/file-opener';
 
 export interface AppMetadata {
   version?: string;
@@ -16,6 +17,39 @@ export interface AppWindowSize {
 export interface AppIcon {
   class?: string;
   svgPath: IconProp;
+}
+
+export interface AppFileAssociations {
+  extensions?: readonly string[];
+  mimeTypes?: readonly string[];
+  fileTypes?: readonly string[];
+}
+
+export type ApplicationFileDescriptor = FinderFileDescriptor;
+
+export interface ApplicationFileOpenParams {
+  source: 'finder';
+  content: {kind: 'metadata-only'};
+  file: ApplicationFileDescriptor;
+}
+
+export type ApplicationFileOpenResult = FinderFileOpenResult;
+
+export function isApplicationFileOpenParams(value: unknown): value is ApplicationFileOpenParams {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const candidate = value as Partial<ApplicationFileOpenParams>;
+  const file = candidate.file as Partial<ApplicationFileDescriptor> | undefined;
+  return candidate.source === 'finder'
+    && candidate.content?.kind === 'metadata-only'
+    && !!file
+    && typeof file.id === 'string'
+    && typeof file.name === 'string'
+    && typeof file.virtualPath === 'string'
+    && typeof file.type === 'string'
+    && (file.mimeType === undefined || typeof file.mimeType === 'string')
+    && (file.size === undefined || (Number.isSafeInteger(file.size) && file.size >= 0));
 }
 
 export type ApplicationKind = 'system' | 'other' | 'app';
@@ -39,6 +73,7 @@ export interface AppEntry {
   minimized?: boolean;
   focused?: boolean;
   params?: unknown;
+  fileAssociations?: AppFileAssociations;
 }
 
 export interface ApplicationInstance extends AppEntry {

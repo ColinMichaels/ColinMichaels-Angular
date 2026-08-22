@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
 import {ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
 import {Subject} from 'rxjs';
@@ -10,10 +10,15 @@ import {AppWindowComponent} from './app-window.component';
 @Component({
   selector: 'app-window-test-content',
   standalone: true,
-  template: '<p data-testid="embedded-content">Embedded content</p>',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: '<p data-testid="embedded-content">Embedded content: {{ renderedParam }}</p>',
 })
 class EmbeddedContentComponent {
-  params?: unknown;
+  @Input() params?: unknown;
+
+  get renderedParam(): string {
+    return JSON.stringify(this.params);
+  }
 }
 
 const createAnimationController = (name: string) => {
@@ -107,6 +112,8 @@ describe('AppWindowComponent', () => {
 
     expect(fixture.debugElement.query(By.directive(EmbeddedContentComponent)).componentInstance).toBe(instance);
     expect(instance.params).toEqual({path: 'trash'});
+    expect(fixture.nativeElement.querySelector('[data-testid="embedded-content"]')?.textContent)
+      .toContain('"path":"trash"');
   });
 
   it('tracks focus events case-insensitively', () => {
@@ -257,6 +264,17 @@ describe('AppWindowComponent', () => {
     tick(20);
 
     expect(document.activeElement).toBe(nextWindow);
+  }));
+
+  it('moves DOM focus into a window when lifecycle focus changes programmatically', fakeAsync(() => {
+    const appWindow = fixture.nativeElement.querySelector('.app-window') as HTMLDivElement;
+    appManager.getFocusedAppId.and.returnValue('cli');
+
+    focus$.next('cli');
+    tick(20);
+
+    expect(component.focused).toBeTrue();
+    expect(document.activeElement).toBe(appWindow);
   }));
 
   it('zooms within configured bounds and restores the prior window bounds', () => {

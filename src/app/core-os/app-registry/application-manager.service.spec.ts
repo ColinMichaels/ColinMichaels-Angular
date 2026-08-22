@@ -120,6 +120,73 @@ describe('ApplicationManagerService', () => {
     expect(lifecycleMock.openApplication).toHaveBeenCalledWith('finder', app, args);
   });
 
+  it('opens a file through its registered handler with an honest metadata-only contract', () => {
+    const app = createAppEntry({id: APP_ID.markdown_reader, title: 'Markdown Reader'});
+    const file = {
+      id: 'release-notes',
+      name: 'Release Notes.md',
+      virtualPath: '/Documents/Release Notes.md',
+      type: 'document',
+      mimeType: 'text/markdown',
+      size: 512,
+    };
+    const registryMock = jasmine.createSpyObj<Pick<
+      ApplicationRegistryService,
+      'getInstalledAppById' | 'getInstalledAppForFile'
+    >>('ApplicationRegistryService', ['getInstalledAppById', 'getInstalledAppForFile']);
+    registryMock.getInstalledAppForFile.and.returnValue(app);
+    const lifecycleMock = jasmine.createSpyObj<Pick<
+      ApplicationLifecycleService,
+      'loadSavedApplicationIds' | 'openApplication'
+    >>('ApplicationLifecycleService', ['loadSavedApplicationIds', 'openApplication']);
+    lifecycleMock.loadSavedApplicationIds.and.returnValue([]);
+    lifecycleMock.openApplication.and.returnValue(true);
+    const service = new ApplicationManagerService(
+      registryMock as unknown as ApplicationRegistryService,
+      lifecycleMock as unknown as ApplicationLifecycleService
+    );
+
+    expect(service.open({file, content: {kind: 'metadata-only'}})).toEqual({
+      status: 'metadata-preview-launched',
+      appId: APP_ID.markdown_reader,
+      appTitle: 'Markdown Reader',
+    });
+    expect(lifecycleMock.openApplication).toHaveBeenCalledWith(APP_ID.markdown_reader, app, {
+      source: 'finder',
+      content: {kind: 'metadata-only'},
+      file,
+    });
+  });
+
+  it('reports unsupported and failed file activation without claiming success', () => {
+    const app = createAppEntry({id: APP_ID.music_player, title: 'Music'});
+    const file = {id: 'song', name: 'song.mp3', virtualPath: '/Music/song.mp3', type: 'audio'};
+    const registryMock = jasmine.createSpyObj<Pick<
+      ApplicationRegistryService,
+      'getInstalledAppById' | 'getInstalledAppForFile'
+    >>('ApplicationRegistryService', ['getInstalledAppById', 'getInstalledAppForFile']);
+    const lifecycleMock = jasmine.createSpyObj<Pick<
+      ApplicationLifecycleService,
+      'loadSavedApplicationIds' | 'openApplication'
+    >>('ApplicationLifecycleService', ['loadSavedApplicationIds', 'openApplication']);
+    lifecycleMock.loadSavedApplicationIds.and.returnValue([]);
+    lifecycleMock.openApplication.and.returnValue(false);
+    const service = new ApplicationManagerService(
+      registryMock as unknown as ApplicationRegistryService,
+      lifecycleMock as unknown as ApplicationLifecycleService
+    );
+
+    expect(service.open({file, content: {kind: 'metadata-only'}})).toEqual({status: 'unsupported'});
+    expect(lifecycleMock.openApplication).not.toHaveBeenCalled();
+
+    registryMock.getInstalledAppForFile.and.returnValue(app);
+    expect(service.open({file, content: {kind: 'metadata-only'}})).toEqual({
+      status: 'failed',
+      appId: APP_ID.music_player,
+      appTitle: 'Music',
+    });
+  });
+
   it('derives app running state from lifecycle instances without mutating registry app entries', () => {
     const app = createAppEntry({id: 'finder', title: 'Finder', instanceIndex: 0});
     const registryApps = [app];

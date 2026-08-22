@@ -28,6 +28,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '@core-os/context-menu/context-menu.service';
 import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
+import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
 
 @Component({
   selector: 'app-desktop',
@@ -46,6 +47,7 @@ import {LogService} from '../services/log.service';
   ],
   templateUrl: './desktop.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
+  providers: [{provide: FINDER_FILE_OPENER, useExisting: ApplicationManagerService}],
   styles: ``
 })
 export class DesktopComponent implements OnInit, AfterViewInit {

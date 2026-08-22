@@ -1,6 +1,7 @@
 import {ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick} from '@angular/core/testing';
 import {BehaviorSubject} from 'rxjs';
 import {FileEntry, FileSystemService, VIEW_MODES} from '../file-system.service';
+import {FINDER_FILE_OPENER} from '../file-opener';
 import {FinderAppComponent} from './finder-app.component';
 
 function folder(id: string, name: string, path: string, parentId?: string): FileEntry {
@@ -159,16 +160,25 @@ class FileSystemStub {
   }
 }
 
+class FileOpenerStub {
+  readonly open = jasmine.createSpy('open').and.returnValue({status: 'unsupported'});
+}
+
 describe('FinderAppComponent', () => {
   let component: FinderAppComponent;
   let fixture: ComponentFixture<FinderAppComponent>;
   let fileSystem: FileSystemStub;
+  let fileOpener: FileOpenerStub;
 
   beforeEach(async () => {
     fileSystem = new FileSystemStub();
+    fileOpener = new FileOpenerStub();
     await TestBed.configureTestingModule({
       imports: [FinderAppComponent],
-      providers: [{provide: FileSystemService, useValue: fileSystem}],
+      providers: [
+        {provide: FileSystemService, useValue: fileSystem},
+        {provide: FINDER_FILE_OPENER, useValue: fileOpener},
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FinderAppComponent);
@@ -209,6 +219,62 @@ describe('FinderAppComponent', () => {
     entry?.dispatchEvent(new MouseEvent('dblclick', {bubbles: true}));
     fixture.detectChanges();
     expect(component.currentPath).toBe('/Projects');
+  });
+
+  it('opens supported files through the registered application and reports unsupported files', () => {
+    const notes = {
+      ...folder('notes', 'Release Notes.md', '/Release Notes.md', 'root'),
+      isDir: false,
+      type: 'document',
+      mimeType: 'text/markdown',
+      children: undefined,
+    };
+    fileOpener.open.and.returnValue({
+      status: 'metadata-preview-launched',
+      appId: 'markdown-reader',
+      appTitle: 'Markdown Reader',
+    });
+
+    component.activateEntry(notes);
+
+    expect(fileOpener.open).toHaveBeenCalledOnceWith({
+      file: {
+        id: 'notes',
+        name: 'Release Notes.md',
+        virtualPath: '/Release Notes.md',
+        type: 'document',
+        mimeType: 'text/markdown',
+      },
+      content: {kind: 'metadata-only'},
+    });
+    expect(component.statusMessage).toBe(
+      'Opened a metadata preview for Release Notes.md in Markdown Reader. No file contents are attached.'
+    );
+
+    fileOpener.open.calls.reset();
+    const preventDefault = jasmine.createSpy('preventDefault');
+    component.handleEntryKeydown({key: 'Enter', preventDefault} as unknown as KeyboardEvent, notes, fileSystem.root);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(fileOpener.open).toHaveBeenCalledTimes(1);
+
+    fileOpener.open.calls.reset();
+    fileOpener.open.and.returnValue({status: 'unsupported'});
+    component.activateEntry({...notes, id: 'photo', name: 'photo.jpg', path: '/photo.jpg', type: 'image'});
+    expect(component.statusMessage).toBe('No installed application can open photo.jpg.');
+  });
+
+  it('keeps folders in Trash inert until they are restored', () => {
+    const trashedFolder = folder('trashed-folder', 'Archived Project', '/Projects/Archived Project', 'trash');
+    component.navigate('trash');
+    const trash = fileSystem.currentDir$.value;
+    trash.children = [trashedFolder];
+    fileSystem.currentDir$.next(trash);
+
+    component.activateEntry(trashedFolder);
+
+    expect(fileOpener.open).not.toHaveBeenCalled();
+    expect(component.currentPath).toBe('trash');
+    expect(component.statusMessage).toBe('Archived Project must be put back before it can be opened.');
   });
 
   it('opens folders with Enter and moves roving focus with arrow keys', fakeAsync(() => {

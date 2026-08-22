@@ -71,6 +71,125 @@ describe('ApplicationRegistryService', () => {
     expect(service.registeredApps.some((app) => app.id === customApp.id)).toBeFalse();
   });
 
+  it('resolves installed file handlers by MIME type, extension, and legacy file kind', () => {
+    const service = new ApplicationRegistryService();
+
+    expect(service.getInstalledAppForFile({
+      id: 'markdown',
+      name: 'Release Notes.bin',
+      virtualPath: '/Documents/Release Notes.bin',
+      type: 'document',
+      mimeType: 'Text/Markdown; charset=utf-8',
+    })?.id).toBe(APP_ID.markdown_reader);
+    expect(service.getInstalledAppForFile({
+      id: 'text',
+      name: 'README.MD',
+      virtualPath: '/Documents/README.MD',
+      type: 'document',
+    })?.id).toBe(APP_ID.markdown_reader);
+    expect(service.getInstalledAppForFile({
+      id: 'audio',
+      name: 'recording.unknown',
+      virtualPath: '/Music/recording.unknown',
+      type: 'audio',
+    })?.id).toBe(APP_ID.music_player);
+    expect(service.getInstalledAppForFile({
+      id: 'image',
+      name: 'sunset.jpg',
+      virtualPath: '/Photos/sunset.jpg',
+      type: 'image',
+      mimeType: 'image/jpeg',
+    })).toBeUndefined();
+  });
+
+  it('prefers exact MIME handlers over wildcard, extension, and file-kind handlers', () => {
+    const service = new ApplicationRegistryService();
+    const exactHandler = createAppEntry({
+      id: 'exact-audio-handler',
+      fileAssociations: {mimeTypes: ['audio/mpeg']},
+    });
+    service.registerApp(exactHandler);
+
+    expect(service.getInstalledAppForFile({
+      id: 'audio',
+      name: 'recording.mp3',
+      virtualPath: '/Music/recording.mp3',
+      type: 'audio',
+      mimeType: 'audio/mpeg',
+    })).toBe(exactHandler);
+
+    expect(service.getInstalledAppForFile({
+      id: 'misleading-audio-name',
+      name: 'recording.md',
+      virtualPath: '/Music/recording.md',
+      type: 'document',
+      mimeType: 'audio/ogg',
+    })?.id).toBe(APP_ID.music_player);
+  });
+
+  it('uses extension fallback only for missing or generic MIME metadata', () => {
+    const service = new ApplicationRegistryService();
+
+    expect(service.getInstalledAppForFile({
+      id: 'generic-markdown',
+      name: 'Release.Notes.MD',
+      virtualPath: '/Documents/Release.Notes.MD',
+      type: 'document',
+      mimeType: 'application/octet-stream',
+    })?.id).toBe(APP_ID.markdown_reader);
+    expect(service.getInstalledAppForFile({
+      id: 'conflicting-markdown',
+      name: 'Release Notes.md',
+      virtualPath: '/Documents/Release Notes.md',
+      type: 'document',
+      mimeType: 'image/jpeg',
+    })).toBeUndefined();
+    expect(service.getInstalledAppForFile({
+      id: 'dotfile',
+      name: '.md',
+      virtualPath: '/Documents/.md',
+      type: 'document',
+    })).toBeUndefined();
+  });
+
+  it('keeps association ties deterministic in catalog registration order', () => {
+    const service = new ApplicationRegistryService();
+    const firstHandler = createAppEntry({
+      id: 'first-note-handler',
+      fileAssociations: {extensions: ['notez']},
+    });
+    const secondHandler = createAppEntry({
+      id: 'second-note-handler',
+      fileAssociations: {extensions: ['notez']},
+    });
+    service.registerApp(firstHandler);
+    service.registerApp(secondHandler);
+
+    expect(service.getInstalledAppForFile({
+      id: 'note',
+      name: 'release.notez',
+      virtualPath: '/Documents/release.notez',
+      type: 'document',
+    })).toBe(firstHandler);
+  });
+
+  it('does not dispatch files to uninstalled handlers', () => {
+    const service = new ApplicationRegistryService();
+    const uninstalledHandler = createAppEntry({
+      id: 'pdf-viewer',
+      installed: false,
+      fileAssociations: {extensions: ['pdf']},
+    });
+    service.registerApp(uninstalledHandler);
+
+    expect(service.getInstalledAppForFile({
+      id: 'pdf',
+      name: 'resume.pdf',
+      virtualPath: '/resume.pdf',
+      type: 'document',
+    })).toBeUndefined();
+  });
+
   it('keeps legacy imports on the canonical catalog, model, and service symbols', () => {
     expect(getLegacyApplicationCatalog).toBe(getDefaultApplicationCatalog);
     expect(LEGACY_APP_ID).toBe(APP_ID);

@@ -1,12 +1,19 @@
 <!-- music-player.component.html -->
 <div
-  class="w-full max-w-xl mx-auto min-w-[600px] bg-gray-900 shadow-lg p-4 text-white">
+  class="music-player w-full max-w-xl mx-auto min-w-[600px] bg-gray-900 shadow-lg p-4 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+  role="region" tabindex="0" aria-label="Music player. Use Space to play or pause and arrow keys to change tracks.">
+  <div *ngIf="finderFile" role="status"
+       class="mb-4 rounded-lg border border-amber-400/25 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
+    <strong class="block break-words text-sm">{{ finderFile.name }}</strong>
+    Finder passed a metadata-only virtual item. No audio bytes are attached, so Music did not replace the current track.
+  </div>
   <!-- Now Playing Section -->
   <div class="flex items-center space-x-4">
     <img [src]="currentTrack.albumArt" alt="Album Art" class="w-16 h-16 rounded-md object-cover"/>
     <div class="flex-1">
       <h2 class="text-lg font-semibold">{{ currentTrack.title }}</h2>
       <p class="text-sm text-zinc-400">{{ currentTrack.artist }}</p>
+      <p class="sr-only" aria-live="polite">Now playing {{ currentTrack.title }} by {{ currentTrack.artist }}.</p>
       <div class="w-full h-1 bg-zinc-700 rounded mt-1">
         <div class="h-full bg-emerald-400 rounded" [style.width.%]="progress"></div>
       </div>
@@ -15,24 +22,32 @@
         <span>{{ formatTime(currentTrack.duration) }}</span>
       </div>
     </div>
-    <fa-icon [icon]="faExpand" class="text-zinc-500 hover:text-white cursor-pointer"></fa-icon>
+    <fa-icon [icon]="faExpand" class="text-zinc-500" aria-hidden="true"></fa-icon>
   </div>
 
   <!-- Controls -->
   <div class="flex justify-center space-x-6 mt-4 text-2xl">
-    <fa-icon [icon]="faBackward" class="cursor-pointer" (click)="prevTrack()"></fa-icon>
-    <fa-icon *ngIf="!isPlaying" [icon]="faPlay" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="play()"></fa-icon>
-    <fa-icon *ngIf="isPlaying" [icon]="faPause" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="pause()"></fa-icon>
-    <fa-icon [icon]="faForward" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="nextTrack()"></fa-icon>
-    <fa-icon [icon]="faRepeat" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="toggleRepeat()"></fa-icon>
-    <fa-icon [icon]="faShuffle" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="toggleShuffle()"></fa-icon>
-    <fa-icon [icon]="volume > 0 ? faVolumeDown: faVolumeMute" class="cursor-pointer" (keydown)="$event.preventDefault()"
-             (click)="toggleMute()"></fa-icon>
+    <button type="button" aria-label="Previous track" class="hover:text-emerald-300" (click)="prevTrack()">
+      <fa-icon [icon]="faBackward"></fa-icon>
+    </button>
+    <button type="button" [attr.aria-label]="isPlaying ? 'Pause' : 'Play'" class="hover:text-emerald-300"
+            (click)="togglePlayback()">
+      <fa-icon [icon]="isPlaying ? faPause : faPlay"></fa-icon>
+    </button>
+    <button type="button" aria-label="Next track" class="hover:text-emerald-300" (click)="nextTrack()">
+      <fa-icon [icon]="faForward"></fa-icon>
+    </button>
+    <button type="button" aria-label="Repeat" class="hover:text-emerald-300" [class.text-emerald-400]="repeatEnabled"
+            [attr.aria-pressed]="repeatEnabled" (click)="toggleRepeat()">
+      <fa-icon [icon]="faRepeat"></fa-icon>
+    </button>
+    <button type="button" aria-label="Shuffle" class="hover:text-emerald-300" (click)="toggleShuffle()">
+      <fa-icon [icon]="faShuffle"></fa-icon>
+    </button>
+    <button type="button" [attr.aria-label]="muted ? 'Unmute' : 'Mute'" class="hover:text-emerald-300"
+            (click)="toggleMute()">
+      <fa-icon [icon]="muted || volume === 0 ? faVolumeMute : faVolumeDown"></fa-icon>
+    </button>
   </div>
 
   <!-- Playlist and Library -->
@@ -68,8 +83,9 @@
       <fa-icon [icon]="faVolumeUp" class="text-white/80"></fa-icon>
       <input
         type="range"
-        [value]="music.volume"
-        (mouseup)="onVolumeChange($event)"
+        aria-label="Volume"
+        [value]="volume * 100"
+        (input)="onVolumeChange($event)"
         class="w-20 accent-gray-300"
         min="0"
         max="100"

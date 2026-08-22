@@ -106,6 +106,11 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
       maxInstances: 1,
       type: AppType.app,
       instanceIndex: 0,
+      fileAssociations: {
+        extensions: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'],
+        mimeTypes: ['audio/*'],
+        fileTypes: ['audio'],
+      },
       status: 'development',
       metadata: createDevelopmentMetadata()
     },
@@ -226,6 +231,10 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
       maxInstances: 10,
       type: AppType.system,
       params: {file: 'colinos-demo.doc.md'},
+      fileAssociations: {
+        extensions: ['md', 'markdown', 'txt'],
+        mimeTypes: ['text/markdown', 'text/plain'],
+      },
       instanceIndex: 0
     },
     {

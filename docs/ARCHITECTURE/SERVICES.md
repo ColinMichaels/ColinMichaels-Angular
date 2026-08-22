@@ -345,9 +345,22 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   canonical Finder UI and tray view-mode controls; the former game-service path is a compatibility export.
 - Current risks:
-  the browser-native tree stores metadata only, session undo is intentionally not persisted, and unknown schema versions stop normal Finder work rather than risking overwrite. First-use and reset writes use a presence-aware revision compare: revision-bearing values retain their token, while confirmed revisionless recovery uses revision zero and therefore may replace another revisionless corrupt value but cannot replace a newer valid nonzero revision. Exact JSON-compatible shape, dense arrays, field bounds, and UTF-8 bytes are checked before cloning; malformed localStorage text and stored `null` remain distinguishable from absence through a recovery-only record read; account changes invalidate pending reloads; and each Finder window owns its navigation/selection/dialog state. The UI can export a bounded diagnostic representation and explicitly reset it. Unsupported binary, cyclic, or oversized values are marked incomplete rather than claimed as a lossless JSON backup. Finder does not open file bytes or represent access to the user's Mac.
+  the browser-native tree stores metadata only, session undo is intentionally not persisted, and unknown schema versions stop normal Finder work rather than risking overwrite. First-use and reset writes use a presence-aware revision compare: revision-bearing values retain their token, while confirmed revisionless recovery uses revision zero and therefore may replace another revisionless corrupt value but cannot replace a newer valid nonzero revision. Exact JSON-compatible shape, dense arrays, field bounds, and UTF-8 bytes are checked before cloning; malformed localStorage text and stored `null` remain distinguishable from absence through a recovery-only record read; account changes invalidate pending reloads; and each Finder window owns its navigation/selection/dialog state. The UI can export a bounded diagnostic representation and explicitly reset it. Unsupported binary, cyclic, or oversized values are marked incomplete rather than claimed as a lossless JSON backup. Finder dispatches metadata-only requests through its injection port; it does not open file bytes or represent access to the user's Mac.
 - Planned cleanup:
-  add MIME-based application opening and drag/drop/redo as separate phases. Add real-folder access only behind an explicit user gesture, retained permission state, visible reconnect handling, and no-background-upload boundary.
+  add bounded actual-content references plus drag/drop/redo as separate phases. Add real-folder access only behind an explicit user gesture, retained permission state, visible reconnect handling, and no-background-upload boundary.
+
+## `core-os/app-registry/application-registry.service.ts`
+
+- Responsibility:
+  canonical installed-app lookup plus deterministic file-handler resolution from catalog associations.
+- Dependencies:
+  ordered application catalog and shared application/file descriptor models.
+- Called by:
+  `ApplicationManagerService` for lifecycle launch/focus/restore and Finder metadata-preview dispatch.
+- Current risks:
+  concrete application components remain catalog imports from the legacy game tree. Specific MIME values are authoritative; extension and legacy-kind fallback is restricted to missing/generic MIME metadata, and equal scores preserve registration order.
+- Planned cleanup:
+  move concrete feature manifests with their application cohorts and add trusted content capabilities without weakening the metadata-only Finder contract.
 
 ## `game-config.service.ts`
 

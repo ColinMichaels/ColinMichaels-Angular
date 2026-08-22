@@ -35,7 +35,7 @@ interface ParamsAwareComponent {
 }
 
 const isParamsAwareComponent = (instance: unknown): instance is ParamsAwareComponent => (
-  typeof instance === 'object' && instance !== null
+  typeof instance === 'object' && instance !== null && 'params' in instance
 );
 
 
@@ -152,7 +152,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['params'] && this.componentRef && isParamsAwareComponent(this.componentRef.instance)) {
-      this.componentRef.instance.params = this.params;
+      this.componentRef.setInput('params', this.params);
     }
     if (changes['minimized'] && !changes['minimized'].firstChange
       && changes['minimized'].previousValue === true
@@ -167,6 +167,9 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.initializeEventListeners();
     this.loadEmbeddedComponent();
     this.setInitialPosition(); // Set the position of the window based on offsets
+    if (this.focused && !this.minimized) {
+      this.scheduleDomFocusRestore(this.appWindowRef.nativeElement);
+    }
   }
 
   /** Set the initial position of the screen */
@@ -191,6 +194,9 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
           this.focused = focus?.toLowerCase() === this.id?.toLowerCase();
           if (this.focused) {
             this.cancelPendingMinimize();
+            if (this.appWindowRef?.nativeElement && !this.minimized) {
+              this.scheduleDomFocusRestore(this.appWindowRef.nativeElement);
+            }
           }
         }
       });
@@ -214,7 +220,7 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.containerRef.clear();
       this.componentRef = this.containerRef.createComponent(this.embeddedComponent);
       if (isParamsAwareComponent(this.componentRef.instance)) {
-        this.componentRef.instance.params = this.params;
+        this.componentRef.setInput('params', this.params);
       }
     }
   }
