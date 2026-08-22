@@ -107,6 +107,9 @@ graph TD
   C --> R[NotificationService]
   R --> S[NotificationServerComponent]
 
+  C --> U[ContextMenuService]
+  U --> V[ContextMenuComponent Overlay]
+
   G --> T[FileSystemService]
 ```
 

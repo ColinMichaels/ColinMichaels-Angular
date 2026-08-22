@@ -24,7 +24,7 @@ import {faCircle, faFile, faInfo, faServer, faTrophy} from '@fortawesome/free-so
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
+import {ContextMenuBuilder, ContextMenuService} from '@core-os/context-menu/context-menu.service';
 import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
 

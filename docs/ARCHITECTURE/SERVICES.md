@@ -297,6 +297,19 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   migrate each feature service independently without folding product behavior or visual redesign into the tray ownership move.
 
+## `core-os/context-menu/context-menu.service.ts`
+
+- Responsibility:
+  build role-filtered menu configuration and own the single CDK overlay used by the reusable Core OS context-menu renderer.
+- Dependencies:
+  Angular CDK overlay/portal, the canonical context-menu component, and the two retained registry prototypes.
+- Called by:
+  desktop right-click handling; former game service/component/menu paths re-export the canonical identities for compatibility.
+- Current risks:
+  ownership is migrated, but keyboard entry/focus, submenu rendering, action-close/focus restoration, and viewport-edge placement still require the separately tracked hardening pass.
+- Planned cleanup:
+  finish that behavior pass without changing desktop routes, app actions, role filtering, or device-local state.
+
 ## `media.service.ts`
 
 - Responsibility:

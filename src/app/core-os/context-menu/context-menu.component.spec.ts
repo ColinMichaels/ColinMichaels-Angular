@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {CONTEXT_MENU_DATA} from '../../services/context-menu.service';
+import {CONTEXT_MENU_DATA} from './context-menu.service';
 
 import { ContextMenuComponent } from './context-menu.component';
 

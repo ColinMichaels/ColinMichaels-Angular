@@ -30,6 +30,13 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 4. Tray view-mode controls mirror `FileSystemService.viewMode$` and write changes back through `setViewMode`; filesystem persistence and Finder rendering remain owned by their existing cohort.
 5. Tray logout calls `AuthService.logout()` so Firebase sign-out completes before that service redirects to login; on failure the tray remains open and exposes an alert without claiming the session ended.
 
+## Context Menu Flow
+
+1. Desktop right-click handling builds the Open, Open With, and Settings menu configuration through canonical `core-os/context-menu/ContextMenuBuilder`.
+2. `ContextMenuService` replaces any prior menu, positions one CDK overlay from the pointer's client coordinates, and injects the configuration into `ContextMenuComponent`.
+3. The transparent backdrop owns the existing outside-click dismissal behavior; no menu state is persisted and Open/Settings continue through `ApplicationManagerService` callbacks.
+4. The ownership move preserves those contracts. Keyboard entry/focus, functional submenu traversal, action-close/focus restoration, and viewport-edge placement remain a separately tracked hardening pass.
+
 ## CLI Command Flow
 
 1. User enters command in CLI app.

@@ -1,7 +1,7 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { DesktopComponent } from './desktop.component';
 import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
-import { ContextMenuService } from '../services/context-menu.service';
+import { ContextMenuService } from '@core-os/context-menu/context-menu.service';
 import { OverlayService } from '../services/overlay.service';
 import { NotificationService } from '../services/notification.service';
 import {OsUserService} from '../services/os-user.service';
