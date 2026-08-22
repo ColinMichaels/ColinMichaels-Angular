@@ -5,7 +5,7 @@ import { ContextMenuService } from '@core-os/context-menu/context-menu.service';
 import { OverlayService } from '../services/overlay.service';
 import { NotificationService } from '../services/notification.service';
 import {OsUserService} from '../services/os-user.service';
-import { TypewriterService } from '../services/typewriter.service';
+import { TypewriterService } from '@core-os/terminal/typewriter.service';
 import { SoundService } from '../services/sound.service';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';

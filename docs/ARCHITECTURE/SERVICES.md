@@ -206,18 +206,18 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   route remaining identity reads through `UserService` and validate command parameters consistently.
 
-## `typewriter.service.ts`
+## `core-os/terminal/typewriter.service.ts`
 
 - Responsibility:
   queued typed output with mode-dependent sound behavior.
 - Dependencies:
-  `SoundService`, `UserService`.
+  staged legacy `SoundService` and `OsUserService`; the OS-user mode relationship uses the canonical type-only models boundary instead of a runtime cycle.
 - Called by:
-  CLI, desktop intro, home terminal.
+  CLI, desktop intro, and the retained home-terminal component. Live consumers use the canonical leaf path; the former game-service path identity-re-exports the same mutable root queue.
 - Current risks:
-  timer teardown, queue behavior, and callback semantics are stabilized; some legacy callers still use loose payload types.
+  timer teardown, queue behavior, and callback semantics are stabilized; the CLI renderer and commands remain outside this ownership batch, and some legacy callers still use loose payload types.
 - Planned cleanup:
-  finish strict event payload types without changing the verified line/queue callback behavior.
+  move the terminal renderer/command cohort separately, finish strict event payload types, and preserve the verified line/queue, prompt, mode, sound, and callback behavior.
 
 ## `settings.service.ts`
 

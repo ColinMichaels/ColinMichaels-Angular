@@ -3,7 +3,7 @@ import {NgForOf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
 import {AppWindowComponent} from '@core-os/windowing/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
-import {TypewriterService} from '../services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {SoundService} from '../services/sound.service';
 import {OsUserService} from '../services/os-user.service';
 import {OverlayService} from '../services/overlay.service';

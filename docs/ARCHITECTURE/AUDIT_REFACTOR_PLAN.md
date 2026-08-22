@@ -148,6 +148,7 @@ Confirmed duplication:
 - Tooltip behavior is now packaged under `core-os/tooltip`: live consumers use the package alias while the former directive, service, and overlay locations remain compatibility re-exports. The examples app stays in the legacy feature tree until the separate feature/lab isolation phase.
 - Browser persistence is now packaged under `core-os/storage`: live OS consumers use the package alias while the former service path remains a compatibility re-export. The `AppStorage` database, `keyvalue` object store, existing keys, and Observable API remain stable; failed operations now reach callers, IndexedDB writes wait for transaction completion, and unsafe origin-wide localStorage clearing is disabled.
 - Application runtime ownership is now packaged under `core-os/app-registry`: the manager, lifecycle, registry, catalog, persistence adapter, models, and factory moved together; live consumers use canonical package imports while former game paths identity-re-export the same root tokens. Catalog inversion into feature-owned manifests remains a separate phase.
+- Renderer-agnostic typed output is now packaged under `core-os/terminal`: the mutable typewriter queue, public models, timer lifecycle, mode state, and sound dispatch moved together; live consumers use canonical leaf imports while the former game-service path identity-re-exports the same root token. CLI commands, renderer, AI chat, sound, OS user, settings, and persistence remain separate cohorts.
 - External API demo patterns repeat between SpaceX and Weather components: service call, loading state, detail panel, and external window opening.
 
 Potential duplication or consolidation targets:
@@ -562,7 +563,8 @@ Exit criteria:
 - [x] Move the desktop dock and system tray into `core-os/dock` and `core-os/tray`; retain selectors, templates, app lifecycle controls, role-gated navigation, menus, Finder view modes, system indicators, and identity-preserving compatibility exports.
 - [x] Move the context-menu models, builder, injection token, overlay service, renderer, and retained registry prototypes into `core-os/context-menu`; keep the desktop on the canonical path and preserve every former path as an identity-compatible export.
 - [x] Complete the separately tested context-menu keyboard/focus, recursively filtered submenu, nested-key containment, action-close, focus-restoration, teardown, desktop-event scoping, and root/nested viewport-placement hardening pass; remove the newly exposed no-op desktop submenu instead of presenting placeholder actions.
-- [ ] Move the remaining notifications, terminal, filesystem, settings, and shell components in separately verified batches.
+- [x] Move the terminal typewriter service and public models into `core-os/terminal`; retain one root constructor through the legacy re-export and keep CLI rendering/commands plus sound/user/persistence dependencies outside the batch.
+- [ ] Move the remaining notifications, terminal renderer/commands, filesystem, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.
 - Preserve app IDs in `APP_ID`.
