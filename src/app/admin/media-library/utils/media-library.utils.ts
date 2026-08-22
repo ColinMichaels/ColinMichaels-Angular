@@ -546,6 +546,8 @@ function matchesQuickFilter(item: MediaLibraryItem, quickFilter: MediaQuickFilte
       return item.status === 'failed';
     case 'archived':
       return item.status === 'archived';
+    case 'deleted':
+      return item.status === 'deleted';
     case 'untagged':
       return item.status !== 'deleted' && item.tags.length === 0;
     case 'large':

@@ -58,12 +58,16 @@ const SOCIAL_POST_FORMATS_BY_CHANNEL: Readonly<Record<string, ReadonlySet<string
   linkedin: new Set(['text', 'link', 'image', 'video', 'carousel']),
 };
 
-export type BlogMutationOperation = 'save' | 'issuePreview' | 'revokePreview' | 'delete';
+export type BlogMutationOperation = 'save' | 'updateEditorial' | 'issuePreview' | 'revokePreview' | 'delete';
 
 export interface BlogMutationResponse {
   deleted: boolean;
+  editorial?: Record<string, unknown> | null;
   post: Record<string, unknown> | null;
+  postId?: string;
   replayed: boolean;
+  revision?: number;
+  updatedAt?: string;
 }
 
 interface BlogMutationRequest {
@@ -71,6 +75,7 @@ interface BlogMutationRequest {
   postId: string;
   expectedRevision: number;
   requestId: string;
+  editorial?: Record<string, unknown> | null;
   post?: Record<string, unknown>;
 }
 
@@ -80,7 +85,9 @@ interface MutationReceipt {
   postId: string;
   resultRevision: number | null;
   deleted: boolean;
+  resultEditorial?: Record<string, unknown> | null;
   previewToken?: string;
+  resultUpdatedAt?: string;
 }
 
 export interface ScheduledPublishingResult {
@@ -101,7 +108,8 @@ export function parseBlogMutationRequest(value: unknown): BlogMutationRequest {
   const requestId = getTrimmedString(value['requestId']);
   const expectedRevision = value['expectedRevision'];
 
-  if (operation !== 'save' && operation !== 'issuePreview' && operation !== 'revokePreview' && operation !== 'delete') {
+  if (operation !== 'save' && operation !== 'updateEditorial'
+    && operation !== 'issuePreview' && operation !== 'revokePreview' && operation !== 'delete') {
     throw new HttpsError('invalid-argument', 'Unsupported blog mutation operation.');
   }
 
@@ -120,6 +128,13 @@ export function parseBlogMutationRequest(value: unknown): BlogMutationRequest {
   if (operation === 'save' && (!isRecord(value['post']) || value['post']['id'] !== postId)) {
     throw new HttpsError('invalid-argument', 'The save request must include the matching complete post.');
   }
+  if (operation === 'updateEditorial' && !Object.prototype.hasOwnProperty.call(value, 'editorial')) {
+    throw new HttpsError('invalid-argument', 'The editorial update request must include editorial metadata or null.');
+  }
+
+  const editorial = operation === 'updateEditorial'
+    ? normalizeEditorialMetadataForWrite(value['editorial'])
+    : undefined;
 
   return {
     operation,
@@ -127,6 +142,7 @@ export function parseBlogMutationRequest(value: unknown): BlogMutationRequest {
     expectedRevision: Number(expectedRevision),
     requestId,
     ...(operation === 'save' ? {post: value['post'] as Record<string, unknown>} : {}),
+    ...(operation === 'updateEditorial' ? {editorial} : {}),
   };
 }
 
@@ -247,6 +263,18 @@ export async function mutateBlogPost(
         throw new HttpsError('already-exists', 'Request id was already used for a different mutation.');
       }
 
+      if (request.operation === 'updateEditorial') {
+        return {
+          deleted: false,
+          editorial: receipt.resultEditorial ?? null,
+          post: null,
+          postId: request.postId,
+          replayed: true,
+          revision: receipt.resultRevision ?? getRevision(currentPost),
+          updatedAt: receipt.resultUpdatedAt ?? getTrimmedString(currentPost?.['updatedAt']),
+        };
+      }
+
       return {
         deleted: receipt.deleted,
         post: currentPost,
@@ -263,6 +291,46 @@ export async function mutateBlogPost(
 
     if (request.operation !== 'save' && !currentPost) {
       throw new HttpsError('not-found', 'Post not found.');
+    }
+
+    if (request.operation === 'updateEditorial') {
+      const update = createEditorialUpdatePlan(
+        currentPost as Record<string, unknown>,
+        request.editorial ?? null,
+        request.expectedRevision,
+        now
+      );
+      transaction.update(postRef, {
+        editorial: update.editorial ?? FieldValue.delete(),
+        revision: update.revision,
+        updatedAt: update.updatedAt,
+        syncedAt: FieldValue.serverTimestamp(),
+      });
+      writeAudit(
+        transaction,
+        firestore,
+        receiptId,
+        actorUid,
+        request.operation,
+        request.postId,
+        currentPost,
+        update.nextPost,
+        now
+      );
+      writeReceipt(transaction, receiptRef, actorUid, request, update.revision, false, now, {
+        editorial: update.editorial,
+        updatedAt: update.updatedAt,
+      });
+
+      return {
+        deleted: false,
+        editorial: update.editorial,
+        post: null,
+        postId: request.postId,
+        replayed: false,
+        revision: update.revision,
+        updatedAt: update.updatedAt,
+      };
     }
 
     if (request.operation === 'delete') {
@@ -348,7 +416,9 @@ export async function mutateBlogPost(
       transaction.delete(oldSlugRef);
     }
     writeAudit(transaction, firestore, receiptId, actorUid, request.operation, request.postId, currentPost, nextPost, now);
-    writeReceipt(transaction, receiptRef, actorUid, request, getRevision(nextPost), false, now, nextPreview?.token);
+    writeReceipt(transaction, receiptRef, actorUid, request, getRevision(nextPost), false, now, {
+      previewToken: nextPreview?.token,
+    });
 
     return {deleted: false, post: nextPost, replayed: false};
   });
@@ -586,6 +656,36 @@ function createNextPost(
     updatedAt: nowIso,
     preview: undefined,
   });
+}
+
+export interface BlogEditorialUpdatePlan {
+  editorial: Record<string, unknown> | null;
+  nextPost: Record<string, unknown>;
+  revision: number;
+  updatedAt: string;
+}
+
+/**
+ * Creates the narrow write plan used by the evidence-only mutation. This path
+ * deliberately does not validate, normalize, or serialize article blocks.
+ */
+export function createEditorialUpdatePlan(
+  currentPost: Record<string, unknown>,
+  value: unknown,
+  expectedRevision: number,
+  now = new Date()
+): BlogEditorialUpdatePlan {
+  const editorial = normalizeEditorialMetadataForWrite(value);
+  const revision = expectedRevision + 1;
+  const updatedAt = now.toISOString();
+  const nextPost = compactUndefined({
+    ...currentPost,
+    editorial: editorial ?? undefined,
+    revision,
+    updatedAt,
+  });
+
+  return {editorial, nextPost, revision, updatedAt};
 }
 
 function validateBlock(value: unknown, blockIds: Set<string>): void {
@@ -848,6 +948,26 @@ function validateEditorialMetadata(value: unknown): void {
   }
 }
 
+export function normalizeEditorialMetadataForWrite(value: unknown): Record<string, unknown> | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  validateEditorialMetadata(value);
+  const editorial = value as Record<string, unknown>;
+  const normalized = compactUndefined({
+    evidenceBasis: getTrimmedString(editorial['evidenceBasis']) || undefined,
+    evidenceSummary: getTrimmedString(editorial['evidenceSummary']) || undefined,
+    sourceReviewedAt: getTrimmedString(editorial['sourceReviewedAt']) || undefined,
+    relationshipDisclosure: getTrimmedString(editorial['relationshipDisclosure']) || undefined,
+    aiAssistanceDisclosure: getTrimmedString(editorial['aiAssistanceDisclosure']) || undefined,
+    syntheticMediaDisclosure: getTrimmedString(editorial['syntheticMediaDisclosure']) || undefined,
+    updateNote: getTrimmedString(editorial['updateNote']) || undefined,
+  });
+
+  return Object.keys(normalized).length > 0 ? normalized : null;
+}
+
 function validateSocialPromotion(value: unknown): void {
   if (value === undefined) {
     return;
@@ -967,7 +1087,11 @@ function writeReceipt(
   resultRevision: number | null,
   deleted: boolean,
   now: Date,
-  previewToken?: string
+  result: {
+    editorial?: Record<string, unknown> | null;
+    previewToken?: string;
+    updatedAt?: string;
+  } = {}
 ): void {
   transaction.set(receiptRef, compactUndefined({
     actorUid,
@@ -976,7 +1100,9 @@ function writeReceipt(
     requestId: request.requestId,
     resultRevision,
     deleted,
-    previewToken,
+    previewToken: result.previewToken,
+    resultEditorial: result.editorial,
+    resultUpdatedAt: result.updatedAt,
     createdAt: now.toISOString(),
     expiresAt: Timestamp.fromDate(new Date(now.getTime() + RECEIPT_TTL_MS)),
   }), {merge: false});

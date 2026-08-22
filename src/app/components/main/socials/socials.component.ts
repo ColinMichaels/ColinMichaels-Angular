@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faGithub, faInstagram, faLinkedin, faXTwitter, faYoutube} from '@fortawesome/free-brands-svg-icons';
 import type {IconDefinition} from '@fortawesome/fontawesome-svg-core';
-import {TooltipDirective} from '../../game/directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {SiteAnalyticsService} from '../../../shared/analytics/site-analytics.service';
 import {CREATOR_PROFILE_URLS} from '../../../shared/seo/site-identity';
 import type {CreatorProfileId} from '../../../shared/seo/site-identity';

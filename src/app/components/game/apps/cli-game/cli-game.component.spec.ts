@@ -4,7 +4,7 @@ import {TypewriterService} from '../../services/typewriter.service';
 import {SoundService} from '../../services/sound.service';
 import {CLIService} from '../../services/cli.service';
 import {GameConfigService} from '../../services/game-config.service';
-import {ApplicationManagerService} from '../../services/application-manager.service';
+import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
 import {AiChatService} from '../../services/ai-chat.service';
 import {OsUserService} from '../../services/os-user.service';
 import {NotificationService} from '../../services/notification.service';

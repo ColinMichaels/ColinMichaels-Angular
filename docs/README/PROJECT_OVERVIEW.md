@@ -6,6 +6,10 @@ This project combines a public portfolio and publishing site with a macOS-inspir
 
 The normal site routes share a global header/menu and persistent light/dark theme toggle. The OS desktop/login/boot/sleep routes remain outside that shared site shell so the reusable OS framework can preserve its own interface system.
 
+The protected Profile surface owns account identity, providers, roles, points, device settings, communication preferences, and a device-local Reading library. Reading records are ordered by recent modification and paginated 10 at a time; cross-device account synchronization is deliberately deferred.
+
+For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated audits and the root July SEO reports are evidence snapshots rather than live backlog authorities.
+
 ## Core Experience
 
 - Desktop shell with app windows and focus management.
@@ -31,16 +35,18 @@ The normal site routes share a global header/menu and persistent light/dark them
   reusable global site header, theme persistence, not-found UI, and shared primitives.
 - `src/app/features/blog`:
   public blog index, category listing, detail routes, typed post models, Firestore-backed repository/storage, and read-only block rendering.
+- `src/app/features/search`, `src/app/features/topics`, `src/app/features/authors`, and `src/app/features/youtube`:
+  public discovery, canonical topic journeys, bylines/profiles, and verified channel-aware video continuations.
 - `src/app/admin`:
   protected admin and CMS route boundary for post listing, creation, and editing.
 - `src/app/labs`:
   preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
-  OS route boundary that preserves legacy desktop/login/boot/sleep URLs.
+  OS route boundary plus migrated app-registry, tooltip, and browser-storage packages; legacy desktop/login/boot/sleep URLs remain preserved.
 - `src/app/components/game`:
   legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:
-  core runtime logic (app manager, CLI, settings, storage, media, sound, user).
+  legacy runtime logic (CLI, settings, media, sound, user) pending staged Core OS migration; former app-registry and storage paths are compatibility re-exports.
 - `src/app/services`:
   shared Firebase/auth services.
 - `src/app/guards`, `src/app/pipes`, `src/app/modules`:
@@ -54,6 +60,6 @@ The normal site routes share a global header/menu and persistent light/dark them
 4. `src/app/core-os/os.routes.ts`
 5. `src/app/app.config.ts`
 6. `src/app/components/game/desktop/desktop.component.ts`
-7. `src/app/components/game/services/application-manager.service.ts`
+7. `src/app/core-os/app-registry/application-manager.service.ts`
 8. `src/app/components/game/apps/cli-game/cli-game.component.ts`
 9. `src/app/components/game/services/*` for subsystem behavior

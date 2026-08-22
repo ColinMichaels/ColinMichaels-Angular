@@ -19,6 +19,9 @@
     "target": "ES2022",
     "module": "ES2022",
     "paths": {
+      "@core-os/*": [
+        "./src/app/core-os/*"
+      ],
       "tooltip-lib": [
         "./dist/tooltip-lib"
       ]

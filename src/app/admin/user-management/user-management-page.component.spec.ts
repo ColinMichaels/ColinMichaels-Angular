@@ -123,6 +123,216 @@ describe('UserManagementPageComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/');
   });
 
+  it('uses the shared admin page, stat, search, alert, and empty-state primitives', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('app-admin-page-header')?.textContent).toContain('User Management');
+    expect(element.querySelectorAll('app-admin-stat-card').length).toBe(3);
+    expect(element.querySelector('app-admin-search-field')).not.toBeNull();
+
+    const searchInput = element.querySelector<HTMLInputElement>('app-admin-search-field input');
+    if (searchInput) {
+      searchInput.value = 'missing account';
+      searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    fixture.detectChanges();
+
+    expect(element.querySelector('app-admin-empty-state')?.textContent).toContain('No users match this search.');
+
+    userManagement.listUsers.and.rejectWith(new Error('Unable to refresh users.'));
+    findButton(element, 'Refresh')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelector('app-admin-alert')?.getAttribute('role')).toBeNull();
+    expect(element.querySelector('app-admin-alert [role="alert"]')?.textContent).toContain('Unable to refresh users.');
+  });
+
+  it('implements automatic, roving keyboard tabs', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const usersTab = findTab(element, 'User management');
+    const pointsTab = findTab(element, 'Points leaderboard');
+
+    expect(usersTab?.getAttribute('aria-selected')).toBe('true');
+    expect(usersTab?.tabIndex).toBe(0);
+    expect(pointsTab?.getAttribute('aria-selected')).toBe('false');
+    expect(pointsTab?.tabIndex).toBe(-1);
+
+    usersTab?.focus();
+    usersTab?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(pointsTab!);
+    expect(pointsTab?.getAttribute('aria-selected')).toBe('true');
+    expect(pointsTab?.tabIndex).toBe(0);
+    expect(usersTab?.tabIndex).toBe(-1);
+    expect(userManagement.listAllUsers).toHaveBeenCalledTimes(1);
+
+    pointsTab?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Home', bubbles: true}));
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(usersTab!);
+    expect(usersTab?.getAttribute('aria-selected')).toBe('true');
+
+    usersTab?.dispatchEvent(new KeyboardEvent('keydown', {key: 'End', bubbles: true}));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(pointsTab!);
+
+    pointsTab?.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(usersTab!);
+  });
+
+  it('makes the role dialog modal, exposes role state, traps focus, and restores its launch control', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const launchButton = findButton(findUserRow(element, 'Reader Example'), 'Manage Roles');
+    launchButton?.focus();
+    launchButton?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    const title = dialog?.querySelector<HTMLElement>('#user-role-editor-title');
+    const viewerToggle = findButton(dialog, 'viewer');
+    const removeViewer = dialog?.querySelector<HTMLButtonElement>('[aria-label="Remove role viewer"]');
+
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('user-role-editor-title');
+    expect(document.activeElement).toBe(title ?? null);
+    expect(launchButton?.closest('[inert]')).not.toBeNull();
+    expect(viewerToggle?.getAttribute('aria-pressed')).toBe('true');
+    expect(removeViewer?.textContent).toContain('viewer');
+
+    launchButton?.focus();
+    expect(document.activeElement).toBe(title ?? null);
+
+    removeViewer?.click();
+    fixture.detectChanges();
+    expect(findButton(dialog, 'viewer')?.getAttribute('aria-pressed')).toBe('false');
+
+    const firstControl = findButton(dialog, 'Close');
+    const lastControl = findButton(dialog, 'Save Roles');
+    const fallbackLastControl = findButton(dialog, 'Cancel');
+    (lastControl?.disabled ? fallbackLastControl : lastControl)?.focus();
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}));
+    expect(document.activeElement).toBe(firstControl!);
+
+    dialog?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+    expect(launchButton?.closest('[inert]')).toBeNull();
+    expect(document.activeElement).toBe(launchButton!);
+    expect(userManagement.updateUserRoles).not.toHaveBeenCalled();
+  });
+
+  it('keeps the role dialog stable and non-dismissible while a save is pending', async () => {
+    let resolveUpdate!: (value: Awaited<ReturnType<UserManagementService['updateUserRoles']>>) => void;
+    userManagement.updateUserRoles.and.returnValue(new Promise(resolve => {
+      resolveUpdate = resolve;
+    }));
+    const element = fixture.nativeElement as HTMLElement;
+    const launchButton = findButton(findUserRow(element, 'Reader Example'), 'Manage Roles');
+    launchButton?.click();
+    fixture.detectChanges();
+
+    let dialog = element.querySelector<HTMLElement>('[role="dialog"]')!;
+    findButton(dialog, 'admin')?.click();
+    fixture.detectChanges();
+    findButton(dialog, 'Save Roles')?.click();
+    fixture.detectChanges();
+
+    const pendingDialog = element.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(findButton(pendingDialog, 'Close')?.disabled).toBeTrue();
+    expect(findButton(pendingDialog, 'Cancel')?.disabled).toBeTrue();
+    expect(findButton(pendingDialog, 'admin')?.disabled).toBeTrue();
+
+    pendingDialog.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    fixture.detectChanges();
+    expect(element.querySelector('[role="dialog"]')).toBe(pendingDialog);
+
+    findButton(pendingDialog, 'Cancel')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('[role="dialog"]')).toBe(pendingDialog);
+
+    resolveUpdate({
+      user: {...managedUser, roles: ['admin', 'viewer']},
+      updatedAt: '2026-08-22T12:00:00.000Z',
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    dialog = element.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog).toBe(pendingDialog);
+    expect(findButton(dialog, 'Close')?.disabled).toBeFalse();
+    expect(element.textContent).toContain('Updated roles for reader@example.com');
+  });
+
+  it('gives access and preview dialogs initial focus, Escape close, and focus restoration', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const row = findUserRow(element, 'Reader Example');
+    const accessButton = findButton(row, 'Disable Sign-In');
+    accessButton?.focus();
+    accessButton?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    let dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('user-access-confirmation-title');
+    expect(document.activeElement).toBe(dialog?.querySelector('#user-access-confirmation-title') ?? null);
+    dialog?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(accessButton!);
+    expect(userManagement.setUserDisabled).not.toHaveBeenCalled();
+
+    const previewButton = findButton(row, 'View as User');
+    previewButton?.focus();
+    previewButton?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('user-view-confirmation-title');
+    expect(document.activeElement).toBe(dialog?.querySelector('#user-view-confirmation-title') ?? null);
+    dialog?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(previewButton!);
+    expect(startViewingAsUser).not.toHaveBeenCalled();
+  });
+
+  it('gives the points dialog modal semantics, initial focus, Escape close, and focus restoration', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    findTab(element, 'Points leaderboard')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const launchButton = findButton(findUserRow(element, 'Reader Example'), 'Manage Points');
+    launchButton?.focus();
+    launchButton?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('user-points-editor-title');
+    expect(document.activeElement).toBe(dialog?.querySelector('#user-points-editor-title') ?? null);
+
+    dialog?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(element.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(launchButton!);
+    expect(userManagement.adjustUserPoints).not.toHaveBeenCalled();
+  });
+
   it('keeps paginated account management as the default user view', async () => {
     const element = fixture.nativeElement as HTMLElement;
 
@@ -226,6 +436,8 @@ describe('UserManagementPageComponent', () => {
     const confirmationInput = dialog?.querySelector<HTMLInputElement>('input');
 
     expect(dialog?.textContent).toContain('Existing profile data, comments, points, and authored content are intentionally preserved.');
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('user-access-confirmation-title');
     expect(confirmButton?.disabled).toBeTrue();
 
     if (confirmationInput) {

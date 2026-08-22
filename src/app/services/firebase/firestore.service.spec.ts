@@ -143,6 +143,7 @@ describe('FirestoreService', () => {
     mockDeleteObject = jasmine.createSpy('deleteObject').and.returnValue(Promise.resolve());
     mockUploadString = jasmine.createSpy('uploadString').and.returnValue(Promise.resolve({}));
     mockUploadBytesResumable = jasmine.createSpy('uploadBytesResumable').and.returnValue({
+      cancel: jasmine.createSpy('cancel').and.returnValue(true),
       on: jasmine.createSpy('on').and.callFake((
         event: string,
         progress: (snapshot: UploadProgressStub) => void,
@@ -151,6 +152,7 @@ describe('FirestoreService', () => {
       ) => {
         setTimeout(() => progress({bytesTransferred: 50, totalBytes: 100}), 0);
         setTimeout(() => complete(), 10);
+        return () => undefined;
       }),
       snapshot: {ref: {}}
     });
@@ -508,6 +510,29 @@ describe('FirestoreService', () => {
           },
           error: done.fail,
         });
+      });
+
+      it('detaches and cancels an unfinished resumable upload on unsubscribe', () => {
+        const detach = jasmine.createSpy('detach');
+        const cancel = jasmine.createSpy('cancel').and.returnValue(true);
+        const on = jasmine.createSpy('on').and.returnValue(detach);
+        harness.uploadBytesResumable.and.returnValue({
+          cancel,
+          on,
+          snapshot: {ref: {}},
+        });
+        const mockFile = new File(['test content'], 'source.webp', {type: 'image/webp'});
+
+        const subscription = service.uploadFileWithProgress(
+          'cms/blog-media-staging/user/media/source.webp',
+          mockFile,
+          undefined,
+          {resolveDownloadUrl: false}
+        ).subscribe();
+        subscription.unsubscribe();
+
+        expect(detach).toHaveBeenCalledTimes(1);
+        expect(cancel).toHaveBeenCalledTimes(1);
       });
     });
 

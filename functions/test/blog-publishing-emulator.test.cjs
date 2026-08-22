@@ -56,6 +56,56 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   assert.equal(replayed.post.revision, 1);
   assert.equal((await firestore.collection('blogPublishingAudit').get()).size, 1);
 
+  const legacyPost = createPost('legacy-post', 'legacy-post', {
+    revision: 7,
+    blocks: [{id: 'legacy-block', type: 'future-block', data: '{malformed'}],
+    legacyField: {preserve: true},
+  });
+  await firestore.doc('posts/legacy-post').set(legacyPost);
+  const editorialRequest = {
+    operation: 'updateEditorial',
+    postId: legacyPost.id,
+    expectedRevision: 7,
+    requestId: '019fc788-730b-7982-91c8-055dcdb1a8c6',
+    editorial: {
+      evidenceBasis: 'researched',
+      evidenceSummary: 'Public sources were checked independently.',
+      sourceReviewedAt: '2026-08-03',
+    },
+  };
+  const editorialUpdate = await mutateBlogPost(
+    firestore,
+    editorialRequest,
+    actorUid,
+    new Date('2026-08-03T13:02:00.000Z')
+  );
+  const updatedLegacyPost = (await firestore.doc('posts/legacy-post').get()).data();
+  assert.equal(editorialUpdate.post, null);
+  assert.equal(editorialUpdate.revision, 8);
+  assert.deepEqual(updatedLegacyPost.blocks, legacyPost.blocks);
+  assert.deepEqual(updatedLegacyPost.legacyField, legacyPost.legacyField);
+  assert.equal(updatedLegacyPost.revision, 8);
+  assert.equal(updatedLegacyPost.editorial.evidenceBasis, 'researched');
+  const auditCountAfterEditorialUpdate = (await firestore.collection('blogPublishingAudit').get()).size;
+
+  const replayedEditorialUpdate = await mutateBlogPost(
+    firestore,
+    editorialRequest,
+    actorUid,
+    new Date('2026-08-03T13:03:00.000Z')
+  );
+  assert.equal(replayedEditorialUpdate.replayed, true);
+  assert.equal(replayedEditorialUpdate.revision, 8);
+  assert.equal((await firestore.collection('blogPublishingAudit').get()).size, auditCountAfterEditorialUpdate);
+
+  await assert.rejects(
+    mutateBlogPost(firestore, {
+      ...editorialRequest,
+      requestId: '019fc788-730b-7982-91c8-055dcdb1a8c7',
+    }, actorUid),
+    error => error.code === 'aborted' && error.details.actualRevision === 8
+  );
+
   await assert.rejects(
     mutateBlogPost(firestore, {
       ...saveRequest,

@@ -50,7 +50,18 @@ export interface MediaCardSelectionEvent {
           <span class="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">{{ labelize(item.mediaType) }}</span>
           <span class="text-gray-600">{{ formatBytes(item.sizeBytes) }}</span>
           <span class="text-gray-600">{{ dimensions }}</span>
-          <span class="text-gray-500">{{ formatDate(item.uploadedAt) }}</span>
+          @if (item.status === 'deleted') {
+            <button
+              type="button"
+              class="rounded-md border border-cyan-500 bg-cyan-950 px-2 py-1.5 text-xs font-semibold text-cyan-50 hover:bg-cyan-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+              (click)="restore.emit(item); $event.stopPropagation()"
+            >
+              <span class="block text-[10px] uppercase tracking-wide text-cyan-200">Deleted</span>
+              <span class="block">Restore</span>
+            </button>
+          } @else {
+            <span class="text-gray-500">{{ formatDate(item.uploadedAt) }}</span>
+          }
         </div>
       } @else {
         <div class="relative overflow-hidden rounded-t-xl bg-gray-100" [style.height.px]="viewMode === 'compact' ? 92 : thumbnailSize">
@@ -67,15 +78,17 @@ export interface MediaCardSelectionEvent {
             </label>
           </div>
 
-          <button
-            type="button"
-            class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md border border-white/70 bg-white/90 text-sm text-gray-500 shadow-sm hover:text-amber-500"
-            [class.text-amber-500]="item.favorite"
-            [attr.aria-label]="item.favorite ? 'Remove favorite' : 'Favorite media'"
-            (click)="favorite.emit(item); $event.stopPropagation()"
-          >
-            {{ item.favorite ? '★' : '☆' }}
-          </button>
+          @if (item.status !== 'deleted') {
+            <button
+              type="button"
+              class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md border border-white/70 bg-white/90 text-sm text-gray-500 shadow-sm hover:text-amber-500"
+              [class.text-amber-500]="item.favorite"
+              [attr.aria-label]="item.favorite ? 'Remove favorite' : 'Favorite media'"
+              (click)="favorite.emit(item); $event.stopPropagation()"
+            >
+              {{ item.favorite ? '★' : '☆' }}
+            </button>
+          }
 
           @if (item.status === 'processing' || item.status === 'uploading') {
             <div class="absolute inset-0 flex items-center justify-center bg-white/75 text-sm font-medium text-blue-700">
@@ -93,6 +106,13 @@ export interface MediaCardSelectionEvent {
           @if (item.status === 'archived') {
             <div class="absolute inset-x-2 bottom-2 rounded-md bg-gray-800/85 px-2 py-1 text-xs font-medium text-white">
               Archived
+            </div>
+          }
+
+          @if (item.status === 'deleted') {
+            <div
+              class="absolute inset-x-2 bottom-2 rounded-md bg-red-950/90 px-2 py-1 text-xs font-medium text-red-100">
+              Deleted
             </div>
           }
         </div>
@@ -120,6 +140,16 @@ export interface MediaCardSelectionEvent {
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500">+{{ item.tags.length - 3 }}</span>
               }
             </div>
+          }
+
+          @if (item.status === 'deleted') {
+            <button
+              type="button"
+              class="w-full rounded-md border border-cyan-500 bg-cyan-950 px-2 py-1.5 text-xs font-semibold text-cyan-50 hover:bg-cyan-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+              (click)="restore.emit(item); $event.stopPropagation()"
+            >
+              Restore
+            </button>
           }
         </div>
       }
@@ -160,6 +190,7 @@ export class MediaCardComponent {
   @Output() selection = new EventEmitter<MediaCardSelectionEvent>();
   @Output() preview = new EventEmitter<MediaLibraryItem>();
   @Output() favorite = new EventEmitter<MediaLibraryItem>();
+  @Output() restore = new EventEmitter<MediaLibraryItem>();
   @Output() contextMenu = new EventEmitter<{ item: MediaLibraryItem; event: MouseEvent }>();
 
   protected get thumbnailUrl(): string | undefined {

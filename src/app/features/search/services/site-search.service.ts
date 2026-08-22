@@ -2,10 +2,13 @@ import {Injectable, inject} from '@angular/core';
 import {combineLatest, map, Observable} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
-import {BlogPost, getBlogListItemTexts} from '../../blog/models/blog-post.model';
+import {BlogGalleryImage, BlogPost, getBlogListItemTexts} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
-import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
+import {
+  resolveBlogPostImage,
+  resolveBlogPostPreviewImages,
+} from '../../blog/utils/blog-image-url.util';
 import {createBlogMarkdownPlainText} from '../../blog/utils/blog-markdown.util';
 import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
 import {TopicHub} from '../../topics/topic-hubs.data';
@@ -38,6 +41,7 @@ export interface SiteSearchItem {
   authorSlug?: string;
   date: string | null;
   image?: string;
+  previewImages?: readonly BlogGalleryImage[];
   topic?: SiteSearchTopic;
 }
 
@@ -229,6 +233,7 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
   const titleText = post.title;
   const excerptText = post.excerpt;
   const topicHub = findTopicHubForBlogPost(post, taxonomyTerms, topicHubs);
+  const previewImages = resolveBlogPostPreviewImages(post);
 
   return {
     id: post.id,
@@ -256,6 +261,7 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
     authorSlug: post.author.slug ?? 'colin-michaels',
     date: post.publishedAt ?? post.updatedAt,
     image: resolveBlogPostImage(post),
+    ...(previewImages.length ? {previewImages} : {}),
     ...(topicHub ? {topic: createSearchTopic(topicHub)} : {}),
   };
 }

@@ -14,8 +14,11 @@ test.describe('site motion', () => {
         const firestoreEmulatorOffline = sourceUrl.startsWith(
           'http://127.0.0.1:8080/google.firestore.v1.Firestore/Listen/channel'
         ) && text.includes('ERR_CONNECTION_REFUSED');
+        const functionsEmulatorOffline = sourceUrl.startsWith(
+          'http://127.0.0.1:5001/colinmichaels/us-east1/'
+        ) && text.includes('ERR_CONNECTION_REFUSED');
 
-        if (text.includes('Could not reach Cloud Firestore backend') || firestoreEmulatorOffline) {
+        if (text.includes('Could not reach Cloud Firestore backend') || firestoreEmulatorOffline || functionsEmulatorOffline) {
           return;
         }
 
@@ -46,7 +49,7 @@ test.describe('site motion', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', {
       level: 1,
-      name: 'A Life of Curiosity. A Journey of Growth.',
+      name: 'Cool gadgets, useful tech, and internet finds',
     })).toBeVisible({timeout: 20_000});
     const viewTransitionsSupported = await page.evaluate(() => (
       typeof document.startViewTransition === 'function'
@@ -59,24 +62,15 @@ test.describe('site motion', () => {
       await expect(page.locator('html')).toHaveAttribute('data-view-transition-count', '1');
     }
 
-    const postImages = page.locator('.blog-image-reveal');
+    // The release runway records this exact stable live canonical, whose
+    // published article contains real image blocks. Requiring a rendered image
+    // figure protects both block-renderer markup and the global motion contract.
+    await page.goto('/blog/hoverair-aqua-waterproof-drone-clever-or-1299-overkill');
+    const firstPostImage = page.locator(
+      'app-blog-block-renderer figure.blog-image-reveal'
+    ).first();
 
-    if (await postImages.count() === 0) {
-      // Local/offline Firestore can legitimately return an empty archive. The
-      // motion contract is CSS-owned, so add a non-visual probe only when real
-      // post media is unavailable instead of coupling the gate to live data.
-      await page.evaluate(() => {
-        const probe = document.createElement('span');
-        probe.className = 'blog-image-reveal';
-        probe.dataset['testid'] = 'blog-image-motion-probe';
-        probe.hidden = true;
-        document.querySelector('.site-theme-scope')?.append(probe);
-      });
-    }
-
-    const firstPostImage = page.locator('.blog-image-reveal').first();
-
-    await expect(firstPostImage).toBeAttached();
+    await expect(firstPostImage).toBeVisible({timeout: 20_000});
     await expect(firstPostImage).toHaveCSS('animation-name', 'blog-image-scroll-reveal');
     await expect(firstPostImage).toHaveCSS('animation-timing-function', 'ease-in-out');
 

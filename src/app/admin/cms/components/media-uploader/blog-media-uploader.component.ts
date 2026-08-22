@@ -462,7 +462,7 @@ import {MediaLibraryService, MediaLibraryUploadOptions} from '../../../media-lib
                 <button
                   type="button"
                   class="border border-cyan-400 bg-cyan-400 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
-                  [disabled]="!selectedLibraryItem || isUploading"
+                  [disabled]="uploaderDisabled || !selectedLibraryItem || isUploading"
                   (click)="applySelectedLibraryItem()"
                 >
                   Use Selected {{ mediaKindLabel }}
@@ -504,6 +504,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   @Input() value = '';
 
   @Output() mediaUploaded = new EventEmitter<BlogMediaUploadResult>();
+  @Output() uploadStateChange = new EventEmitter<boolean>();
   @Output() valueChange = new EventEmitter<string>();
 
   protected isDisabled = false;
@@ -542,6 +543,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.destroyRef.onDestroy(() => {
       this.uploadSubscription?.unsubscribe();
       this.librarySubscription?.unsubscribe();
+      this.setUploading(false);
     });
   }
 
@@ -644,11 +646,13 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   protected selectLibraryItem(item: MediaLibraryItem): void {
+    if (this.uploaderDisabled) return;
+
     this.selectedLibraryItem = item;
   }
 
   protected applySelectedLibraryItem(): void {
-    if (!this.selectedLibraryItem) {
+    if (this.uploaderDisabled || !this.selectedLibraryItem) {
       return;
     }
 
@@ -656,6 +660,8 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   protected applyMediaItem(item: MediaLibraryItem): void {
+    if (this.uploaderDisabled) return;
+
     if (!this.allowedMediaTypes.includes(item.mediaType)) {
       this.errorMessage = `Choose a ${this.mediaKindLabel.toLowerCase()} file.`;
       this.selectedLibraryItem = null;
@@ -683,6 +689,8 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   protected onUrlInput(event: Event): void {
+    if (this.uploaderDisabled) return;
+
     const input = event.target as HTMLInputElement | null;
 
     if (!input) {
@@ -700,7 +708,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
       input.value = '';
     }
 
-    if (file) {
+    if (file && !this.uploaderDisabled) {
       this.uploadFile(file);
     }
   }
@@ -754,6 +762,8 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   private uploadFile(file: File): void {
+    if (this.uploaderDisabled || this.isUploading) return;
+
     const mediaType = this.mediaTypeForFile(file);
     if (!mediaType || !this.allowedMediaTypes.includes(mediaType)) {
       this.errorMessage = `Choose a ${this.mediaKindLabel.toLowerCase()} file.`;
@@ -765,7 +775,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     }
 
     this.uploadSubscription?.unsubscribe();
-    this.isUploading = true;
+    this.setUploading(true);
     this.uploadProgress = 0;
     this.uploadFileName = file.name;
     this.errorMessage = '';
@@ -777,7 +787,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
       next: event => this.handleUploadProgress(event),
       error: error => this.handleUploadError(error),
       complete: () => {
-        this.isUploading = false;
+        this.setUploading(false);
       },
     });
   }
@@ -804,7 +814,7 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
   }
 
   private handleUploadError(error: unknown): void {
-    this.isUploading = false;
+    this.setUploading(false);
     this.errorMessage = error instanceof Error
       ? error.message
       : typeof error === 'string' ? error : `Unable to upload ${this.mediaKindLabel}.`;
@@ -818,6 +828,13 @@ export class BlogMediaUploaderComponent implements ControlValueAccessor {
     this.optimizationMessage = '';
     this.valueChange.emit(value);
     this.onChange(value);
+  }
+
+  private setUploading(isUploading: boolean): void {
+    if (this.isUploading === isUploading) return;
+
+    this.isUploading = isUploading;
+    this.uploadStateChange.emit(isUploading);
   }
 
   private createUploadOptions(): MediaLibraryUploadOptions {

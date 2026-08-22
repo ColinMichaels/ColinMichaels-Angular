@@ -4,7 +4,7 @@ import {FormControl, FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, V
 import {Task, TaskService} from '../../services/task.service';
 import {catchError, map, startWith} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, debounceTime, Observable, of} from 'rxjs';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {TimeAgoPipe} from '../../../../pipes/time-ago.pipe';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faArchive, faCheck, faPlus, faRedo, faTrash} from '@fortawesome/free-solid-svg-icons';

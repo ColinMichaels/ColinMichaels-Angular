@@ -5,22 +5,22 @@
 This codebase uses service-local reactive state (mostly `BehaviorSubject`) instead of a central state library.
 
 - Long-lived state:
-  app registry/open apps/focus, user profile, settings, file system, notifications.
+  app registry/open apps/focus through `core-os/app-registry`, plus user profile, settings, file system, and notifications.
 - Component-local state:
   UI toggles, view pagination, current selected items.
 - Persistence:
-  settings/user/tasks/patches via `StorageService`.
+  settings/user/tasks/patches via `StorageService`; open app base IDs via the narrow `ApplicationStatePersistenceService` localStorage adapter.
 
 ## Core Event Flows
 
 ## App and Window Lifecycle
 
 1. Desktop requests open app via `ApplicationManagerService.openApplication(id)`.
-2. Manager validates registry, memory, and instance limits.
-3. `ApplicationFactory` creates window instance metadata.
+2. Manager resolves the canonical registry entry and delegates to `ApplicationLifecycleService`.
+3. Lifecycle validates memory and instance limits, then `ApplicationFactory` creates window instance metadata.
 4. `AppWindowComponent` dynamically creates embedded component.
 5. Focus updates reorder open apps list and tray state.
-6. Open app list is persisted to local storage key `applications`.
+6. Open base app IDs are persisted to the exact localStorage key `applications`; restoration also accepts historical `{id}` records and numbered instance IDs.
 
 ## CLI Command Flow
 
@@ -45,5 +45,4 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 
 - Unbounded subscriptions in services/components that do not use `takeUntilDestroyed`.
 - Dynamic window/component lifecycle depends on mutable shared objects.
-- App persistence uses raw object snapshots and should be narrowed to safe fields.
-
+- The default app catalog still imports concrete legacy game components; feature-owned manifests remain a later migration cohort.

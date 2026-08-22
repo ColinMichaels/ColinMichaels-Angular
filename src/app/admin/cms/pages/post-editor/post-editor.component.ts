@@ -84,6 +84,10 @@ import {CmsAuthorFormComponent} from '../../components/author-form/author-form.c
 import {SocialPromotionEditorComponent} from '../../components/social-promotion-editor/social-promotion-editor.component';
 import {PostScheduleCalendarComponent} from './post-schedule-calendar.component';
 import {
+  PostPackageImportProgress,
+  PostPackageImportProgressComponent,
+} from './post-package-import-progress.component';
+import {
   getEmbeddedBlogPostMediaPackageManifest,
   getUnresolvedBlogPostMediaPackageReferences,
   isBlogPostPackagePostDocument,
@@ -454,6 +458,7 @@ function getErrorMessage(error: unknown): string {
     CmsToastContainerComponent,
     AdminControlModuleComponent,
     CmsAuthorFormComponent,
+    PostPackageImportProgressComponent,
     PostScheduleCalendarComponent,
     SocialPromotionEditorComponent,
   ],
@@ -474,6 +479,7 @@ function getErrorMessage(error: unknown): string {
                 type="file"
                 class="hidden"
                 accept=".json,application/json"
+                [disabled]="isImportLauncherUnavailable()"
                 (change)="importPostJson($event)"
               >
               <input
@@ -483,37 +489,59 @@ function getErrorMessage(error: unknown): string {
                 accept=".json,application/json,image/jpeg,image/png,image/webp,image/avif,image/gif"
                 multiple
                 webkitdirectory
+                [disabled]="isImportLauncherUnavailable()"
                 (change)="importPostPackage($event)"
               >
               @if (isNewPost) {
                 <button
                   type="button"
-                  class="inline-flex h-9 items-center justify-center border border-cyan-500/70 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                  [disabled]="isPackageImportInProgress()"
+                  class="inline-flex h-9 items-center justify-center border border-cyan-500/70 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-500 hover:text-zinc-950 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-700 aria-disabled:text-zinc-500 aria-disabled:hover:bg-transparent aria-disabled:hover:text-zinc-500"
+                  [attr.aria-disabled]="isImportLauncherUnavailable()"
                   title="Choose a folder containing the post JSON, image manifest, and generated images"
-                  (click)="postPackageImportInput.click()"
+                  (click)="openPostPackagePicker(postPackageImportInput)"
                 >
                   {{ isPackageImportInProgress() ? 'Importing package...' : 'Import post package' }}
                 </button>
               }
               <button
                 type="button"
-                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
-                (click)="postJsonImportInput.click()"
+                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-500 aria-disabled:hover:bg-transparent"
+                [attr.aria-disabled]="isImportLauncherUnavailable()"
+                (click)="openPostJsonPicker(postJsonImportInput)"
               >
-                Import JSON
+                {{ isJsonImportInProgress() ? 'Importing JSON...' : 'Import JSON' }}
               </button>
               <button
                 type="button"
-                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-800 aria-disabled:text-zinc-600 aria-disabled:hover:bg-transparent"
+                [attr.aria-disabled]="isPostImportInProgress() || isJsonExportInProgress || isPreviewGenerationInProgress"
                 (click)="exportPostJson()"
               >
-                Export JSON
+                {{ isJsonExportInProgress ? 'Exporting JSON...' : 'Export JSON' }}
               </button>
             </div>
           </header>
 
-          <nav class="overflow-x-auto border border-zinc-800 bg-zinc-900/40" aria-label="Post workspace">
+          <p
+            class="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-testid="post-import-announcement"
+          >
+            {{ postImportAnnouncement() }}
+          </p>
+
+          @if (packageImportProgress(); as importProgress) {
+            <app-post-package-import-progress [progress]="importProgress"></app-post-package-import-progress>
+          }
+
+          <nav
+            class="overflow-x-auto border border-zinc-800 bg-zinc-900/40"
+            aria-label="Post workspace"
+            [attr.inert]="isPostImportInProgress() ? '' : null"
+            [attr.aria-disabled]="isPostImportInProgress()"
+          >
             <div class="flex min-w-max">
               @for (workspace of workspaces; track workspace.id) {
                 <button
@@ -533,6 +561,8 @@ function getErrorMessage(error: unknown): string {
             class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"
             [hidden]="activeWorkspace() !== 'post'"
             [style.display]="activeWorkspace() === 'post' ? null : 'none'"
+            [attr.inert]="isPostImportInProgress() ? '' : null"
+            [attr.aria-busy]="isPostImportInProgress()"
             aria-label="Post editor workspace"
           >
             <section class="space-y-3">
@@ -706,6 +736,8 @@ function getErrorMessage(error: unknown): string {
                       assetRole="cover"
                       [postSlug]="mediaUploadSlug"
                       [required]="true"
+                      [disabled]="isCoverMediaWriterUnavailable()"
+                      (uploadStateChange)="setMediaUploadInProgress('cover', $event)"
                       (mediaUploaded)="onCoverImageUploaded($event)"
                     ></app-blog-media-uploader>
 
@@ -721,6 +753,8 @@ function getErrorMessage(error: unknown): string {
                       [optimizationMaxWidth]="2560"
                       [optimizationMaxHeight]="1600"
                       [optimizationQuality]="0.84"
+                      [disabled]="isPostImportInProgress()"
+                      (uploadStateChange)="setMediaUploadInProgress('background', $event)"
                       (mediaUploaded)="onBackgroundImageUploaded($event)"
                     ></app-blog-media-uploader>
 
@@ -822,6 +856,27 @@ function getErrorMessage(error: unknown): string {
                     <p class="border border-cyan-400/25 bg-cyan-400/5 px-3 py-2 text-xs leading-5 text-zinc-400 md:col-span-2">
                       Unclassified articles remain publishable for migration safety, but readers see that their evidence details have not yet been reviewed under the current editorial standard.
                     </p>
+                    <div
+                      class="flex flex-col gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between md:col-span-2">
+                      <div class="space-y-1">
+                        <p class="text-xs font-medium text-zinc-200">Legacy-safe evidence update</p>
+                        @if (isNewPost) {
+                          <p class="text-xs leading-5 text-zinc-500">Save the new post once before using the
+                            evidence-only update.</p>
+                        } @else {
+                          <p class="text-xs leading-5 text-zinc-500">Updates only Evidence & Disclosures. Article blocks
+                            and every other unsaved field stay untouched.</p>
+                        }
+                      </div>
+                      <button
+                        type="button"
+                        class="h-9 shrink-0 border border-cyan-400/70 px-3 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
+                        [disabled]="isNewPost || !hasUnsavedEditorialChanges || isEditorialSaveInProgress || isSaveInProgress || isDeleteInProgress"
+                        (click)="saveEditorialOnly()"
+                      >
+                        {{ isEditorialSaveInProgress ? 'Saving evidence' : 'Save evidence only' }}
+                      </button>
+                    </div>
                   </div>
                 </app-admin-control-module>
 
@@ -866,6 +921,8 @@ function getErrorMessage(error: unknown): string {
                       optimizationOutputType="image/jpeg"
                       [forceOptimizationOutputType]="true"
                       [postSlug]="mediaUploadSlug"
+                      [disabled]="isPostImportInProgress()"
+                      (uploadStateChange)="setMediaUploadInProgress('open-graph', $event)"
                       (mediaUploaded)="onOpenGraphImageUploaded($event)"
                     ></app-blog-media-uploader>
                     <div class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
@@ -1009,6 +1066,7 @@ function getErrorMessage(error: unknown): string {
                 [error]="assistantError"
                 [sourceLabel]="assistantSourceLabel"
                 [isThumbnailLoading]="isThumbnailLoading"
+                [isThumbnailWriterUnavailable]="isThumbnailWriterUnavailable()"
                 [thumbnailError]="thumbnailError"
                 [lastGeneratedThumbnail]="lastGeneratedThumbnail"
                 (generateRequested)="generateAssistantSuggestions()"
@@ -1055,6 +1113,8 @@ function getErrorMessage(error: unknown): string {
             class="space-y-4"
             [hidden]="activeWorkspace() !== 'social'"
             [style.display]="activeWorkspace() === 'social' ? null : 'none'"
+            [attr.inert]="isPostImportInProgress() ? '' : null"
+            [attr.aria-busy]="isPostImportInProgress()"
             aria-label="Social shares workspace"
           >
             <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
@@ -1089,6 +1149,8 @@ function getErrorMessage(error: unknown): string {
             class="space-y-4"
             [hidden]="activeWorkspace() !== 'preview'"
             [style.display]="activeWorkspace() === 'preview' ? null : 'none'"
+            [attr.inert]="isPostImportInProgress() ? '' : null"
+            [attr.aria-busy]="isPostImportInProgress()"
             aria-label="Preview and SEO workspace"
           >
             <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
@@ -1104,7 +1166,7 @@ function getErrorMessage(error: unknown): string {
                 #draftPreviewPanel
                 [post]="currentPost"
                 [status]="postForm.controls.status.value"
-                [isSaving]="isSaveInProgress"
+                [isSaving]="isSaveInProgress || isPreviewGenerationInProgress"
                 [isDeleting]="isDeleteInProgress"
                 (generateRequested)="generatePreviewLink()"
                 (postChanged)="onPreviewPostChanged($event)"
@@ -1127,6 +1189,8 @@ function getErrorMessage(error: unknown): string {
 
           <section
             class="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-2 shadow-2xl shadow-black/40 backdrop-blur transition-[left] duration-200 sm:px-8 lg:left-[var(--admin-sidebar-width)] lg:px-12"
+            [attr.inert]="isPostImportInProgress() ? '' : null"
+            [attr.aria-busy]="isPostImportInProgress()"
             aria-label="Post actions"
           >
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-2">
@@ -1183,7 +1247,7 @@ function getErrorMessage(error: unknown): string {
                           <button
                             type="button"
                             class="h-9 px-3 text-left text-xs font-medium text-red-200 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:text-zinc-600"
-                            [disabled]="isDeleteInProgress || isSaveInProgress"
+                            [disabled]="isDeleteInProgress || isSaveInProgress || isPostImportInProgress()"
                             (click)="deleteCurrentPost()"
                           >
                             {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
@@ -1224,7 +1288,7 @@ function getErrorMessage(error: unknown): string {
                   <button
                     type="button"
                     class="hidden h-9 border border-red-500/60 px-3 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent sm:inline-block"
-                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress"
+                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress || isEditorialSaveInProgress || isPostImportInProgress()"
                     (click)="deleteCurrentPost()"
                   >
                     {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
@@ -1233,7 +1297,7 @@ function getErrorMessage(error: unknown): string {
                   <button
                     type="button"
                     class="h-9 border border-cyan-400 bg-cyan-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
-                    [disabled]="isSaveInProgress || isDeleteInProgress"
+                    [disabled]="isSaveInProgress || isDeleteInProgress || isEditorialSaveInProgress || isPostImportInProgress()"
                     (click)="savePost()"
                   >
                     {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
@@ -1280,9 +1344,15 @@ export class CmsPostEditorComponent implements AfterViewInit {
   private hasHydratedFirestorePost = false;
   private hasCreatedPost = false;
   private isApplyingEditorState = false;
+  private editorStateOperationCount = 0;
+  private editorStateApplicationQueue: Promise<void> = Promise.resolve();
   private hasLoadedRecoveryDraft = false;
   private readonly recoveryRequests = new Subject<void>();
   private recoveryWritePromise: Promise<void> | null = null;
+  private postImportOperationId = 0;
+  private readonly activeMediaUploadFields = new Set<string>();
+  private activeEditorImageUploadCount = 0;
+  private isDestroyed = false;
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
@@ -1325,8 +1395,17 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected lastSaved: EditorSavedDocument | null = null;
   protected lastSavedBackupJson = '';
   protected isSaveInProgress = false;
+  protected isEditorialSaveInProgress = false;
   protected isDeleteInProgress = false;
+  protected isPreviewGenerationInProgress = false;
+  protected isJsonExportInProgress = false;
   protected readonly isPackageImportInProgress = signal(false);
+  protected readonly isJsonImportInProgress = signal(false);
+  protected readonly isPostImportInProgress = computed(() => (
+    this.isPackageImportInProgress() || this.isJsonImportInProgress()
+  ));
+  protected readonly postImportAnnouncement = signal('');
+  protected readonly packageImportProgress = signal<PostPackageImportProgress | null>(null);
   protected assistantResult: BlogAssistantResult | null = null;
   protected assistantMessage = '';
   protected assistantError = '';
@@ -1339,30 +1418,50 @@ export class CmsPostEditorComponent implements AfterViewInit {
     file: File,
     onProgress?: EditorImageUploadProgressCallback
   ): Promise<EditorImageUploadResult> => {
-    const upload = await lastValueFrom(
-      this.blogMediaUpload.uploadImage(file, {
-        slug: this.mediaUploadSlug,
-        role: 'editor-image',
-      }).pipe(
-        tap(progress => onProgress?.(progress.progress))
-      )
-    );
-
-    if (!upload.downloadUrl) {
-      throw new Error('Editor image upload completed without a download URL.');
+    if (this.rejectWhileImporting('uploading another editor image')) {
+      throw new Error('Wait for the active post import to finish before uploading another editor image.');
     }
 
-    return {
-      success: 1,
-      file: {
-        url: upload.downloadUrl,
-        width: upload.width,
-        height: upload.height,
-      },
-    };
+    this.activeEditorImageUploadCount += 1;
+
+    try {
+      const upload = await lastValueFrom(
+        this.blogMediaUpload.uploadImage(file, {
+          slug: this.mediaUploadSlug,
+          role: 'editor-image',
+        }).pipe(
+          tap(progress => onProgress?.(progress.progress)),
+          takeUntilDestroyed(this.destroyRef)
+        )
+      );
+
+      if (this.isDestroyed) {
+        throw new Error('The editor closed before the image upload finished.');
+      }
+
+      if (!upload.downloadUrl) {
+        throw new Error('Editor image upload completed without a download URL.');
+      }
+
+      return {
+        success: 1,
+        file: {
+          url: upload.downloadUrl,
+          width: upload.width,
+          height: upload.height,
+        },
+      };
+    } finally {
+      this.activeEditorImageUploadCount = Math.max(0, this.activeEditorImageUploadCount - 1);
+    }
   };
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.isDestroyed = true;
+      this.postImportOperationId += 1;
+    });
+
     this.postForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.requestRecoverySave());
@@ -1414,12 +1513,17 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   @HostListener('window:beforeunload', ['$event'])
   protected protectBrowserUnload(event: BeforeUnloadEvent): void {
-    if (!this.hasUnsavedChanges) return;
+    if (!this.hasUnsavedChanges && !this.isPostImportInProgress()) return;
     event.preventDefault();
     event.returnValue = '';
   }
 
   canDeactivate(): boolean {
+    if (this.isPostImportInProgress()) {
+      this.toast.error('Wait for the active import to finish before leaving this editor. Closing the page interrupts unfinished file or media processing.');
+      return false;
+    }
+
     return !this.hasUnsavedChanges
       || window.confirm('You have unsaved post changes. A recovery copy may exist, but leaving now can still lose the latest keystrokes. Leave this editor?');
   }
@@ -1535,6 +1639,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
     return this.postForm.dirty || this.hasUnsavedSocialChanges || this.hasUnsavedEditorChanges();
   }
 
+  protected get hasUnsavedEditorialChanges(): boolean {
+    return this.editorialControls.some(control => control.dirty);
+  }
+
   protected get recoverySummary(): string {
     const draft = this.recoveryDraft();
 
@@ -1559,6 +1667,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected setWorkspace(workspace: PostEditorWorkspace): void {
+    if (this.rejectWhileImporting('changing editor workspaces')) return;
+
     if (workspace === 'social') {
       this.socialWorkspacePost = this.createSocialWorkspacePost();
     }
@@ -1578,18 +1688,22 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected onSocialPromotionChange(promotion: BlogSocialPromotion): void {
+    if (this.isPostImportInProgress()) return;
+
     this.socialPromotionDraft = promotion;
     this.hasUnsavedSocialChanges = true;
     this.requestRecoverySave();
   }
 
   protected onEditorContentChanged(): void {
-    if (this.isApplyingEditorState) return;
+    if (this.isApplyingEditorState || this.isPostImportInProgress()) return;
     this.hasUnsavedEditorChanges.set(true);
     this.requestRecoverySave();
   }
 
   protected async saveSocialPromotion(promotion: BlogSocialPromotion): Promise<void> {
+    if (this.rejectWhileImporting('saving social promotion changes')) return;
+
     this.onSocialPromotionChange(promotion);
     await this.savePost();
   }
@@ -1613,26 +1727,28 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async restoreRecoveryDraft(): Promise<void> {
+    if (this.rejectWhileImporting('restoring the recovery draft')) return;
+    if (this.rejectWhileApplyingEditorState('restoring another recovery draft')) return;
+
     const recovery = this.recoveryDraft();
     if (!recovery) return;
 
-    this.isApplyingEditorState = true;
-
     try {
-      // Older schema-v1 recovery drafts do not have the additive editorial
-      // fields. Patch the known values so those drafts remain recoverable.
-      this.postForm.patchValue(recovery.form, {emitEvent: false});
-      this.syncCatCornerDiscoveryControl();
-      this.socialPromotionDraft = recovery.socialPromotion;
-      this.socialWorkspacePost = this.createSocialWorkspacePost();
-      await this.editorComponent?.restoreRecoverySnapshot(recovery.editor);
-      this.postForm.markAsDirty();
-      this.hasUnsavedEditorChanges.set(true);
-      this.hasUnsavedSocialChanges = true;
-      this.saveConflict.set(null);
-      this.toast.success('Restored the private recovery copy. Review it, then explicitly save when ready.');
+      await this.enqueueEditorStateApplication(async () => {
+        // Older schema-v1 recovery drafts do not have the additive editorial
+        // fields. Patch the known values so those drafts remain recoverable.
+        this.postForm.patchValue(recovery.form, {emitEvent: false});
+        this.syncCatCornerDiscoveryControl();
+        this.socialPromotionDraft = recovery.socialPromotion;
+        this.socialWorkspacePost = this.createSocialWorkspacePost();
+        await this.editorComponent?.restoreRecoverySnapshot(recovery.editor);
+        this.postForm.markAsDirty();
+        this.hasUnsavedEditorChanges.set(true);
+        this.hasUnsavedSocialChanges = true;
+        this.saveConflict.set(null);
+        this.toast.success('Restored the private recovery copy. Review it, then explicitly save when ready.');
+      });
     } finally {
-      this.isApplyingEditorState = false;
       this.requestRecoverySave();
     }
   }
@@ -1648,19 +1764,61 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async reloadRemotePost(): Promise<void> {
+    if (this.rejectWhileImporting('reloading the canonical post')) return;
+    if (this.rejectWhileApplyingEditorState('reloading the canonical post again')) return;
+
     const remotePost = this.saveConflict()?.remotePost;
     if (!remotePost) {
       this.toast.error('The canonical post no longer exists. Save your work as a new draft instead.');
       return;
     }
 
-    const recoverySaved = await this.persistRecovery(true);
-    if (!recoverySaved) {
-      this.toast.error('Reload was cancelled because the latest local work could not be written to Recovery.');
-      return;
+    await this.enqueueEditorStateApplication(async () => {
+      const recoverySaved = await this.persistRecovery(true);
+      if (!recoverySaved) {
+        this.toast.error('Reload was cancelled because the latest local work could not be written to Recovery.');
+        return;
+      }
+
+      const latestRemotePost = this.resolveLatestReloadPost(remotePost);
+      if (!latestRemotePost) {
+        this.toast.error('Reload was cancelled because the canonical post was deleted while Recovery was being saved. Your local work remains available.');
+        return;
+      }
+
+      await this.applyFirestorePostNow(latestRemotePost);
+      this.toast.success('Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
+    });
+  }
+
+  private resolveLatestReloadPost(requestedRemotePost: BlogPost): BlogPost | null {
+    const currentConflict = this.saveConflict();
+
+    if (currentConflict?.postId === requestedRemotePost.id && currentConflict.actualRevision === null) {
+      return null;
     }
-    await this.applyFirestorePost(remotePost);
-    this.toast.success('Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
+
+    const liveRemotePost = this.firestorePost?.();
+    if (this.firestorePost && this.hasHydratedFirestorePost && !this.isPostLoading() && !liveRemotePost) {
+      this.saveConflict.set(new BlogPostRevisionConflictError(
+        requestedRemotePost.id,
+        normalizeBlogPostRevision(this.currentPost?.revision),
+        null
+      ));
+      return null;
+    }
+
+    const candidates = [
+      requestedRemotePost,
+      currentConflict?.remotePost,
+      liveRemotePost,
+    ].filter((post): post is BlogPost => post?.id === requestedRemotePost.id);
+
+    return candidates.reduce<BlogPost>((latest, candidate) => (
+      normalizeBlogPostRevision(candidate.revision) >= normalizeBlogPostRevision(latest.revision)
+        ? candidate
+        : latest
+    ), requestedRemotePost);
   }
 
   protected async saveConflictAsCopy(): Promise<void> {
@@ -1783,6 +1941,16 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.postForm.markAsDirty();
   }
 
+  protected openPostJsonPicker(input: HTMLInputElement): void {
+    if (this.rejectWhilePostOperation('choosing another import')) return;
+    input.click();
+  }
+
+  protected openPostPackagePicker(input: HTMLInputElement): void {
+    if (this.rejectWhilePostOperation('choosing another import')) return;
+    input.click();
+  }
+
   protected async importPostJson(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.[0];
@@ -1795,13 +1963,30 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return;
     }
 
+    if (this.rejectWhilePostOperation('importing another document')) return;
+
+    const operationId = ++this.postImportOperationId;
+    this.isJsonImportInProgress.set(true);
+    this.postImportAnnouncement.set('Importing the selected JSON document.');
     try {
       const parsedJson: unknown = JSON.parse(await file.text());
+      if (!this.isActiveJsonImport(operationId)) return;
+
       const importedDocument = this.createImportedPostDocument(parsedJson);
       await this.applyImportedPost(importedDocument.post);
+      if (!this.isActiveJsonImport(operationId)) return;
+
+      this.postImportAnnouncement.set('');
       this.toast.success(`Imported ${importedDocument.sourceLabel} from ${file.name}. Review and save to persist it.`);
     } catch (error) {
+      if (!this.isActiveJsonImport(operationId)) return;
+
+      this.postImportAnnouncement.set('');
       this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
+    } finally {
+      if (!this.isDestroyed && this.postImportOperationId === operationId) {
+        this.isJsonImportInProgress.set(false);
+      }
     }
   }
 
@@ -1822,7 +2007,25 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return;
     }
 
+    if (this.rejectWhilePostOperation('importing another package')) return;
+
+    if (!this.isNewPost) {
+      this.toast.error('Post packages can only be imported from New Post.');
+      return;
+    }
+
+    const operationId = ++this.postImportOperationId;
+    let hasAnnouncedProcessing = false;
     this.isPackageImportInProgress.set(true);
+    this.postImportAnnouncement.set('Checking the selected post package.');
+    this.packageImportProgress.set({
+      stage: 'checking',
+      message: `Reading ${files.length} selected file${files.length === 1 ? '' : 's'} and locating the post and image manifest.`,
+      detail: 'The package is being checked before any media is uploaded.',
+      progress: null,
+      completedImages: 0,
+      totalImages: 0,
+    });
     let uploadedCount = 0;
 
     try {
@@ -1836,6 +2039,16 @@ export class CmsPostEditorComponent implements AfterViewInit {
         file,
         value: JSON.parse(await file.text()) as unknown,
       })));
+      if (!this.isActivePackageImport(operationId)) return;
+
+      this.packageImportProgress.set({
+        stage: 'checking',
+        message: 'Validating the post document, image manifest, and media references.',
+        detail: `Found ${jsonFiles.length} JSON file${jsonFiles.length === 1 ? '' : 's'} in the selected package.`,
+        progress: null,
+        completedImages: 0,
+        totalImages: 0,
+      });
       const postCandidates = parsedFiles.flatMap(({file, value}) => {
         if (!isBlogPostPackagePostDocument(value)) {
           return [];
@@ -1885,6 +2098,15 @@ export class CmsPostEditorComponent implements AfterViewInit {
           + 'This package will not update or overwrite that post. Continue by importing a separate draft with a unique slug?'
         );
         if (!confirmed) {
+          this.packageImportProgress.set({
+            stage: 'cancelled',
+            message: 'The package import was canceled before any media was uploaded.',
+            detail: 'The current draft was not changed.',
+            progress: 0,
+            completedImages: 0,
+            totalImages: manifest.images.length,
+          });
+          this.postImportAnnouncement.set('Post package import canceled. The current draft was not changed.');
           return;
         }
       }
@@ -1908,13 +2130,63 @@ export class CmsPostEditorComponent implements AfterViewInit {
       const fileMatches = matchBlogPostPackageImageFiles(manifest, files.filter(file => !jsonFiles.includes(file)));
       const uploadSlug = createBlogSlug(originalPost.slug || originalPost.title) || this.mediaUploadSlug;
       const uploadedUrls = new Map<string, string>();
+      const totalImages = fileMatches.length;
+      this.postImportAnnouncement.set(`Uploading ${totalImages} post package image${totalImages === 1 ? '' : 's'}.`);
 
-      for (const {entry, file} of fileMatches) {
+      for (const [index, {entry, file}] of fileMatches.entries()) {
+        const currentImageNumber = index + 1;
+        this.packageImportProgress.set({
+          stage: 'uploading',
+          message: `Preparing image ${currentImageNumber} of ${totalImages}: ${entry.file}`,
+          detail: 'Optimizing the image locally before transfer when that reduces its size.',
+          progress: (uploadedCount / totalImages) * 100,
+          completedImages: uploadedCount,
+          totalImages,
+          currentFile: entry.file,
+        });
         const upload = await lastValueFrom(this.blogMediaUpload.uploadImage(file, {
           slug: uploadSlug,
           role: entry.role,
           altText: entry.altText,
-        }));
+        }).pipe(
+          takeUntilDestroyed(this.destroyRef),
+          tap(uploadProgress => {
+            if (!this.isActivePackageImport(operationId)) return;
+
+            const currentFileProgress = Math.min(100, Math.max(0, uploadProgress.progress));
+            const imageIsReady = Boolean(uploadProgress.downloadUrl);
+            const processing = currentFileProgress >= 100 && !imageIsReady;
+            if (processing && !hasAnnouncedProcessing) {
+              hasAnnouncedProcessing = true;
+              this.postImportAnnouncement.set('Upload transfer is complete. Processing media and creating web-ready versions.');
+            }
+            const completedImages = imageIsReady ? uploadedCount + 1 : uploadedCount;
+            const overallProgress = ((uploadedCount + currentFileProgress / 100) / totalImages) * 100;
+            const message = imageIsReady
+              ? `Image ${currentImageNumber} of ${totalImages} is ready: ${entry.file}`
+              : processing
+                ? `Upload ${currentImageNumber} of ${totalImages} is complete. Processing ${entry.file} and creating web-ready versions.`
+                : currentFileProgress > 0
+                  ? `Uploading image ${currentImageNumber} of ${totalImages}: ${entry.file} (${Math.round(currentFileProgress)}%)`
+                  : `Preparing image ${currentImageNumber} of ${totalImages}: ${entry.file}`;
+            const detail = imageIsReady
+              ? 'The finalized media URL is ready. Continuing with the package.'
+              : processing
+                ? 'The transfer is complete; server-side validation and image variants are still running.'
+                : 'Package import will continue automatically after this image is ready.';
+
+            this.packageImportProgress.set({
+              stage: processing ? 'processing' : 'uploading',
+              message,
+              detail,
+              progress: overallProgress,
+              completedImages,
+              totalImages,
+              currentFile: entry.file,
+            });
+          })
+        ));
+        if (!this.isActivePackageImport(operationId)) return;
 
         if (!upload.downloadUrl) {
           throw new Error(`The upload for ${entry.file} completed without a media URL.`);
@@ -1923,6 +2195,15 @@ export class CmsPostEditorComponent implements AfterViewInit {
         uploadedUrls.set(entry.reference, upload.downloadUrl);
         uploadedCount += 1;
       }
+
+      this.packageImportProgress.set({
+        stage: 'applying',
+        message: `All ${totalImages} package image${totalImages === 1 ? ' is' : 's are'} ready. Loading the imported draft into the editor.`,
+        detail: 'Replacing declared media references and preserving this New Post draft as unsaved work.',
+        progress: 100,
+        completedImages: uploadedCount,
+        totalImages,
+      });
 
       const resolvedPost = {
         ...replaceBlogPostMediaPackageReferences(originalPost, uploadedUrls),
@@ -1936,25 +2217,65 @@ export class CmsPostEditorComponent implements AfterViewInit {
         throw new Error(`The imported post still has unresolved media placeholders: ${remainingReferences.join(', ')}.`);
       }
 
+      if (!this.isActivePackageImport(operationId)) return;
       await this.applyImportedPost(resolvedPost);
+      if (!this.isActivePackageImport(operationId)) return;
+
+      this.packageImportProgress.set({
+        stage: 'complete',
+        message: `Imported ${postCandidate.imported.sourceLabel} with ${uploadedCount} generated image${uploadedCount === 1 ? '' : 's'}.`,
+        detail: 'The draft is loaded for review but has not been saved or published.',
+        progress: 100,
+        completedImages: uploadedCount,
+        totalImages,
+      });
+      this.postImportAnnouncement.set('');
       this.toast.success(`Imported ${postCandidate.imported.sourceLabel} and uploaded ${uploadedCount} generated image${uploadedCount === 1 ? '' : 's'}. Review and save the draft to persist it.`);
     } catch (error) {
+      if (!this.isActivePackageImport(operationId)) return;
+
       const uploadedMediaNotice = uploadedCount > 0
         ? ` ${uploadedCount} image${uploadedCount === 1 ? '' : 's'} already uploaded remain available in the Media Library.`
         : '';
-      this.toast.error(`Unable to import post package: ${getErrorMessage(error)}${uploadedMediaNotice}`);
+      const errorMessage = getErrorMessage(error);
+      const currentProgress = this.packageImportProgress();
+      this.packageImportProgress.set({
+        stage: 'error',
+        message: `Unable to import post package: ${errorMessage}`,
+        detail: uploadedMediaNotice.trim() || 'The current draft was not changed.',
+        progress: currentProgress?.progress ?? null,
+        completedImages: uploadedCount,
+        totalImages: currentProgress?.totalImages ?? 0,
+        currentFile: currentProgress?.currentFile,
+      });
+      this.postImportAnnouncement.set('');
+      this.toast.error(`Unable to import post package: ${errorMessage}${uploadedMediaNotice}`);
     } finally {
-      this.isPackageImportInProgress.set(false);
+      if (!this.isDestroyed && this.postImportOperationId === operationId) {
+        this.isPackageImportInProgress.set(false);
+      }
     }
   }
 
   protected async exportPostJson(): Promise<void> {
+    if (this.rejectWhileImporting('exporting the draft')) return;
+    if (this.isJsonExportInProgress || this.isPreviewGenerationInProgress) {
+      this.toast.error('Wait for the current export or preview operation to finish.');
+      return;
+    }
+
+    this.isJsonExportInProgress = true;
     try {
       const backupPost = await this.createCurrentBackupPost();
+      if (this.isDestroyed) return;
+
       this.downloadJson(this.createPostBackupJson(backupPost), createPostBackupFileName(backupPost.slug));
       this.toast.success(`Exported "${backupPost.title}" as JSON.`);
     } catch (error) {
+      if (this.isDestroyed) return;
       this.toast.error(`Unable to export JSON: ${getErrorMessage(error)}`);
+    } finally {
+      this.isJsonExportInProgress = false;
     }
   }
 
@@ -2005,6 +2326,16 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async generateAndStoreThumbnail(thumbnail: BlogThumbnailSuggestion): Promise<void> {
+    if (this.rejectWhileImporting('generating and applying a thumbnail')) return;
+    if (this.activeMediaUploadFields.has('cover')) {
+      this.toast.error('Wait for the current cover image upload to finish before generating a thumbnail.');
+      return;
+    }
+    if (this.isThumbnailLoading) {
+      this.toast.error('Wait for the current thumbnail generation to finish before generating another thumbnail.');
+      return;
+    }
+
     this.thumbnailError = '';
     this.lastGeneratedThumbnail = null;
 
@@ -2023,6 +2354,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
         postId: this.currentPost.id,
         slug: this.postForm.controls.slug.value || this.currentPost.slug,
       });
+
+      if (this.isDestroyed) return;
 
       this.postForm.controls.coverImage.setValue(storedThumbnail.downloadUrl);
       this.postForm.markAsDirty();
@@ -2045,6 +2378,25 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected onOpenGraphImageUploaded(upload: BlogMediaUploadResult): void {
     this.markUploadedMedia(upload);
+  }
+
+  protected setMediaUploadInProgress(field: string, isUploading: boolean): void {
+    if (isUploading) {
+      this.activeMediaUploadFields.add(field);
+      return;
+    }
+
+    this.activeMediaUploadFields.delete(field);
+  }
+
+  protected isCoverMediaWriterUnavailable(): boolean {
+    return this.isPostImportInProgress() || this.isThumbnailLoading !== null;
+  }
+
+  protected isThumbnailWriterUnavailable(): boolean {
+    return this.isPostImportInProgress()
+      || this.isThumbnailLoading !== null
+      || this.activeMediaUploadFields.has('cover');
   }
 
   protected clearBackgroundImage(): void {
@@ -2110,6 +2462,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async savePost(): Promise<boolean> {
+    if (this.rejectWhileImporting('saving the post')) return false;
+
+    if (this.isEditorialSaveInProgress) {
+      this.toast.error('Wait for the evidence-only update to finish before saving the complete post.');
+      return false;
+    }
+
     if (!this.editorComponent) {
       this.toast.error('The editor is still loading. Try saving again in a moment.');
       return false;
@@ -2132,7 +2491,53 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
   }
 
+  protected async saveEditorialOnly(): Promise<void> {
+    if (this.rejectWhileImporting('saving evidence metadata')) return;
+
+    if (!this.currentPost || this.isNewPost) {
+      this.toast.error('Save this post once before using the evidence-only update.');
+      return;
+    }
+    if (!this.hasUnsavedEditorialChanges) {
+      this.toast.error('Change an Evidence & Disclosures field before saving evidence only.');
+      return;
+    }
+
+    this.isEditorialSaveInProgress = true;
+
+    try {
+      const savedPost = await this.blogRepository.updatePostEditorial(
+        this.currentPost,
+        createEditorialMetadataFromForm(this.postForm.getRawValue())
+      );
+
+      this.currentPost = savedPost;
+      this.setEditorialFormFromPost(savedPost);
+      this.editorialControls.forEach(control => control.markAsPristine());
+      this.saveConflict.set(null);
+      this.syncLastSavedBackupJson();
+
+      if (this.hasUnsavedChanges) {
+        this.requestRecoverySave();
+      } else {
+        await this.deleteRecoveryBestEffort(savedPost.id);
+      }
+
+      this.toast.success(`Saved evidence metadata for "${savedPost.title}" without rewriting article blocks.`);
+    } catch (error) {
+      if (error instanceof BlogPostRevisionConflictError) {
+        this.saveConflict.set(error);
+        this.requestRecoverySave();
+      }
+      this.toast.error(error instanceof Error ? error.message : 'Unable to save evidence metadata.');
+    } finally {
+      this.isEditorialSaveInProgress = false;
+    }
+  }
+
   protected async deleteCurrentPost(): Promise<void> {
+    if (this.rejectWhileImporting('deleting the post')) return;
+
     if (!this.currentPost || this.isNewPost) {
       this.toast.error('Save this post before deleting it.');
       return;
@@ -2168,6 +2573,12 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async generatePreviewLink(): Promise<void> {
+    if (this.rejectWhileImporting('generating a preview')) return;
+    if (this.isPreviewGenerationInProgress || this.isJsonExportInProgress) {
+      this.draftPreviewPanel?.onPreviewError('Wait for the current preview or export operation to finish.');
+      return;
+    }
+
     this.draftPreviewPanel?.clearMessages();
 
     if (this.postForm.controls.status.value !== 'draft') {
@@ -2183,12 +2594,20 @@ export class CmsPostEditorComponent implements AfterViewInit {
         return;
       }
 
-      const result = await this.blogRepository.createPreviewForPost(this.currentPost);
-      this.currentPost = result.post;
-      this.syncLastSavedBackupJson();
-      this.toast.success('Saved the draft and refreshed its public preview link.');
-      this.draftPreviewPanel?.onPreviewGenerated(result.post);
+      this.isPreviewGenerationInProgress = true;
+      try {
+        const result = await this.blogRepository.createPreviewForPost(this.currentPost);
+        if (this.isDestroyed) return;
+
+        this.currentPost = result.post;
+        this.syncLastSavedBackupJson();
+        this.toast.success('Saved the draft and refreshed its public preview link.');
+        this.draftPreviewPanel?.onPreviewGenerated(result.post);
+      } finally {
+        this.isPreviewGenerationInProgress = false;
+      }
     } catch (error) {
+      if (this.isDestroyed) return;
       if (error instanceof BlogPostRevisionConflictError) {
         this.saveConflict.set(error);
         this.requestRecoverySave();
@@ -2198,6 +2617,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected onPreviewPostChanged(post: BlogPost): void {
+    if (this.isPostImportInProgress()) return;
+
     const socialPromotion = this.hasUnsavedSocialChanges
       ? this.socialPromotionDraft
       : post.socialPromotion ?? {announcements: []};
@@ -2211,6 +2632,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected async onSaved(saved: EditorSavedDocument): Promise<boolean> {
+    if (this.rejectWhileImporting('saving the post')) return false;
+
     this.postForm.markAllAsTouched();
 
     if (!this.currentPost) {
@@ -2324,6 +2747,83 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
   }
 
+  private isActivePackageImport(operationId: number): boolean {
+    return !this.isDestroyed
+      && this.isPackageImportInProgress()
+      && this.postImportOperationId === operationId;
+  }
+
+  private isActiveJsonImport(operationId: number): boolean {
+    return !this.isDestroyed
+      && this.isJsonImportInProgress()
+      && this.postImportOperationId === operationId;
+  }
+
+  protected isImportLauncherUnavailable(): boolean {
+    return this.isPostImportInProgress() || this.importBlockingOperation() !== null;
+  }
+
+  private rejectWhilePostOperation(action: string): boolean {
+    if (this.rejectWhileImporting(action)) return true;
+
+    const operation = this.importBlockingOperation();
+    if (!operation) return false;
+
+    this.toast.error(`Wait for ${operation} before ${action}.`);
+    return true;
+  }
+
+  private importBlockingOperation(): string | null {
+    if (this.isSaveInProgress || this.isEditorialSaveInProgress) return 'the current save to finish';
+    if (this.isDeleteInProgress) return 'the current delete to finish';
+    if (this.isPreviewGenerationInProgress) return 'preview generation to finish';
+    if (this.isJsonExportInProgress) return 'the current JSON export to finish';
+    if (this.isApplyingEditorState) return 'the editor state update to finish';
+    if (this.isThumbnailLoading) return 'thumbnail generation to finish';
+    if (this.activeMediaUploadFields.size > 0 || this.activeEditorImageUploadCount > 0) {
+      return 'the current media upload to finish';
+    }
+    if (this.isPostLoading()) return 'the post to finish loading';
+    return null;
+  }
+
+  private rejectWhileImporting(action: string): boolean {
+    if (!this.isPostImportInProgress()) return false;
+
+    this.toast.error(`Wait for the active import to finish before ${action}.`);
+    return true;
+  }
+
+  private rejectWhileApplyingEditorState(action: string): boolean {
+    if (!this.isApplyingEditorState) return false;
+
+    this.toast.error(`Wait for the current editor state update to finish before ${action}.`);
+    return true;
+  }
+
+  private beginEditorStateApplication(): void {
+    this.editorStateOperationCount += 1;
+    this.isApplyingEditorState = true;
+  }
+
+  private endEditorStateApplication(): void {
+    this.editorStateOperationCount = Math.max(0, this.editorStateOperationCount - 1);
+    this.isApplyingEditorState = this.editorStateOperationCount > 0;
+  }
+
+  private enqueueEditorStateApplication(work: () => Promise<void>): Promise<void> {
+    this.beginEditorStateApplication();
+
+    const operation = this.editorStateApplicationQueue.then(async () => {
+      if (this.isDestroyed) return;
+      await work();
+    });
+    const settledOperation = operation.finally(() => this.endEditorStateApplication());
+    this.editorStateApplicationQueue = settledOperation.catch(() => undefined);
+
+    return settledOperation;
+  }
+
   private resolvePost(): BlogPost | undefined {
     if (this.slug) {
       return this.blogRepository.getAdminPostBySlug(this.slug);
@@ -2337,25 +2837,48 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   private async applyFirestorePost(post: BlogPost): Promise<void> {
-    this.isApplyingEditorState = true;
+    if (this.isPostImportInProgress()) return;
 
-    try {
-      this.currentPost = post;
-      this.initialData = createEditorDocument(post);
-      this.setFormFromPost(post);
-      this.socialPromotionDraft = post.socialPromotion ?? {announcements: []};
-      this.socialWorkspacePost = this.createSocialWorkspacePost();
-      this.hasUnsavedSocialChanges = false;
-      this.hasUnsavedEditorChanges.set(false);
-      this.postForm.markAsPristine();
-      this.hasHydratedFirestorePost = true;
-      this.saveConflict.set(null);
+    await this.enqueueEditorStateApplication(async () => {
+      const hasUnsavedChanges = this.hasUnsavedChanges;
+      const disposition = getRemotePostDisposition({
+        localPost: this.currentPost,
+        remotePost: post,
+        hasHydrated: this.hasHydratedFirestorePost || hasUnsavedChanges,
+        hasUnsavedChanges,
+        isLoading: this.isPostLoading(),
+      });
 
-      await this.editorComponent?.renderDocument(this.initialData);
-      await this.loadRecoveryDraft();
-    } finally {
-      this.isApplyingEditorState = false;
-    }
+      if (disposition === 'conflict') {
+        this.saveConflict.set(new BlogPostRevisionConflictError(
+          post.id,
+          normalizeBlogPostRevision(this.currentPost?.revision),
+          normalizeBlogPostRevision(post.revision),
+          post
+        ));
+        return;
+      }
+
+      if (disposition !== 'hydrate') return;
+
+      await this.applyFirestorePostNow(post);
+    });
+  }
+
+  private async applyFirestorePostNow(post: BlogPost): Promise<void> {
+    this.currentPost = post;
+    this.initialData = createEditorDocument(post);
+    this.setFormFromPost(post);
+    this.socialPromotionDraft = post.socialPromotion ?? {announcements: []};
+    this.socialWorkspacePost = this.createSocialWorkspacePost();
+    this.hasUnsavedSocialChanges = false;
+    this.hasUnsavedEditorChanges.set(false);
+    this.postForm.markAsPristine();
+    this.hasHydratedFirestorePost = true;
+    this.saveConflict.set(null);
+
+    await this.editorComponent?.renderDocument(this.initialData);
+    await this.loadRecoveryDraft();
   }
 
   private createImportedPostDocument(value: unknown): ImportedPostDocument {
@@ -2512,14 +3035,24 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   private async persistRecovery(force = false): Promise<boolean> {
     if (!this.currentPost || !this.editorComponent) return false;
-    if (!force && (!this.hasUnsavedChanges || this.isSaveInProgress || this.isDeleteInProgress)) return false;
+    if (!force && (
+      !this.hasUnsavedChanges
+      || this.isSaveInProgress
+      || this.isDeleteInProgress
+      || this.isPostImportInProgress()
+    )) return false;
 
     if (this.recoveryWritePromise) {
       await this.recoveryWritePromise.catch(() => undefined);
     }
 
     if (!this.currentPost || !this.editorComponent) return false;
-    if (!force && (!this.hasUnsavedChanges || this.isSaveInProgress || this.isDeleteInProgress)) return false;
+    if (!force && (
+      !this.hasUnsavedChanges
+      || this.isSaveInProgress
+      || this.isDeleteInProgress
+      || this.isPostImportInProgress()
+    )) return false;
 
     this.recoveryStatus.set('saving');
     this.recoveryError.set('');
@@ -2717,6 +3250,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
   }
 
+  private get editorialControls() {
+    return [
+      this.postForm.controls.evidenceBasis,
+      this.postForm.controls.evidenceSummary,
+      this.postForm.controls.sourceReviewedAt,
+      this.postForm.controls.relationshipDisclosure,
+      this.postForm.controls.aiAssistanceDisclosure,
+      this.postForm.controls.syntheticMediaDisclosure,
+      this.postForm.controls.updateNote,
+    ] as const;
+  }
+
   private createForm(post: BlogPost): FormGroup<PostEditorForm> {
     const catCorner = createCmsCatCornerFormValue(post.catCorner);
 
@@ -2793,6 +3338,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
       updateNote: post.editorial?.updateNote ?? '',
     });
     this.syncCatCornerDiscoveryControl();
+  }
+
+  private setEditorialFormFromPost(post: BlogPost): void {
+    this.postForm.patchValue({
+      evidenceBasis: post.editorial?.evidenceBasis ?? '',
+      evidenceSummary: post.editorial?.evidenceSummary ?? '',
+      sourceReviewedAt: post.editorial?.sourceReviewedAt ?? '',
+      relationshipDisclosure: post.editorial?.relationshipDisclosure ?? '',
+      aiAssistanceDisclosure: post.editorial?.aiAssistanceDisclosure ?? '',
+      syntheticMediaDisclosure: post.editorial?.syntheticMediaDisclosure ?? '',
+      updateNote: post.editorial?.updateNote ?? '',
+    }, {emitEvent: false});
   }
 
   private createAuthorSnapshot(author: AuthorProfile): BlogPost['author'] {

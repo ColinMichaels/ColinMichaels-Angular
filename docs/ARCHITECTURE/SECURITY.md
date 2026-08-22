@@ -2,7 +2,7 @@
 
 ## Threat Model (Relevant to This App)
 
-- XSS via dynamic HTML rendering (`innerHTML`, dynamic tooltip/notification content, terminal output).
+- XSS via dynamic HTML rendering (`innerHTML` notification content, terminal output, and other reviewed HTML sinks).
 - Open redirect or unsafe external navigation from route-driven URL values.
 - Client-side secret exposure (API keys in browser bundle/environment files).
 - Unsafe parsing and persistence of local storage data.
@@ -25,12 +25,15 @@ Current sinks include:
 
 - CLI output rendering with `[innerHTML]`
 - notification message rendering with `[innerHTML]`
-- tooltip text rendering with `[innerHTML]`
 - raw `innerHTML` writes in settings subpanel fallback
 - SVG trust bypass via `bypassSecurityTrustHtml`
 
 Risk:
 user-controlled or remotely controlled strings could execute markup/script payloads if not constrained.
+
+Core OS tooltip copy is no longer an HTML sink. The shared overlay renders text
+with Angular interpolation, and focused controls receive a composed
+`aria-describedby` relationship without interpreting tooltip markup.
 
 The CMS custom HTML block deliberately excludes `iframe` and `script` markup at both Editor.js save time and public Angular rendering. Interactive article apps use a separate typed embed boundary instead. The Hear the Hook soundboard is pinned to its exact HTTPS origin and approved root, `/soundboard`, and `/soundboard.html` paths; each normalizes to the canonical `/soundboard` page. It is rendered with a static iframe sandbox and denied camera, microphone, geolocation, payment, clipboard, and fullscreen capabilities. Its optional height message is accepted only when the origin, frame window, message type, and finite bounded height all match. Other app URLs render as outbound links rather than frames.
 

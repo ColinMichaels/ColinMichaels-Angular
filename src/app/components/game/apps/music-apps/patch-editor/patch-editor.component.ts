@@ -1,5 +1,5 @@
 import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
-import {StorageService} from '../../../services/storage.service';
+import {StorageService} from '@core-os/storage';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import {NotificationService} from '../../../services/notification.service';
@@ -33,8 +33,8 @@ import {
   faVolumeHigh,
   faWaveSquare,
 } from '@fortawesome/free-solid-svg-icons';
-import {TooltipDirective} from '../../../directives/tooltip.directive';
-import {take} from 'rxjs/operators';
+import {TooltipDirective} from '@core-os/tooltip';
+import {finalize, map, switchMap, take} from 'rxjs/operators';
 import {PianoComponent} from '../piano/piano.component';
 import {SoundDriverId, SoundDriverMetadata} from '../../../services/sound-drivers/sound-driver.types';
 
@@ -72,6 +72,7 @@ export class PatchEditorComponent implements OnInit {
   selectedFactoryPresetName = '';
   selectedSavedPatchName = '';
   showKeyboard = false;
+  storageBusy = false;
   protected readonly soundDrivers: readonly SoundDriverMetadata[];
 
   constructor(
@@ -131,32 +132,39 @@ export class PatchEditorComponent implements OnInit {
   }
 
   savePatch(): void {
+    if (!this.beginStorageMutation()) {
+      return;
+    }
+
     const patchToSave = this.patchService.normalizePatch(this.selectedPatch);
     this.selectedPatch = patchToSave;
 
-    this.storageService.getItems<SynthPatch>(STORAGE_KEY).pipe(take(1)).subscribe({
-      next: (existingPatches) => {
+    this.storageService.getItems<SynthPatch>(STORAGE_KEY).pipe(
+      switchMap((existingPatches) => {
         const patches = existingPatches ?? [];
         const nextPatches = [
           patchToSave,
           ...patches.filter(patch => patch.name !== patchToSave.name),
         ];
 
-        this.storageService.setItems(STORAGE_KEY, nextPatches).pipe(take(1)).subscribe({
-          next: () => {
-            this.savedPatches = nextPatches.map(patch => this.patchService.normalizePatch(patch));
-            this.selectedFactoryPresetName = '';
-            this.selectedSavedPatchName = patchToSave.name;
-            this.notify.show({
-              title: 'Patch saved',
-              message: patchToSave.name,
-              type: 'success',
-            });
-          },
-          error: () => this.notify.error('Failed to save patch.')
+        return this.storageService.setItems(STORAGE_KEY, nextPatches).pipe(map(() => nextPatches));
+      }),
+      take(1),
+      finalize(() => {
+        this.storageBusy = false;
+      })
+    ).subscribe({
+      next: (nextPatches) => {
+        this.savedPatches = nextPatches.map(patch => this.patchService.normalizePatch(patch));
+        this.selectedFactoryPresetName = '';
+        this.selectedSavedPatchName = patchToSave.name;
+        this.notify.show({
+          title: 'Patch saved',
+          message: patchToSave.name,
+          type: 'success',
         });
       },
-      error: () => this.notify.error('Failed to load saved patches.')
+      error: () => this.notify.error('Failed to save patch.')
     });
   }
 
@@ -166,8 +174,17 @@ export class PatchEditorComponent implements OnInit {
       return;
     }
 
+    if (!this.beginStorageMutation()) {
+      return;
+    }
+
     const nextPatches = this.savedPatches.filter(patch => patch.name !== name);
-    this.storageService.setItems(STORAGE_KEY, nextPatches).pipe(take(1)).subscribe({
+    this.storageService.setItems(STORAGE_KEY, nextPatches).pipe(
+      take(1),
+      finalize(() => {
+        this.storageBusy = false;
+      })
+    ).subscribe({
       next: () => {
         this.savedPatches = nextPatches;
         this.selectedFactoryPresetName = '';
@@ -180,12 +197,28 @@ export class PatchEditorComponent implements OnInit {
   }
 
   loadPatchList(): void {
-    this.storageService.getItems<SynthPatch>(STORAGE_KEY).pipe(take(1)).subscribe({
+    this.storageBusy = true;
+    this.storageService.getItems<SynthPatch>(STORAGE_KEY).pipe(
+      take(1),
+      finalize(() => {
+        this.storageBusy = false;
+      })
+    ).subscribe({
       next: (patches) => {
         this.savedPatches = (patches ?? []).map(patch => this.patchService.normalizePatch(patch));
       },
       error: () => this.notify.error('Failed to load saved patches.')
     });
+  }
+
+  private beginStorageMutation(): boolean {
+    if (this.storageBusy) {
+      this.notify.warn('Wait for the current patch storage operation to finish.');
+      return false;
+    }
+
+    this.storageBusy = true;
+    return true;
   }
 
   loadSavedPatch(name: string): void {

@@ -53,12 +53,15 @@ interface InspectorDraft {
 
             <div class="grid grid-cols-2 gap-2">
               <button type="button" class="primary-action" (click)="previewRequested.emit(singleItem)">Preview</button>
-              <button type="button" class="secondary-action" (click)="renameRequested.emit(singleItem)">Rename</button>
-              <button type="button" class="secondary-action" [disabled]="singleItem.mediaType !== 'image'" (click)="resizeRequested.emit([singleItem])">Resize</button>
               <button type="button" class="secondary-action" (click)="copyUrlRequested.emit(singleItem)">Copy URL</button>
+              @if (singleItem.status !== 'deleted') {
+                <button type="button" class="secondary-action" (click)="renameRequested.emit(singleItem)">Rename</button>
+                <button type="button" class="secondary-action" [disabled]="singleItem.mediaType !== 'image'" (click)="resizeRequested.emit([singleItem])">Resize</button>
+              }
             </div>
 
-            <form class="space-y-4" (ngSubmit)="saveSingleItem()">
+            @if (singleItem.status !== 'deleted') {
+              <form class="space-y-4" (ngSubmit)="saveSingleItem()">
               <label class="block space-y-1">
                 <span class="field-label">Display name</span>
                 <input class="field-input" name="displayName" [(ngModel)]="draft.displayName" required>
@@ -114,8 +117,13 @@ interface InspectorDraft {
                 <textarea class="field-input min-h-20 resize-y" name="notes" [(ngModel)]="draft.notes"></textarea>
               </label>
 
-              <button type="submit" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Metadata</button>
-            </form>
+                <button type="submit" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save Metadata</button>
+              </form>
+            } @else {
+              <p class="rounded-lg border border-cyan-700 bg-cyan-950/60 p-3 text-sm text-cyan-50" role="status">
+                Restore this retained record before editing its metadata or lifecycle state.
+              </p>
+            }
 
             <section class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm">
               <h3 class="font-semibold text-gray-900">Details</h3>
@@ -138,11 +146,15 @@ interface InspectorDraft {
             </section>
 
             <section class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-4">
-              <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: [singleItem], favorite: !singleItem.favorite})">
-                {{ singleItem.favorite ? 'Unfavorite' : 'Favorite' }}
-              </button>
-              <button type="button" class="secondary-action" (click)="archiveRequested.emit([singleItem])">Archive</button>
-              <button type="button" class="danger-action col-span-2" (click)="deleteRequested.emit([singleItem])">Delete</button>
+              @if (singleItem.status === 'deleted') {
+                <button type="button" class="primary-action col-span-2" (click)="restoreRequested.emit([singleItem])">Restore</button>
+              } @else {
+                <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: [singleItem], favorite: !singleItem.favorite})">
+                  {{ singleItem.favorite ? 'Unfavorite' : 'Favorite' }}
+                </button>
+                <button type="button" class="secondary-action" (click)="archiveRequested.emit([singleItem])">Archive</button>
+                <button type="button" class="danger-action col-span-2" (click)="deleteRequested.emit([singleItem])">Delete</button>
+              }
             </section>
           </section>
         } @else {
@@ -164,13 +176,17 @@ interface InspectorDraft {
             <section class="space-y-3">
               <h3 class="text-sm font-semibold text-gray-900">Batch Actions</h3>
               <div class="grid grid-cols-2 gap-2">
-                <button type="button" class="primary-action" (click)="batchRenameRequested.emit(selectedItems)">Batch Rename</button>
-                <button type="button" class="secondary-action" (click)="resizeRequested.emit(imageItems)" [disabled]="imageItems.length === 0">Batch Resize</button>
-                <button type="button" class="secondary-action" (click)="batchTagRequested.emit(selectedItems)">Add Tags</button>
-                <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: selectedItems, favorite: true})">Favorite</button>
-                <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: selectedItems, favorite: false})">Unfavorite</button>
-                <button type="button" class="secondary-action" (click)="archiveRequested.emit(selectedItems)">Archive</button>
-                <button type="button" class="danger-action col-span-2" (click)="deleteRequested.emit(selectedItems)">Delete</button>
+                @if (deletedItems.length > 0) {
+                  <button type="button" class="primary-action col-span-2" (click)="restoreRequested.emit(deletedItems)">Restore Deleted ({{ deletedItems.length }})</button>
+                } @else {
+                  <button type="button" class="primary-action" (click)="batchRenameRequested.emit(selectedItems)">Batch Rename</button>
+                  <button type="button" class="secondary-action" (click)="resizeRequested.emit(imageItems)" [disabled]="imageItems.length === 0">Batch Resize</button>
+                  <button type="button" class="secondary-action" (click)="batchTagRequested.emit(selectedItems)">Add Tags</button>
+                  <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: selectedItems, favorite: true})">Favorite</button>
+                  <button type="button" class="secondary-action" (click)="favoriteRequested.emit({items: selectedItems, favorite: false})">Unfavorite</button>
+                  <button type="button" class="secondary-action" (click)="archiveRequested.emit(selectedItems)">Archive</button>
+                  <button type="button" class="danger-action col-span-2" (click)="deleteRequested.emit(selectedItems)">Delete</button>
+                }
               </div>
             </section>
           </section>
@@ -262,6 +278,7 @@ export class MediaInspectorComponent implements OnChanges {
   @Output() favoriteRequested = new EventEmitter<{ items: readonly MediaLibraryItem[]; favorite: boolean }>();
   @Output() archiveRequested = new EventEmitter<readonly MediaLibraryItem[]>();
   @Output() deleteRequested = new EventEmitter<readonly MediaLibraryItem[]>();
+  @Output() restoreRequested = new EventEmitter<readonly MediaLibraryItem[]>();
   @Output() copyUrlRequested = new EventEmitter<MediaLibraryItem>();
   @Output() closeRequested = new EventEmitter<void>();
 
@@ -282,6 +299,10 @@ export class MediaInspectorComponent implements OnChanges {
 
   protected get imageItems(): readonly MediaLibraryItem[] {
     return this.selectedItems.filter(item => item.mediaType === 'image');
+  }
+
+  protected get deletedItems(): readonly MediaLibraryItem[] {
+    return this.selectedItems.filter(item => item.status === 'deleted');
   }
 
   protected get totalSelectedSize(): number {

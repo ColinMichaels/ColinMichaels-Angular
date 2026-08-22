@@ -1,0 +1,153 @@
+import {firstValueFrom} from 'rxjs';
+import {StorageService as LegacyStorageService} from '../../components/game/services/storage.service';
+import {
+  IndexedDbStrategy,
+  LocalStorageStrategy,
+  StorageService,
+  StorageStrategy
+} from './storage.service';
+
+interface IndexedDbHarness {
+  factory: Pick<IDBFactory, 'open'>;
+  request: IDBOpenDBRequest;
+  transaction: IDBTransaction;
+}
+
+function createIndexedDbHarness(): IndexedDbHarness {
+  const store = {
+    put: () => ({}),
+    get: () => ({}),
+    delete: () => ({}),
+    getAllKeys: () => ({}),
+    clear: () => ({})
+  } as unknown as IDBObjectStore;
+  const transaction = {
+    error: null,
+    onabort: null,
+    oncomplete: null,
+    onerror: null,
+    objectStore: () => store
+  } as unknown as IDBTransaction;
+  const database = {
+    close: () => undefined,
+    objectStoreNames: {contains: () => true},
+    onversionchange: null,
+    transaction: () => transaction
+  } as unknown as IDBDatabase;
+  const request = {
+    error: null,
+    onblocked: null,
+    onerror: null,
+    onsuccess: null,
+    onupgradeneeded: null,
+    result: database
+  } as unknown as IDBOpenDBRequest;
+  const factory = {
+    open: () => request
+  } as unknown as Pick<IDBFactory, 'open'>;
+
+  return {factory, request, transaction};
+}
+
+describe('StorageService', () => {
+  let service: StorageService;
+  let storageKey: string;
+
+  beforeEach(() => {
+    service = new StorageService();
+    storageKey = `core-os-storage-spec-${crypto.randomUUID()}`;
+  });
+
+  afterEach(async () => {
+    await firstValueFrom(service.removeItem(storageKey));
+  });
+
+  it('round-trips a value without changing the storage key', async () => {
+    const value = {enabled: true, level: 3};
+
+    await firstValueFrom(service.setItem(storageKey, value));
+
+    expect(await firstValueFrom(service.getItem(storageKey))).toEqual(value);
+  });
+
+  it('keeps the legacy path on the same Angular service token', () => {
+    expect(LegacyStorageService).toBe(StorageService);
+  });
+
+  it('preserves the collection helpers', async () => {
+    const value = ['one', 'two'];
+
+    await firstValueFrom(service.setItems(storageKey, value));
+
+    expect(await firstValueFrom(service.getItems(storageKey))).toEqual(value);
+  });
+
+  it('lists and removes the exact persisted key', async () => {
+    await firstValueFrom(service.setItem(storageKey, 'value'));
+
+    expect(await firstValueFrom(service.getAllKeys())).toContain(storageKey);
+
+    await firstValueFrom(service.removeItem(storageKey));
+    expect(await firstValueFrom(service.getItem(storageKey))).toBeNull();
+  });
+
+  it('propagates strategy write failures to callers', async () => {
+    const failure = new Error('quota exceeded');
+    const strategy = jasmine.createSpyObj<StorageStrategy>('StorageStrategy', [
+      'setItem',
+      'getItem',
+      'getAllKeys',
+      'removeItem',
+      'clear'
+    ]);
+    strategy.setItem.and.rejectWith(failure);
+    const failingService = new StorageService(strategy);
+
+    await expectAsync(firstValueFrom(failingService.setItem(storageKey, 'value')))
+      .toBeRejectedWith(failure);
+  });
+
+  it('settles IndexedDB writes only after the transaction completes', async () => {
+    const harness = createIndexedDbHarness();
+    const strategy = new IndexedDbStrategy('AppStorage', 'keyvalue', 1, harness.factory);
+    const write = strategy.setItem(storageKey, 'value');
+    let settled = false;
+    void write.then(() => {
+      settled = true;
+    });
+
+    harness.request.onsuccess?.call(harness.request, new Event('success'));
+    await Promise.resolve();
+    expect(settled).toBeFalse();
+
+    harness.transaction.oncomplete?.call(harness.transaction, new Event('complete'));
+    await write;
+    expect(settled).toBeTrue();
+  });
+
+  it('propagates an aborted IndexedDB transaction', async () => {
+    const harness = createIndexedDbHarness();
+    const strategy = new IndexedDbStrategy('AppStorage', 'keyvalue', 1, harness.factory);
+    const removal = strategy.removeItem(storageKey);
+
+    harness.request.onsuccess?.call(harness.request, new Event('success'));
+    await Promise.resolve();
+    harness.transaction.onabort?.call(harness.transaction, new Event('abort'));
+
+    await expectAsync(removal).toBeRejectedWithError('IndexedDB transaction was aborted.');
+  });
+
+  it('keeps localStorage failures observable and refuses origin-wide clearing', async () => {
+    const strategy = new LocalStorageStrategy();
+    const unrelatedKey = `${storageKey}-unrelated`;
+    localStorage.setItem(unrelatedKey, 'keep');
+
+    await expectAsync(strategy.setItem(storageKey, BigInt(1))).toBeRejected();
+    await expectAsync(strategy.clear()).toBeRejectedWithError(
+      'Clearing the localStorage fallback is disabled to protect unrelated origin data.'
+    );
+    expect(localStorage.getItem(unrelatedKey)).toBe('keep');
+
+    localStorage.removeItem(unrelatedKey);
+  });
+});

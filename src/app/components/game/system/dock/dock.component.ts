@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, effect, inject, signal} from '@angul
 import {CommonModule} from "@angular/common";
 import {toSignal} from '@angular/core/rxjs-interop';
 import {map} from 'rxjs';
-import {ApplicationManagerService} from '../../services/application-manager.service';
+import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {
@@ -15,7 +15,7 @@ import {
   faUsers
 } from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {SvgService} from '../../services/svg.service';
 import {SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';

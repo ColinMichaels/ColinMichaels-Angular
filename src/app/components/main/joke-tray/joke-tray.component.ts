@@ -10,7 +10,7 @@ import {RouterLink} from '@angular/router';
 import {HOME_NOTIFY_CLASSES} from '../main.constants';
 import {faSmile} from '@fortawesome/free-regular-svg-icons';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {TooltipDirective} from '../../game/directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 
 @Component({
   selector: 'app-joke-tray',

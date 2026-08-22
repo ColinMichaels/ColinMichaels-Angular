@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   collectTrustedBlogMediaIds,
+  createEditorialUpdatePlan,
   parseBlogMutationRequest,
   validateTrustedBlogPost,
 } = require('../lib/blog-publishing.js');
@@ -225,6 +226,46 @@ test('parses bounded idempotent save requests and rejects mismatched post ids', 
     ...request,
     postId: 'another-post',
   }), /matching complete post/);
+});
+
+test('parses and normalizes evidence-only updates without inspecting legacy blocks', () => {
+  const request = parseBlogMutationRequest({
+    operation: 'updateEditorial',
+    postId: 'post-phase-seven',
+    expectedRevision: 3,
+    requestId: '019fc788-730b-7982-91c8-055dcdb1a8c6',
+    editorial: {
+      evidenceBasis: 'researched',
+      evidenceSummary: '  Public sources were checked independently.  ',
+      sourceReviewedAt: '2026-08-21',
+    },
+  });
+  const legacyBlocks = [{id: 'legacy', type: 'future-block', data: '{malformed'}];
+  const currentPost = createPost({revision: 3, blocks: legacyBlocks, legacyField: {preserve: true}});
+  const plan = createEditorialUpdatePlan(
+    currentPost,
+    request.editorial,
+    request.expectedRevision,
+    new Date('2026-08-21T16:00:00.000Z')
+  );
+
+  assert.deepEqual(request.editorial, {
+    evidenceBasis: 'researched',
+    evidenceSummary: 'Public sources were checked independently.',
+    sourceReviewedAt: '2026-08-21',
+  });
+  assert.equal(plan.revision, 4);
+  assert.equal(plan.updatedAt, '2026-08-21T16:00:00.000Z');
+  assert.equal(plan.nextPost.blocks, legacyBlocks);
+  assert.deepEqual(plan.nextPost.legacyField, {preserve: true});
+  assert.throws(() => parseBlogMutationRequest({
+    ...request,
+    editorial: {evidenceBasis: 'researched', authorityScore: 100},
+  }), /unsupported fields/);
+  assert.throws(() => parseBlogMutationRequest({
+    ...request,
+    editorial: {sourceReviewedAt: '2026-02-30'},
+  }), /YYYY-MM-DD/);
 });
 
 test('extracts only trusted Phase 7 media identities from storage paths and provider URLs', () => {

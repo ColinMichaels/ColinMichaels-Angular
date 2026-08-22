@@ -9,13 +9,13 @@ import {OsUserService} from '../services/os-user.service';
 import {OverlayService} from '../services/overlay.service';
 import {
   ApplicationManagerService
-} from '../services/application-manager.service';
+} from '@core-os/app-registry/application-manager.service';
 import {
   APP_ID,
   WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
-} from '../services/application-manager.models';
+} from '@core-os/app-registry/application-manager.models';
 import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
@@ -25,7 +25,7 @@ import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fort
 import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
-import {TooltipDirective} from '../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
 
 @Component({

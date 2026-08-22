@@ -162,7 +162,8 @@ export class FirestoreService {
       progress: (snapshot: { bytesTransferred: number; totalBytes: number }) => void,
       error: (error: unknown) => void,
       complete: () => void
-    ) => void;
+    ) => () => void;
+    cancel: () => boolean;
     snapshot: { ref: unknown };
   } {
     return (uploadBytesResumableFn as (...innerArgs: unknown[]) => {
@@ -171,7 +172,8 @@ export class FirestoreService {
         progress: (snapshot: { bytesTransferred: number; totalBytes: number }) => void,
         error: (error: unknown) => void,
         complete: () => void
-      ) => void;
+      ) => () => void;
+      cancel: () => boolean;
       snapshot: { ref: unknown };
     })(...args);
   }
@@ -465,17 +467,20 @@ export class FirestoreService {
     const uploadTask = this.uploadBytesResumable(storageRef, file, metadata);
 
     return new Observable<StorageUploadProgress>(observer => {
-      uploadTask.on(
+      let uploadSettled = false;
+      const detachListener = uploadTask.on(
         'state_changed',
         (snapshot: { bytesTransferred: number; totalBytes: number }) => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           observer.next({progress, uploadComplete: false});
         },
         (error: unknown) => {
+          uploadSettled = true;
           console.error(`Error uploading file to ${path}:`, error);
           observer.error(error);
         },
         async () => {
+          uploadSettled = true;
           if (options.resolveDownloadUrl === false) {
             observer.next({progress: 100, uploadComplete: true});
             observer.complete();
@@ -491,6 +496,14 @@ export class FirestoreService {
           }
         }
       );
+
+      return () => {
+        detachListener();
+
+        if (!uploadSettled) {
+          uploadTask.cancel();
+        }
+      };
     });
   }
 

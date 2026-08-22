@@ -15,7 +15,7 @@ import {
 import {SettingsService} from './settings.service';
 import {catchError} from 'rxjs/operators';
 import {LogService} from './log.service';
-import {StorageService} from './storage.service';
+import {StorageService} from '@core-os/storage';
 
 const OS_USER_SETTING_SET_ID = 'osUser';
 const LEGACY_USER_SETTING_SET_ID = 'user';

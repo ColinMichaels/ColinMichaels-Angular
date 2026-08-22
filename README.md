@@ -2,6 +2,12 @@
 
 Angular and Firebase application for ColinMichaels.com. The project combines a public portfolio and publishing site, a Firestore-backed blog/CMS, public experiments, and a reusable browser-based OS framework.
 
+## Current Status
+
+The application is actively developed on scoped feature branches. Use the [Roadmap](docs/FUTURE_FEATURES/ROADMAP.md) for the current prioritized backlog, the [August 2026 audit action plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md) for the current SEO/discovery release queue, and the [Changelog](docs/CHANGELOG.md) for delivered source work. The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` files are preserved July 2026 snapshots, not the current backlog.
+
+Recent source work includes hardened CMS recovery/import/media flows, a reusable Core OS app-registry package, cinematic topic-page heroes, bounded in-body image previews for post listings, a paginated device-local Reading library on Profile, and a repeatable local release gate. Local source, Firebase preview, and production deployment remain separate states.
+
 ## What This Project Contains
 
 - Public website for portfolio, writing, media, project notes, and personal brand content.
@@ -30,6 +36,8 @@ Angular and Firebase application for ColinMichaels.com. The project combines a p
 - `src/app/core-os`: reusable OS-style framework route boundary and infrastructure.
 - `src/app/components/game`: legacy desktop/game systems pending continued migration into `core-os`.
 - `src/app/labs`: preserved experiments and playground routes; `/labs` currently redirects to `/blog`.
+- `labs`: isolated production experiments and reproducible media tooling that are not application runtime dependencies.
+- `archive`: retired or unreachable prototypes preserved with restoration and security notes.
 - `functions`: Firebase Functions for SEO rendering, feeds, sitemap, media, and CMS helpers.
 - `docs`: architecture, setup, changelog, planning, and migration notes.
 
@@ -59,9 +67,16 @@ Runs the Angular app with the local configuration.
 ```bash
 npm run build
 npm run lint
+npm run test:docs
 ```
 
-Required validation before completing changes.
+Required build/lint validation plus the tracked-Markdown documentation gate.
+
+```bash
+npm run test:release
+```
+
+Runs the local release gate: lint, production build, documentation validation, the complete Angular suite, content-package validation, and all non-emulator Functions tests. It does not deploy or prove production behavior.
 
 ```bash
 npm --prefix functions run build
@@ -151,7 +166,7 @@ The OS-style systems are reusable infrastructure and should be preserved and mod
 
 Relevant areas:
 
-- `src/app/core-os`
+- `src/app/core-os` — active route boundary plus the migrated app-registry, tooltip, and browser-storage packages.
 - `src/app/components/game`
 
 ## Documentation
@@ -167,7 +182,8 @@ Start here:
 - [Security Notes](docs/ARCHITECTURE/SECURITY.md)
 - [Changelog](docs/CHANGELOG.md)
 - [Future Roadmap](docs/FUTURE_FEATURES/ROADMAP.md)
-- [Tech Debt TODOs](docs/TODOS/TECH_DEBT.md)
+- [Tech Debt Completion Log](docs/TODOS/TECH_DEBT.md)
+- [August 2026 SEO and Reader-Experience Action Plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md)
 
 ## Development Rules
 

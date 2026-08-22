@@ -1,9 +1,12 @@
-import {ApplicationFactory} from '../factories/application-factory';
+import {
+  ApplicationLifecycleService as LegacyApplicationLifecycleService
+} from '../../components/game/services/application-lifecycle.service';
+import {ApplicationFactory} from './application-factory';
 import {AppEntry, AppType} from './application-manager.models';
 import {ApplicationLifecycleService} from './application-lifecycle.service';
 import {ApplicationStatePersistenceService} from './application-state-persistence.service';
-import {LogService} from './log.service';
-import {NotificationService} from './notification.service';
+import {LogService} from '../../components/game/services/log.service';
+import {NotificationService} from '../../components/game/services/notification.service';
 
 class TestComponent {
 }
@@ -42,6 +45,10 @@ describe('ApplicationLifecycleService', () => {
       loggerMock as unknown as LogService,
       persistenceMock as unknown as ApplicationStatePersistenceService
     );
+  });
+
+  it('keeps the legacy import on the canonical root service token', () => {
+    expect(LegacyApplicationLifecycleService).toBe(ApplicationLifecycleService);
   });
 
   it('opens an application and passes params into the created instance', () => {

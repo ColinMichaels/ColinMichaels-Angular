@@ -9,6 +9,7 @@ export type MediaQuickFilter =
   | 'processing'
   | 'failed'
   | 'archived'
+  | 'deleted'
   | 'untagged'
   | 'large';
 export type MediaSortMode =

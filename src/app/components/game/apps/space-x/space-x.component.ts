@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
 import {faHackerNews, faWikipediaW, faYoutube} from '@fortawesome/free-brands-svg-icons';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {SpaceXLaunch, SpaceXPanelItemId} from './models/spacex-models';
 import {SpacexSubPanelComponent} from './spacex-sub-panel/spacex-sub-panel.component';
 import {SpacexService} from './spacex.service';

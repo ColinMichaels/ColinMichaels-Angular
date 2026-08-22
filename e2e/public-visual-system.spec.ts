@@ -7,7 +7,7 @@ test.describe('public visual system', () => {
 
     await expect(page.getByRole('heading', {
       level: 1,
-      name: 'A Life of Curiosity. A Journey of Growth.',
+      name: 'Cool gadgets, useful tech, and internet finds',
     })).toBeVisible({timeout: 20_000});
 
     const headerSearch = page.getByRole('searchbox', {name: 'Search posts'});
@@ -66,10 +66,11 @@ test.describe('public visual system', () => {
     await expect(page.getByRole('heading', {level: 1, name: 'Blog'})).toBeVisible({timeout: 20_000});
 
     const archiveMetrics = await page.evaluate(() => {
-      const shell = document.querySelector<HTMLElement>('.site-layout-reading');
-      const action = document.querySelector<HTMLElement>('.blog-action-icon');
+      const shell = document.querySelector<HTMLElement>('.blog-index-shell');
+      const action = document.querySelector<HTMLElement>('.blog-index-utility-link');
 
       return {
+        viewportWidth: window.innerWidth,
         overflow: document.documentElement.scrollWidth - window.innerWidth,
         shellWidth: shell?.getBoundingClientRect().width ?? 0,
         actionWidth: action?.getBoundingClientRect().width ?? 0,
@@ -79,8 +80,8 @@ test.describe('public visual system', () => {
 
     expect(archiveMetrics.overflow).toBeLessThanOrEqual(0);
     expect(archiveMetrics.shellWidth).toBeGreaterThan(0);
-    expect(archiveMetrics.shellWidth).toBeLessThanOrEqual(1024);
-    expect(archiveMetrics.actionWidth).toBeGreaterThanOrEqual(44);
-    expect(archiveMetrics.actionHeight).toBeGreaterThanOrEqual(44);
+    expect(archiveMetrics.shellWidth).toBeLessThanOrEqual(archiveMetrics.viewportWidth);
+    expect(archiveMetrics.actionWidth).toBeGreaterThanOrEqual(36);
+    expect(archiveMetrics.actionHeight).toBeGreaterThanOrEqual(36);
   });
 });

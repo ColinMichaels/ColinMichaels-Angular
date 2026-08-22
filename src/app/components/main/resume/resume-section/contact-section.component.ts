@@ -1,5 +1,5 @@
 import {Component, Input, OnInit, ChangeDetectionStrategy} from '@angular/core';
-import {TooltipDirective} from '../../../game/directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 
 export class Transformer {
   private readonly cipher = {

@@ -6,6 +6,12 @@ import {AuthService} from '../../services/auth.service';
 import {AdjustAdminUserPointsResponse, AdminManagedUser} from './models/user-management.models';
 import {UserManagementService} from './services/user-management.service';
 import {CAT_CORNER_ADDICT_ROLE} from '../../shared/user-account/user-account.model';
+import {AdminAlertComponent} from '../shared/admin-alert.component';
+import {AdminEmptyStateComponent} from '../shared/admin-empty-state.component';
+import {AdminPageHeaderComponent} from '../shared/admin-page-header.component';
+import {AdminSearchFieldComponent} from '../shared/admin-search-field.component';
+import {AdminStatCardComponent} from '../shared/admin-stat-card.component';
+import {DialogFocusDirective} from '../shared/dialog-focus.directive';
 import {UserPointsEditorComponent} from './components/user-points-editor.component';
 
 const suggestedRoles = [
@@ -73,19 +79,25 @@ function getUserLabel(user: AdminManagedUser): string {
 @Component({
   selector: 'app-user-management-page',
   imports: [
+    AdminAlertComponent,
+    AdminEmptyStateComponent,
+    AdminPageHeaderComponent,
+    AdminSearchFieldComponent,
+    AdminStatCardComponent,
+    DialogFocusDirective,
     UserPointsEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
       <section class="mx-auto max-w-6xl space-y-8">
-        <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div class="space-y-3">
-            <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">Admin</p>
-            <h1 class="text-4xl font-semibold text-zinc-50">User Management</h1>
-            <p class="max-w-2xl text-zinc-400">Review Firebase Auth accounts, disable suspicious sign-ins, remove Auth records, test the application with another user's role view, and manage custom claim roles from a protected admin-only tool.</p>
-          </div>
+        <app-admin-page-header
+          eyebrow="Admin"
+          title="User Management"
+          description="Review Firebase Auth accounts, disable suspicious sign-ins, remove Auth records, test the application with another user's role view, and manage custom claim roles from a protected admin-only tool."
+        >
           <button
+            adminPageHeaderActions
             type="button"
             class="inline-flex justify-center border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
             [disabled]="isActiveViewLoading()"
@@ -93,7 +105,7 @@ function getUserLabel(user: AdminManagedUser): string {
           >
             Refresh
           </button>
-        </header>
+        </app-admin-page-header>
 
         <div class="grid gap-2 border border-zinc-800 bg-zinc-900 p-2 sm:grid-cols-2" role="tablist" aria-label="User management views">
           <button
@@ -107,8 +119,10 @@ function getUserLabel(user: AdminManagedUser): string {
             [class.border-transparent]="activeView() !== 'users'"
             [class.text-zinc-300]="activeView() !== 'users'"
             [attr.aria-selected]="activeView() === 'users'"
+            [attr.tabindex]="activeView() === 'users' ? 0 : -1"
             aria-controls="user-management-panel"
             (click)="showView('users')"
+            (keydown)="handleTabKeydown($event)"
           >
             <span class="block">User management</span>
             <span class="mt-1 block text-xs font-normal opacity-75">Accounts, roles, access, and deletion</span>
@@ -124,8 +138,10 @@ function getUserLabel(user: AdminManagedUser): string {
             [class.border-transparent]="activeView() !== 'points'"
             [class.text-zinc-300]="activeView() !== 'points'"
             [attr.aria-selected]="activeView() === 'points'"
+            [attr.tabindex]="activeView() === 'points' ? 0 : -1"
             aria-controls="user-points-panel"
             (click)="showView('points')"
+            (keydown)="handleTabKeydown($event)"
           >
             <span class="block">Points leaderboard</span>
             <span class="mt-1 block text-xs font-normal opacity-75">Balances, ranking, and adjustments</span>
@@ -135,31 +151,18 @@ function getUserLabel(user: AdminManagedUser): string {
         @if (activeView() === 'users') {
           <section id="user-management-panel" class="space-y-8" role="tabpanel" aria-labelledby="user-management-tab">
             <section class="grid gap-4 sm:grid-cols-3">
-              <div class="border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-sm text-zinc-500">Loaded Users</p>
-                <p class="mt-2 text-3xl font-semibold">{{ users().length }}</p>
-              </div>
-              <div class="border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-sm text-zinc-500">Admins</p>
-                <p class="mt-2 text-3xl font-semibold">{{ adminCount() }}</p>
-              </div>
-              <div class="border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-sm text-zinc-500">Disabled</p>
-                <p class="mt-2 text-3xl font-semibold">{{ disabledCount() }}</p>
-              </div>
+              <app-admin-stat-card label="Loaded Users" [value]="users().length" />
+              <app-admin-stat-card label="Admins" [value]="adminCount()" />
+              <app-admin-stat-card label="Disabled" [value]="disabledCount()" />
             </section>
 
             <section class="grid gap-4 border border-zinc-800 bg-zinc-900 p-4 md:grid-cols-[1fr_auto] md:items-end">
-              <label class="grid gap-2 text-sm text-zinc-300">
-                Search users
-                <input
-                  type="search"
-                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
-                  placeholder="Email, display name, uid, or role"
-                  [value]="searchTerm()"
-                  (input)="updateSearch($event)"
-                >
-              </label>
+              <app-admin-search-field
+                label="Search users"
+                placeholder="Email, display name, uid, or role"
+                [value]="searchTerm()"
+                (valueChange)="searchTerm.set($event)"
+              />
               <div class="flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -183,27 +186,17 @@ function getUserLabel(user: AdminManagedUser): string {
         } @else {
           <section id="user-points-panel" class="space-y-8" role="tabpanel" aria-labelledby="user-points-tab">
             <section class="grid gap-4 sm:grid-cols-2">
-              <div class="border border-zinc-800 bg-zinc-900 p-4">
-                <p class="text-sm text-zinc-500">Leaderboard Users</p>
-                <p class="mt-2 text-3xl font-semibold">{{ leaderboardUsers().length }}</p>
-              </div>
-              <div class="border border-violet-400/30 bg-violet-950/20 p-4">
-                <p class="text-sm text-violet-200/70">Current Points</p>
-                <p class="mt-2 text-3xl font-semibold text-violet-100">{{ formatPoints(totalPoints()) }}</p>
-              </div>
+              <app-admin-stat-card label="Leaderboard Users" [value]="leaderboardUsers().length" />
+              <app-admin-stat-card label="Current Points" [value]="formatPoints(totalPoints())" />
             </section>
 
             <section class="border border-zinc-800 bg-zinc-900 p-4">
-              <label class="grid gap-2 text-sm text-zinc-300">
-                Search points leaderboard
-                <input
-                  type="search"
-                  class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-violet-300"
-                  placeholder="Email, display name, uid, or role"
-                  [value]="pointsSearchTerm()"
-                  (input)="updatePointsSearch($event)"
-                >
-              </label>
+              <app-admin-search-field
+                label="Search points leaderboard"
+                placeholder="Email, display name, uid, or role"
+                [value]="pointsSearchTerm()"
+                (valueChange)="pointsSearchTerm.set($event)"
+              />
             </section>
           </section>
         }
@@ -213,7 +206,7 @@ function getUserLabel(user: AdminManagedUser): string {
         }
 
         @if (errorMessage() && !pendingAccessAction()) {
-          <p class="border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100" role="alert">{{ errorMessage() }}</p>
+          <app-admin-alert [message]="errorMessage()!" />
         }
 
         @if (activeView() === 'users') {
@@ -272,14 +265,14 @@ function getUserLabel(user: AdminManagedUser): string {
                               class="border border-amber-400/70 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
                               [disabled]="user.uid === currentUser()?.uid || isStartingUserView()"
                               [attr.title]="user.uid === currentUser()?.uid ? 'You are already signed in as this user' : null"
-                              (click)="openUserViewConfirmation(user)"
+                              (click)="openUserViewConfirmation(user, $event)"
                             >
                               View as User
                             </button>
                             <button
                               type="button"
                               class="border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-                              (click)="openEditor(user)"
+                              (click)="openEditor(user, $event)"
                             >
                               Manage Roles
                             </button>
@@ -288,7 +281,7 @@ function getUserLabel(user: AdminManagedUser): string {
                               class="border border-orange-400/70 px-3 py-2 text-sm font-medium text-orange-100 hover:bg-orange-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
                               [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
                               [attr.title]="user.uid === currentUser()?.uid ? 'You cannot change sign-in access for your own admin account' : null"
-                              (click)="openAccessConfirmation(user, user.disabled ? 'enable' : 'disable')"
+                              (click)="openAccessConfirmation(user, user.disabled ? 'enable' : 'disable', $event)"
                             >
                               {{ user.disabled ? 'Restore Sign-In' : 'Disable Sign-In' }}
                             </button>
@@ -297,7 +290,7 @@ function getUserLabel(user: AdminManagedUser): string {
                               class="border border-red-500/70 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
                               [disabled]="user.uid === currentUser()?.uid || isMutatingAccess()"
                               [attr.title]="user.uid === currentUser()?.uid ? 'You cannot delete your own admin account' : null"
-                              (click)="openAccessConfirmation(user, 'delete')"
+                              (click)="openAccessConfirmation(user, 'delete', $event)"
                             >
                               Delete Auth User
                             </button>
@@ -306,7 +299,9 @@ function getUserLabel(user: AdminManagedUser): string {
                       </tr>
                     } @empty {
                       <tr>
-                        <td colspan="5" class="px-4 py-10 text-center text-zinc-400">No users match this search.</td>
+                        <td colspan="5" class="px-4 py-6">
+                          <app-admin-empty-state message="No users match this search." />
+                        </td>
                       </tr>
                     }
                   }
@@ -452,7 +447,7 @@ function getUserLabel(user: AdminManagedUser): string {
                           <button
                             type="button"
                             class="w-full border border-violet-400/70 px-3 py-2 text-sm font-medium text-violet-100 hover:bg-violet-400 hover:text-zinc-950"
-                            (click)="openPointsEditor(user)"
+                            (click)="openPointsEditor(user, $event)"
                           >
                             Manage Points
                           </button>
@@ -461,7 +456,9 @@ function getUserLabel(user: AdminManagedUser): string {
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="9" class="px-4 py-10 text-center text-zinc-400">No users match this search.</td>
+                      <td colspan="9" class="px-4 py-6">
+                        <app-admin-empty-state message="No users match this search." />
+                      </td>
                     </tr>
                   }
                 }
@@ -472,17 +469,25 @@ function getUserLabel(user: AdminManagedUser): string {
         }
 
         @if (selectedUser(); as user) {
-          <section class="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 py-8">
+          <section
+            class="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4 py-8"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-role-editor-title"
+            [appDialogFocus]="dialogLaunchControl()"
+            (appDialogEscape)="closeEditor()"
+          >
             <div class="w-full max-w-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl shadow-black">
               <header class="flex items-start justify-between gap-4 border-b border-zinc-800 pb-4">
                 <div class="min-w-0">
                   <p class="text-sm uppercase tracking-[0.24em] text-cyan-300">Roles</p>
-                  <h2 class="mt-2 truncate text-2xl font-semibold text-zinc-50">{{ user.displayName || user.email || user.uid }}</h2>
+                  <h2 id="user-role-editor-title" class="mt-2 truncate text-2xl font-semibold text-zinc-50" tabindex="-1" data-dialog-initial-focus>{{ user.displayName || user.email || user.uid }}</h2>
                   <p class="mt-1 break-all text-xs text-zinc-500">{{ user.uid }}</p>
                 </div>
                 <button
                   type="button"
-                  class="border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800"
+                  class="border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:cursor-wait disabled:text-zinc-600 disabled:hover:bg-transparent"
+                  [disabled]="isSaving()"
                   (click)="closeEditor()"
                 >
                   Close
@@ -502,6 +507,8 @@ function getUserLabel(user: AdminManagedUser): string {
                         [class.text-zinc-950]="hasDraftRole(role)"
                         [class.border-zinc-700]="!hasDraftRole(role)"
                         [class.text-zinc-200]="!hasDraftRole(role)"
+                        [attr.aria-pressed]="hasDraftRole(role)"
+                        [disabled]="isSaving()"
                         (click)="toggleDraftRole(role)"
                       >
                         {{ role }}
@@ -518,13 +525,15 @@ function getUserLabel(user: AdminManagedUser): string {
                       class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-cyan-300"
                       placeholder="roleName"
                       [value]="newRoleName()"
+                      [disabled]="isSaving()"
                       (input)="updateNewRole($event)"
                       (keydown.enter)="addCustomRole()"
                     >
                   </label>
                   <button
                     type="button"
-                    class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                    class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:text-zinc-600 disabled:hover:bg-transparent"
+                    [disabled]="isSaving()"
                     (click)="addCustomRole()"
                   >
                     Add Role
@@ -542,9 +551,11 @@ function getUserLabel(user: AdminManagedUser): string {
                       <button
                         type="button"
                         class="border border-cyan-400/40 bg-cyan-950/40 px-3 py-2 text-sm text-cyan-100 hover:border-red-300 hover:text-red-100"
+                        [attr.aria-label]="'Remove role ' + role"
+                        [disabled]="isSaving()"
                         (click)="removeDraftRole(role)"
                       >
-                        {{ role }} x
+                        {{ role }} <span aria-hidden="true">×</span>
                       </button>
                     } @empty {
                       <span class="text-sm text-zinc-500">No roles assigned.</span>
@@ -556,7 +567,8 @@ function getUserLabel(user: AdminManagedUser): string {
               <footer class="flex flex-wrap justify-end gap-3 border-t border-zinc-800 pt-4">
                 <button
                   type="button"
-                  class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                  class="border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:text-zinc-600 disabled:hover:bg-transparent"
+                  [disabled]="isSaving()"
                   (click)="closeEditor()"
                 >
                   Cancel
@@ -577,17 +589,25 @@ function getUserLabel(user: AdminManagedUser): string {
         @if (selectedPointsUser(); as user) {
           <app-user-points-editor
             [user]="user"
+            [returnFocusTo]="dialogLaunchControl()"
             (dismissed)="closePointsEditor()"
             (pointsAdjusted)="handlePointsAdjusted($event)"
           />
         }
 
         @if (pendingAccessAction(); as pending) {
-          <section class="fixed inset-0 z-[90] grid place-items-center bg-black/75 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="user-access-confirmation-title">
+          <section
+            class="fixed inset-0 z-[90] grid place-items-center bg-black/75 px-4 py-8"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-access-confirmation-title"
+            [appDialogFocus]="dialogLaunchControl()"
+            (appDialogEscape)="closeAccessConfirmation()"
+          >
             <div class="w-full max-w-xl border bg-zinc-950 p-5 shadow-2xl shadow-black" [class.border-red-500]="pending.action === 'delete'" [class.border-orange-400]="pending.action !== 'delete'">
               <header class="border-b border-zinc-800 pb-4">
                 <p class="text-sm uppercase tracking-[0.24em]" [class.text-red-300]="pending.action === 'delete'" [class.text-orange-300]="pending.action !== 'delete'">Firebase Auth access</p>
-                <h2 id="user-access-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50">
+                <h2 id="user-access-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50" tabindex="-1" data-dialog-initial-focus>
                   @switch (pending.action) {
                     @case ('disable') { Disable sign-in? }
                     @case ('enable') { Restore sign-in? }
@@ -624,7 +644,7 @@ function getUserLabel(user: AdminManagedUser): string {
               </div>
 
               @if (errorMessage()) {
-                <p class="mb-5 border border-red-500/40 bg-red-950/30 p-3 text-sm text-red-100" role="alert">{{ errorMessage() }}</p>
+                <app-admin-alert class="mb-5" [message]="errorMessage()!" />
               }
 
               <footer class="flex flex-wrap justify-end gap-3 border-t border-zinc-800 pt-4">
@@ -662,11 +682,18 @@ function getUserLabel(user: AdminManagedUser): string {
         }
 
         @if (pendingUserView(); as user) {
-          <section class="fixed inset-0 z-[80] grid place-items-center bg-black/75 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="user-view-confirmation-title">
+          <section
+            class="fixed inset-0 z-[80] grid place-items-center bg-black/75 px-4 py-8"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-view-confirmation-title"
+            [appDialogFocus]="dialogLaunchControl()"
+            (appDialogEscape)="closeUserViewConfirmation()"
+          >
             <div class="w-full max-w-xl border border-amber-400/50 bg-zinc-950 p-5 shadow-2xl shadow-black">
               <header class="border-b border-zinc-800 pb-4">
                 <p class="text-sm uppercase tracking-[0.24em] text-amber-300">Admin preview</p>
-                <h2 id="user-view-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50">View the application as {{ user.displayName || user.email || user.uid }}?</h2>
+                <h2 id="user-view-confirmation-title" class="mt-2 text-2xl font-semibold text-zinc-50" tabindex="-1" data-dialog-initial-focus>View the application as {{ user.displayName || user.email || user.uid }}?</h2>
               </header>
 
               <div class="space-y-4 py-5 text-sm leading-6 text-zinc-300">
@@ -746,6 +773,7 @@ export class UserManagementPageComponent {
   protected readonly draftRoles = signal<readonly string[]>([]);
   protected readonly newRoleName = signal('');
   protected readonly roleInputError = signal<string | null>(null);
+  protected readonly dialogLaunchControl = signal<HTMLElement | null>(null);
   protected readonly currentUser = toSignal(this.authService.user$, {initialValue: null});
 
   protected readonly filteredUsers = computed(() => {
@@ -831,6 +859,41 @@ export class UserManagementPageComponent {
     }
   }
 
+  protected handleTabKeydown(event: KeyboardEvent): void {
+    const tabs = Array.from(
+      (event.currentTarget as HTMLElement | null)?.closest('[role="tablist"]')
+        ?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [],
+    );
+    const currentIndex = tabs.indexOf(event.currentTarget as HTMLButtonElement);
+    let nextIndex: number;
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case 'ArrowRight':
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    if (nextIndex < 0 || !tabs[nextIndex]) {
+      return;
+    }
+
+    event.preventDefault();
+    const view: UserManagementView = tabs[nextIndex].id === 'user-points-tab' ? 'points' : 'users';
+    this.showView(view);
+    tabs[nextIndex].focus();
+  }
+
   protected refreshUsers(): void {
     this.pageTokenStack.set([]);
     this.currentPageToken.set(null);
@@ -863,16 +926,6 @@ export class UserManagementPageComponent {
     void this.loadUsers(previousToken || undefined);
   }
 
-  protected updateSearch(event: Event): void {
-    const input = event.target instanceof HTMLInputElement ? event.target : null;
-    this.searchTerm.set(input?.value ?? '');
-  }
-
-  protected updatePointsSearch(event: Event): void {
-    const input = event.target instanceof HTMLInputElement ? event.target : null;
-    this.pointsSearchTerm.set(input?.value ?? '');
-  }
-
   protected sortUsersBy(key: UserSortKey): void {
     if (this.sortKey() === key) {
       this.sortDirection.update(direction => direction === 'asc' ? 'desc' : 'asc');
@@ -895,7 +948,8 @@ export class UserManagementPageComponent {
     return this.sortKey() === key;
   }
 
-  protected openEditor(user: AdminManagedUser): void {
+  protected openEditor(user: AdminManagedUser, event: Event): void {
+    this.rememberDialogLaunchControl(event);
     this.selectedUser.set(user);
     this.draftRoles.set([...user.roles].sort((a, b) => a.localeCompare(b)));
     this.newRoleName.set('');
@@ -903,7 +957,8 @@ export class UserManagementPageComponent {
     this.statusMessage.set(null);
   }
 
-  protected openPointsEditor(user: AdminManagedUser): void {
+  protected openPointsEditor(user: AdminManagedUser, event: Event): void {
+    this.rememberDialogLaunchControl(event);
     this.selectedPointsUser.set(user);
     this.errorMessage.set(null);
     this.statusMessage.set(null);
@@ -921,11 +976,12 @@ export class UserManagementPageComponent {
     this.statusMessage.set(`${action} ${Math.abs(result.adjustment.delta)} points ${result.adjustment.delta > 0 ? 'to' : 'from'} ${accountLabel}. New balance: ${result.adjustment.newTotal}.`);
   }
 
-  protected openAccessConfirmation(user: AdminManagedUser, action: UserAccessAction): void {
+  protected openAccessConfirmation(user: AdminManagedUser, action: UserAccessAction, event: Event): void {
     if (user.uid === this.currentUser()?.uid) {
       return;
     }
 
+    this.rememberDialogLaunchControl(event);
     this.pendingAccessAction.set({action, user});
     this.accessConfirmation.set('');
     this.errorMessage.set(null);
@@ -1001,7 +1057,8 @@ export class UserManagementPageComponent {
     }
   }
 
-  protected openUserViewConfirmation(user: AdminManagedUser): void {
+  protected openUserViewConfirmation(user: AdminManagedUser, event: Event): void {
+    this.rememberDialogLaunchControl(event);
     this.pendingUserView.set(user);
     this.errorMessage.set(null);
     this.statusMessage.set(null);
@@ -1033,6 +1090,10 @@ export class UserManagementPageComponent {
   }
 
   protected closeEditor(): void {
+    if (this.isSaving()) {
+      return;
+    }
+
     this.selectedUser.set(null);
     this.draftRoles.set([]);
     this.newRoleName.set('');
@@ -1091,14 +1152,19 @@ export class UserManagementPageComponent {
   }
 
   protected async saveRoles(user: AdminManagedUser): Promise<void> {
+    if (this.isSaving()) {
+      return;
+    }
+
     this.isSaving.set(true);
     this.errorMessage.set(null);
     this.statusMessage.set(null);
+    const roles = [...this.draftRoles()];
 
     try {
       const result = await this.userManagement.updateUserRoles({
         uid: user.uid,
-        roles: this.draftRoles(),
+        roles,
       });
 
       this.replaceUser(result.user);
@@ -1172,5 +1238,10 @@ export class UserManagementPageComponent {
 
   private serializeRoles(roles: readonly string[]): string {
     return [...roles].sort((a, b) => a.localeCompare(b)).join('\n');
+  }
+
+  private rememberDialogLaunchControl(event: Event): void {
+    const launchControl = event.currentTarget;
+    this.dialogLaunchControl.set(launchControl instanceof HTMLElement ? launchControl : null);
   }
 }

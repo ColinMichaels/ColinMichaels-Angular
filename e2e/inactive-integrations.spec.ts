@@ -18,7 +18,7 @@ test.describe('inactive integration boundary', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', {
       level: 1,
-      name: 'A Life of Curiosity. A Journey of Growth.',
+      name: 'Cool gadgets, useful tech, and internet finds',
     })).toBeVisible({timeout: 20_000});
 
     await page.goto('/os/weather-app');

@@ -232,18 +232,31 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   remove remaining boundary-level `any` usage and keep persistence flows observable and testable.
 
-## `application-manager.service.ts`
+## `core-os/app-registry/application-manager.service.ts`
 
 - Responsibility:
   facade for app registry, launch/close/focus, memory checks, and persistence of open apps.
 - Dependencies:
-  `ApplicationFactory`, `NotificationService`, `LogService`.
+  `ApplicationRegistryService`, `ApplicationLifecycleService`.
 - Called by:
   desktop, dock, tray, app window template, activity monitor, CLI.
 - Current risks:
-  registry, catalog, persistence, and lifecycle responsibilities are extracted, with deterministic restoration and instance handling; the facade still coordinates several legacy consumers.
+  the full runtime cohort now has canonical `core-os/app-registry` ownership and identity-preserving legacy exports; the catalog still references concrete legacy app components, and lifecycle still reaches legacy notification/media/log services until those independent migrations occur.
 - Planned cleanup:
-  continue tightening facade types and consumer coupling without recombining the extracted services.
+  move catalog entries into feature-owned manifests and migrate notification/media/log boundaries without changing IDs, restoration, focus, or instance behavior.
+
+## `core-os/app-registry/application-state-persistence.service.ts`
+
+- Responsibility:
+  synchronous compatibility persistence for the open-window `applications` payload.
+- Dependencies:
+  `LogService`.
+- Called by:
+  `ApplicationLifecycleService`.
+- Current risks:
+  browser-local state is intentionally unversioned, but reads accept both current string arrays and historical `{id}` records; malformed data and write failures are logged without blocking OS startup.
+- Planned cleanup:
+  keep this adapter narrow until a separately designed, versioned app-session migration can define reconciliation and rollback semantics.
 
 ## `media.service.ts`
 
@@ -258,18 +271,18 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   normalize `MediaItem` factory return types and tighten icon interfaces.
 
-## `storage.service.ts`
+## `core-os/storage/storage.service.ts`
 
 - Responsibility:
   persistence abstraction (`IndexedDB` first, localStorage fallback).
 - Dependencies:
   browser storage APIs.
 - Called by:
-  settings, tasks, patch editor.
+  settings, tasks, OS user migration, patch editor.
 - Current risks:
-  strategy-level `getAllKeys()` behavior is aligned and covered; broad generic value types remain in legacy callers.
+  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—and its broad `clear()` operation is deliberately disabled to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
 - Planned cleanup:
-  tighten caller value types while preserving IndexedDB/localStorage strategy parity.
+  tighten caller value types and define an explicit fallback-key namespace before enabling localStorage bulk clearing, while preserving the `AppStorage` database, `keyvalue` object store, and existing raw keys.
 
 ## `file-system.service.ts`
 
