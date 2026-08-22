@@ -3,6 +3,7 @@ import {defer, distinctUntilChanged, from, map, Observable, of, switchMap} from 
 
 import {
   BlogAdminStats,
+  BlogEditorialMetadata,
   BlogPost,
   BlogPostStatus,
   BlogPostSummary,
@@ -279,6 +280,14 @@ export class BlogRepositoryService {
     };
 
     return this.storage.savePost(savedPost, expectedRevision);
+  }
+
+  updatePostEditorial(post: BlogPost, editorial: BlogEditorialMetadata | undefined): Promise<BlogPost> {
+    return this.storage.updatePostEditorial(
+      post,
+      editorial,
+      normalizeBlogPostRevision(post.revision)
+    );
   }
 
   async createPreviewForPost(post: BlogPost): Promise<BlogPostPreviewResult> {

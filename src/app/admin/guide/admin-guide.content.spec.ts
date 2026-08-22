@@ -87,7 +87,14 @@ describe('admin guide content', () => {
       .toEqual(['review-article-evidence']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'required advisory source links').map(entry => entry.id))
       .toEqual(['review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'legacy block json metadata only').map(entry => entry.id))
+      .toEqual(['review-article-evidence']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'evidence-only action reports stale overwrite newer').map(entry => entry.id))
+      .toEqual(['review-article-evidence']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'published needs classification')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'legacy block json metadata only')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'save evidence only')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'save evidence only')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'published discovery gaps required advisory')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'evidence review queue')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'discovery trust review queue')).toEqual([]);

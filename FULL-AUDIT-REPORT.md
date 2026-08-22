@@ -1,6 +1,6 @@
 # Full SEO Audit Report: colinmichaels.com
 
-> Historical baseline: this report records the July 3, 2026 audit evidence and scores. Several findings below have since been resolved. See `ACTION-PLAN.md` for the current completion and remaining-work status; do not treat the original issue list as the live backlog.
+> Historical baseline: this report records the July 3, 2026 audit evidence and scores. Several findings below have since been resolved. See the [August 2026 audit](docs/SEO/AUDITS/2026-08-15/FULL-AUDIT-REPORT.md), its [current action plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md), and the [project roadmap](docs/FUTURE_FEATURES/ROADMAP.md); do not treat the original issue list as the live backlog.
 
 - **Audit date:** July 03, 2026
 - **Homepage:** https://colinmichaels.com/

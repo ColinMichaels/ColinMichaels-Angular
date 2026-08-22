@@ -18,7 +18,7 @@ import {BehaviorSubject} from 'rxjs';
 import {FIREBASE_AUTH, FIREBASE_FIRESTORE} from '../../../services/firebase/firebase.tokens';
 import {FirestoreCollectionSync} from '../../../services/firebase/firestore-collection-sync';
 import {canManageCmsContent} from '../../../shared/user-account/user-account.model';
-import {BlogPost, normalizeBlogAuthor} from '../models/blog-post.model';
+import {BlogEditorialMetadata, BlogPost, normalizeBlogAuthor} from '../models/blog-post.model';
 import {normalizeBlogPostRevision} from '../models/blog-post-revision.model';
 import {normalizeBlogImageFields} from '../utils/blog-image-url.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
@@ -69,6 +69,14 @@ export class BlogStorageService {
 
   async savePost(post: BlogPost, expectedRevision = normalizeBlogPostRevision(post.revision) - 1): Promise<BlogPost> {
     return this.publishing.savePost(post, Math.max(0, expectedRevision));
+  }
+
+  async updatePostEditorial(
+    post: BlogPost,
+    editorial: BlogEditorialMetadata | undefined,
+    expectedRevision = normalizeBlogPostRevision(post.revision)
+  ): Promise<BlogPost> {
+    return this.publishing.updateEditorial(post, editorial, Math.max(0, expectedRevision));
   }
 
   async savePosts(posts: readonly BlogPost[]): Promise<readonly BlogPost[]> {

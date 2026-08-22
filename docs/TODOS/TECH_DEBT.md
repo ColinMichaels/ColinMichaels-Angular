@@ -1,4 +1,6 @@
-# Tech Debt TODOs
+# Tech Debt Completion Log
+
+Reviewed August 21, 2026. Every item in this original stabilization/refactor plan is complete. This file is retained as implementation and validation history; it is not the active backlog. Use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md) for current work and record new debt there or in the owning architecture document before adding another item here.
 
 Status legend:
 
@@ -32,12 +34,12 @@ Status legend:
   - Progress: added explicit initializing/authenticated/unauthenticated/unavailable auth states, made membership prompting wait for resolved anonymous identity and cancel on sign-in, consolidated duplicate authentication guards, and moved the shared/Core OS logger to local buffer and console output without Firestore persistence.
   - Validation: focused auth, campaign, guard, route-inventory, and logging specs; repository lint, build, full unit suite, and rendered signed-out blog checks.
 
-- [x] Fix lint gate wiring (`npm run lint` currently non-functional).
+- [x] Restore lint gate wiring (the original audit found `npm run lint` non-functional).
   - Impact: High
   - Effort: S
   - Validation: lint command runs and reports real issues.
 
-- [x] Fix test script include pattern so specs are discovered (currently 0 tests executed).
+- [x] Fix the test script include pattern (the original audit discovered 0 specs).
   - Impact: High
   - Effort: S
   - Validation: test command executes existing specs.
@@ -179,7 +181,9 @@ Status legend:
   - Effort: S
   - Validation: consistent local/CI build success, `.nvmrc` present, and workflow Node setup parity.
 
-## Suggested Execution Order
+## Historical Execution Order
+
+The plan below is preserved to explain the sequence used to close this backlog. All listed stages are complete; it is not a current recommendation queue.
 
 1. Restore quality gates (lint/test/build reliability).
 2. Patch clear correctness/security bugs.

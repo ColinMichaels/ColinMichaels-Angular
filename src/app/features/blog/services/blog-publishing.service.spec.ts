@@ -31,6 +31,8 @@ describe('BlogPublishingService', () => {
     const service = TestBed.inject(BlogPublishingService);
     await expectAsync(service.savePost(createPost(), 0))
       .toBeRejectedWithError('Firebase Functions is not initialized.');
+    await expectAsync(service.updateEditorial(createPost(), {evidenceBasis: 'researched'}, 0))
+      .toBeRejectedWithError('Firebase Functions is not initialized.');
     await expectAsync(service.issuePreview(createPost().id, 0))
       .toBeRejectedWithError('Firebase Functions is not initialized.');
     await expectAsync(service.deletePost(createPost().id, 0))

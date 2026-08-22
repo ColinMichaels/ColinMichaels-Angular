@@ -6285,11 +6285,11 @@ function getPositiveInteger(value: unknown): number | null {
 
 function requireCmsAccess(auth: AdminCallableAuth | undefined): string {
   if (!auth?.uid) {
-    throw new HttpsError('unauthenticated', 'You must be signed in to use CMS AI functions.');
+    throw new HttpsError('unauthenticated', 'You must be signed in to use CMS tools.');
   }
 
   if (!hasAnyRoleClaim(auth.token, CMS_ACCESS_ROLES)) {
-    throw new HttpsError('permission-denied', 'You must have CMS access to use CMS AI functions.');
+    throw new HttpsError('permission-denied', 'You must have CMS access to use CMS tools.');
   }
 
   return auth.uid;
