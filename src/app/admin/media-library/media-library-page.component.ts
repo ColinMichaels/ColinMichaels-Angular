@@ -55,6 +55,7 @@ import {MediaPreviewDialogComponent} from './components/media-preview-dialog.com
 import {MediaStatusBarComponent} from './components/media-status-bar.component';
 import {ResizeMediaDialogComponent} from './components/resize-media-dialog.component';
 import {TagEditorComponent} from './components/tag-editor.component';
+import {AdminPageHeaderComponent} from '../shared/admin-page-header.component';
 
 interface BreadcrumbItem {
   id: string | null;
@@ -114,6 +115,7 @@ const allowedSortModes: readonly MediaSortMode[] = [
 @Component({
   selector: 'app-media-library-page',
   imports: [
+    AdminPageHeaderComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -133,13 +135,10 @@ const allowedSortModes: readonly MediaSortMode[] = [
     @if (vm$ | async; as vm) {
       <main class="cms-media-library min-h-screen bg-zinc-950 px-5 py-10 text-zinc-100 sm:px-8 lg:px-12">
         <section class="mx-auto max-w-7xl space-y-8">
-          <header class="grid gap-5 border-b border-zinc-800 pb-8 md:grid-cols-[1fr_auto] md:items-end">
-            <div class="space-y-3">
-              <p class="text-sm uppercase tracking-[0.3em] text-cyan-300">CMS</p>
-              <h1 class="text-4xl font-semibold text-zinc-50">Media Library</h1>
-              <p class="max-w-2xl text-zinc-400">Browse, organize, rename, resize, tag, and preview Firebase-backed CMS media assets.</p>
-            </div>
-          </header>
+          <app-admin-page-header
+            title="Media Library"
+            description="Browse, organize, rename, resize, tag, and preview Firebase-backed CMS media assets."
+          ></app-admin-page-header>
 
           <section class="overflow-hidden border border-zinc-800 bg-zinc-950/80 shadow-2xl">
             <app-media-library-toolbar
@@ -210,21 +209,25 @@ const allowedSortModes: readonly MediaSortMode[] = [
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-blue-50 px-4 py-2 text-sm">
                 <div class="font-semibold text-blue-900">{{ vm.selectedItems.length }} selected</div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" class="batch-button" (click)="openRenameDialog(vm.selectedItems)">{{ vm.selectedItems.length === 1 ? 'Rename' : 'Batch Rename' }}</button>
-                  <button type="button" class="batch-button" (click)="openResizeDialog(vm.selectedItems)">Resize</button>
-                  <button type="button" class="batch-button" (click)="openTagDialog(vm.selectedItems, 'add')">Add Tags</button>
-                  <button type="button" class="batch-button" (click)="openTagDialog(vm.selectedItems, 'remove')">Remove Tags</button>
-                  <select class="rounded-md border border-blue-200 bg-white px-2 py-1.5 text-sm text-blue-900" (change)="moveSelectedItems($event, vm.selectedItems, vm.folders)">
-                    <option value="">Move to...</option>
-                    <option value="__uncategorized">Uncategorized</option>
-                    @for (folder of vm.folders; track folder.id) {
-                      <option [value]="folder.id">{{ folder.path }}</option>
-                    }
-                  </select>
-                  <button type="button" class="batch-button" (click)="setFavorite(vm.selectedItems, true)">Favorite</button>
-                  <button type="button" class="batch-button" (click)="setFavorite(vm.selectedItems, false)">Unfavorite</button>
-                  <button type="button" class="batch-button" (click)="archiveItems(vm.selectedItems)">Archive</button>
-                  <button type="button" class="danger-batch-button" (click)="deleteItems(vm.selectedItems)">Delete</button>
+                  @if (hasDeletedItems(vm.selectedItems)) {
+                    <button type="button" class="batch-button" (click)="restoreItems(vm.selectedItems)">Restore Deleted</button>
+                  } @else {
+                    <button type="button" class="batch-button" (click)="openRenameDialog(vm.selectedItems)">{{ vm.selectedItems.length === 1 ? 'Rename' : 'Batch Rename' }}</button>
+                    <button type="button" class="batch-button" (click)="openResizeDialog(vm.selectedItems)">Resize</button>
+                    <button type="button" class="batch-button" (click)="openTagDialog(vm.selectedItems, 'add')">Add Tags</button>
+                    <button type="button" class="batch-button" (click)="openTagDialog(vm.selectedItems, 'remove')">Remove Tags</button>
+                    <select class="rounded-md border border-blue-200 bg-white px-2 py-1.5 text-sm text-blue-900" (change)="moveSelectedItems($event, vm.selectedItems, vm.folders)">
+                      <option value="">Move to...</option>
+                      <option value="__uncategorized">Uncategorized</option>
+                      @for (folder of vm.folders; track folder.id) {
+                        <option [value]="folder.id">{{ folder.path }}</option>
+                      }
+                    </select>
+                    <button type="button" class="batch-button" (click)="setFavorite(vm.selectedItems, true)">Favorite</button>
+                    <button type="button" class="batch-button" (click)="setFavorite(vm.selectedItems, false)">Unfavorite</button>
+                    <button type="button" class="batch-button" (click)="archiveItems(vm.selectedItems)">Archive</button>
+                    <button type="button" class="danger-batch-button" (click)="deleteItems(vm.selectedItems)">Delete</button>
+                  }
                   <button type="button" class="batch-button" (click)="clearSelection()">Clear</button>
                 </div>
               </div>
@@ -244,6 +247,7 @@ const allowedSortModes: readonly MediaSortMode[] = [
               (selection)="handleSelection($event)"
               (preview)="openPreview($event)"
               (favorite)="toggleFavorite($event)"
+              (restore)="restoreItems([$event])"
               (contextMenu)="openPreview($event.item)"
               (uploadRequested)="pageFileInput.click()"
               (filesDropped)="uploadFiles($event)"
@@ -270,6 +274,7 @@ const allowedSortModes: readonly MediaSortMode[] = [
                 (favoriteRequested)="setFavorite($event.items, $event.favorite)"
                 (archiveRequested)="archiveItems($event)"
                 (deleteRequested)="deleteItems($event)"
+                (restoreRequested)="restoreItems($event)"
                 (copyUrlRequested)="copyUrl($event)"
                 (closeRequested)="inspectorOpenSubject.next(false)"
               />
@@ -757,7 +762,14 @@ export class MediaLibraryPageComponent {
 
   @HostListener('document:keydown', ['$event'])
   protected handleKeyboardShortcut(event: KeyboardEvent): void {
-    if (this.isTypingTarget(event.target)) {
+    if (this.hasPageOverlayOpen()) {
+      if (event.key === 'Escape') {
+        this.clearTransientUi();
+      }
+      return;
+    }
+
+    if (this.isInteractiveTarget(event.target)) {
       return;
     }
 
@@ -777,7 +789,11 @@ export class MediaLibraryPageComponent {
 
     if (modifier && event.key.toLowerCase() === 'r') {
       event.preventDefault();
-      if (this.selectedItemsSnapshot.length === 1 && this.selectedItemsSnapshot[0]) {
+      if (
+        this.selectedItemsSnapshot.length === 1
+        && this.selectedItemsSnapshot[0]
+        && this.selectedItemsSnapshot[0].status !== 'deleted'
+      ) {
         this.openSingleRename(this.selectedItemsSnapshot[0]);
       }
       return;
@@ -802,6 +818,10 @@ export class MediaLibraryPageComponent {
 
     if (event.key === 'Delete' && this.selectedItemsSnapshot.length > 0) {
       event.preventDefault();
+      if (this.selectedItemsSnapshot.some(item => item.status === 'deleted')) {
+        return;
+      }
+
       if (event.shiftKey) {
         this.deleteItems(this.selectedItemsSnapshot);
       } else {
@@ -1088,6 +1108,23 @@ export class MediaLibraryPageComponent {
     this.clearSelection();
   }
 
+  protected hasDeletedItems(items: readonly MediaLibraryItem[]): boolean {
+    return items.some(item => item.status === 'deleted');
+  }
+
+  protected restoreItems(items: readonly MediaLibraryItem[]): void {
+    const deletedIds = items
+      .filter(item => item.status === 'deleted')
+      .map(item => item.id);
+
+    if (deletedIds.length === 0) {
+      return;
+    }
+
+    this.runOperation(this.mediaLibrary.restoreMedia(deletedIds), 'Media restored.');
+    this.clearSelection();
+  }
+
   protected moveSelectedItems(event: Event, items: readonly MediaLibraryItem[], folders: readonly MediaLibraryFolder[]): void {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
@@ -1163,6 +1200,12 @@ export class MediaLibraryPageComponent {
   }
 
   private clearTransientUi(): void {
+    if (this.draggingOverGrid) {
+      this.draggingOverGrid = false;
+      this.changeDetector.markForCheck();
+      return;
+    }
+
     if (this.previewItemId) {
       this.previewItemId = null;
       return;
@@ -1285,17 +1328,46 @@ export class MediaLibraryPageComponent {
     }
   }
 
-  private isTypingTarget(target: EventTarget | null): boolean {
-    const element = target as HTMLElement | null;
+  private hasPageOverlayOpen(): boolean {
+    return this.filterPanelOpen
+      || this.sidebarDrawerOpen
+      || this.draggingOverGrid
+      || this.previewItemId !== null
+      || this.batchRenameItems.length > 0
+      || this.resizeItems.length > 0
+      || this.tagDialogItems.length > 0
+      || this.singleRenameItem !== null;
+  }
+
+  private isInteractiveTarget(target: EventTarget | null): boolean {
+    const element = target instanceof Element ? target : null;
 
     if (!element) {
       return false;
     }
 
-    return element.tagName === 'INPUT'
-      || element.tagName === 'TEXTAREA'
-      || element.tagName === 'SELECT'
-      || element.isContentEditable;
+    return element.closest([
+      'input',
+      'textarea',
+      'select',
+      'button',
+      'a[href]',
+      'audio',
+      'video',
+      'summary',
+      '[contenteditable="true"]',
+      '[role="button"]',
+      '[role="checkbox"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="option"]',
+      '[role="radio"]',
+      '[role="slider"]',
+      '[role="spinbutton"]',
+      '[role="switch"]',
+      '[role="tab"]',
+      '[role="textbox"]',
+    ].join(',')) !== null;
   }
 
   private getInitialSortMode(): MediaSortMode {

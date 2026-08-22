@@ -13,7 +13,7 @@
         <fa-icon [icon]="faPlay"></fa-icon>
         Preview
       </button>
-      <button type="button" class="secondary-action" (click)="savePatch()">
+      <button type="button" class="secondary-action" [disabled]="storageBusy" (click)="savePatch()">
         <fa-icon [icon]="faFloppyDisk"></fa-icon>
         Save
       </button>
@@ -86,7 +86,7 @@
             <fa-icon [icon]="faCopy"></fa-icon>
             Copy
           </button>
-          <button type="button" class="tool-button danger" (click)="deletePatch()">
+          <button type="button" class="tool-button danger" [disabled]="storageBusy" (click)="deletePatch()">
             <fa-icon [icon]="faTrash"></fa-icon>
             Delete
           </button>

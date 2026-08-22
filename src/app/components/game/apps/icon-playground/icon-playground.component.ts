@@ -3,7 +3,7 @@ import {LoadedSvgIcon, SvgService} from '../../services/svg.service';
 import {NgFor} from '@angular/common';
 import {FileExtensions, SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {NotificationService} from '../../services/notification.service';
 
 @Component({
@@ -18,8 +18,9 @@ import {NotificationService} from '../../services/notification.service';
              type="button"
              class="icon-item flex flex-col items-center border-0 bg-transparent p-0 text-inherit"
              [attr.aria-label]="'Preview ' + icon.name + ' icon'"
+             [appTooltip]="icon.name"
              (click)="showNotify(icon.name, icon)">
-          <div class="w-10 h-10 shadow-xl shadow-black/50 active:shadow-0" [appTooltip]="icon.name">
+          <div class="w-10 h-10 shadow-xl shadow-black/50 active:shadow-0">
             <app-svg-icon [icon]="icon.icon"/>
           </div>
         </button>

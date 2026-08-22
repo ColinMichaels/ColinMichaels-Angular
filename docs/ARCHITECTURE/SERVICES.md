@@ -258,18 +258,18 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   normalize `MediaItem` factory return types and tighten icon interfaces.
 
-## `storage.service.ts`
+## `core-os/storage/storage.service.ts`
 
 - Responsibility:
   persistence abstraction (`IndexedDB` first, localStorage fallback).
 - Dependencies:
   browser storage APIs.
 - Called by:
-  settings, tasks, patch editor.
+  settings, tasks, OS user migration, patch editor.
 - Current risks:
-  strategy-level `getAllKeys()` behavior is aligned and covered; broad generic value types remain in legacy callers.
+  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—and its broad `clear()` operation is deliberately disabled to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
 - Planned cleanup:
-  tighten caller value types while preserving IndexedDB/localStorage strategy parity.
+  tighten caller value types and define an explicit fallback-key namespace before enabling localStorage bulk clearing, while preserving the `AppStorage` database, `keyvalue` object store, and existing raw keys.
 
 ## `file-system.service.ts`
 

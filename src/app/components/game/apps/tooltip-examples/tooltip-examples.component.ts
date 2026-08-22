@@ -1,7 +1,7 @@
 import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {NgForOf, NgIf} from '@angular/common';
-import {TooltipOptions} from '../../services/tooltip.service';
+import type {TooltipOptions} from '@core-os/tooltip';
 import {MarkdownReaderComponent} from '../markdown-reader/markdown-reader.component';
 import {NotificationService} from '../../services/notification.service';
 import {MediaItem} from '../../services/media.service';

@@ -45,7 +45,8 @@ This is a presentational, repository-free component. Its parent supplies already
 
 The component owns consistent post/category/tag links, image resolution, date metadata, heading level, excerpt/tag visibility, optional promotional excerpt clamping, topic appearance variables, and loading/error/empty states. Its default media treatment remains unchanged, while parents can opt a listing into `mediaPresentation="background"` to place each resolved post image behind that card's content. `titleMaxLength` bounds the displayed heading copy by character count, and `titleLineClamp` caps its rendered lines; both title controls are opt-in so archive consumers retain their full titles. Parents can expose the same code-native read action outside the `fan` layout with `showReadLink` and customize its label with `readLinkLabel`. `appearanceByPostId` supports mixed-topic feeds without moving topic lookup into the component.
 
-The shared listing enables its reusable image scrubber by default; a specialized parent can opt out with `enableImagePreview="false"`. The repository summary projection extracts at most five unique in-body Image or Image Gallery entries in reading order, omits the resolved cover/thumbnail, and copies URL, alt, caption, and intrinsic-dimension metadata only. Homepage feeds intentionally retain full posts for hero/editorial decisions, so the listing derives and memoizes the same bounded projection from their blocks when summary metadata is absent. The listing does not add those URLs to the DOM until a fine-pointer visitor intentionally rests on the linked thumbnail for 120 milliseconds or focuses it from the keyboard. The activated thumbnail expands above its existing layout position—modestly for list/grid/editorial cards and more strongly for the compact featured-fan thumbnail—while the cover softens and the bounded set buffers. The active interior image then replaces it inside that
+The shared listing enables its reusable image scrubber by default; a specialized parent can opt out with `enableImagePreview="false"`. The repository summary projection extracts at most five unique in-body Image or Image Gallery entries in reading order, omits the resolved cover/thumbnail, and copies URL, alt, caption, and intrinsic-dimension metadata only. Homepage feeds intentionally retain full posts for hero/editorial decisions, so the listing derives and memoizes the same bounded projection from their blocks when summary metadata is absent. Search items now carry the same bounded in-memory projection from the full posts already loaded for indexing, allowing larger search artwork to share the interaction without a Firestore field. Preview URLs are not added to the DOM until a fine-pointer visitor intentionally rests on the linked thumbnail for 120 milliseconds or focuses it from the keyboard. The activated thumbnail expands above its existing layout position—modestly for
+list/grid/editorial and search rows and more strongly for the compact featured-fan thumbnail—while the cover softens and the bounded set buffers. The active interior image then replaces it inside that
 same enlarged frame. Horizontal pointer position changes the visible image, while leaving the thumbnail restores the normal artwork and exact original size. Keyboard readers use Left/Right Arrow for the same swaps and Escape to restore the cover; Enter and ordinary clicks retain the canonical article route. Coarse-pointer and no-hover devices keep the normal one-tap link and do not request preview image bytes. Failed image requests settle the buffer instead of leaving the cover in a permanent loading state.
 
 The original single-layout `BlogPostCardComponent` remains preserved for compatibility, but current public archive and homepage consumers use `BlogPostListingComponent`.
@@ -54,7 +55,13 @@ The original single-layout `BlogPostCardComponent` remains preserved for compati
 
 Location: `src/app/features/blog/components/post-image-scrubber/post-image-scrubber.component.ts`
 
-This shared visual component owns the contained image-swap layer, active-frame transition, buffer treatment, load/error settlement events, and reduced-motion styling. `BlogPostListingComponent` retains interaction timing, pointer/keyboard state, article navigation, and the decision to instantiate it. Because homepage writing, recovery, topic, archive, taxonomy, and author surfaces already reuse the listing component, they receive one loading and accessibility contract without page-specific image-preview implementations.
+This shared visual component owns the contained image-swap layer, active-frame transition, buffer treatment, load/error settlement events, and reduced-motion styling. `PostImagePreviewDirective` owns the interaction contract while each linked-thumbnail consumer decides when to instantiate the visual layer.
+
+### `PostImagePreviewDirective`
+
+Location: `src/app/features/blog/directives/post-image-preview.directive.ts`
+
+This standalone directive centralizes the 120-millisecond fine-pointer delay, horizontal frame selection, focus activation, Arrow-key cycling, Escape/leave restoration, buffering state, accessible status relationship, and timer cleanup. `BlogPostListingComponent` and the advanced-search result rows apply the directive to their existing article links, so navigation, analytics, query parameters, and coarse-pointer behavior remain owned by the consuming surface while the preview behavior stays consistent.
 
 ### `HomeRecoveryBlogSectionsComponent`
 
@@ -160,7 +167,7 @@ The optional `BlogPostSummary.previewImages` field is derived in memory from exi
 
 Client topic metadata and Firebase Functions crawler metadata continue to use the resolved primary topic image. Companion scenes are decorative page media and do not change canonical or social-preview identity.
 
-The cinematic hero and shared post-image-scrubber changes require a Hosting deployment only. They change no Functions code, environment value, Firebase rule, Firestore document, or migration. The companion assets and Angular bundle must ship together.
+The cinematic hero, shared post-image-scrubber, and search-page preview changes require a Hosting deployment only. They change no Functions code, environment value, Firebase rule, Firestore document, or migration. The companion assets and Angular bundle must ship together.
 
 ## Accessibility and Responsive Contract
 

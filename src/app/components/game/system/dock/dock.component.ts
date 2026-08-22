@@ -15,7 +15,7 @@ import {
   faUsers
 } from '@fortawesome/free-solid-svg-icons';
 import {NotificationService} from '../../services/notification.service';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {SvgService} from '../../services/svg.service';
 import {SvgIcons} from '../../services/file-system.service';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';

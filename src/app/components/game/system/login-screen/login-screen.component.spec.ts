@@ -30,6 +30,7 @@ describe('LoginScreenComponent', () => {
     loginWithFacebookRedirect: jasmine.Spy;
     getProviderConflictInfo: jasmine.Spy;
     updateUserProfile: jasmine.Spy;
+    resetPassword: jasmine.Spy;
   };
   let userServiceMock: {
     updateUser: jasmine.Spy;
@@ -71,7 +72,8 @@ describe('LoginScreenComponent', () => {
       loginWithFacebook: jasmine.createSpy('loginWithFacebook').and.returnValue(of(null)),
       loginWithFacebookRedirect: jasmine.createSpy('loginWithFacebookRedirect').and.returnValue(of(undefined)),
       getProviderConflictInfo: jasmine.createSpy('getProviderConflictInfo').and.returnValue(of(null)),
-      updateUserProfile: jasmine.createSpy('updateUserProfile').and.returnValue(of(undefined))
+      updateUserProfile: jasmine.createSpy('updateUserProfile').and.returnValue(of(undefined)),
+      resetPassword: jasmine.createSpy('resetPassword').and.returnValue(of(undefined))
     };
     userServiceMock = {
       updateUser: jasmine.createSpy('updateUser').and.returnValue(Promise.resolve())
@@ -176,6 +178,63 @@ describe('LoginScreenComponent', () => {
       newPostEmails: false,
       newsletter: false,
     });
+  });
+
+  it('announces a successful password reset without opening a browser alert', () => {
+    const browserAlert = spyOn(window, 'alert');
+    component.loginForm.patchValue({email: firebaseUser.email});
+
+    component.resetPassword();
+    fixture.detectChanges();
+
+    const status = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('#password-reset-status');
+    const resetButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')
+    ).find(button => button.textContent?.includes('Forgot password'));
+
+    expect(authServiceMock.resetPassword).toHaveBeenCalledOnceWith(firebaseUser.email);
+    expect(browserAlert).not.toHaveBeenCalled();
+    expect(component.passwordResetInProgress).toBeFalse();
+    expect(status?.getAttribute('role')).toBe('status');
+    expect(status?.getAttribute('aria-live')).toBe('polite');
+    expect(status?.textContent).toContain(`Password reset email sent to ${firebaseUser.email}`);
+    expect(resetButton?.getAttribute('aria-describedby')).toBe('password-reset-status');
+  });
+
+  it('keeps password reset errors in the assertive login feedback and clears stale success', () => {
+    authServiceMock.resetPassword.and.returnValue(throwError(() => ({code: 'auth/network-request-failed'})));
+    component.passwordResetFeedback = 'Old reset message';
+    component.loginForm.patchValue({email: firebaseUser.email});
+
+    component.resetPassword();
+    fixture.detectChanges();
+
+    const error = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('#login-error');
+
+    expect(component.passwordResetFeedback).toBe('');
+    expect(component.passwordResetInProgress).toBeFalse();
+    expect(error?.getAttribute('role')).toBe('alert');
+    expect(error?.textContent).toContain('Network error while contacting Firebase Authentication');
+  });
+
+  it('marks the invalid reset email field for native validation feedback', () => {
+    component.loginForm.patchValue({email: 'not-an-email'});
+
+    component.resetPassword();
+
+    expect(authServiceMock.resetPassword).not.toHaveBeenCalled();
+    expect(component.loginForm.get('email')?.touched).toBeTrue();
+    expect(component.error).toBe('Please enter a valid email address');
+  });
+
+  it('clears password-reset success before a new sign-in attempt', () => {
+    authServiceMock.signInWithEmail.and.returnValue(NEVER);
+    component.passwordResetFeedback = 'Password reset email sent.';
+    component.loginForm.setValue({email: firebaseUser.email, password: 'password'});
+
+    component.onLogin();
+
+    expect(component.passwordResetFeedback).toBe('');
   });
 
   it('returns email users to the public home page when no redirect was requested', () => {

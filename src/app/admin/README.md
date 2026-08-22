@@ -13,11 +13,11 @@ Component inventory:
 - `AdminShellComponent` provides the fixed desktop sidebar, responsive navigation drawer, 64px utility header, environment/account footer, and persistent CMS `New Post` action. Desktop users can collapse the sidebar to a 72px icon rail; labels remain available through hover/focus tooltips and the preference persists locally. The shell also owns the browser-tab title while active, using the same URL-derived section label shown in the utility header so navigation cannot retain stale metadata from a previous admin page.
 - `admin-navigation.config.ts` defines grouped destinations, icons, exact/prefix matching, page titles, and role visibility for Overview, Publishing, Site Content, Assets, and Administration.
 - `AdminEnvironmentBadgeComponent` supports the compact shell-footer treatment while preserving the detailed badge for feature surfaces that need it.
-- `AdminPageHeaderComponent` provides the shared page identity, description, and projected action layout adopted by Homepage Hero, Topics, and Recommended Links. It changes presentation only; routes, forms, and persistence remain owned by each manager.
+- `AdminPageHeaderComponent` provides the shared page identity, description, and projected action layout adopted by Homepage Hero, Topics, Recommended Links, Comments, Media, and Users. It changes presentation only; routes, forms, and persistence remain owned by each manager.
 - `AdminEditorActionBarComponent` provides a shared inline or panel save surface with live status, busy semantics, and projected feature-owned actions. Homepage Hero, Topics, and Recommended Links retain their existing submit/delete handlers while reporting saving and unsaved states consistently.
-- `AdminStatCardComponent` standardizes the compact metric cards used by Homepage Hero, Topics, and Recommended Links while accepting the managers' existing computed values as inputs.
+- `AdminStatCardComponent` standardizes the compact metric cards used by Homepage Hero, Topics, Recommended Links, and Users while accepting the managers' existing computed values as inputs.
 - `AdminAlertComponent` and `AdminEmptyStateComponent` standardize assertive load-error announcements and polite empty-list feedback while preserving each manager's feature-owned message.
-- `AdminSearchFieldComponent` standardizes the labeled search control used by Topics and Recommended Links while each manager continues to own its local filtering state.
+- `AdminSearchFieldComponent` standardizes the labeled search control used by Topics, Recommended Links, Comments, Public Submissions, and Users while each manager continues to own its local filtering state.
 - `AdminControlModuleComponent` provides a compact disclosure row for secondary or infrequently changed settings. Its projected content remains mounted while hidden so forms, uploads, and in-progress edits are preserved when a module is collapsed.
 - `AdminOverviewComponent` is an operations dashboard backed by `BlogRepositoryService`, with publishing counts, the next scheduled post, recent drafts, recently published posts, and role-aware management links.
 - `AdminGuidePageComponent` provides the searchable `/admin/guide` operating manual with stable fragment links, clipboard sharing, direct protected-route actions, a desktop contents rail, and a mobile jump menu.
@@ -33,7 +33,8 @@ The Admin Guide currently covers the shared shell plus Posts, scheduling, Bulk E
 
 The post editor uses compact control modules to keep the writing surface visible: Post Details stays open while Publishing, Cover Image, Search & Sharing, Draft Preview, Discovery & Trust, AI suggestions, Recovery & Conflicts, and Last Saved details start collapsed. Each closed module exposes a live summary or status badge, and validation opens the module containing a field that needs attention. At the desktop `xl` breakpoint, the right-side inspector stays pinned beneath the 64px admin header and scrolls within a viewport-bounded region above the fixed action bar. The sticky mobile command bar keeps status and Save visible, with View/Delete actions in a compact contextual menu, so it does not obscure the editor.
 
-New Post package import accepts a clean portable folder containing exactly one post JSON document, one literal `image-manifest.json` with a top-level `images` array, and only the final image files referenced through exact `media://` placeholders. Source notes, provenance sidecars that use `assets`, and unused working images belong outside the selected import folder. Package discovery ignores slug-only provenance JSON, conflicting post candidates are named in the error, the busy state clears after failures, and a successful import uploads media while leaving an unsaved draft for review.
+New Post package import accepts a clean portable folder containing exactly one post JSON document, one literal `image-manifest.json` with a top-level `images` array, and only the final image files referenced through exact `media://` placeholders. Source notes, provenance sidecars that use `assets`, and unused working images belong outside the selected import folder. Package discovery ignores slug-only provenance JSON, conflicting post candidates are named in the error, and a successful import uploads media while leaving an unsaved draft for review. A persistent accessible status panel distinguishes package checks, per-image transfer progress, trusted server-side processing, draft preparation, completion, cancellation, and failure; a pre-existing polite live region announces bounded milestones without repeating every percentage or terminal toast, and partial failures report finalized images retained in the Media Library. JSON and package imports share one editor lock, launch controls
+retain keyboard focus through guarded `aria-disabled`, and save/delete/export/preview plus in-app navigation stay blocked until the import settles. Component teardown cancels an unfinished Firebase resumable transfer, invalidates the continuation, and cannot apply a late draft; finalization already started after upload completion remains server-owned.
 
 The **Discovery & Trust Checklist** keeps the existing title, description, slug, canonical, social-image, taxonomy, alt-text, and heading checks, then adds advisory article-body checks for usable external references, a non-self contextual `/blog/{slug}` next read, and supporting in-body media or structured evidence. It recognizes hardened rich-text/HTML anchors, Markdown links, literal HTTP(S) URLs, recursive list content, and chart source URLs without treating a YouTube/media destination as a citation. Supporting artifacts include images, gallery items, embeds, charts, stats, code, and HTML/Markdown tables. The analyzer never claims that an artifact is original or authoritative; the editor must confirm relevance, rights, disclosure, and source quality. Warnings do not block first-person journal entries or saves, and no post document, Firebase data, route, or backend contract changes.
 
@@ -362,8 +363,9 @@ Sign-in disable/restore and deletion are serialized against role changes for the
 
 Component inventory:
 
-- `UserManagementPageComponent` defaults to the paginated Firebase Auth user table with account search, roles, status, **View as User**, disable/restore, and typed-delete controls; its separate points view renders the complete sortable leaderboard with only the point-specific editor action.
-- `UserPointsEditorComponent` displays the full point breakdown, validates Add/Remove/Set total changes, requires an audit reason, previews the resulting balance, and submits one callable-backed adjustment.
+- `UserManagementPageComponent` defaults to the paginated Firebase Auth user table with account search, roles, status, **View as User**, disable/restore, and typed-delete controls; its separate points view renders the complete sortable leaderboard with only the point-specific editor action. The two views use automatic roving keyboard tabs, and the page reuses the shared admin header, statistics, search, alert, and empty-state primitives without changing service behavior.
+- `DialogFocusDirective` gives the role, sign-in access, **View as User**, and points dialogs one keyboard contract: an explicit accessible name, initial focus, Tab containment, Escape dismissal, and focus restoration to the launch control.
+- `UserPointsEditorComponent` displays the full point breakdown, validates Add/Remove/Set total changes, requires an audit reason, previews the resulting balance, and submits one callable-backed adjustment inside the shared dialog-focus boundary.
 - `UserManagementService` is the feature-scoped Firebase Functions client for user administration callables, preserves single-page requests for account management, follows every `listAdminUsers` page token only when the complete leaderboard is requested, and hydrates any legacy missing point projection from the canonical user account document during staggered deployments.
 
 ## Public Submission Inbox
@@ -390,6 +392,7 @@ Safety and migration notes:
 
 The comment moderation console is available at `/admin/comments` for CMS-capable roles.
 
+- `CommentModerationPageComponent` uses the shared admin page header, search, alert, and empty-state primitives. Queue filters expose their selected state; search covers author, post, reply context, and body text; loading and outcomes are announced; and only one moderation request can run at a time. Routine approve/hide/restore controls remain grouped separately from a confirmed Delete action. Delete retains the record in the Deleted queue, where Restore returns it to approved discussion.
 - New reader comments are submitted through the `submitPostComment` callable.
 - Comment writes are server-only: direct Firestore creates are denied so clients cannot bypass callable validation.
 - Localhost moderation requires Functions and Firestore to point at the same backend. The local Angular config connects to the local Firestore emulator at `127.0.0.1:8080` and Functions emulator at `127.0.0.1:5001`; use `npm run serve:emulators` when testing comments fully locally. Full emulator mode uses isolated local data, so seed/import posts before expecting the local blog list to match production content.
@@ -404,6 +407,7 @@ The comment moderation console is available at `/admin/comments` for CMS-capable
 
 Migration notes:
 
+- The Comments normalization changes presentation and client-side concurrency only. It introduces no route, role, callable, Firestore, or stored-comment migration. Roll back the page component and guide copy together if needed; existing moderation records remain valid.
 - Existing admins created by `functions/scripts/set-admin-claim.mjs` remain compatible because the UI reads both top-level `admin` / `cmsAdmin` claims and the nested `roles` map.
 - Keep future permission names in the `roles` map; only mirror top-level claims when existing Firebase rules require backwards compatibility.
 
@@ -413,7 +417,7 @@ The admin media library is available at `/admin/cms/media-library` and lives und
 
 Component inventory:
 
-- `MediaLibraryPageComponent` coordinates media loading, filtering, sorting, selection, uploads, dialogs, and keyboard shortcuts.
+- `MediaLibraryPageComponent` coordinates media loading, filtering, sorting, selection, uploads, dialogs, and keyboard shortcuts. Archived and Deleted are distinct quick filters; deleted records expose Restore and stay out of ordinary views. Global organizer shortcuts pause behind dialogs, drawers, previews, filters, drag overlays, and interactive controls so background selection or lifecycle changes cannot run accidentally.
 - Sidebar, toolbar, grid/card, inspector, preview, filter, batch rename, resize, tag editor, and status bar components are standalone and feature-scoped.
 
 Service and migration notes:
@@ -422,5 +426,6 @@ Service and migration notes:
 - Image uploads keep the CMS client optimization as a convenience, then pass through `BlogMediaFunctionsService` for trusted finalization. Other media uses the existing generic Firebase Storage progress wrapper and is not represented as a trusted blog-image asset.
 - `BlogMediaUploaderComponent` remains image-only by default, but consumers can opt into allowed Media Library types; Social Shares uses this contract for image or video attachments and enforces the existing 8 MB image and 25 MB generic-media limits before upload.
 - Metadata rename updates display names only and intentionally does not rename Storage objects.
+- Media Delete remains a reversible `status: deleted` transition. Restore returns the retained record to `ready`; archived records remain separate. No collection, Storage object, route, role, or callable migration is introduced by this organizer safety pass.
 - Resize requests go through `MediaProcessingService`, which calls callable Firebase Functions named `resizeMedia` or `batchResizeMedia` when those existing functions are deployed.
 - If production media metadata already uses different collection names, change the service constants instead of component logic.

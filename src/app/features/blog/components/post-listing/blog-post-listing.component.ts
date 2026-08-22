@@ -1,12 +1,8 @@
-import {DOCUMENT, DatePipe, isPlatformBrowser, NgStyle} from '@angular/common';
+import {DatePipe, NgStyle} from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
-  inject,
   Input,
-  PLATFORM_ID,
-  signal,
 } from '@angular/core';
 import {RouterLink} from '@angular/router';
 
@@ -21,6 +17,7 @@ import {
   resolveBlogPostImage,
   resolveBlogPostPreviewImages,
 } from '../../utils/blog-image-url.util';
+import {PostImagePreviewDirective} from '../../directives/post-image-preview.directive';
 import {PostImageScrubberComponent} from '../post-image-scrubber/post-image-scrubber.component';
 
 export type BlogPostListingLayout = 'list' | 'grid' | 'fan' | 'compact' | 'editorial';
@@ -37,22 +34,13 @@ export type BlogPostListingAppearanceByPostId = Readonly<
   Record<string, BlogPostListingAppearance | undefined>
 >;
 
-interface BlogPostImagePreviewState {
-  postId: string;
-  activeIndex: number;
-  settledUrls: ReadonlySet<string>;
-}
-
-const IMAGE_PREVIEW_OPEN_DELAY_MS = 120;
-const IMAGE_PREVIEW_CLOSE_DELAY_MS = 60;
-const EMPTY_PREVIEW_SETTLED_URLS: ReadonlySet<string> = new Set<string>();
-
 @Component({
   selector: 'app-blog-post-listing',
   standalone: true,
   imports: [
     DatePipe,
     NgStyle,
+    PostImagePreviewDirective,
     PostImageScrubberComponent,
     RouterLink,
   ],
@@ -121,16 +109,12 @@ const EMPTY_PREVIEW_SETTLED_URLS: ReadonlySet<string> = new Set<string>();
 
                 <a
                   class="blog-image-reveal post-listing__media"
-                  [class.post-listing__media--scrubbing]="isImagePreviewActive(post)"
+                  [appPostImagePreview]="post.id"
+                  [postImagePreviewTitle]="post.title"
+                  [postImagePreviewImages]="enableImagePreview ? previewImages(post) : emptyPreviewImages"
+                  #imagePreview="postImagePreview"
                   [routerLink]="['/', pathNames.BLOG, post.slug]"
                   [attr.aria-label]="'Read ' + post.title"
-                  [attr.aria-describedby]="isImagePreviewActive(post) ? imagePreviewStatusId(post) : null"
-                  (pointerenter)="queueImagePreview(post, $event)"
-                  (pointermove)="updateImagePreview(post, $event)"
-                  (pointerleave)="queueImagePreviewClose(post.id)"
-                  (focus)="openImagePreviewFromFocus(post)"
-                  (blur)="queueImagePreviewClose(post.id)"
-                  (keydown)="handleImagePreviewKeydown(post, $event)"
                 >
                   <span class="post-listing__media-viewport absolute inset-0 overflow-hidden">
                     @if (layout === 'editorial') {
@@ -143,33 +127,33 @@ const EMPTY_PREVIEW_SETTLED_URLS: ReadonlySet<string> = new Set<string>();
                     }
                     <img
                       class="post-listing__image h-full w-full object-cover transition-[filter,transform] duration-300 motion-reduce:transition-none"
-                      [class.post-image-scrubber-cover--active]="isImagePreviewActive(post)"
-                      [class.post-image-scrubber-cover--buffering]="isImagePreviewBuffering(post)"
+                      [class.post-image-scrubber-cover--active]="imagePreview.active()"
+                      [class.post-image-scrubber-cover--buffering]="imagePreview.buffering()"
                       [src]="postImage(post)"
                       [alt]="post.title + ' cover image'"
                       [style.object-fit]="layout === 'editorial' ? 'contain' : null"
                       loading="lazy"
                     >
-                    @if (enableImagePreview && isImagePreviewActive(post)) {
+                    @if (imagePreview.active()) {
                       <app-post-image-scrubber
                         [images]="previewImages(post)"
-                        [activeIndex]="activePreviewIndex(post)"
-                        [settledUrls]="imagePreviewSettledUrls(post)"
-                        [buffering]="isImagePreviewBuffering(post)"
-                        (imageSettled)="settlePreviewImage(post.id, $event)"
+                        [activeIndex]="imagePreview.activeIndex()"
+                        [settledUrls]="imagePreview.settledUrls()"
+                        [buffering]="imagePreview.buffering()"
+                        (imageSettled)="imagePreview.settle($event)"
                       ></app-post-image-scrubber>
                     }
                   </span>
                 </a>
 
-                @if (enableImagePreview && isImagePreviewActive(post)) {
+                @if (imagePreview.active()) {
                   <span
-                    [id]="imagePreviewStatusId(post)"
+                    [id]="imagePreview.statusId()"
                     class="sr-only"
                     role="status"
                     aria-live="polite"
                   >
-                    {{ imagePreviewStatus(post) }}
+                    {{ imagePreview.status() }}
                   </span>
                 }
 
@@ -1077,21 +1061,8 @@ export class BlogPostListingComponent {
   @Input() appearanceByPostId: BlogPostListingAppearanceByPostId = {};
 
   protected readonly pathNames = PATH_NAMES;
-  private readonly document = inject(DOCUMENT);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly imagePreviewState = signal<BlogPostImagePreviewState | null>(null);
+  protected readonly emptyPreviewImages: readonly BlogGalleryImage[] = [];
   private readonly fullPostPreviewImages = new WeakMap<BlogPost, readonly BlogGalleryImage[]>();
-  private previewOpenTimer: number | undefined;
-  private previewCloseTimer: number | undefined;
-  private pendingPreviewIndex = 0;
-
-  constructor() {
-    this.destroyRef.onDestroy(() => {
-      this.clearPreviewTimer('open');
-      this.clearPreviewTimer('close');
-    });
-  }
 
   protected get loadingItems(): readonly number[] {
     const count = Math.min(8, Math.max(1, Math.floor(this.loadingItemCount)));
@@ -1120,122 +1091,6 @@ export class BlogPostListingComponent {
     const previewImages = resolveBlogPostPreviewImages(post);
     this.fullPostPreviewImages.set(post, previewImages);
     return previewImages;
-  }
-
-  protected hasImagePreview(post: BlogPostSummary): boolean {
-    return this.enableImagePreview && this.previewImages(post).length > 0;
-  }
-
-  protected isImagePreviewActive(post: BlogPostSummary): boolean {
-    return this.imagePreviewState()?.postId === post.id;
-  }
-
-  protected isImagePreviewBuffering(post: BlogPostSummary): boolean {
-    const state = this.imagePreviewState();
-
-    return state?.postId === post.id
-      && state.settledUrls.size < this.previewImages(post).length;
-  }
-
-  protected queueImagePreview(post: BlogPostSummary, event: PointerEvent): void {
-    if (!this.canUseImagePreview(post)) {
-      return;
-    }
-
-    this.clearPreviewTimer('close');
-    this.pendingPreviewIndex = this.previewIndexFromPointer(post, event);
-
-    if (this.isImagePreviewActive(post)) {
-      this.updateActivePreviewIndex(post.id, this.pendingPreviewIndex);
-      return;
-    }
-
-    this.clearPreviewTimer('open');
-    this.previewOpenTimer = this.document.defaultView?.setTimeout(() => {
-      this.activateImagePreview(post, this.pendingPreviewIndex);
-    }, IMAGE_PREVIEW_OPEN_DELAY_MS);
-  }
-
-  protected updateImagePreview(post: BlogPostSummary, event: PointerEvent): void {
-    const nextIndex = this.previewIndexFromPointer(post, event);
-    this.pendingPreviewIndex = nextIndex;
-
-    if (this.isImagePreviewActive(post)) {
-      this.updateActivePreviewIndex(post.id, nextIndex);
-    }
-  }
-
-  protected queueImagePreviewClose(postId: string): void {
-    this.clearPreviewTimer('open');
-    this.clearPreviewTimer('close');
-    this.previewCloseTimer = this.document.defaultView?.setTimeout(() => {
-      if (this.imagePreviewState()?.postId === postId) {
-        this.imagePreviewState.set(null);
-      }
-    }, IMAGE_PREVIEW_CLOSE_DELAY_MS);
-  }
-
-  protected openImagePreviewFromFocus(post: BlogPostSummary): void {
-    if (!this.canUseImagePreview(post)) {
-      return;
-    }
-
-    this.clearPreviewTimer('open');
-    this.clearPreviewTimer('close');
-    this.activateImagePreview(post, 0);
-  }
-
-  protected handleImagePreviewKeydown(post: BlogPostSummary, event: KeyboardEvent): void {
-    if (!this.isImagePreviewActive(post)) {
-      return;
-    }
-
-    const imageCount = this.previewImages(post).length;
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.imagePreviewState.set(null);
-      return;
-    }
-
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
-      return;
-    }
-
-    event.preventDefault();
-    const currentIndex = this.imagePreviewState()?.activeIndex ?? 0;
-    const direction = event.key === 'ArrowRight' ? 1 : -1;
-    this.updateActivePreviewIndex(post.id, (currentIndex + direction + imageCount) % imageCount);
-  }
-
-  protected settlePreviewImage(postId: string, url: string): void {
-    const state = this.imagePreviewState();
-
-    if (state?.postId !== postId || state.settledUrls.has(url)) {
-      return;
-    }
-
-    const settledUrls = new Set(state.settledUrls);
-    settledUrls.add(url);
-    this.imagePreviewState.set({...state, settledUrls});
-  }
-
-  protected imagePreviewStatusId(post: BlogPostSummary): string {
-    return `post-image-preview-status-${post.id}`;
-  }
-
-  protected imagePreviewStatus(post: BlogPostSummary): string {
-    const images = this.previewImages(post);
-    const index = this.activePreviewIndex(post);
-    const image = images[index];
-    const imageDescription = image?.alt.trim() || `${post.title} interior image`;
-
-    return `Preview ${index + 1} of ${images.length}: ${imageDescription}`;
-  }
-
-  protected imagePreviewSettledUrls(post: BlogPostSummary): ReadonlySet<string> {
-    const state = this.imagePreviewState();
-    return state?.postId === post.id ? state.settledUrls : EMPTY_PREVIEW_SETTLED_URLS;
   }
 
   protected postDate(post: BlogPostSummary): string {
@@ -1297,75 +1152,6 @@ export class BlogPostListingComponent {
 
   private postAppearance(post: BlogPostSummary): BlogPostListingAppearance | null {
     return this.appearanceByPostId[post.id] ?? this.appearance;
-  }
-
-  private canUseImagePreview(post: BlogPostSummary): boolean {
-    return this.isBrowser
-      && this.hasImagePreview(post)
-      && this.document.defaultView?.matchMedia('(hover: hover) and (pointer: fine)').matches === true;
-  }
-
-  private previewIndexFromPointer(post: BlogPostSummary, event: PointerEvent): number {
-    const imageCount = this.previewImages(post).length;
-
-    if (!imageCount) {
-      return 0;
-    }
-
-    const target = event.currentTarget;
-
-    if (!(target instanceof HTMLElement)) {
-      return this.activePreviewIndex(post);
-    }
-
-    const bounds = target.getBoundingClientRect();
-
-    if (bounds.width <= 0) {
-      return this.activePreviewIndex(post);
-    }
-
-    const pointerProgress = Math.min(0.999, Math.max(0, (event.clientX - bounds.left) / bounds.width));
-    return Math.floor(pointerProgress * imageCount);
-  }
-
-  private activateImagePreview(post: BlogPostSummary, imageIndex: number): void {
-    const imageCount = this.previewImages(post).length;
-
-    if (!imageCount) {
-      return;
-    }
-
-    this.imagePreviewState.set({
-      postId: post.id,
-      activeIndex: Math.min(imageCount - 1, Math.max(0, imageIndex)),
-      settledUrls: new Set<string>(),
-    });
-  }
-
-  private updateActivePreviewIndex(postId: string, imageIndex: number): void {
-    this.imagePreviewState.update((state) => state?.postId === postId
-      ? {...state, activeIndex: imageIndex}
-      : state);
-  }
-
-  protected activePreviewIndex(post: BlogPostSummary): number {
-    const state = this.imagePreviewState();
-    return state?.postId === post.id ? state.activeIndex : 0;
-  }
-
-  private clearPreviewTimer(timer: 'open' | 'close'): void {
-    const window = this.document.defaultView;
-    const timerId = timer === 'open' ? this.previewOpenTimer : this.previewCloseTimer;
-
-    if (timerId !== undefined) {
-      window?.clearTimeout(timerId);
-    }
-
-    if (timer === 'open') {
-      this.previewOpenTimer = undefined;
-    } else {
-      this.previewCloseTimer = undefined;
-    }
   }
 
   private get normalizedTitleMaxLength(): number | null {

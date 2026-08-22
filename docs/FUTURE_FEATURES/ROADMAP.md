@@ -1,6 +1,6 @@
 # Roadmap
 
-Updated August 21, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
+Updated August 22, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
 
 Local implementation, a saved Firebase version, a preview, and production deployment are separate states. Nothing in this roadmap should be read as production-live without exact-commit deployment and public verification.
 
@@ -12,6 +12,10 @@ Local implementation, a saved Firebase version, a preview, and production deploy
 - The release gate, supported Node runtime, package-import hardening, analytics quality signals, creator-channel identity, and Higgsfield lab preservation are documented and implemented in source.
 - `npm run test:docs` validates tracked Markdown links, architecture-index coverage, status-authority labels, and roadmap review age as part of the local release gate.
 - Existing posts have a CMS-role-gated **Save evidence only** path. The `updateEditorial` trusted mutation validates only allowlisted editorial metadata, uses expected-revision and idempotent-retry protection, records an audit event, and preserves all article blocks and unrelated fields. This is implemented and tested locally; production availability still depends on exact-commit Functions and Hosting deployment plus authenticated verification.
+- The legacy OS login screen reports password-reset success with accessible inline status instead of a blocking browser alert, retains assertive reset errors, and prevents duplicate requests while a reset is pending.
+- Admin Console Phase 3 is source-complete across Homepage Hero, Topics, Recommended Links, Comments, Media, and Users. Comments has serialized moderation plus retained-record Delete/Restore, Media separates Archived and Deleted recovery while gating background shortcuts, and Users has keyboard-correct tabs and accessible focus-managed dialogs. Exact-commit deployment and authenticated rendered verification remain part of the release gate below.
+- The first Core OS migration batch moves tooltip behavior into `core-os/tooltip` with stable template inputs and legacy import re-exports. The shared lifecycle owns reentrancy-safe replacement and timer cleanup, renders copy as text, and keeps the correct focused control described until focus/hover ends or Escape dismisses it, without changing routes, app IDs, persisted state, or Firebase behavior.
+- The second Core OS migration batch moves the IndexedDB-first OS storage abstraction into `core-os/storage`. Live consumers use the package alias, the legacy path re-exports the same root service, IndexedDB writes wait for transaction completion, failed operations reach callers, Task mutations serialize against the last successful state, Patch Editor mutations cannot overlap, and unsafe origin-wide localStorage clearing is disabled. The `AppStorage` database, `keyvalue` object store, existing keys, availability-only localStorage fallback, and Observable signatures remain stable.
 
 ## Now: Safety And Release Clarity
 
@@ -32,9 +36,9 @@ Local implementation, a saved Firebase version, a preview, and production deploy
 
 ## Next: One To Two Sprints
 
-### Complete Admin Console Phase 3
+### Begin Admin Console Phase 4 after Phase 3 release verification
 
-Homepage Hero, Topics, and Recommended Links already share page-header, action-bar, statistics, feedback, and search primitives. Finish the same careful list/detail normalization for Media Library, Comments, and Users while preserving their specialized density, role boundaries, and destructive-action separation.
+Use the proven shared contracts to split only stable page-composition, view-model, and persistence responsibilities. Remove duplicate presentation code only after reference and archive review; preserve specialized Media and Editor density, current routes, role boundaries, and Firebase behavior. Do not combine this cleanup with the paused social-delivery backend.
 
 ### Close the current SEO release loop
 
@@ -55,9 +59,7 @@ External social delivery remains paused. Calendar composition, provider connecti
 
 ### Core OS Migration
 
-Move reusable implementation from `src/app/components/game` into `src/app/core-os` in small import-only batches. Preserve routes, persisted local state, window lifecycle, keyboard behavior, and compatibility exports; do not combine the move with a visual rewrite.
-
-The remaining explicit source TODO is in the legacy OS login screen: replace the password-reset success `alert()` with accessible OS-owned feedback while preserving reset errors, focus behavior, and the current authentication flow.
+Continue moving reusable implementation from `src/app/components/game` into `src/app/core-os` in small import-only batches. The tooltip and browser-storage packages are complete; app manager, windowing, dock, tray, terminal, context menu, notification, settings, filesystem, and shell ownership remain. Preserve routes, persisted local state, window lifecycle, keyboard behavior, and compatibility exports; do not combine a move with a visual rewrite.
 
 ### Cross-Device Reading State
 

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {SettingsService} from '../../services/settings.service';
 import {DailyForecast, WeatherBundle, WeatherService} from '../../services/weather.service';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
-import {TooltipDirective} from '../../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 
 @Component({
   selector: 'app-weather',

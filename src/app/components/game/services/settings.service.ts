@@ -1,6 +1,6 @@
 import {Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, Subscription, take} from 'rxjs';
-import {StorageService} from './storage.service';
+import {StorageService} from '@core-os/storage';
 import {NotificationService} from './notification.service';
 import {FormControl, FormGroup} from '@angular/forms';
 
@@ -276,11 +276,15 @@ export class SettingsService implements OnDestroy {
   }
 
   private persistSetting<T>(id: string, value: T): void {
-    this.storageService.setItem(id, value).pipe(take(1)).subscribe();
+    this.storageService.setItem(id, value).pipe(take(1)).subscribe({
+      error: () => this.showNotify(`Failed to save setting "${id}".`)
+    });
   }
 
   private persistSettingSet<T>(id: string, values: T[]): void {
-    this.storageService.setItems(id, values).pipe(take(1)).subscribe();
+    this.storageService.setItems(id, values).pipe(take(1)).subscribe({
+      error: () => this.showNotify(`Failed to save setting set "${id}".`)
+    });
   }
 
   private isSettingArray(value: unknown[]): value is Setting<unknown>[] {

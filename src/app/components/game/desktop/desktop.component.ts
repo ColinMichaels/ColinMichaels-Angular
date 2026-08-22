@@ -25,7 +25,7 @@ import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fort
 import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
-import {TooltipDirective} from '../directives/tooltip.directive';
+import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
 
 @Component({

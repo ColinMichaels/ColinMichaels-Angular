@@ -166,7 +166,7 @@ The OS-style systems are reusable infrastructure and should be preserved and mod
 
 Relevant areas:
 
-- `src/app/core-os`
+- `src/app/core-os` — active route boundary plus the migrated reusable tooltip and browser-storage packages.
 - `src/app/components/game`
 
 ## Documentation

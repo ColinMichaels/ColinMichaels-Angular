@@ -79,6 +79,7 @@ import {MediaCardComponent, MediaCardSelectionEvent} from './media-card.componen
                   (selection)="selection.emit($event)"
                   (preview)="preview.emit($event)"
                   (favorite)="favorite.emit($event)"
+                  (restore)="restore.emit($event)"
                   (contextMenu)="contextMenu.emit($event)"
                 />
               }
@@ -95,6 +96,7 @@ import {MediaCardComponent, MediaCardSelectionEvent} from './media-card.componen
                   (selection)="selection.emit($event)"
                   (preview)="preview.emit($event)"
                   (favorite)="favorite.emit($event)"
+                  (restore)="restore.emit($event)"
                   (contextMenu)="contextMenu.emit($event)"
                 />
               }
@@ -128,6 +130,7 @@ export class MediaGridComponent {
   @Output() selection = new EventEmitter<MediaCardSelectionEvent>();
   @Output() preview = new EventEmitter<MediaLibraryItem>();
   @Output() favorite = new EventEmitter<MediaLibraryItem>();
+  @Output() restore = new EventEmitter<MediaLibraryItem>();
   @Output() contextMenu = new EventEmitter<{ item: MediaLibraryItem; event: MouseEvent }>();
   @Output() uploadRequested = new EventEmitter<void>();
   @Output() filesDropped = new EventEmitter<readonly File[]>();

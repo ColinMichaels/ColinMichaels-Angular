@@ -1,9 +1,9 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {of} from 'rxjs';
+import {of, Subject} from 'rxjs';
 
 import {PatchEditorComponent} from './patch-editor.component';
 import {DEFAULT_SYNTH_PATCH, PatchService, SYNTH_PRESET_PATCHES, SynthPatch} from '../../../services/patch.service';
-import {StorageService} from '../../../services/storage.service';
+import {StorageService} from '@core-os/storage';
 import {NotificationService} from '../../../services/notification.service';
 import {SOUND_DRIVERS} from '../../../services/sound-drivers/sound-driver.types';
 
@@ -99,6 +99,24 @@ describe('PatchEditorComponent', () => {
     expect(setItemsArgs[0]).toBe('keyboard-patches');
     expect(savedPatches.length).toBe(1);
     expect(savedPatches[0].name).toBe('Saved Pad');
+  });
+
+  it('blocks overlapping patch mutations until persistence settles', () => {
+    const pendingWrite = new Subject<void>();
+    storageService.setItems.and.returnValue(pendingWrite.asObservable());
+    component.selectedPatch = clonePatch(DEFAULT_SYNTH_PATCH, 'Queued Pad');
+
+    component.savePatch();
+    component.savePatch();
+
+    expect(storageService.setItems).toHaveBeenCalledTimes(1);
+    expect(notify.warn).toHaveBeenCalledWith('Wait for the current patch storage operation to finish.');
+    expect(component.storageBusy).toBeTrue();
+
+    pendingWrite.next();
+    pendingWrite.complete();
+
+    expect(component.storageBusy).toBeFalse();
   });
 
   it('loads a factory preset into the editor', () => {

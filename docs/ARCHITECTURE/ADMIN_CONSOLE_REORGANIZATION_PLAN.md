@@ -23,9 +23,9 @@ Phase 1, the first Overview slice, and the Phase 2 publishing-flow presentation 
 - The Posts page keeps `New Post` as its sole primary header action, moves import/export/Firestore refresh into a keyboard-accessible Maintenance disclosure, renders the compact bulk-action surface only after at least one row is selected, and adds separate read-only Evidence and Discovery & Trust queues so editors can prioritize individual corpus work without bulk-inferred claims or content writes.
 - Calendar now distinguishes launch-following from fixed-time social plans, keeps launch plans aligned when a post is rescheduled, requires media for Instagram planning, reports provider readiness honestly, and receives direct post context from the Editor's Distribution module.
 - Social Connections is now a protected Publishing destination for Facebook, Instagram, and Threads authorization health, explicit Facebook Page selection, direct Instagram Business Login, reconnect, and disconnect controls while external delivery remains disabled.
-- Phase 3 has started with shared page-header, editor-action-bar, statistics-card, feedback-state, and list-search contracts for Homepage Hero, Topics, and Recommended Links. This removes duplicated identity, save-state, metric, feedback, and search markup while leaving routes, computed values, Firestore operations, and specialized list/detail editors unchanged.
+- Phase 3 source work is complete across Homepage Hero, Topics, Recommended Links, Comments, Media, and Users. These surfaces use the applicable shared page-header, editor-action-bar, statistics-card, feedback-state, empty-state, and list-search contracts while preserving specialized density, routes, role boundaries, computed values, Firestore operations, and destructive-action separation. Comments serializes moderation and provides confirmed retained-record Delete/Restore; Media separates Archived from Deleted and gates background shortcuts; Users adds keyboard-correct tabs and accessible modal focus management.
 
-The next admin reorganization slice is Phase 3 site-content, asset, and operations consistency. Real social delivery workers remain a separate backend project.
+The next admin reorganization slice is Phase 4 component/state cleanup after release verification. Real social delivery workers remain a separate backend project.
 
 ## Pre-Refactor Baseline
 
@@ -233,7 +233,7 @@ Exit criteria:
 
 ### Phase 3: Site Content, Assets, And Operations
 
-Status: in progress. Homepage Hero, Topics, and Recommended Links now share Phase 3 page-header, editor-action-bar, statistics-card, feedback-state, and list-search contracts; broader list/detail normalization and the remaining Media, Comments, and Users surfaces are still pending.
+Status: source complete; exact-commit deployment and authenticated rendered verification remain release gates. Homepage Hero, Topics, Recommended Links, Comments, Media, and Users now share the applicable Phase 3 page-header, search, statistics, and feedback/empty-state contracts. Comments serializes moderation and confirms retained-record Delete separately from routine actions; its Deleted queue exposes Restore. Media has distinct Archived and Deleted recovery paths and prevents background shortcuts behind overlays or controls. Users preserves the admin-only service boundary while adding roving tabs and accessible focus-managed dialogs.
 
 - Migrate Homepage, Topics, Links, Media, Comments, and Users to the shell.
 - Normalize page headers and list/detail layouts without flattening specialized tools.
@@ -244,6 +244,8 @@ Exit criteria:
 - every admin page uses the same global navigation and page hierarchy
 - the overview surfaces real work rather than duplicating the sidebar
 - Media and Editor retain the density their tasks require
+
+Comments, Media, and Users require no route, role, callable, Firestore schema, Storage object, or stored-record migration. The normalized pages reuse shared presentational primitives while keeping their existing services and backend authorization boundaries unchanged. Rollback is limited to the affected presentation components, the shared admin dialog-focus directive used by Comments and Users, and synchronized operator documentation.
 
 ### Phase 4: Component And State Cleanup
 

@@ -226,7 +226,8 @@ export class MediaLibrarySidebarComponent {
     {id: 'uncategorized', label: 'Uncategorized', icon: '◇'},
     {id: 'processing', label: 'Processing', icon: '◌'},
     {id: 'failed', label: 'Failed Processing', icon: '!'},
-    {id: 'archived', label: 'Archived / Trash', icon: '⌫'},
+    {id: 'archived', label: 'Archived', icon: '▣'},
+    {id: 'deleted', label: 'Deleted', icon: '⌫'},
   ];
 
   protected readonly mediaTypes: readonly MediaTypeItem[] = [

@@ -22,13 +22,23 @@ function createMarkdownPost(): BlogPost {
       description: 'A post built from Markdown.',
     },
     contentFormat: 'editorjs',
-    blocks: [{
-      id: 'markdown-1',
-      type: 'markdown',
-      data: {
-        markdown: '## Setup\n\nUse **typed blocks** and read [the guide](https://example.com).',
+    blocks: [
+      {
+        id: 'markdown-1',
+        type: 'markdown',
+        data: {
+          markdown: '## Setup\n\nUse **typed blocks** and read [the guide](https://example.com).',
+        },
       },
-    }],
+      {
+        id: 'interior-image',
+        type: 'image',
+        data: {
+          url: '/assets/images/blog/interior.webp',
+          alt: 'Interior article preview',
+        },
+      },
+    ],
     createdAt: '2026-07-10T12:00:00.000Z',
     updatedAt: '2026-07-10T12:00:00.000Z',
     publishedAt: '2026-07-10T12:00:00.000Z',
@@ -62,6 +72,10 @@ describe('SiteSearchService', () => {
     expect(markdownItem?.bodyText).toBe('setup use typed blocks and read the guide.');
     expect(markdownItem?.bodyText).not.toContain('**');
     expect(markdownItem?.bodyText).not.toContain('example.com');
+    expect(markdownItem?.previewImages).toEqual([{
+      url: '/assets/images/blog/interior.webp',
+      alt: 'Interior article preview',
+    }]);
     expect(searchSiteItems(items, {
       query: 'typed blocks',
       type: 'all',

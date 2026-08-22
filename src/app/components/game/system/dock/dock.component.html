@@ -31,10 +31,12 @@
 
     <section class="flex space-x-2 pointer-events-auto">
       <ng-container *ngFor="let app of generalApps">
-        <div class="relative" [tooltipShowArrow]="true" [appTooltip]="app.title">
+        <div class="relative">
           <button type="button"
                   (dblclick)="openApp(app.id)"
                   (click)="focusApp(app.id)"
+                  [tooltipShowArrow]="true"
+                  [appTooltip]="app.title"
                   [class.dock-icon]="!app.icon"
                   class="pointer-events-auto border-0 bg-transparent p-0 text-inherit"
                   [class.-translate-y-1]="app.running">

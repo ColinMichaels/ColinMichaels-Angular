@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, HostListener, inject, input, output, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, input, output, signal} from '@angular/core';
 
 import {
   AdjustAdminUserPointsResponse,
@@ -6,6 +6,7 @@ import {
   AdminUserPointOperation,
 } from '../models/user-management.models';
 import {UserManagementService} from '../services/user-management.service';
+import {DialogFocusDirective} from '../../shared/dialog-focus.directive';
 
 const MAX_ADMIN_POINT_AMOUNT = 1_000_000;
 
@@ -15,6 +16,7 @@ function getErrorMessage(error: unknown): string {
 
 @Component({
   selector: 'app-user-points-editor',
+  imports: [DialogFocusDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -22,12 +24,15 @@ function getErrorMessage(error: unknown): string {
       role="dialog"
       aria-modal="true"
       aria-labelledby="user-points-editor-title"
+      [appDialogFocus]="returnFocusTo()"
+      (appDialogEscape)="dismiss()"
     >
       <div class="min-w-0 w-full max-w-2xl border border-violet-400/50 bg-zinc-950 p-5 shadow-2xl shadow-black">
         <header class="flex items-start justify-between gap-4 border-b border-zinc-800 pb-4">
           <div class="min-w-0">
             <p class="text-sm uppercase tracking-[0.24em] text-violet-300">Reader points</p>
-            <h2 id="user-points-editor-title" class="mt-2 truncate text-2xl font-semibold text-zinc-50">
+            <h2 id="user-points-editor-title" class="mt-2 truncate text-2xl font-semibold text-zinc-50" tabindex="-1"
+                data-dialog-initial-focus>
               Manage points for {{ user().displayName || user().email || user().uid }}
             </h2>
             <p class="mt-1 break-all text-xs text-zinc-500">{{ user().email || user().uid }}</p>
@@ -159,6 +164,7 @@ export class UserPointsEditorComponent {
   private readonly userManagement = inject(UserManagementService);
 
   readonly user = input.required<AdminManagedUser>();
+  readonly returnFocusTo = input<HTMLElement | null>(null);
   readonly dismissed = output<void>();
   readonly pointsAdjusted = output<AdjustAdminUserPointsResponse>();
 
@@ -236,11 +242,6 @@ export class UserPointsEditorComponent {
         return 'Points to add';
     }
   });
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    this.dismiss();
-  }
 
   protected selectOperation(operation: AdminUserPointOperation): void {
     this.operation.set(operation);

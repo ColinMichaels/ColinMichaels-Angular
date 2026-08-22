@@ -42,11 +42,11 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 - `src/app/labs`:
   preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
-  OS route boundary that preserves legacy desktop/login/boot/sleep URLs.
+  OS route boundary plus migrated reusable tooltip and browser-storage packages; legacy desktop/login/boot/sleep URLs remain preserved.
 - `src/app/components/game`:
   legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:
-  core runtime logic (app manager, CLI, settings, storage, media, sound, user).
+  legacy runtime logic (app manager, CLI, settings, media, sound, user) pending staged Core OS migration; the former storage path is a compatibility re-export.
 - `src/app/services`:
   shared Firebase/auth services.
 - `src/app/guards`, `src/app/pipes`, `src/app/modules`:

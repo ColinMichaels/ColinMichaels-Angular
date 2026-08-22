@@ -21,7 +21,7 @@ import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fort
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {SoundService} from '../../services/sound.service';
 import {MusicService} from '../../services/music.service';
-import {Subject, takeUntil} from 'rxjs';
+import {finalize, Subject, takeUntil} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {LogService} from '../../services/log.service';
 import {type User, type UserCredential} from 'firebase/auth';
@@ -194,6 +194,8 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   googleLoading = false;
   facebookLoading = false;
   error = '';
+  passwordResetFeedback = '';
+  passwordResetInProgress = false;
   isReaderCampaign = false;
 
   form: FormGroup;
@@ -305,6 +307,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   toggleMode() {
     this.isLoginMode = !this.isLoginMode;
     this.error = '';
+    this.passwordResetFeedback = '';
   }
 
   passwordMatchValidator(form: FormGroup) {
@@ -394,6 +397,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
 
     this.loading = true;
     this.error = '';
+    this.passwordResetFeedback = '';
     const {email, password} = this.loginForm.value;
     this.debugLogin('email login submitted', {email});
 
@@ -481,6 +485,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   loginWithGoogle() {
+    this.passwordResetFeedback = '';
     if (this.isReaderCampaign && !this.isLoginMode) {
       this.rememberRegistrationCommunicationChoices();
     }
@@ -519,6 +524,7 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
   }
 
   loginWithFacebook() {
+    this.passwordResetFeedback = '';
     if (this.isReaderCampaign && !this.isLoginMode) {
       this.rememberRegistrationCommunicationChoices();
     }
@@ -742,23 +748,36 @@ export class LoginScreenComponent implements OnInit, OnDestroy {
     this.navigateToDestination();
   }
 
-  resetPassword() {
+  resetPassword(): void {
+    this.passwordResetFeedback = '';
+
     if (!this.loginForm.get('email')?.valid) {
       this.error = 'Please enter a valid email address';
+      this.loginForm.get('email')?.markAsTouched();
       return;
     }
 
-    const email = this.loginForm.get('email')?.value;
+    if (this.passwordResetInProgress) {
+      return;
+    }
+
+    const email = String(this.loginForm.get('email')?.value ?? '').trim();
+    this.passwordResetInProgress = true;
+    this.error = '';
     this.authService.resetPassword(email)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        finalize(() => {
+          this.passwordResetInProgress = false;
+        }),
+        takeUntil(this.destroy$)
+      )
       .subscribe({
         next: () => {
           this.logger.info('Password reset email sent to:', email);
-          this.error = '';
-          // TODO: Turn into modal popup or something
-          alert(`Password reset email sent to ${email}`);
+          this.passwordResetFeedback = `Password reset email sent to ${email}. Check your inbox for the secure reset link.`;
         },
         error: (error) => {
+          this.passwordResetFeedback = '';
           this.error = this.getErrorMessage(this.getErrorCode(error));
           this.logger.error('Password reset error:', error);
         }

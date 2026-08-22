@@ -35,8 +35,21 @@
 
 
           <!-- Error Message -->
-          <div *ngIf="error" class="error-message mb-4 p-2 text-sm bg-red-100 text-red-700 rounded">
+          <div
+            *ngIf="error"
+            id="login-error"
+            role="alert"
+            class="error-message mb-4 max-w-sm rounded bg-red-100 p-2 text-center text-sm text-red-700">
             {{ error }}
+          </div>
+
+          <div
+            *ngIf="passwordResetFeedback"
+            id="password-reset-status"
+            role="status"
+            aria-live="polite"
+            class="mb-4 max-w-sm rounded border border-emerald-200/50 bg-emerald-950/75 p-3 text-center text-sm leading-5 text-emerald-50">
+            {{ passwordResetFeedback }}
           </div>
 
           <!-- Login Form -->
@@ -52,6 +65,7 @@
                 inputmode="email"
                 autocapitalize="none"
                 spellcheck="false"
+                [attr.aria-describedby]="error ? 'login-error' : (passwordResetFeedback ? 'password-reset-status' : null)"
                 placeholder="Enter your email">
               <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
                    class="text-red-500 text-sm mt-1">
@@ -86,8 +100,10 @@
                 <button
                   type="button"
                   (click)="resetPassword()"
-                  class="text-gray-500 hover:text-white cursor-pointer text-sm bg-transparent border-0 p-0">
-                  Forgot password?
+                  [disabled]="passwordResetInProgress || loading"
+                  [attr.aria-describedby]="error ? 'login-error' : (passwordResetFeedback ? 'password-reset-status' : null)"
+                  class="min-h-11 rounded-lg border-0 bg-transparent px-3 py-2 text-sm text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-wait disabled:opacity-60">
+                  {{ passwordResetInProgress ? 'Sending reset email...' : 'Forgot password?' }}
                 </button>
               </div>
             </div>
