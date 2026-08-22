@@ -71,6 +71,64 @@ describe('BlogMediaUploadService trusted finalization', () => {
     expect(result.checksum).toBe('abc123');
   });
 
+  it('returns the largest JPEG variant for an Open Graph upload', async () => {
+    mediaFunctions.finalizeUpload.and.resolveTo({
+      mediaId: '019fc788-730b-7982-91c8-055dcdb1a8bf',
+      checksum: 'abc123',
+      originalName: 'social.jpg',
+      originalContentType: 'image/jpeg',
+      originalSize: 4,
+      downloadUrl: 'https://firebasestorage.googleapis.com/final.webp',
+      storagePath: 'cms/blog-media/story/open-graph/media/1600w.webp',
+      contentType: 'image/webp',
+      size: 3,
+      width: 1600,
+      height: 900,
+      variants: [
+        {
+          contentType: 'image/webp',
+          format: 'webp',
+          width: 1600,
+          height: 900,
+          size: 3,
+          storagePath: 'cms/blog-media/story/open-graph/media/1600w.webp',
+          url: 'https://firebasestorage.googleapis.com/final.webp',
+        },
+        {
+          contentType: 'image/jpeg',
+          format: 'jpeg',
+          width: 960,
+          height: 540,
+          size: 5,
+          storagePath: 'cms/blog-media/story/open-graph/media/960w.jpg',
+          url: 'https://firebasestorage.googleapis.com/final-960.jpg',
+        },
+        {
+          contentType: 'image/jpeg',
+          format: 'jpeg',
+          width: 1600,
+          height: 900,
+          size: 7,
+          storagePath: 'cms/blog-media/story/open-graph/media/1600w.jpg',
+          url: 'https://firebasestorage.googleapis.com/final-1600.jpg',
+        },
+      ],
+    });
+
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'social.jpg', {type: 'image/jpeg'});
+    const result = await lastValueFrom(service.uploadImage(file, {
+      slug: 'Story',
+      role: 'open-graph',
+      optimization: {enabled: false},
+    }));
+
+    expect(result.downloadUrl).toBe('https://firebasestorage.googleapis.com/final-1600.jpg');
+    expect(result.storagePath).toBe('cms/blog-media/story/open-graph/media/1600w.jpg');
+    expect(result.contentType).toBe('image/jpeg');
+    expect(result.width).toBe(1600);
+    expect(result.height).toBe(900);
+  });
+
   it('rejects unsupported SVG uploads before Storage is called', async () => {
     const file = new File(['<svg/>'], 'unsafe.svg', {type: 'image/svg+xml'});
     await expectAsync(lastValueFrom(service.uploadImage(file, {slug: 'story', role: 'editor-image'})))

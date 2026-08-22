@@ -108,6 +108,8 @@ describe('admin guide content', () => {
       .toEqual(['create-and-publish-a-post']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'image signature responsive variants').map(entry => entry.id))
       .toEqual(['create-and-publish-a-post']);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'open graph social share jpeg crawler').map(entry => entry.id))
+      .toEqual(['create-and-publish-a-post']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['mediaManager'], 'canonical media deletion reference check').map(entry => entry.id))
       .toEqual(['upload-and-reuse-media']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'canonical media deletion')).toEqual([]);
@@ -116,6 +118,7 @@ describe('admin guide content', () => {
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'deleted quick filter restore media')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'trusted publishing')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'image signature')).toEqual([]);
+    expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'open graph social share jpeg crawler')).toEqual([]);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], 'contact author inbox').map(entry => entry.id))
       .toEqual(['review-public-submissions']);
     expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], 'email alert smtp')).toEqual([]);

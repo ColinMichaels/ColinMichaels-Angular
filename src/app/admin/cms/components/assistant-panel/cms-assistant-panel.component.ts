@@ -103,9 +103,9 @@ import {
                 <p class="text-xs text-zinc-500">Alt text: {{ thumbnail.altText }}</p>
                 <button
                   type="button"
-                  class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-                  [disabled]="isThumbnailLoading === thumbnail.id"
-                  (click)="generateThumbnail.emit(thumbnail)"
+                  class="border border-cyan-500/70 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-700 aria-disabled:text-zinc-600 aria-disabled:hover:bg-transparent aria-disabled:hover:text-zinc-600"
+                  [attr.aria-disabled]="isThumbnailWriterUnavailable"
+                  (click)="requestThumbnailGeneration(thumbnail)"
                 >
                   {{ isThumbnailLoading === thumbnail.id ? 'Generating Image' : 'Generate & Store' }}
                 </button>
@@ -139,6 +139,7 @@ export class CmsAssistantPanelComponent {
   @Input({required: true}) error!: string;
   @Input({required: true}) sourceLabel!: string;
   @Input({required: true}) isThumbnailLoading!: string | null;
+  @Input() isThumbnailWriterUnavailable = false;
   @Input({required: true}) thumbnailError!: string;
   @Input({required: true}) lastGeneratedThumbnail!: BlogStoredThumbnail | null;
 
@@ -156,5 +157,11 @@ export class CmsAssistantPanelComponent {
 
     const suggestionCount = this.result?.suggestions.length ?? 0;
     return suggestionCount > 0 ? `${suggestionCount} suggestions ready` : 'Optional metadata and thumbnail help';
+  }
+
+  protected requestThumbnailGeneration(thumbnail: BlogThumbnailSuggestion): void {
+    if (this.isThumbnailWriterUnavailable) return;
+
+    this.generateThumbnail.emit(thumbnail);
   }
 }

@@ -7,7 +7,7 @@ test.describe('public and Core OS style ownership', () => {
 
     await expect(page.getByRole('heading', {
       level: 1,
-      name: 'A Life of Curiosity. A Journey of Growth.',
+      name: 'Cool gadgets, useful tech, and internet finds',
     })).toBeVisible({timeout: 20_000});
 
     const publicRoot = page.locator('app-root');

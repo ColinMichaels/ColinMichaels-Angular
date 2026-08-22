@@ -5,6 +5,7 @@ import {Observable, Subject, of, throwError} from 'rxjs';
 
 import {AuthorRepositoryService} from '../../../../features/authors/services/author-repository.service';
 import {BlogPost} from '../../../../features/blog/models/blog-post.model';
+import {BlogPostRevisionConflictError} from '../../../../features/blog/models/blog-post-revision.model';
 import {BlogRepositoryService} from '../../../../features/blog/services/blog-repository.service';
 import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
@@ -13,19 +14,29 @@ import {
   BlogMediaUploadService,
 } from '../../services/blog-media-upload.service';
 import {EditorSavedDocument} from '../../models/editor-document.model';
+import {BlogStoredThumbnail, BlogThumbnailSuggestion} from '../../models/blog-ai-assistant.model';
+import {CmsPostRecoverySnapshot} from '../../models/post-recovery.model';
 import {CmsPostRecoveryService} from '../../services/post-recovery.service';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {PostPackageImportProgress} from './post-package-import-progress.component';
 import {CmsPostEditorComponent} from './post-editor.component';
 
 interface TestablePostEditor {
+  applyFirestorePost(post: BlogPost): Promise<void>;
+
   canDeactivate(): boolean;
 
   deleteCurrentPost(): Promise<void>;
 
   exportPostJson(): Promise<void>;
 
+  createCurrentBackupPost(): Promise<BlogPost>;
+
+  downloadJson(value: unknown, fileName: string): void;
+
   generatePreviewLink(): Promise<void>;
+
+  generateAndStoreThumbnail(thumbnail: BlogThumbnailSuggestion): Promise<void>;
 
   importPostJson(event: Event): Promise<void>;
 
@@ -35,14 +46,43 @@ interface TestablePostEditor {
   isPackageImportInProgress: WritableSignal<boolean>;
   isPostImportInProgress: () => boolean;
 
+  isImportLauncherUnavailable(): boolean;
+
+  isCoverMediaWriterUnavailable(): boolean;
+
+  isApplyingEditorState: boolean;
+  isJsonExportInProgress: boolean;
+  isPreviewGenerationInProgress: boolean;
+  isThumbnailLoading: string | null;
+
   onSaved(saved: EditorSavedDocument): Promise<boolean>;
 
   packageImportProgress: WritableSignal<PostPackageImportProgress | null>;
+
+  persistRecovery(force?: boolean): Promise<boolean>;
   postImportAnnouncement: WritableSignal<string>;
+  recoveryDraft: WritableSignal<CmsPostRecoverySnapshot | null>;
+
+  reloadRemotePost(): Promise<void>;
+
+  restoreRecoveryDraft(): Promise<void>;
+
+  saveConflict: WritableSignal<BlogPostRevisionConflictError | null>;
 
   protectBrowserUnload(event: BeforeUnloadEvent): void;
 
   savePost(): Promise<boolean>;
+
+  setMediaUploadInProgress(field: string, isUploading: boolean): void;
+
+  uploadEditorImage(file: File): Promise<unknown>;
+
+  editorComponent?: {
+    renderDocument(document: unknown): Promise<void>;
+    restoreRecoverySnapshot(snapshot: unknown): Promise<void>;
+  };
+  currentPost?: BlogPost;
+  postForm: { controls: { title: { value: string } } };
 }
 
 describe('CmsPostEditorComponent package import lifecycle', () => {
@@ -50,19 +90,25 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
   let editor: TestablePostEditor;
   let uploadImage: jasmine.Spy<(file: File) => Observable<BlogMediaUploadProgress>>;
   let getAdminPostBySlug: jasmine.Spy<(slug: string) => BlogPost | undefined>;
+  let createPreviewForPost: jasmine.Spy;
+  let generateAndStoreThumbnail: jasmine.Spy<(request: unknown) => Promise<BlogStoredThumbnail>>;
   let router: jasmine.SpyObj<Pick<Router, 'navigate'>>;
   let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success'>>;
 
   beforeEach(async () => {
     uploadImage = jasmine.createSpy('uploadImage');
     getAdminPostBySlug = jasmine.createSpy('getAdminPostBySlug').and.returnValue(undefined);
+    createPreviewForPost = jasmine.createSpy('createPreviewForPost');
+    generateAndStoreThumbnail = jasmine.createSpy('generateAndStoreThumbnail');
     router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.resolveTo(true);
     toast = jasmine.createSpyObj('CmsToastService', ['error', 'success']);
 
     const blogRepository = {
       loading$: of(false),
+      createExportDocument: (posts: readonly BlogPost[]) => ({posts}),
       createNewPostTemplate: () => createPost('https://images.example/original.webp'),
+      createPreviewForPost,
       createUniqueSlug: (slug: string) => slug,
       getAdminPostBySlug,
       getAdminPosts$: () => of([]),
@@ -92,7 +138,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
         {provide: BlogRepositoryService, useValue: blogRepository},
         {provide: AuthorRepositoryService, useValue: {getAuthors$: () => of([])}},
         {provide: BlogAiAssistantService, useValue: {}},
-        {provide: BlogAiFunctionsService, useValue: {}},
+        {provide: BlogAiFunctionsService, useValue: {generateAndStoreThumbnail}},
         {provide: BlogMediaUploadService, useValue: {uploadImage}},
         {provide: CmsToastService, useValue: toast},
         {provide: CmsPostRecoveryService, useValue: recoveryService},
@@ -104,8 +150,14 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
         <button
           type="button"
           data-testid="package-import-trigger"
-          [attr.aria-disabled]="isPostImportInProgress()"
+          [attr.aria-disabled]="isImportLauncherUnavailable()"
         >Import post package</button>
+        <button
+          type="button"
+          data-testid="json-export-trigger"
+          [attr.aria-disabled]="isPostImportInProgress() || isJsonExportInProgress || isPreviewGenerationInProgress"
+          (click)="exportPostJson()"
+        >Export JSON</button>
         <p role="status" aria-live="polite" data-testid="post-import-announcement">
           {{ postImportAnnouncement() }}
         </p>
@@ -210,6 +262,244 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(toast.success).toHaveBeenCalledWith(jasmine.stringMatching(/Imported post/));
   });
 
+  it('keeps a pending preview authoritative and rejects an import until preview creation settles', async () => {
+    let resolvePreview: ((value: { post: BlogPost }) => void) | undefined;
+    createPreviewForPost.and.returnValue(new Promise<{ post: BlogPost }>(resolve => {
+      resolvePreview = resolve;
+    }));
+    spyOn(editor, 'savePost').and.resolveTo(true);
+
+    const previewPromise = editor.generatePreviewLink();
+    await waitForSpy(createPreviewForPost);
+
+    expect(editor.isPreviewGenerationInProgress).toBeTrue();
+    expect(editor.isImportLauncherUnavailable()).toBeTrue();
+    await editor.importPostPackage(createPackageEvent());
+    expect(uploadImage).not.toHaveBeenCalled();
+
+    resolvePreview?.({post: createPost('https://images.example/preview.webp')});
+    await previewPromise;
+
+    expect(editor.isPreviewGenerationInProgress).toBeFalse();
+  });
+
+  it('keeps a pending JSON export isolated from package import', async () => {
+    let resolveBackup: ((value: BlogPost) => void) | undefined;
+    spyOn(editor, 'createCurrentBackupPost').and.returnValue(new Promise<BlogPost>(resolve => {
+      resolveBackup = resolve;
+    }));
+    const downloadJson = spyOn(editor, 'downloadJson');
+    const exportPostJson = spyOn(editor, 'exportPostJson').and.callThrough();
+    fixture.detectChanges();
+    const exportTrigger = query('[data-testid="json-export-trigger"]') as HTMLButtonElement;
+    exportTrigger.focus();
+
+    exportTrigger.click();
+    await waitForSpy(exportPostJson);
+    const exportPromise = exportPostJson.calls.mostRecent().returnValue;
+    fixture.detectChanges();
+
+    expect(editor.isJsonExportInProgress).toBeTrue();
+    expect(editor.isImportLauncherUnavailable()).toBeTrue();
+    expect(exportTrigger.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(exportTrigger);
+    await editor.importPostPackage(createPackageEvent());
+    expect(uploadImage).not.toHaveBeenCalled();
+
+    resolveBackup?.(createPost('https://images.example/export.webp'));
+    await exportPromise;
+
+    expect(editor.isJsonExportInProgress).toBeFalse();
+    expect(downloadJson).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks import while remote state, thumbnail, or form-media work can still write to the editor', async () => {
+    editor.isApplyingEditorState = true;
+    await editor.importPostPackage(createPackageEvent());
+    editor.isApplyingEditorState = false;
+
+    editor.isThumbnailLoading = 'thumbnail-1';
+    await editor.importPostPackage(createPackageEvent());
+    editor.isThumbnailLoading = null;
+
+    editor.setMediaUploadInProgress('cover', true);
+    await editor.importPostPackage(createPackageEvent());
+    editor.setMediaUploadInProgress('cover', false);
+
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(3);
+  });
+
+  it('serializes thumbnail generation and keeps import blocked until the active writer settles', async () => {
+    let resolveThumbnail: ((value: BlogStoredThumbnail) => void) | undefined;
+    generateAndStoreThumbnail.and.returnValue(new Promise<BlogStoredThumbnail>(resolve => {
+      resolveThumbnail = resolve;
+    }));
+    const suggestion: BlogThumbnailSuggestion = {
+      id: 'thumbnail-1',
+      prompt: 'A production-ready thumbnail',
+      altText: 'A production-ready thumbnail',
+      style: 'editorial',
+    };
+
+    editor.setMediaUploadInProgress('cover', true);
+    await editor.generateAndStoreThumbnail(suggestion);
+    expect(generateAndStoreThumbnail).not.toHaveBeenCalled();
+    editor.setMediaUploadInProgress('cover', false);
+
+    const firstGeneration = editor.generateAndStoreThumbnail(suggestion);
+    await waitForSpy(generateAndStoreThumbnail);
+    await editor.generateAndStoreThumbnail({...suggestion, id: 'thumbnail-2'});
+    await editor.importPostPackage(createPackageEvent());
+
+    expect(generateAndStoreThumbnail).toHaveBeenCalledTimes(1);
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(editor.isThumbnailLoading).toBe('thumbnail-1');
+    expect(editor.isCoverMediaWriterUnavailable()).toBeTrue();
+
+    resolveThumbnail?.(createStoredThumbnail());
+    await firstGeneration;
+
+    expect(editor.isThumbnailLoading).toBeNull();
+    expect(editor.isCoverMediaWriterUnavailable()).toBeFalse();
+  });
+
+  it('re-evaluates queued remote hydration after a recovery restoration finishes', async () => {
+    let resolveRestore: (() => void) | undefined;
+    const restoreRecoverySnapshot = jasmine.createSpy('restoreRecoverySnapshot').and.returnValue(
+      new Promise<void>(resolve => {
+        resolveRestore = resolve;
+      })
+    );
+    const renderDocument = jasmine.createSpy('renderDocument').and.resolveTo(undefined);
+    editor.editorComponent = {renderDocument, restoreRecoverySnapshot};
+    editor.recoveryDraft.set(createRecoverySnapshot());
+
+    const restoration = editor.restoreRecoveryDraft();
+    await waitForSpy(restoreRecoverySnapshot);
+
+    const remotePost = {
+      ...createPost('https://images.example/remote.webp'),
+      title: 'Same canonical revision',
+    };
+    const hydration = editor.applyFirestorePost(remotePost);
+    await Promise.resolve();
+
+    expect(renderDocument).not.toHaveBeenCalled();
+    expect(editor.isApplyingEditorState).toBeTrue();
+
+    resolveRestore?.();
+    await restoration;
+    await hydration;
+
+    expect(renderDocument).not.toHaveBeenCalled();
+    expect(editor.currentPost).not.toEqual(remotePost);
+    expect(editor.postForm.controls.title.value).toBe('Recovered local post');
+    expect(editor.saveConflict()).toBeNull();
+    expect(editor.isApplyingEditorState).toBeFalse();
+
+    const newerRemotePost = {...remotePost, revision: 2, title: 'Newest canonical post'};
+    await editor.applyFirestorePost(newerRemotePost);
+
+    expect(renderDocument).not.toHaveBeenCalled();
+    expect(editor.postForm.controls.title.value).toBe('Recovered local post');
+    expect(editor.saveConflict()?.remotePost).toEqual(newerRemotePost);
+  });
+
+  it('serializes repeated canonical reload requests while recovery persistence is pending', async () => {
+    let resolveRecovery: ((value: boolean) => void) | undefined;
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.returnValue(new Promise<boolean>(resolve => {
+      resolveRecovery = resolve;
+    }));
+    editor.saveConflict.set(new BlogPostRevisionConflictError(
+      'package-post',
+      0,
+      1,
+      {...createPost('https://images.example/remote.webp'), revision: 1}
+    ));
+
+    const firstReload = editor.reloadRemotePost();
+    await waitForSpy(persistRecovery);
+    await editor.reloadRemotePost();
+
+    expect(persistRecovery).toHaveBeenCalledTimes(1);
+    expect(editor.isApplyingEditorState).toBeTrue();
+
+    resolveRecovery?.(false);
+    await firstReload;
+
+    expect(editor.isApplyingEditorState).toBeFalse();
+  });
+
+  it('reloads the newest canonical revision reported while recovery persistence is pending', async () => {
+    let resolveRecovery: ((value: boolean) => void) | undefined;
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.returnValue(new Promise<boolean>(resolve => {
+      resolveRecovery = resolve;
+    }));
+    const renderDocument = jasmine.createSpy('renderDocument').and.resolveTo(undefined);
+    editor.editorComponent = {
+      renderDocument,
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined),
+    };
+    const staleRemotePost = {
+      ...createPost('https://images.example/stale-remote.webp'),
+      revision: 1,
+      title: 'Stale canonical revision',
+    };
+    const latestRemotePost = {
+      ...staleRemotePost,
+      revision: 2,
+      title: 'Latest canonical revision',
+    };
+    editor.saveConflict.set(new BlogPostRevisionConflictError('package-post', 0, 1, staleRemotePost));
+
+    const reload = editor.reloadRemotePost();
+    await waitForSpy(persistRecovery);
+    editor.saveConflict.set(new BlogPostRevisionConflictError('package-post', 0, 2, latestRemotePost));
+    resolveRecovery?.(true);
+    await reload;
+
+    expect(editor.currentPost).toEqual(latestRemotePost);
+    expect(editor.postForm.controls.title.value).toBe('Latest canonical revision');
+    expect(editor.saveConflict()).toBeNull();
+    expect(renderDocument).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledWith(
+      'Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.'
+    );
+  });
+
+  it('does not apply a captured revision when the canonical post is deleted during recovery persistence', async () => {
+    let resolveRecovery: ((value: boolean) => void) | undefined;
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.returnValue(new Promise<boolean>(resolve => {
+      resolveRecovery = resolve;
+    }));
+    const renderDocument = jasmine.createSpy('renderDocument').and.resolveTo(undefined);
+    editor.editorComponent = {
+      renderDocument,
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined),
+    };
+    const staleRemotePost = {
+      ...createPost('https://images.example/stale-remote.webp'),
+      revision: 1,
+      title: 'Stale canonical revision',
+    };
+    editor.saveConflict.set(new BlogPostRevisionConflictError('package-post', 0, 1, staleRemotePost));
+
+    const reload = editor.reloadRemotePost();
+    await waitForSpy(persistRecovery);
+    const deletionConflict = new BlogPostRevisionConflictError('package-post', 0, null);
+    editor.saveConflict.set(deletionConflict);
+    resolveRecovery?.(true);
+    await reload;
+
+    expect(editor.currentPost).not.toEqual(staleRemotePost);
+    expect(editor.saveConflict()).toBe(deletionConflict);
+    expect(renderDocument).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(
+      'Reload was cancelled because the canonical post was deleted while Recovery was being saved. Your local work remains available.'
+    );
+  });
+
   it('reports finalized media after a later package image fails and releases the busy lock', async () => {
     uploadImage.and.returnValues(
       of(createUploadProgress(100, 'https://images.example/package-cover.webp')),
@@ -258,6 +548,21 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 
+  it('unsubscribes an unfinished Editor.js image upload when the editor is destroyed', async () => {
+    const upload = new Subject<BlogMediaUploadProgress>();
+    uploadImage.and.returnValue(upload);
+
+    const uploadPromise = editor.uploadEditorImage(new File(['image'], 'inline.webp', {type: 'image/webp'}));
+    const rejection = expectAsync(uploadPromise).toBeRejected();
+    await waitForSpy(uploadImage);
+    expect(upload.observers.length).toBe(1);
+
+    fixture.destroy();
+    await rejection;
+
+    expect(upload.observers.length).toBe(0);
+  });
+
   it('preserves indeterminate progress when package validation fails before totals exist', async () => {
     const postFile = createPackageFile(
       'post.json',
@@ -277,6 +582,104 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
   function query(selector: string): HTMLElement | null {
     return (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(selector);
   }
+});
+
+describe('CmsPostEditorComponent canonical reload live snapshot', () => {
+  let fixture: ComponentFixture<CmsPostEditorComponent>;
+  let editor: TestablePostEditor;
+  let postStream: Subject<BlogPost | undefined>;
+  let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success'>>;
+
+  beforeEach(async () => {
+    postStream = new Subject<BlogPost | undefined>();
+    toast = jasmine.createSpyObj('CmsToastService', ['error', 'success']);
+    const cachedPost = {
+      ...createPost('https://images.example/cached.webp'),
+      title: 'Cached canonical revision',
+    };
+    const initialPost = {
+      ...createPost('https://images.example/initial.webp'),
+      title: 'Initial canonical revision',
+    };
+    const blogRepository = {
+      loading$: of(false),
+      createNewPostTemplate: () => createPost('https://images.example/new.webp'),
+      createUniqueSlug: (slug: string) => slug,
+      getAdminPostBySlug: () => cachedPost,
+      getAdminPostBySlug$: () => postStream.asObservable(),
+      getAdminPosts$: () => of([]),
+      savePost: jasmine.createSpy('savePost'),
+    };
+    const recoveryService = {
+      clearNewPostId: jasmine.createSpy('clearNewPostId'),
+      delete: jasmine.createSpy('delete').and.resolveTo(undefined),
+      getOrCreateNewPostId: (fallback: string) => fallback,
+      load: jasmine.createSpy('load').and.resolveTo(undefined),
+      save: jasmine.createSpy('save'),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CmsPostEditorComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({slug: 'package-post'}),
+              queryParamMap: convertToParamMap({}),
+            },
+          },
+        },
+        {provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate'])},
+        {provide: BlogRepositoryService, useValue: blogRepository},
+        {provide: AuthorRepositoryService, useValue: {getAuthors$: () => of([])}},
+        {provide: BlogAiAssistantService, useValue: {}},
+        {provide: BlogAiFunctionsService, useValue: {}},
+        {provide: BlogMediaUploadService, useValue: {}},
+        {provide: CmsToastService, useValue: toast},
+        {provide: CmsPostRecoveryService, useValue: recoveryService},
+      ],
+    })
+      .overrideComponent(CmsPostEditorComponent, {set: {template: ''}})
+      .compileComponents();
+
+    fixture = TestBed.createComponent(CmsPostEditorComponent);
+    editor = fixture.componentInstance as unknown as TestablePostEditor;
+    fixture.detectChanges();
+    postStream.next(initialPost);
+    fixture.detectChanges();
+    await waitForCondition(() => (
+      editor.currentPost?.title === initialPost.title && !editor.isApplyingEditorState
+    ));
+  });
+
+  it('treats an empty hydrated live snapshot as deletion before the effect updates the conflict', async () => {
+    let resolveRecovery: ((value: boolean) => void) | undefined;
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.returnValue(new Promise<boolean>(resolve => {
+      resolveRecovery = resolve;
+    }));
+    const staleRemotePost = {
+      ...createPost('https://images.example/stale-remote.webp'),
+      revision: 1,
+      title: 'Stale canonical revision',
+    };
+    editor.saveConflict.set(new BlogPostRevisionConflictError('package-post', 0, 1, staleRemotePost));
+
+    const reload = editor.reloadRemotePost();
+    await waitForSpy(persistRecovery);
+    postStream.next(undefined);
+
+    expect(editor.saveConflict()?.actualRevision).toBe(1);
+
+    resolveRecovery?.(true);
+    await reload;
+
+    expect(editor.currentPost).not.toEqual(staleRemotePost);
+    expect(editor.saveConflict()?.actualRevision).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith(
+      'Reload was cancelled because the canonical post was deleted while Recovery was being saved. Your local work remains available.'
+    );
+  });
 });
 
 function createPost(coverImage: string): BlogPost {
@@ -354,10 +757,70 @@ function createUploadProgress(progress: number, downloadUrl?: string): BlogMedia
   };
 }
 
+function createStoredThumbnail(): BlogStoredThumbnail {
+  return {
+    generatedAt: '2026-08-22T00:00:00.000Z',
+    source: 'backend',
+    prompt: 'A production-ready thumbnail',
+    altText: 'A production-ready thumbnail',
+    style: 'editorial',
+    contentType: 'image/webp',
+    storagePath: 'blog-media/package/thumbnail.webp',
+    downloadUrl: 'https://images.example/thumbnail.webp',
+    model: 'test-model',
+  };
+}
+
+function createRecoverySnapshot(): CmsPostRecoverySnapshot {
+  const post = createPost('https://images.example/recovery.webp');
+
+  return {
+    schemaVersion: 1,
+    ownerUid: 'owner-1',
+    postId: post.id,
+    postSlug: post.slug,
+    isNewPost: true,
+    baseRevision: 0,
+    baseUpdatedAt: post.updatedAt,
+    savedAt: '2026-08-22T00:00:00.000Z',
+    expiresAt: '2026-09-21T00:00:00.000Z',
+    contentHash: 'fnv1a-test',
+    form: {
+      authorId: post.authorId ?? 'colin-michaels',
+      title: 'Recovered local post',
+      slug: post.slug,
+      excerpt: post.excerpt,
+      coverImage: post.coverImage,
+      backgroundImage: '',
+      featured: post.featured ?? false,
+      catCornerEnabled: false,
+      catCornerDiscoveryPost: false,
+      status: post.status,
+      publishedAt: '',
+      categories: post.categories.join(', '),
+      tags: post.tags.join(', '),
+      seoTitle: post.seo.title,
+      seoDescription: post.seo.description,
+      canonical: '',
+      openGraphImage: '',
+    },
+    editor: {mode: 'visual', document: {blocks: []}},
+    socialPromotion: {announcements: []},
+  };
+}
+
 async function waitForSpy(spy: jasmine.Spy): Promise<void> {
   for (let attempt = 0; attempt < 20 && !spy.calls.any(); attempt += 1) {
     await Promise.resolve();
   }
 
   expect(spy).toHaveBeenCalled();
+}
+
+async function waitForCondition(condition: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 20 && !condition(); attempt += 1) {
+    await Promise.resolve();
+  }
+
+  expect(condition()).toBeTrue();
 }

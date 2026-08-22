@@ -120,7 +120,9 @@ describe('BlogMediaUploaderComponent', () => {
 
   it('uploads a new image as a media library item and applies it', () => {
     const onChange = jasmine.createSpy('onChange');
+    const uploadStates: boolean[] = [];
     fixture.componentInstance.registerOnChange(onChange);
+    fixture.componentInstance.uploadStateChange.subscribe(state => uploadStates.push(state));
     fixture.componentRef.setInput('postSlug', 'test-post');
     fixture.componentRef.setInput('assetRole', 'open-graph');
     fixture.componentRef.setInput('optimizationOutputType', 'image/jpeg');
@@ -149,6 +151,7 @@ describe('BlogMediaUploaderComponent', () => {
       }),
     }));
     expect(onChange).toHaveBeenCalledWith('/assets/images/backgrounds/night.jpg');
+    expect(uploadStates).toEqual([true, false]);
     expect(queryInputValue('input[type="text"]')).toBe('/assets/images/backgrounds/night.jpg');
     expect(queryText()).toContain('Uploaded uploaded-social.jpg to the media library.');
   });
@@ -233,6 +236,34 @@ describe('BlogMediaUploaderComponent', () => {
 
     expect(queryText()).not.toContain('Existing hero image');
     expect(applyButton?.disabled).toBeTrue();
+  });
+
+  it('keeps an already-open picker non-mutating when the parent disables the writer', () => {
+    const onChange = jasmine.createSpy('onChange');
+    fixture.componentInstance.registerOnChange(onChange);
+
+    clickButtonByText('Choose Cover');
+    fixture.detectChanges();
+    clickButtonByText('Existing hero image');
+    fixture.detectChanges();
+
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+
+    const applyButton = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')
+    ).find(candidate => candidate.textContent?.includes('Use Selected Image'));
+    const urlInput = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="text"]');
+
+    expect(applyButton?.disabled).toBeTrue();
+    expect(urlInput?.disabled).toBeTrue();
+    applyButton?.click();
+    expect(onChange).not.toHaveBeenCalled();
+
+    clickButtonByText('Upload');
+    fixture.detectChanges();
+    const fileInput = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="file"]');
+    expect(fileInput?.disabled).toBeTrue();
   });
 
   function clickButtonByText(text: string): void {

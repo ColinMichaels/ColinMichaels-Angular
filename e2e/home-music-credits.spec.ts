@@ -16,6 +16,12 @@ for (const viewport of [
       await page.locator('#about').scrollIntoViewIfNeeded();
       const recognition = page.getByRole('heading', {name: '2006 Latin GRAMMY® Award — Best Urban Music Album'});
       await expect(recognition).toBeVisible({timeout: 20_000});
+      const awardImage = page.locator('img[alt*="Latin GRAMMY plaque"]');
+
+      await expect(awardImage).toBeVisible();
+      await expect.poll(async () => awardImage.evaluate(image => (
+        image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+      ))).toBe(true);
 
       const credits = page.locator('app-music-credits');
       await credits.scrollIntoViewIfNeeded();

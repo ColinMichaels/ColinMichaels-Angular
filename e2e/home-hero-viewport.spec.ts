@@ -12,6 +12,7 @@ test.describe('homepage hero viewport fit', () => {
       name: 'Cool gadgets, useful tech, and internet finds',
     });
     await expect(headline).toBeVisible({timeout: 20_000});
+    await expect(page.locator('.home-hero-panel-image')).toBeVisible({timeout: 20_000});
 
     const metrics = await page.evaluate(() => {
       const hero = document.querySelector<HTMLElement>('.home-article-hero');

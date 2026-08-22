@@ -4,29 +4,25 @@ import {suppressMembershipCampaign} from './support/public-reader-state';
 test.describe('blog sticky toolbar', () => {
   test('pins post context and jumps to deferred comments', async ({page}) => {
     test.setTimeout(60_000);
-    const consoleErrors: string[] = [];
+    const consoleErrors: Array<{ sourceUrl: string; text: string }> = [];
     const pageErrors: string[] = [];
 
     page.on('console', message => {
       if (message.type() === 'error') {
-        consoleErrors.push(message.text());
+        consoleErrors.push({
+          sourceUrl: message.location().url,
+          text: message.text(),
+        });
       }
     });
     page.on('pageerror', error => pageErrors.push(error.message));
 
     await suppressMembershipCampaign(page);
-    await page.goto('/blog');
-
-    const firstPostLink = page
-      .getByRole('region', {name: 'Published blog posts'})
-      .locator('h2 a')
-      .first();
-    await expect(firstPostLink).toBeVisible({timeout: 20_000});
-    const firstPostHref = await firstPostLink.getAttribute('href');
-
-    expect(firstPostHref).toMatch(/^\/blog\/[^/]+$/);
-    await page.goto(firstPostHref ?? '/blog');
-    await expect(page).toHaveURL(/\/blog\/[^/]+$/);
+    // This committed production-baseline article has multiple real Heading
+    // blocks, a generated contents list, and article media. A fixed contract
+    // route prevents missing headings in another post from bypassing the test.
+    await page.goto('/blog/they-bought-a-full-size-temu-mega-drone');
+    await expect(page).toHaveURL(/\/blog\/they-bought-a-full-size-temu-mega-drone$/);
     await expect(page.getByRole('status', {name: 'Loading latest stories'})).toBeHidden();
 
     const toolbar = page.locator('app-blog-sticky-post-toolbar');
@@ -174,6 +170,10 @@ test.describe('blog sticky toolbar', () => {
     expect(commentsShortcutIsHitTarget).toBe(true);
     expect(commentsShortcutBox).not.toBeNull();
 
+    // Use the supported reduced-motion path so a long, media-rich article
+    // cannot leave this interaction waiting on a browser smooth-scroll
+    // animation while images continue to settle on a mobile viewport.
+    await page.emulateMedia({reducedMotion: 'reduce'});
     await page.mouse.click(
       (commentsShortcutBox?.x ?? 0) + (commentsShortcutBox?.width ?? 0) / 2,
       (commentsShortcutBox?.y ?? 0) + (commentsShortcutBox?.height ?? 0) / 2
@@ -195,9 +195,15 @@ test.describe('blog sticky toolbar', () => {
     await expect(postTop).toBeFocused();
     await expect.poll(async () => Math.round((await postTop.boundingBox())?.y ?? -1)).toBe(80);
 
-    const unexpectedConsoleErrors = consoleErrors.filter(message => (
-      !message.includes('server responded with a status of 401')
-    ));
+    const unexpectedConsoleErrors = consoleErrors
+      .filter(({sourceUrl, text}) => {
+        const knownLocalEmulatorOrigin = sourceUrl.startsWith('http://127.0.0.1:5001/')
+          || sourceUrl.startsWith('http://127.0.0.1:8080/');
+
+        return !text.includes('server responded with a status of 401')
+          && !(knownLocalEmulatorOrigin && text.includes('ERR_CONNECTION_REFUSED'));
+      })
+      .map(({sourceUrl, text}) => sourceUrl ? `${sourceUrl}: ${text}` : text);
 
     expect(unexpectedConsoleErrors).toEqual([]);
     expect(pageErrors).toEqual([]);

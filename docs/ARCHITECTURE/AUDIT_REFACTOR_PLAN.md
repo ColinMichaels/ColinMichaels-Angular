@@ -132,7 +132,7 @@ Largest services/data files:
 | `services/firebase/firestore.service.ts`          |   671 | Split Firestore document CRUD, Storage upload, user profile helpers, and batch helpers. |
 | `components/game/services/file-system.service.ts` |   381 | Separate static tree loading, path operations, mock generation, and UI state.           |
 | `services/firebase/realtime-db.service.ts`        |   345 | Keep as deprecated compatibility adapter until no consumers remain.                     |
-| `components/game/services/application-catalog.ts` |   331 | Move app entries into feature-owned manifests and register through a catalog adapter.   |
+| `core-os/app-registry/application-catalog.ts`     |   331 | Move app entries into feature-owned manifests and register through a catalog adapter.   |
 | `components/game/services/weather.service.ts`     |   309 | Add typed API DTOs and feature boundary.                                                |
 | `components/game/services/settings.service.ts`    |   298 | Split registry, persistence, and form adapter concerns.                                 |
 
@@ -147,13 +147,14 @@ Confirmed duplication:
 - `WindowHeaderComponent`, `AppWindowComponent`, `FinderWindowComponent`, and project demo wrappers contain overlapping window chrome concepts.
 - Tooltip behavior is now packaged under `core-os/tooltip`: live consumers use the package alias while the former directive, service, and overlay locations remain compatibility re-exports. The examples app stays in the legacy feature tree until the separate feature/lab isolation phase.
 - Browser persistence is now packaged under `core-os/storage`: live OS consumers use the package alias while the former service path remains a compatibility re-export. The `AppStorage` database, `keyvalue` object store, existing keys, and Observable API remain stable; failed operations now reach callers, IndexedDB writes wait for transaction completion, and unsafe origin-wide localStorage clearing is disabled.
+- Application runtime ownership is now packaged under `core-os/app-registry`: the manager, lifecycle, registry, catalog, persistence adapter, models, and factory moved together; live consumers use canonical package imports while former game paths identity-re-export the same root tokens. Catalog inversion into feature-owned manifests remains a separate phase.
 - External API demo patterns repeat between SpaceX and Weather components: service call, loading state, detail panel, and external window opening.
 
 Potential duplication or consolidation targets:
 
 - `NotificationService`, `NotificationServerComponent`, and media/icon helpers should form a reusable notification package.
 - `ScrollEffectsModule` and standalone public page animation use should become standalone directives in `shared/scroll`.
-- `StorageService` now owns general OS key/value persistence under `core-os/storage`; `ApplicationStatePersistenceService` remains a narrow legacy localStorage adapter for the open-window `applications` payload until the app-registry migration can preserve and test its legacy `{id}` parsing contract.
+- `StorageService` owns general OS key/value persistence under `core-os/storage`; `ApplicationStatePersistenceService` is now owned by `core-os/app-registry` but deliberately remains a narrow synchronous localStorage adapter for the open-window `applications` payload. Its exact key, string-array writes, and legacy `{id}` parsing contract are preserved and tested.
 
 ## Dead Code and Archive Candidates
 
@@ -556,7 +557,8 @@ Exit criteria:
 - Move app manager, windowing, dock, tray, context menu, tooltip, notifications, terminal, filesystem, and shell components into `core-os`.
 - [x] Move the tooltip directive, lifecycle service, overlay, models, and public exports into `core-os/tooltip`; retain compatibility re-exports and focused lifecycle/accessibility coverage.
 - [x] Move the IndexedDB-first browser storage abstraction into `core-os/storage`; retain the legacy re-export, database, object-store, raw keys, availability-only localStorage fallback, and Observable signatures while making persistence failures explicit.
-- [ ] Move the remaining app manager, windowing, dock, tray, context menu, notifications, terminal, filesystem, and shell components in separately verified batches.
+- [x] Move the application manager, lifecycle, registry, catalog, persistence adapter, models, and factory into `core-os/app-registry`; retain identity-preserving compatibility exports, `APP_ID`, catalog order, and the legacy `applications` payload contract.
+- [ ] Move the remaining windowing, dock, tray, context menu, notifications, terminal, filesystem, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.
 - Preserve app IDs in `APP_ID`.

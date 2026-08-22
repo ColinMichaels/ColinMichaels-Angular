@@ -183,19 +183,23 @@ export class BlogMediaUploadService {
               role,
               altText: options.altText ?? '',
             })).pipe(
-              map(finalized => ({
-                ...progress,
-                progress: 100,
-                storagePath: finalized.storagePath,
-                contentType: finalized.contentType,
-                size: finalized.size,
-                width: finalized.width,
-                height: finalized.height,
-                mediaId: finalized.mediaId,
-                checksum: finalized.checksum,
-                variants: finalized.variants,
-                downloadUrl: finalized.downloadUrl,
-              }))
+              map(finalized => {
+                const deliveryVariant = this.selectDeliveryVariant(finalized.variants, options.role);
+
+                return {
+                  ...progress,
+                  progress: 100,
+                  storagePath: deliveryVariant?.storagePath ?? finalized.storagePath,
+                  contentType: deliveryVariant?.contentType ?? finalized.contentType,
+                  size: deliveryVariant?.size ?? finalized.size,
+                  width: deliveryVariant?.width ?? finalized.width,
+                  height: deliveryVariant?.height ?? finalized.height,
+                  mediaId: finalized.mediaId,
+                  checksum: finalized.checksum,
+                  variants: finalized.variants,
+                  downloadUrl: deliveryVariant?.url ?? finalized.downloadUrl,
+                };
+              })
             );
           })
         );
@@ -209,6 +213,19 @@ export class BlogMediaUploadService {
     }
 
     return null;
+  }
+
+  private selectDeliveryVariant(
+    variants: readonly BlogMediaVariant[],
+    role: BlogMediaUploadOptions['role']
+  ): BlogMediaVariant | undefined {
+    if (role.trim().toLowerCase() !== 'open-graph') {
+      return undefined;
+    }
+
+    return variants
+      .filter(variant => variant.format === 'jpeg')
+      .sort((left, right) => right.width - left.width)[0];
   }
 
   private getSizeValidationError(file: File, maxSizeBytes: number): string | null {

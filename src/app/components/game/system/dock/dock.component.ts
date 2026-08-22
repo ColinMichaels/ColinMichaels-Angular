@@ -2,7 +2,7 @@ import {ChangeDetectionStrategy, Component, effect, inject, signal} from '@angul
 import {CommonModule} from "@angular/common";
 import {toSignal} from '@angular/core/rxjs-interop';
 import {map} from 'rxjs';
-import {ApplicationManagerService} from '../../services/application-manager.service';
+import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
 import {AbbreviationPipe} from '../../../../pipes/abbreviation.pipe';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {

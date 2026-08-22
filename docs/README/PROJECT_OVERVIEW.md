@@ -42,11 +42,11 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 - `src/app/labs`:
   preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
-  OS route boundary plus migrated reusable tooltip and browser-storage packages; legacy desktop/login/boot/sleep URLs remain preserved.
+  OS route boundary plus migrated app-registry, tooltip, and browser-storage packages; legacy desktop/login/boot/sleep URLs remain preserved.
 - `src/app/components/game`:
   legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:
-  legacy runtime logic (app manager, CLI, settings, media, sound, user) pending staged Core OS migration; the former storage path is a compatibility re-export.
+  legacy runtime logic (CLI, settings, media, sound, user) pending staged Core OS migration; former app-registry and storage paths are compatibility re-exports.
 - `src/app/services`:
   shared Firebase/auth services.
 - `src/app/guards`, `src/app/pipes`, `src/app/modules`:
@@ -60,6 +60,6 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 4. `src/app/core-os/os.routes.ts`
 5. `src/app/app.config.ts`
 6. `src/app/components/game/desktop/desktop.component.ts`
-7. `src/app/components/game/services/application-manager.service.ts`
+7. `src/app/core-os/app-registry/application-manager.service.ts`
 8. `src/app/components/game/apps/cli-game/cli-game.component.ts`
 9. `src/app/components/game/services/*` for subsystem behavior

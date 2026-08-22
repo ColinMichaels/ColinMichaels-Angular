@@ -459,8 +459,8 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
     .author-resume-section {
       display: grid;
       gap: 2rem;
-      margin-inline: calc(clamp(1.25rem, 4vw, 3rem) * -1);
-      padding: clamp(2.5rem, 5vw, 4.25rem) clamp(1.25rem, 4vw, 3rem);
+      margin-inline: calc(var(--site-gutter, 1.5rem) * -1);
+      padding: clamp(2.5rem, 5vw, 4.25rem) var(--site-gutter, 1.5rem);
       border-top: 1px solid var(--site-border);
     }
 

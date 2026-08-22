@@ -8,7 +8,7 @@ import {CLIService, CLIResponse} from '../../services/cli.service';
 import {AiChatResponse, AiChatService} from '../../services/ai-chat.service';
 import {GameConfigService} from '../../services/game-config.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {ApplicationManagerService} from '../../services/application-manager.service';
+import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
 import {debounceTime, take} from 'rxjs';
 import {NotificationService} from '../../services/notification.service';
 import {MediaItem} from '../../services/media.service';

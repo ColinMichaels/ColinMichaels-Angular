@@ -39,9 +39,9 @@ import {AdminControlModuleComponent} from '../../../shared/admin-control-module.
         <div class="grid grid-cols-2 gap-2">
           <button
             type="button"
-            class="border border-cyan-400 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-600"
-            [disabled]="isInProgress || isSaving || isDeleting"
-            (click)="generateRequested.emit()"
+            class="border border-cyan-400 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-700 aria-disabled:text-zinc-600 aria-disabled:hover:bg-transparent"
+            [attr.aria-disabled]="isInProgress || isSaving || isDeleting"
+            (click)="requestGeneration()"
           >
             {{ hasActivePreview ? 'Refresh Link' : 'Create Link' }}
           </button>
@@ -149,6 +149,12 @@ export class CmsDraftPreviewPanelComponent {
   public onPreviewError(msg: string): void {
     this.isInProgress = false;
     this.error = msg;
+  }
+
+  protected requestGeneration(): void {
+    if (this.isInProgress || this.isSaving || this.isDeleting) return;
+
+    this.generateRequested.emit();
   }
 
   protected async revokeLink(): Promise<void> {

@@ -1,4 +1,8 @@
-import {AppEntry, AppType} from './application-manager.models';
+import {TestBed} from '@angular/core/testing';
+import {
+  ApplicationManagerService as LegacyApplicationManagerService
+} from '../../components/game/services/application-manager.service';
+import {APP_ID, AppEntry, AppType} from './application-manager.models';
 import {ApplicationLifecycleService} from './application-lifecycle.service';
 import {ApplicationManagerService} from './application-manager.service';
 import {ApplicationRegistryService} from './application-registry.service';
@@ -21,6 +25,46 @@ function createAppEntry(overrides: Partial<AppEntry> = {}): AppEntry {
 }
 
 describe('ApplicationManagerService', () => {
+  afterEach(() => {
+    localStorage.removeItem('applications');
+    TestBed.resetTestingModule();
+  });
+
+  it('resolves canonical and legacy manager imports to one root instance', () => {
+    localStorage.removeItem('applications');
+    TestBed.configureTestingModule({});
+
+    expect(LegacyApplicationManagerService).toBe(ApplicationManagerService);
+    expect(TestBed.inject(LegacyApplicationManagerService)).toBe(TestBed.inject(ApplicationManagerService));
+  });
+
+  it('launches, focuses, persists, and closes an app through the real root runtime graph', () => {
+    localStorage.removeItem('applications');
+    TestBed.configureTestingModule({});
+    const service = TestBed.inject(ApplicationManagerService);
+
+    expect(service.openApplication(APP_ID.about)).toBeTrue();
+    expect(service.openApplication(APP_ID.about)).toBeTrue();
+    expect(service.openApplications.map((app) => app.id)).toEqual([APP_ID.about]);
+    expect(service.getFocusedAppId()).toBe(APP_ID.about);
+    expect(localStorage.getItem('applications')).toBe('["about"]');
+
+    service.closeApplication(APP_ID.about);
+    expect(service.openApplications).toEqual([]);
+    expect(localStorage.getItem('applications')).toBe('[]');
+  });
+
+  it('restores a legacy object snapshot through the real registry and lifecycle graph', () => {
+    localStorage.setItem('applications', JSON.stringify([{id: APP_ID.finder}]));
+    TestBed.configureTestingModule({});
+
+    const service = TestBed.inject(ApplicationManagerService);
+
+    expect(service.openApplications.map((app) => app.id)).toEqual([APP_ID.finder]);
+    expect(service.getFocusedAppId()).toBe(APP_ID.finder);
+    expect(localStorage.getItem('applications')).toBe('["finder"]');
+  });
+
   it('normalizes saved instance ids and restores repeated apps as new instances', () => {
     const app = createAppEntry();
 
