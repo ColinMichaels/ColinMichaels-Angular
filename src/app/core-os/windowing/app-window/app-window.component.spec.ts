@@ -98,6 +98,17 @@ describe('AppWindowComponent', () => {
       .toContain('Embedded content');
   });
 
+  it('forwards later activation parameters without recreating the embedded app', () => {
+    const embedded = fixture.debugElement.query(By.directive(EmbeddedContentComponent));
+    const instance = embedded.componentInstance as EmbeddedContentComponent;
+
+    fixture.componentRef.setInput('params', {path: 'trash'});
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(EmbeddedContentComponent)).componentInstance).toBe(instance);
+    expect(instance.params).toEqual({path: 'trash'});
+  });
+
   it('tracks focus events case-insensitively', () => {
     focus$.next('CLI');
     expect(component.focused).toBeTrue();

@@ -7,7 +7,7 @@ import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {faApple} from '@fortawesome/free-brands-svg-icons';
 import {faBatteryHalf, faMemory} from '@fortawesome/free-solid-svg-icons';
 import {OsUserService} from '../../components/game/services/os-user.service';
-import {FileSystemService, VIEW_MODES} from '../../components/game/services/file-system.service';
+import {FileSystemService, VIEW_MODES} from '@core-os/filesystem';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {SoundPlayerComponent} from '../../components/game/system/sound-player/sound-player.component';
 import {AuthService} from '../../services/auth.service';

@@ -130,7 +130,7 @@ Largest services/data files:
 | File                                              | Lines | Recommendation                                                                          |
 |---------------------------------------------------|------:|-----------------------------------------------------------------------------------------|
 | `services/firebase/firestore.service.ts`          |   671 | Split Firestore document CRUD, Storage upload, user profile helpers, and batch helpers. |
-| `components/game/services/file-system.service.ts` |   381 | Separate static tree loading, path operations, mock generation, and UI state.           |
+| `core-os/filesystem/file-system.service.ts`       |   800+ | Split schema validation/import from transactional operations if the contract expands.   |
 | `services/firebase/realtime-db.service.ts`        |   345 | Keep as deprecated compatibility adapter until no consumers remain.                     |
 | `core-os/app-registry/application-catalog.ts`     |   331 | Move app entries into feature-owned manifests and register through a catalog adapter.   |
 | `components/game/services/weather.service.ts`     |   309 | Add typed API DTOs and feature boundary.                                                |
@@ -565,7 +565,8 @@ Exit criteria:
 - [x] Complete the separately tested context-menu keyboard/focus, recursively filtered submenu, nested-key containment, action-close, focus-restoration, teardown, desktop-event scoping, and root/nested viewport-placement hardening pass; remove the newly exposed no-op desktop submenu instead of presenting placeholder actions.
 - [x] Move the terminal typewriter service and public models into `core-os/terminal`; retain one root constructor through the legacy re-export and keep CLI rendering/commands plus sound/user/persistence dependencies outside the batch.
 - [x] Complete the separate Dock/window behavior phase: derive Dock items from installed/running registry state, use one-click activation, add runtime minimize/restore and focus transfer, implement reduced-motion-safe Dock-targeted animation, and give native window controls close/minimize/zoom semantics without changing the persisted app-ID payload.
-- [ ] Move the remaining notifications, terminal renderer/commands, filesystem, settings, and shell components in separately verified batches.
+- [x] Move the filesystem service and Finder UI into `core-os/filesystem`; retain component identity exports plus a deprecated mock-service facade, import deterministic seed data into validated per-account versioned `AppStorage` snapshots, serialize durable organization/Trash/tag/undo operations with revision conflicts and recovery, and keep host-folder access plus file opening outside the batch.
+- [ ] Move the remaining notifications, terminal renderer/commands, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.
 - Preserve app IDs in `APP_ID`.

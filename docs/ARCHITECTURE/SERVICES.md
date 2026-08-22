@@ -293,7 +293,7 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   the desktop shell through the explicit `@core-os/tray/system-tray.component` path.
 - Current risks:
-  filesystem, sound, clock, and user services remain in the legacy game tree until their independent cohorts move; focused tests protect menu semantics, single-menu state, view-mode synchronization, app actions, memory formatting, authenticated logout success/failure, and compatibility identity.
+  sound, clock, and user services remain in the legacy game tree until their independent cohorts move; the filesystem bridge is canonical under `core-os/filesystem`. Focused tests protect menu semantics, single-menu state, view-mode synchronization, app actions, memory formatting, authenticated logout success/failure, and compatibility identity.
 - Planned cleanup:
   migrate each feature service independently without folding product behavior or visual redesign into the tray ownership move.
 
@@ -332,22 +332,22 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   settings, tasks, OS user migration, patch editor.
 - Current risks:
-  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—and its broad `clear()` operation is deliberately disabled to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
+  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—requires Web Locks for atomic compare-and-set, and deliberately disables broad `clear()` to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
 - Planned cleanup:
   tighten caller value types and define an explicit fallback-key namespace before enabling localStorage bulk clearing, while preserving the `AppStorage` database, `keyvalue` object store, and existing raw keys.
 
-## `file-system.service.ts`
+## `core-os/filesystem/file-system.service.ts`
 
 - Responsibility:
-  virtual file tree, path navigation, finder data/view modes.
+  versioned virtual filesystem, path navigation, serialized Finder mutations, selection, search, tags, Trash, undo, and view modes.
 - Dependencies:
-  `HttpClient` and deterministic seeded mock content.
+  `HttpClient` for the one-time compatibility seed, `AuthService` for UID isolation, and `core-os/storage/StorageService` for device-local persistence and revision compare-and-set.
 - Called by:
-  finder UI and tray view mode controls.
+  canonical Finder UI and tray view-mode controls; the former game-service path is a compatibility export.
 - Current risks:
-  startup content is deterministic and lightweight; the virtual file tree remains development/demo data rather than a durable filesystem contract.
+  the browser-native tree stores metadata only, session undo is intentionally not persisted, and unknown schema versions stop normal Finder work rather than risking overwrite. First-use and reset writes use a presence-aware revision compare: revision-bearing values retain their token, while confirmed revisionless recovery uses revision zero and therefore may replace another revisionless corrupt value but cannot replace a newer valid nonzero revision. Exact JSON-compatible shape, dense arrays, field bounds, and UTF-8 bytes are checked before cloning; malformed localStorage text and stored `null` remain distinguishable from absence through a recovery-only record read; account changes invalidate pending reloads; and each Finder window owns its navigation/selection/dialog state. The UI can export a bounded diagnostic representation and explicitly reset it. Unsupported binary, cyclic, or oversized values are marked incomplete rather than claimed as a lossless JSON backup. Finder does not open file bytes or represent access to the user's Mac.
 - Planned cleanup:
-  keep demo-data generation isolated and add a lazy/static mock gate only if startup profiling shows a regression.
+  add MIME-based application opening and drag/drop/redo as separate phases. Add real-folder access only behind an explicit user gesture, retained permission state, visible reconnect handling, and no-background-upload boundary.
 
 ## `game-config.service.ts`
 

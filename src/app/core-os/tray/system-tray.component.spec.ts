@@ -5,7 +5,7 @@ import {provideRouter} from '@angular/router';
 import {BehaviorSubject, of, Subject, throwError} from 'rxjs';
 
 import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
-import {FileSystemService, VIEW_MODES} from '../../components/game/services/file-system.service';
+import {FileSystemService, VIEW_MODES} from '@core-os/filesystem';
 import {OsUserService} from '../../components/game/services/os-user.service';
 import {AuthService} from '../../services/auth.service';
 

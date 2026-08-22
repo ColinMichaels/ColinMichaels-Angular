@@ -33,7 +33,7 @@ import {TailwindPreviewComponent} from '../../components/game/apps/tailwind-prev
 import {TaskAppComponent} from '../../components/game/apps/task-app/task-app.component';
 import {TooltipExamplesComponent} from '../../components/game/apps/tooltip-examples/tooltip-examples.component';
 import {WeatherComponent} from '../../components/game/apps/weather/weather.component';
-import {FinderAppComponent} from '../../components/game/system/finder-app/finder-app.component';
+import {FinderAppComponent} from '@core-os/filesystem/finder-app/finder-app.component';
 import {SettingsPanelComponent} from '../../components/game/system/settings-panel/settings-panel.component';
 import {APP_ID, AppEntry, AppType} from './application-manager.models';
 

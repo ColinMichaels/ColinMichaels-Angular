@@ -1,7 +1,7 @@
 import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {LoadedSvgIcon, SvgService} from '../../services/svg.service';
 import {NgFor} from '@angular/common';
-import {FileExtensions, SvgIcons} from '../../services/file-system.service';
+import {FileExtensions, SvgIcons} from '@core-os/filesystem';
 import {SvgIconComponent} from '../../templates/app-icon/svg-icon.component';
 import {TooltipDirective} from '@core-os/tooltip';
 import {NotificationService} from '../../services/notification.service';

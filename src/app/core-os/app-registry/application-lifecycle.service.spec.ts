@@ -76,6 +76,18 @@ describe('ApplicationLifecycleService', () => {
     expect(service.getFocusedAppId()).toBe('cli');
   });
 
+  it('delivers new activation params to an existing running app', () => {
+    const app = createAppEntry({id: 'finder', title: 'Finder'});
+    service.openApplication(app.id, app, {path: '/'});
+
+    const result = service.openApplication(app.id, app, {path: 'trash'});
+
+    expect(result).toBeTrue();
+    expect(service.openApplications.length).toBe(1);
+    expect(service.openApplications[0].params).toEqual({path: 'trash'});
+    expect(service.getFocusedAppId()).toBe('finder');
+  });
+
   it('minimizes a focused app, advances focus, and restores it through normal activation', () => {
     const cli = createAppEntry({id: 'cli', title: 'CLI'});
     const finder = createAppEntry({id: 'finder', title: 'Finder'});

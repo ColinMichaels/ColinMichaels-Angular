@@ -42,7 +42,7 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 - `src/app/labs`:
   preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
-  OS route boundary plus migrated app-registry, windowing, dock, tray, context-menu, tooltip, and browser-storage packages. The registry-driven Dock and runtime minimize/restore lifecycle are canonical here; Finder remains a seeded virtual filesystem pending its separately staged storage migration. Legacy desktop/login/boot/sleep URLs remain preserved.
+  OS route boundary plus migrated app-registry, windowing, dock, tray, context-menu, tooltip, browser-storage, and filesystem/Finder packages. The registry-driven Dock, runtime minimize/restore lifecycle, and versioned device-local writable Finder are canonical here; file opening and explicit user-selected host-folder access remain separately staged. Legacy desktop/login/boot/sleep URLs remain preserved.
 - `src/app/components/game`:
   legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:

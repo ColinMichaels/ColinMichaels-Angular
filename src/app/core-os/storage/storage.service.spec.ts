@@ -9,14 +9,29 @@ import {
 
 interface IndexedDbHarness {
   factory: Pick<IDBFactory, 'open'>;
+  getKeyRequest: IDBRequest<IDBValidKey | undefined>;
+  getRequest: IDBRequest<unknown>;
   request: IDBOpenDBRequest;
   transaction: IDBTransaction;
 }
 
 function createIndexedDbHarness(): IndexedDbHarness {
+  const getRequest = {
+    error: null,
+    onerror: null,
+    onsuccess: null,
+    result: undefined,
+  } as unknown as IDBRequest<unknown>;
+  const getKeyRequest = {
+    error: null,
+    onerror: null,
+    onsuccess: null,
+    result: undefined,
+  } as unknown as IDBRequest<IDBValidKey | undefined>;
   const store = {
     put: () => ({}),
-    get: () => ({}),
+    get: () => getRequest,
+    getKey: () => getKeyRequest,
     delete: () => ({}),
     getAllKeys: () => ({}),
     clear: () => ({})
@@ -46,7 +61,7 @@ function createIndexedDbHarness(): IndexedDbHarness {
     open: () => request
   } as unknown as Pick<IDBFactory, 'open'>;
 
-  return {factory, request, transaction};
+  return {factory, getKeyRequest, getRequest, request, transaction};
 }
 
 describe('StorageService', () => {
@@ -68,6 +83,17 @@ describe('StorageService', () => {
     await firstValueFrom(service.setItem(storageKey, value));
 
     expect(await firstValueFrom(service.getItem(storageKey))).toEqual(value);
+  });
+
+  it('atomically compares revisions before replacing a value', async () => {
+    expect(await firstValueFrom(service.compareAndSetItem(storageKey, null, {revision: 0, value: 'first'})))
+      .toBeTrue();
+    expect(await firstValueFrom(service.compareAndSetItem(storageKey, null, {revision: 0, value: 'stale'})))
+      .toBeFalse();
+    expect(await firstValueFrom(service.compareAndSetItem(storageKey, 0, {revision: 1, value: 'second'})))
+      .toBeTrue();
+    expect(await firstValueFrom(service.getItem(storageKey)))
+      .toEqual({revision: 1, value: 'second'});
   });
 
   it('keeps the legacy path on the same Angular service token', () => {
@@ -95,7 +121,11 @@ describe('StorageService', () => {
     const failure = new Error('quota exceeded');
     const strategy = jasmine.createSpyObj<StorageStrategy>('StorageStrategy', [
       'setItem',
+      'compareAndSetItem',
+      'supportsAtomicCompareAndSet',
       'getItem',
+      'getRecoverableItem',
+      'getRecoveryRecord',
       'getAllKeys',
       'removeItem',
       'clear'
@@ -125,6 +155,28 @@ describe('StorageService', () => {
     expect(settled).toBeTrue();
   });
 
+  it('distinguishes missing, null, and undefined IndexedDB recovery values', async () => {
+    const readRecord = async (value: unknown, keyResult: IDBValidKey | undefined) => {
+      const harness = createIndexedDbHarness();
+      const strategy = new IndexedDbStrategy('AppStorage', 'keyvalue', 1, harness.factory);
+      const read = strategy.getRecoveryRecord(storageKey);
+      harness.request.onsuccess?.call(harness.request, new Event('success'));
+      for (let attempt = 0; attempt < 5 && !harness.getRequest.onsuccess; attempt++) {
+        await Promise.resolve();
+      }
+      Object.defineProperty(harness.getRequest, 'result', {value, configurable: true});
+      Object.defineProperty(harness.getKeyRequest, 'result', {value: keyResult, configurable: true});
+      harness.getRequest.onsuccess?.call(harness.getRequest, new Event('success'));
+      harness.getKeyRequest.onsuccess?.call(harness.getKeyRequest, new Event('success'));
+      harness.transaction.oncomplete?.call(harness.transaction, new Event('complete'));
+      return read;
+    };
+
+    expect(await readRecord(undefined, undefined)).toEqual({exists: false, value: null});
+    expect(await readRecord(null, storageKey)).toEqual({exists: true, value: null});
+    expect(await readRecord(undefined, storageKey)).toEqual({exists: true, value: undefined});
+  });
+
   it('propagates an aborted IndexedDB transaction', async () => {
     const harness = createIndexedDbHarness();
     const strategy = new IndexedDbStrategy('AppStorage', 'keyvalue', 1, harness.factory);
@@ -149,5 +201,63 @@ describe('StorageService', () => {
     expect(localStorage.getItem(unrelatedKey)).toBe('keep');
 
     localStorage.removeItem(unrelatedKey);
+  });
+
+  it('only advertises localStorage compare-and-set when Web Locks can serialize it', async () => {
+    const strategy = new LocalStorageStrategy();
+    try {
+      if (strategy.supportsAtomicCompareAndSet()) {
+        expect(await strategy.compareAndSetItem(storageKey, null, {revision: 0})).toBeTrue();
+        expect(await strategy.compareAndSetItem(storageKey, null, {revision: 1})).toBeFalse();
+      } else {
+        await expectAsync(strategy.compareAndSetItem(storageKey, null, {revision: 0}))
+          .toBeRejectedWithError(/Web Locks API/);
+      }
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
+  });
+
+  it('exposes malformed localStorage text only through the recovery read path', async () => {
+    const strategy = new LocalStorageStrategy();
+    localStorage.setItem(storageKey, '{not-json');
+    try {
+      await expectAsync(strategy.getItem(storageKey)).toBeRejected();
+      expect(await strategy.getRecoverableItem(storageKey)).toBe('{not-json');
+      if (strategy.supportsAtomicCompareAndSet()) {
+        expect(await strategy.compareAndSetItem(storageKey, 0, {revision: 1})).toBeTrue();
+      }
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
+  });
+
+  it('preserves a present empty localStorage value for explicit recovery', async () => {
+    const strategy = new LocalStorageStrategy();
+    localStorage.setItem(storageKey, '');
+    try {
+      await expectAsync(strategy.getItem(storageKey)).toBeRejected();
+      expect(await strategy.getRecoverableItem(storageKey)).toBe('');
+      if (strategy.supportsAtomicCompareAndSet()) {
+        expect(await strategy.compareAndSetItem(storageKey, null, {revision: 0})).toBeFalse();
+        expect(await strategy.compareAndSetItem(storageKey, 0, {revision: 1})).toBeTrue();
+      }
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
+  });
+
+  it('distinguishes a present null localStorage value from a missing key during recovery', async () => {
+    const strategy = new LocalStorageStrategy();
+    localStorage.setItem(storageKey, 'null');
+    try {
+      expect(await strategy.getRecoveryRecord(storageKey)).toEqual({exists: true, value: null});
+      if (strategy.supportsAtomicCompareAndSet()) {
+        expect(await strategy.compareAndSetItem(storageKey, null, {revision: 1})).toBeFalse();
+        expect(await strategy.compareAndSetItem(storageKey, 0, {revision: 1})).toBeTrue();
+      }
+    } finally {
+      localStorage.removeItem(storageKey);
+    }
   });
 });

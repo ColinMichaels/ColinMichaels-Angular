@@ -4,13 +4,26 @@ import {from, Observable} from 'rxjs';
 export interface StorageStrategy {
   setItem(key: string, value: unknown): Promise<void>;
 
+  compareAndSetItem(key: string, expectedRevision: number | null, value: unknown): Promise<boolean>;
+
+  supportsAtomicCompareAndSet(): boolean;
+
   getItem<T>(key: string): Promise<T | null>;
+
+  getRecoverableItem<T>(key: string): Promise<T | null>;
+
+  getRecoveryRecord<T>(key: string): Promise<RecoverableStorageValue<T>>;
 
   getAllKeys(): Promise<string[]>;
 
   removeItem(key: string): Promise<void>;
 
   clear(): Promise<void>;
+}
+
+export interface RecoverableStorageValue<T> {
+  exists: boolean;
+  value: T | null;
 }
 
 export const CORE_OS_STORAGE_STRATEGY = new InjectionToken<StorageStrategy>('CORE_OS_STORAGE_STRATEGY');
@@ -34,8 +47,24 @@ export class StorageService {
     return from(this.strategy.setItem(key, value));
   }
 
+  compareAndSetItem(key: string, expectedRevision: number | null, value: unknown): Observable<boolean> {
+    return from(this.strategy.compareAndSetItem(key, expectedRevision, value));
+  }
+
+  supportsAtomicCompareAndSet(): boolean {
+    return this.strategy.supportsAtomicCompareAndSet();
+  }
+
   getItem<T>(key: string): Observable<T | null> {
     return from(this.strategy.getItem<T>(key));
+  }
+
+  getRecoverableItem<T>(key: string): Observable<T | null> {
+    return from(this.strategy.getRecoverableItem<T>(key));
+  }
+
+  getRecoveryRecord<T>(key: string): Observable<RecoverableStorageValue<T>> {
+    return from(this.strategy.getRecoveryRecord<T>(key));
   }
 
   setItems(key: string, values: unknown[]): Observable<void> {
@@ -88,6 +117,53 @@ export class IndexedDbStrategy implements StorageStrategy {
     });
   }
 
+  async compareAndSetItem(
+    key: string,
+    expectedRevision: number | null,
+    value: unknown,
+  ): Promise<boolean> {
+    const db = await this.db;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.storeName, 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.get(key);
+      const keyRequest = store.getKey(key);
+      let matched = false;
+      let valueReady = false;
+      let keyReady = false;
+      const compare = () => {
+        if (!valueReady || !keyReady) {
+          return;
+        }
+        const exists = keyRequest.result !== undefined;
+        const current = request.result as {revision?: unknown} | null | undefined;
+        const currentRevision = !exists
+          ? null
+          : current && typeof current.revision === 'number' ? current.revision : 0;
+        if (!Object.is(currentRevision, expectedRevision)) {
+          return;
+        }
+        store.put(value, key);
+        matched = true;
+      };
+      request.onsuccess = () => {
+        valueReady = true;
+        compare();
+      };
+      keyRequest.onsuccess = () => {
+        keyReady = true;
+        compare();
+      };
+      request.onerror = () => transaction.abort();
+      keyRequest.onerror = () => transaction.abort();
+      this.settleTransaction(transaction, () => resolve(matched), reject);
+    });
+  }
+
+  supportsAtomicCompareAndSet(): boolean {
+    return true;
+  }
+
   async getItem<T>(key: string): Promise<T | null> {
     const db = await this.db;
     return new Promise((resolve, reject) => {
@@ -99,6 +175,35 @@ export class IndexedDbStrategy implements StorageStrategy {
         value = request.result ?? null;
       };
       this.settleTransaction(transaction, () => resolve(value), reject);
+    });
+  }
+
+  async getRecoverableItem<T>(key: string): Promise<T | null> {
+    return this.getItem<T>(key);
+  }
+
+  async getRecoveryRecord<T>(key: string): Promise<RecoverableStorageValue<T>> {
+    const db = await this.db;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(this.storeName, 'readonly');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.get(key);
+      const keyRequest = store.getKey(key);
+      let value: T | undefined;
+      let exists = false;
+      request.onsuccess = () => {
+        value = request.result;
+      };
+      keyRequest.onsuccess = () => {
+        exists = keyRequest.result !== undefined;
+      };
+      request.onerror = () => transaction.abort();
+      keyRequest.onerror = () => transaction.abort();
+      this.settleTransaction(
+        transaction,
+        () => resolve({exists, value: exists ? value as T : null}),
+        reject,
+      );
     });
   }
 
@@ -169,9 +274,67 @@ export class LocalStorageStrategy implements StorageStrategy {
     localStorage.setItem(key, JSON.stringify(value));
   }
 
+  async compareAndSetItem(
+    key: string,
+    expectedRevision: number | null,
+    value: unknown,
+  ): Promise<boolean> {
+    if (!this.supportsAtomicCompareAndSet()) {
+      throw new Error('Atomic localStorage changes require the Web Locks API in this browser.');
+    }
+    return navigator.locks.request(`core-os-storage-cas:${key}`, async () => {
+      const item = localStorage.getItem(key);
+      const exists = item !== null;
+      let current: {revision?: unknown} | string | null = null;
+      if (item !== null) {
+        try {
+          current = JSON.parse(item) as {revision?: unknown};
+        } catch {
+          current = item;
+        }
+      }
+      const currentRevision = !exists
+        ? null
+        : current && typeof current === 'object' && typeof current.revision === 'number' ? current.revision : 0;
+      if (!Object.is(currentRevision, expectedRevision)) {
+        return false;
+      }
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    });
+  }
+
+  supportsAtomicCompareAndSet(): boolean {
+    return typeof navigator !== 'undefined' && !!navigator.locks?.request;
+  }
+
   async getItem<T>(key: string): Promise<T | null> {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    return item === null ? null : JSON.parse(item);
+  }
+
+  async getRecoverableItem<T>(key: string): Promise<T | null> {
+    const item = localStorage.getItem(key);
+    if (item === null) {
+      return null;
+    }
+    try {
+      return JSON.parse(item) as T;
+    } catch {
+      return item as T;
+    }
+  }
+
+  async getRecoveryRecord<T>(key: string): Promise<RecoverableStorageValue<T>> {
+    const item = localStorage.getItem(key);
+    if (item === null) {
+      return {exists: false, value: null};
+    }
+    try {
+      return {exists: true, value: JSON.parse(item) as T};
+    } catch {
+      return {exists: true, value: item as T};
+    }
   }
 
   async removeItem(key: string): Promise<void> {

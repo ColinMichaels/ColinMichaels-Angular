@@ -151,6 +151,9 @@ export class AppWindowComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['params'] && this.componentRef && isParamsAwareComponent(this.componentRef.instance)) {
+      this.componentRef.instance.params = this.params;
+    }
     if (changes['minimized'] && !changes['minimized'].firstChange
       && changes['minimized'].previousValue === true
       && changes['minimized'].currentValue === false) {

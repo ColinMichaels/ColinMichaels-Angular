@@ -71,6 +71,11 @@ export class ApplicationLifecycleService {
     if (app && !forceNewInstance) {
       const existing = this.getMostRecentApplicationInstance(app.id);
       if (existing) {
+        if (args !== undefined) {
+          this.applications.next(this.applications.value.map((application) => (
+            application.id === existing.id ? {...application, params: args} : application
+          )));
+        }
         this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
         return true;
       }
