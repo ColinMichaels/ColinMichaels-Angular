@@ -149,7 +149,7 @@ const GENERATED_FILE_EXTENSIONS: string[] = [
   FileExtensions.zip
 ];
 
-interface UndoRecord {
+interface HistoryRecord {
   label: string;
   snapshot: VirtualFileSystemSnapshot;
   locationId: string;
@@ -161,7 +161,10 @@ export class FileSystemService {
   private snapshot = this.createEmptySnapshot();
   private locationId = ROOT_ID;
   private mutationQueue: Promise<void> = Promise.resolve();
-  private readonly undoStack: UndoRecord[] = [];
+  private readonly undoStack: HistoryRecord[] = [];
+  private readonly redoStack: HistoryRecord[] = [];
+  private historyOperationPending = false;
+  private pendingMutationCount = 0;
   private generatedIdCounter = 0;
   private storageKey: string | null = CORE_OS_FILE_SYSTEM_STORAGE_KEY;
   private identityRevision = 0;
@@ -186,6 +189,12 @@ export class FileSystemService {
 
   private readonly undoLabelSubject = new BehaviorSubject<string | null>(null);
   readonly undoLabel$ = this.undoLabelSubject.asObservable();
+
+  private readonly redoLabelSubject = new BehaviorSubject<string | null>(null);
+  readonly redoLabel$ = this.redoLabelSubject.asObservable();
+
+  private readonly mutationBusySubject = new BehaviorSubject(false);
+  readonly mutationBusy$ = this.mutationBusySubject.asObservable();
 
   private readonly recoveryAvailableSubject = new BehaviorSubject(false);
   readonly recoveryAvailable$ = this.recoveryAvailableSubject.asObservable();
@@ -284,6 +293,10 @@ export class FileSystemService {
 
   getUndoLabel(): string | null {
     return this.undoLabelSubject.value;
+  }
+
+  getRedoLabel(): string | null {
+    return this.redoLabelSubject.value;
   }
 
   hasRecoverableData(): boolean {
@@ -548,49 +561,82 @@ export class FileSystemService {
   }
 
   async undoLastMutation(): Promise<boolean> {
-    await this.initialization;
-    return this.enqueueMutation(async () => {
-      const identityRevision = this.identityRevision;
-      const record = this.undoStack.at(-1);
-      if (!record) {
-        return false;
-      }
-      const storageKey = this.requireStorageKey();
-      const restored = this.cloneSnapshot(record.snapshot);
-      restored.revision = this.nextRevisionToken(this.snapshot.revision);
-      restored.updatedAt = new Date().toISOString();
-      this.validateSnapshot(restored);
-      try {
-        const persisted = await firstValueFrom(
-          this.storage.compareAndSetItem(storageKey, this.snapshot.revision, restored)
-        );
-        if (identityRevision !== this.identityRevision) {
-          return true;
+    return this.restoreHistory('undo');
+  }
+
+  async redoLastMutation(): Promise<boolean> {
+    return this.restoreHistory('redo');
+  }
+
+  private async restoreHistory(direction: 'undo' | 'redo'): Promise<boolean> {
+    if (this.historyOperationPending || this.pendingMutationCount > 0) {
+      return false;
+    }
+    this.historyOperationPending = true;
+    this.beginMutation();
+    try {
+      await this.initialization;
+      return await this.enqueueMutation(async () => {
+        const identityRevision = this.identityRevision;
+        const sourceStack = direction === 'undo' ? this.undoStack : this.redoStack;
+        const targetStack = direction === 'undo' ? this.redoStack : this.undoStack;
+        const record = sourceStack.at(-1);
+        if (!record) {
+          return false;
         }
-        if (!persisted) {
-          const reloaded = await this.reloadAfterConflict(storageKey, identityRevision);
-          if (!reloaded) {
+        const storageKey = this.requireStorageKey();
+        const current: HistoryRecord = {
+          label: record.label,
+          snapshot: this.cloneSnapshot(this.snapshot),
+          locationId: this.locationId,
+          selectedId: this.selectedFileSubject.value?.id,
+        };
+        const restored = this.cloneSnapshot(record.snapshot);
+        restored.revision = this.nextRevisionToken(this.snapshot.revision);
+        restored.updatedAt = new Date().toISOString();
+        this.validateSnapshot(restored);
+        try {
+          const persisted = await firstValueFrom(
+            this.storage.compareAndSetItem(storageKey, this.snapshot.revision, restored)
+          );
+          if (identityRevision !== this.identityRevision) {
             return true;
           }
-          throw new Error('Finder changed in another tab. The latest saved version was loaded; try again.');
+          if (!persisted) {
+            const reloaded = await this.reloadAfterConflict(storageKey, identityRevision);
+            if (!reloaded) {
+              return true;
+            }
+            throw new Error('Finder changed in another tab. The latest saved version was loaded; try again.');
+          }
+          sourceStack.pop();
+          this.pushHistoryRecord(targetStack, current);
+          this.snapshot = restored;
+          this.locationId = record.locationId === TRASH_ID
+            || this.findById(record.locationId, restored.root)?.isDir
+            ? record.locationId
+            : ROOT_ID;
+          const restoredSelection = record.selectedId ? this.findDisplayEntry(record.selectedId) : undefined;
+          this.selectedFileSubject.next(restoredSelection ? this.cloneEntry(restoredSelection) : undefined);
+          this.errorSubject.next(null);
+          this.updateHistoryLabels();
+          this.refreshCurrentDirectory();
+          return true;
+        } catch (error) {
+          if (identityRevision === this.identityRevision) {
+            const fallback = direction === 'undo'
+              ? 'Finder could not undo the last change.'
+              : 'Finder could not redo the last change.';
+            this.errorSubject.next(this.describeError(error, fallback));
+            this.updateHistoryLabels();
+          }
+          throw error;
         }
-        this.undoStack.pop();
-        this.snapshot = restored;
-        this.locationId = record.locationId;
-        const restoredSelection = record.selectedId ? this.findDisplayEntry(record.selectedId) : undefined;
-        this.selectedFileSubject.next(restoredSelection ? this.cloneEntry(restoredSelection) : undefined);
-        this.errorSubject.next(null);
-        this.undoLabelSubject.next(this.undoStack.at(-1)?.label ?? null);
-        this.refreshCurrentDirectory();
-        return true;
-      } catch (error) {
-        if (identityRevision === this.identityRevision) {
-          this.errorSubject.next(this.describeError(error, 'Finder could not undo the last change.'));
-          this.undoLabelSubject.next(this.undoStack.at(-1)?.label ?? null);
-        }
-        throw error;
-      }
-    });
+      });
+    } finally {
+      this.historyOperationPending = false;
+      this.endMutation();
+    }
   }
 
   async exportRecoveryData(): Promise<string> {
@@ -643,8 +689,9 @@ export class FileSystemService {
       this.snapshot = next;
       this.locationId = ROOT_ID;
       this.undoStack.length = 0;
+      this.redoStack.length = 0;
       this.selectedFileSubject.next(undefined);
-      this.undoLabelSubject.next(null);
+      this.updateHistoryLabels();
       this.errorSubject.next(null);
       this.clearRecoveryData();
       this.readySubject.next(true);
@@ -734,60 +781,89 @@ export class FileSystemService {
     label: string,
     mutate: (next: VirtualFileSystemSnapshot) => boolean | void,
   ): Promise<void> {
-    await this.initialization;
-    if (!this.readySubject.value) {
-      throw new Error(this.errorSubject.value ?? 'Finder is not ready.');
-    }
-
-    return this.enqueueMutation(async () => {
-      const identityRevision = this.identityRevision;
-      const storageKey = this.requireStorageKey();
-      const previous = this.cloneSnapshot(this.snapshot);
-      const previousLocationId = this.locationId;
-      const previousSelectedId = this.selectedFileSubject.value?.id;
-      const next = this.cloneSnapshot(this.snapshot);
-      if (mutate(next) === false) {
-        return;
+    this.beginMutation();
+    try {
+      await this.initialization;
+      if (!this.readySubject.value) {
+        throw new Error(this.errorSubject.value ?? 'Finder is not ready.');
       }
-      next.revision = this.nextRevisionToken(previous.revision);
-      next.updatedAt = new Date().toISOString();
-      this.validateSnapshot(next);
 
-      try {
-        const persisted = await firstValueFrom(
-          this.storage.compareAndSetItem(storageKey, previous.revision, next)
-        );
-        if (identityRevision !== this.identityRevision) {
+      return await this.enqueueMutation(async () => {
+        const identityRevision = this.identityRevision;
+        const storageKey = this.requireStorageKey();
+        const previous = this.cloneSnapshot(this.snapshot);
+        const previousLocationId = this.locationId;
+        const previousSelectedId = this.selectedFileSubject.value?.id;
+        const next = this.cloneSnapshot(this.snapshot);
+        if (mutate(next) === false) {
           return;
         }
-        if (!persisted) {
-          const reloaded = await this.reloadAfterConflict(storageKey, identityRevision);
-          if (!reloaded) {
+        next.revision = this.nextRevisionToken(previous.revision);
+        next.updatedAt = new Date().toISOString();
+        this.validateSnapshot(next);
+
+        try {
+          const persisted = await firstValueFrom(
+            this.storage.compareAndSetItem(storageKey, previous.revision, next)
+          );
+          if (identityRevision !== this.identityRevision) {
             return;
           }
-          throw new Error('Finder changed in another tab. The latest saved version was loaded; try again.');
+          if (!persisted) {
+            const reloaded = await this.reloadAfterConflict(storageKey, identityRevision);
+            if (!reloaded) {
+              return;
+            }
+            throw new Error('Finder changed in another tab. The latest saved version was loaded; try again.');
+          }
+        } catch (error) {
+          if (identityRevision === this.identityRevision) {
+            this.errorSubject.next(this.describeError(error, 'Finder could not save the change.'));
+          }
+          throw error;
         }
-      } catch (error) {
-        if (identityRevision === this.identityRevision) {
-          this.errorSubject.next(this.describeError(error, 'Finder could not save the change.'));
-        }
-        throw error;
-      }
 
-      this.undoStack.push({
-        label,
-        snapshot: previous,
-        locationId: previousLocationId,
-        selectedId: previousSelectedId,
+        this.pushHistoryRecord(this.undoStack, {
+          label,
+          snapshot: previous,
+          locationId: previousLocationId,
+          selectedId: previousSelectedId,
+        });
+        this.redoStack.length = 0;
+        this.snapshot = next;
+        this.errorSubject.next(null);
+        this.updateHistoryLabels();
+        this.refreshCurrentDirectory();
       });
-      if (this.undoStack.length > MAX_UNDO_DEPTH) {
-        this.undoStack.shift();
-      }
-      this.snapshot = next;
-      this.errorSubject.next(null);
-      this.undoLabelSubject.next(label);
-      this.refreshCurrentDirectory();
-    });
+    } finally {
+      this.endMutation();
+    }
+  }
+
+  private pushHistoryRecord(stack: HistoryRecord[], record: HistoryRecord): void {
+    stack.push(record);
+    if (stack.length > MAX_UNDO_DEPTH) {
+      stack.shift();
+    }
+  }
+
+  private updateHistoryLabels(): void {
+    this.undoLabelSubject.next(this.undoStack.at(-1)?.label ?? null);
+    this.redoLabelSubject.next(this.redoStack.at(-1)?.label ?? null);
+  }
+
+  private beginMutation(): void {
+    this.pendingMutationCount++;
+    if (this.pendingMutationCount === 1) {
+      this.mutationBusySubject.next(true);
+    }
+  }
+
+  private endMutation(): void {
+    this.pendingMutationCount = Math.max(0, this.pendingMutationCount - 1);
+    if (this.pendingMutationCount === 0) {
+      this.mutationBusySubject.next(false);
+    }
   }
 
   private enqueueMutation<T>(operation: () => Promise<T>): Promise<T> {
@@ -1805,8 +1881,9 @@ export class FileSystemService {
     this.snapshot = this.createEmptySnapshot();
     this.locationId = ROOT_ID;
     this.undoStack.length = 0;
+    this.redoStack.length = 0;
     this.selectedFileSubject.next(undefined);
-    this.undoLabelSubject.next(null);
+    this.updateHistoryLabels();
     this.readySubject.next(false);
     this.clearRecoveryData();
     this.errorSubject.next(null);
@@ -1852,7 +1929,8 @@ export class FileSystemService {
     this.snapshot = normalized;
     this.locationId = this.findById(this.locationId, normalized.root)?.id ?? ROOT_ID;
     this.undoStack.length = 0;
-    this.undoLabelSubject.next(null);
+    this.redoStack.length = 0;
+    this.updateHistoryLabels();
     this.selectedFileSubject.next(undefined);
     this.readySubject.next(true);
     this.clearRecoveryData();

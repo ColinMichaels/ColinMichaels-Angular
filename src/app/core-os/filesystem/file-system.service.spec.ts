@@ -255,11 +255,15 @@ describe('FileSystemService', () => {
     await service.whenReady();
     const projectsA = childByName(service.getCurrentDirectory(), 'Projects');
     await service.createFolder(projectsA.id, 'Account A Only');
+    await service.createFolder(projectsA.id, 'Transient History');
+    expect(await service.undoLastMutation()).toBeTrue();
+    expect(service.getRedoLabel()).toBe('New Folder');
 
     users.next({uid: 'reader-b'});
     expect(service.isReady()).toBeFalse();
     expect(service.getCurrentDirectory().children).toEqual([]);
     expect(service.getSelectedEntry()).toBeUndefined();
+    expect(service.getRedoLabel()).toBeNull();
     await service.whenReady();
     expect(childByName(service.getCurrentDirectory(), 'Projects').children?.map((entry) => entry.name))
       .not.toContain('Account A Only');
@@ -340,7 +344,7 @@ describe('FileSystemService', () => {
     expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('resume.pdf');
   });
 
-  it('undoes persisted mutations in reverse order', async () => {
+  it('undoes and redoes persisted mutations in history order', async () => {
     const {service, strategy} = createService();
     await service.whenReady();
     const projects = childByName(service.getCurrentDirectory(), 'Projects');
@@ -348,15 +352,47 @@ describe('FileSystemService', () => {
     await service.renameEntry(created.id, 'Final');
 
     expect(service.getUndoLabel()).toBe('Rename');
+    expect(service.getRedoLabel()).toBeNull();
     expect(await service.undoLastMutation()).toBeTrue();
     expect(service.getUndoLabel()).toBe('New Folder');
+    expect(service.getRedoLabel()).toBe('Rename');
     expect(service.navigateTo('/Projects')).toBeTrue();
     expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('Draft');
 
     expect(await service.undoLastMutation()).toBeTrue();
     expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).not.toContain('Draft');
     expect(await service.undoLastMutation()).toBeFalse();
+
+    expect(service.getRedoLabel()).toBe('New Folder');
+    expect(await service.redoLastMutation()).toBeTrue();
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('Draft');
+    expect(service.getRedoLabel()).toBe('Rename');
+    expect(await service.redoLastMutation()).toBeTrue();
+    expect(service.navigateTo('/Projects')).toBeTrue();
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('Final');
+    expect(service.getRedoLabel()).toBeNull();
+    expect(await service.redoLastMutation()).toBeFalse();
     expect(strategy.values.has(CORE_OS_FILE_SYSTEM_STORAGE_KEY)).toBeTrue();
+  });
+
+  it('keeps redo available after a failed replay and clears it after a new saved mutation', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    const projects = childByName(service.getCurrentDirectory(), 'Projects');
+    await service.createFolder(projects.id, 'Draft');
+    expect(await service.undoLastMutation()).toBeTrue();
+    expect(service.getRedoLabel()).toBe('New Folder');
+
+    strategy.failWrites = true;
+    await expectAsync(service.redoLastMutation()).toBeRejectedWithError(/quota exceeded/);
+    expect(service.getRedoLabel()).toBe('New Folder');
+    expect(service.navigateTo('/Projects')).toBeTrue();
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).not.toContain('Draft');
+
+    strategy.failWrites = false;
+    await service.createFolder(projects.id, 'Replacement');
+    expect(service.getRedoLabel()).toBeNull();
+    expect(await service.redoLastMutation()).toBeFalse();
   });
 
   it('serializes overlapping mutations against the latest successful snapshot', async () => {
@@ -374,7 +410,7 @@ describe('FileSystemService', () => {
       .toEqual(jasmine.arrayContaining(['First', 'Second']));
   });
 
-  it('serializes undo behind an in-flight mutation', async () => {
+  it('rejects stale-label undo while a normal mutation is pending', async () => {
     const {service, strategy} = createService();
     await service.whenReady();
     const projects = childByName(service.getCurrentDirectory(), 'Projects');
@@ -383,14 +419,40 @@ describe('FileSystemService', () => {
 
     const rename = service.renameEntry(draft.id, 'Final');
     const undo = service.undoLastMutation();
-    await Promise.resolve();
+    expect(await undo).toBeFalse();
     release();
     await rename;
-    expect(await undo).toBeTrue();
 
     expect(service.navigateTo('/Projects')).toBeTrue();
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('Final');
+    expect(service.getUndoLabel()).toBe('Rename');
+    expect(await service.undoLastMutation()).toBeTrue();
+    expect(service.navigateTo('/Projects')).toBeTrue();
     expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('Draft');
-    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).not.toContain('Final');
+  });
+
+  it('allows only one cross-window history replay while persistence is pending', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    const projects = childByName(service.getCurrentDirectory(), 'Projects');
+    await service.createFolder(projects.id, 'First');
+    await service.createFolder(projects.id, 'Second');
+    const mutationBusy: boolean[] = [];
+    service.mutationBusy$.subscribe((busy) => mutationBusy.push(busy));
+    const release = strategy.deferNextCompare();
+
+    const firstFinderUndo = service.undoLastMutation();
+    const secondFinderUndo = service.undoLastMutation();
+    expect(await secondFinderUndo).toBeFalse();
+    release();
+    expect(await firstFinderUndo).toBeTrue();
+
+    expect(service.navigateTo('/Projects')).toBeTrue();
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).toContain('First');
+    expect(service.getCurrentDirectory().children?.map((entry) => entry.name)).not.toContain('Second');
+    expect(service.getUndoLabel()).toBe('New Folder');
+    expect(service.getRedoLabel()).toBe('New Folder');
+    expect(mutationBusy).toEqual([false, true, false]);
   });
 
   it('serializes Move to Trash and Empty Trash in invocation order', async () => {

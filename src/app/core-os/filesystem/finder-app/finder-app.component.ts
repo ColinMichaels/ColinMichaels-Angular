@@ -13,6 +13,7 @@ import {FormsModule} from '@angular/forms';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {
   faArrowRotateLeft,
+  faArrowRotateRight,
   faChevronLeft,
   faChevronRight,
   faCopy,
@@ -101,8 +102,11 @@ export class FinderAppComponent {
   loading = true;
   busy = false;
   statusMessage = 'Loading Finder…';
+  statusAnnouncementSequence = 0;
   errorMessage: string | null = null;
   undoLabel: string | null = null;
+  redoLabel: string | null = null;
+  mutationBusy = false;
   recoveryAvailable = false;
   dialogMode: FinderDialogMode | null = null;
   dialogValue = '';
@@ -218,7 +222,7 @@ export class FinderAppComponent {
         if (ready) {
           this.loading = false;
           this.refreshDirectory();
-          this.statusMessage = 'Finder is ready.';
+          this.announceStatus('Finder is ready.');
           void this.openPendingPath();
         } else {
           this.resetWindowStateForUnavailableFileSystem();
@@ -230,12 +234,18 @@ export class FinderAppComponent {
         this.errorMessage = message;
         if (message && !this.ready) {
           this.loading = false;
-          this.statusMessage = 'Finder is unavailable.';
+          this.announceStatus('Finder is unavailable.');
         }
       });
     this.fileSystemService.undoLabel$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((label) => this.undoLabel = label);
+    this.fileSystemService.redoLabel$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((label) => this.redoLabel = label);
+    this.fileSystemService.mutationBusy$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((busy) => this.mutationBusy = busy);
     this.fileSystemService.recoveryAvailable$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((available) => this.recoveryAvailable = available);
@@ -273,7 +283,7 @@ export class FinderAppComponent {
     this.navHistory.push(target.path);
     this.navIndex = this.navHistory.length - 1;
     this.searchTerm = '';
-    this.statusMessage = `Opened ${this.locationLabel(target.path)}.`;
+    this.announceStatus(`Opened ${this.locationLabel(target.path)}.`);
   }
 
   setViewMode(mode: VIEW_MODES): void {
@@ -307,12 +317,12 @@ export class FinderAppComponent {
     }
     const count = entries.length;
     if (!value.trim()) {
-      this.statusMessage = `Search cleared. ${this.describeItemCount(count)} in this folder.`;
+      this.announceStatus(`Search cleared. ${this.describeItemCount(count)} in this folder.`);
       return;
     }
-    this.statusMessage = count === 0
+    this.announceStatus(count === 0
       ? 'No items match your search.'
-      : `${this.describeItemCount(count)} match your search.`;
+      : `${this.describeItemCount(count)} match your search.`);
   }
 
   entryTabIndex(entry: FileEntry, directory: FileEntry): number {
@@ -323,14 +333,14 @@ export class FinderAppComponent {
 
   selectEntry(entry: FileEntry): void {
     this.selectedFile = entry;
-    this.statusMessage = `${entry.name} selected.`;
+    this.announceStatus(`${entry.name} selected.`);
   }
 
   activateEntry(entry: FileEntry): void {
     this.selectEntry(entry);
     if (entry.isDir) {
       if (this.isTrashView) {
-        this.statusMessage = `${entry.name} must be put back before it can be opened.`;
+        this.announceStatus(`${entry.name} must be put back before it can be opened.`);
       } else {
         this.navigate(entry.path);
         requestAnimationFrame(() => this.focusFirstEntryOrRoot());
@@ -350,16 +360,16 @@ export class FinderAppComponent {
     }) ?? {status: 'unsupported'};
     switch (result.status) {
       case 'content-opened':
-        this.statusMessage = `Opened ${entry.name} in ${result.appTitle}.`;
+        this.announceStatus(`Opened ${entry.name} in ${result.appTitle}.`);
         break;
       case 'metadata-preview-launched':
-        this.statusMessage = `Opened a metadata preview for ${entry.name} in ${result.appTitle}. No file contents are attached.`;
+        this.announceStatus(`Opened a metadata preview for ${entry.name} in ${result.appTitle}. No file contents are attached.`);
         break;
       case 'failed':
-        this.statusMessage = `${result.appTitle ?? 'The selected application'} could not open ${entry.name}.`;
+        this.announceStatus(`${result.appTitle ?? 'The selected application'} could not open ${entry.name}.`);
         break;
       case 'unsupported':
-        this.statusMessage = `No installed application can open ${entry.name}.`;
+        this.announceStatus(`No installed application can open ${entry.name}.`);
         break;
     }
   }
@@ -425,7 +435,7 @@ export class FinderAppComponent {
       link.download = `finder-recovery-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      this.statusMessage = 'Downloaded a local Finder recovery diagnostic.';
+      this.announceStatus('Downloaded a local Finder recovery diagnostic.');
     } catch (error) {
       this.errorMessage = this.describeError(error);
     } finally {
@@ -482,7 +492,7 @@ export class FinderAppComponent {
           break;
       }
       this.refreshDirectory(result?.id);
-      this.statusMessage = `${this.dialogSubmitLabel} completed.`;
+      this.announceStatus(`${this.dialogSubmitLabel} completed.`);
       this.dismissDialog();
     } catch (error) {
       this.errorMessage = this.describeError(error);
@@ -524,12 +534,22 @@ export class FinderAppComponent {
   }
 
   async undo(): Promise<void> {
-    if (!this.undoLabel || this.busy) {
+    if (!this.undoLabel || this.busy || this.mutationBusy) {
       return;
     }
     await this.runAction(
       () => this.fileSystemService.undoLastMutation(),
       `Undid ${this.undoLabel}.`,
+    );
+  }
+
+  async redo(): Promise<void> {
+    if (!this.redoLabel || this.busy || this.mutationBusy) {
+      return;
+    }
+    await this.runAction(
+      () => this.fileSystemService.redoLastMutation(),
+      `Redid ${this.redoLabel}.`,
     );
   }
 
@@ -544,17 +564,26 @@ export class FinderAppComponent {
     if (this.isEditableTarget(event.target)) {
       return;
     }
-    if (event.metaKey && event.shiftKey && event.key.toLowerCase() === 'n') {
+    const commandKey = event.metaKey || event.ctrlKey;
+    if (commandKey && event.shiftKey && event.key.toLowerCase() === 'n') {
       event.preventDefault();
       this.openNewFolderDialog();
       return;
     }
-    if (event.metaKey && event.key.toLowerCase() === 'z') {
+    if (commandKey && event.key.toLowerCase() === 'z') {
       event.preventDefault();
-      void this.undo();
+      if (event.shiftKey) {
+        void this.redo();
+      } else {
+        void this.undo();
+      }
       return;
     }
-    if (event.metaKey && event.key === 'Backspace') {
+    const trashShortcut = (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
+        && event.key === 'Backspace')
+      || (!event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
+        && event.key === 'Delete' && this.isFileWorkspaceTarget(event.target));
+    if (trashShortcut) {
       event.preventDefault();
       void this.moveSelectedToTrash();
     }
@@ -651,7 +680,7 @@ export class FinderAppComponent {
     this.currentPath = target.path;
     this.selectedFile = undefined;
     this.searchTerm = '';
-    this.statusMessage = `Opened ${this.locationLabel(target.path)}.`;
+    this.announceStatus(`Opened ${this.locationLabel(target.path)}.`);
   }
 
   private openDialog(mode: FinderDialogMode, value = ''): void {
@@ -741,11 +770,14 @@ export class FinderAppComponent {
     this.errorMessage = null;
     try {
       const result = await operation();
+      if (result === false) {
+        return result;
+      }
       const preferredSelectionId = result && typeof result === 'object' && 'id' in result
         ? String(result.id)
         : undefined;
       this.refreshDirectory(preferredSelectionId);
-      this.statusMessage = successMessage;
+      this.announceStatus(successMessage);
       if (focusAfterRemoval) {
         requestAnimationFrame(() => this.focusFirstEntryOrRoot());
       }
@@ -800,7 +832,7 @@ export class FinderAppComponent {
       this.navHistory = [directory.path];
       this.navIndex = 0;
       this.searchTerm = '';
-      this.statusMessage = 'The previous folder is no longer available. Finder opened Home.';
+      this.announceStatus('The previous folder is no longer available. Finder opened Home.');
     }
     const selectedId = preferredSelectionId ?? this.selectedFile?.id;
     const entries = this.visibleEntries(directory);
@@ -848,7 +880,7 @@ export class FinderAppComponent {
     this.dialogTargetName = '';
     this.dialogParentId = undefined;
     this.loading = true;
-    this.statusMessage = 'Loading Finder…';
+    this.announceStatus('Loading Finder…');
     if (ownedFocus) {
       requestAnimationFrame(() => root?.focus());
     }
@@ -856,6 +888,11 @@ export class FinderAppComponent {
 
   private describeItemCount(count: number): string {
     return `${count} ${count === 1 ? 'item' : 'items'}`;
+  }
+
+  private announceStatus(message: string): void {
+    this.statusAnnouncementSequence++;
+    this.statusMessage = message;
   }
 
   private matchesSearch(entry: FileEntry, query: string): boolean {
@@ -888,6 +925,10 @@ export class FinderAppComponent {
     return target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable="true"]');
   }
 
+  private isFileWorkspaceTarget(target: EventTarget | null): boolean {
+    return target instanceof HTMLElement && !!target.closest('[role="option"], [role="listbox"]');
+  }
+
   private describeError(error: unknown): string {
     return error instanceof Error && error.message ? error.message : 'Finder could not complete that action.';
   }
@@ -907,6 +948,7 @@ export class FinderAppComponent {
     tag: faTag,
     trash: faTrashCan,
     undo: faArrowRotateLeft,
+    redo: faArrowRotateRight,
   };
   protected readonly viewModes = VIEW_MODES;
 }

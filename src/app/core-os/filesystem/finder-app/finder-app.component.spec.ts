@@ -28,6 +28,8 @@ class FileSystemStub {
   readonly ready$ = new BehaviorSubject(true);
   readonly error$ = new BehaviorSubject<string | null>(null);
   readonly undoLabel$ = new BehaviorSubject<string | null>(null);
+  readonly redoLabel$ = new BehaviorSubject<string | null>(null);
+  readonly mutationBusy$ = new BehaviorSubject(false);
   readonly recoveryAvailable$ = new BehaviorSubject(false);
   sortBy: 'name' | 'type' | 'modified' = 'name';
 
@@ -50,6 +52,7 @@ class FileSystemStub {
   readonly emptyTrash = jasmine.createSpy('emptyTrash').and.resolveTo();
   readonly setTags = jasmine.createSpy('setTags').and.callFake(async (id: string) => this.requireEntry(id));
   readonly undoLastMutation = jasmine.createSpy('undoLastMutation').and.resolveTo(true);
+  readonly redoLastMutation = jasmine.createSpy('redoLastMutation').and.resolveTo(true);
   readonly exportRecoveryData = jasmine.createSpy('exportRecoveryData').and.resolveTo('{}');
   readonly resetToSeed = jasmine.createSpy('resetToSeed').and.resolveTo();
 
@@ -364,6 +367,209 @@ describe('FinderAppComponent', () => {
     Object.defineProperty(typing, 'target', {value: input});
     component.handleKeydown(typing);
     expect(component.dialogMode).toBeNull();
+  });
+
+  it('maps Command or Control Z to undo and Shift Z to redo', fakeAsync(() => {
+    fileSystem.undoLabel$.next('Rename');
+    const undo = new KeyboardEvent('keydown', {key: 'z', metaKey: true, cancelable: true});
+    component.handleKeydown(undo);
+    flushMicrotasks();
+
+    expect(undo.defaultPrevented).toBeTrue();
+    expect(fileSystem.undoLastMutation).toHaveBeenCalledTimes(1);
+
+    fileSystem.redoLabel$.next('Rename');
+    const redo = new KeyboardEvent('keydown', {
+      key: 'Z',
+      ctrlKey: true,
+      shiftKey: true,
+      cancelable: true,
+    });
+    component.handleKeydown(redo);
+    flushMicrotasks();
+
+    expect(redo.defaultPrevented).toBeTrue();
+    expect(fileSystem.redoLastMutation).toHaveBeenCalledTimes(1);
+
+    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type="search"]');
+    const typing = new KeyboardEvent('keydown', {key: 'z', metaKey: true, shiftKey: true});
+    Object.defineProperty(typing, 'target', {value: input});
+    component.handleKeydown(typing);
+    expect(fileSystem.redoLastMutation).toHaveBeenCalledTimes(1);
+  }));
+
+  it('keeps editing and toolbar keys non-destructive while mapping Finder Trash keys', fakeAsync(() => {
+    component.selectEntry(fileSystem.projects);
+
+    const wordDelete = new KeyboardEvent('keydown', {key: 'Backspace', ctrlKey: true, cancelable: true});
+    component.handleKeydown(wordDelete);
+    flushMicrotasks();
+    expect(wordDelete.defaultPrevented).toBeFalse();
+    expect(fileSystem.moveToTrash).not.toHaveBeenCalled();
+
+    for (const modifiers of [{shiftKey: true}, {altKey: true}, {ctrlKey: true}]) {
+      const modifiedMacChord = new KeyboardEvent('keydown', {
+        key: 'Backspace',
+        metaKey: true,
+        cancelable: true,
+        ...modifiers,
+      });
+      component.handleKeydown(modifiedMacChord);
+      flushMicrotasks();
+      expect(modifiedMacChord.defaultPrevented).toBeFalse();
+    }
+    expect(fileSystem.moveToTrash).not.toHaveBeenCalled();
+
+    const macTrash = new KeyboardEvent('keydown', {key: 'Backspace', metaKey: true, cancelable: true});
+    component.handleKeydown(macTrash);
+    flushMicrotasks();
+    expect(macTrash.defaultPrevented).toBeTrue();
+    expect(fileSystem.moveToTrash).toHaveBeenCalledTimes(1);
+
+    const toolbarButton = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Redo');
+    const webTrash = new KeyboardEvent('keydown', {key: 'Delete', cancelable: true});
+    Object.defineProperty(webTrash, 'target', {value: toolbarButton});
+    component.handleKeydown(webTrash);
+    flushMicrotasks();
+    expect(webTrash.defaultPrevented).toBeFalse();
+    expect(fileSystem.moveToTrash).toHaveBeenCalledTimes(1);
+
+    component.selectEntry(fileSystem.projects);
+    const finderOption = (fixture.nativeElement as HTMLElement)
+      .querySelector('[data-finder-entry-id="projects"]');
+    const optionDelete = new KeyboardEvent('keydown', {key: 'Delete', cancelable: true});
+    Object.defineProperty(optionDelete, 'target', {value: finderOption});
+    component.handleKeydown(optionDelete);
+    flushMicrotasks();
+    expect(optionDelete.defaultPrevented).toBeTrue();
+    expect(fileSystem.moveToTrash).toHaveBeenCalledTimes(2);
+  }));
+
+  it('distinguishes consecutive identical redo announcements', async () => {
+    fileSystem.redoLabel$.next('New Folder');
+    const initialSequence = component.statusAnnouncementSequence;
+
+    await component.redo();
+    fixture.detectChanges();
+    const liveRegion = (fixture.nativeElement as HTMLElement).querySelector('[aria-live="polite"]');
+    expect(liveRegion?.textContent).toContain(`Status update ${initialSequence + 1}: Redid New Folder.`);
+
+    await component.redo();
+    fixture.detectChanges();
+    expect(liveRegion?.textContent).toContain(`Status update ${initialSequence + 2}: Redid New Folder.`);
+  });
+
+  it('distinguishes consecutive identical dialog completion announcements', async () => {
+    const initialSequence = component.statusAnnouncementSequence;
+
+    component.openNewFolderDialog();
+    component.dialogValue = 'First Folder';
+    await component.submitDialog();
+    fixture.detectChanges();
+    const liveRegion = (fixture.nativeElement as HTMLElement).querySelector('[aria-live="polite"]');
+    expect(liveRegion?.textContent).toContain(`Status update ${initialSequence + 1}: Create completed.`);
+
+    component.openNewFolderDialog();
+    component.dialogValue = 'Second Folder';
+    await component.submitDialog();
+    fixture.detectChanges();
+    expect(liveRegion?.textContent).toContain(`Status update ${initialSequence + 2}: Create completed.`);
+  });
+
+  it('does not announce a history command that another Finder already consumed', async () => {
+    fileSystem.redoLabel$.next('Rename');
+    fileSystem.redoLastMutation.and.resolveTo(false);
+    const previousMessage = component.statusMessage;
+    const previousSequence = component.statusAnnouncementSequence;
+
+    await component.redo();
+
+    expect(component.statusMessage).toBe(previousMessage);
+    expect(component.statusAnnouncementSequence).toBe(previousSequence);
+  });
+
+  it('announces redo availability without removing the history control from the focus order', () => {
+    fixture.detectChanges();
+    const findRedoButton = () => [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Redo');
+
+    expect(findRedoButton()?.disabled).toBeFalse();
+    expect(findRedoButton()?.getAttribute('aria-disabled')).toBe('true');
+    expect(findRedoButton()?.getAttribute('aria-label')).toBe('Nothing to redo');
+
+    fileSystem.redoLabel$.next('Move to Trash');
+    fixture.detectChanges();
+
+    expect(findRedoButton()?.disabled).toBeFalse();
+    expect(findRedoButton()?.getAttribute('aria-disabled')).toBe('false');
+    expect(findRedoButton()?.getAttribute('aria-label')).toBe('Redo Move to Trash');
+
+    fileSystem.mutationBusy$.next(true);
+    fixture.detectChanges();
+    expect(findRedoButton()?.disabled).toBeFalse();
+    expect(findRedoButton()?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('keeps the focused history control stable while a local replay succeeds', async () => {
+    fileSystem.undoLabel$.next('Rename');
+    let completeReplay!: (value: boolean) => void;
+    fileSystem.undoLastMutation.and.returnValue(new Promise<boolean>((resolve) => {
+      completeReplay = resolve;
+    }));
+    fixture.detectChanges();
+    const undoButton = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Undo') as HTMLButtonElement;
+    undoButton.focus();
+
+    const replay = component.undo();
+    fixture.detectChanges();
+    expect(undoButton.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(undoButton);
+
+    completeReplay(true);
+    await replay;
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(undoButton);
+  });
+
+  it('keeps the focused history control stable while a local replay fails', async () => {
+    fileSystem.redoLabel$.next('Move to Trash');
+    let rejectReplay!: (reason: unknown) => void;
+    fileSystem.redoLastMutation.and.returnValue(new Promise<boolean>((_, reject) => {
+      rejectReplay = reject;
+    }));
+    fixture.detectChanges();
+    const redoButton = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Redo') as HTMLButtonElement;
+    redoButton.focus();
+
+    const replay = component.redo();
+    fixture.detectChanges();
+    expect(redoButton.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(redoButton);
+
+    rejectReplay(new Error('Persistence unavailable'));
+    await replay;
+    fixture.detectChanges();
+    expect(component.errorMessage).toBe('Persistence unavailable');
+    expect(document.activeElement).toBe(redoButton);
+  });
+
+  it('keeps a focused history control stable while another Finder is mutating', () => {
+    fileSystem.redoLabel$.next('New Folder');
+    fixture.detectChanges();
+    const redoButton = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Redo') as HTMLButtonElement;
+    redoButton.focus();
+
+    fileSystem.mutationBusy$.next(true);
+    fixture.detectChanges();
+    redoButton.click();
+
+    expect(redoButton.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(redoButton);
+    expect(fileSystem.redoLastMutation).not.toHaveBeenCalled();
   });
 
   it('contains destructive dialog focus and restores the launcher', fakeAsync(() => {

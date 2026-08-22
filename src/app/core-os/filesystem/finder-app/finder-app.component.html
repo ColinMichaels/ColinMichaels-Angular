@@ -83,10 +83,15 @@
                 class="finder-control px-2 text-xs text-red-300 hover:bg-red-500/10 disabled:text-zinc-600"
                 [disabled]="busy || !(getCurrentDir() | async)?.children?.length"
                 (click)="openEmptyTrashDialog()">Empty Trash…</button>
-        <button type="button" class="finder-control flex items-center gap-1 px-2 text-xs hover:bg-white/10 disabled:text-zinc-600"
-                [disabled]="!undoLabel || busy" [attr.aria-label]="undoLabel ? 'Undo ' + undoLabel : 'Nothing to undo'"
+        <button type="button" class="finder-control flex items-center gap-1 px-2 text-xs hover:bg-white/10 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-600"
+                [attr.aria-disabled]="!undoLabel || busy || mutationBusy" [attr.aria-label]="undoLabel ? 'Undo ' + undoLabel : 'Nothing to undo'"
                 (click)="undo()">
           <fa-icon [icon]="icons.undo" size="sm"></fa-icon><span>Undo</span>
+        </button>
+        <button type="button" class="finder-control flex items-center gap-1 px-2 text-xs hover:bg-white/10 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-600"
+                [attr.aria-disabled]="!redoLabel || busy || mutationBusy" [attr.aria-label]="redoLabel ? 'Redo ' + redoLabel : 'Nothing to redo'"
+                (click)="redo()">
+          <fa-icon [icon]="icons.redo" size="sm"></fa-icon><span>Redo</span>
         </button>
 
         <span class="mx-1 h-5 w-px bg-white/10" aria-hidden="true"></span>
@@ -221,7 +226,9 @@
     </main>
 
     <footer class="flex min-h-7 items-center justify-between border-t border-white/10 bg-zinc-900 px-3 text-[11px] text-zinc-400">
-      <span aria-live="polite">{{ statusMessage }}</span>
+      <span aria-live="polite" aria-atomic="true">
+        <span class="sr-only">Status update {{ statusAnnouncementSequence }}: </span>{{ statusMessage }}
+      </span>
       <span *ngIf="selectedFile" class="max-w-48 truncate">{{ selectedFile.name }}</span>
     </footer>
   </div>
