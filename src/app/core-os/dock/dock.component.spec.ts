@@ -1,13 +1,13 @@
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {provideHttpClient, withXhr} from '@angular/common/http';
 import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {Router} from '@angular/router';
 import {of, throwError} from 'rxjs';
 
 import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
+import {AppEntry, AppType} from '@core-os/app-registry/application-manager.models';
 import {AuthService, AdminAuthorization} from '../../services/auth.service';
 import {NotificationService} from '../../components/game/services/notification.service';
-import {SvgService} from '../../components/game/services/svg.service';
 
 import {DockComponent} from './dock.component';
 
@@ -18,20 +18,39 @@ describe('DockComponent', () => {
   let authService: jasmine.SpyObj<AuthService>;
   let notificationService: jasmine.SpyObj<NotificationService>;
   let router: jasmine.SpyObj<Router>;
-  let svgService: jasmine.SpyObj<SvgService>;
+  let notesApp: AppEntry;
+
+  afterEach(() => {
+    document.querySelectorAll('.test-window-focus-target').forEach((element) => element.remove());
+  });
 
   beforeEach(async () => {
-    appManager = jasmine.createSpyObj<ApplicationManagerService>(
-      'ApplicationManagerService',
-      ['openApplication', 'closeApplication', 'setApplicationFocus', 'getApps', 'getRunningApps'],
-      {registeredApps: [], openApplications: []}
-    );
-    appManager.getApps.and.returnValue([{
+    notesApp = {
       id: 'notes',
       title: 'Notes',
+      component: class {},
       installed: true,
       running: false,
-    } as ReturnType<ApplicationManagerService['getApps']>[number]]);
+      maxInstances: 1,
+      instanceIndex: 0,
+      type: AppType.app,
+      memory: 128,
+    };
+    appManager = jasmine.createSpyObj<ApplicationManagerService>(
+      'ApplicationManagerService',
+      [
+        'openApplication',
+        'closeApplication',
+        'setApplicationFocus',
+        'getApps',
+        'getRunningApps',
+        'getFocusedAppId',
+      ],
+      {registeredApps: [notesApp], openApplications: []}
+    );
+    appManager.getApps.and.returnValue([notesApp]);
+    appManager.openApplication.and.returnValue(true);
+    appManager.getFocusedAppId.and.returnValue('notes');
 
     authService = jasmine.createSpyObj<AuthService>(
       'AuthService',
@@ -50,9 +69,6 @@ describe('DockComponent', () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
     router.navigate.and.resolveTo(true);
     router.navigateByUrl.and.resolveTo(true);
-    svgService = jasmine.createSpyObj<SvgService>('SvgService', ['loadIcons']);
-    svgService.loadIcons.and.returnValue([]);
-
     await TestBed.configureTestingModule({
       imports: [DockComponent],
       providers: [
@@ -62,7 +78,6 @@ describe('DockComponent', () => {
         {provide: AuthService, useValue: authService},
         {provide: NotificationService, useValue: notificationService},
         {provide: Router, useValue: router},
-        {provide: SvgService, useValue: svgService},
       ]
     }).compileComponents();
 
@@ -84,15 +99,55 @@ describe('DockComponent', () => {
     expect(accountState.canManageUsers()).toBeTrue();
   });
 
-  it('uses single-click focus and double-click launch for registered applications', () => {
+  it('uses a single Dock click to launch or focus an installed application', () => {
     const appButton = fixture.nativeElement.querySelector('.dock-icon') as HTMLButtonElement;
 
     appButton.click();
-    appButton.dispatchEvent(new MouseEvent('dblclick', {bubbles: true}));
 
-    expect(appManager.setApplicationFocus).toHaveBeenCalledWith('notes');
-    expect(appManager.openApplication).toHaveBeenCalledWith('notes', undefined);
+    expect(appButton.getAttribute('aria-label')).toBe('Open Notes');
+    expect(appManager.openApplication).toHaveBeenCalledOnceWith('notes', undefined);
+    expect(appManager.setApplicationFocus).not.toHaveBeenCalled();
   });
+
+  it('does not show a launch bounce when the application cannot open', () => {
+    appManager.openApplication.and.returnValue(false);
+
+    component.openApp('notes');
+
+    expect((component as unknown as {openingAppId: () => string | null}).openingAppId()).toBeNull();
+  });
+
+  it('moves keyboard focus from a launch item to the newly opened window', fakeAsync(() => {
+    const windowTarget = document.createElement('button');
+    windowTarget.className = 'test-window-focus-target';
+    windowTarget.dataset['windowId'] = 'notes';
+    document.body.appendChild(windowTarget);
+    const appButton = fixture.nativeElement.querySelector('.dock-icon') as HTMLButtonElement;
+    appButton.focus();
+
+    appButton.click();
+    tick(20);
+
+    expect(document.activeElement).toBe(windowTarget);
+    tick(450);
+  }));
+
+  it('moves keyboard focus from a Dock item to a restored window', fakeAsync(() => {
+    notesApp.running = true;
+    notesApp.minimized = true;
+    fixture.detectChanges();
+    const windowTarget = document.createElement('button');
+    windowTarget.className = 'test-window-focus-target';
+    windowTarget.dataset['windowId'] = 'notes';
+    document.body.appendChild(windowTarget);
+    const appButton = fixture.nativeElement.querySelector('.dock-icon') as HTMLButtonElement;
+    appButton.focus();
+
+    appButton.click();
+    tick(20);
+
+    expect(document.activeElement).toBe(windowTarget);
+  }));
 
   it('delegates close, notification, navigation, and logout actions', () => {
     component.closeApp('notes');
@@ -106,17 +161,12 @@ describe('DockComponent', () => {
     expect(authService.logout).toHaveBeenCalledTimes(1);
   });
 
-  it('loads the preserved static system icon set through the icon service', () => {
-    void component.staticApps;
+  it('labels running and minimized applications from lifecycle state', () => {
+    notesApp.running = true;
+    expect(component.getDockActionLabel(notesApp)).toBe('Show Notes');
 
-    expect(svgService.loadIcons).toHaveBeenCalledWith([
-      'safari',
-      'notes',
-      'calendar',
-      'clock',
-      'phone',
-      'camera',
-    ], 'system');
+    notesApp.minimized = true;
+    expect(component.getDockActionLabel(notesApp)).toBe('Restore Notes');
   });
 
   it('leaves logout failure reporting to the authentication service', () => {

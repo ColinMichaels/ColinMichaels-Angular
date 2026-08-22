@@ -85,6 +85,10 @@ export class ApplicationManagerService {
     this.applicationLifecycle.closeApplication(id);
   }
 
+  minimizeApplication(id: string): boolean {
+    return this.applicationLifecycle.minimizeApplication(id);
+  }
+
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
     return this.applicationLifecycle.setApplicationFocus(id, offsetX, offsetY);
   }
@@ -110,13 +114,15 @@ export class ApplicationManagerService {
   }
 
   private withRuntimeState(app: AppEntry): AppEntry {
-    const runningInstances = this.applicationLifecycle.openApplications
-      .filter((openApp) => openApp.parent?.id === app.id).length;
+    const appInstances = this.applicationLifecycle.openApplications
+      .filter((openApp) => openApp.parent?.id === app.id);
 
     return {
       ...app,
-      running: runningInstances > 0,
-      instanceIndex: runningInstances
+      running: appInstances.length > 0,
+      focused: appInstances.some((instance) => instance.focused),
+      minimized: appInstances.length > 0 && appInstances.every((instance) => instance.minimized),
+      instanceIndex: appInstances.length
     };
   }
 }

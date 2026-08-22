@@ -30,6 +30,7 @@ export class ApplicationFactory {
       offsetX,
       offsetY,
       running: true,
+      minimized: false,
       installed: app.installed,
       instanceIndex: resolvedInstanceIndex,
       focused: app.focused ?? false,

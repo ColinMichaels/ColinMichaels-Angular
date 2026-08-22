@@ -564,6 +564,7 @@ Exit criteria:
 - [x] Move the context-menu models, builder, injection token, overlay service, renderer, and retained registry prototypes into `core-os/context-menu`; keep the desktop on the canonical path and preserve every former path as an identity-compatible export.
 - [x] Complete the separately tested context-menu keyboard/focus, recursively filtered submenu, nested-key containment, action-close, focus-restoration, teardown, desktop-event scoping, and root/nested viewport-placement hardening pass; remove the newly exposed no-op desktop submenu instead of presenting placeholder actions.
 - [x] Move the terminal typewriter service and public models into `core-os/terminal`; retain one root constructor through the legacy re-export and keep CLI rendering/commands plus sound/user/persistence dependencies outside the batch.
+- [x] Complete the separate Dock/window behavior phase: derive Dock items from installed/running registry state, use one-click activation, add runtime minimize/restore and focus transfer, implement reduced-motion-safe Dock-targeted animation, and give native window controls close/minimize/zoom semantics without changing the persisted app-ID payload.
 - [ ] Move the remaining notifications, terminal renderer/commands, filesystem, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.

@@ -18,16 +18,16 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 1. Desktop requests open app via `ApplicationManagerService.openApplication(id)`.
 2. Manager resolves the canonical registry entry and delegates to `ApplicationLifecycleService`.
 3. Lifecycle validates memory and instance limits, then `ApplicationFactory` creates window instance metadata.
-4. Canonical `core-os/windowing/AppWindowComponent` dynamically creates the embedded component, forwards its optional parameters, and owns bounded drag/resize listener teardown.
-5. Focus updates reorder open apps list and tray state; the window subscribes to the same case-insensitive focus stream.
+4. Canonical `core-os/windowing/AppWindowComponent` dynamically creates the embedded component, forwards its optional parameters, and owns bounded drag/resize/zoom plus Dock-animation teardown.
+5. Focus updates immutably reorder open apps and clear background focus flags; minimizing retains the instance and embedded component, marks it hidden, and focuses the next visible window or desktop. Normal activation restores it.
 6. Open base app IDs are persisted to the exact localStorage key `applications`; restoration also accepts historical `{id}` records and numbered instance IDs.
 
 ## Dock and System Tray Flow
 
-1. Canonical `core-os/dock/DockComponent` reads registered/running apps from `ApplicationManagerService`; single click requests focus and double click requests launch through the same manager facade.
+1. Canonical `core-os/dock/DockComponent` derives items from installed general apps, Finder/Settings, and other running system apps. One click delegates normal activation through `ApplicationManagerService`, which opens, focuses, or restores the most recent instance.
 2. Role-gated dock destinations read current authentication and authorization state from `AuthService`; sign-out delegates redirect and failure logging to that service.
 3. Canonical `core-os/tray/SystemTrayComponent` uses the same manager facade for launch, close, and close-all actions while rendering memory from the lifecycle state.
-4. Tray view-mode controls mirror `FileSystemService.viewMode$` and write changes back through `setViewMode`; filesystem persistence and Finder rendering remain owned by their existing cohort.
+4. Tray view-mode controls mirror `FileSystemService.viewMode$` and write changes back through `setViewMode`; the current seeded virtual tree is not durable or local-Mac access, and filesystem persistence plus Finder rendering remain owned by their existing cohort.
 5. Tray logout calls `AuthService.logout()` so Firebase sign-out completes before that service redirects to login; on failure the tray remains open and exposes an alert without claiming the session ended.
 
 ## Context Menu Flow

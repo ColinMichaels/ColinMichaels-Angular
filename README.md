@@ -6,7 +6,7 @@ Angular and Firebase application for ColinMichaels.com. The project combines a p
 
 The application is actively developed on scoped feature branches. Use the [Roadmap](docs/FUTURE_FEATURES/ROADMAP.md) for the current prioritized backlog, the [August 2026 audit action plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md) for the current SEO/discovery release queue, and the [Changelog](docs/CHANGELOG.md) for delivered source work. The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` files are preserved July 2026 snapshots, not the current backlog.
 
-Recent source work includes hardened CMS recovery/import/media flows, reusable Core OS app-registry, windowing, dock, tray, keyboard-complete context-menu, and terminal-typewriter packages, cinematic topic-page heroes, bounded in-body image previews for post listings, a paginated device-local Reading library on Profile, and a repeatable local release gate. Local source, Firebase preview, and production deployment remain separate states.
+Recent source work includes hardened CMS recovery/import/media flows; reusable Core OS app-registry, windowing, Dock, tray, keyboard-complete context-menu, and terminal-typewriter packages; registry-driven one-click Dock activation with window minimize/restore and zoom behavior; cinematic topic-page heroes; bounded in-body image previews for post listings; a paginated device-local Reading library on Profile; and a repeatable local release gate. Local source, Firebase preview, and production deployment remain separate states.
 
 ## What This Project Contains
 
@@ -15,7 +15,7 @@ Recent source work includes hardened CMS recovery/import/media flows, reusable C
 - Protected admin CMS for creating, editing, importing, publishing, and managing blog posts and media.
 - Firebase Functions for crawler-friendly SEO HTML, sitemap/feed generation, YouTube feed loading, and CMS AI helpers.
 - Preserved labs area for experiments and demos, with `/labs` temporarily redirected during its redesign.
-- Browser OS framework for desktop/window/dock/terminal-style systems.
+- Browser OS framework for desktop/window/Dock/terminal-style systems. Its current boundary, macOS-inspired behavior, Finder phases, and extraction criteria are documented in [Core OS Desktop and Finder](docs/ARCHITECTURE/CORE_OS_DESKTOP.md).
 
 ## Current Stack
 

@@ -37,6 +37,7 @@ describe('ApplicationFactory', () => {
       offsetX: 40,
       offsetY: 80,
       running: true,
+      minimized: false,
       installed: true,
       instanceIndex: 1,
       autofit: false,

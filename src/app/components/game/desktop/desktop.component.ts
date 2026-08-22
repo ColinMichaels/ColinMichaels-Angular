@@ -12,6 +12,7 @@ import {
 } from '@core-os/app-registry/application-manager.service';
 import {
   APP_ID,
+  ApplicationInstance,
   WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
@@ -82,6 +83,10 @@ export class DesktopComponent implements OnInit, AfterViewInit {
 
   openApp(id: string, params?: unknown) {
     this.appManager.openApplication(id, params);
+  }
+
+  trackApplicationInstance(_: number, application: ApplicationInstance): string {
+    return application.id;
   }
 
   /** CLICK EVENTS **/

@@ -261,28 +261,28 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 ## `core-os/windowing/app-window/app-window.component.ts`
 
 - Responsibility:
-  generic Core OS window host, dynamic child creation and parameter handoff, focus/close/collapse interaction, pointer drag/resize bounds, and global-listener cleanup.
+  generic Core OS window host, dynamic child creation and parameter handoff, focus/close/minimize/zoom interaction, Dock-targeted animation, pointer drag/resize bounds, and global-listener cleanup.
 - Dependencies:
   `ApplicationManagerService`, the app-registry window constraints, FontAwesome chrome, and the legacy CLI component as the preserved default embedded type.
 - Called by:
   the desktop shell through the explicit `@core-os/windowing/app-window/*` package path.
 - Current risks:
-  drag and resize orchestration remains component-local and relies on document pointer events; focused browser tests now protect viewport clamping, dimension limits, focus, dynamic parameters, pointer completion, and instance-owned listener/selection-lock teardown. The former app-window path is an identity-preserving compatibility export.
+  drag, resize, zoom, and animation orchestration remain component-local and rely on document/browser APIs; focused browser tests protect viewport clamping, dimension limits, focus, dynamic parameters, minimize fallback/targeting, pointer completion, and instance-owned listener/selection-lock/animation teardown. The former app-window path is an identity-preserving compatibility export.
 - Planned cleanup:
   extract drag/resize mechanics into a window controller in a separate behavior-locked refactor, then replace the legacy default embedded type only when application manifests own an explicit component.
 
 ## `core-os/dock/dock.component.ts`
 
 - Responsibility:
-  desktop application launcher, running-state indicators, app focus/open/close delegation, role-aware account destinations, notification testing, sign-out, and Trash entry points.
+  registry-driven desktop application launcher, installed/running selection, running-state indicators, one-click app open/focus/restore delegation, launch bounce, role-aware account destinations, notification testing, sign-out, and Trash entry points.
 - Dependencies:
-  `ApplicationManagerService`, `AuthService`, `NotificationService`, `SvgService`, router navigation, tooltip chrome, and legacy icon/filesystem types pending their own migrations.
+  `ApplicationManagerService` provides the installed/running/focused/minimized application contract; `AuthService`, `NotificationService`, router navigation, tooltip chrome, and Font Awesome provide the explicit shell utilities and presentation edge.
 - Called by:
   the desktop shell through the explicit `@core-os/dock/dock.component` path.
 - Current risks:
-  static icon placeholders and the notification trigger are still explicitly test/demo controls; role visibility remains sourced from `AuthService`, and logout delegates redirect/error logging there without duplicate console output. The former system path is an identity-preserving compatibility export.
+  the notification trigger remains an explicit test/demo control; role visibility remains sourced from `AuthService`, and logout delegates redirect/error logging there without duplicate console output. Installed general apps can overflow into horizontal Dock scrolling at narrow supported widths. The former system path is an identity-preserving compatibility export.
 - Planned cleanup:
-  keep the dock behavior stable until notification and icon ownership move, then replace test-only launcher actions only through an explicitly designed product change.
+  move account utilities into a dedicated Core OS shell adapter and keep future Finder file operations behind the filesystem boundary in `CORE_OS_DESKTOP.md`; replace test-only launcher actions only through an explicitly designed product change.
 
 ## `core-os/tray/system-tray.component.ts`
 

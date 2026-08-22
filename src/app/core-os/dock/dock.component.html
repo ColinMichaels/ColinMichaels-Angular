@@ -1,46 +1,21 @@
 <!-- Desktop-only shell chrome; application content remains owned by its feature. -->
-<div class="fixed bottom-0 w-full flex justify-center mx-auto">
-  <div class="cursor-pointer dock-back w-full mx-8 h-10 rounded-lg rounded-b-none px-4 py-6 shadow-2xl
-  border border-white/10 flex items-center justify-end pointer-events-none">
-
-    <section class="flex space-x-2 overflow-hidden justify-start cursor-not-allowed pointer-events-auto">
-      <ng-container *ngFor="let app of staticApps">
-        <div class="w-7 h-7"  [appTooltip]="'Coming Soon'">
-              <app-svg-icon [icon]="app.icon"/>
-        </div>
-      </ng-container>
-    </section>
-    <!--<section class="flex space-x-2 overflow-hidden pointer-events-auto">
-      &lt;!&ndash; Running Apps Section &ndash;&gt;
-      <ng-container *ngFor="let app of runningGeneralApps">
-          <div class="relative flex-1 shrink min-w-0" [class.-translate-y-1]="app.running" [tooltipShowArrow]="true" [appTooltip]="app.title" >
-            <div (click)="openApp(app.id)"
-                 [class.dock-icon]="!app.icon"
-                 class="pointer-events-auto" [class.-translate-y-1]="app.running">
-              <div *ngIf="app.icon; else showTitle">
-                <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
-              </div>
-              <ng-template #showTitle>
-                <span>{{ app.title | abbreviation }}</span>
-              </ng-template>
-
-            </div>
-            <div *ngIf="app.running" class="absolute -bottom-1 left-3.5 shadow-xl  pointer-events-auto bg-zinc-400 h-1 w-1 rounded-full"></div>
-          </div>
-      </ng-container>
-    </section>-->
-
-    <section class="flex space-x-2 pointer-events-auto">
-      <ng-container *ngFor="let app of generalApps">
+<div class="fixed bottom-2 w-full flex justify-center px-4">
+  <nav aria-label="Dock" class="dock-back flex max-w-[calc(100vw-2rem)] items-center justify-end overflow-visible
+  border border-white/10 px-3 py-2 shadow-2xl pointer-events-auto">
+    <div class="min-w-0 overflow-x-auto overflow-y-hidden -mt-4 px-1 pt-4 pb-1">
+    <section aria-label="Applications" class="flex w-max space-x-2 pointer-events-auto">
+      <ng-container *ngFor="let app of dockApps; trackBy: trackApp">
         <div class="relative">
           <button type="button"
-                  (dblclick)="openApp(app.id)"
-                  (click)="focusApp(app.id)"
+                  (click)="openApp(app.id)"
+                  [attr.data-dock-app-id]="app.id"
+                  [attr.aria-label]="getDockActionLabel(app)"
+                  [attr.aria-current]="app.focused ? 'true' : null"
                   [tooltipShowArrow]="true"
                   [appTooltip]="app.title"
                   [class.dock-icon]="!app.icon"
-                  class="pointer-events-auto border-0 bg-transparent p-0 text-inherit"
-                  [class.-translate-y-1]="app.running">
+                  [class.dock-app-button--opening]="openingAppId() === app.id"
+                  class="dock-app-button pointer-events-auto">
             <div *ngIf="app.icon; else showTitle">
               <fa-icon [icon]="app.icon.svgPath" [class]="app.icon.class"></fa-icon>
             </div>
@@ -50,31 +25,37 @@
 
           </button>
           <div *ngIf="app.running"
-               class="absolute -bottom-1.5 left-3.5 shadow-xl  pointer-events-none bg-zinc-400 h-1 w-1 rounded-full"></div>
+               aria-hidden="true"
+               class="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-zinc-300 shadow-xl pointer-events-none"></div>
         </div>
       </ng-container>
     </section>
+    </div>
     <!-- Divider -->
-    <section class="w-px h-8 mx-4 bg-white/20 backdrop-blur-sm rounded"></section>
+    <span aria-hidden="true" class="w-px h-8 mx-3 bg-white/20 backdrop-blur-sm rounded"></span>
     <!-- /Divider -->
     <section class="flex flex-grow-0 space-x-2 text-zinc-400 cursor-pointer pointer-events-auto">
 
-      <button *ngIf="isSignedIn()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+      <button *ngIf="isSignedIn()" type="button" class="dock-utility-button"
+              aria-label="Profile"
               (click)="navigateTo('/profile')" [tooltipShowArrow]="true" [appTooltip]="'Profile'">
         <fa-icon [icon]="faUser">
         </fa-icon>
       </button>
-      <button *ngIf="canOpenAdmin()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+      <button *ngIf="canOpenAdmin()" type="button" class="dock-utility-button"
+              aria-label="Admin"
               (click)="navigateTo('/admin')" [tooltipShowArrow]="true" [appTooltip]="'Admin'">
         <fa-icon [icon]="faShield">
         </fa-icon>
       </button>
-      <button *ngIf="canManageUsers()" type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+      <button *ngIf="canManageUsers()" type="button" class="dock-utility-button"
+              aria-label="User Management"
               (click)="navigateTo('/admin/users')" [tooltipShowArrow]="true" [appTooltip]="'User Management'">
         <fa-icon [icon]="faUsers">
         </fa-icon>
       </button>
-      <button type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+      <button type="button" class="dock-utility-button"
+              aria-label="Generate test notification"
               (click)="notify()" [tooltipShowArrow]="true" [appTooltip]="'TEST Notifications'">
         <fa-stack [size]="'xs'">
           <fa-icon [icon]="faSquare" [stackItemSize]="'2x'" class="text-purple-800 active:text-yellow-500"></fa-icon>
@@ -82,13 +63,15 @@
                    class="text-yellow-400 hover:text-yellow-500 active:text-purple-800"></fa-icon>
         </fa-stack>
       </button>
-      <button type="button" class="dock-animation border-0 bg-transparent p-0 text-inherit"
+      <button type="button" class="dock-utility-button"
+              aria-label="Log Out"
               (click)="logout()" [tooltipShowArrow]="true" [appTooltip]="'Log Out'">
         <fa-icon [icon]="faRightFromBracket">
         </fa-icon>
       </button>
       <button type="button"
-              class="dock-animation border-0 bg-transparent p-0 text-inherit text-zinc-500/50 hover:text-white/50"
+              class="dock-utility-button text-zinc-500/50 hover:text-white/50"
+              aria-label="Trash"
               (click)="openApp('finder', {path: 'trash'})" (dblclick)="trash('user')" tooltipSize="sm"
               [appTooltip]="'Trash'">
         <fa-icon [icon]="faTrashCan">
@@ -96,5 +79,5 @@
       </button>
 
     </section>
-  </div>
+  </nav>
 </div>

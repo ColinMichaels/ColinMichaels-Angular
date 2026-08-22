@@ -36,12 +36,14 @@ export interface AppEntry {
   windowSize?: AppWindowSize;
   installed: boolean;
   running?: boolean;
+  minimized?: boolean;
   focused?: boolean;
   params?: unknown;
 }
 
 export interface ApplicationInstance extends AppEntry {
   autofit: boolean;
+  minimized: boolean;
   parent: AppEntry | null;
   offsetX?: number;
   offsetY?: number;

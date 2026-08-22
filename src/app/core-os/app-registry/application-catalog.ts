@@ -215,7 +215,7 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
     },
     {
       id: APP_ID.markdown_reader,
-      title: '',
+      title: 'Markdown Reader',
       component: MarkdownReaderComponent,
       installed: true,
       icon: {

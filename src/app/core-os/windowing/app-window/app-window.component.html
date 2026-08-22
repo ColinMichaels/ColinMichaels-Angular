@@ -1,6 +1,11 @@
 <!-- app-window.component.html -->
-<div tabindex="0" *ngIf="isVisible && !isMinimized" #appWindow
+<div tabindex="0" *ngIf="isVisible" #appWindow
      (mousedown)="bringToFront($event)"
+     (focusin)="focusFromKeyboard($event)"
+     role="dialog"
+     [attr.aria-label]="windowLabel"
+     [attr.data-window-id]="id"
+     [class.hidden]="minimized"
      class="app-window fixed flex flex-col max-h-screen rounded-lg border border-white/10 shadow-lg overflow-hidden"
      [class.window-unfocused]="!focused"
      [ngClass]="[
@@ -9,24 +14,33 @@
      ]">
   <!-- Title Bar -->
   <div #header
-       (dblclick)="resetWindowSize()"
+       (dblclick)="onHeaderDoubleClick($event)"
        class="app-window-header relative flex items-center justify-between px-3 py-1  rounded-t-lg cursor-move select-none pointer-events-auto">
-    <div class="flex space-x-1 text-zinc-700 cursor-pointer text-[6px]" (mouseenter)="showSizeIcons = !showSizeIcons"
+    <div class="flex space-x-0.5 text-zinc-700 cursor-pointer text-[6px]" role="group" aria-label="Window controls" (mouseenter)="showSizeIcons = true"
          (mouseleave)="showSizeIcons = false">
-      <fa-stack (click)="closeApp()">
-        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-red-500"></fa-icon>
-        <fa-icon [icon]="faTimes" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
-      </fa-stack>
+      <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border-0 bg-transparent p-0 leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              [attr.aria-label]="'Close ' + windowLabel" (click)="closeApp()">
+        <fa-stack>
+          <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-red-500"></fa-icon>
+          <fa-icon [icon]="faTimes" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
+        </fa-stack>
+      </button>
 
-      <fa-stack (click)="collapseApp()">
-        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-yellow-400"></fa-icon>
-        <fa-icon [icon]="faMinus" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
-      </fa-stack>
+      <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border-0 bg-transparent p-0 leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              [attr.aria-label]="'Minimize ' + windowLabel + ' to Dock'" (click)="minimizeToDock()">
+        <fa-stack>
+          <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-yellow-400"></fa-icon>
+          <fa-icon [icon]="faMinus" stackItemSize="2x" [class.hidden]="!showSizeIcons"></fa-icon>
+        </fa-stack>
+      </button>
 
-      <fa-stack (click)="minimizeToDock()">
-        <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-green-500"></fa-icon>
-        <fa-icon [icon]="faUpRightAndDownLeftFromCenter" stackItemSize="1x" [class.hidden]="!showSizeIcons"></fa-icon>
-      </fa-stack>
+      <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border-0 bg-transparent p-0 leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              [attr.aria-label]="(isMaximized ? 'Restore ' : 'Zoom ') + windowLabel" [disabled]="autoFit" (click)="toggleMaximize()">
+        <fa-stack>
+          <fa-icon [icon]="faCircle" stackItemSize="2x" class="text-green-500"></fa-icon>
+          <fa-icon [icon]="faUpRightAndDownLeftFromCenter" stackItemSize="1x" [class.hidden]="!showSizeIcons"></fa-icon>
+        </fa-stack>
+      </button>
     </div>
     <div class="title text-xs text-white/90 font-medium truncate"
          *ngIf="!autoFit"
