@@ -1,0 +1,58 @@
+<div
+  #menuRoot
+  class="context-menu-surface bg-zinc-900/50 text-white text-xs shadow-md border rounded"
+  role="menu"
+  tabindex="-1"
+  [attr.aria-label]="menuConfig.menuId + ' context menu'"
+  (keydown)="handleKey($event)"
+  (mouseleave)="closeOpenSubmenuTree()"
+>
+  <div class="context-menu-items" (scroll)="onMenuScroll()">
+    <ng-container *ngFor="let item of menuConfig.items">
+      <div *ngIf="item.separator" class="border-t my-1" role="separator"></div>
+      <div
+        *ngIf="!item.separator"
+        role="none"
+        [class.bg-gray-900]="isFocused(item)"
+        (mouseenter)="openSubmenu(item)"
+      >
+        <button
+          #menuItem
+          type="button"
+          role="menuitem"
+          class="w-full text-left px-4 py-2 hover:bg-zinc-700 focus-visible:bg-zinc-700 focus-visible:outline-none disabled:opacity-50"
+          [disabled]="item.disabled"
+          [attr.tabindex]="isFocused(item) && !item.disabled ? 0 : -1"
+          [attr.aria-haspopup]="item.submenu?.length ? 'menu' : null"
+          [attr.aria-expanded]="item.submenu?.length ? isSubmenuOpen(item) : null"
+          [attr.aria-controls]="item.submenu?.length ? submenuId(item) : null"
+          (focus)="syncFocusedItem(item)"
+          (click)="onSelect(item)"
+        >
+          <span *ngIf="item.icon" class="mr-2" aria-hidden="true">{{ item.icon }}</span>
+          {{ item.label }}
+          <span *ngIf="item.submenu?.length" class="float-right" aria-hidden="true">›</span>
+        </button>
+      </div>
+    </ng-container>
+  </div>
+
+  <ng-container *ngFor="let item of menuConfig.items">
+    <div
+      #submenuPanel
+      *ngIf="item.submenu?.length"
+      class="submenu-panel absolute z-10"
+      role="none"
+      [id]="submenuId(item)"
+      [class.hidden]="!isSubmenuOpen(item)"
+      [style.left.px]="submenuHorizontalOffset(item)"
+      [style.top.px]="submenuTopOffset(item)"
+    >
+      <app-context-menu
+        [inputConfig]="submenuConfig(item)"
+        (dismissed)="dismissed.emit()"
+        (navigateBack)="returnFromSubmenu(item)"
+      ></app-context-menu>
+    </div>
+  </ng-container>
+</div>

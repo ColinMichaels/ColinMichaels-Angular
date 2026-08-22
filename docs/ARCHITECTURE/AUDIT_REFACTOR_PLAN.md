@@ -561,7 +561,7 @@ Exit criteria:
 - [x] Move the generic app window and reusable window header into `core-os/windowing`; retain their selectors, inputs, templates, drag/resize/focus/close behavior, and identity-preserving compatibility exports. Keep Finder content with its filesystem-specific application until that independent cohort moves.
 - [x] Move the desktop dock and system tray into `core-os/dock` and `core-os/tray`; retain selectors, templates, app lifecycle controls, role-gated navigation, menus, Finder view modes, system indicators, and identity-preserving compatibility exports.
 - [x] Move the context-menu models, builder, injection token, overlay service, renderer, and retained registry prototypes into `core-os/context-menu`; keep the desktop on the canonical path and preserve every former path as an identity-compatible export.
-- [ ] Complete the separately tested context-menu keyboard/focus, submenu, action-close, focus-restoration, and viewport-placement hardening pass.
+- [x] Complete the separately tested context-menu keyboard/focus, recursively filtered submenu, nested-key containment, action-close, focus-restoration, teardown, desktop-event scoping, and root/nested viewport-placement hardening pass; remove the newly exposed no-op desktop submenu instead of presenting placeholder actions.
 - [ ] Move the remaining notifications, terminal, filesystem, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.

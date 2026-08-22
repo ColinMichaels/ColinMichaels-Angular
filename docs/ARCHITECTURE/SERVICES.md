@@ -306,9 +306,9 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   desktop right-click handling; former game service/component/menu paths re-export the canonical identities for compatibility.
 - Current risks:
-  ownership is migrated, but keyboard entry/focus, submenu rendering, action-close/focus restoration, and viewport-edge placement still require the separately tracked hardening pass.
+  role filtering controls presentation only and must never replace authorization inside an action; registry prototypes remain retained but unused by the live generic renderer.
 - Planned cleanup:
-  finish that behavior pass without changing desktop routes, app actions, role filtering, or device-local state.
+  keep actions synchronous and locally authorized while future consumers adopt the tested Context Menu/Shift+F10, focus, submenu, closure, and restoration contracts.
 
 ## `media.service.ts`
 

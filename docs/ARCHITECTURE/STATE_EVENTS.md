@@ -32,10 +32,12 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 
 ## Context Menu Flow
 
-1. Desktop right-click handling builds the Open, Open With, and Settings menu configuration through canonical `core-os/context-menu/ContextMenuBuilder`.
-2. `ContextMenuService` replaces any prior menu, positions one CDK overlay from the pointer's client coordinates, and injects the configuration into `ContextMenuComponent`.
-3. The transparent backdrop owns the existing outside-click dismissal behavior; no menu state is persisted and Open/Settings continue through `ApplicationManagerService` callbacks.
-4. The ownership move preserves those contracts. Keyboard entry/focus, functional submenu traversal, action-close/focus restoration, and viewport-edge placement remain a separately tracked hardening pass.
+1. A background-only desktop right click focuses the desktop and opens the canonical Open/Settings menu at the pointer. Bubbled events from windows and icons are ignored; the former no-op Open With test submenu is no longer presented.
+2. The focused desktop also opens the same menu through the Context Menu key or Shift+F10 at a stable near-origin position.
+3. `ContextMenuService` replaces any prior menu, captures the invoker, creates a pushed four-way CDK root overlay with an eight-pixel viewport margin, injects the configuration, and focuses the first enabled item.
+4. `ContextMenuComponent` owns named `menu`, `menuitem`, and `separator` semantics; roving Arrow/Home/End focus skips disabled and structural rows, ArrowRight/ArrowLeft stay within their owning level, and recursive submenus flip left or right and vertically fit when opened or resized near an edge.
+5. Action completion, Escape, Tab, the transparent backdrop, page scrolling, navigation, or desktop teardown dismiss the transient overlay. Independent menu-list scrolling, pointer exit, or a sibling branch replacement closes the open submenu tree, clears descendant state, and returns keyboard focus to the visible owning trigger when needed. Service-owned overlay dismissal restores the connected invoker; replacement does not restore focus between overlays.
+6. No menu state is persisted. Open and Settings continue through `ApplicationManagerService`; the builder recursively filters roles and assigns complete parent/path metadata, but that presentation filter remains distinct from authorization inside an action.
 
 ## CLI Command Flow
 

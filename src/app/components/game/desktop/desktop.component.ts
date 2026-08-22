@@ -62,6 +62,7 @@ export class DesktopComponent implements OnInit, AfterViewInit {
               private readonly route: ActivatedRoute,
               private readonly logger: LogService,
               private readonly destroyRef: DestroyRef) {
+    this.destroyRef.onDestroy(() => this.contextMenuService.close());
   }
 
   ngOnInit() {
@@ -91,33 +92,13 @@ export class DesktopComponent implements OnInit, AfterViewInit {
   }
 
   onRightClick(event: MouseEvent) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
     event.preventDefault();
-    this.contextMenuService.open(
-      new ContextMenuBuilder('desktop', ['admin'])
-        .addItem({
-          label: 'Open',
-          action: () => {
-            this.openApp(APP_ID.finder);
-          }}).addSubmenu(
-        'Open With',
-        [
-          {
-            label: 'TEST',
-            action: () => {}
-          },
-          {
-            label: 'TEST2',
-            action: () => {}
-          }
-        ]
-      ).addItem({
-        label: 'Settings',
-        action: () => {
-          this.openApp(APP_ID.system_settings);
-        }
-      }).build(),
-      { x: event.clientX, y: event.clientY }
-    );
+    (event.currentTarget as HTMLElement).focus();
+    this.openDesktopContextMenu({x: event.clientX, y: event.clientY});
   }
 
   onClickWindow(event: MouseEvent) {
@@ -127,10 +108,37 @@ export class DesktopComponent implements OnInit, AfterViewInit {
   }
 
   onDesktopKeyDown(event: KeyboardEvent) {
-    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault();
+      const desktop = event.currentTarget as HTMLElement;
+      const bounds = desktop.getBoundingClientRect();
+      this.openDesktopContextMenu({x: bounds.left + 24, y: bounds.top + 24});
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.appManager.setApplicationFocus('desktop', 0, 0);
     }
+  }
+
+  private openDesktopContextMenu(position: {x: number; y: number}): void {
+    const config = new ContextMenuBuilder('desktop')
+      .addItem({
+        label: 'Open',
+        action: () => this.openApp(APP_ID.finder),
+      })
+      .addItem({
+        label: 'Settings',
+        action: () => this.openApp(APP_ID.system_settings),
+      })
+      .build();
+
+    this.contextMenuService.open(config, position);
   }
 
   onBeginInvestigation() {

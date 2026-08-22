@@ -23,6 +23,10 @@ CSP deliberately remains report-only. Before introducing an enforcing `Content-S
 
 Core OS controls labeled logout must call `AuthService.logout()` rather than only navigating away from the desktop. `AuthService` owns Firebase `signOut()`, successful login-route redirection, and failure logging. Both the dock and system tray use that boundary; a failed tray logout keeps the Apple menu open and exposes an alert without claiming that the active session ended. The tray does not cancel an in-flight logout during component teardown because the underlying Firebase Promise is not cancelable and the service must retain terminal redirect/error ownership. Sleep, Restart, and Shutdown remain navigation controls and must not be presented as evidence of session termination.
 
+### Core OS context-menu boundary
+
+`ContextMenuBuilder` recursively filters role-gated branches before presentation and assigns complete parent/path metadata; this remains client-side presentation logic, not authorization, so actions must still enforce their own trusted boundary. The generic renderer uses Angular text interpolation for labels/icons, never `innerHTML`, and does not persist menu configuration or action data. Desktop background events are scoped so a bubbled context event from a window or control cannot silently substitute the desktop menu. The single CDK root overlay closes on action, Escape, Tab, backdrop, scrolling, navigation, or desktop teardown and restores focus only to a still-connected invoker; nested panels contain their own key events and fit the current viewport.
+
 ## 1) XSS Surface
 
 Current sinks include:

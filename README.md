@@ -6,7 +6,7 @@ Angular and Firebase application for ColinMichaels.com. The project combines a p
 
 The application is actively developed on scoped feature branches. Use the [Roadmap](docs/FUTURE_FEATURES/ROADMAP.md) for the current prioritized backlog, the [August 2026 audit action plan](docs/SEO/AUDITS/2026-08-15/ACTION-PLAN.md) for the current SEO/discovery release queue, and the [Changelog](docs/CHANGELOG.md) for delivered source work. The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` files are preserved July 2026 snapshots, not the current backlog.
 
-Recent source work includes hardened CMS recovery/import/media flows, reusable Core OS app-registry, windowing, dock, tray, and context-menu ownership packages, cinematic topic-page heroes, bounded in-body image previews for post listings, a paginated device-local Reading library on Profile, and a repeatable local release gate. Local source, Firebase preview, and production deployment remain separate states.
+Recent source work includes hardened CMS recovery/import/media flows, reusable Core OS app-registry, windowing, dock, tray, and keyboard-complete context-menu packages, cinematic topic-page heroes, bounded in-body image previews for post listings, a paginated device-local Reading library on Profile, and a repeatable local release gate. Local source, Firebase preview, and production deployment remain separate states.
 
 ## What This Project Contains
 
