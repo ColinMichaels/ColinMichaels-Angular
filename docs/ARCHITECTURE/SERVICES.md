@@ -271,6 +271,32 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   extract drag/resize mechanics into a window controller in a separate behavior-locked refactor, then replace the legacy default embedded type only when application manifests own an explicit component.
 
+## `core-os/dock/dock.component.ts`
+
+- Responsibility:
+  desktop application launcher, running-state indicators, app focus/open/close delegation, role-aware account destinations, notification testing, sign-out, and Trash entry points.
+- Dependencies:
+  `ApplicationManagerService`, `AuthService`, `NotificationService`, `SvgService`, router navigation, tooltip chrome, and legacy icon/filesystem types pending their own migrations.
+- Called by:
+  the desktop shell through the explicit `@core-os/dock/dock.component` path.
+- Current risks:
+  static icon placeholders and the notification trigger are still explicitly test/demo controls; role visibility remains sourced from `AuthService`, and logout delegates redirect/error logging there without duplicate console output. The former system path is an identity-preserving compatibility export.
+- Planned cleanup:
+  keep the dock behavior stable until notification and icon ownership move, then replace test-only launcher actions only through an explicitly designed product change.
+
+## `core-os/tray/system-tray.component.ts`
+
+- Responsibility:
+  desktop menu bar, app lifecycle menus, Finder view-mode bridge, memory display, OS route links, authenticated logout, sound/battery/clock controls, and current OS user label.
+- Dependencies:
+  `ApplicationManagerService`, `AuthService`, `FileSystemService`, `OsUserService`, router links, Clock, Sound Player, and FontAwesome chrome.
+- Called by:
+  the desktop shell through the explicit `@core-os/tray/system-tray.component` path.
+- Current risks:
+  filesystem, sound, clock, and user services remain in the legacy game tree until their independent cohorts move; focused tests protect menu semantics, single-menu state, view-mode synchronization, app actions, memory formatting, authenticated logout success/failure, and compatibility identity.
+- Planned cleanup:
+  migrate each feature service independently without folding product behavior or visual redesign into the tray ownership move.
+
 ## `media.service.ts`
 
 - Responsibility:

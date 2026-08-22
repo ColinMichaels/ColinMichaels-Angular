@@ -33,7 +33,7 @@ Current route group files are boundary markers only. They preserve existing URL 
 ## Major Subsystems
 
 - Desktop shell:
-  desktop surface, tray, dock, route params, context menu.
+  legacy desktop surface and route/context-menu orchestration with canonical `core-os/dock` and `core-os/tray` chrome.
 - Window/app manager:
   app registry, app launch, focus, close, persisted open apps.
 - CLI gameplay:

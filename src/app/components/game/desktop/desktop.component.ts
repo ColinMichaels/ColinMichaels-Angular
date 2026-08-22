@@ -16,10 +16,10 @@ import {
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
 } from '@core-os/app-registry/application-manager.models';
-import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
+import {SystemTrayComponent} from '@core-os/tray/system-tray.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
-import {DockComponent} from '../system/dock/dock.component';
+import {DockComponent} from '@core-os/dock/dock.component';
 import {faCircle, faFile, faInfo, faServer, faTrophy} from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {ActivatedRoute} from '@angular/router';

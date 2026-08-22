@@ -59,7 +59,7 @@ External social delivery remains paused. Calendar composition, provider connecti
 
 ### Core OS Migration
 
-Continue moving reusable implementation from `src/app/components/game` into `src/app/core-os` in small import-only batches. The app-registry/manager, windowing, tooltip, and browser-storage packages are complete; dock, tray, terminal, context menu, notification, settings, filesystem, and shell ownership remain. Preserve routes, persisted local state, window lifecycle, keyboard behavior, and compatibility exports; do not combine a move with a visual rewrite. Window controller extraction remains a separate internal refactor after the ownership migrations so it cannot silently change drag or resize behavior.
+Continue moving reusable implementation from `src/app/components/game` into `src/app/core-os` in small import-only batches. The app-registry/manager, windowing, dock, tray, tooltip, and browser-storage packages are complete; terminal, context menu, notification, settings, filesystem, and shell ownership remain. Preserve routes, persisted local state, window lifecycle, keyboard behavior, and compatibility exports; do not combine a move with a visual rewrite. Window controller extraction remains a separate internal refactor after the ownership migrations so it cannot silently change drag or resize behavior.
 
 ### Cross-Device Reading State
 

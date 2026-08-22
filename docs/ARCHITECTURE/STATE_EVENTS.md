@@ -22,6 +22,14 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 5. Focus updates reorder open apps list and tray state; the window subscribes to the same case-insensitive focus stream.
 6. Open base app IDs are persisted to the exact localStorage key `applications`; restoration also accepts historical `{id}` records and numbered instance IDs.
 
+## Dock and System Tray Flow
+
+1. Canonical `core-os/dock/DockComponent` reads registered/running apps from `ApplicationManagerService`; single click requests focus and double click requests launch through the same manager facade.
+2. Role-gated dock destinations read current authentication and authorization state from `AuthService`; sign-out delegates redirect and failure logging to that service.
+3. Canonical `core-os/tray/SystemTrayComponent` uses the same manager facade for launch, close, and close-all actions while rendering memory from the lifecycle state.
+4. Tray view-mode controls mirror `FileSystemService.viewMode$` and write changes back through `setViewMode`; filesystem persistence and Finder rendering remain owned by their existing cohort.
+5. Tray logout calls `AuthService.logout()` so Firebase sign-out completes before that service redirects to login; on failure the tray remains open and exposes an alert without claiming the session ended.
+
 ## CLI Command Flow
 
 1. User enters command in CLI app.
@@ -45,4 +53,5 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 
 - Unbounded subscriptions in services/components that do not use `takeUntilDestroyed`.
 - Dynamic window/component lifecycle depends on mutable shared objects.
+- Dock/tray feature dependencies still cross into the legacy game tree until notification, filesystem, user, sound, and clock ownership move independently.
 - The default app catalog still imports concrete legacy game components; feature-owned manifests remain a later migration cohort.

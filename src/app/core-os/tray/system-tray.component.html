@@ -1,4 +1,4 @@
-<!-- system-tray.component.html -->
+<!-- Desktop-only shell chrome; feature services remain compatibility dependencies. -->
 <div
   class="fixed top-0 left-0 w-full z-50
   shadow-2xl
@@ -37,7 +37,17 @@
             <a role="menuitem" class="menu-item block" [routerLink]="['/boot']">Restart</a>
             <a role="menuitem" class="menu-item block" [routerLink]="['/']">Shutdown</a>
             <hr class="menu-separator"/>
-          <a role="menuitem" class="menu-item block" [routerLink]="['/']">Log Out {{ userName }}</a>
+          <button type="button"
+                  role="menuitem"
+                  class="menu-item w-full text-left"
+                  [disabled]="logoutPending()"
+                  [attr.aria-busy]="logoutPending()"
+                  (click)="logout()">
+            {{ logoutPending() ? 'Logging Out…' : 'Log Out ' + userName }}
+          </button>
+          <p *ngIf="logoutError()" role="alert" class="px-2 py-1 text-xs text-red-200">
+            {{ logoutError() }}
+          </p>
         </div>
       </section>
       <section class="relative">
