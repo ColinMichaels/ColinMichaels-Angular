@@ -1,7 +1,7 @@
 import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
-import {WindowHeaderComponent} from '../../components/game/templates/app-window/window-header/window-header.component';
+import {WindowHeaderComponent} from '@core-os/windowing/window-header/window-header.component';
 
 @Component({
   selector: 'app-not-found',

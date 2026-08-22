@@ -122,7 +122,7 @@ Largest component files:
 | `components/game/apps/messages/messages.component.ts`                               |   453 | Extract message list, composer, conversation nav, mock data.                         |
 | `components/game/apps/cli-game/cli-game.component.ts`                               |   357 | Move command IO orchestration into facade and keep UI focused.                       |
 | `components/game/system/login-screen/login-screen.component.ts`                     |   348 | Split login/register/reset forms and auth validation helpers.                        |
-| `components/game/templates/app-window/app-window.component.ts`                      |   328 | Extract drag/resize logic into directives or window controller service.              |
+| `core-os/windowing/app-window/app-window.component.ts`                              |   328 | Extract drag/resize logic into directives or window controller service.              |
 | `components/game/desktop/desktop.component.ts`                                      |   268 | Move intro boot sequence and notification seeding into OS startup service.           |
 
 Largest services/data files:
@@ -544,7 +544,7 @@ Exit criteria:
 - Preserve `ScrollEffectsModule` temporarily as a compatibility wrapper.
 - Move public-safe pipes to `shared/pipes`.
 - Extract typed `ProjectFeature` and `ProjectDemo` models from inline home template data.
-- Move `WindowHeaderComponent` only after deciding whether it is shared UI or OS window chrome.
+- [x] Keep `WindowHeaderComponent` as OS window chrome under `core-os/windowing`, with shared and Labs consumers using the public package instead of the legacy game path.
 
 Exit criteria:
 
@@ -558,7 +558,8 @@ Exit criteria:
 - [x] Move the tooltip directive, lifecycle service, overlay, models, and public exports into `core-os/tooltip`; retain compatibility re-exports and focused lifecycle/accessibility coverage.
 - [x] Move the IndexedDB-first browser storage abstraction into `core-os/storage`; retain the legacy re-export, database, object-store, raw keys, availability-only localStorage fallback, and Observable signatures while making persistence failures explicit.
 - [x] Move the application manager, lifecycle, registry, catalog, persistence adapter, models, and factory into `core-os/app-registry`; retain identity-preserving compatibility exports, `APP_ID`, catalog order, and the legacy `applications` payload contract.
-- [ ] Move the remaining windowing, dock, tray, context menu, notifications, terminal, filesystem, settings, and shell components in separately verified batches.
+- [x] Move the generic app window and reusable window header into `core-os/windowing`; retain their selectors, inputs, templates, drag/resize/focus/close behavior, and identity-preserving compatibility exports. Keep Finder content with its filesystem-specific application until that independent cohort moves.
+- [ ] Move the remaining dock, tray, context menu, notifications, terminal, filesystem, settings, and shell components in separately verified batches.
 - Update imports mechanically.
 - Keep `ApplicationManagerService` and route behavior stable.
 - Preserve app IDs in `APP_ID`.

@@ -258,6 +258,19 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   keep this adapter narrow until a separately designed, versioned app-session migration can define reconciliation and rollback semantics.
 
+## `core-os/windowing/app-window/app-window.component.ts`
+
+- Responsibility:
+  generic Core OS window host, dynamic child creation and parameter handoff, focus/close/collapse interaction, pointer drag/resize bounds, and global-listener cleanup.
+- Dependencies:
+  `ApplicationManagerService`, the app-registry window constraints, FontAwesome chrome, and the legacy CLI component as the preserved default embedded type.
+- Called by:
+  the desktop shell through the explicit `@core-os/windowing/app-window/*` package path.
+- Current risks:
+  drag and resize orchestration remains component-local and relies on document pointer events; focused browser tests now protect viewport clamping, dimension limits, focus, dynamic parameters, pointer completion, and instance-owned listener/selection-lock teardown. The former app-window path is an identity-preserving compatibility export.
+- Planned cleanup:
+  extract drag/resize mechanics into a window controller in a separate behavior-locked refactor, then replace the legacy default embedded type only when application manifests own an explicit component.
+
 ## `media.service.ts`
 
 - Responsibility:

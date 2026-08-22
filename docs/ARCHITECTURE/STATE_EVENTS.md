@@ -18,8 +18,8 @@ This codebase uses service-local reactive state (mostly `BehaviorSubject`) inste
 1. Desktop requests open app via `ApplicationManagerService.openApplication(id)`.
 2. Manager resolves the canonical registry entry and delegates to `ApplicationLifecycleService`.
 3. Lifecycle validates memory and instance limits, then `ApplicationFactory` creates window instance metadata.
-4. `AppWindowComponent` dynamically creates embedded component.
-5. Focus updates reorder open apps list and tray state.
+4. Canonical `core-os/windowing/AppWindowComponent` dynamically creates the embedded component, forwards its optional parameters, and owns bounded drag/resize listener teardown.
+5. Focus updates reorder open apps list and tray state; the window subscribes to the same case-insensitive focus stream.
 6. Open base app IDs are persisted to the exact localStorage key `applications`; restoration also accepts historical `{id}` records and numbered instance IDs.
 
 ## CLI Command Flow

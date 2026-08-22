@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
-import {AppWindowComponent} from '../templates/app-window/app-window.component';
+import {AppWindowComponent} from '@core-os/windowing/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
 import {TypewriterService} from '../services/typewriter.service';
 import {SoundService} from '../services/sound.service';
