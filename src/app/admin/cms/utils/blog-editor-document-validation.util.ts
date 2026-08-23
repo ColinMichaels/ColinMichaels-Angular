@@ -21,6 +21,7 @@ const YOUTUBE_EDITOR_BLOCK_TYPE = 'youtubeEmbed';
 const SUNO_EDITOR_BLOCK_TYPE = 'sunoEmbed';
 const APP_EMBED_EDITOR_BLOCK_TYPE = 'appEmbed';
 const LEGACY_CHECKLIST_EDITOR_BLOCK_TYPE = 'checklist';
+const recoverableCompatibilityBlockTypes = new Set(['list', 'chart']);
 
 const knownEditorBlockTypes = new Set([
   'paragraph',
@@ -254,6 +255,12 @@ export function normalizeEditorDocumentForBlogEditor(document: OutputData): Outp
   return {
     ...document,
     blocks: document.blocks.map(block => {
+      const recoveredBlock = recoverSupportedCompatibilityBlock(block);
+
+      if (recoveredBlock) {
+        return recoveredBlock;
+      }
+
       if (isKnownBlogEditorBlockType(block.type)
         || !isJsonObject(block.data)
         || (block.tunes !== undefined && !isJsonObject(block.tunes))) {
@@ -273,6 +280,42 @@ export function normalizeEditorDocumentForBlogEditor(document: OutputData): Outp
       };
     }),
   };
+}
+
+/**
+ * Reopens a preserved list or chart after its payload passes the current
+ * registered tool validation. Invalid or still-unknown payloads remain opaque
+ * and losslessly preserved.
+ */
+function recoverSupportedCompatibilityBlock(block: OutputData['blocks'][number]): OutputData['blocks'][number] | null {
+  if (block.type !== BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE || !isJsonObject(block.data)) {
+    return null;
+  }
+
+  const originalType = block.data['originalType'];
+  const originalData = block.data['originalData'];
+  const originalTunes = block.data['originalTunes'];
+
+  if (typeof originalType !== 'string'
+    || originalType === BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE
+    || !recoverableCompatibilityBlockTypes.has(originalType)
+    || !isJsonObject(originalData)
+    || (originalTunes !== undefined && !isJsonObject(originalTunes))) {
+    return null;
+  }
+
+  const recoveredBlock: OutputData['blocks'][number] = {
+    id: block.id,
+    type: originalType,
+    data: originalData,
+    ...(isJsonObject(originalTunes) ? {tunes: originalTunes} : {}),
+  };
+  const validation = validateEditorDocumentForBlog({blocks: [recoveredBlock]});
+
+  return validation.isValid
+  && validation.diagnostics.every(diagnostic => diagnostic.code !== 'preserved-unsupported-block')
+    ? recoveredBlock
+    : null;
 }
 
 export function isJsonObject(value: unknown): value is BlogJsonObject {

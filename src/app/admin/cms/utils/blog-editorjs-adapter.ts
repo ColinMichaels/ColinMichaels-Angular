@@ -41,6 +41,7 @@ import {
 import {
   BLOG_UNSUPPORTED_EDITOR_BLOCK_TYPE,
   isJsonObject,
+  normalizeEditorDocumentForBlogEditor,
   validateEditorDocumentForBlog,
 } from './blog-editor-document-validation.util';
 
@@ -163,12 +164,14 @@ function toListData(blockData: BlogBlockData): Record<string, unknown> {
       style: blockData.listStyle ?? (blockData.ordered ? 'ordered' : 'unordered'),
       meta: blockData.listMeta ?? {},
       items: blockData.listItems.map(toEditorListItem),
+      ...(blockData.placement ? {placement: blockData.placement} : {}),
     };
   }
 
   return {
-    style: blockData.ordered ? 'ordered' : 'unordered',
+    style: blockData.listStyle ?? (blockData.ordered ? 'ordered' : 'unordered'),
     items: blockData.items ?? [],
+    ...(blockData.placement ? {placement: blockData.placement} : {}),
   };
 }
 
@@ -857,10 +860,92 @@ function extractGalleryImages(value: unknown): readonly BlogGalleryImage[] {
 }
 
 export function createEditorDocument(post: BlogPost): OutputData {
-  return {
+  return normalizeEditorDocumentForBlogEditor({
     time: new Date(post.updatedAt).getTime(),
-    blocks: post.blocks.map(toEditorBlock),
+    blocks: post.blocks.map(block => toEditorBlock(recoverCanonicalListEnvelope(block) ?? block)),
+  });
+}
+
+/**
+ * Portable post packages use canonical list data while compatibility
+ * envelopes retain raw Editor.js data. A loose package imported by an older
+ * build could therefore protect an otherwise valid canonical list. Recover
+ * only the unambiguous canonical list shape and let the normal adapter produce
+ * the Editor.js representation; every other envelope remains untouched.
+ */
+function recoverCanonicalListEnvelope(block: BlogContentBlock): BlogContentBlock | null {
+  const envelope = block.type === 'unsupported' ? block.data.unsupportedBlock : undefined;
+
+  if (!envelope || envelope.originalType !== 'list') {
+    return null;
+  }
+
+  const data = envelope.originalData;
+
+  if (!isRecoverableCanonicalListData(data)) {
+    return null;
+  }
+
+  const candidate: BlogContentBlock = {
+    id: block.id,
+    type: 'list',
+    data: data as BlogBlockData,
+    ...(envelope.originalTunes ? {editorTunes: envelope.originalTunes} : {}),
   };
+  const editorBlock = toEditorBlock(candidate);
+  const validation = validateEditorDocumentForBlog({blocks: [editorBlock]});
+
+  return validation.isValid ? candidate : null;
+}
+
+function isRecoverableCanonicalListData(data: BlogJsonObject): boolean {
+  const allowedKeys = new Set([
+    'placement',
+    'items',
+    'ordered',
+    'listStyle',
+    'listPresentation',
+    'listMeta',
+    'listItems',
+  ]);
+  const hasCanonicalShape = ['ordered', 'listStyle', 'listPresentation', 'listMeta', 'listItems']
+    .some(key => Object.prototype.hasOwnProperty.call(data, key));
+  const items = data['items'];
+  const listItems = data['listItems'];
+  const listStyle = data['listStyle'];
+  const ordered = data['ordered'];
+  const presentation = data['listPresentation'];
+
+  if (!hasCanonicalShape
+    || !Object.keys(data).every(key => allowedKeys.has(key))
+    || (data['placement'] !== undefined && !BLOG_BLOCK_PLACEMENTS.includes(data['placement'] as BlogBlockPlacement))
+    || (items !== undefined && (!Array.isArray(items) || !items.every(item => typeof item === 'string')))
+    || (listItems !== undefined && (!Array.isArray(listItems) || !listItems.every(isRecoverableCanonicalListItem)))
+    || (items !== undefined && listItems !== undefined)
+    || (listStyle !== undefined && !BLOG_LIST_STYLES.includes(listStyle as BlogListStyle))
+    || (ordered !== undefined && typeof ordered !== 'boolean')
+    || (presentation !== undefined && !BLOG_LIST_PRESENTATIONS.includes(presentation as BlogListPresentation))
+    || (data['listMeta'] !== undefined && !isJsonObject(data['listMeta']))
+    || (data['listMeta'] !== undefined && listItems === undefined)
+    || (listStyle === 'checklist' && listItems === undefined)
+    || (presentation === 'steps' && listStyle !== 'ordered' && !(listStyle === undefined && ordered === true))) {
+    return false;
+  }
+
+  return typeof ordered !== 'boolean'
+    || listStyle === undefined
+    || ordered === (listStyle === 'ordered');
+}
+
+function isRecoverableCanonicalListItem(value: unknown): value is BlogListItem {
+  if (!isJsonObject(value) || !Object.keys(value).every(key => ['content', 'meta', 'items'].includes(key))) {
+    return false;
+  }
+
+  return typeof value['content'] === 'string'
+    && isJsonObject(value['meta'])
+    && Array.isArray(value['items'])
+    && value['items'].every(isRecoverableCanonicalListItem);
 }
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {
