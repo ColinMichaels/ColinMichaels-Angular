@@ -1,7 +1,7 @@
 import {fakeAsync, tick} from '@angular/core/testing';
-import {SoundService} from './sound.service';
+import {SoundService} from '../../components/game/services/sound.service';
+import {OsUserService} from '../../components/game/services/os-user.service';
 import {TypewriterService} from './typewriter.service';
-import {OsUserService} from './os-user.service';
 
 describe('TypewriterService', () => {
   let service: TypewriterService;
@@ -60,6 +60,38 @@ describe('TypewriterService', () => {
 
     tick(200);
     expect(service.typedText$.getValue()).toBe('ab\n');
+  }));
+
+  it('preserves OS-user prompt formatting for path-aware lines', fakeAsync(() => {
+    service.enqueueLine({text: 'status', agent: 'user', showPath: true, speed: 1, pauseAfter: 0});
+
+    tick(20);
+
+    expect(service.typedText$.getValue()).toBe('colin@:/ status\n');
+  }));
+
+  it('uses mode-specific sound and configured volume before resetting the active mode', fakeAsync(() => {
+    service.setVolume(0.35);
+    service.enqueueLine({text: 'x', agent: 'system', mode: 'system', speed: 1, pauseAfter: 0});
+
+    expect(service.activeMode$.value).toBe('system');
+    tick(1);
+
+    expect(soundServiceMock.playVariant).toHaveBeenCalledOnceWith(
+      'digital-beep-2.mp3',
+      {volume: 0.35, forceRestart: true}
+    );
+    tick(0);
+    expect(service.activeMode$.value).toBe('default');
+  }));
+
+  it('does not play character sounds while sound is disabled', fakeAsync(() => {
+    service.enableSound(false);
+    service.enqueueLine({text: 'x', agent: 'system', mode: 'glitch', speed: 1, pauseAfter: 0});
+
+    tick(10);
+
+    expect(soundServiceMock.playVariant).not.toHaveBeenCalled();
   }));
 
   it('cancels pending completion timeout when cleared', fakeAsync(() => {

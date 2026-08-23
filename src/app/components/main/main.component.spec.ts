@@ -16,7 +16,7 @@ import {
 } from '../../features/recommended-links/services/recommended-link-repository.service';
 import {YouTubeFeedService} from '../../features/youtube/services/youtube-feed.service';
 import {COLIN_AUTHOR_PROFILE} from '../../shared/author/author-profile.data';
-import {TypewriterService} from '../game/services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {MainComponent} from './main.component';
 import {AuthService} from '../../services/auth.service';
 import {DailyDiscoveryService} from '../../features/daily-discovery/services/daily-discovery.service';

@@ -1,4 +1,4 @@
-import {Component, DestroyRef, HostListener, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
+import {Component, DestroyRef, HostListener, Input, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {MUSIC_PLAYER_SETTING_ID, MusicService, Track} from '../../services/music.service';
 import {NgForOf, NgIf} from '@angular/common';
 import {FaIconComponent} from '@fortawesome/angular-fontawesome';
@@ -13,6 +13,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {SettingsService} from '../../services/settings.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {
+  ApplicationFileDescriptor,
+  isApplicationFileOpenParams,
+} from '@core-os/app-registry/application-manager.models';
 
 @Component({
   selector: 'app-music-player',
@@ -26,16 +30,24 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   ],
 })
 export class MusicPlayerComponent implements OnDestroy {
-  toggleRepeat() {
-      throw new Error('Method not implemented.');
-  }
-
   currentTrack: Track;
   trackLibrary: Track[];
   isPlaying = false;
   currentTime = 0;
   progress = 0;
   volume = 0;
+  muted = false;
+  repeatEnabled = false;
+  finderFile?: ApplicationFileDescriptor;
+
+  @Input()
+  set params(value: unknown) {
+    if (!isApplicationFileOpenParams(value)) {
+      this.finderFile = undefined;
+      return;
+    }
+    this.finderFile = {...value.file};
+  }
 
   constructor(
     public music: MusicService,
@@ -45,6 +57,8 @@ export class MusicPlayerComponent implements OnDestroy {
     this.currentTrack = this.music.currentTrack;
     this.trackLibrary = this.music.library;
     this.volume = this.music.volume();
+    this.muted = this.music.isMuted();
+    this.repeatEnabled = this.music.loopEnabled();
     this.music.trackChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((track) => {
       this.currentTrack = track;
     });
@@ -53,6 +67,8 @@ export class MusicPlayerComponent implements OnDestroy {
       this.progress = (time / this.currentTrack.duration) * 100;
     });
     this.music.isPlayingChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state: boolean) => this.isPlaying = state);
+    this.music.mutedChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state: boolean) => this.muted = state);
+    this.music.volumeChanged.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((volume: number) => this.volume = volume);
   }
 
   play() {
@@ -61,6 +77,14 @@ export class MusicPlayerComponent implements OnDestroy {
 
   pause() {
     this.music.pause();
+  }
+
+  togglePlayback() {
+    if (this.isPlaying) {
+      this.pause();
+    } else {
+      this.play();
+    }
   }
 
   nextTrack() {
@@ -85,22 +109,27 @@ export class MusicPlayerComponent implements OnDestroy {
   onVolumeChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     const volume = Number(value) / 100;
-    this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', volume);
-    this.music.setVolume(volume);
-    // Update volume through sound service
+    this.applyVolume(volume);
   }
 
-  @HostListener('window:keydown', ['$event'])
+  @HostListener('keydown', ['$event'])
   handleKeyboard(event: KeyboardEvent) {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (target?.closest('button, input, select, textarea, a[href], [contenteditable="true"]')) {
+      return;
+    }
     if (event.code === 'Space') {
+      event.preventDefault();
       if (this.isPlaying) {
         this.pause();
       } else {
         this.play();
       }
     } else if (event.code === 'ArrowRight') {
+      event.preventDefault();
       this.nextTrack();
     } else if (event.code === 'ArrowLeft') {
+      event.preventDefault();
       this.prevTrack();
     }
   }
@@ -122,10 +151,14 @@ export class MusicPlayerComponent implements OnDestroy {
      this.selectTrack(track);
   }
 
+  toggleRepeat() {
+    this.repeatEnabled = !this.repeatEnabled;
+    this.music.setLoop(this.repeatEnabled);
+  }
+
   toggleMute() {
-    const volume = this.music.volume();
-    const toggleVolume = this.volume =  volume === 0 ? 1 : 0;
-    this.music.setVolume(toggleVolume);
+    this.muted = !this.muted;
+    this.music.setMuted(this.muted);
   }
 
   ngOnDestroy() {
@@ -133,4 +166,12 @@ export class MusicPlayerComponent implements OnDestroy {
   }
 
   protected readonly faVolumeMute = faVolumeMute;
+
+  private applyVolume(volume: number): void {
+    const normalized = Math.min(1, Math.max(0, volume));
+    this.volume = normalized;
+    this.muted = false;
+    this.settingsService.updateSettingSetWithSingleValue(MUSIC_PLAYER_SETTING_ID, 'volume', normalized);
+    this.music.setVolume(normalized);
+  }
 }

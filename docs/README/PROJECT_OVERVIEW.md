@@ -42,11 +42,11 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 - `src/app/labs`:
   preserved experiments and route-backed playgrounds; the `/labs` index is paused while `/background` remains available.
 - `src/app/core-os`:
-  OS route boundary plus migrated app-registry, tooltip, and browser-storage packages; legacy desktop/login/boot/sleep URLs remain preserved.
+  OS route boundary plus migrated app-registry, windowing, dock, tray, context-menu, tooltip, browser-storage, and filesystem/Finder packages. The registry-driven Dock, runtime minimize/restore lifecycle, versioned device-local writable Finder with bounded session undo/redo, and metadata-only file-association dispatch are canonical here; opening actual bytes and explicit user-selected host-folder access remain separately staged. Legacy desktop/login/boot/sleep URLs remain preserved.
 - `src/app/components/game`:
   legacy desktop simulation, apps, system UI, and most game services pending folder migration.
 - `src/app/components/game/services`:
-  legacy runtime logic (CLI, settings, media, sound, user) pending staged Core OS migration; former app-registry and storage paths are compatibility re-exports.
+  legacy runtime logic (CLI, settings, media, sound, user) pending staged Core OS migration; former app-registry, storage, and context-menu service paths are compatibility re-exports. The former window, dock, system-tray, context-menu renderer, and retained menu-registry prototype paths separately re-export their canonical Core OS packages.
 - `src/app/services`:
   shared Firebase/auth services.
 - `src/app/guards`, `src/app/pipes`, `src/app/modules`:
@@ -61,5 +61,9 @@ For current priorities, use the [Roadmap](../FUTURE_FEATURES/ROADMAP.md). Dated 
 5. `src/app/app.config.ts`
 6. `src/app/components/game/desktop/desktop.component.ts`
 7. `src/app/core-os/app-registry/application-manager.service.ts`
-8. `src/app/components/game/apps/cli-game/cli-game.component.ts`
-9. `src/app/components/game/services/*` for subsystem behavior
+8. `src/app/core-os/windowing/app-window/app-window.component.ts`
+9. `src/app/core-os/dock/dock.component.ts`
+10. `src/app/core-os/tray/system-tray.component.ts`
+11. `src/app/core-os/context-menu/context-menu.service.ts`
+12. `src/app/components/game/apps/cli-game/cli-game.component.ts`
+13. `src/app/components/game/services/*` for subsystem behavior

@@ -71,6 +71,11 @@ export class ApplicationLifecycleService {
     if (app && !forceNewInstance) {
       const existing = this.getMostRecentApplicationInstance(app.id);
       if (existing) {
+        if (args !== undefined) {
+          this.applications.next(this.applications.value.map((application) => (
+            application.id === existing.id ? {...application, params: args} : application
+          )));
+        }
         this.setApplicationFocus(existing.id, existing.offsetX, existing.offsetY);
         return true;
       }
@@ -129,8 +134,18 @@ export class ApplicationLifecycleService {
       return;
     }
 
+    const wasFocused = this.focusedAppId.getValue() === id;
     const remainingApplications = this.applications.getValue().filter((app) => app.id !== id);
     this.applications.next(remainingApplications);
+
+    if (wasFocused) {
+      const nextApplication = [...remainingApplications].reverse().find((openApp) => !openApp.minimized);
+      if (nextApplication) {
+        this.setApplicationFocus(nextApplication.id, nextApplication.offsetX, nextApplication.offsetY);
+      } else {
+        this.focusedAppId.next('desktop');
+      }
+    }
 
     this.saveOpenApplications();
   }
@@ -139,10 +154,40 @@ export class ApplicationLifecycleService {
     this.applications.getValue().forEach((app) => this.closeApplication(app.id));
   }
 
+  minimizeApplication(id: string): boolean {
+    const application = this.getAppByID(id);
+    if (!application || application.minimized) {
+      return false;
+    }
+
+    const wasFocused = this.focusedAppId.getValue() === id;
+    const minimizedApplications = this.applications.value.map((openApp) => ({
+      ...openApp,
+      focused: openApp.id === id ? false : openApp.focused,
+      minimized: openApp.id === id ? true : openApp.minimized,
+    }));
+    this.applications.next(minimizedApplications);
+
+    if (wasFocused) {
+      const nextApplication = [...minimizedApplications]
+        .reverse()
+        .find((openApp) => !openApp.minimized);
+
+      if (nextApplication) {
+        this.setApplicationFocus(nextApplication.id, nextApplication.offsetX, nextApplication.offsetY);
+      } else {
+        this.focusedAppId.next('desktop');
+      }
+    }
+
+    return true;
+  }
+
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
     const application = this.applications.value.find((app) => app.id === id);
     if (id === 'desktop') {
       this.focusedAppId.next(id);
+      this.applications.next(this.applications.value.map((openApp) => ({...openApp, focused: false})));
       return true;
     }
     if (!application) {
@@ -150,18 +195,18 @@ export class ApplicationLifecycleService {
     }
 
     this.focusedAppId.next(id);
-    application.focused = true;
-    application.offsetX = offsetX ?? DEFAULT_WINDOW_OFFSET_X;
-    application.offsetY = offsetY ?? DEFAULT_WINDOW_OFFSET_Y;
+    const focusedApplication: ApplicationInstance = {
+      ...application,
+      focused: true,
+      minimized: false,
+      offsetX: offsetX ?? application.offsetX ?? DEFAULT_WINDOW_OFFSET_X,
+      offsetY: offsetY ?? application.offsetY ?? DEFAULT_WINDOW_OFFSET_Y,
+    };
+    const backgroundApplications = this.applications.value
+      .filter((openApp) => openApp.id !== id)
+      .map((openApp) => ({...openApp, focused: false}));
 
-    const index = this.applications.value.findIndex((app) => app.id === id);
-    if (index !== -1) {
-      this.applications.next([
-        ...this.applications.value.slice(0, index),
-        ...this.applications.value.slice(index + 1),
-        application
-      ]);
-    }
+    this.applications.next([...backgroundApplications, focusedApplication]);
 
     return true;
   }

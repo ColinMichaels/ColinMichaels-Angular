@@ -1,16 +1,17 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { DesktopComponent } from './desktop.component';
 import {ApplicationManagerService} from '@core-os/app-registry/application-manager.service';
-import { ContextMenuService } from '../services/context-menu.service';
+import { ContextMenuService } from '@core-os/context-menu/context-menu.service';
 import { OverlayService } from '../services/overlay.service';
 import { NotificationService } from '../services/notification.service';
 import {OsUserService} from '../services/os-user.service';
-import { TypewriterService } from '../services/typewriter.service';
+import { TypewriterService } from '@core-os/terminal/typewriter.service';
 import { SoundService } from '../services/sound.service';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import {LogService} from '../services/log.service';
 import {GameLevel} from '../services/game-config.service';
+import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
 
 describe('DesktopComponent', () => {
   let component: DesktopComponent;
@@ -18,6 +19,7 @@ describe('DesktopComponent', () => {
 
   // Mocks for injected services
   const appManagerServiceMock = {
+    open: jasmine.createSpy('open'),
     openApplication: jasmine.createSpy('openApplication'),
     closeAllApps: jasmine.createSpy('closeAllApps'),
     setApplicationFocus: jasmine.createSpy('setApplicationFocus'),
@@ -25,6 +27,7 @@ describe('DesktopComponent', () => {
 
   const contextMenuServiceMock = {
     open: jasmine.createSpy('open'),
+    close: jasmine.createSpy('close'),
   };
 
   const overlayServiceMock = {
@@ -97,6 +100,10 @@ describe('DesktopComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('provides the application manager through the Finder file-opening port', () => {
+    expect(fixture.debugElement.injector.get(FINDER_FILE_OPENER)).toBe(appManagerServiceMock);
+  });
+
   it('should call onBeginInvestigation when view initializes', () => {
     spyOn(component, 'onBeginInvestigation');
     component.ngAfterViewInit();
@@ -117,16 +124,44 @@ describe('DesktopComponent', () => {
   });
 
   it('should handle onRightClick and open context menu', () => {
+    contextMenuServiceMock.open.calls.reset();
+    appManagerServiceMock.openApplication.calls.reset();
+    const desktop = {focus: jasmine.createSpy('focus')};
     const event = {
       preventDefault: jasmine.createSpy('preventDefault'),
       clientX: 100,
       clientY: 200,
+      target: desktop,
+      currentTarget: desktop,
     } as unknown as MouseEvent;
 
     component.onRightClick(event);
 
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(contextMenuServiceMock.open).toHaveBeenCalled();
+    expect(desktop.focus).toHaveBeenCalled();
+    const [config, position] = contextMenuServiceMock.open.calls.mostRecent().args;
+    expect(position).toEqual({x: 100, y: 200});
+    expect(config.menuId).toBe('desktop');
+    expect(config.items.map((item: {label: string}) => item.label)).toEqual(['Open', 'Settings']);
+
+    config.items[0].action();
+    config.items[1].action();
+    expect(appManagerServiceMock.openApplication).toHaveBeenCalledWith('finder', undefined);
+    expect(appManagerServiceMock.openApplication).toHaveBeenCalledWith('system-settings', undefined);
+  });
+
+  it('does not open the desktop menu for a bubbled window or icon context event', () => {
+    contextMenuServiceMock.open.calls.reset();
+    const event = {
+      preventDefault: jasmine.createSpy('preventDefault'),
+      target: {},
+      currentTarget: {},
+    } as unknown as MouseEvent;
+
+    component.onRightClick(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(contextMenuServiceMock.open).not.toHaveBeenCalled();
   });
 
   it('should handle onClickWindow and set application focus', () => {
@@ -159,6 +194,53 @@ describe('DesktopComponent', () => {
 
     expect(event.preventDefault).toHaveBeenCalled();
     expect(appManagerServiceMock.setApplicationFocus).toHaveBeenCalledWith('desktop', 0, 0);
+  });
+
+  ['ContextMenu', 'Shift+F10'].forEach(shortcut => {
+    it(`opens the desktop menu from ${shortcut}`, () => {
+      contextMenuServiceMock.open.calls.reset();
+      const desktop = {
+        getBoundingClientRect: () => ({left: 10, top: 20}),
+      };
+      const event = {
+        target: desktop,
+        currentTarget: desktop,
+        key: shortcut === 'ContextMenu' ? 'ContextMenu' : 'F10',
+        shiftKey: shortcut === 'Shift+F10',
+        preventDefault: jasmine.createSpy('preventDefault'),
+      } as unknown as KeyboardEvent;
+
+      component.onDesktopKeyDown(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(contextMenuServiceMock.open).toHaveBeenCalledWith(
+        jasmine.objectContaining({menuId: 'desktop'}),
+        {x: 34, y: 44},
+      );
+    });
+  });
+
+  it('does not intercept context-menu keys from a child control', () => {
+    contextMenuServiceMock.open.calls.reset();
+    const event = {
+      target: {},
+      currentTarget: {},
+      key: 'ContextMenu',
+      preventDefault: jasmine.createSpy('preventDefault'),
+    } as unknown as KeyboardEvent;
+
+    component.onDesktopKeyDown(event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(contextMenuServiceMock.open).not.toHaveBeenCalled();
+  });
+
+  it('closes an open context menu when the desktop is destroyed', () => {
+    contextMenuServiceMock.close.calls.reset();
+
+    fixture.destroy();
+
+    expect(contextMenuServiceMock.close).toHaveBeenCalledTimes(1);
   });
 
   it('should call showNotificationUpdates in onBeginInvestigation', () => {

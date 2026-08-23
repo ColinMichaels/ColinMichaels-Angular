@@ -76,6 +76,45 @@ describe('ApplicationLifecycleService', () => {
     expect(service.getFocusedAppId()).toBe('cli');
   });
 
+  it('delivers new activation params to an existing running app', () => {
+    const app = createAppEntry({id: 'finder', title: 'Finder'});
+    service.openApplication(app.id, app, {path: '/'});
+
+    const result = service.openApplication(app.id, app, {path: 'trash'});
+
+    expect(result).toBeTrue();
+    expect(service.openApplications.length).toBe(1);
+    expect(service.openApplications[0].params).toEqual({path: 'trash'});
+    expect(service.getFocusedAppId()).toBe('finder');
+  });
+
+  it('minimizes a focused app, advances focus, and restores it through normal activation', () => {
+    const cli = createAppEntry({id: 'cli', title: 'CLI'});
+    const finder = createAppEntry({id: 'finder', title: 'Finder'});
+    service.openApplication(cli.id, cli);
+    service.openApplication(finder.id, finder);
+
+    expect(service.minimizeApplication('finder')).toBeTrue();
+    expect(service.getAppByID('finder')?.minimized).toBeTrue();
+    expect(service.getFocusedAppId()).toBe('cli');
+
+    expect(service.openApplication(finder.id, finder)).toBeTrue();
+    expect(service.getAppByID('finder')?.minimized).toBeFalse();
+    expect(service.getFocusedAppId()).toBe('finder');
+  });
+
+  it('focuses the desktop when the final visible window is minimized or closed', () => {
+    const app = createAppEntry();
+    service.openApplication(app.id, app);
+
+    expect(service.minimizeApplication(app.id)).toBeTrue();
+    expect(service.getFocusedAppId()).toBe('desktop');
+
+    service.setApplicationFocus(app.id);
+    service.closeApplication(app.id);
+    expect(service.getFocusedAppId()).toBe('desktop');
+  });
+
   it('creates unique IDs when force opening additional instances', () => {
     const app = createAppEntry();
     service.openApplication(app.id, app);

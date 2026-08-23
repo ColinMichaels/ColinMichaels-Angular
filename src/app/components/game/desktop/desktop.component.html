@@ -13,7 +13,7 @@
       (loaded)="onLevelLoaded()"
       (failed)="onLevelLoadFailed($event)"
     ></app-level-loader>
-    <ng-container *ngFor="let applicationInstance of appManager.openApplications">
+    <ng-container *ngFor="let applicationInstance of appManager.openApplications; trackBy: trackApplicationInstance">
       <app-window
         [id]="applicationInstance.id"
         [title]="applicationInstance.title"
@@ -24,6 +24,8 @@
         [minHeight]="WINDOW_HEIGHT_MIN"
         [maxHeight]="WINDOW_WIDTH_MAX"
         [params]="applicationInstance.params"
+        [minimized]="applicationInstance.minimized"
+        [focused]="applicationInstance.focused ?? false"
       ></app-window>
     </ng-container>
     <div class="absolute top-10 right-5 flex flex-col items-center space-y-2 pointer-events-auto">

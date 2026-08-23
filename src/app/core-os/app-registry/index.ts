@@ -8,10 +8,15 @@ export {
   WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN,
+  isApplicationFileOpenParams,
 } from './application-manager.models';
 export type {
   AppEntry,
+  AppFileAssociations,
   AppIcon,
+  ApplicationFileDescriptor,
+  ApplicationFileOpenParams,
+  ApplicationFileOpenResult,
   ApplicationInstance,
   ApplicationKind,
   AppMetadata,

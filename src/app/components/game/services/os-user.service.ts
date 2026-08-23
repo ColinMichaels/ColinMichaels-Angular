@@ -1,5 +1,5 @@
 import {Injectable, OnDestroy} from '@angular/core';
-import {TypingMode} from './typewriter.service';
+import type {TypingMode} from '@core-os/terminal/typewriter.models';
 import {
   BehaviorSubject,
   combineLatest,

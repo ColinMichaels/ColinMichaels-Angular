@@ -1,5 +1,5 @@
 import {AfterViewInit, ChangeDetectionStrategy, Component, ViewEncapsulation} from '@angular/core';
-import {TypewriterService} from '../../game/services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({

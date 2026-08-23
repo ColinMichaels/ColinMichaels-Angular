@@ -206,18 +206,18 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   route remaining identity reads through `UserService` and validate command parameters consistently.
 
-## `typewriter.service.ts`
+## `core-os/terminal/typewriter.service.ts`
 
 - Responsibility:
   queued typed output with mode-dependent sound behavior.
 - Dependencies:
-  `SoundService`, `UserService`.
+  staged legacy `SoundService` and `OsUserService`; the OS-user mode relationship uses the canonical type-only models boundary instead of a runtime cycle.
 - Called by:
-  CLI, desktop intro, home terminal.
+  CLI, desktop intro, and the retained home-terminal component. Live consumers use the canonical leaf path; the former game-service path identity-re-exports the same mutable root queue.
 - Current risks:
-  timer teardown, queue behavior, and callback semantics are stabilized; some legacy callers still use loose payload types.
+  timer teardown, queue behavior, and callback semantics are stabilized; the CLI renderer and commands remain outside this ownership batch, and some legacy callers still use loose payload types.
 - Planned cleanup:
-  finish strict event payload types without changing the verified line/queue callback behavior.
+  move the terminal renderer/command cohort separately, finish strict event payload types, and preserve the verified line/queue, prompt, mode, sound, and callback behavior.
 
 ## `settings.service.ts`
 
@@ -258,6 +258,58 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Planned cleanup:
   keep this adapter narrow until a separately designed, versioned app-session migration can define reconciliation and rollback semantics.
 
+## `core-os/windowing/app-window/app-window.component.ts`
+
+- Responsibility:
+  generic Core OS window host, dynamic child creation and parameter handoff, focus/close/minimize/zoom interaction, Dock-targeted animation, pointer drag/resize bounds, and global-listener cleanup.
+- Dependencies:
+  `ApplicationManagerService`, the app-registry window constraints, FontAwesome chrome, and the legacy CLI component as the preserved default embedded type.
+- Called by:
+  the desktop shell through the explicit `@core-os/windowing/app-window/*` package path.
+- Current risks:
+  drag, resize, zoom, and animation orchestration remain component-local and rely on document/browser APIs; focused browser tests protect viewport clamping, dimension limits, focus, dynamic parameters, minimize fallback/targeting, pointer completion, and instance-owned listener/selection-lock/animation teardown. The former app-window path is an identity-preserving compatibility export.
+- Planned cleanup:
+  extract drag/resize mechanics into a window controller in a separate behavior-locked refactor, then replace the legacy default embedded type only when application manifests own an explicit component.
+
+## `core-os/dock/dock.component.ts`
+
+- Responsibility:
+  registry-driven desktop application launcher, installed/running selection, running-state indicators, one-click app open/focus/restore delegation, launch bounce, role-aware account destinations, notification testing, sign-out, and Trash entry points.
+- Dependencies:
+  `ApplicationManagerService` provides the installed/running/focused/minimized application contract; `AuthService`, `NotificationService`, router navigation, tooltip chrome, and Font Awesome provide the explicit shell utilities and presentation edge.
+- Called by:
+  the desktop shell through the explicit `@core-os/dock/dock.component` path.
+- Current risks:
+  the notification trigger remains an explicit test/demo control; role visibility remains sourced from `AuthService`, and logout delegates redirect/error logging there without duplicate console output. Installed general apps can overflow into horizontal Dock scrolling at narrow supported widths. The former system path is an identity-preserving compatibility export.
+- Planned cleanup:
+  move account utilities into a dedicated Core OS shell adapter and keep future Finder file operations behind the filesystem boundary in `CORE_OS_DESKTOP.md`; replace test-only launcher actions only through an explicitly designed product change.
+
+## `core-os/tray/system-tray.component.ts`
+
+- Responsibility:
+  desktop menu bar, app lifecycle menus, Finder view-mode bridge, memory display, OS route links, authenticated logout, sound/battery/clock controls, and current OS user label.
+- Dependencies:
+  `ApplicationManagerService`, `AuthService`, `FileSystemService`, `OsUserService`, router links, Clock, Sound Player, and FontAwesome chrome.
+- Called by:
+  the desktop shell through the explicit `@core-os/tray/system-tray.component` path.
+- Current risks:
+  sound, clock, and user services remain in the legacy game tree until their independent cohorts move; the filesystem bridge is canonical under `core-os/filesystem`. Focused tests protect menu semantics, single-menu state, view-mode synchronization, app actions, memory formatting, authenticated logout success/failure, and compatibility identity.
+- Planned cleanup:
+  migrate each feature service independently without folding product behavior or visual redesign into the tray ownership move.
+
+## `core-os/context-menu/context-menu.service.ts`
+
+- Responsibility:
+  build role-filtered menu configuration and own the single CDK overlay used by the reusable Core OS context-menu renderer.
+- Dependencies:
+  Angular CDK overlay/portal, the canonical context-menu component, and the two retained registry prototypes.
+- Called by:
+  desktop right-click handling; former game service/component/menu paths re-export the canonical identities for compatibility.
+- Current risks:
+  role filtering controls presentation only and must never replace authorization inside an action; registry prototypes remain retained but unused by the live generic renderer.
+- Planned cleanup:
+  keep actions synchronous and locally authorized while future consumers adopt the tested Context Menu/Shift+F10, focus, submenu, closure, and restoration contracts.
+
 ## `media.service.ts`
 
 - Responsibility:
@@ -280,22 +332,35 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Called by:
   settings, tasks, OS user migration, patch editor.
 - Current risks:
-  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—and its broad `clear()` operation is deliberately disabled to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
+  strategy-level keys are aligned and covered, writes resolve only after IndexedDB transaction completion, and failures remain observable to callers. Broad generic value types remain in legacy callers. The localStorage strategy is availability-only—not a runtime failover—requires Web Locks for atomic compare-and-set, and deliberately disables broad `clear()` to protect unrelated origin data. The former `components/game/services/storage.service.ts` path is a compatibility re-export so both paths resolve to one root service token.
 - Planned cleanup:
   tighten caller value types and define an explicit fallback-key namespace before enabling localStorage bulk clearing, while preserving the `AppStorage` database, `keyvalue` object store, and existing raw keys.
 
-## `file-system.service.ts`
+## `core-os/filesystem/file-system.service.ts`
 
 - Responsibility:
-  virtual file tree, path navigation, finder data/view modes.
+  versioned virtual filesystem, path navigation, serialized Finder mutations, selection, search, tags, Trash, bounded session undo/redo, and view modes.
 - Dependencies:
-  `HttpClient` and deterministic seeded mock content.
+  `HttpClient` for the one-time compatibility seed, `AuthService` for UID isolation, and `core-os/storage/StorageService` for device-local persistence and revision compare-and-set.
 - Called by:
-  finder UI and tray view mode controls.
+  canonical Finder UI and tray view-mode controls; the former game-service path is a compatibility export.
 - Current risks:
-  startup content is deterministic and lightweight; the virtual file tree remains development/demo data rather than a durable filesystem contract.
+  the browser-native tree stores metadata only, session undo/redo is intentionally not persisted, and unknown schema versions stop normal Finder work rather than risking overwrite. Undo and redo replay complete validated snapshots through the same serialized compare-and-set boundary; a failed replay retains the prior rendered tree and history labels, a new saved mutation clears redo, and identity/conflict reloads clear both stacks. First-use and reset writes use a presence-aware revision compare: revision-bearing values retain their token, while confirmed revisionless recovery uses revision zero and therefore may replace another revisionless corrupt value but cannot replace a newer valid nonzero revision. Exact JSON-compatible shape, dense arrays, field bounds, and UTF-8 bytes are checked before cloning; malformed localStorage text and stored `null` remain distinguishable from absence through a recovery-only record read; account changes invalidate pending reloads; and each Finder window owns its navigation/selection/dialog state. The UI can export a bounded diagnostic representation and explicitly reset it. Unsupported binary, cyclic, or oversized values are marked incomplete rather than claimed as a lossless JSON backup. Finder dispatches metadata-only requests through its injection port; it does not open file bytes or represent access to the user's Mac.
 - Planned cleanup:
-  keep demo-data generation isolated and add a lazy/static mock gate only if startup profiling shows a regression.
+  add bounded actual-content references plus drag/drop and conflict-choice organization as separate phases. Add real-folder access only behind an explicit user gesture, retained permission state, visible reconnect handling, and no-background-upload boundary.
+
+## `core-os/app-registry/application-registry.service.ts`
+
+- Responsibility:
+  canonical installed-app lookup plus deterministic file-handler resolution from catalog associations.
+- Dependencies:
+  ordered application catalog and shared application/file descriptor models.
+- Called by:
+  `ApplicationManagerService` for lifecycle launch/focus/restore and Finder metadata-preview dispatch.
+- Current risks:
+  concrete application components remain catalog imports from the legacy game tree. Specific MIME values are authoritative; extension and legacy-kind fallback is restricted to missing/generic MIME metadata, and equal scores preserve registration order.
+- Planned cleanup:
+  move concrete feature manifests with their application cohorts and add trusted content capabilities without weakening the metadata-only Finder contract.
 
 ## `game-config.service.ts`
 

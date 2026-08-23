@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {BehaviorSubject, of} from 'rxjs';
-import {TypewriterService} from '../../services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {SoundService} from '../../services/sound.service';
 import {CLIService} from '../../services/cli.service';
 import {GameConfigService} from '../../services/game-config.service';

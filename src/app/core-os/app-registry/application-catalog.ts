@@ -33,7 +33,7 @@ import {TailwindPreviewComponent} from '../../components/game/apps/tailwind-prev
 import {TaskAppComponent} from '../../components/game/apps/task-app/task-app.component';
 import {TooltipExamplesComponent} from '../../components/game/apps/tooltip-examples/tooltip-examples.component';
 import {WeatherComponent} from '../../components/game/apps/weather/weather.component';
-import {FinderAppComponent} from '../../components/game/system/finder-app/finder-app.component';
+import {FinderAppComponent} from '@core-os/filesystem/finder-app/finder-app.component';
 import {SettingsPanelComponent} from '../../components/game/system/settings-panel/settings-panel.component';
 import {APP_ID, AppEntry, AppType} from './application-manager.models';
 
@@ -106,6 +106,11 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
       maxInstances: 1,
       type: AppType.app,
       instanceIndex: 0,
+      fileAssociations: {
+        extensions: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'],
+        mimeTypes: ['audio/*'],
+        fileTypes: ['audio'],
+      },
       status: 'development',
       metadata: createDevelopmentMetadata()
     },
@@ -215,7 +220,7 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
     },
     {
       id: APP_ID.markdown_reader,
-      title: '',
+      title: 'Markdown Reader',
       component: MarkdownReaderComponent,
       installed: true,
       icon: {
@@ -226,6 +231,10 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
       maxInstances: 10,
       type: AppType.system,
       params: {file: 'colinos-demo.doc.md'},
+      fileAssociations: {
+        extensions: ['md', 'markdown', 'txt'],
+        mimeTypes: ['text/markdown', 'text/plain'],
+      },
       instanceIndex: 0
     },
     {

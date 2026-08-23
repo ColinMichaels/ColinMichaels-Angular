@@ -14,7 +14,8 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex items-center space-x-2 bg-zinc-800/40 p-1.5 rounded-lg">
-      <button (click)="togglePlayPause()" class="text-white/80 hover:text-white text-xs">
+      <button type="button" (click)="togglePlayPause()" [attr.aria-label]="isPlaying() ? 'Pause music' : 'Play music'"
+              class="text-white/80 hover:text-white text-xs">
         <fa-icon [icon]="isPlaying() ? faPause : faPlay"></fa-icon>
       </button>
 
@@ -22,7 +23,8 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
         <fa-icon [icon]="faVolumeUp" class="text-white/80"></fa-icon>
         <input
           type="range"
-          [value]="musicService.volume"
+          aria-label="Music volume"
+          [value]="volume() * 100"
           (input)="onVolumeChange($event)"
           class="w-20 accent-gray-300"
           min="0"
@@ -46,9 +48,13 @@ export class SoundPlayerComponent {
     this.musicService.isPlayingChanged.pipe(takeUntilDestroyed()).subscribe(playing => {
       this.isPlaying.set(playing);
     });
+    this.musicService.volumeChanged.pipe(takeUntilDestroyed()).subscribe(volume => {
+      this.volume.set(volume);
+    });
   }
 
   isPlaying = signal(false);
+  volume = signal(this.musicService.volume());
 
   togglePlayPause() {
     this.isPlaying.update(v => {

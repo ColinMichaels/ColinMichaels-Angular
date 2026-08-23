@@ -1,7 +1,7 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 
 import {HomeTerminalWindowComponent} from './home-terminal-window.component';
-import {TypewriterService} from '../../game/services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {BehaviorSubject} from 'rxjs';
 
 describe('HomeTerminalWindowComponent', () => {

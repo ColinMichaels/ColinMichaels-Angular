@@ -58,6 +58,8 @@ export class MusicService {
   public trackChanged = new BehaviorSubject<Track>(this._currentTrack);
   public timeUpdated = new BehaviorSubject<number>(0);
   public isPlayingChanged = new BehaviorSubject<boolean>(false);
+  public mutedChanged = new BehaviorSubject<boolean>(false);
+  public volumeChanged = new BehaviorSubject<number>(this.player.volume);
 
   private timer = interval(1000).subscribe(() => {
     if (!this.player.paused) {
@@ -82,6 +84,14 @@ export class MusicService {
 
   volume() {
     return this.player.volume;
+  }
+
+  loopEnabled() {
+    return this.player.loop;
+  }
+
+  isMuted() {
+    return this.player.muted;
   }
 
   stopAll() {
@@ -116,7 +126,19 @@ export class MusicService {
   }
 
   setVolume(volume: number) {
+    const normalized = Math.min(1, Math.max(0, volume));
     this.player.muted = false;
-    this.player.volume = (volume >= 1) ? 1 : volume;
+    this.player.volume = normalized;
+    this.mutedChanged.next(false);
+    this.volumeChanged.next(normalized);
+  }
+
+  setMuted(muted: boolean) {
+    this.player.muted = muted;
+    this.mutedChanged.next(muted);
+  }
+
+  setLoop(enabled: boolean) {
+    this.player.loop = enabled;
   }
 }

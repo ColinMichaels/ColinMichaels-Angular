@@ -9,9 +9,7 @@ import {TailwindPreviewComponent} from '../../../components/game/apps/tailwind-p
 import {TaskAppComponent} from '../../../components/game/apps/task-app/task-app.component';
 import {TooltipExamplesComponent} from '../../../components/game/apps/tooltip-examples/tooltip-examples.component';
 import {WeatherComponent} from '../../../components/game/apps/weather/weather.component';
-import {
-  WindowHeaderComponent
-} from '../../../components/game/templates/app-window/window-header/window-header.component';
+import {WindowHeaderComponent} from '@core-os/windowing/window-header/window-header.component';
 import {ProjectItemComponent} from '../../../components/main/project-item/project-item.component';
 
 interface LabEntry {

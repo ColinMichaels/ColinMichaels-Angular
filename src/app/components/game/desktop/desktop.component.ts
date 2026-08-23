@@ -1,9 +1,9 @@
 import {AfterViewInit, Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from "@angular/common";
 import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
-import {AppWindowComponent} from '../templates/app-window/app-window.component';
+import {AppWindowComponent} from '@core-os/windowing/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
-import {TypewriterService} from '../services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
 import {SoundService} from '../services/sound.service';
 import {OsUserService} from '../services/os-user.service';
 import {OverlayService} from '../services/overlay.service';
@@ -12,21 +12,23 @@ import {
 } from '@core-os/app-registry/application-manager.service';
 import {
   APP_ID,
+  ApplicationInstance,
   WINDOW_HEIGHT_MIN,
   WINDOW_WIDTH_MAX,
   WINDOW_WIDTH_MIN
 } from '@core-os/app-registry/application-manager.models';
-import {SystemTrayComponent} from '../system/system-tray/system-tray.component';
+import {SystemTrayComponent} from '@core-os/tray/system-tray.component';
 import {NotificationService} from '../services/notification.service';
 import {MediaItem} from '../services/media.service';
-import {DockComponent} from '../system/dock/dock.component';
+import {DockComponent} from '@core-os/dock/dock.component';
 import {faCircle, faFile, faInfo, faServer, faTrophy} from '@fortawesome/free-solid-svg-icons';
 import {FaIconComponent, FaStackComponent, FaStackItemSizeDirective} from '@fortawesome/angular-fontawesome';
 import {ActivatedRoute} from '@angular/router';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {ContextMenuBuilder, ContextMenuService} from '../services/context-menu.service';
+import {ContextMenuBuilder, ContextMenuService} from '@core-os/context-menu/context-menu.service';
 import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
+import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
 
 @Component({
   selector: 'app-desktop',
@@ -45,6 +47,7 @@ import {LogService} from '../services/log.service';
   ],
   templateUrl: './desktop.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
+  providers: [{provide: FINDER_FILE_OPENER, useExisting: ApplicationManagerService}],
   styles: ``
 })
 export class DesktopComponent implements OnInit, AfterViewInit {
@@ -62,6 +65,7 @@ export class DesktopComponent implements OnInit, AfterViewInit {
               private readonly route: ActivatedRoute,
               private readonly logger: LogService,
               private readonly destroyRef: DestroyRef) {
+    this.destroyRef.onDestroy(() => this.contextMenuService.close());
   }
 
   ngOnInit() {
@@ -83,6 +87,10 @@ export class DesktopComponent implements OnInit, AfterViewInit {
     this.appManager.openApplication(id, params);
   }
 
+  trackApplicationInstance(_: number, application: ApplicationInstance): string {
+    return application.id;
+  }
+
   /** CLICK EVENTS **/
   onDoubleClicked(event: MouseEvent) {
     if (event.target === event.currentTarget) {
@@ -91,33 +99,13 @@ export class DesktopComponent implements OnInit, AfterViewInit {
   }
 
   onRightClick(event: MouseEvent) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
     event.preventDefault();
-    this.contextMenuService.open(
-      new ContextMenuBuilder('desktop', ['admin'])
-        .addItem({
-          label: 'Open',
-          action: () => {
-            this.openApp(APP_ID.finder);
-          }}).addSubmenu(
-        'Open With',
-        [
-          {
-            label: 'TEST',
-            action: () => {}
-          },
-          {
-            label: 'TEST2',
-            action: () => {}
-          }
-        ]
-      ).addItem({
-        label: 'Settings',
-        action: () => {
-          this.openApp(APP_ID.system_settings);
-        }
-      }).build(),
-      { x: event.clientX, y: event.clientY }
-    );
+    (event.currentTarget as HTMLElement).focus();
+    this.openDesktopContextMenu({x: event.clientX, y: event.clientY});
   }
 
   onClickWindow(event: MouseEvent) {
@@ -127,10 +115,37 @@ export class DesktopComponent implements OnInit, AfterViewInit {
   }
 
   onDesktopKeyDown(event: KeyboardEvent) {
-    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault();
+      const desktop = event.currentTarget as HTMLElement;
+      const bounds = desktop.getBoundingClientRect();
+      this.openDesktopContextMenu({x: bounds.left + 24, y: bounds.top + 24});
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.appManager.setApplicationFocus('desktop', 0, 0);
     }
+  }
+
+  private openDesktopContextMenu(position: {x: number; y: number}): void {
+    const config = new ContextMenuBuilder('desktop')
+      .addItem({
+        label: 'Open',
+        action: () => this.openApp(APP_ID.finder),
+      })
+      .addItem({
+        label: 'Settings',
+        action: () => this.openApp(APP_ID.system_settings),
+      })
+      .build();
+
+    this.contextMenuService.open(config, position);
   }
 
   onBeginInvestigation() {

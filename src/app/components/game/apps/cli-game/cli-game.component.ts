@@ -1,6 +1,7 @@
 import {Component, DestroyRef, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {TypewriterService, TypingMode} from '../../services/typewriter.service';
+import {TypewriterService} from '@core-os/terminal/typewriter.service';
+import type {TypingMode} from '@core-os/terminal/typewriter.models';
 import {SoundService} from '../../services/sound.service';
 import {NgClass} from '@angular/common';
 import {OsUserService} from '../../services/os-user.service';

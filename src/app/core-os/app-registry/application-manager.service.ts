@@ -2,7 +2,14 @@ import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import {ApplicationLifecycleService} from './application-lifecycle.service';
 import {ApplicationRegistryService} from './application-registry.service';
-import {AppEntry, ApplicationInstance, AppType} from './application-manager.models';
+import {
+  ApplicationFileOpenParams,
+  ApplicationFileOpenResult,
+  AppEntry,
+  ApplicationInstance,
+  AppType,
+} from './application-manager.models';
+import type {FinderFileOpenRequest} from '@core-os/filesystem/file-opener';
 
 @Injectable({providedIn: 'root'})
 export class ApplicationManagerService {
@@ -81,8 +88,38 @@ export class ApplicationManagerService {
     return this.applicationLifecycle.openApplication(id, app, args);
   }
 
+  open(request: FinderFileOpenRequest): ApplicationFileOpenResult {
+    const app = this.applicationRegistry.getInstalledAppForFile(request.file);
+    if (!app) {
+      return {status: 'unsupported'};
+    }
+
+    const params: ApplicationFileOpenParams = {
+      source: 'finder',
+      content: request.content,
+      file: {
+        id: request.file.id,
+        name: request.file.name,
+        virtualPath: request.file.virtualPath,
+        type: request.file.type,
+        ...(request.file.mimeType ? {mimeType: request.file.mimeType} : {}),
+        ...(request.file.size !== undefined ? {size: request.file.size} : {}),
+      },
+    };
+    const opened = this.applicationLifecycle.openApplication(app.id, app, params);
+    return {
+      status: opened ? 'metadata-preview-launched' : 'failed',
+      appId: app.id,
+      appTitle: app.title,
+    };
+  }
+
   closeApplication(id: string): void {
     this.applicationLifecycle.closeApplication(id);
+  }
+
+  minimizeApplication(id: string): boolean {
+    return this.applicationLifecycle.minimizeApplication(id);
   }
 
   setApplicationFocus(id: string, offsetX?: number, offsetY?: number): boolean {
@@ -110,13 +147,15 @@ export class ApplicationManagerService {
   }
 
   private withRuntimeState(app: AppEntry): AppEntry {
-    const runningInstances = this.applicationLifecycle.openApplications
-      .filter((openApp) => openApp.parent?.id === app.id).length;
+    const appInstances = this.applicationLifecycle.openApplications
+      .filter((openApp) => openApp.parent?.id === app.id);
 
     return {
       ...app,
-      running: runningInstances > 0,
-      instanceIndex: runningInstances
+      running: appInstances.length > 0,
+      focused: appInstances.some((instance) => instance.focused),
+      minimized: appInstances.length > 0 && appInstances.every((instance) => instance.minimized),
+      instanceIndex: appInstances.length
     };
   }
 }

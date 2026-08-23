@@ -33,11 +33,11 @@ Current route group files are boundary markers only. They preserve existing URL 
 ## Major Subsystems
 
 - Desktop shell:
-  desktop surface, tray, dock, route params, context menu.
+  legacy desktop surface and route/context-menu orchestration with canonical `core-os/dock` and `core-os/tray` chrome.
 - Window/app manager:
   app registry, app launch, focus, close, persisted open apps.
 - CLI gameplay:
-  command execution, typewriter output, user/level progression.
+  legacy command execution and user/level progression with renderer-agnostic typed output owned by `core-os/terminal`.
 - Blog/CMS:
   public published post views, optional typed article evidence/disclosure metadata, a reader-membership campaign that reuses authentication, comments, points, Profile preferences, and Web Push, scheduled publishing through a Firebase Cloud Scheduler Function, a URL-backed Post/Social Shares/Preview editor workspace with explicit-apply AI social variants, a protected publishing Calendar that reuses the controlled native-first composer for post-linked channel announcements, and a durable delivery outbox, a dry-run Bulk Post Editor for reviewing hashed SEO/taxonomy candidates without canonical writes, tokenized draft previews, category/tag archives, image-led topic hubs, blog search, read-only block rendering and SEO metadata, a protected admin post list/editor with a read-only evidence-review queue and individual review workflow, typed Editor.js-shaped block data including custom typography, stats, chart, polls, Suno songs, and sanitized HTML blocks, Firestore-backed CMS storage for
   create/edit workflows. Poll votes use authenticated callable Functions and a backend-only aggregate/vote hierarchy with server-enforced result visibility; see `docs/ARCHITECTURE/EDITORJS_POLLS.md`. Suno songs use a dedicated URL-normalizing authoring tool and provider-specific sandboxed public player without an external API; see `docs/ARCHITECTURE/EDITORJS_SUNO_EMBEDS.md`. Public post discovery uses one repository-free listing component with list, grid, fan, compact, and homepage editorial variants; topic pages place featured/recent writing before the preserved supporting guide. See `docs/ARCHITECTURE/ARTICLE_EVIDENCE_AND_DISCLOSURES.md`, `docs/ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md`, and `docs/ARCHITECTURE/READER_MEMBERSHIP_CAMPAIGN.md`.
@@ -97,7 +97,7 @@ graph TD
   K --> I
   K --> L[UserService]
 
-  J --> M[TypewriterService]
+  J --> M[core-os terminal TypewriterService]
   M --> N[SoundService]
 
   L --> O[SettingsService]
@@ -106,6 +106,9 @@ graph TD
   C --> Q[OverlayService]
   C --> R[NotificationService]
   R --> S[NotificationServerComponent]
+
+  C --> U[ContextMenuService]
+  U --> V[ContextMenuComponent Overlay]
 
   G --> T[FileSystemService]
 ```
