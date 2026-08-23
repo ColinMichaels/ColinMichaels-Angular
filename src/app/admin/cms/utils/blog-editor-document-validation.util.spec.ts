@@ -130,6 +130,81 @@ describe('blog editor document validation', () => {
     }));
   });
 
+  it('reopens valid compatibility envelopes when their original tools are now supported', () => {
+    const normalized = normalizeEditorDocumentForBlogEditor({
+      blocks: [
+        {
+          id: 'list-1',
+          type: 'unsupported',
+          data: {
+            originalType: 'list',
+            originalData: {style: 'ordered', items: ['Draft', 'Review']},
+            originalTunes: {listPresentation: {presentation: 'steps'}},
+          },
+        },
+        {
+          id: 'chart-1',
+          type: 'unsupported',
+          data: {
+            originalType: 'chart',
+            originalData: {
+              chartType: 'line',
+              labels: ['Week 1', 'Week 2'],
+              datasets: [{label: 'Readers', data: [42, 57]}],
+            },
+          },
+        },
+        {
+          id: 'table-1',
+          type: 'unsupported',
+          data: {originalType: 'table', originalData: {content: [['A', 'B']]}},
+        },
+      ],
+    });
+
+    expect(normalized.blocks[0]).toEqual({
+      id: 'list-1',
+      type: 'list',
+      data: {style: 'ordered', items: ['Draft', 'Review']},
+      tunes: {listPresentation: {presentation: 'steps'}},
+    });
+    expect(normalized.blocks[1]).toEqual({
+      id: 'chart-1',
+      type: 'chart',
+      data: {
+        chartType: 'line',
+        labels: ['Week 1', 'Week 2'],
+        datasets: [{label: 'Readers', data: [42, 57]}],
+      },
+    });
+    expect(normalized.blocks[2].type).toBe('unsupported');
+    expect(validateEditorDocumentForBlog(normalized).diagnostics).toEqual([
+      jasmine.objectContaining({
+        code: 'preserved-unsupported-block',
+        blockIndex: 2,
+        blockType: 'table',
+      }),
+    ]);
+  });
+
+  it('keeps invalid known compatibility payloads protected', () => {
+    const normalized = normalizeEditorDocumentForBlogEditor({
+      blocks: [{
+        id: 'mixed-list',
+        type: 'unsupported',
+        data: {
+          originalType: 'list',
+          originalData: {
+            style: 'ordered',
+            items: ['Legacy', {content: 'Recursive', meta: {}, items: []}],
+          },
+        },
+      }],
+    });
+
+    expect(normalized.blocks[0].type).toBe('unsupported');
+  });
+
   it('rejects malformed known blocks rather than approving lossy normalization', () => {
     const result = validateEditorDocumentForBlog({
       blocks: [

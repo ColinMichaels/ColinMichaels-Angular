@@ -1082,6 +1082,73 @@ describe('blog-editorjs-adapter', () => {
     expect(createBlogBlocksFromEditorDocument(wrapped) as unknown).toEqual(blocks);
   });
 
+  it('restores supported list and chart envelopes into editable and public blocks', () => {
+    const document = createEditorDocument(createPost({
+      blocks: [
+        {
+          id: 'canonical-list',
+          type: 'unsupported',
+          data: {
+            unsupportedBlock: {
+              originalType: 'list',
+              originalData: {
+                items: ['Draft', 'Review'],
+                ordered: true,
+                listStyle: 'ordered',
+                listPresentation: 'steps',
+              },
+            },
+          },
+        },
+        {
+          id: 'chart-series',
+          type: 'unsupported',
+          data: {
+            unsupportedBlock: {
+              originalType: 'chart',
+              originalData: {
+                chartType: 'line',
+                labels: ['Week 1', 'Week 2'],
+                datasets: [{label: 'Readers', data: [42, 57]}],
+              },
+            },
+          },
+        },
+      ],
+    }));
+
+    expect(document.blocks).toEqual([
+      {
+        id: 'canonical-list',
+        type: 'list',
+        data: {style: 'ordered', items: ['Draft', 'Review']},
+        tunes: {listPresentation: {presentation: 'steps'}},
+      },
+      {
+        id: 'chart-series',
+        type: 'chart',
+        data: {
+          chartType: 'line',
+          labels: ['Week 1', 'Week 2'],
+          datasets: [{label: 'Readers', data: [42, 57]}],
+        },
+      },
+    ]);
+
+    const restored = createBlogBlocksFromEditorDocument(document);
+    expect(restored.map(block => block.type)).toEqual(['list', 'chart']);
+    expect(restored[0].data).toEqual(jasmine.objectContaining({
+      items: ['Draft', 'Review'],
+      ordered: true,
+      listPresentation: 'steps',
+    }));
+    expect(restored[1].data).toEqual(jasmine.objectContaining({
+      chartType: 'line',
+      labels: ['Week 1', 'Week 2'],
+      datasets: [{label: 'Readers', data: [42, 57]}],
+    }));
+  });
+
   it('envelopes malformed known blocks instead of partially normalizing or dropping data', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [{
