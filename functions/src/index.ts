@@ -60,6 +60,7 @@ import {
 } from './seo-fallback-pages';
 import {renderSeoImageMarkup} from './seo-image-markup';
 import {createBlogFeedItemUrl} from './blog-feed-url';
+import {getLargestJpegVariantUrl, getManagedMediaIdFromWebpUrl} from './open-graph-image';
 import {collectExternalBlogCitationUrls} from './blog-citations';
 import {BlogVideoObjectJsonLd, createBlogCompanionVideoJsonLd} from './blog-video-schema';
 import {
@@ -3782,7 +3783,7 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     const post = await fetchPreviewSeoBlogPost(previewToken);
 
     if (post) {
-      return createBlogPreviewSeoMetadata(post, previewToken);
+      return await createBlogPreviewSeoMetadata(post, previewToken);
     }
 
     return createMissingBlogPostSeoMetadata('preview');
@@ -3793,7 +3794,7 @@ async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
     const post = await fetchPublishedSeoBlogPost(slug);
 
     if (post) {
-      return createBlogPostSeoMetadata(post);
+      return await createBlogPostSeoMetadata(post);
     }
 
     return createMissingBlogPostSeoMetadata(slug);
@@ -4284,7 +4285,7 @@ async function createHomeSeoMetadata(): Promise<SeoMetadata> {
   }
 
   const sourceImage = post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE;
-  const compatibleImage = toOpenGraphCompatibleImage(sourceImage);
+  const compatibleImage = await resolveOpenGraphCompatibleImage(sourceImage);
   const versionSeed = [
     HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION,
     post.id,
@@ -4666,10 +4667,10 @@ function getPostsForTopicHub(
   return posts.filter(post => scoreBlogPostForTopicHub(post, topicHub) > 0);
 }
 
-function createBlogPostSeoMetadata(post: SeoBlogPostDocument): SeoMetadata {
+async function createBlogPostSeoMetadata(post: SeoBlogPostDocument): Promise<SeoMetadata> {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
-  const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
+  const image = await resolveOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
   const imageAlt = post.ogImageAlt || post.imageAlt || `${title} preview image`;
@@ -4774,10 +4775,10 @@ function createAuthorsIndexSeoMetadata(authors: readonly SeoAuthorDocument[]): S
   };
 }
 
-function createBlogPreviewSeoMetadata(post: SeoBlogPostDocument, previewToken: string): SeoMetadata {
+async function createBlogPreviewSeoMetadata(post: SeoBlogPostDocument, previewToken: string): Promise<SeoMetadata> {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
-  const image = toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
+  const image = await resolveOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE);
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
 
@@ -5267,6 +5268,34 @@ function toOpenGraphCompatibleImage(value: string): string {
   const jpegAsset = createJpegAssetUrl(image);
 
   return jpegAsset || HOMEPAGE_OG_IMAGE;
+}
+
+async function resolveOpenGraphCompatibleImage(value: string): Promise<string> {
+  const image = createAbsoluteUrl(value || HOMEPAGE_OG_IMAGE);
+
+  if (!isWebpImageUrl(image)) {
+    return image;
+  }
+
+  const localJpegAsset = createJpegAssetUrl(image);
+  if (localJpegAsset) {
+    return localJpegAsset;
+  }
+
+  const mediaId = getManagedMediaIdFromWebpUrl(image);
+  if (!mediaId) {
+    return HOMEPAGE_OG_IMAGE;
+  }
+
+  try {
+    const media = await getFirestore().collection('blogMediaAssets').doc(mediaId).get();
+    const jpegUrl = getLargestJpegVariantUrl(media.get('result'));
+
+    return jpegUrl || HOMEPAGE_OG_IMAGE;
+  } catch (error) {
+    logger.warn('Unable to resolve an Open Graph JPEG media variant.', {mediaId, error});
+    return HOMEPAGE_OG_IMAGE;
+  }
 }
 
 function isWebpImageUrl(value: string): boolean {
