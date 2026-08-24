@@ -34,6 +34,10 @@ import {
 } from '../../../features/blog/models/blog-post.model';
 import {getBlogSunoEmbedUrls, SUNO_EMBED_HEIGHT} from '../../../features/blog/utils/blog-suno-embed.util';
 import {
+  createBlogUnsupportedBlockEnvelope,
+  decodeBlogUnsupportedBlockEnvelope,
+} from '../../../features/blog/utils/blog-unsupported-block.util';
+import {
   createYouTubeEmbedUrl,
   createYouTubeWatchUrl,
   getYouTubeVideoId,
@@ -300,7 +304,7 @@ function toEditorBlockWithoutTunes(block: BlogContentBlock): OutputBlockData {
         data: {},
       };
     case 'unsupported': {
-      const envelope = block.data.unsupportedBlock;
+      const envelope = decodeBlogUnsupportedBlockEnvelope(block.data.unsupportedBlock);
 
       return {
         id: block.id,
@@ -679,11 +683,11 @@ function normalizeImportKey(value: string): string {
 }
 
 function createUnsupportedEnvelope(data: Record<string, unknown>): BlogUnsupportedBlockEnvelope {
-  return {
-    originalType: getString(data, 'originalType') ?? 'unknown',
-    originalData: isJsonObject(data['originalData']) ? data['originalData'] : {},
-    ...(isJsonObject(data['originalTunes']) ? {originalTunes: data['originalTunes']} : {}),
-  };
+  return createBlogUnsupportedBlockEnvelope(
+    getString(data, 'originalType') ?? 'unknown',
+    isJsonObject(data['originalData']) ? data['originalData'] : {},
+    isJsonObject(data['originalTunes']) ? data['originalTunes'] : undefined
+  );
 }
 
 function extractLegacyChartJsPoints(data: Record<string, unknown>): readonly BlogChartPoint[] {
@@ -874,7 +878,9 @@ export function createEditorDocument(post: BlogPost): OutputData {
  * the Editor.js representation; every other envelope remains untouched.
  */
 function recoverCanonicalListEnvelope(block: BlogContentBlock): BlogContentBlock | null {
-  const envelope = block.type === 'unsupported' ? block.data.unsupportedBlock : undefined;
+  const envelope = block.type === 'unsupported'
+    ? decodeBlogUnsupportedBlockEnvelope(block.data.unsupportedBlock)
+    : null;
 
   if (!envelope || envelope.originalType !== 'list') {
     return null;
@@ -1098,9 +1104,7 @@ function createUnsupportedBlogBlock(
     type: 'unsupported',
     data: {
       unsupportedBlock: {
-        originalType,
-        originalData,
-        ...(originalTunes ? {originalTunes} : {}),
+        ...createBlogUnsupportedBlockEnvelope(originalType, originalData, originalTunes),
       },
     },
   };

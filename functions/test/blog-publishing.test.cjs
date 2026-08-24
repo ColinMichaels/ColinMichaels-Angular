@@ -4,6 +4,7 @@ const test = require('node:test');
 const {
   collectTrustedBlogMediaIds,
   createEditorialUpdatePlan,
+  normalizeUnsupportedBlogBlocksForStorage,
   parseBlogMutationRequest,
   validateTrustedBlogPost,
 } = require('../lib/blog-publishing.js');
@@ -198,6 +199,63 @@ test('bounds nested compatibility JSON without rejecting safe internal media pat
   assert.doesNotThrow(() => validateTrustedBlogPost(createPost({
     coverImage: '/images/legacy-safe-path.webp',
   })));
+});
+
+test('encodes nested-array compatibility data before Firestore storage without losing it', () => {
+  const tableData = {
+    withHeadings: true,
+    content: [['Aircraft', 'Price'], ['Helix', '$190,000']],
+  };
+  const normalized = normalizeUnsupportedBlogBlocksForStorage(createPost({
+    blocks: [{
+      id: 'table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          originalData: tableData,
+          originalTunes: {alignmentTune: {alignment: 'center'}},
+        },
+      },
+    }],
+  }));
+  const envelope = normalized.blocks[0].data.unsupportedBlock;
+
+  assert.equal(envelope.encoding, 'json-v1');
+  assert.deepEqual(JSON.parse(envelope.originalDataJson), tableData);
+  assert.deepEqual(JSON.parse(envelope.originalTunesJson), {alignmentTune: {alignment: 'center'}});
+  assert.equal(envelope.originalData, undefined);
+  assert.doesNotThrow(() => validateTrustedBlogPost(normalized));
+});
+
+test('rejects malformed encoded compatibility data at the trusted boundary', () => {
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{
+      id: 'table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          encoding: 'json-v1',
+          originalDataJson: '{not-json}',
+        },
+      },
+    }],
+  })), /compatibility envelope/);
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    blocks: [{
+      id: 'mixed-table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          encoding: 'json-v1',
+          originalDataJson: '{"content":[["A","B"]]}',
+          originalData: {content: [['A', 'B']]},
+        },
+      },
+    }],
+  })), /compatibility envelope/);
 });
 
 test('requires a future timestamp for a newly scheduled write', () => {

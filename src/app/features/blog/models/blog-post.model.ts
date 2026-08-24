@@ -104,10 +104,18 @@ export interface BlogListItem {
   items: readonly BlogListItem[];
 }
 
+/**
+ * Unsupported Editor.js data normally stays as JSON objects. Payloads that
+ * contain arrays directly inside arrays use the encoded form because
+ * Firestore cannot persist nested arrays.
+ */
 export interface BlogUnsupportedBlockEnvelope {
   originalType: string;
-  originalData: BlogJsonObject;
+  originalData?: BlogJsonObject;
   originalTunes?: BlogJsonObject;
+  encoding?: 'json-v1';
+  originalDataJson?: string;
+  originalTunesJson?: string;
 }
 
 export const BLOG_CHART_TYPES = [

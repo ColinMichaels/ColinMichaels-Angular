@@ -1957,7 +1957,29 @@ export const mutateBlogPost = onCall(
   },
   async request => {
     const actorUid = requireCmsAccess(request.auth);
-    return mutateBlogPostTransaction(getFirestore(), request.data, actorUid);
+    try {
+      return await mutateBlogPostTransaction(getFirestore(), request.data, actorUid);
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      const reference = randomUUID();
+      const mutation = isRecord(request.data) ? request.data : {};
+      logger.error('Unexpected trusted blog mutation failure.', {
+        error,
+        reference,
+        actorUid,
+        operation: typeof mutation['operation'] === 'string' ? mutation['operation'] : 'unknown',
+        postId: typeof mutation['postId'] === 'string' ? mutation['postId'] : 'unknown',
+        requestId: typeof mutation['requestId'] === 'string' ? mutation['requestId'] : 'unknown',
+      });
+      throw new HttpsError(
+        'internal',
+        'The publishing service could not confirm the operation. Retry once; if it continues, report the reference code.',
+        {reference}
+      );
+    }
   }
 );
 

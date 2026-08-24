@@ -17,6 +17,7 @@ const MAX_BLOCKS = 1_000;
 const MAX_JSON_DEPTH = 32;
 const MAX_JSON_VALUES = 50_000;
 const MAX_LIST_ITEMS = 5_000;
+const UNSUPPORTED_JSON_ENCODING = 'json-v1';
 const POST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{15,127}$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -611,7 +612,9 @@ function createNextPost(
   const nowIso = now.toISOString();
 
   if (request.operation === 'save') {
-    const requestedPost = request.post as Record<string, unknown>;
+    const requestedPost = normalizeUnsupportedBlogBlocksForStorage(
+      request.post as Record<string, unknown>
+    );
     const status = requestedPost['status'];
     const previousPreview = getPreview(currentPost);
     const publishedAt = status === 'published'
@@ -656,6 +659,58 @@ function createNextPost(
     updatedAt: nowIso,
     preview: undefined,
   });
+}
+
+/**
+ * Firestore rejects an array that directly contains another array. Preserve
+ * opaque unsupported Editor.js data losslessly by JSON-encoding only the
+ * compatibility envelopes that need it before the trusted transaction writes.
+ */
+export function normalizeUnsupportedBlogBlocksForStorage(
+  post: Record<string, unknown>
+): Record<string, unknown> {
+  const blocks = post['blocks'];
+
+  if (!Array.isArray(blocks)) {
+    return post;
+  }
+
+  let changed = false;
+  const normalizedBlocks = blocks.map(block => {
+    if (!isRecord(block) || block['type'] !== 'unsupported' || !isRecord(block['data'])) {
+      return block;
+    }
+
+    const envelope = block['data']['unsupportedBlock'];
+    if (!isRecord(envelope)
+      || envelope['encoding'] !== undefined
+      || envelope['originalDataJson'] !== undefined
+      || envelope['originalTunesJson'] !== undefined
+      || !isRecord(envelope['originalData'])
+      || (envelope['originalTunes'] !== undefined && !isRecord(envelope['originalTunes']))
+      || (!hasFirestoreNestedArray(envelope['originalData'])
+        && !hasFirestoreNestedArray(envelope['originalTunes']))) {
+      return block;
+    }
+
+    changed = true;
+    return {
+      ...block,
+      data: {
+        ...block['data'],
+        unsupportedBlock: {
+          originalType: envelope['originalType'],
+          encoding: UNSUPPORTED_JSON_ENCODING,
+          originalDataJson: JSON.stringify(envelope['originalData']),
+          ...(isRecord(envelope['originalTunes'])
+            ? {originalTunesJson: JSON.stringify(envelope['originalTunes'])}
+            : {}),
+        },
+      },
+    };
+  });
+
+  return changed ? {...post, blocks: normalizedBlocks} : post;
 }
 
 export interface BlogEditorialUpdatePlan {
@@ -767,10 +822,7 @@ function validateBlock(value: unknown, blockIds: Set<string>): void {
   }
   if (type === 'unsupported') {
     const envelope = data['unsupportedBlock'];
-    if (!isRecord(envelope)
-      || !getTrimmedString(envelope['originalType'])
-      || !isJsonObject(envelope['originalData'])
-      || (envelope['originalTunes'] !== undefined && !isJsonObject(envelope['originalTunes']))) {
+    if (!decodeUnsupportedBlockEnvelope(envelope)) {
       invalid('Unsupported blocks must retain their compatibility envelope.');
     }
   } else if (data['unsupportedBlock'] !== undefined) {
@@ -1275,6 +1327,71 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
     return false;
   }
   return true;
+}
+
+function decodeUnsupportedBlockEnvelope(value: unknown): {
+  originalType: string;
+  originalData: Record<string, unknown>;
+  originalTunes?: Record<string, unknown>;
+} | null {
+  if (!isRecord(value) || !getTrimmedString(value['originalType'])) {
+    return null;
+  }
+
+  if (value['encoding'] === UNSUPPORTED_JSON_ENCODING) {
+    if (value['originalData'] !== undefined || value['originalTunes'] !== undefined) {
+      return null;
+    }
+    const originalData = parseJsonObject(value['originalDataJson']);
+    const originalTunes = value['originalTunesJson'] === undefined
+      ? undefined
+      : parseJsonObject(value['originalTunesJson']);
+
+    if (!originalData || (value['originalTunesJson'] !== undefined && !originalTunes)) {
+      return null;
+    }
+
+    return {
+      originalType: getTrimmedString(value['originalType']),
+      originalData,
+      ...(originalTunes ? {originalTunes} : {}),
+    };
+  }
+
+  if (value['encoding'] !== undefined
+    || value['originalDataJson'] !== undefined
+    || value['originalTunesJson'] !== undefined
+    || !isJsonObject(value['originalData'])
+    || (value['originalTunes'] !== undefined && !isJsonObject(value['originalTunes']))) {
+    return null;
+  }
+
+  return {
+    originalType: getTrimmedString(value['originalType']),
+    originalData: value['originalData'],
+    ...(value['originalTunes'] ? {originalTunes: value['originalTunes'] as Record<string, unknown>} : {}),
+  };
+}
+
+function parseJsonObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return isJsonObject(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasFirestoreNestedArray(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some(item => Array.isArray(item) || hasFirestoreNestedArray(item));
+  }
+
+  return isRecord(value) && Object.values(value).some(hasFirestoreNestedArray);
 }
 
 function isStats(value: unknown): boolean {

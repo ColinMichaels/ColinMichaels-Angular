@@ -31,6 +31,7 @@ import {
 } from '../models/blog-social-promotion.model';
 import {isSocialPostFormatAllowed} from './blog-social-promotion.util';
 import {isBlogEditorialSourceDate} from './blog-editorial-metadata.util';
+import {decodeBlogUnsupportedBlockEnvelope} from './blog-unsupported-block.util';
 import {isVideoUploadDate} from './blog-youtube-journey.util';
 import {
   hasDisallowedInlineUrlProtocol,
@@ -141,11 +142,7 @@ function isBlogBlockData(type: BlogBlockType, value: unknown): boolean {
 
   if (type === 'unsupported') {
     const envelope = value['unsupportedBlock'];
-    return isRecord(envelope)
-      && typeof envelope['originalType'] === 'string'
-      && envelope['originalType'].trim().length > 0
-      && isBlogJsonObject(envelope['originalData'])
-      && (envelope['originalTunes'] === undefined || isBlogJsonObject(envelope['originalTunes']));
+    return decodeBlogUnsupportedBlockEnvelope(envelope) !== null;
   }
 
   return value['unsupportedBlock'] === undefined;

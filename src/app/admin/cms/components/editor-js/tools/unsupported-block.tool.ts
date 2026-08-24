@@ -2,11 +2,11 @@ import type {BlockTool, BlockToolConstructorOptions} from '@editorjs/editorjs';
 
 import type {
   BlogJsonObject,
-  BlogUnsupportedBlockEnvelope,
 } from '../../../../../features/blog/models/blog-post.model';
+import type {DecodedBlogUnsupportedBlockEnvelope} from '../../../../../features/blog/utils/blog-unsupported-block.util';
 import {isJsonObject} from '../../../utils/blog-editor-document-validation.util';
 
-export type UnsupportedEditorBlockData = BlogUnsupportedBlockEnvelope;
+export type UnsupportedEditorBlockData = DecodedBlogUnsupportedBlockEnvelope;
 
 export class UnsupportedBlockTool implements BlockTool {
   static get isReadOnlySupported(): boolean {
