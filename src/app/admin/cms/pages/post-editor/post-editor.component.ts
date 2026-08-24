@@ -2148,6 +2148,9 @@ export class CmsPostEditorComponent implements AfterViewInit {
           slug: uploadSlug,
           role: entry.role,
           altText: entry.altText,
+          ...(entry.role === 'open-graph' ? {
+            optimization: {enabled: true, outputType: 'image/jpeg', forceOutputType: true},
+          } : {}),
         }).pipe(
           takeUntilDestroyed(this.destroyRef),
           tap(uploadProgress => {

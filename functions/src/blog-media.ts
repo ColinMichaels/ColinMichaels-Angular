@@ -31,7 +31,7 @@ export interface BlogMediaVariant {
 
 export interface FinalizedBlogMedia {
   checksum: string;
-  contentType: 'image/webp';
+  contentType: BlogMediaVariant['contentType'];
   downloadUrl: string;
   height: number;
   mediaId: string;
@@ -96,6 +96,17 @@ export function getResponsiveVariantWidths(sourceWidth: number): readonly number
     ...OUTPUT_WIDTHS.filter(width => width < sourceWidth),
     Math.min(sourceWidth, OUTPUT_WIDTHS[OUTPUT_WIDTHS.length - 1]),
   ])].sort((left, right) => left - right);
+}
+
+/**
+ * Social crawlers still have inconsistent WebP support. Keep an Open Graph
+ * upload JPEG-only so the URL stored on the post is directly usable by every
+ * social scraper, rather than merely selecting JPEG from a mixed variant set.
+ */
+export function getBlogMediaVariantFormats(role: string): readonly TrustedImageVariantFormat[] {
+  return role.trim().toLowerCase() === 'open-graph'
+    ? ['jpeg']
+    : ['avif', 'webp', 'jpeg'];
 }
 
 export async function finalizeBlogMediaUpload(
@@ -174,7 +185,7 @@ export async function finalizeBlogMediaUpload(
 
     const variants: BlogMediaVariant[] = [];
     for (const width of getResponsiveVariantWidths(sourceWidth)) {
-      for (const format of ['avif', 'webp', 'jpeg'] as const) {
+      for (const format of getBlogMediaVariantFormats(request.role)) {
         const output = await createVariant(source, width, format);
         const extension = format === 'jpeg' ? 'jpg' : format;
         const storagePath = `cms/blog-media/${request.slug}/${request.role}/${request.mediaId}/${width}w.${extension}`;
@@ -209,11 +220,12 @@ export async function finalizeBlogMediaUpload(
       }
     }
 
+    const primaryFormat: TrustedImageVariantFormat = request.role === 'open-graph' ? 'jpeg' : 'webp';
     const primary = [...variants]
-      .filter(variant => variant.format === 'webp')
+      .filter(variant => variant.format === primaryFormat)
       .sort((left, right) => right.width - left.width)[0];
     if (!primary) {
-      throw new Error('Responsive image generation did not produce a WebP primary asset.');
+      throw new Error(`Responsive image generation did not produce a ${primaryFormat.toUpperCase()} primary asset.`);
     }
 
     const result: FinalizedBlogMedia = {
@@ -224,7 +236,7 @@ export async function finalizeBlogMediaUpload(
       originalSize: source.byteLength,
       downloadUrl: primary.url,
       storagePath: primary.storagePath,
-      contentType: 'image/webp',
+      contentType: primary.contentType,
       size: primary.size,
       width: primary.width,
       height: primary.height,

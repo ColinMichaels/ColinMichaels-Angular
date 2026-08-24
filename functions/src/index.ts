@@ -1546,7 +1546,7 @@ export const rssFeed = onRequest(
 
     try {
       const posts = await fetchPublishedFeedBlogPosts();
-      const xml = renderRssFeed(posts);
+      const xml = await renderRssFeed(posts);
 
       response
         .status(200)
@@ -1582,7 +1582,7 @@ export const jsonFeed = onRequest(
 
     try {
       const posts = await fetchPublishedFeedBlogPosts();
-      const feed = renderJsonFeed(posts);
+      const feed = await renderJsonFeed(posts);
 
       response
         .status(200)
@@ -4110,11 +4110,10 @@ async function fetchPublishedFeedBlogPosts(): Promise<readonly SeoBlogPostDocume
     });
 }
 
-function renderRssFeed(posts: readonly SeoBlogPostDocument[]): string {
+async function renderRssFeed(posts: readonly SeoBlogPostDocument[]): Promise<string> {
   const latestPostUpdate = getLatestIsoDate(posts.map(post => post.updatedAt || post.publishedAt).filter(isNonEmptyString));
-  const items = posts
-    .map(post => renderRssFeedItem(post))
-    .join('\n');
+  const resolveImage = createOpenGraphImageResolver();
+  const items = (await Promise.all(posts.map(post => renderRssFeedItem(post, resolveImage)))).join('\n');
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -4134,8 +4133,11 @@ function renderRssFeed(posts: readonly SeoBlogPostDocument[]): string {
   ].filter(line => line.length > 0).join('\n');
 }
 
-function renderRssFeedItem(post: SeoBlogPostDocument): string {
-  const metadata = createBlogPostFeedMetadata(post);
+async function renderRssFeedItem(
+  post: SeoBlogPostDocument,
+  resolveImage: (value: string) => Promise<string>
+): Promise<string> {
+  const metadata = await createBlogPostFeedMetadata(post, resolveImage);
   const categories = metadata.tags
     .map(tag => `      <category>${escapeXml(tag)}</category>`)
     .join('\n');
@@ -4158,7 +4160,8 @@ function renderRssFeedItem(post: SeoBlogPostDocument): string {
   ].filter(line => line.length > 0).join('\n');
 }
 
-function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
+async function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): Promise<string> {
+  const resolveImage = createOpenGraphImageResolver();
   const feed = {
     version: 'https://jsonfeed.org/version/1.1',
     title: `${SITE_NAME} Blog`,
@@ -4174,8 +4177,8 @@ function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
         url: SITE_URL,
       },
     ],
-    items: posts.map(post => {
-      const metadata = createBlogPostFeedMetadata(post);
+    items: await Promise.all(posts.map(async post => {
+      const metadata = await createBlogPostFeedMetadata(post, resolveImage);
 
       return {
         id: metadata.url,
@@ -4194,13 +4197,16 @@ function renderJsonFeed(posts: readonly SeoBlogPostDocument[]): string {
         ],
         tags: metadata.tags,
       };
-    }),
+    })),
   };
 
   return `${JSON.stringify(feed, null, 2)}\n`;
 }
 
-function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
+async function createBlogPostFeedMetadata(
+  post: SeoBlogPostDocument,
+  resolveImage: (value: string) => Promise<string>
+): Promise<{
   title: string;
   description: string;
   url: string;
@@ -4212,10 +4218,12 @@ function createBlogPostFeedMetadata(post: SeoBlogPostDocument): {
   tags: readonly string[];
   publishedAt: string;
   modifiedAt: string;
-} {
+}> {
   const title = stripHtml(post.ogTitle || post.seoTitle || post.title);
   const description = truncateDescription(stripHtml(post.ogDescription || post.seoDescription || post.excerpt));
-  const image = createAbsoluteUrl(toOpenGraphCompatibleImage(post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE));
+  const image = createAbsoluteUrl(await resolveImage(
+    post.seoOpenGraphImage || post.ogImage || post.thumbnailImage || post.coverImage || HOMEPAGE_OG_IMAGE
+  ));
   const imageWidth = post.seoOpenGraphImageWidth ?? post.ogImageWidth ?? DEFAULT_OG_IMAGE_WIDTH;
   const imageHeight = post.seoOpenGraphImageHeight ?? post.ogImageHeight ?? DEFAULT_OG_IMAGE_HEIGHT;
   const url = createBlogFeedItemUrl(post.seoCanonical, post.slug, SITE_URL);
@@ -5296,6 +5304,20 @@ async function resolveOpenGraphCompatibleImage(value: string): Promise<string> {
     logger.warn('Unable to resolve an Open Graph JPEG media variant.', {mediaId, error});
     return HOMEPAGE_OG_IMAGE;
   }
+}
+
+function createOpenGraphImageResolver(): (value: string) => Promise<string> {
+  const resolvedImages = new Map<string, Promise<string>>();
+
+  return (value: string) => {
+    const image = createAbsoluteUrl(value || HOMEPAGE_OG_IMAGE);
+    let resolved = resolvedImages.get(image);
+    if (!resolved) {
+      resolved = resolveOpenGraphCompatibleImage(image);
+      resolvedImages.set(image, resolved);
+    }
+    return resolved;
+  };
 }
 
 function isWebpImageUrl(value: string): boolean {
