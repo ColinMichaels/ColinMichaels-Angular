@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   detectTrustedImageMimeType,
+  getBlogMediaVariantFormats,
   getResponsiveVariantWidths,
 } = require('../lib/blog-media.js');
 
@@ -20,4 +21,10 @@ test('creates bounded responsive widths without enlargement or duplicates', () =
   assert.deepEqual(getResponsiveVariantWidths(960), [480, 960]);
   assert.deepEqual(getResponsiveVariantWidths(2400), [480, 960, 1600]);
   assert.deepEqual(getResponsiveVariantWidths(0), []);
+});
+
+test('keeps Open Graph uploads JPEG-only while retaining responsive web formats elsewhere', () => {
+  assert.deepEqual(getBlogMediaVariantFormats('open-graph'), ['jpeg']);
+  assert.deepEqual(getBlogMediaVariantFormats('cover'), ['avif', 'webp', 'jpeg']);
+  assert.deepEqual(getBlogMediaVariantFormats('editor-image'), ['avif', 'webp', 'jpeg']);
 });

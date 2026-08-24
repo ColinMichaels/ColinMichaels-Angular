@@ -236,6 +236,30 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(toast.success).toHaveBeenCalledWith(jasmine.stringMatching(/Review and save the draft/));
   });
 
+  it('requests a forced JPEG upload for an Open Graph image in a post package', async () => {
+    uploadImage.and.returnValue(of(createUploadProgress(100, 'https://images.example/package-social.jpg')));
+    const post = createPost('media://images/cover.webp');
+    post.seo.openGraphImage = 'media://images/social.jpg';
+    const event = createFileEvent([
+      createPackageFile('post.json', JSON.stringify(post), 'application/json'),
+      createPackageFile('image-manifest.json', JSON.stringify({
+        images: [
+          {file: 'images/cover.webp', role: 'cover'},
+          {file: 'images/social.jpg', role: 'open-graph'},
+        ],
+      }), 'application/json'),
+      createPackageFile('images/cover.webp', 'cover-bytes', 'image/webp'),
+      createPackageFile('images/social.jpg', 'social-bytes', 'image/jpeg'),
+    ]);
+
+    await editor.importPostPackage(event);
+
+    expect((uploadImage.calls.argsFor(1) as unknown as readonly unknown[])[1]).toEqual(jasmine.objectContaining({
+      role: 'open-graph',
+      optimization: {enabled: true, outputType: 'image/jpeg', forceOutputType: true},
+    }));
+  });
+
   it('uses one shared lock when JSON reading starts before a package import', async () => {
     let resolveJson: ((value: string) => void) | undefined;
     const delayedJson = new Promise<string>(resolve => {
