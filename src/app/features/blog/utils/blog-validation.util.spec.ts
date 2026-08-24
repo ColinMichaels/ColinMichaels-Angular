@@ -133,6 +133,41 @@ describe('blog post validation', () => {
       },
     })).toBeTrue();
     expect(isBlogContentBlock({
+      id: 'encoded-table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          encoding: 'json-v1',
+          originalDataJson: '{"content":[["A","B"]]}',
+          originalTunesJson: '{"alignmentTune":{"alignment":"center"}}',
+        },
+      },
+    })).toBeTrue();
+    expect(isBlogContentBlock({
+      id: 'bad-encoded-table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          encoding: 'json-v1',
+          originalDataJson: '{not-json}',
+        },
+      },
+    })).toBeFalse();
+    expect(isBlogContentBlock({
+      id: 'mixed-encoded-table-1',
+      type: 'unsupported',
+      data: {
+        unsupportedBlock: {
+          originalType: 'table',
+          encoding: 'json-v1',
+          originalDataJson: '{"content":[["A","B"]]}',
+          originalData: {content: [['A', 'B']]},
+        },
+      },
+    })).toBeFalse();
+    expect(isBlogContentBlock({
       id: 'table-1',
       type: 'unsupported',
       data: {unsupportedBlock: {originalType: 'table'}},

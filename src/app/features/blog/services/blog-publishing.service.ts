@@ -160,6 +160,21 @@ export class BlogPublishingService {
       }
     }
 
+    if (error instanceof FirebaseError && error.code === 'functions/internal') {
+      const directDetails = (error as FirebaseError & { details?: unknown }).details;
+      const details = isRecord(directDetails)
+        ? directDetails
+        : (isRecord(error.customData) ? error.customData['details'] : undefined);
+      const reference = isRecord(details) && typeof details['reference'] === 'string'
+        ? details['reference'].trim()
+        : '';
+
+      return new Error(
+        'The publishing service encountered an unexpected server error. Your draft remains in the editor; retry once.'
+        + (reference ? ` If it continues, report reference ${reference}.` : '')
+      );
+    }
+
     if (error instanceof Error) {
       return error;
     }

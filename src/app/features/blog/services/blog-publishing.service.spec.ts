@@ -1,4 +1,5 @@
 import {TestBed} from '@angular/core/testing';
+import {FirebaseError} from 'firebase/app';
 
 import {BlogPost} from '../models/blog-post.model';
 import {BlogPublishingService} from './blog-publishing.service';
@@ -37,5 +38,28 @@ describe('BlogPublishingService', () => {
       .toBeRejectedWithError('Firebase Functions is not initialized.');
     await expectAsync(service.deletePost(createPost().id, 0))
       .toBeRejectedWithError('Firebase Functions is not initialized.');
+  });
+
+  it('turns opaque internal callable failures into actionable editor guidance', () => {
+    const service = TestBed.inject(BlogPublishingService);
+    const toPublishingError = Reflect.get(service, 'toPublishingError') as (
+      error: unknown,
+      request: object
+    ) => Error;
+    const error = new FirebaseError('functions/internal', 'internal', {
+      details: {reference: 'failure-reference-123'},
+    });
+
+    const publishingError = toPublishingError.call(service, error, {
+      operation: 'save',
+      postId: createPost().id,
+      expectedRevision: 0,
+      requestId: 'request-reference-123',
+      post: createPost(),
+    });
+
+    expect(publishingError.message).toContain('Your draft remains in the editor');
+    expect(publishingError.message).toContain('failure-reference-123');
+    expect(publishingError.message).not.toBe('internal');
   });
 });

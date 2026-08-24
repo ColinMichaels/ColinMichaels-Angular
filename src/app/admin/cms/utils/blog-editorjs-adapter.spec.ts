@@ -1055,12 +1055,9 @@ describe('blog-editorjs-adapter', () => {
       data: {
         unsupportedBlock: {
           originalType: 'table',
-          originalData: {
-            withHeadings: true,
-            content: [['Name', 'Value'], ['Speed', 42]],
-            settings: {compact: false},
-          },
-          originalTunes: {alignmentTune: {alignment: 'center'}},
+          encoding: 'json-v1',
+          originalDataJson: '{"withHeadings":true,"content":[["Name","Value"],["Speed",42]],"settings":{"compact":false}}',
+          originalTunesJson: '{"alignmentTune":{"alignment":"center"}}',
         },
       },
     }]);
