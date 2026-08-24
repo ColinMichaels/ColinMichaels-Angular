@@ -1146,6 +1146,86 @@ describe('blog-editorjs-adapter', () => {
     }));
   });
 
+  it('restores redundant canonical package lists and YouTube embeds from compatibility envelopes', () => {
+    const document = createEditorDocument(createPost({
+      blocks: [
+        {
+          id: 'package-list',
+          type: 'unsupported',
+          data: {
+            unsupportedBlock: {
+              originalType: 'list',
+              originalData: {
+                ordered: false,
+                style: 'unordered',
+                listStyle: 'unordered',
+                listPresentation: 'standard',
+                listMeta: {},
+                items: ['See the scene', 'Carry the load'],
+                listItems: [
+                  {content: 'See the scene', meta: {}, items: []},
+                  {content: 'Carry the load', meta: {}, items: []},
+                ],
+              },
+            },
+          },
+        },
+        {
+          id: 'package-youtube',
+          type: 'unsupported',
+          data: {
+            unsupportedBlock: {
+              originalType: 'embed',
+              originalData: {
+                provider: 'youtube',
+                url: 'https://www.youtube.com/watch?v=s4SHEhtmTYc',
+                embedUrl: 'https://www.youtube.com/embed/s4SHEhtmTYc',
+              },
+            },
+          },
+        },
+      ],
+    }));
+
+    expect(document.blocks).toEqual([
+      {
+        id: 'package-list',
+        type: 'list',
+        data: {
+          style: 'unordered',
+          meta: {},
+          items: [
+            {content: 'See the scene', meta: {}, items: []},
+            {content: 'Carry the load', meta: {}, items: []},
+          ],
+        },
+        tunes: {listPresentation: {presentation: 'standard'}},
+      },
+      {
+        id: 'package-youtube',
+        type: 'youtubeEmbed',
+        data: {url: 'https://www.youtube.com/watch?v=s4SHEhtmTYc'},
+      },
+    ]);
+
+    const restored = createBlogBlocksFromEditorDocument(document);
+    expect(restored.map(block => block.type)).toEqual(['list', 'embed']);
+    expect(restored[0].data).toEqual(jasmine.objectContaining({
+      ordered: false,
+      listStyle: 'unordered',
+      listPresentation: 'standard',
+      listItems: [
+        {content: 'See the scene', meta: {}, items: []},
+        {content: 'Carry the load', meta: {}, items: []},
+      ],
+    }));
+    expect(restored[1].data).toEqual(jasmine.objectContaining({
+      provider: 'youtube',
+      url: 'https://www.youtube.com/watch?v=s4SHEhtmTYc',
+      embedUrl: 'https://www.youtube.com/embed/s4SHEhtmTYc',
+    }));
+  });
+
   it('envelopes malformed known blocks instead of partially normalizing or dropping data', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [{

@@ -37,6 +37,7 @@ import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/s
 import {DEFAULT_COVER_IMAGE} from '../../../../features/blog/blog.constants';
 import {
   BLOG_POST_STATUSES,
+  isBlogContentBlock,
   isBlogPost,
   isRecord,
   isStringArray
@@ -322,6 +323,10 @@ function createImportedOpenGraph(value: unknown): BlogPost['og'] | undefined {
 
 function createImportedBlocks(value: Record<string, unknown>, fallback: readonly BlogContentBlock[]): readonly BlogContentBlock[] {
   if (Array.isArray(value['blocks'])) {
+    if (value['blocks'].every(isBlogContentBlock)) {
+      return value['blocks'];
+    }
+
     const blocks = createBlogBlocksFromEditorDocument({
       time: Date.now(),
       blocks: value['blocks'] as OutputData['blocks'],
@@ -1003,6 +1008,7 @@ function getErrorMessage(error: unknown): string {
               <app-admin-control-module
                 title="Recovery & Conflicts"
                 [summary]="recoverySummary"
+                [(expanded)]="recoveryPanelExpanded"
                 description="Recovery copies are private to your account and never publish or replace the canonical post automatically."
               >
                 <div class="space-y-3 text-xs">
@@ -1381,6 +1387,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected readonly recoveryError = signal('');
   protected readonly showRecoveryComparison = signal(false);
   protected readonly saveConflict = signal<BlogPostRevisionConflictError | null>(null);
+  protected readonly recoveryPanelExpanded = signal(false);
   protected readonly newAuthor = signal<AuthorProfile | null>(null);
   protected readonly selectedAuthor = computed(() => (
     this.authors().find(author => author.id === this.postForm.controls.authorId.value)
@@ -1787,6 +1794,16 @@ export class CmsPostEditorComponent implements AfterViewInit {
       }
 
       await this.applyFirestorePostNow(latestRemotePost);
+
+      if (this.isNewPost && !this.hasCreatedPost) {
+        this.hasCreatedPost = true;
+        this.recoveryService.clearNewPostId();
+        void this.router.navigate(['/admin/cms', latestRemotePost.slug, 'edit'], {
+          replaceUrl: true,
+          queryParamsHandling: 'preserve',
+        });
+      }
+
       this.toast.success('Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
     });
   }
@@ -2743,7 +2760,19 @@ export class CmsPostEditorComponent implements AfterViewInit {
     } catch (error) {
       if (error instanceof BlogPostRevisionConflictError) {
         this.saveConflict.set(error);
+        this.recoveryPanelExpanded.set(true);
         this.requestRecoverySave();
+
+        const firstSaveCommitted = this.isNewPost
+          && error.expectedRevision === 0
+          && error.actualRevision !== null
+          && error.actualRevision >= 1
+          && Boolean(error.remotePost);
+
+        this.toast.error(firstSaveCommitted
+          ? 'The first save already created this draft. Recovery & Conflicts is open; choose Reload remote to adopt revision 1 without overwriting your local recovery copy.'
+          : error.message);
+        return false;
       }
       this.toast.error(error instanceof Error ? error.message : 'Unable to save post to Firestore.');
       return false;

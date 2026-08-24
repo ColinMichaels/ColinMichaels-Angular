@@ -866,36 +866,41 @@ function extractGalleryImages(value: unknown): readonly BlogGalleryImage[] {
 export function createEditorDocument(post: BlogPost): OutputData {
   return normalizeEditorDocumentForBlogEditor({
     time: new Date(post.updatedAt).getTime(),
-    blocks: post.blocks.map(block => toEditorBlock(recoverCanonicalListEnvelope(block) ?? block)),
+    blocks: post.blocks.map(block => toEditorBlock(recoverCanonicalCompatibilityEnvelope(block) ?? block)),
   });
 }
 
 /**
- * Portable post packages use canonical list data while compatibility
+ * Portable post packages use canonical block data while compatibility
  * envelopes retain raw Editor.js data. A loose package imported by an older
- * build could therefore protect an otherwise valid canonical list. Recover
- * only the unambiguous canonical list shape and let the normal adapter produce
- * the Editor.js representation; every other envelope remains untouched.
+ * build could therefore protect an otherwise valid canonical list or embed.
+ * Recover only unambiguous canonical shapes and let the normal adapter produce
+ * their registered Editor.js representation; every other envelope remains
+ * untouched.
  */
-function recoverCanonicalListEnvelope(block: BlogContentBlock): BlogContentBlock | null {
+function recoverCanonicalCompatibilityEnvelope(block: BlogContentBlock): BlogContentBlock | null {
   const envelope = block.type === 'unsupported'
     ? decodeBlogUnsupportedBlockEnvelope(block.data.unsupportedBlock)
     : null;
 
-  if (!envelope || envelope.originalType !== 'list') {
+  if (!envelope) {
     return null;
   }
 
-  const data = envelope.originalData;
+  const recoveredData = envelope.originalType === 'list'
+    ? normalizeRecoverableCanonicalListData(envelope.originalData)
+    : envelope.originalType === 'embed'
+      ? normalizeRecoverableCanonicalEmbedData(envelope.originalData)
+      : null;
 
-  if (!isRecoverableCanonicalListData(data)) {
+  if (!recoveredData) {
     return null;
   }
 
   const candidate: BlogContentBlock = {
     id: block.id,
-    type: 'list',
-    data: data as BlogBlockData,
+    type: envelope.originalType as 'list' | 'embed',
+    data: recoveredData,
     ...(envelope.originalTunes ? {editorTunes: envelope.originalTunes} : {}),
   };
   const editorBlock = toEditorBlock(candidate);
@@ -904,11 +909,12 @@ function recoverCanonicalListEnvelope(block: BlogContentBlock): BlogContentBlock
   return validation.isValid ? candidate : null;
 }
 
-function isRecoverableCanonicalListData(data: BlogJsonObject): boolean {
+function normalizeRecoverableCanonicalListData(data: BlogJsonObject): BlogBlockData | null {
   const allowedKeys = new Set([
     'placement',
     'items',
     'ordered',
+    'style',
     'listStyle',
     'listPresentation',
     'listMeta',
@@ -918,29 +924,62 @@ function isRecoverableCanonicalListData(data: BlogJsonObject): boolean {
     .some(key => Object.prototype.hasOwnProperty.call(data, key));
   const items = data['items'];
   const listItems = data['listItems'];
+  const style = data['style'];
   const listStyle = data['listStyle'];
   const ordered = data['ordered'];
   const presentation = data['listPresentation'];
+  const placement = data['placement'];
+  const listMeta = data['listMeta'];
 
   if (!hasCanonicalShape
     || !Object.keys(data).every(key => allowedKeys.has(key))
-    || (data['placement'] !== undefined && !BLOG_BLOCK_PLACEMENTS.includes(data['placement'] as BlogBlockPlacement))
+    || (placement !== undefined && !BLOG_BLOCK_PLACEMENTS.includes(placement as BlogBlockPlacement))
     || (items !== undefined && (!Array.isArray(items) || !items.every(item => typeof item === 'string')))
     || (listItems !== undefined && (!Array.isArray(listItems) || !listItems.every(isRecoverableCanonicalListItem)))
-    || (items !== undefined && listItems !== undefined)
+    || (style !== undefined && !BLOG_LIST_STYLES.includes(style as BlogListStyle))
     || (listStyle !== undefined && !BLOG_LIST_STYLES.includes(listStyle as BlogListStyle))
     || (ordered !== undefined && typeof ordered !== 'boolean')
     || (presentation !== undefined && !BLOG_LIST_PRESENTATIONS.includes(presentation as BlogListPresentation))
-    || (data['listMeta'] !== undefined && !isJsonObject(data['listMeta']))
-    || (data['listMeta'] !== undefined && listItems === undefined)
+    || (listMeta !== undefined && !isJsonObject(listMeta))
+    || (listMeta !== undefined && listItems === undefined)
     || (listStyle === 'checklist' && listItems === undefined)
-    || (presentation === 'steps' && listStyle !== 'ordered' && !(listStyle === undefined && ordered === true))) {
-    return false;
+    || (presentation === 'steps' && listStyle !== 'ordered' && !(listStyle === undefined && ordered === true))
+    || (items === undefined && listItems === undefined)) {
+    return null;
   }
 
-  return typeof ordered !== 'boolean'
-    || listStyle === undefined
-    || ordered === (listStyle === 'ordered');
+  if (typeof ordered === 'boolean'
+    && ((listStyle !== undefined && ordered !== (listStyle === 'ordered'))
+      || (style !== undefined && ordered !== (style === 'ordered')))) {
+    return null;
+  }
+
+  if (style !== undefined && listStyle !== undefined && style !== listStyle) {
+    return null;
+  }
+
+  if (Array.isArray(items) && Array.isArray(listItems)) {
+    const redundantRepresentationsMatch = listItems.every(item => item.items.length === 0)
+      && items.length === listItems.length
+      && items.every((item, index) => item === listItems[index].content);
+
+    if (!redundantRepresentationsMatch) {
+      return null;
+    }
+  }
+
+  return {
+    ...(placement !== undefined ? {placement: placement as BlogBlockPlacement} : {}),
+    ...(typeof ordered === 'boolean' ? {ordered} : {}),
+    ...(listStyle !== undefined ? {listStyle: listStyle as BlogListStyle} : {}),
+    ...(presentation !== undefined ? {listPresentation: presentation as BlogListPresentation} : {}),
+    ...(Array.isArray(listItems)
+      ? {
+        listMeta: (listMeta as BlogJsonObject | undefined) ?? {},
+        listItems: listItems as unknown as readonly BlogListItem[],
+      }
+      : {items: items as readonly string[]}),
+  };
 }
 
 function isRecoverableCanonicalListItem(value: unknown): value is BlogListItem {
@@ -952,6 +991,52 @@ function isRecoverableCanonicalListItem(value: unknown): value is BlogListItem {
     && isJsonObject(value['meta'])
     && Array.isArray(value['items'])
     && value['items'].every(isRecoverableCanonicalListItem);
+}
+
+function normalizeRecoverableCanonicalEmbedData(data: BlogJsonObject): BlogBlockData | null {
+  const allowedKeys = new Set([
+    'placement',
+    'provider',
+    'url',
+    'embedUrl',
+    'caption',
+    'height',
+    'isCompanionVideo',
+    'videoTitle',
+    'videoDescription',
+    'videoUploadDate',
+    'videoDurationSeconds',
+  ]);
+  const placement = data['placement'];
+  const provider = data['provider'];
+  const url = data['url'];
+  const embedUrl = data['embedUrl'];
+  const caption = data['caption'];
+  const height = data['height'];
+  const isCompanionVideo = data['isCompanionVideo'];
+  const videoTitle = data['videoTitle'];
+  const videoDescription = data['videoDescription'];
+  const videoUploadDate = data['videoUploadDate'];
+  const videoDurationSeconds = data['videoDurationSeconds'];
+
+  if (!Object.keys(data).every(key => allowedKeys.has(key))
+    || (placement !== undefined && !BLOG_BLOCK_PLACEMENTS.includes(placement as BlogBlockPlacement))
+    || (provider !== undefined && typeof provider !== 'string')
+    || (url !== undefined && typeof url !== 'string')
+    || (embedUrl !== undefined && typeof embedUrl !== 'string')
+    || (caption !== undefined && typeof caption !== 'string')
+    || (height !== undefined && (typeof height !== 'number' || !Number.isFinite(height)))
+    || (isCompanionVideo !== undefined && typeof isCompanionVideo !== 'boolean')
+    || (videoTitle !== undefined && typeof videoTitle !== 'string')
+    || (videoDescription !== undefined && typeof videoDescription !== 'string')
+    || (videoUploadDate !== undefined && typeof videoUploadDate !== 'string')
+    || (videoDurationSeconds !== undefined
+      && (typeof videoDurationSeconds !== 'number' || !Number.isFinite(videoDurationSeconds)))
+    || (typeof url !== 'string' && typeof embedUrl !== 'string')) {
+    return null;
+  }
+
+  return data as BlogBlockData;
 }
 
 export function createBlogBlocksFromEditorDocument(document: OutputData): readonly BlogContentBlock[] {

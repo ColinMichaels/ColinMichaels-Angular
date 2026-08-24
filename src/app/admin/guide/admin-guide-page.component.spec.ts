@@ -62,6 +62,21 @@ describe('AdminGuidePageComponent', () => {
     expect(element.textContent).toContain('1 guide found');
   });
 
+  it('renders first-save revision recovery guidance for a content editor', async () => {
+    const fixture = await createFixture(['contentEditor']);
+    const element = fixture.nativeElement as HTMLElement;
+    const search = element.querySelector<HTMLInputElement>('#admin-guide-search');
+
+    expect(search).not.toBeNull();
+    search!.value = 'expected revision 0 adopt revision';
+    search!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('If New Post reports expected revision 0 and found revision 1');
+    expect(element.textContent).toContain('choose Reload remote');
+    expect(element.textContent).toContain('1 guide found');
+  });
+
   it('keeps unrelated reader roles out of the admin access summary', async () => {
     const fixture = await createFixture(['admin', 'catCornerAddict']);
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';

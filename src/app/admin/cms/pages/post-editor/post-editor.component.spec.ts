@@ -65,6 +65,8 @@ interface TestablePostEditor {
 
   reloadRemotePost(): Promise<void>;
 
+  recoveryPanelExpanded: WritableSignal<boolean>;
+
   restoreRecoveryDraft(): Promise<void>;
 
   saveConflict: WritableSignal<BlogPostRevisionConflictError | null>;
@@ -93,6 +95,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
   let createPreviewForPost: jasmine.Spy;
   let generateAndStoreThumbnail: jasmine.Spy<(request: unknown) => Promise<BlogStoredThumbnail>>;
   let router: jasmine.SpyObj<Pick<Router, 'navigate'>>;
+  let savePost: jasmine.Spy;
   let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success'>>;
 
   beforeEach(async () => {
@@ -100,6 +103,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     getAdminPostBySlug = jasmine.createSpy('getAdminPostBySlug').and.returnValue(undefined);
     createPreviewForPost = jasmine.createSpy('createPreviewForPost');
     generateAndStoreThumbnail = jasmine.createSpy('generateAndStoreThumbnail');
+    savePost = jasmine.createSpy('savePost');
     router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.resolveTo(true);
     toast = jasmine.createSpyObj('CmsToastService', ['error', 'success']);
@@ -112,7 +116,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
       createUniqueSlug: (slug: string) => slug,
       getAdminPostBySlug,
       getAdminPosts$: () => of([]),
-      savePost: jasmine.createSpy('savePost'),
+      savePost,
     };
     const recoveryService = {
       clearNewPostId: jasmine.createSpy('clearNewPostId'),
@@ -136,7 +140,25 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
         },
         {provide: Router, useValue: router},
         {provide: BlogRepositoryService, useValue: blogRepository},
-        {provide: AuthorRepositoryService, useValue: {getAuthors$: () => of([])}},
+        {
+          provide: AuthorRepositoryService,
+          useValue: {
+            getAuthors$: () => of([{
+              id: 'colin-michaels',
+              slug: 'colin-michaels',
+              name: 'Colin Michaels',
+              title: 'Publisher',
+              shortBio: 'Publisher',
+              bio: 'Publisher',
+              avatarUrl: 'https://images.example/colin.webp',
+              imageAlt: 'Colin Michaels',
+              externalProfiles: [],
+              status: 'published',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            }]),
+          },
+        },
         {provide: BlogAiAssistantService, useValue: {}},
         {provide: BlogAiFunctionsService, useValue: {generateAndStoreThumbnail}},
         {provide: BlogMediaUploadService, useValue: {uploadImage}},
@@ -258,6 +280,59 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
       role: 'open-graph',
       optimization: {enabled: true, outputType: 'image/jpeg', forceOutputType: true},
     }));
+  });
+
+  it('keeps canonical list and YouTube blocks editable when a loose backup uses a string author', async () => {
+    uploadImage.and.returnValue(of(createUploadProgress(100, 'https://images.example/package-cover.webp')));
+    const renderDocument = jasmine.createSpy('renderDocument').and.resolveTo(undefined);
+    editor.editorComponent = {
+      renderDocument,
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined),
+    };
+    const loosePost = {
+      ...createPost('media://images/cover.webp'),
+      author: 'Colin Michaels',
+      blocks: [
+        {
+          id: 'package-list',
+          type: 'list',
+          data: {
+            ordered: false,
+            style: 'unordered',
+            listStyle: 'unordered',
+            listPresentation: 'standard',
+            listMeta: {},
+            items: ['See the scene', 'Carry the load'],
+            listItems: [
+              {content: 'See the scene', meta: {}, items: []},
+              {content: 'Carry the load', meta: {}, items: []},
+            ],
+          },
+        },
+        {
+          id: 'package-youtube',
+          type: 'embed',
+          data: {
+            provider: 'youtube',
+            url: 'https://www.youtube.com/watch?v=s4SHEhtmTYc',
+            embedUrl: 'https://www.youtube.com/embed/s4SHEhtmTYc',
+          },
+        },
+      ],
+    };
+    const event = createFileEvent([
+      createPackageFile('post.json', JSON.stringify({posts: [loosePost]}), 'application/json'),
+      createPackageFile('image-manifest.json', JSON.stringify({
+        images: [{file: 'images/cover.webp', role: 'cover'}],
+      }), 'application/json'),
+      createPackageFile('images/cover.webp', 'cover-bytes', 'image/webp'),
+    ]);
+
+    await editor.importPostPackage(event);
+
+    expect(editor.packageImportProgress()?.stage).toBe('complete');
+    const rendered = renderDocument.calls.mostRecent().args[0] as { blocks: readonly { type: string }[] };
+    expect(rendered.blocks.map(block => block.type)).toEqual(['list', 'youtubeEmbed']);
   });
 
   it('uses one shared lock when JSON reading starts before a package import', async () => {
@@ -487,8 +562,32 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(editor.postForm.controls.title.value).toBe('Latest canonical revision');
     expect(editor.saveConflict()).toBeNull();
     expect(renderDocument).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/cms', 'package-post', 'edit'], {
+      replaceUrl: true,
+      queryParamsHandling: 'preserve',
+    });
     expect(toast.success).toHaveBeenCalledWith(
       'Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.'
+    );
+  });
+
+  it('opens recovery with first-save adoption guidance when revision 1 already exists', async () => {
+    const remotePost = {...createPost('https://images.example/remote.webp'), revision: 1};
+    const conflict = new BlogPostRevisionConflictError('package-post', 0, 1, remotePost);
+    savePost.and.rejectWith(conflict);
+    fixture.detectChanges();
+
+    const result = await editor.onSaved({
+      data: {blocks: []},
+      savedAt: '2026-08-24T20:00:00.000Z',
+      blockCount: 0,
+    });
+
+    expect(result).toBeFalse();
+    expect(editor.saveConflict()).toBe(conflict);
+    expect(editor.recoveryPanelExpanded()).toBeTrue();
+    expect(toast.error).toHaveBeenCalledWith(
+      'The first save already created this draft. Recovery & Conflicts is open; choose Reload remote to adopt revision 1 without overwriting your local recovery copy.'
     );
   });
 
