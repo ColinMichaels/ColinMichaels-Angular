@@ -68,12 +68,13 @@ describe('AdminGuidePageComponent', () => {
     const search = element.querySelector<HTMLInputElement>('#admin-guide-search');
 
     expect(search).not.toBeNull();
-    search!.value = 'expected revision 0 adopt revision';
+    search!.value = 'automatic first save reconciliation use saved draft';
     search!.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(element.textContent).toContain('If New Post reports expected revision 0 and found revision 1');
-    expect(element.textContent).toContain('choose Reload remote');
+    expect(element.textContent).toContain('handles the exact New Post conflict expected revision 0 and found revision 1');
+    expect(element.textContent).toContain('the panel remains open with Use saved draft');
+    expect(element.textContent).toContain('Revision 2 or any other mismatch remains a real conflict');
     expect(element.textContent).toContain('1 guide found');
   });
 

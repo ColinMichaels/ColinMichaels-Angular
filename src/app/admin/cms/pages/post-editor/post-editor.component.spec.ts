@@ -63,13 +63,15 @@ interface TestablePostEditor {
   postImportAnnouncement: WritableSignal<string>;
   recoveryDraft: WritableSignal<CmsPostRecoverySnapshot | null>;
 
-  reloadRemotePost(): Promise<void>;
+  reloadRemotePost(automaticFirstSaveAdoption?: boolean): Promise<boolean>;
 
   recoveryPanelExpanded: WritableSignal<boolean>;
 
   restoreRecoveryDraft(): Promise<void>;
 
   saveConflict: WritableSignal<BlogPostRevisionConflictError | null>;
+
+  saveConflictAsCopy(): Promise<void>;
 
   protectBrowserUnload(event: BeforeUnloadEvent): void;
 
@@ -571,9 +573,43 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     );
   });
 
-  it('opens recovery with first-save adoption guidance when revision 1 already exists', async () => {
+  it('automatically adopts revision 1 when the first save already completed', async () => {
     const remotePost = {...createPost('https://images.example/remote.webp'), revision: 1};
     const conflict = new BlogPostRevisionConflictError('package-post', 0, 1, remotePost);
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.resolveTo(true);
+    savePost.and.rejectWith(conflict);
+    fixture.detectChanges();
+    const renderDocument = jasmine.createSpy('renderDocument').and.resolveTo(undefined);
+    editor.editorComponent = {
+      renderDocument,
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined),
+    };
+
+    const result = await editor.onSaved({
+      data: {blocks: []},
+      savedAt: '2026-08-24T20:00:00.000Z',
+      blockCount: 0,
+    });
+
+    expect(result).toBeTrue();
+    expect(persistRecovery).toHaveBeenCalledWith(true);
+    expect(editor.currentPost).toEqual(remotePost);
+    expect(editor.saveConflict()).toBeNull();
+    expect(editor.recoveryPanelExpanded()).toBeTrue();
+    expect(renderDocument).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/cms', 'package-post', 'edit'], {
+      replaceUrl: true,
+      queryParamsHandling: 'preserve',
+    });
+    expect(toast.success).toHaveBeenCalledWith(
+      'Your first save completed successfully. The editor adopted revision 1 and kept your earlier local work in Recovery.'
+    );
+  });
+
+  it('keeps the first-save conflict open when Recovery cannot be stored before adoption', async () => {
+    const remotePost = {...createPost('https://images.example/remote.webp'), revision: 1};
+    const conflict = new BlogPostRevisionConflictError('package-post', 0, 1, remotePost);
+    spyOn(editor, 'persistRecovery').and.resolveTo(false);
     savePost.and.rejectWith(conflict);
     fixture.detectChanges();
 
@@ -586,9 +622,42 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(result).toBeFalse();
     expect(editor.saveConflict()).toBe(conflict);
     expect(editor.recoveryPanelExpanded()).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(
-      'The first save already created this draft. Recovery & Conflicts is open; choose Reload remote to adopt revision 1 without overwriting your local recovery copy.'
+      'Reload was cancelled because the latest local work could not be written to Recovery.'
     );
+  });
+
+  it('keeps revision 2 as a manual conflict instead of treating it as a completed first save', async () => {
+    const remotePost = {...createPost('https://images.example/remote.webp'), revision: 2};
+    const conflict = new BlogPostRevisionConflictError('package-post', 0, 2, remotePost);
+    const persistRecovery = spyOn(editor, 'persistRecovery').and.resolveTo(true);
+    savePost.and.rejectWith(conflict);
+    fixture.detectChanges();
+
+    const result = await editor.onSaved({
+      data: {blocks: []},
+      savedAt: '2026-08-24T20:00:00.000Z',
+      blockCount: 0,
+    });
+
+    expect(result).toBeFalse();
+    expect(editor.saveConflict()).toBe(conflict);
+    expect(editor.recoveryPanelExpanded()).toBeTrue();
+    expect(persistRecovery).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(conflict.message);
+  });
+
+  it('requires confirmation before creating a separate conflict recovery draft', async () => {
+    const confirm = spyOn(window, 'confirm').and.returnValue(false);
+
+    await editor.saveConflictAsCopy();
+
+    expect(confirm).toHaveBeenCalledWith(
+      'Create a separate recovery draft? The canonical post will remain unchanged and both drafts will need manual review. Choose Cancel and use the saved draft unless you intentionally need two versions.'
+    );
+    expect(savePost).not.toHaveBeenCalled();
   });
 
   it('does not apply a captured revision when the canonical post is deleted during recovery persistence', async () => {
