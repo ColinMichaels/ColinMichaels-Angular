@@ -381,9 +381,6 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
   }
 
   ngAfterViewInit(): void {
-    if (this.enableParallax) {
-      this.setupParallaxListeners();
-    }
     this.setupResizeObserver();
 
     if (isPlatformBrowser(this.platformId)) {
@@ -401,8 +398,6 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
     if (this.youtubePlayer) {
       this.youtubePlayer.destroy();
     }
-    window.removeEventListener('scroll', this.onScroll);
-    window.removeEventListener('resize', this.onResize);
   }
 
   private async initializeVideoProviders(): Promise<void> {
@@ -584,11 +579,6 @@ export class FullScreenBackgroundComponent implements OnInit, AfterViewInit, OnD
         element.initialOffset = {x: 0, y: 0};
       }
     });
-  }
-
-  private setupParallaxListeners(): void {
-    window.addEventListener('scroll', this.onScroll.bind(this), {passive: true});
-    window.addEventListener('resize', this.onResize.bind(this), {passive: true});
   }
 
   private setupResizeObserver(): void {

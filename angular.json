@@ -53,8 +53,14 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2MB",
-                  "maximumError": "15MB"
+                  "maximumWarning": "1.65MB",
+                  "maximumError": "1.9MB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "main",
+                  "maximumWarning": "1.35MB",
+                  "maximumError": "1.5MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -166,7 +172,7 @@
     "analytics": false,
     "cache": {
       "enabled": true,
-      "environment": "ci"
+      "environment": "all"
     }
   }
 }

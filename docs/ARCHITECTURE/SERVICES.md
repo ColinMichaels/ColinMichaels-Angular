@@ -27,10 +27,34 @@
   the legacy `components/game/services/log.service.ts` path re-exports the shared implementation so existing Core OS consumers retain one service instance and their current API.
 - Privacy boundary:
   browser clients do not persist logs to Firestore. Any future remote telemetry must be introduced behind a separately authorized, consent-aware sink with retention and redaction rules.
+- Memory boundary:
+  a chronological 500-entry ring buffer replaces unbounded append/copy behavior. Eviction and Clear release retained entry references while pagination and filtering preserve their existing API.
 - Migration:
   no stored data or Firestore Rules change is required. Existing `logs` documents are left untouched.
 
 This section focuses on the key game/runtime services prioritized in the cleanup audit.
+
+## `features/blog/services/blog-storage.service.ts`
+
+- Responsibility:
+  auth-aware canonical post access, compact post-index loading, bounded anonymous direct-article caching, and trusted publishing delegation.
+- Public memory boundary:
+  home, listing, author, category, and search consumers use backend-owned `/postSummaries` records without Editor.js blocks. Direct routes fetch one canonical published post by slug, retain at most three recent full posts, coalesce same-slug requests, refresh a stale full post when its summary revision advances, and recheck canonical publication when a summary disappears.
+- Admin compatibility:
+  CMS roles retain the existing complete collection stream for exports, bulk actions, media references, and legacy admin surfaces. Firestore `docChanges()` remaps only changed documents, and same-version editor streams suppress redundant hydration.
+- Migration:
+  `functions/scripts/backfill-post-summaries.mjs` performs an idempotent dry-run-by-default backfill, requires an explicit project in apply mode, transactionally rechecks repair candidates, and writes the schema-versioned completeness manifest only after successful application. See `PERFORMANCE_AND_CACHE_BUDGETS.md`.
+- Security boundary:
+  browser clients cannot write summaries. Trusted canonical mutations update them transactionally.
+
+## `features/blog/services/blog-article-library.service.ts`
+
+- Responsibility:
+  device-local reading progress, resume headings, favorites, and read-later metadata.
+- Persistence boundary:
+  IndexedDB remains authoritative. Startup and visible-tab reconciliation use a full read; successful single-record writes update signal state incrementally instead of rescanning the store.
+- Migration:
+  no database or record-schema migration is introduced by the incremental state path.
 
 ## `shared/analytics/site-analytics.service.ts`
 

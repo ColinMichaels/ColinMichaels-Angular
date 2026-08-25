@@ -1,14 +1,14 @@
-import {BlogPost} from '../../blog/models/blog-post.model';
+import {BlogPostSummary} from '../../blog/models/blog-post.model';
 import {HomepageHeroSettings} from '../models/homepage-hero.model';
 
 const HOMEPAGE_HERO_MAX_POSTS = 6;
 const CREATOR_PROMISE_PATTERN = /\b(?:angular|architecture|camera|creator|drone|firebase|fpv|gadget|gadgets|gear|internet find|internet finds|lab|labs|photography|project|projects|robot|robots|software|tech|technology|video|web development)\b/iu;
 
-function getSortablePostDate(post: BlogPost): string {
+function getSortablePostDate(post: BlogPostSummary): string {
   return post.publishedAt ?? post.updatedAt;
 }
 
-function matchesCreatorPromise(post: BlogPost): boolean {
+function matchesCreatorPromise(post: BlogPostSummary): boolean {
   return CREATOR_PROMISE_PATTERN.test([
     post.title,
     post.excerpt,
@@ -20,16 +20,16 @@ function matchesCreatorPromise(post: BlogPost): boolean {
 }
 
 export function selectHomepageHeroPost(
-  posts: readonly BlogPost[],
+  posts: readonly BlogPostSummary[],
   settings: HomepageHeroSettings
-): BlogPost | null {
+): BlogPostSummary | null {
   return selectHomepageHeroPosts(posts, settings)[0] ?? null;
 }
 
 export function selectHomepageHeroPosts(
-  posts: readonly BlogPost[],
+  posts: readonly BlogPostSummary[],
   settings: HomepageHeroSettings
-): readonly BlogPost[] {
+): readonly BlogPostSummary[] {
   const seenPostIds = new Set<string>();
   const newestPosts = [...posts].sort((left, right) => (
     getSortablePostDate(right).localeCompare(getSortablePostDate(left))
@@ -44,7 +44,7 @@ export function selectHomepageHeroPosts(
     return true;
   });
 
-  let leadPost: BlogPost | undefined;
+  let leadPost: BlogPostSummary | undefined;
   const promisePosts = newestPosts.filter(matchesCreatorPromise);
   const automaticPool = promisePosts.length > 0 ? promisePosts : newestPosts;
 

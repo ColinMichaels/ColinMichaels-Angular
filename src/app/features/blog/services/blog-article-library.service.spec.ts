@@ -54,6 +54,19 @@ describe('BlogArticleLibraryService', () => {
     expect(service.getRecord(post.slug)?.favorite).toBeTrue();
   });
 
+  it('updates in-memory records after writes without rescanning the full store', async () => {
+    const post = createPost();
+    const refresh = spyOn(service, 'refresh').and.callThrough();
+
+    await service.setFavorite(post, true);
+    await service.updateProgress(post, 36);
+    await service.resetProgress(post.slug);
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(service.getRecord(post.slug)?.favorite).toBeTrue();
+    expect(service.getRecord(post.slug)?.progressPercent).toBe(0);
+  });
+
   it('removes empty list-only records after their final choice is cleared', async () => {
     const post = createPost();
     await service.setFavorite(post, true);
@@ -135,5 +148,16 @@ describe('BlogArticleLibraryService', () => {
     expect(normalizeProgress(120)).toBe(100);
     expect(normalizeProgress(Number.NaN)).toBe(0);
     expect(isBlogArticleLibraryRecord({version: 1, progressPercent: 101})).toBeFalse();
+  });
+
+  it('reconciles persisted records when a tab becomes visible again', async () => {
+    const refresh = spyOn(service, 'refresh').and.callThrough();
+    spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,4 @@
-import {TestBed} from '@angular/core/testing';
+import {DeferBlockState, TestBed} from '@angular/core/testing';
 import {RouterTestingModule} from '@angular/router/testing';
 import {of} from 'rxjs';
 
@@ -39,7 +39,7 @@ describe('SiteFooterComponent', () => {
     }).compileComponents();
   });
 
-  it('renders the shared site navigation and ownership details', () => {
+  it('renders the shared site navigation and defers non-critical sharing controls', async () => {
     const fixture = TestBed.createComponent(SiteFooterComponent);
     fixture.detectChanges();
 
@@ -58,6 +58,11 @@ describe('SiteFooterComponent', () => {
     expect(footerText).toContain('Topics');
     expect(footerText).toContain('About');
     expect(footerText).toContain('Open OS');
+    expect(footer.querySelector('[aria-label="Share ColinMichaels.com"]')).toBeNull();
+
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map(deferBlock => deferBlock.render(DeferBlockState.Complete)));
+
     expect(footer.querySelector('[aria-label="Share ColinMichaels.com"]')).not.toBeNull();
   });
 

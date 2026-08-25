@@ -22,7 +22,6 @@ import {map} from 'rxjs';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogPostListingComponent} from '../../../blog/components/post-listing/blog-post-listing.component';
 import {BlogRepositoryService} from '../../../blog/services/blog-repository.service';
-import {createBlogReadingStats} from '../../../blog/utils/blog-reading.util';
 import {SeoService} from '../../../../shared/seo/seo.service';
 import {HOMEPAGE_OG_IMAGE, SITE_NAME, SITE_URL, createSiteTitle} from '../../../../shared/seo/seo.metadata';
 import {
@@ -684,7 +683,7 @@ export class AuthorPageComponent {
   protected readonly archiveView = computed(() => parseBlogArchiveView(this.requestedView(), 'list'));
   protected readonly listingLayout = computed(() => resolveBlogArchiveListingLayout(this.archiveView()));
   private readonly authorList = toSignal(this.authors.getPublishedAuthors$(), {initialValue: []});
-  private readonly publishedPosts = toSignal(this.blog.getPublishedFullPosts$(), {initialValue: []});
+  private readonly publishedPosts = toSignal(this.blog.getPublishedPosts$(), {initialValue: []});
   protected readonly author = computed(() => this.authorList().find(author => author.slug === this.slug()));
   protected readonly posts = computed(() => {
     const author = this.author();
@@ -701,7 +700,10 @@ export class AuthorPageComponent {
   protected readonly stats = computed<AuthorStats | null>(() => {
     const posts = this.posts();
     if (!this.author()) return null;
-    const readingStats = posts.map(post => createBlogReadingStats(post));
+    const readingStats = posts.map(post => ({
+      wordCount: post.wordCount ?? 0,
+      readingMinutes: post.readingMinutes ?? 1,
+    }));
     return {
       publishedPosts: posts.length,
       totalWords: readingStats.reduce((total, stats) => total + stats.wordCount, 0),

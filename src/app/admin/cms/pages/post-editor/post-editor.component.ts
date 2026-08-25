@@ -1101,7 +1101,12 @@ function isFirstSaveCommitConflict(
                 (generateThumbnail)="generateAndStoreThumbnail($event)"
               ></app-cms-assistant-panel>
 
-              <app-admin-control-module title="Last Saved" [summary]="lastSavedSummary">
+              <app-admin-control-module
+                title="Last Saved"
+                [summary]="lastSavedSummary"
+                [expanded]="lastSavedPanelExpanded()"
+                (expandedChange)="setLastSavedPanelExpanded($event)"
+              >
                 @if (lastSaved; as saved) {
                   <div class="space-y-3">
                     <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
@@ -1121,8 +1126,10 @@ function isFirstSaveCommitConflict(
                         Download JSON
                       </button>
                     </div>
-                    <pre
-                      class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ lastSavedBackupJson }}</pre>
+                    @if (lastSavedBackupJson) {
+                      <pre
+                        class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ lastSavedBackupJson }}</pre>
+                    }
                   </div>
                 } @else {
                   <p class="text-sm text-zinc-500">
@@ -1185,30 +1192,32 @@ function isFirstSaveCommitConflict(
               </p>
             </header>
 
-            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <app-cms-draft-preview-panel
-                #draftPreviewPanel
-                [post]="currentPost"
-                [status]="postForm.controls.status.value"
-                [isSaving]="isSaveInProgress || isPreviewGenerationInProgress"
-                [isDeleting]="isDeleteInProgress"
-                (generateRequested)="generatePreviewLink()"
-                (postChanged)="onPreviewPostChanged($event)"
-              ></app-cms-draft-preview-panel>
+            @if (hasOpenedPreviewWorkspace()) {
+              <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <app-cms-draft-preview-panel
+                  #draftPreviewPanel
+                  [post]="currentPost"
+                  [status]="postForm.controls.status.value"
+                  [isSaving]="isSaveInProgress || isPreviewGenerationInProgress"
+                  [isDeleting]="isDeleteInProgress"
+                  (generateRequested)="generatePreviewLink()"
+                  (postChanged)="onPreviewPostChanged($event)"
+                ></app-cms-draft-preview-panel>
 
-              <div class="space-y-3">
-                <app-cms-seo-checklist
-                  [checklistInput]="createSeoChecklistInput()"
-                ></app-cms-seo-checklist>
-                <button
-                  type="button"
-                  class="inline-flex h-10 w-full items-center justify-center border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 hover:border-cyan-400 hover:text-cyan-200"
-                  (click)="openSeoFields()"
-                >
-                  Edit SEO &amp; share-card fields
-                </button>
+                <div class="space-y-3">
+                  <app-cms-seo-checklist
+                    [checklistInput]="createSeoChecklistInput()"
+                  ></app-cms-seo-checklist>
+                  <button
+                    type="button"
+                    class="inline-flex h-10 w-full items-center justify-center border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 hover:border-cyan-400 hover:text-cyan-200"
+                    (click)="openSeoFields()"
+                  >
+                    Edit SEO &amp; share-card fields
+                  </button>
+                </div>
               </div>
-            </div>
+            }
           </section>
 
           <section
@@ -1372,7 +1381,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
   private editorStateApplicationQueue: Promise<void> = Promise.resolve();
   private hasLoadedRecoveryDraft = false;
   private readonly recoveryRequests = new Subject<void>();
-  private recoveryWritePromise: Promise<void> | null = null;
+  private recoveryWritePromise: Promise<boolean> | null = null;
+  private recoveryWritePending = false;
+  private recoveryForcePending = false;
+  private isRecoveryCleanupInProgress = false;
   private postImportOperationId = 0;
   private readonly activeMediaUploadFields = new Set<string>();
   private activeEditorImageUploadCount = 0;
@@ -1387,6 +1399,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       ? this.route.snapshot.queryParamMap.get('tab') as PostEditorWorkspace
       : 'post'
   );
+  protected readonly hasOpenedPreviewWorkspace = signal(this.activeWorkspace() === 'preview');
   protected readonly initialSocialChannel = isComposableSocialChannel(this.route.snapshot.queryParamMap.get('channel'))
     ? this.route.snapshot.queryParamMap.get('channel') as BlogSocialChannel
     : 'facebook';
@@ -1416,9 +1429,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
   protected readonly mediaSettingsOpen = signal(false);
   protected readonly editorialSettingsOpen = signal(false);
   protected readonly seoSettingsOpen = signal(false);
+  protected readonly lastSavedPanelExpanded = signal(false);
   protected readonly isPostLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   protected lastSaved: EditorSavedDocument | null = null;
   protected lastSavedBackupJson = '';
+  private seoChecklistInputCache: SeoChecklistInput | null = null;
+  private seoChecklistBlocksSource: EditorSavedDocument | null = null;
+  private seoChecklistBlocksCache: readonly BlogContentBlock[] | null = null;
   protected isSaveInProgress = false;
   protected isEditorialSaveInProgress = false;
   protected isDeleteInProgress = false;
@@ -1489,7 +1506,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
     this.postForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.requestRecoverySave());
+      .subscribe(() => {
+        this.invalidateSeoChecklistInput();
+        this.requestRecoverySave();
+      });
 
     this.recoveryRequests
       .pipe(
@@ -1523,6 +1543,11 @@ export class CmsPostEditorComponent implements AfterViewInit {
         const currentRevision = normalizeBlogPostRevision(this.currentPost?.revision);
         const remoteRevision = normalizeBlogPostRevision(post.revision);
         this.saveConflict.set(new BlogPostRevisionConflictError(post.id, currentRevision, remoteRevision, post));
+        return;
+      }
+
+      if (disposition === 'acknowledge' && post) {
+        this.acknowledgeFirestorePost(post);
         return;
       }
 
@@ -1698,6 +1723,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
       this.socialWorkspacePost = this.createSocialWorkspacePost();
     }
 
+    if (workspace === 'preview') {
+      this.hasOpenedPreviewWorkspace.set(true);
+    }
+
     this.activeWorkspace.set(workspace);
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -1775,6 +1804,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         this.hasUnsavedEditorChanges.set(true);
         this.hasUnsavedSocialChanges = true;
         this.saveConflict.set(null);
+        this.invalidateSeoChecklistInput();
         this.toast.success('Restored the private recovery copy. Review it, then explicitly save when ready.');
       });
     } finally {
@@ -2333,14 +2363,24 @@ export class CmsPostEditorComponent implements AfterViewInit {
     }
   }
 
+  protected setLastSavedPanelExpanded(expanded: boolean): void {
+    this.lastSavedPanelExpanded.set(expanded);
+
+    if (expanded) {
+      this.getLastSavedBackupJson();
+    }
+  }
+
   protected async copyLastSavedJson(): Promise<void> {
-    if (!this.lastSavedBackupJson) {
+    const backupJson = this.getLastSavedBackupJson();
+
+    if (!backupJson) {
       this.toast.error('Save this post before copying its JSON backup.');
       return;
     }
 
     try {
-      await this.copyTextToClipboard(this.lastSavedBackupJson);
+      await this.copyTextToClipboard(backupJson);
       this.toast.success('Copied the last saved post JSON.');
     } catch (error) {
       this.toast.error(`Unable to copy JSON: ${getErrorMessage(error)}`);
@@ -2348,12 +2388,14 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected downloadLastSavedJson(): void {
-    if (!this.lastSavedBackupJson || !this.currentPost) {
+    const backupJson = this.getLastSavedBackupJson();
+
+    if (!backupJson || !this.currentPost) {
       this.toast.error('Save this post before downloading its JSON backup.');
       return;
     }
 
-    this.downloadJson(this.lastSavedBackupJson, createPostBackupFileName(this.currentPost.slug));
+    this.downloadJson(backupJson, createPostBackupFileName(this.currentPost.slug));
     this.toast.success(`Downloaded the last saved JSON for "${this.currentPost.title}".`);
   }
 
@@ -2776,7 +2818,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
       this.hasUnsavedSocialChanges = false;
       this.saveConflict.set(null);
       this.lastSaved = saved;
-      this.lastSavedBackupJson = this.createPostBackupJson(savedPost);
+      this.invalidateLastSavedBackupJson();
+      this.invalidateSeoChecklistInput();
       this.toast.success(`Saved "${savedPost.title}" to Firestore.`);
 
       await this.deleteRecoveryBestEffort(savedPost.id);
@@ -2921,6 +2964,11 @@ export class CmsPostEditorComponent implements AfterViewInit {
         return;
       }
 
+      if (disposition === 'acknowledge') {
+        this.acknowledgeFirestorePost(post);
+        return;
+      }
+
       if (disposition !== 'hydrate') return;
 
       await this.applyFirestorePostNow(post);
@@ -2938,9 +2986,18 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.postForm.markAsPristine();
     this.hasHydratedFirestorePost = true;
     this.saveConflict.set(null);
+    this.invalidateSeoChecklistInput();
 
     await this.editorComponent?.renderDocument(this.initialData);
     await this.loadRecoveryDraft();
+  }
+
+  private acknowledgeFirestorePost(post: BlogPost): void {
+    this.currentPost = post;
+    this.hasHydratedFirestorePost = true;
+    this.saveConflict.set(null);
+    this.invalidateSeoChecklistInput();
+    void this.loadRecoveryDraft();
   }
 
   private createImportedPostDocument(value: unknown): ImportedPostDocument {
@@ -3071,6 +3128,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.postForm.markAsDirty();
     this.lastSaved = null;
     this.lastSavedBackupJson = '';
+    this.invalidateSeoChecklistInput();
     await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
     this.requestRecoverySave();
   }
@@ -3097,6 +3155,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   private async persistRecovery(force = false): Promise<boolean> {
     if (!this.currentPost || !this.editorComponent) return false;
+    if (this.isRecoveryCleanupInProgress) return false;
     if (!force && (
       !this.hasUnsavedChanges
       || this.isSaveInProgress
@@ -3104,35 +3163,71 @@ export class CmsPostEditorComponent implements AfterViewInit {
       || this.isPostImportInProgress()
     )) return false;
 
+    this.recoveryWritePending = true;
+    this.recoveryForcePending ||= force;
+    let didPersist = false;
+
+    do {
+      const writePromise = this.ensureRecoveryWritePromise();
+      didPersist = await writePromise || didPersist;
+    } while (this.recoveryWritePending || this.recoveryWritePromise);
+
+    return didPersist;
+  }
+
+  private ensureRecoveryWritePromise(): Promise<boolean> {
     if (this.recoveryWritePromise) {
-      await this.recoveryWritePromise.catch(() => undefined);
+      return this.recoveryWritePromise;
     }
 
-    if (!this.currentPost || !this.editorComponent) return false;
-    if (!force && (
-      !this.hasUnsavedChanges
-      || this.isSaveInProgress
-      || this.isDeleteInProgress
-      || this.isPostImportInProgress()
-    )) return false;
-
-    this.recoveryStatus.set('saving');
-    this.recoveryError.set('');
-
-    const writePromise = this.writeRecoverySnapshot();
+    const writePromise = this.drainRecoveryWrites();
     this.recoveryWritePromise = writePromise;
-
-    try {
-      await writePromise;
-      return true;
-    } catch (error) {
-      this.setRecoveryError(error);
-      return false;
-    } finally {
+    void writePromise.finally(() => {
       if (this.recoveryWritePromise === writePromise) {
         this.recoveryWritePromise = null;
       }
+
+      if (this.recoveryWritePending && !this.isRecoveryCleanupInProgress) {
+        this.ensureRecoveryWritePromise();
+      }
+    });
+
+    return writePromise;
+  }
+
+  private async drainRecoveryWrites(): Promise<boolean> {
+    let didPersist = false;
+
+    while (this.recoveryWritePending) {
+      const force = this.recoveryForcePending;
+      this.recoveryWritePending = false;
+      this.recoveryForcePending = false;
+
+      if (!this.currentPost || !this.editorComponent || this.isRecoveryCleanupInProgress) {
+        continue;
+      }
+
+      if (!force && (
+        !this.hasUnsavedChanges
+        || this.isSaveInProgress
+        || this.isDeleteInProgress
+        || this.isPostImportInProgress()
+      )) {
+        continue;
+      }
+
+      this.recoveryStatus.set('saving');
+      this.recoveryError.set('');
+
+      try {
+        await this.writeRecoverySnapshot();
+        didPersist = true;
+      } catch (error) {
+        this.setRecoveryError(error);
+      }
     }
+
+    return didPersist;
   }
 
   private async writeRecoverySnapshot(): Promise<void> {
@@ -3157,8 +3252,14 @@ export class CmsPostEditorComponent implements AfterViewInit {
   private async deleteRecoveryBestEffort(postId: string | undefined): Promise<void> {
     if (!postId) return;
 
+    this.isRecoveryCleanupInProgress = true;
+
     try {
-      await this.recoveryWritePromise?.catch(() => undefined);
+      this.recoveryWritePending = false;
+      this.recoveryForcePending = false;
+      await this.recoveryWritePromise;
+      this.recoveryWritePending = false;
+      this.recoveryForcePending = false;
       await this.recoveryService.delete(postId);
       this.recoveryDraft.set(null);
       this.showRecoveryComparison.set(false);
@@ -3166,6 +3267,12 @@ export class CmsPostEditorComponent implements AfterViewInit {
       this.recoveryError.set('');
     } catch (error) {
       this.setRecoveryError(error);
+    } finally {
+      this.isRecoveryCleanupInProgress = false;
+
+      if (this.hasUnsavedChanges) {
+        this.requestRecoverySave();
+      }
     }
   }
 
@@ -3271,12 +3378,29 @@ export class CmsPostEditorComponent implements AfterViewInit {
     return JSON.stringify(this.blogRepository.createExportDocument([post]), null, 2);
   }
 
+  private getLastSavedBackupJson(): string {
+    if (!this.lastSavedBackupJson && this.lastSaved && this.currentPost) {
+      this.lastSavedBackupJson = this.createPostBackupJson(this.currentPost);
+    }
+
+    return this.lastSavedBackupJson;
+  }
+
+  private invalidateLastSavedBackupJson(): void {
+    this.lastSavedBackupJson = '';
+
+    if (this.lastSavedPanelExpanded()) {
+      this.getLastSavedBackupJson();
+    }
+  }
+
   private syncLastSavedBackupJson(): void {
     if (!this.lastSaved || !this.currentPost) {
       return;
     }
 
-    this.lastSavedBackupJson = this.createPostBackupJson(this.currentPost);
+    this.invalidateLastSavedBackupJson();
+    this.invalidateSeoChecklistInput();
   }
 
   private downloadJson(contents: string, fileName: string): void {
@@ -3426,9 +3550,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected createSeoChecklistInput(): SeoChecklistInput {
+    if (this.seoChecklistInputCache) {
+      return this.seoChecklistInputCache;
+    }
+
     const formValue = this.postForm.getRawValue();
 
-    return {
+    this.seoChecklistInputCache = {
       title: formValue.title,
       slug: formValue.slug,
       excerpt: formValue.excerpt,
@@ -3443,14 +3571,30 @@ export class CmsPostEditorComponent implements AfterViewInit {
       blocks: this.getLatestKnownBlocks(),
       editorial: createEditorialMetadataFromForm(formValue),
     };
+
+    return this.seoChecklistInputCache;
   }
 
   private getLatestKnownBlocks(): readonly BlogContentBlock[] {
     if (this.lastSaved) {
-      return createBlogBlocksFromEditorDocument(this.lastSaved.data);
+      if (this.seoChecklistBlocksSource !== this.lastSaved || !this.seoChecklistBlocksCache) {
+        this.seoChecklistBlocksSource = this.lastSaved;
+        this.seoChecklistBlocksCache = createBlogBlocksFromEditorDocument(this.lastSaved.data);
+      }
+
+      return this.seoChecklistBlocksCache;
     }
 
     return this.currentPost?.blocks ?? [];
+  }
+
+  private invalidateSeoChecklistInput(): void {
+    this.seoChecklistInputCache = null;
+
+    if (this.seoChecklistBlocksSource !== this.lastSaved) {
+      this.seoChecklistBlocksSource = null;
+      this.seoChecklistBlocksCache = null;
+    }
   }
 
   private createCanonicalUrl(slug: string): string {

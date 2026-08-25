@@ -1,6 +1,6 @@
 import {Injectable, inject} from '@angular/core';
 
-import {BlogPost} from '../../blog/models/blog-post.model';
+import {BlogPostSummary} from '../../blog/models/blog-post.model';
 import {HOME_SEO_METADATA} from '../../../shared/seo/seo.metadata';
 import {SeoService} from '../../../shared/seo/seo.service';
 import {HomepageHeroSettings} from '../models/homepage-hero.model';
@@ -13,7 +13,7 @@ import {
 export class HomepageSocialPreviewService {
   private readonly seo = inject(SeoService);
 
-  apply(settings: HomepageHeroSettings, posts: readonly BlogPost[]): void {
+  apply(settings: HomepageHeroSettings, posts: readonly BlogPostSummary[]): void {
     const selection = createHomepageSocialPreviewSelection(posts, settings);
     const compatibleImage = this.seo.toOpenGraphCompatibleImage(selection.image);
 

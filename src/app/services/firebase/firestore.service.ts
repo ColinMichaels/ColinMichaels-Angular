@@ -1,4 +1,5 @@
-import {Inject, Injectable} from '@angular/core';
+import {Inject, Injectable, Optional} from '@angular/core';
+import type {FirebaseApp} from 'firebase/app';
 import {
   collection as collectionFn,
   deleteDoc as deleteDocFn,
@@ -25,12 +26,13 @@ import {
   uploadBytes as uploadBytesFn,
   uploadBytesResumable as uploadBytesResumableFn,
   uploadString as uploadStringFn,
-  UploadMetadata
+  UploadMetadata,
+  getStorage,
 } from 'firebase/storage';
 import {from, Observable, throwError, of} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
 import {v4 as uuidv4} from 'uuid';
-import {FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
+import {FIREBASE_APP, FIREBASE_FIRESTORE, FIREBASE_STORAGE} from './firebase.tokens';
 
 
 export interface FirestoreDocument {
@@ -75,10 +77,18 @@ export interface StorageUploadOptions {
   providedIn: 'root'
 })
 export class FirestoreService {
+  private readonly storage: FirebaseStorage;
+
   constructor(
-    @Inject(FIREBASE_FIRESTORE) private firestore: Firestore,
-    @Inject(FIREBASE_STORAGE) private storage: FirebaseStorage
+    @Inject(FIREBASE_FIRESTORE) private readonly firestore: Firestore,
+    @Optional() @Inject(FIREBASE_STORAGE) storage: FirebaseStorage | null,
+    @Optional() @Inject(FIREBASE_APP) firebaseApp: FirebaseApp | null
   ) {
+    if (!storage && !firebaseApp) {
+      throw new Error('Firebase Storage is not initialized.');
+    }
+
+    this.storage = storage ?? getStorage(firebaseApp!);
   }
 
   // Wrappers keep Firebase calls mockable in tests without changing runtime behavior.

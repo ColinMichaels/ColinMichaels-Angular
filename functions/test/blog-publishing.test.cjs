@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   collectTrustedBlogMediaIds,
+  createBlogPostSummaryDocument,
   createEditorialUpdatePlan,
   normalizeUnsupportedBlogBlocksForStorage,
   parseBlogMutationRequest,
@@ -55,6 +56,49 @@ function createPost(overrides = {}) {
 
 test('accepts the complete backward-compatible Editor.js post contract', () => {
   assert.doesNotThrow(() => validateTrustedBlogPost(createPost(), new Date('2026-08-03T13:00:00.000Z')));
+});
+
+test('creates a compact searchable summary without retaining canonical blocks', () => {
+  const post = createPost({
+    status: 'published',
+    publishedAt: '2026-08-03T13:00:00.000Z',
+    blocks: [
+      {id: 'paragraph', type: 'paragraph', data: {text: '<strong>Useful</strong> recovery advice.'}},
+      {
+        id: 'markdown',
+        type: 'markdown',
+        data: {markdown: 'Read **the guide** at [this page](https://example.com/private).'}
+      },
+      {
+        id: 'gallery',
+        type: 'gallery',
+        data: {galleryImages: [{url: '/assets/images/inside.webp', alt: 'Inside view'}]},
+      },
+    ],
+  });
+
+  const summary = createBlogPostSummaryDocument(post);
+
+  assert.equal(summary.id, post.id);
+  assert.equal(summary.status, 'published');
+  assert.equal(summary.storageVersion, 1);
+  assert.equal('blocks' in summary, false);
+  assert.match(summary.searchBodyText, /useful recovery advice/);
+  assert.match(summary.searchBodyText, /read the guide at this page/);
+  assert.doesNotMatch(summary.searchBodyText, /example\.com/);
+  assert.deepEqual(summary.previewImages, [{url: '/assets/images/inside.webp', alt: 'Inside view'}]);
+  assert.ok(summary.wordCount > 0);
+  assert.ok(summary.readingMinutes > 0);
+});
+
+test('bounds compact summary search text without truncating reading statistics', () => {
+  const repeatedText = 'searchable '.repeat(4_000);
+  const summary = createBlogPostSummaryDocument(createPost({
+    blocks: [{id: 'large-paragraph', type: 'paragraph', data: {text: repeatedText}}],
+  }));
+
+  assert.equal(summary.searchBodyText.length, 16_000);
+  assert.ok(summary.wordCount > 3_000);
 });
 
 test('accepts evidence-backed companion video metadata and rejects malformed or misplaced fields', () => {

@@ -1,5 +1,5 @@
 import {DOCUMENT} from '@angular/common';
-import {Injectable, computed, inject, signal} from '@angular/core';
+import {DestroyRef, Injectable, computed, inject, signal} from '@angular/core';
 
 import {BlogPostSummary} from '../models/blog-post.model';
 
@@ -50,12 +50,13 @@ export interface BlogArticleResumeLocation {
  */
 export class BlogArticleLibraryService {
   private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly indexedDb = this.document.defaultView?.indexedDB;
   private readonly recordsState = signal<readonly BlogArticleLibraryRecord[]>([]);
   private readonly readyState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private databasePromise: Promise<IDBDatabase> | undefined;
-  private writeQueue: Promise<void> = Promise.resolve();
+  private writeQueue: Promise<void>;
 
   readonly supported = signal(Boolean(this.indexedDb)).asReadonly();
   readonly records = this.recordsState.asReadonly();
@@ -69,7 +70,19 @@ export class BlogArticleLibraryService {
   )));
 
   constructor() {
-    void this.refresh();
+    this.writeQueue = this.refresh();
+    const reconcileWhenVisible = () => {
+      if (this.document.visibilityState === 'visible') {
+        void this.enqueueWrite(() => this.refresh());
+      }
+    };
+
+    if (this.document.defaultView) {
+      this.document.addEventListener('visibilitychange', reconcileWhenVisible);
+      this.destroyRef.onDestroy(() => {
+        this.document.removeEventListener('visibilitychange', reconcileWhenVisible);
+      });
+    }
   }
 
   getRecord(slug: string): BlogArticleLibraryRecord | undefined {
@@ -160,7 +173,7 @@ export class BlogArticleLibraryService {
         modifiedAt: new Date().toISOString(),
       };
       await this.putRecord(updated);
-      await this.refresh();
+      this.upsertRecordInState(updated);
       return updated;
     });
   }
@@ -175,7 +188,7 @@ export class BlogArticleLibraryService {
       const transaction = database.transaction(BLOG_ARTICLE_LIBRARY_STORE, 'readwrite');
       transaction.objectStore(BLOG_ARTICLE_LIBRARY_STORE).delete(slug);
       await transactionDone(transaction);
-      await this.refresh();
+      this.removeRecordFromState(slug);
       return true;
     });
   }
@@ -214,7 +227,7 @@ export class BlogArticleLibraryService {
       this.recordsState.set(values
         .map(normalizeStoredArticleLibraryRecord)
         .filter((record): record is BlogArticleLibraryRecord => Boolean(record))
-        .sort((left, right) => right.modifiedAt.localeCompare(left.modifiedAt)));
+        .sort(compareArticleLibraryRecords));
       this.errorState.set(null);
     } catch {
       this.recordsState.set([]);
@@ -239,7 +252,7 @@ export class BlogArticleLibraryService {
       });
 
       await this.putRecord(updated);
-      await this.refresh();
+      this.upsertRecordInState(updated);
       return updated;
     });
   }
@@ -274,6 +287,21 @@ export class BlogArticleLibraryService {
     const transaction = database.transaction(BLOG_ARTICLE_LIBRARY_STORE, 'readwrite');
     transaction.objectStore(BLOG_ARTICLE_LIBRARY_STORE).put(record);
     await transactionDone(transaction);
+  }
+
+  private upsertRecordInState(record: BlogArticleLibraryRecord): void {
+    this.recordsState.set([
+      record,
+      ...this.recordsState().filter(candidate => candidate.post.slug !== record.post.slug),
+    ].sort(compareArticleLibraryRecords));
+    this.errorState.set(null);
+    this.readyState.set(true);
+  }
+
+  private removeRecordFromState(slug: string): void {
+    this.recordsState.set(this.recordsState().filter(record => record.post.slug !== slug));
+    this.errorState.set(null);
+    this.readyState.set(true);
   }
 
   private openDatabase(): Promise<IDBDatabase> {
@@ -317,6 +345,13 @@ export function normalizeProgress(value: number): number {
   }
 
   return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function compareArticleLibraryRecords(
+  left: BlogArticleLibraryRecord,
+  right: BlogArticleLibraryRecord
+): number {
+  return right.modifiedAt.localeCompare(left.modifiedAt);
 }
 
 export function isBlogArticleLibraryRecord(value: unknown): boolean {

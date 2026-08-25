@@ -34,8 +34,10 @@
 }
 <app-user-view-banner/>
 <app-screen-saver-launcher/>
-@if (showSiteHeader()) {
-  <app-daily-discovery-play-overlay/>
+  @if (showDailyDiscoveryOverlay()) {
+    @defer (when showDailyDiscoveryOverlay()) {
+      <app-daily-discovery-play-overlay/>
+    }
 }
 @if (showBlogMembershipCampaign()) {
   @defer (when showBlogMembershipCampaign()) {

@@ -7,6 +7,7 @@ type FirestoreErrorDescription = (error: unknown) => string;
 export class FirestoreCollectionSync<T> {
   private unsubscribe: (() => void) | undefined;
   private runId = 0;
+  private readonly mappedValuesByDocumentId = new Map<string, T>();
 
   constructor(
     private readonly valuesSubject: BehaviorSubject<readonly T[]>,
@@ -47,6 +48,7 @@ export class FirestoreCollectionSync<T> {
 
   private startRun(): number {
     const runId = ++this.runId;
+    this.mappedValuesByDocumentId.clear();
     this.loadingSubject.next(true);
     this.errorSubject.next(null);
 
@@ -58,9 +60,26 @@ export class FirestoreCollectionSync<T> {
       return;
     }
 
+    // Firestore gives an initial batch of "added" changes followed by only the
+    // documents that changed. Preserve the already validated object instances
+    // so a one-document update does not remap and revalidate the entire query.
+    for (const change of snapshot.docChanges()) {
+      if (change.type === 'removed') {
+        this.mappedValuesByDocumentId.delete(change.doc.id);
+        continue;
+      }
+
+      const mappedValue = this.mapValue(change.doc.data());
+      if (mappedValue === null) {
+        this.mappedValuesByDocumentId.delete(change.doc.id);
+      } else {
+        this.mappedValuesByDocumentId.set(change.doc.id, mappedValue);
+      }
+    }
+
     const values = snapshot.docs
-      .map(documentSnapshot => this.mapValue(documentSnapshot.data()))
-      .filter((value): value is T => value !== null);
+      .map(documentSnapshot => this.mappedValuesByDocumentId.get(documentSnapshot.id))
+      .filter((value): value is T => value !== undefined);
 
     this.valuesSubject.next(values);
     this.loadingSubject.next(false);

@@ -154,10 +154,6 @@ import {
   mutateBlogPost as mutateBlogPostTransaction,
   publishDueScheduledPosts,
 } from './blog-publishing';
-import {
-  finalizeBlogMediaUpload,
-  inspectOrDeleteBlogMedia,
-} from './blog-media';
 import {storePublicSubmission} from './public-submissions';
 import {
   PublicSubmissionSmtpConfig,
@@ -1993,6 +1989,7 @@ export const finalizeBlogMedia = onCall(
   },
   async request => {
     const actorUid = requireCmsOrMediaAccess(request.auth);
+    const {finalizeBlogMediaUpload} = await import('./blog-media');
     return finalizeBlogMediaUpload(getFirestore(), getStorage().bucket(), request.data, actorUid);
   }
 );
@@ -2009,6 +2006,7 @@ export const deleteBlogMedia = onCall(
     // Destructive media operations require the dedicated media-management
     // boundary; content editors retain actor-owned upload/finalize access only.
     const actorUid = requireMediaManagementAccess(request.auth);
+    const {inspectOrDeleteBlogMedia} = await import('./blog-media');
     return inspectOrDeleteBlogMedia(getFirestore(), getStorage().bucket(), request.data, actorUid);
   }
 );
