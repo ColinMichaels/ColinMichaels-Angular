@@ -450,6 +450,16 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
+function isFirstSaveCommitConflict(
+  isNewPost: boolean,
+  conflict: BlogPostRevisionConflictError
+): boolean {
+  return isNewPost
+    && conflict.expectedRevision === 0
+    && conflict.actualRevision === 1
+    && Boolean(conflict.remotePost);
+}
+
 @Component({
   selector: 'app-cms-post-editor',
   imports: [
@@ -1022,16 +1032,24 @@ function getErrorMessage(error: unknown): string {
 
                   @if (saveConflict(); as conflict) {
                     <div class="space-y-2 border border-amber-500/60 bg-amber-950/20 p-3" role="alert">
-                      <p class="font-semibold text-amber-200">Canonical save conflict</p>
-                      <p class="leading-5 text-amber-100/80">{{ conflict.message }}</p>
+                      <p class="font-semibold text-amber-200">
+                        {{ isCommittedFirstSaveConflict(conflict) ? 'First save completed' : 'Canonical save conflict' }}
+                      </p>
+                      <p class="leading-5 text-amber-100/80">
+                        @if (isCommittedFirstSaveConflict(conflict)) {
+                          Revision 1 already exists. Automatic adoption paused because the latest local recovery copy could not be stored. Retry Use saved draft; create a separate draft only when you intentionally need both versions.
+                        } @else {
+                          {{ conflict.message }}
+                        }
+                      </p>
                       <div class="flex flex-wrap gap-2">
                         @if (conflict.remotePost) {
                           <button type="button" class="border border-amber-500/70 px-2.5 py-1.5 font-medium text-amber-100 hover:bg-amber-900/50" (click)="reloadRemotePost()">
-                            Reload remote
+                            {{ isCommittedFirstSaveConflict(conflict) ? 'Use saved draft' : 'Reload remote' }}
                           </button>
                         }
-                        <button type="button" class="border border-cyan-500/70 px-2.5 py-1.5 font-medium text-cyan-100 hover:bg-cyan-900/40" (click)="saveConflictAsCopy()">
-                          Save as new draft
+                        <button type="button" class="border border-zinc-600 px-2.5 py-1.5 font-medium text-zinc-200 hover:bg-zinc-800" (click)="saveConflictAsCopy()">
+                          Create separate recovery draft
                         </button>
                       </div>
                     </div>
@@ -1733,6 +1751,10 @@ export class CmsPostEditorComponent implements AfterViewInit {
     return String(recovery.editor.document.blocks.length);
   }
 
+  protected isCommittedFirstSaveConflict(conflict: BlogPostRevisionConflictError): boolean {
+    return isFirstSaveCommitConflict(this.isNewPost, conflict);
+  }
+
   protected async restoreRecoveryDraft(): Promise<void> {
     if (this.rejectWhileImporting('restoring the recovery draft')) return;
     if (this.rejectWhileApplyingEditorState('restoring another recovery draft')) return;
@@ -1770,16 +1792,17 @@ export class CmsPostEditorComponent implements AfterViewInit {
     await this.deleteRecoveryBestEffort(recovery.postId);
   }
 
-  protected async reloadRemotePost(): Promise<void> {
-    if (this.rejectWhileImporting('reloading the canonical post')) return;
-    if (this.rejectWhileApplyingEditorState('reloading the canonical post again')) return;
+  protected async reloadRemotePost(automaticFirstSaveAdoption = false): Promise<boolean> {
+    if (this.rejectWhileImporting('reloading the canonical post')) return false;
+    if (this.rejectWhileApplyingEditorState('reloading the canonical post again')) return false;
 
     const remotePost = this.saveConflict()?.remotePost;
     if (!remotePost) {
       this.toast.error('The canonical post no longer exists. Save your work as a new draft instead.');
-      return;
+      return false;
     }
 
+    let adopted = false;
     await this.enqueueEditorStateApplication(async () => {
       const recoverySaved = await this.persistRecovery(true);
       if (!recoverySaved) {
@@ -1804,8 +1827,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
         });
       }
 
-      this.toast.success('Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
+      adopted = true;
+      this.toast.success(automaticFirstSaveAdoption
+        ? 'Your first save completed successfully. The editor adopted revision 1 and kept your earlier local work in Recovery.'
+        : 'Reloaded the latest canonical revision. Your earlier local work remains available in Recovery.');
     });
+
+    return adopted;
   }
 
   private resolveLatestReloadPost(requestedRemotePost: BlogPost): BlogPost | null {
@@ -1840,6 +1868,12 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected async saveConflictAsCopy(): Promise<void> {
     if (this.isSaveInProgress) return;
+
+    const confirmed = window.confirm(
+      'Create a separate recovery draft? The canonical post will remain unchanged and both drafts will need manual review. Choose Cancel and use the saved draft unless you intentionally need two versions.'
+    );
+    if (!confirmed) return;
+
     this.isSaveInProgress = true;
 
     try {
@@ -2763,15 +2797,11 @@ export class CmsPostEditorComponent implements AfterViewInit {
         this.recoveryPanelExpanded.set(true);
         this.requestRecoverySave();
 
-        const firstSaveCommitted = this.isNewPost
-          && error.expectedRevision === 0
-          && error.actualRevision !== null
-          && error.actualRevision >= 1
-          && Boolean(error.remotePost);
+        if (isFirstSaveCommitConflict(this.isNewPost, error)) {
+          return this.reloadRemotePost(true);
+        }
 
-        this.toast.error(firstSaveCommitted
-          ? 'The first save already created this draft. Recovery & Conflicts is open; choose Reload remote to adopt revision 1 without overwriting your local recovery copy.'
-          : error.message);
+        this.toast.error(error.message);
         return false;
       }
       this.toast.error(error instanceof Error ? error.message : 'Unable to save post to Firestore.');
