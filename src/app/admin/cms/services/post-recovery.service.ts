@@ -22,10 +22,53 @@ export function createCmsPostRecoveryDocumentId(postId: string): string {
   return encodeURIComponent(postId);
 }
 
+export function isCmsPostRecoveryWriteUnchanged(
+  cachedRecovery: CmsPostRecoverySnapshot | undefined,
+  write: CmsPostRecoveryWrite,
+  ownerUid: string
+): boolean {
+  return cachedRecovery?.ownerUid === ownerUid
+    && cachedRecovery.postId === write.postId
+    && cachedRecovery.postSlug === write.postSlug
+    && cachedRecovery.isNewPost === write.isNewPost
+    && cachedRecovery.baseRevision === write.baseRevision
+    && cachedRecovery.baseUpdatedAt === write.baseUpdatedAt
+    && areRecoveryValuesEqual(cachedRecovery.form, write.form)
+    && areRecoveryValuesEqual(cachedRecovery.editor, write.editor)
+    && areRecoveryValuesEqual(cachedRecovery.socialPromotion, write.socialPromotion);
+}
+
+function areRecoveryValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left)
+      && Array.isArray(right)
+      && left.length === right.length
+      && left.every((item, index) => areRecoveryValuesEqual(item, right[index]));
+  }
+
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') {
+    return false;
+  }
+
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord).filter(key => leftRecord[key] !== undefined).sort();
+  const rightKeys = Object.keys(rightRecord).filter(key => rightRecord[key] !== undefined).sort();
+
+  return leftKeys.length === rightKeys.length
+    && leftKeys.every((key, index) => key === rightKeys[index]
+      && areRecoveryValuesEqual(leftRecord[key], rightRecord[key]));
+}
+
 @Injectable({providedIn: 'root'})
 export class CmsPostRecoveryService {
   private readonly firestore: Firestore | null = inject(FIREBASE_FIRESTORE, {optional: true});
   private readonly auth: Auth | null = inject(FIREBASE_AUTH, {optional: true});
+  private cachedRecovery: CmsPostRecoverySnapshot | undefined;
 
   getOrCreateNewPostId(suggestedPostId: string): string {
     try {
@@ -57,6 +100,7 @@ export class CmsPostRecoveryService {
     const snapshot = await getDoc(recoveryRef);
 
     if (!snapshot.exists()) {
+      this.cachedRecovery = undefined;
       return undefined;
     }
 
@@ -68,18 +112,26 @@ export class CmsPostRecoveryService {
 
     if (isCmsPostRecoveryExpired(value)) {
       await deleteDoc(recoveryRef);
+      this.cachedRecovery = undefined;
       return undefined;
     }
 
+    this.cachedRecovery = value;
     return value;
   }
 
   async save(write: CmsPostRecoveryWrite): Promise<CmsPostRecoverySnapshot> {
     const {firestore, ownerUid} = await this.requireContext();
+    const cachedRecovery = this.cachedRecovery;
+
+    if (cachedRecovery && isCmsPostRecoveryWriteUnchanged(cachedRecovery, write, ownerUid)) {
+      return cachedRecovery;
+    }
+
+    const contentHash = createCmsPostRecoveryContentHash(write);
     const now = new Date();
     const savedAt = now.toISOString();
     const expiresAt = new Date(now.getTime() + CMS_POST_RECOVERY_RETENTION_MS).toISOString();
-    const contentHash = createCmsPostRecoveryContentHash(write);
     const recovery: CmsPostRecoverySnapshot = {
       ...write,
       schemaVersion: CMS_POST_RECOVERY_SCHEMA_VERSION,
@@ -98,12 +150,16 @@ export class CmsPostRecoveryService {
       {merge: false}
     );
 
+    this.cachedRecovery = recovery;
     return recovery;
   }
 
   async delete(postId: string): Promise<void> {
     const {firestore, ownerUid} = await this.requireContext();
     await deleteDoc(this.createRecoveryRef(firestore, ownerUid, postId));
+    if (this.cachedRecovery?.ownerUid === ownerUid && this.cachedRecovery.postId === postId) {
+      this.cachedRecovery = undefined;
+    }
   }
 
   private createRecoveryRef(firestore: Firestore, ownerUid: string, postId: string) {

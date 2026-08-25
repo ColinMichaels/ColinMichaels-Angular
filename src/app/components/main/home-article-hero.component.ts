@@ -13,7 +13,7 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
-import {BlogPost} from '../../features/blog/models/blog-post.model';
+import {BlogPost, BlogPostSummary} from '../../features/blog/models/blog-post.model';
 import {createBlogReadingStats} from '../../features/blog/utils/blog-reading.util';
 import {DailyDiscoveryRailComponent} from '../../features/daily-discovery/components/daily-discovery-rail.component';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../../features/homepage/homepage-hero.defaults';
@@ -926,15 +926,15 @@ export class HomeArticleHeroComponent {
     this.startHeroPostRotation();
   }
 
-  protected postLabel(post: BlogPost): string {
+  protected postLabel(post: BlogPostSummary): string {
     return post.subcategories?.[0] ?? post.categories[0] ?? post.tags[0] ?? 'Article';
   }
 
-  protected postTopicLabel(post: BlogPost): string {
+  protected postTopicLabel(post: BlogPostSummary): string {
     return this.postTopic(post)?.theme.shortLabel ?? this.postLabel(post);
   }
 
-  protected postThemeStyle(post: BlogPost): Record<string, string> {
+  protected postThemeStyle(post: BlogPostSummary): Record<string, string> {
     const topic = this.postTopic(post);
 
     return {
@@ -944,12 +944,21 @@ export class HomeArticleHeroComponent {
     };
   }
 
-  protected postExcerpt(post: BlogPost): string {
+  protected postExcerpt(post: BlogPostSummary): string {
     return truncateText(post.excerpt, HERO_POST_EXCERPT_MAX_LENGTH);
   }
 
-  protected readingMinutes(post: BlogPost): number {
-    return createBlogReadingStats(post).readingMinutes;
+  protected readingMinutes(post: BlogPostSummary): number {
+    if (post.readingMinutes !== undefined) {
+      return post.readingMinutes;
+    }
+
+    // Preserve the legacy/full-post input contract while the public feed moves
+    // to precomputed summaries. Normal production summaries never need to keep
+    // the blocks graph alive for this calculation.
+    return 'blocks' in post && Array.isArray(post.blocks)
+      ? createBlogReadingStats(post as BlogPost).readingMinutes
+      : 1;
   }
 
   protected recordYouTubeSubscribe(): void {
@@ -1021,7 +1030,7 @@ export class HomeArticleHeroComponent {
 
   private orderFallbackSlides(
     slides: readonly HomepageHeroSlide[],
-    post: BlogPost | null
+    post: BlogPostSummary | null
   ): readonly HomepageHeroSlide[] {
     if (slides.length < 2) {
       return slides;
@@ -1037,7 +1046,7 @@ export class HomeArticleHeroComponent {
     ];
   }
 
-  private postTopic(post: BlogPost): TopicHub | null {
+  private postTopic(post: BlogPostSummary): TopicHub | null {
     return this.topicHubs().find(topicHub => postMatchesHubTerms(post, topicHub.terms)) ?? null;
   }
 

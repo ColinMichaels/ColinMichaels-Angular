@@ -20,12 +20,18 @@ import {
   SCREEN_SAVER_KEN_BURNS_DURATION_SECONDS,
   ScreenSaverDisplaySlide,
   ScreenSaverModuleId,
+  getScreenSaverActiveWindowIndexes,
 } from './screen-saver.model';
 import {ScreenSaverPreferencesService} from './screen-saver-preferences.service';
 
 const MINIMUM_SCREEN_SAVER_TRANSITION_MS = 1200;
 const SCREEN_SAVER_MOTION_PATHS = ['drift-east', 'drift-west', 'rise', 'fall'] as const;
 export const SCREEN_SAVER_CONTROLS_IDLE_MS = 2000;
+
+interface ScreenSaverRenderedSlide {
+  sourceIndex: number;
+  slide: ScreenSaverDisplaySlide;
+}
 
 @Component({
   selector: 'app-screen-saver',
@@ -44,18 +50,18 @@ export const SCREEN_SAVER_CONTROLS_IDLE_MS = 2000;
       aria-label="Full-screen hero image viewer"
       aria-keyshortcuts="S Escape"
     >
-      @if (hasOpened()) {
+      @if (isActive()) {
         <div class="screen-saver-stage" aria-hidden="true">
-          @for (slide of slides(); track slide.id; let slideIndex = $index) {
+          @for (renderedSlide of renderedSlides(); track renderedSlide.slide.id) {
             <img
-              [src]="slide.imageUrl"
+              [src]="renderedSlide.slide.imageUrl"
               alt=""
               class="screen-saver-image"
-              [class.is-active]="slideIndex === activeSlideIndex()"
+              [class.is-active]="renderedSlide.sourceIndex === activeSlideIndex()"
               [class.has-ken-burns]="isActive() && kenBurnsEnabled()"
-              [attr.data-motion-path]="motionPath(slideIndex)"
-              [style.object-position]="slideObjectPosition(slide)"
-              [style.transform-origin]="slideObjectPosition(slide)"
+              [attr.data-motion-path]="motionPath(renderedSlide.sourceIndex)"
+              [style.object-position]="slideObjectPosition(renderedSlide.slide)"
+              [style.transform-origin]="slideObjectPosition(renderedSlide.slide)"
               [style.--screen-saver-transition-duration]="transitionDuration()"
               [style.--screen-saver-drift-duration]="driftDuration()"
               decoding="async"
@@ -68,9 +74,9 @@ export const SCREEN_SAVER_CONTROLS_IDLE_MS = 2000;
         <div class="screen-saver-status" aria-hidden="true">
           <span class="screen-saver-status-mark"></span>
           <span>Screen saver</span>
-          @if (slides().length > 1) {
+          @if (slideCount() > 1) {
             <span class="screen-saver-counter">
-              {{ displaySlideNumber() }} / {{ slides().length.toString().padStart(2, '0') }}
+              {{ displaySlideNumber() }} / {{ slideCount().toString().padStart(2, '0') }}
             </span>
           }
         </div>
@@ -463,9 +469,9 @@ export class ScreenSaverComponent {
   protected readonly isActive = signal(false);
   protected readonly controlsVisible = signal(false);
   protected readonly showPointerHint = signal(false);
-  protected readonly hasOpened = signal(false);
   protected readonly activeSlideIndex = signal(0);
   protected readonly localImages = this.localMedia.images;
+  private readonly activeLocalImages = this.localMedia.activeImages;
   protected readonly moduleId = computed<ScreenSaverModuleId>(() => {
     return this.preferences.moduleId() === 'local' && this.localImages().length > 0 ? 'local' : 'hero';
   });
@@ -493,19 +499,27 @@ export class ScreenSaverComponent {
       focalPointY: slide.focalPointY,
     }));
   });
-  protected readonly slides = computed<readonly ScreenSaverDisplaySlide[]>(() => {
-    const localImages = this.localImages();
-
-    if (this.moduleId() === 'local' && localImages.length > 0) {
-      return localImages.map(image => ({
-        id: image.id,
-        imageUrl: image.imageUrl,
-        focalPointX: 50,
-        focalPointY: 50,
+  protected readonly slideCount = computed(() => {
+    return this.moduleId() === 'local' ? this.localImages().length : this.heroSlides().length;
+  });
+  protected readonly renderedSlides = computed<readonly ScreenSaverRenderedSlide[]>(() => {
+    if (this.moduleId() === 'local') {
+      return this.activeLocalImages().map(image => ({
+        sourceIndex: image.sourceIndex,
+        slide: {
+          id: image.id,
+          imageUrl: image.imageUrl,
+          focalPointX: 50,
+          focalPointY: 50,
+        },
       }));
     }
 
-    return this.heroSlides();
+    const heroSlides = this.heroSlides();
+    return getScreenSaverActiveWindowIndexes(this.activeSlideIndex(), heroSlides.length).map(sourceIndex => ({
+      sourceIndex,
+      slide: heroSlides[sourceIndex],
+    }));
   });
   protected readonly transitionMs = computed(() => {
     return Math.max(this.settings().transitionMs, MINIMUM_SCREEN_SAVER_TRANSITION_MS);
@@ -519,7 +533,7 @@ export class ScreenSaverComponent {
   });
   private readonly shouldRotate = computed(() => {
     return this.isActive()
-      && this.slides().length > 1
+      && this.slideCount() > 1
       && this.pageVisible()
       && !this.reducedMotion();
   });
@@ -527,9 +541,13 @@ export class ScreenSaverComponent {
   constructor() {
     this.initializeBrowserState();
     this.keepActiveSlideInBounds();
+    this.manageLocalMediaWindow();
     this.startSlideRotation();
     this.lockPageScrollWhileActive();
-    this.destroyRef.onDestroy(() => this.cancelControlsHide());
+    this.destroyRef.onDestroy(() => {
+      this.cancelControlsHide();
+      this.localMedia.releaseActiveImages();
+    });
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -583,6 +601,7 @@ export class ScreenSaverComponent {
       return;
     }
 
+    this.localMedia.releaseActiveImages();
     this.isActive.set(false);
     this.controlsVisible.set(false);
     this.showPointerHint.set(false);
@@ -645,7 +664,6 @@ export class ScreenSaverComponent {
     this.focusBeforeOpen = this.document.activeElement instanceof HTMLElement
       ? this.document.activeElement
       : null;
-    this.hasOpened.set(true);
     this.activeSlideIndex.set(0);
     this.controlsVisible.set(true);
     this.showPointerHint.set(false);
@@ -688,11 +706,27 @@ export class ScreenSaverComponent {
 
   private keepActiveSlideInBounds(): void {
     effect(() => {
-      const slideCount = this.slides().length;
+      const slideCount = this.slideCount();
 
       if (slideCount === 0 || this.activeSlideIndex() >= slideCount) {
         this.activeSlideIndex.set(0);
       }
+    });
+  }
+
+  private manageLocalMediaWindow(): void {
+    effect(() => {
+      const shouldLoadLocalImages = this.isActive()
+        && this.moduleId() === 'local'
+        && this.localImages().length > 0;
+      const activeIndex = this.activeSlideIndex();
+
+      if (!shouldLoadLocalImages) {
+        this.localMedia.releaseActiveImages();
+        return;
+      }
+
+      void this.localMedia.setActiveWindow(activeIndex);
     });
   }
 
@@ -703,7 +737,7 @@ export class ScreenSaverComponent {
       }
 
       const intervalId = window.setInterval(() => {
-        this.activeSlideIndex.update(index => (index + 1) % this.slides().length);
+        this.activeSlideIndex.update(index => (index + 1) % this.slideCount());
       }, this.slideshowIntervalSeconds() * 1000);
 
       onCleanup(() => window.clearInterval(intervalId));

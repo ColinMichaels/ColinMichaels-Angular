@@ -1,6 +1,7 @@
 import {Injectable, inject} from '@angular/core';
 import {
   Database,
+  getDatabase,
   ref,
   push,
   set,
@@ -18,7 +19,7 @@ import {
   endAt
 } from 'firebase/database';
 import {Observable} from 'rxjs';
-import {FIREBASE_DATABASE} from './firebase.tokens';
+import {FIREBASE_APP, FIREBASE_DATABASE} from './firebase.tokens';
 
 export interface DatabaseItem {
   id?: string;
@@ -28,7 +29,9 @@ export interface DatabaseItem {
   providedIn: 'root'
 })
 export class RealtimeDbService {
-  private readonly db: Database | null = inject(FIREBASE_DATABASE, {optional: true});
+  private readonly firebaseApp = inject(FIREBASE_APP, {optional: true});
+  private readonly db: Database | null = inject(FIREBASE_DATABASE, {optional: true})
+    ?? (this.firebaseApp ? getDatabase(this.firebaseApp) : null);
 
   constructor() {
     console.warn('RealtimeDbService is deprecated. Please use FirebaseService instead.');

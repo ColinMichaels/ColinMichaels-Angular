@@ -18,7 +18,8 @@ changing or duplicating route components.
 - `ScreenSaverPreferencesService`: persists the selected module, Ken Burns state/speed, and slideshow interval in the
   device-local `colinmichaels.screen-saver.preferences.v1` local-storage record.
 - `ScreenSaverLocalMediaService`: stores uploaded image blobs in the device-local
-  `colinmichaels-screen-saver-v1` IndexedDB database and owns their temporary object URLs.
+  `colinmichaels-screen-saver-v1` IndexedDB database, retains lightweight metadata, and owns object URLs only for the
+  active previous/current/next image window.
 - `HomepageHeroRepositoryService`: remains the single source for published hero images and saved slideshow timing.
 - `getPublishedHomepageHeroSlides`: preserves the same published-state filtering and deterministic ordering used by the
   homepage hero.
@@ -28,7 +29,8 @@ changing or duplicating route components.
 - Pressing unmodified `S` outside an input, textarea, select, or editable region toggles the overlay.
 - Before the first `S` press, only the shortcut launcher is mounted. The renderer, toolbar, preferences, local-media
   storage, and homepage-media integration are emitted as a lazy chunk and initialized on demand. The mounted viewer
-  remains warm after first use, so later toggles do not repeat the import or initialization work.
+  remains warm after first use, so later toggles do not repeat the import or initialization work; its image stage and
+  object URLs are still released whenever the overlay closes.
 - `Escape` and the visible Exit control close an active overlay.
 - Mouse movement never closes the active overlay. It reveals the studio interface and restarts a two-second idle
   timer; the top chrome, toolbar, and pointer hint fade away after two seconds without movement.
@@ -46,7 +48,8 @@ changing or duplicating route components.
   are never sent to Firebase or another remote service. A successful upload activates the My Images module.
 - Keyboard Tab movement also reveals the controls, while `S`, `Escape`, and the visible Exit button remain the only
   ways to close the screen saver.
-- Images are not added to the DOM until the viewer is first opened, avoiding initial image requests from this feature.
+- Images are not added to the DOM until the viewer opens. At most previous/current/next are rendered, and local Blob
+  URLs outside that window are revoked. Closing removes the stage and revokes every local URL.
 - Draft settings, empty published slide lists, and unavailable Firestore state fall back to the branded default hero.
 - Rotation pauses in hidden tabs and for `prefers-reduced-motion: reduce`; reduced-motion users receive a static image.
 - The underlying page is scroll-locked only while the overlay is active, and keyboard focus returns to the prior

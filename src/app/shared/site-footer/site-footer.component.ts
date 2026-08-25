@@ -60,20 +60,24 @@ import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../seo/seo.metadat
         </div>
 
         <div class="mt-8 flex flex-col gap-4 border-t border-slate-200 pt-6 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
-          <app-blog-share-actions
-            [title]="siteTitle"
-            [excerpt]="siteDescription"
-            [path]="''"
-            [url]="siteUrl"
-            [trackingEnabled]="isSignedIn()"
-            utmCampaign="site_share"
-            utmContent="homepage"
-            label="Share site"
-            groupLabel="Share ColinMichaels.com"
-            linkLabel="site"
-            variant="panel"
-            (shared)="recordSiteShare($event)"
-          ></app-blog-share-actions>
+          @defer (on viewport) {
+            <app-blog-share-actions
+              [title]="siteTitle"
+              [excerpt]="siteDescription"
+              [path]="''"
+              [url]="siteUrl"
+              [trackingEnabled]="isSignedIn()"
+              utmCampaign="site_share"
+              utmContent="homepage"
+              label="Share site"
+              groupLabel="Share ColinMichaels.com"
+              linkLabel="site"
+              variant="panel"
+              (shared)="recordSiteShare($event)"
+            ></app-blog-share-actions>
+          } @placeholder {
+            <div class="h-11 w-52 max-w-full" aria-hidden="true"></div>
+          }
 
           <a
             class="btn-ghost w-fit"

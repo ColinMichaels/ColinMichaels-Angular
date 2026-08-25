@@ -52,4 +52,12 @@ describe('CmsSeoChecklistComponent', () => {
     expect(text).toContain('Evidence classification');
     expect(text).toContain('14/14');
   });
+
+  it('memoizes the checklist analysis until its input changes', () => {
+    const component = fixture.componentInstance as unknown as {
+      checklist: () => unknown;
+    };
+
+    expect(component.checklist()).toBe(component.checklist());
+  });
 });

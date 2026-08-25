@@ -33,6 +33,42 @@ describe('post editor remote hydration policy', () => {
     })).toBe('hydrate');
   });
 
+  it('acknowledges an unchanged first snapshot without requesting another editor render', () => {
+    const localPost = createPost(3);
+
+    expect(getRemotePostDisposition({
+      localPost,
+      remotePost: {...localPost},
+      hasHydrated: false,
+      hasUnsavedChanges: false,
+      isLoading: false,
+    })).toBe('acknowledge');
+  });
+
+  it('does not rehydrate an already applied canonical version', () => {
+    const localPost = createPost(3);
+
+    expect(getRemotePostDisposition({
+      localPost,
+      remotePost: {...localPost},
+      hasHydrated: true,
+      hasUnsavedChanges: false,
+      isLoading: false,
+    })).toBe('preserve-local');
+  });
+
+  it('hydrates a same-revision snapshot when its canonical timestamp changed', () => {
+    const localPost = createPost(3);
+
+    expect(getRemotePostDisposition({
+      localPost,
+      remotePost: {...localPost, updatedAt: '2026-08-03T12:01:00.000Z'},
+      hasHydrated: true,
+      hasUnsavedChanges: false,
+      isLoading: false,
+    })).toBe('hydrate');
+  });
+
   it('preserves dirty local state during unrelated Firestore refreshes', () => {
     expect(getRemotePostDisposition({
       localPost: createPost(3),

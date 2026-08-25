@@ -1,4 +1,4 @@
-import {BlogPost} from '../../blog/models/blog-post.model';
+import {BlogPostSummary} from '../../blog/models/blog-post.model';
 import {HOMEPAGE_OG_IMAGE} from '../../../shared/seo/seo.metadata';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../homepage-hero.defaults';
 import {HomepageHeroSettings} from '../models/homepage-hero.model';
@@ -11,14 +11,14 @@ export interface HomepageSocialPreviewSelection {
   imageAlt: string;
   imageHeight?: number;
   imageWidth?: number;
-  post: BlogPost | null;
+  post: BlogPostSummary | null;
   versionSeed: string;
 }
 
 export function selectHomepageSocialPost(
-  posts: readonly BlogPost[],
+  posts: readonly BlogPostSummary[],
   settings: HomepageHeroSettings
-): BlogPost | null {
+): BlogPostSummary | null {
   // Draft CMS selections remain private; public metadata follows the default policy until settings publish.
   const publicSettings = settings.status === 'published' ? settings : DEFAULT_HOMEPAGE_HERO_SETTINGS;
 
@@ -26,7 +26,7 @@ export function selectHomepageSocialPost(
 }
 
 export function createHomepageSocialPreviewSelection(
-  posts: readonly BlogPost[],
+  posts: readonly BlogPostSummary[],
   settings: HomepageHeroSettings
 ): HomepageSocialPreviewSelection {
   const post = selectHomepageSocialPost(posts, settings);
@@ -40,7 +40,7 @@ export function createHomepageSocialPreviewSelection(
     };
   }
 
-  const image = post.seo.openGraphImage?.trim()
+  const image = post.seo?.openGraphImage?.trim()
     || post.og?.image?.trim()
     || post.coverImage.trim()
     || HOMEPAGE_OG_IMAGE;
@@ -48,8 +48,8 @@ export function createHomepageSocialPreviewSelection(
   return {
     image,
     imageAlt: post.og?.imageAlt?.trim() || `${post.title} featured on ColinMichaels.com`,
-    imageWidth: post.seo.openGraphImageWidth ?? post.og?.imageWidth,
-    imageHeight: post.seo.openGraphImageHeight ?? post.og?.imageHeight,
+    imageWidth: post.seo?.openGraphImageWidth ?? post.og?.imageWidth,
+    imageHeight: post.seo?.openGraphImageHeight ?? post.og?.imageHeight,
     post,
     versionSeed: [
       HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION,

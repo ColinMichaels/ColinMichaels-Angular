@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import {deleteDoc, doc, getDoc, setDoc, updateDoc} from 'firebase/firestore';
+import {collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where} from 'firebase/firestore';
 import {deleteObject, getBytes, listAll, ref, updateMetadata, uploadBytes} from 'firebase/storage';
 
 const projectId = 'phase7-rules-test';
@@ -57,6 +57,24 @@ beforeEach(async () => {
       status: 'draft',
       revision: 3,
     });
+    await setDoc(doc(context.firestore(), 'postSummaries', 'published-post'), {
+      id: 'published-post',
+      slug: 'published-post',
+      status: 'published',
+      revision: 2,
+    });
+    await setDoc(doc(context.firestore(), 'postSummaries', 'draft-post'), {
+      id: 'draft-post',
+      slug: 'draft-post',
+      status: 'draft',
+      revision: 3,
+    });
+    await setDoc(doc(context.firestore(), 'postSummaries', '__manifest'), {
+      kind: 'post-summary-index',
+      schemaVersion: 1,
+      complete: true,
+      status: 'published',
+    });
     await setDoc(doc(context.firestore(), 'postDrafts', 'owner-user', 'recoveries', 'draft-post'), {
       ownerUid: 'owner-user',
       postId: 'draft-post',
@@ -94,6 +112,19 @@ test('public readers can read only published canonical posts', async () => {
   const published = await assertSucceeds(getDoc(doc(publicDb, 'posts', 'published-post')));
   assert.equal(published.data().status, 'published');
   await assertFails(getDoc(doc(publicDb, 'posts', 'draft-post')));
+  await assertSucceeds(getDoc(doc(publicDb, 'postSummaries', 'published-post')));
+  await assertFails(getDoc(doc(publicDb, 'postSummaries', 'draft-post')));
+  const manifest = await assertSucceeds(getDoc(doc(publicDb, 'postSummaries', '__manifest')));
+  assert.equal(manifest.data().complete, true);
+  const publicSummaries = await assertSucceeds(getDocs(query(
+    collection(publicDb, 'postSummaries'),
+    where('status', '==', 'published')
+  )));
+  assert.deepEqual(
+    publicSummaries.docs.map(document => document.id).sort(),
+    ['__manifest', 'published-post']
+  );
+  await assertFails(getDocs(collection(publicDb, 'postSummaries')));
 });
 
 test('CMS roles can read drafts but every canonical write is backend-only', async () => {
@@ -104,6 +135,7 @@ test('CMS roles can read drafts but every canonical write is backend-only', asyn
   await assertFails(deleteDoc(doc(editorDb, 'posts', 'draft-post')));
   await assertFails(setDoc(doc(editorDb, 'postPreviews', 'preview-token'), {post: {status: 'draft'}}));
   await assertFails(setDoc(doc(editorDb, 'blogSlugs', 'reserved-slug'), {postId: 'new-post'}));
+  await assertFails(setDoc(doc(editorDb, 'postSummaries', 'new-post'), {status: 'published'}));
   await assertFails(setDoc(doc(editorDb, 'blogPublishingAudit', 'event'), {postId: 'draft-post'}));
 });
 
@@ -114,6 +146,7 @@ test('the recursive admin fallback cannot bypass backend-only publishing records
     ['postPreviews', 'preview-token'],
     ['postDrafts', 'direct-admin-draft'],
     ['blogSlugs', 'reserved-slug'],
+    ['postSummaries', 'new-post'],
     ['blogMutationReceipts', 'receipt'],
     ['blogPublishingAudit', 'event'],
     ['blogMediaAssets', 'media-id'],

@@ -1,10 +1,11 @@
 import {Injectable, inject} from '@angular/core';
-import {defer, distinctUntilChanged, from, map, Observable, of, switchMap} from 'rxjs';
+import {combineLatest, defer, distinctUntilChanged, from, map, Observable, of, switchMap} from 'rxjs';
 
 import {
   BlogAdminStats,
   BlogEditorialMetadata,
   BlogPost,
+  BlogPostIndexEntry,
   BlogPostStatus,
   BlogPostSummary,
   isCatCornerPost,
@@ -21,6 +22,8 @@ import {
   normalizeBlogImageFields,
   resolveBlogPostPreviewImages,
 } from '../utils/blog-image-url.util';
+import {createBlogReadingStats} from '../utils/blog-reading.util';
+import {createBlogPostSearchBodyText} from '../utils/blog-search-text.util';
 
 export interface BlogPostPreviewResult {
   post: BlogPost;
@@ -48,13 +51,16 @@ function toSummary(post: BlogPost): BlogPostSummary {
   const imageFields = normalizeBlogImageFields(post);
   const authorFields = normalizeBlogAuthor(post.author, post.authorId);
   const previewImages = resolveBlogPostPreviewImages(post);
+  const readingStats = createBlogReadingStats(post);
 
   return {
     id: post.id,
+    revision: normalizeBlogPostRevision(post.revision),
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt,
     coverImage: imageFields.coverImage,
+    ...(post.backgroundImage ? {backgroundImage: post.backgroundImage} : {}),
     thumbnailImage: imageFields.thumbnailImage,
     featured: post.featured,
     ...authorFields,
@@ -63,18 +69,40 @@ function toSummary(post: BlogPost): BlogPostSummary {
     tags: post.tags,
     ...(previewImages.length ? {previewImages} : {}),
     catCorner: post.catCorner,
+    seo: post.seo,
+    ...(post.og ? {og: post.og} : {}),
+    searchBodyText: createBlogPostSearchBodyText(post),
+    ...readingStats,
     publishedAt: post.publishedAt,
     updatedAt: post.updatedAt,
   };
 }
 
-function getSortablePostDate(post: BlogPost): string {
+function getSortablePostDate(post: Pick<BlogPostSummary, 'publishedAt' | 'updatedAt'>): string {
   return post.publishedAt ?? post.updatedAt;
 }
 
-function sortNewestFirst(left: BlogPost, right: BlogPost): number {
+function sortNewestFirst(
+  left: Pick<BlogPostSummary, 'publishedAt' | 'updatedAt'>,
+  right: Pick<BlogPostSummary, 'publishedAt' | 'updatedAt'>
+): number {
   return getSortablePostDate(right).localeCompare(getSortablePostDate(left))
     || right.updatedAt.localeCompare(left.updatedAt);
+}
+
+function sameBlogPostVersion(
+  previous: Pick<BlogPostSummary, 'id' | 'revision' | 'updatedAt'> | undefined,
+  current: Pick<BlogPostSummary, 'id' | 'revision' | 'updatedAt'> | undefined
+): boolean {
+  return previous?.id === current?.id
+    && normalizeBlogPostRevision(previous?.revision) === normalizeBlogPostRevision(current?.revision)
+    && previous?.updatedAt === current?.updatedAt;
+}
+
+function blogPostVersionKey(post: Pick<BlogPostSummary, 'id' | 'revision' | 'updatedAt'> | undefined): string {
+  return post
+    ? JSON.stringify([post.id, normalizeBlogPostRevision(post.revision), post.updatedAt])
+    : 'missing';
 }
 
 export function createBlogSlug(value: string): string {
@@ -118,8 +146,8 @@ export class BlogRepositoryService {
   readonly error$ = this.storage.error$;
 
   getPublishedPosts$(): Observable<readonly BlogPostSummary[]> {
-    return this.storage.posts$.pipe(
-      map(posts => this.createPublishedPosts(posts))
+    return this.storage.postIndex$.pipe(
+      map(posts => this.createPublishedIndexPosts(posts))
     );
   }
 
@@ -130,25 +158,42 @@ export class BlogRepositoryService {
   }
 
   getPublishedCatCornerPosts$(): Observable<readonly BlogPostSummary[]> {
-    return this.storage.posts$.pipe(
-      map(posts => this.createPublishedCatCornerPosts(posts))
+    return this.storage.postIndex$.pipe(
+      map(posts => this.createPublishedIndexCatCornerPosts(posts))
     );
   }
 
   getPublishedPostBySlug$(slug: string): Observable<BlogPost | undefined> {
     const normalizedSlug = slug.trim();
-    const cachedPost = this.getPublishedPostBySlug(normalizedSlug);
-    const initialPost$ = cachedPost
-      ? of(cachedPost)
-      : defer(() => from(this.storage.loadPublishedPostBySlug(normalizedSlug)));
+    const cachedPost$ = this.storage.posts$.pipe(
+      map(posts => posts.find(post => post.slug === normalizedSlug && post.status === 'published')),
+      distinctUntilChanged((previous, current) => sameBlogPostVersion(previous, current))
+    );
+    const indexedPost$ = this.storage.postIndex$.pipe(
+      map(posts => posts.find(post => post.slug === normalizedSlug && post.status === 'published')),
+      distinctUntilChanged((previous, current) => sameBlogPostVersion(previous, current))
+    );
 
-    return initialPost$.pipe(
-      switchMap(() => this.storage.posts$.pipe(
-        map(posts => posts.find(post => post.slug === normalizedSlug && post.status === 'published')),
-        distinctUntilChanged((previous, current) => (
-          previous?.id === current?.id && previous?.updatedAt === current?.updatedAt
-        ))
-      ))
+    return combineLatest([cachedPost$, indexedPost$]).pipe(
+      map(([cachedPost, indexedPost]) => ({
+        cachedPost,
+        indexedPost,
+        lookupKey: cachedPost && indexedPost && sameBlogPostVersion(cachedPost, indexedPost)
+          ? `cached:${blogPostVersionKey(indexedPost)}`
+          : `fetch:${blogPostVersionKey(indexedPost)}`,
+      })),
+      distinctUntilChanged((previous, current) => previous.lookupKey === current.lookupKey),
+      switchMap(({cachedPost, indexedPost}) => {
+        if (cachedPost && indexedPost && sameBlogPostVersion(cachedPost, indexedPost)) {
+          return of(cachedPost);
+        }
+
+        // A missing summary can mean the cached post was unpublished or
+        // deleted. Re-check the canonical collection instead of allowing a
+        // bounded anonymous cache entry to remain publicly readable forever.
+        return defer(() => from(this.storage.loadPublishedPostBySlug(normalizedSlug)));
+      }),
+      distinctUntilChanged((previous, current) => sameBlogPostVersion(previous, current))
     );
   }
 
@@ -164,13 +209,18 @@ export class BlogRepositoryService {
 
   getAdminPostBySlug$(slug: string): Observable<BlogPost | undefined> {
     return this.storage.posts$.pipe(
-      map(posts => posts.find(post => post.slug === slug))
+      map(posts => posts.find(post => post.slug === slug)),
+      distinctUntilChanged((previous, current) => (
+        previous?.id === current?.id
+        && normalizeBlogPostRevision(previous?.revision) === normalizeBlogPostRevision(current?.revision)
+        && previous?.updatedAt === current?.updatedAt
+      ))
     );
   }
 
   getCategories$(): Observable<readonly string[]> {
-    return this.storage.posts$.pipe(
-      map(posts => this.createCategories(posts))
+    return this.storage.postIndex$.pipe(
+      map(posts => this.createIndexCategories(posts))
     );
   }
 
@@ -181,7 +231,8 @@ export class BlogRepositoryService {
   }
 
   getPublishedPosts(): readonly BlogPostSummary[] {
-    return this.createPublishedPosts(this.getPosts());
+    const index = this.storage.getPostIndex();
+    return index.length > 0 ? this.createPublishedIndexPosts(index) : this.createPublishedPosts(this.getPosts());
   }
 
   getPublishedFullPosts(): readonly BlogPost[] {
@@ -189,7 +240,10 @@ export class BlogRepositoryService {
   }
 
   getPublishedCatCornerPosts(): readonly BlogPostSummary[] {
-    return this.createPublishedCatCornerPosts(this.getPosts());
+    const index = this.storage.getPostIndex();
+    return index.length > 0
+      ? this.createPublishedIndexCatCornerPosts(index)
+      : this.createPublishedCatCornerPosts(this.getPosts());
   }
 
   getPublishedPostBySlug(slug: string): BlogPost | undefined {
@@ -209,7 +263,8 @@ export class BlogRepositoryService {
   }
 
   getCategories(): readonly string[] {
-    return this.createCategories(this.getPosts());
+    const index = this.storage.getPostIndex();
+    return index.length > 0 ? this.createIndexCategories(index) : this.createCategories(this.getPosts());
   }
 
   getAdminStats(): BlogAdminStats {
@@ -449,6 +504,12 @@ export class BlogRepositoryService {
       .map(toSummary);
   }
 
+  private createPublishedIndexPosts(posts: readonly BlogPostIndexEntry[]): readonly BlogPostSummary[] {
+    return posts
+      .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
+      .sort(sortNewestFirst);
+  }
+
   private createPublishedFullPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
     return posts
       .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
@@ -462,11 +523,25 @@ export class BlogRepositoryService {
       .map(toSummary);
   }
 
+  private createPublishedIndexCatCornerPosts(posts: readonly BlogPostIndexEntry[]): readonly BlogPostSummary[] {
+    return posts
+      .filter(post => post.status === 'published' && isCatCornerPost(post))
+      .sort(sortNewestFirst);
+  }
+
   private createAdminPosts(posts: readonly BlogPost[]): readonly BlogPost[] {
     return [...posts].sort(sortNewestFirst);
   }
 
   private createCategories(posts: readonly BlogPost[]): readonly string[] {
+    const categories = posts
+      .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
+      .flatMap(post => getBlogTaxonomyTerms(post));
+
+    return [...new Set(categories)].sort();
+  }
+
+  private createIndexCategories(posts: readonly BlogPostIndexEntry[]): readonly string[] {
     const categories = posts
       .filter(post => post.status === 'published' && isPublicBlogListingPost(post))
       .flatMap(post => getBlogTaxonomyTerms(post));

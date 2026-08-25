@@ -5,7 +5,11 @@ import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../homepage/homepage-hero.defaults
 import {HomepageHeroSettings} from '../homepage/models/homepage-hero.model';
 import {HomepageHeroRepositoryService} from '../homepage/services/homepage-hero-repository.service';
 import {ScreenSaverLocalMediaService} from './screen-saver-local-media.service';
-import {ScreenSaverLocalImage, ScreenSaverModuleId} from './screen-saver.model';
+import {
+  ScreenSaverActiveLocalImage,
+  ScreenSaverLocalImage,
+  ScreenSaverModuleId,
+} from './screen-saver.model';
 import {ScreenSaverPreferencesService} from './screen-saver-preferences.service';
 import {
   SCREEN_SAVER_CONTROLS_IDLE_MS,
@@ -42,7 +46,10 @@ describe('ScreenSaverComponent', () => {
   let kenBurnsSpeed: ReturnType<typeof signal<number>>;
   let slideshowIntervalSeconds: ReturnType<typeof signal<number>>;
   let localImages: ReturnType<typeof signal<readonly ScreenSaverLocalImage[]>>;
+  let activeLocalImages: ReturnType<typeof signal<readonly ScreenSaverActiveLocalImage[]>>;
   let addFiles: jasmine.Spy;
+  let setActiveWindow: jasmine.Spy;
+  let releaseActiveImages: jasmine.Spy;
 
   beforeEach(async () => {
     spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
@@ -61,7 +68,12 @@ describe('ScreenSaverComponent', () => {
     kenBurnsSpeed = signal(2);
     slideshowIntervalSeconds = signal(8);
     localImages = signal<readonly ScreenSaverLocalImage[]>([]);
+    activeLocalImages = signal<readonly ScreenSaverActiveLocalImage[]>([]);
     addFiles = jasmine.createSpy('addFiles').and.resolveTo(0);
+    setActiveWindow = jasmine.createSpy('setActiveWindow').and.resolveTo();
+    releaseActiveImages = jasmine.createSpy('releaseActiveImages').and.callFake(() => {
+      activeLocalImages.set([]);
+    });
 
     await TestBed.configureTestingModule({
       imports: [ScreenSaverComponent],
@@ -87,10 +99,13 @@ describe('ScreenSaverComponent', () => {
           provide: ScreenSaverLocalMediaService,
           useValue: {
             images: localImages,
+            activeImages: activeLocalImages,
             supported: signal(true),
             busy: signal(false),
             error: signal<string | null>(null),
             addFiles,
+            setActiveWindow,
+            releaseActiveImages,
           },
         },
       ],
@@ -115,12 +130,15 @@ describe('ScreenSaverComponent', () => {
     expect(overlay?.classList.contains('is-active')).toBeTrue();
     expect(document.body.style.overflow).toBe('hidden');
     expect(fixture.nativeElement.querySelectorAll('.screen-saver-image').length).toBe(2);
+    releaseActiveImages.calls.reset();
 
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 'S', bubbles: true}));
     fixture.detectChanges();
 
     expect(overlay?.classList.contains('is-active')).toBeFalse();
     expect(document.body.style.overflow).toBe('');
+    expect(fixture.nativeElement.querySelectorAll('.screen-saver-image').length).toBe(0);
+    expect(releaseActiveImages).toHaveBeenCalled();
   });
 
   it('does not intercept S while the user is typing', () => {
@@ -288,7 +306,27 @@ describe('ScreenSaverComponent', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
     fixture.detectChanges();
 
-    expect(activeImage?.classList.contains('has-ken-burns')).toBeFalse();
+    expect(activeImage?.isConnected).toBeFalse();
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.screen-saver-image').length).toBe(0);
+  });
+
+  it('renders only the current and adjacent slides for a larger hero set', () => {
+    const settings = createSettings();
+    const heroRepository = TestBed.inject(HomepageHeroRepositoryService);
+    const heroSettings = heroRepository.settings as ReturnType<typeof signal<HomepageHeroSettings>>;
+    heroSettings.set({
+      ...settings,
+      slides: Array.from({length: 8}, (_, index) => ({
+        ...settings.slides[0],
+        id: `hero-${index}`,
+        sortOrder: index,
+      })),
+    });
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.screen-saver-image').length).toBe(3);
   });
 
   it('switches to My Images after a successful local upload', async () => {
@@ -297,10 +335,10 @@ describe('ScreenSaverComponent', () => {
       name: 'trail.png',
       addedAt: '2026-07-10T00:00:00.000Z',
       size: 4,
-      imageUrl: 'blob:local-trail',
     };
     addFiles.and.callFake(async () => {
       localImages.set([localImage]);
+      activeLocalImages.set([{...localImage, imageUrl: 'blob:local-trail', sourceIndex: 0}]);
       return 1;
     });
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 's', bubbles: true}));

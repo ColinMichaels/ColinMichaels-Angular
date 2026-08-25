@@ -153,6 +153,9 @@ export class AppComponent {
   protected readonly showBlogMembershipCampaign = computed(() => {
     return shouldShowBlogMembershipCampaign(this.currentUrl(), this.dailyDiscoveryPlay.isPlaying());
   });
+  protected readonly showDailyDiscoveryOverlay = computed(() => {
+    return this.showSiteHeader() && this.dailyDiscoveryPlay.isPlaying();
+  });
   protected readonly activeUserView = toSignal(this.authService.userView$, {initialValue: null});
   protected readonly activeSearchQuery = this.siteSearch.query;
   protected readonly scrollToFirstSearchMatch = computed(() => isBlogArticleRoute(this.currentUrl()));

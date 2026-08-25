@@ -2,14 +2,10 @@ import {Injectable, inject} from '@angular/core';
 import {combineLatest, map, Observable} from 'rxjs';
 
 import {PATH_NAMES} from '../../../app-route-paths';
-import {BlogGalleryImage, BlogPost, getBlogListItemTexts} from '../../blog/models/blog-post.model';
+import {BlogGalleryImage, BlogPostSummary} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {getBlogTaxonomyTerms} from '../../blog/utils/blog-category-url.util';
-import {
-  resolveBlogPostImage,
-  resolveBlogPostPreviewImages,
-} from '../../blog/utils/blog-image-url.util';
-import {createBlogMarkdownPlainText} from '../../blog/utils/blog-markdown.util';
+import {resolveBlogPostImage} from '../../blog/utils/blog-image-url.util';
 import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
 import {TopicHub} from '../../topics/topic-hubs.data';
 
@@ -29,7 +25,6 @@ export interface SiteSearchItem {
   title: string;
   excerpt: string;
   path: string;
-  searchText: string;
   titleText: string;
   excerptText: string;
   taxonomyText: string;
@@ -59,7 +54,7 @@ export interface SiteSearchResult extends SiteSearchItem {
   matchedFields: readonly string[];
 }
 
-const RAW_STATIC_SEARCH_ITEMS: readonly Omit<SiteSearchItem, 'searchText'>[] = [
+const STATIC_SEARCH_ITEMS: readonly SiteSearchItem[] = [
   {
     id: 'page-home',
     type: 'page' as const,
@@ -132,16 +127,6 @@ const RAW_STATIC_SEARCH_ITEMS: readonly Omit<SiteSearchItem, 'searchText'>[] = [
   },
 ];
 
-const STATIC_SEARCH_ITEMS: readonly SiteSearchItem[] = RAW_STATIC_SEARCH_ITEMS.map(item => ({
-  ...item,
-  searchText: normalizeSearchValue([
-    item.titleText,
-    item.excerptText,
-    item.taxonomyText,
-    item.bodyText,
-  ].join(' ')),
-}));
-
 @Injectable({
   providedIn: 'root',
 })
@@ -153,7 +138,7 @@ export class SiteSearchService {
 
   getSearchItems$(): Observable<readonly SiteSearchItem[]> {
     return combineLatest([
-      this.blogRepository.getPublishedFullPosts$(),
+      this.blogRepository.getPublishedPosts$(),
       this.topicHubRepository.getPublishedTopicHubs$(),
     ]).pipe(
       map(([posts, topicHubs]) => [
@@ -225,15 +210,18 @@ export function normalizeSearchValue(value: string): string {
     .toLowerCase();
 }
 
-function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): SiteSearchItem {
-  const bodyText = createBlogPostBodyText(post);
+function createBlogSearchItem(post: BlogPostSummary, topicHubs: readonly TopicHub[]): SiteSearchItem {
+  // Backend and legacy-summary projection both store this bounded field in the
+  // same normalized form, so the active search view can share the string
+  // instead of allocating a second article-body copy.
+  const bodyText = post.searchBodyText ?? '';
   const taxonomyTerms = getBlogTaxonomyTerms(post);
   const taxonomyText = [...taxonomyTerms, ...post.tags].join(' ');
   const authorText = [post.author.name, post.author.title, post.author.slug].filter(Boolean).join(' ');
-  const titleText = post.title;
-  const excerptText = post.excerpt;
+  const titleText = `${post.title} ${post.seo?.title ?? ''}`;
+  const excerptText = `${post.excerpt} ${post.seo?.description ?? ''}`;
   const topicHub = findTopicHubForBlogPost(post, taxonomyTerms, topicHubs);
-  const previewImages = resolveBlogPostPreviewImages(post);
+  const previewImages = post.previewImages ?? [];
 
   return {
     id: post.id,
@@ -244,16 +232,7 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
     titleText: normalizeSearchValue(titleText),
     excerptText: normalizeSearchValue(excerptText),
     taxonomyText: normalizeSearchValue(`${taxonomyText} ${authorText}`),
-    bodyText: normalizeSearchValue(bodyText),
-    searchText: normalizeSearchValue([
-      titleText,
-      excerptText,
-      taxonomyText,
-      authorText,
-      bodyText,
-      post.seo.title,
-      post.seo.description,
-    ].join(' ')),
+    bodyText,
     categories: taxonomyTerms,
     tags: post.tags,
     authorId: post.authorId,
@@ -264,41 +243,6 @@ function createBlogSearchItem(post: BlogPost, topicHubs: readonly TopicHub[]): S
     ...(previewImages.length ? {previewImages} : {}),
     ...(topicHub ? {topic: createSearchTopic(topicHub)} : {}),
   };
-}
-
-function createBlogPostBodyText(post: BlogPost): string {
-  const blockText = post.blocks
-    .flatMap(block => [
-      block.data.title,
-      block.data.text,
-      block.data.caption,
-      block.data.attribution,
-      block.data.code,
-      block.data.html,
-      block.type === 'markdown' ? createBlogMarkdownPlainText(block.data.markdown) : block.data.markdown,
-      ...getBlogListItemTexts(block.data),
-      ...(block.data.stats ?? []).flatMap(stat => [stat.label, stat.value, stat.caption]),
-      ...(block.data.chartPoints ?? []).flatMap(point => [point.label, point.note]),
-      ...(block.data.labels ?? []),
-      ...(block.data.datasets ?? []).map(dataset => dataset.label),
-      block.data.xAxisTitle,
-      block.data.yAxisTitle,
-      block.data.sourceLabel,
-      block.data.accessibilitySummary,
-      ...(block.data.galleryImages ?? []).flatMap(image => [image.alt, image.caption]),
-    ])
-    .filter((value): value is string => typeof value === 'string')
-    .join(' ');
-
-  return [
-    blockText,
-    post.editorial?.evidenceBasis,
-    post.editorial?.evidenceSummary,
-    post.editorial?.relationshipDisclosure,
-    post.editorial?.aiAssistanceDisclosure,
-    post.editorial?.syntheticMediaDisclosure,
-    post.editorial?.updateNote,
-  ].filter((value): value is string => typeof value === 'string').join(' ');
 }
 
 function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
@@ -331,12 +275,6 @@ function createTopicSearchItem(topicHub: TopicHub): SiteSearchItem {
     excerptText: normalizeSearchValue(excerptText),
     taxonomyText: normalizeSearchValue(taxonomyText),
     bodyText: normalizeSearchValue(bodyText),
-    searchText: normalizeSearchValue([
-      titleText,
-      excerptText,
-      taxonomyText,
-      bodyText,
-    ].join(' ')),
     categories: ['Topics'],
     tags: topicHub.terms,
     date: topicHub.updatedAt,
@@ -354,7 +292,7 @@ function createSearchTopic(topicHub: TopicHub): SiteSearchTopic {
 }
 
 function findTopicHubForBlogPost(
-  post: BlogPost,
+  post: BlogPostSummary,
   taxonomyTerms: readonly string[],
   topicHubs: readonly TopicHub[]
 ): TopicHub | null {
@@ -445,10 +383,6 @@ function scoreSearchItem(
       score += 3;
       matchedFields.add('Body');
     }
-  }
-
-  if (score === 0 && item.searchText.includes(normalizedQuery)) {
-    score = 1;
   }
 
   return score > 0 ? {...item, score, matchedFields: [...matchedFields]} : null;

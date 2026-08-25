@@ -73,6 +73,16 @@ Do not remove experimental systems unless explicitly instructed.
 
 # Development Rules
 
+## Branch And PR Workflow
+
+- Create a new dedicated `codex/<descriptive-work-slug>` branch from the latest verified `origin/dev` before starting each feature, fix, or release batch.
+- Never implement directly on `dev` or continue unrelated work on a reused feature branch.
+- If relevant uncommitted work already exists while `HEAD` still matches `origin/dev`, preserve it by creating the dedicated branch immediately; never reset or discard it to change branches.
+- Keep each branch scoped to one coherent change, then open its pull request against `dev` as a draft unless the maintainer requests another target.
+- Treat commit, push, pull-request creation, and deployment as separate actions. Do not infer permission for one from permission for another.
+
+---
+
 ## Refactor Priority
 
 Prefer:

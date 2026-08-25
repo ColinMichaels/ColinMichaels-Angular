@@ -12,7 +12,11 @@ export interface ScreenSaverLocalImage {
   name: string;
   addedAt: string;
   size: number;
+}
+
+export interface ScreenSaverActiveLocalImage extends ScreenSaverLocalImage {
   imageUrl: string;
+  sourceIndex: number;
 }
 
 export interface ScreenSaverPreferences {
@@ -59,3 +63,20 @@ export const SCREEN_SAVER_KEN_BURNS_DURATION_SECONDS: Readonly<Record<number, nu
   4: 13,
   5: 10,
 };
+
+export function getScreenSaverActiveWindowIndexes(
+  activeIndex: number,
+  slideCount: number
+): readonly number[] {
+  if (slideCount <= 0) {
+    return [];
+  }
+
+  const normalizedIndex = Number.isFinite(activeIndex) ? Math.trunc(activeIndex) : 0;
+  const currentIndex = Math.min(slideCount - 1, Math.max(0, normalizedIndex));
+  return [...new Set([
+    currentIndex,
+    (currentIndex + 1) % slideCount,
+    (currentIndex - 1 + slideCount) % slideCount,
+  ])];
+}

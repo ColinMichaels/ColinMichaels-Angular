@@ -354,10 +354,13 @@ export interface BlogPost {
 
 export interface BlogPostSummary {
   id: string;
+  /** Canonical revision used to suppress same-version reprocessing. */
+  revision?: number;
   slug: string;
   title: string;
   excerpt: string;
   coverImage: string;
+  backgroundImage?: string;
   thumbnailImage?: string;
   featured?: boolean;
   authorId?: string;
@@ -368,8 +371,20 @@ export interface BlogPostSummary {
   /** Bounded in-body media metadata used by opt-in, interaction-triggered listing previews. */
   previewImages?: readonly BlogGalleryImage[];
   catCorner?: BlogCatCornerSettings;
+  /** Precomputed public metadata avoids retaining full Editor.js blocks for listings and search. */
+  seo?: BlogSeoMetadata;
+  og?: BlogOpenGraphMetadata;
+  searchBodyText?: string;
+  wordCount?: number;
+  readingMinutes?: number;
   publishedAt: string | null;
   updatedAt: string;
+}
+
+/** Backend-owned list/search record. Full article blocks remain in `/posts` only. */
+export interface BlogPostIndexEntry extends BlogPostSummary {
+  status: BlogPostStatus;
+  createdAt: string;
 }
 
 export interface BlogAdminStats {

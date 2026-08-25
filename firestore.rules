@@ -57,6 +57,7 @@ service cloud.firestore {
         || collectionId == 'dailyDiscoveryAdminReceipts'
         || collectionId == 'dailyDiscoveryAdminAudit'
         || collectionId == 'posts'
+        || collectionId == 'postSummaries'
         || collectionId == 'postPreviews'
         || collectionId == 'postDrafts'
         || collectionId == 'blogSlugs'
@@ -145,6 +146,13 @@ service cloud.firestore {
       allow get, list: if canManageCmsContent() || isPublishedPost();
       // Phase 7: every canonical post mutation is validated, revision-checked,
       // slug-reserved, audited, and applied by the trusted Functions boundary.
+      allow create, update, delete: if false;
+    }
+
+    match /postSummaries/{postId} {
+      allow get, list: if canManageCmsContent() || isPublishedPost();
+      // Summary documents are derived from the validated canonical post by the
+      // trusted publishing boundary and cannot be written by browser clients.
       allow create, update, delete: if false;
     }
 

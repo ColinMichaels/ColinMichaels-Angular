@@ -1,14 +1,18 @@
 import {TestBed} from '@angular/core/testing';
 import {BehaviorSubject, filter, firstValueFrom, of} from 'rxjs';
 
-import {BlogEditorialMetadata, BlogPost} from '../models/blog-post.model';
+import {BlogEditorialMetadata, BlogPost, BlogPostIndexEntry} from '../models/blog-post.model';
 import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../models/blog-post-revision.model';
+import {resolveBlogPostPreviewImages} from '../utils/blog-image-url.util';
+import {createBlogReadingStats} from '../utils/blog-reading.util';
+import {createBlogPostSearchBodyText} from '../utils/blog-search-text.util';
 import {BlogStorageService} from './blog-storage.service';
 import {BlogRepositoryService} from './blog-repository.service';
 
 function createPost(overrides: Partial<BlogPost>): BlogPost {
   return {
     id: overrides.id ?? `post-${overrides.slug ?? 'test'}`,
+    ...(overrides.revision !== undefined ? {revision: overrides.revision} : {}),
     slug: overrides.slug ?? 'test-post',
     title: overrides.title ?? 'Test Post',
     excerpt: overrides.excerpt ?? 'A test post.',
@@ -39,6 +43,7 @@ function createPost(overrides: Partial<BlogPost>): BlogPost {
 
 class FakeBlogStorageService {
   private readonly postsSubject = new BehaviorSubject<readonly BlogPost[]>([]);
+  private readonly postIndexSubject = new BehaviorSubject<readonly BlogPostIndexEntry[]>([]);
   private readonly previews = new Map<string, BlogPost>();
   private readonly directPublishedPosts = new Map<string, BlogPost>();
 
@@ -46,15 +51,50 @@ class FakeBlogStorageService {
   private nextSaveError: Error | null = null;
 
   readonly posts$ = this.postsSubject.asObservable();
+  readonly postIndex$ = this.postIndexSubject.asObservable();
   readonly loading$ = of(false);
   readonly error$ = of(null);
 
   setPosts(posts: readonly BlogPost[]): void {
     this.postsSubject.next(posts);
+    this.setPostIndex(posts);
+  }
+
+  setPostIndex(posts: readonly BlogPost[]): void {
+    this.postIndexSubject.next(posts.map(post => ({
+      id: post.id,
+      revision: post.revision,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      coverImage: post.coverImage,
+      backgroundImage: post.backgroundImage,
+      thumbnailImage: post.thumbnailImage,
+      featured: post.featured,
+      authorId: post.authorId,
+      author: post.author,
+      categories: post.categories,
+      subcategories: post.subcategories,
+      tags: post.tags,
+      previewImages: resolveBlogPostPreviewImages(post),
+      catCorner: post.catCorner,
+      seo: post.seo,
+      og: post.og,
+      searchBodyText: createBlogPostSearchBodyText(post),
+      ...createBlogReadingStats(post),
+      status: post.status,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      publishedAt: post.publishedAt,
+    })));
   }
 
   getPosts(): readonly BlogPost[] {
     return this.postsSubject.value;
+  }
+
+  getPostIndex(): readonly BlogPostIndexEntry[] {
+    return this.postIndexSubject.value;
   }
 
   failNextSave(error: Error): void {
@@ -356,6 +396,28 @@ describe('BlogRepositoryService', () => {
     expect(service.getPublishedPostBySlug('draft-post')).toBeUndefined();
   });
 
+  it('does not re-emit an unchanged admin post when another post changes', () => {
+    const emissions: (BlogPost | undefined)[] = [];
+    const subscription = service.getAdminPostBySlug$('published-post').subscribe(post => emissions.push(post));
+
+    storage.setPosts([
+      {...publishedPost},
+      {...draftPost, title: 'Changed draft'},
+    ]);
+
+    expect(emissions).toEqual([publishedPost]);
+
+    const nextRevision = {
+      ...publishedPost,
+      revision: 1,
+      updatedAt: '2026-01-03T12:00:00.000Z',
+    };
+    storage.setPosts([nextRevision, draftPost]);
+
+    expect(emissions).toEqual([publishedPost, nextRevision]);
+    subscription.unsubscribe();
+  });
+
   it('uses an isolated Firestore lookup when a direct post is not in the collection cache', async () => {
     storage.setPosts([]);
     storage.setDirectPublishedPost(publishedPost);
@@ -371,6 +433,34 @@ describe('BlogRepositoryService', () => {
 
     expect(post).toEqual(publishedPost);
     expect(storage.loadPublishedPostBySlugCalls).toEqual([]);
+  });
+
+  it('refreshes a cached article when the compact index advertises a newer revision', async () => {
+    const stalePost = {...publishedPost, revision: 1};
+    const refreshedPost = {
+      ...publishedPost,
+      revision: 2,
+      title: 'Refreshed Published Post',
+      updatedAt: '2026-01-04T12:00:00.000Z',
+    };
+    storage.setPosts([stalePost]);
+    storage.setPostIndex([refreshedPost]);
+    storage.setDirectPublishedPost(refreshedPost);
+
+    const post = await firstValueFrom(service.getPublishedPostBySlug$('published-post'));
+
+    expect(post).toEqual(refreshedPost);
+    expect(storage.loadPublishedPostBySlugCalls).toEqual(['published-post']);
+  });
+
+  it('rechecks a cached article when it disappears from the public index', async () => {
+    storage.setPosts([publishedPost]);
+    storage.setPostIndex([]);
+
+    const post = await firstValueFrom(service.getPublishedPostBySlug$('published-post'));
+
+    expect(post).toBeUndefined();
+    expect(storage.loadPublishedPostBySlugCalls).toEqual(['published-post']);
   });
 
   it('keeps a cold slug lookup subscribed until the published collection supplies the post', async () => {

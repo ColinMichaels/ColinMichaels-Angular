@@ -79,7 +79,8 @@ describe('CMS post recovery model', () => {
   });
 
   it('creates a stable comparison fingerprint independent of object key order', () => {
-    expect(createCmsPostRecoveryContentHash({title: 'Test', blocks: [1, 2]}))
-      .toBe(createCmsPostRecoveryContentHash({blocks: [1, 2], title: 'Test'}));
+    const hash = createCmsPostRecoveryContentHash({title: 'Test', blocks: [1, 2]});
+    expect(hash).toBe(createCmsPostRecoveryContentHash({blocks: [1, 2], title: 'Test'}));
+    expect(hash).toMatch(/^fnv1a-v2-[0-9a-f]{8}$/);
   });
 });
