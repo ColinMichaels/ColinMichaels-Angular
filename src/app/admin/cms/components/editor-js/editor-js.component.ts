@@ -1130,6 +1130,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
 
   ngAfterViewInit(): void {
     this.setJsonDocument(this.initialData);
+    this.stageProductionPreviewDocument(this.initialData);
     void this.initializeEditor();
   }
 
@@ -1164,7 +1165,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     try {
       const document = this.requireValidEditorDocument(this.initialData);
       this.setJsonDocument(document);
-      this.setProductionPreviewDocument(document);
+      this.stageProductionPreviewDocument(document);
       await this.renderEditorDocument(document);
       this.contentChanged.emit();
     } catch (error) {
@@ -1191,7 +1192,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
       const normalizedDocument = this.requireValidEditorDocument(document);
       this.initialData = normalizedDocument;
       this.setJsonDocument(normalizedDocument);
-      this.setProductionPreviewDocument(normalizedDocument);
+      this.stageProductionPreviewDocument(normalizedDocument);
 
       if (this.editor) {
         await this.renderEditorDocument(normalizedDocument);
@@ -1236,7 +1237,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     const document = this.requireValidEditorDocument(snapshot.document);
     this.initialData = document;
     this.setJsonDocument(document);
-    this.setProductionPreviewDocument(document);
+    this.stageProductionPreviewDocument(document);
     this.viewMode.set('visual');
     await this.renderEditorDocument(document);
   }
@@ -1256,7 +1257,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
           : this.editor
             ? await this.getVisualDocument()
             : this.requireValidEditorDocument(this.initialData);
-        this.setJsonDocument(document);
+        this.setJsonDocument(document, true);
         this.viewMode.set('json');
         return;
       }
@@ -1282,7 +1283,7 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
       }
 
       this.setJsonDocument(normalizedDocument);
-      this.setProductionPreviewDocument(normalizedDocument);
+      this.stageProductionPreviewDocument(normalizedDocument);
       this.viewMode.set('visual');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to synchronize the editor views.';
@@ -1720,6 +1721,14 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     this.previewBlocks.set(createBlogBlocksFromEditorDocument(document));
   }
 
+  private stageProductionPreviewDocument(document: OutputData): void {
+    this.previewDocument = document;
+
+    if (this.viewMode() === 'preview') {
+      this.previewBlocks.set(createBlogBlocksFromEditorDocument(document));
+    }
+  }
+
   private async renderEditorDocument(document: OutputData): Promise<void> {
     if (!this.editor) {
       return;
@@ -1756,8 +1765,11 @@ export class EditorJsComponent implements AfterViewInit, OnChanges {
     }
   }
 
-  private setJsonDocument(document: OutputData): void {
-    this.jsonSource.set(JSON.stringify(document, null, 2));
+  private setJsonDocument(document: OutputData, materializeSource = this.viewMode() === 'json'): void {
+    if (materializeSource) {
+      this.jsonSource.set(JSON.stringify(document, null, 2));
+    }
+
     this.setJsonValidationState(document);
   }
 

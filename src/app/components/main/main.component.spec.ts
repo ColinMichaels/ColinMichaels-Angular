@@ -148,18 +148,17 @@ describe('MainComponent', () => {
   let fixture: ComponentFixture<MainComponent>;
   let blogRepositoryService: Pick<
     BlogRepositoryService,
-    'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'
+    'getPublishedPosts$' | 'getPublishedPosts' | 'loading$' | 'error$'
   >;
   let youtubeFeedService: Pick<YouTubeFeedService, 'getLatestVideos$'>;
 
   beforeEach(async () => {
     blogRepositoryService = {
       getPublishedPosts$: jasmine.createSpy('getPublishedPosts$').and.returnValue(of(MOCK_POSTS)),
-      getPublishedFullPosts$: jasmine.createSpy('getPublishedFullPosts$').and.returnValue(of(MOCK_FULL_POSTS)),
-      getPublishedFullPosts: jasmine.createSpy('getPublishedFullPosts').and.returnValue(MOCK_FULL_POSTS),
+      getPublishedPosts: jasmine.createSpy('getPublishedPosts').and.returnValue(MOCK_POSTS),
       loading$: of(false),
       error$: of(null),
-    } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'getPublishedFullPosts$' | 'getPublishedFullPosts' | 'loading$' | 'error$'>;
+    } satisfies Pick<BlogRepositoryService, 'getPublishedPosts$' | 'getPublishedPosts' | 'loading$' | 'error$'>;
     youtubeFeedService = {
       getLatestVideos$: jasmine.createSpy('getLatestVideos$').and.returnValue(of({
         fetchedAt: '2026-06-14T00:00:00.000Z',
@@ -285,9 +284,8 @@ describe('MainComponent', () => {
   it('shares one published post feed across homepage blog sections', async () => {
     await renderDeferredHomepageContent(fixture);
 
-    expect(blogRepositoryService.getPublishedFullPosts$).toHaveBeenCalledTimes(1);
-    expect(blogRepositoryService.getPublishedFullPosts).toHaveBeenCalledTimes(1);
-    expect(blogRepositoryService.getPublishedPosts$).not.toHaveBeenCalled();
+    expect(blogRepositoryService.getPublishedPosts$).toHaveBeenCalledTimes(1);
+    expect(blogRepositoryService.getPublishedPosts).toHaveBeenCalledTimes(1);
   });
 
   it('renders the homepage author bio section', async () => {

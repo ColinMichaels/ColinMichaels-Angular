@@ -139,28 +139,51 @@ export function isCmsPostRecoveryExpired(
 
 /** Stable, non-security fingerprint used only to compare recovery snapshots. */
 export function createCmsPostRecoveryContentHash(value: unknown): string {
-  const source = stableStringify(value);
-  let hash = 0x811c9dc5;
-
-  for (let index = 0; index < source.length; index += 1) {
-    hash ^= source.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-
-  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+  const hash = hashStableValue(value, 0x811c9dc5);
+  return `fnv1a-v2-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
-function stableStringify(value: unknown): string {
+function hashStableValue(value: unknown, hash: number): number {
   if (Array.isArray(value)) {
-    return `[${value.map(item => stableStringify(item)).join(',')}]`;
+    let nextHash = hashText(hash, `array:${value.length}[`);
+    for (const item of value) {
+      nextHash = hashStableValue(item, nextHash);
+    }
+    return hashText(nextHash, ']');
   }
 
   if (isRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
-      .join(',')}}`;
+    const keys = Object.keys(value).sort();
+    let nextHash = hashText(hash, `object:${keys.length}{`);
+    for (const key of keys) {
+      nextHash = hashText(nextHash, `key:${key.length}:`);
+      nextHash = hashText(nextHash, key);
+      nextHash = hashStableValue(value[key], nextHash);
+    }
+    return hashText(nextHash, '}');
   }
 
-  return JSON.stringify(value) ?? 'undefined';
+  if (typeof value === 'string') {
+    return hashText(hashText(hash, `string:${value.length}:`), value);
+  }
+  if (value === null) {
+    return hashText(hash, 'null');
+  }
+  if (typeof value === 'number') {
+    return hashText(hash, `number:${Number.isFinite(value) ? String(value) : 'null'}`);
+  }
+  if (typeof value === 'boolean') {
+    return hashText(hash, value ? 'boolean:true' : 'boolean:false');
+  }
+
+  return hashText(hash, `${typeof value}:undefined`);
+}
+
+function hashText(hash: number, value: string): number {
+  let nextHash = hash;
+  for (let index = 0; index < value.length; index += 1) {
+    nextHash ^= value.charCodeAt(index);
+    nextHash = Math.imul(nextHash, 0x01000193);
+  }
+  return nextHash;
 }

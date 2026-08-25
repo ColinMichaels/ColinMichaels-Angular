@@ -71,7 +71,7 @@ describe('AuthorPageComponent', () => {
         {
           provide: BlogRepositoryService,
           useValue: {
-            getPublishedFullPosts$: () => of(posts),
+            getPublishedPosts$: () => of(posts),
           },
         },
         {

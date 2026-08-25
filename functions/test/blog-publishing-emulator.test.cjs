@@ -49,6 +49,10 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   const saved = await mutateBlogPost(firestore, saveRequest, actorUid, new Date('2026-08-03T13:00:00.000Z'));
   assert.equal(saved.post.revision, 1);
   assert.equal((await firestore.doc('blogSlugs/shared-slug').get()).get('postId'), firstPost.id);
+  const firstSummary = (await firestore.doc(`postSummaries/${firstPost.id}`).get()).data();
+  assert.equal(firstSummary.slug, firstPost.slug);
+  assert.equal(firstSummary.storageVersion, 1);
+  assert.equal('blocks' in firstSummary, false);
   assert.equal((await firestore.collection('blogPublishingAudit').get()).size, 1);
 
   const replayed = await mutateBlogPost(firestore, saveRequest, actorUid, new Date('2026-08-03T13:01:00.000Z'));
@@ -86,6 +90,7 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   assert.deepEqual(updatedLegacyPost.legacyField, legacyPost.legacyField);
   assert.equal(updatedLegacyPost.revision, 8);
   assert.equal(updatedLegacyPost.editorial.evidenceBasis, 'researched');
+  assert.equal((await firestore.doc('postSummaries/legacy-post').get()).get('revision'), 8);
   const auditCountAfterEditorialUpdate = (await firestore.collection('blogPublishingAudit').get()).size;
 
   const replayedEditorialUpdate = await mutateBlogPost(
@@ -188,6 +193,9 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   assert.equal(published.status, 'published');
   assert.equal(published.revision, 5);
   assert.equal(published.publishedAt, scheduledAt);
+  const publishedSummary = (await firestore.doc(`postSummaries/${firstPost.id}`).get()).data();
+  assert.equal(publishedSummary.status, 'published');
+  assert.equal(publishedSummary.revision, 5);
 
   const deleted = await mutateBlogPost(firestore, {
     operation: 'delete',
@@ -197,6 +205,7 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   }, actorUid, new Date('2026-08-03T14:05:00.000Z'));
   assert.equal(deleted.deleted, true);
   assert.equal((await firestore.doc(`posts/${firstPost.id}`).get()).exists, false);
+  assert.equal((await firestore.doc(`postSummaries/${firstPost.id}`).get()).exists, false);
   assert.equal((await firestore.doc('blogSlugs/shared-slug').get()).exists, false);
 
   await deleteApp(app);

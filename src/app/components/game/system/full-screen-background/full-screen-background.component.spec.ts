@@ -20,4 +20,21 @@ describe('FullScreenBackgroundComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('handles each window scroll once and removes the Angular listener on destroy', () => {
+    const updateParallax = spyOn(
+      component as unknown as { updateParallax(): void },
+      'updateParallax'
+    );
+
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(updateParallax).toHaveBeenCalledTimes(1);
+
+    fixture.destroy();
+    updateParallax.calls.reset();
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(updateParallax).not.toHaveBeenCalled();
+  });
 });

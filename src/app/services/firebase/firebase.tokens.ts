@@ -1,10 +1,10 @@
 import {InjectionToken, Provider} from '@angular/core';
 import {FirebaseApp, FirebaseOptions, getApp, getApps, initializeApp} from 'firebase/app';
 import {Auth, connectAuthEmulator, getAuth} from 'firebase/auth';
-import {Database, getDatabase} from 'firebase/database';
+import type {Database} from 'firebase/database';
 import {Firestore, connectFirestoreEmulator, getFirestore} from 'firebase/firestore';
 import {Functions, connectFunctionsEmulator, getFunctions} from 'firebase/functions';
-import {FirebaseStorage, getStorage} from 'firebase/storage';
+import type {FirebaseStorage} from 'firebase/storage';
 
 export const FIREBASE_APP = new InjectionToken<FirebaseApp>('Firebase app');
 export const FIREBASE_AUTH = new InjectionToken<Auth>('Firebase auth');
@@ -52,11 +52,6 @@ export function provideFirebaseServices(options: FirebaseOptions, emulators?: Fi
       deps: [FIREBASE_APP],
     },
     {
-      provide: FIREBASE_DATABASE,
-      useFactory: (app: FirebaseApp) => getDatabase(app),
-      deps: [FIREBASE_APP],
-    },
-    {
       provide: FIREBASE_FIRESTORE,
       useFactory: (app: FirebaseApp) => {
         const firestore = getFirestore(app);
@@ -80,11 +75,6 @@ export function provideFirebaseServices(options: FirebaseOptions, emulators?: Fi
 
         return functions;
       },
-      deps: [FIREBASE_APP],
-    },
-    {
-      provide: FIREBASE_STORAGE,
-      useFactory: (app: FirebaseApp) => getStorage(app),
       deps: [FIREBASE_APP],
     },
   ];

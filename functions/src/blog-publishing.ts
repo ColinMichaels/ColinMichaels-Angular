@@ -4,6 +4,7 @@ import {FieldValue, Firestore, Timestamp, Transaction} from 'firebase-admin/fire
 import {HttpsError} from 'firebase-functions/v2/https';
 
 const POSTS_COLLECTION = 'posts';
+const POST_SUMMARIES_COLLECTION = 'postSummaries';
 const AUTHORS_COLLECTION = 'authors';
 const PREVIEWS_COLLECTION = 'postPreviews';
 const SLUGS_COLLECTION = 'blogSlugs';
@@ -17,6 +18,7 @@ const MAX_BLOCKS = 1_000;
 const MAX_JSON_DEPTH = 32;
 const MAX_JSON_VALUES = 50_000;
 const MAX_LIST_ITEMS = 5_000;
+const MAX_SEARCH_BODY_CHARACTERS = 16_000;
 const UNSUPPORTED_JSON_ENCODING = 'json-v1';
 const POST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}$/;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{15,127}$/;
@@ -239,6 +241,46 @@ export function validateTrustedBlogPost(value: unknown, now = new Date(), allowD
   }
 }
 
+/**
+ * Creates the backend-owned public/admin list record. Keeping Editor.js blocks
+ * out of this document lets list, home, author, and search routes avoid loading
+ * every complete article into the root application heap.
+ */
+export function createBlogPostSummaryDocument(post: Record<string, unknown>): Record<string, unknown> {
+  const searchSummary = createSearchSummary(post);
+  const wordCount = countSearchWords(getTrimmedString(post['excerpt'])) + searchSummary.wordCount;
+  const previewImages = createSummaryPreviewImages(post);
+
+  return compactUndefined({
+    id: post['id'],
+    revision: post['revision'],
+    slug: post['slug'],
+    title: post['title'],
+    excerpt: post['excerpt'],
+    coverImage: post['coverImage'],
+    backgroundImage: post['backgroundImage'],
+    thumbnailImage: post['thumbnailImage'],
+    featured: post['featured'],
+    authorId: post['authorId'],
+    author: post['author'],
+    categories: post['categories'],
+    subcategories: post['subcategories'],
+    tags: post['tags'],
+    previewImages: previewImages.length > 0 ? previewImages : undefined,
+    catCorner: post['catCorner'],
+    seo: post['seo'],
+    og: post['og'],
+    searchBodyText: searchSummary.searchBodyText,
+    wordCount,
+    readingMinutes: Math.max(1, Math.ceil(wordCount / 225)),
+    status: post['status'],
+    createdAt: post['createdAt'],
+    updatedAt: post['updatedAt'],
+    publishedAt: post['publishedAt'],
+    storageVersion: 1,
+  });
+}
+
 export async function mutateBlogPost(
   firestore: Firestore,
   value: unknown,
@@ -249,6 +291,7 @@ export async function mutateBlogPost(
   const receiptId = createReceiptId(actorUid, request.requestId);
   const receiptRef = firestore.collection(RECEIPTS_COLLECTION).doc(receiptId);
   const postRef = firestore.collection(POSTS_COLLECTION).doc(request.postId);
+  const postSummaryRef = firestore.collection(POST_SUMMARIES_COLLECTION).doc(request.postId);
   const previewToken = request.operation === 'issuePreview' ? createPreviewToken() : undefined;
 
   return firestore.runTransaction(async transaction => {
@@ -307,6 +350,7 @@ export async function mutateBlogPost(
         updatedAt: update.updatedAt,
         syncedAt: FieldValue.serverTimestamp(),
       });
+      transaction.set(postSummaryRef, createBlogPostSummaryDocument(update.nextPost), {merge: false});
       writeAudit(
         transaction,
         firestore,
@@ -341,6 +385,7 @@ export async function mutateBlogPost(
       const slugSnapshot = slugRef ? await transaction.get(slugRef) : null;
 
       transaction.delete(postRef);
+      transaction.delete(postSummaryRef);
       if (currentPreview) {
         transaction.delete(firestore.collection(PREVIEWS_COLLECTION).doc(currentPreview.token));
       }
@@ -407,6 +452,7 @@ export async function mutateBlogPost(
       syncedAt: FieldValue.serverTimestamp(),
       storageVersion: 2,
     }, {merge: false});
+    transaction.set(postSummaryRef, createBlogPostSummaryDocument(nextPost), {merge: false});
     transaction.set(nextSlugRef, {
       slug: nextSlug,
       postId: request.postId,
@@ -517,6 +563,11 @@ async function publishScheduledPost(firestore: Firestore, postId: string, now: D
       syncedAt: FieldValue.serverTimestamp(),
       storageVersion: 2,
     }, {merge: true});
+    transaction.set(
+      firestore.collection(POST_SUMMARIES_COLLECTION).doc(postId),
+      createBlogPostSummaryDocument(nextPost),
+      {merge: false}
+    );
     transaction.set(slugRef, {
       slug,
       postId,
@@ -1222,6 +1273,146 @@ function getPreview(value: Record<string, unknown> | null): {token: string; crea
   const createdAt = getTrimmedString(preview['createdAt']);
   const expiresAt = getTrimmedString(preview['expiresAt']);
   return token && createdAt && expiresAt ? {token, createdAt, expiresAt} : null;
+}
+
+const SUMMARY_SEARCH_TEXT_KEYS = new Set([
+  'accessibilitySummary',
+  'aiAssistanceDisclosure',
+  'alt',
+  'attribution',
+  'caption',
+  'code',
+  'content',
+  'description',
+  'evidenceBasis',
+  'evidenceSummary',
+  'html',
+  'label',
+  'markdown',
+  'note',
+  'question',
+  'relationshipDisclosure',
+  'sourceLabel',
+  'syntheticMediaDisclosure',
+  'text',
+  'title',
+  'updateNote',
+  'value',
+  'xAxisTitle',
+  'yAxisTitle',
+]);
+
+function createSearchSummary(post: Record<string, unknown>): { searchBodyText: string; wordCount: number } {
+  let searchBodyText = '';
+  let wordCount = 0;
+  const appendText = (value: string): void => {
+    wordCount += countSearchWords(value);
+    if (searchBodyText.length >= MAX_SEARCH_BODY_CHARACTERS) {
+      return;
+    }
+
+    const separator = searchBodyText ? ' ' : '';
+    const remaining = MAX_SEARCH_BODY_CHARACTERS - searchBodyText.length - separator.length;
+    const normalized = normalizeSummarySearchText(value, remaining);
+    if (normalized && remaining > 0) {
+      searchBodyText += `${separator}${normalized.slice(0, remaining)}`;
+    }
+  };
+  const appendSearchValues = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(appendSearchValues);
+      return;
+    }
+    if (!isRecord(value)) {
+      return;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (typeof child === 'string' && SUMMARY_SEARCH_TEXT_KEYS.has(key)) {
+        appendText(child);
+      } else if (Array.isArray(child) || isRecord(child)) {
+        appendSearchValues(child);
+      }
+    }
+  };
+
+  appendSearchValues(post['blocks']);
+  appendSearchValues(post['editorial']);
+
+  return {searchBodyText, wordCount};
+}
+
+function normalizeSummarySearchText(value: string, outputCharacterLimit: number): string {
+  // Search storage is bounded, so do not run several markup-normalization
+  // passes over an otherwise valid near-1 MiB block after the projection has
+  // no room left. The multiplier leaves room for stripped links and tags.
+  const sourceCharacterLimit = Math.max(4_096, outputCharacterLimit * 4);
+  return value
+    .slice(0, sourceCharacterLimit)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, ' $1 ')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, ' $1 ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[`*_~>#]/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, ' and ')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function countSearchWords(value: string): number {
+  const wordPattern = /\S+/g;
+  let wordCount = 0;
+
+  while (wordPattern.exec(value)) {
+    wordCount += 1;
+  }
+
+  return wordCount;
+}
+
+function createSummaryPreviewImages(post: Record<string, unknown>): readonly Record<string, unknown>[] {
+  const coverImage = getTrimmedString(post['coverImage']);
+  const seenUrls = new Set<string>(coverImage ? [coverImage] : []);
+  const images: Record<string, unknown>[] = [];
+  const appendImage = (value: unknown): void => {
+    if (images.length >= 5 || !isRecord(value)) {
+      return;
+    }
+    const url = getTrimmedString(value['url']);
+    if (!url || seenUrls.has(url)) {
+      return;
+    }
+    seenUrls.add(url);
+    images.push(compactUndefined({
+      url,
+      alt: getTrimmedString(value['alt']),
+      caption: getTrimmedString(value['caption']) || undefined,
+      width: isOptionalPositiveInteger(value['width']) ? value['width'] : undefined,
+      height: isOptionalPositiveInteger(value['height']) ? value['height'] : undefined,
+    }));
+  };
+
+  const blocks = Array.isArray(post['blocks']) ? post['blocks'] : [];
+  for (const block of blocks) {
+    if (!isRecord(block) || !isRecord(block['data'])) {
+      continue;
+    }
+    const data = block['data'];
+    if (block['type'] === 'image') {
+      appendImage(data);
+    }
+    if (Array.isArray(data['galleryImages'])) {
+      data['galleryImages'].forEach(appendImage);
+    }
+    if (images.length >= 5) {
+      break;
+    }
+  }
+
+  return images;
 }
 
 function isAllowedMediaUrl(value: string): boolean {

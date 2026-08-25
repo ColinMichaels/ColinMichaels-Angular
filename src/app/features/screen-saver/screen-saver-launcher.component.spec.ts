@@ -55,10 +55,13 @@ describe('ScreenSaverLauncherComponent', () => {
           provide: ScreenSaverLocalMediaService,
           useValue: {
             images: signal([]),
+            activeImages: signal([]),
             supported: signal(true),
             busy: signal(false),
             error: signal<string | null>(null),
             addFiles: jasmine.createSpy('addFiles').and.resolveTo(0),
+            setActiveWindow: jasmine.createSpy('setActiveWindow').and.resolveTo(),
+            releaseActiveImages: jasmine.createSpy('releaseActiveImages'),
           },
         },
       ],

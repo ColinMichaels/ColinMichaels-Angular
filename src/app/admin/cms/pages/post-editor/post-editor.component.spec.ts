@@ -15,7 +15,11 @@ import {
 } from '../../services/blog-media-upload.service';
 import {EditorSavedDocument} from '../../models/editor-document.model';
 import {BlogStoredThumbnail, BlogThumbnailSuggestion} from '../../models/blog-ai-assistant.model';
-import {CmsPostRecoverySnapshot} from '../../models/post-recovery.model';
+import {
+  CmsPostRecoverySnapshot,
+  CmsPostRecoveryWrite,
+  createCmsPostRecoveryContentHash
+} from '../../models/post-recovery.model';
 import {CmsPostRecoveryService} from '../../services/post-recovery.service';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {PostPackageImportProgress} from './post-package-import-progress.component';
@@ -31,6 +35,8 @@ interface TestablePostEditor {
   exportPostJson(): Promise<void>;
 
   createCurrentBackupPost(): Promise<BlogPost>;
+
+  createSeoChecklistInput(): unknown;
 
   downloadJson(value: unknown, fileName: string): void;
 
@@ -55,6 +61,9 @@ interface TestablePostEditor {
   isPreviewGenerationInProgress: boolean;
   isThumbnailLoading: string | null;
 
+  lastSaved: EditorSavedDocument | null;
+  lastSavedBackupJson: string;
+
   onSaved(saved: EditorSavedDocument): Promise<boolean>;
 
   packageImportProgress: WritableSignal<PostPackageImportProgress | null>;
@@ -77,16 +86,19 @@ interface TestablePostEditor {
 
   savePost(): Promise<boolean>;
 
+  setLastSavedPanelExpanded(expanded: boolean): void;
+
   setMediaUploadInProgress(field: string, isUploading: boolean): void;
 
   uploadEditorImage(file: File): Promise<unknown>;
 
   editorComponent?: {
+    getRecoverySnapshot?(): Promise<CmsPostRecoveryWrite['editor']>;
     renderDocument(document: unknown): Promise<void>;
     restoreRecoverySnapshot(snapshot: unknown): Promise<void>;
   };
   currentPost?: BlogPost;
-  postForm: { controls: { title: { value: string } } };
+  postForm: { controls: { title: { value: string; setValue(value: string): void } } };
 }
 
 describe('CmsPostEditorComponent package import lifecycle', () => {
@@ -95,24 +107,32 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
   let uploadImage: jasmine.Spy<(file: File) => Observable<BlogMediaUploadProgress>>;
   let getAdminPostBySlug: jasmine.Spy<(slug: string) => BlogPost | undefined>;
   let createPreviewForPost: jasmine.Spy;
+  let createExportDocument: jasmine.Spy;
   let generateAndStoreThumbnail: jasmine.Spy<(request: unknown) => Promise<BlogStoredThumbnail>>;
   let router: jasmine.SpyObj<Pick<Router, 'navigate'>>;
   let savePost: jasmine.Spy;
+  let saveRecovery: jasmine.Spy<(write: CmsPostRecoveryWrite) => Promise<CmsPostRecoverySnapshot>>;
   let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success'>>;
 
   beforeEach(async () => {
     uploadImage = jasmine.createSpy('uploadImage');
     getAdminPostBySlug = jasmine.createSpy('getAdminPostBySlug').and.returnValue(undefined);
     createPreviewForPost = jasmine.createSpy('createPreviewForPost');
+    createExportDocument = jasmine.createSpy('createExportDocument').and.callFake(
+      (posts: readonly BlogPost[]) => ({posts})
+    );
     generateAndStoreThumbnail = jasmine.createSpy('generateAndStoreThumbnail');
     savePost = jasmine.createSpy('savePost');
+    saveRecovery = jasmine.createSpy('saveRecovery').and.callFake(write => (
+      Promise.resolve(createRecoverySnapshotFromWrite(write))
+    ));
     router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.resolveTo(true);
     toast = jasmine.createSpyObj('CmsToastService', ['error', 'success']);
 
     const blogRepository = {
       loading$: of(false),
-      createExportDocument: (posts: readonly BlogPost[]) => ({posts}),
+      createExportDocument,
       createNewPostTemplate: () => createPost('https://images.example/original.webp'),
       createPreviewForPost,
       createUniqueSlug: (slug: string) => slug,
@@ -125,7 +145,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
       delete: jasmine.createSpy('delete').and.resolveTo(undefined),
       getOrCreateNewPostId: (fallback: string) => fallback,
       load: jasmine.createSpy('load').and.resolveTo(undefined),
-      save: jasmine.createSpy('save'),
+      save: saveRecovery,
     };
 
     await TestBed.configureTestingModule({
@@ -505,6 +525,82 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     expect(renderDocument).not.toHaveBeenCalled();
     expect(editor.postForm.controls.title.value).toBe('Recovered local post');
     expect(editor.saveConflict()?.remotePost).toEqual(newerRemotePost);
+  });
+
+  it('keeps one recovery write active and persists only the latest queued snapshot', async () => {
+    let resolveFirstWrite: ((snapshot: CmsPostRecoverySnapshot) => void) | undefined;
+    let activeWrites = 0;
+    let maximumActiveWrites = 0;
+    const getRecoverySnapshot = jasmine.createSpy('getRecoverySnapshot').and.resolveTo({
+      mode: 'visual',
+      document: {blocks: []},
+    });
+    editor.editorComponent = {
+      getRecoverySnapshot,
+      renderDocument: jasmine.createSpy('renderDocument').and.resolveTo(undefined),
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined),
+    };
+    saveRecovery.and.callFake(write => {
+      activeWrites += 1;
+      maximumActiveWrites = Math.max(maximumActiveWrites, activeWrites);
+
+      if (saveRecovery.calls.count() === 1) {
+        return new Promise<CmsPostRecoverySnapshot>(resolve => {
+          resolveFirstWrite = snapshot => {
+            activeWrites -= 1;
+            resolve(snapshot);
+          };
+        });
+      }
+
+      activeWrites -= 1;
+      return Promise.resolve(createRecoverySnapshotFromWrite(write));
+    });
+
+    const firstPersistence = editor.persistRecovery(true);
+    await waitForSpy(saveRecovery);
+    const latestPersistence = editor.persistRecovery(true);
+    await Promise.resolve();
+
+    expect(saveRecovery).toHaveBeenCalledTimes(1);
+
+    const firstWrite = saveRecovery.calls.first().args[0];
+    resolveFirstWrite?.(createRecoverySnapshotFromWrite(firstWrite));
+
+    expect(await firstPersistence).toBeTrue();
+    expect(await latestPersistence).toBeTrue();
+    expect(saveRecovery).toHaveBeenCalledTimes(2);
+    expect(getRecoverySnapshot).toHaveBeenCalledTimes(2);
+    expect(maximumActiveWrites).toBe(1);
+  });
+
+  it('reuses the SEO checklist input until an authoring dependency changes', () => {
+    const firstInput = editor.createSeoChecklistInput();
+
+    expect(editor.createSeoChecklistInput()).toBe(firstInput);
+
+    editor.postForm.controls.title.setValue('Changed title');
+
+    expect(editor.createSeoChecklistInput()).not.toBe(firstInput);
+  });
+
+  it('defers pretty backup JSON until the Last Saved module is opened', () => {
+    editor.lastSaved = {
+      data: {blocks: []},
+      savedAt: '2026-08-24T12:00:00.000Z',
+      blockCount: 0,
+    };
+    editor.lastSavedBackupJson = '';
+
+    editor.setLastSavedPanelExpanded(false);
+    expect(createExportDocument).not.toHaveBeenCalled();
+
+    editor.setLastSavedPanelExpanded(true);
+    expect(createExportDocument).toHaveBeenCalledTimes(1);
+    expect(editor.lastSavedBackupJson).toContain('package-post');
+
+    editor.setLastSavedPanelExpanded(true);
+    expect(createExportDocument).toHaveBeenCalledTimes(1);
   });
 
   it('serializes repeated canonical reload requests while recovery persistence is pending', async () => {
@@ -998,6 +1094,17 @@ function createRecoverySnapshot(): CmsPostRecoverySnapshot {
     },
     editor: {mode: 'visual', document: {blocks: []}},
     socialPromotion: {announcements: []},
+  };
+}
+
+function createRecoverySnapshotFromWrite(write: CmsPostRecoveryWrite): CmsPostRecoverySnapshot {
+  return {
+    ...write,
+    schemaVersion: 1,
+    ownerUid: 'owner-1',
+    savedAt: '2026-08-24T12:01:00.000Z',
+    expiresAt: '2026-09-23T12:01:00.000Z',
+    contentHash: createCmsPostRecoveryContentHash(write),
   };
 }
 

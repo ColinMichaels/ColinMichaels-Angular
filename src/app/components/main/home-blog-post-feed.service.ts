@@ -10,8 +10,8 @@ export class HomeBlogPostFeedService {
   private readonly blogRepository = inject(BlogRepositoryService);
 
   readonly publishedPosts = toSignal(
-    this.blogRepository.getPublishedFullPosts$(),
-    {initialValue: this.blogRepository.getPublishedFullPosts()}
+    this.blogRepository.getPublishedPosts$(),
+    {initialValue: this.blogRepository.getPublishedPosts()}
   );
   readonly isLoading = toSignal(this.blogRepository.loading$, {initialValue: true});
   readonly loadError = toSignal(this.blogRepository.error$, {initialValue: null});

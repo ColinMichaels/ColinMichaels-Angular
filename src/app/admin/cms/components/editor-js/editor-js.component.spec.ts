@@ -628,6 +628,22 @@ describe('EditorJsComponent', () => {
     expect(visualTab?.getAttribute('aria-selected')).toBe('true');
   });
 
+  it('materializes pretty JSON only when the JSON view is opened', async () => {
+    fixture.componentRef.setInput('initialData', {
+      blocks: [{id: 'lazy-json', type: 'paragraph', data: {text: 'Lazy JSON source.'}}],
+    });
+    fixture.detectChanges();
+    await waitForEditorLoad(fixture);
+    const component = fixture.componentInstance as unknown as { jsonSource: () => string };
+
+    expect(component.jsonSource()).toBe('');
+
+    clickButtonByText(fixture, 'JSON');
+    await fixture.whenStable();
+
+    expect(component.jsonSource()).toContain('Lazy JSON source.');
+  });
+
   it('keeps invalid source in JSON mode and reports the validation error', async () => {
     fixture.componentRef.setInput('initialData', {
       blocks: [{

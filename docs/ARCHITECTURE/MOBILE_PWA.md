@@ -35,11 +35,12 @@ Feature-specific offline article behavior remains under `src/app/features/blog`:
 
 ## Cache Policy
 
-The worker and offline-reading layer use three cache boundaries:
+The worker and offline-reading layer use four cache boundaries:
 
-1. `app-shell` prefetches versioned JavaScript/CSS, the HTML entry point, local fonts, and install icons. The JavaScript set includes lazy route bundles because a cold offline Angular navigation cannot identify and fetch a missing route bundle.
-2. `public-images-and-documents` lazily caches ordinary local images and public static documents after they are requested.
-3. `colinmichaels-offline-blog-posts-v1` is a user-controlled Cache Storage namespace containing versioned JSON snapshots for posts the reader explicitly saves. It is not an Angular worker asset group, so Angular version cleanup cannot mistake user-selected articles for an obsolete application version.
+1. `app-shell-critical` prefetches only the HTML entry point, main/polyfills/styles, the PWA wrapper, favicon, manifest, and install icons required to start the public shell.
+2. `lazy-code-and-fonts` caches route chunks and WOFF2 files only after first use. A route that has never been opened online is not promised as a cold-offline destination.
+3. `public-images-and-documents` lazily caches ordinary local images and public static documents after they are requested.
+4. `colinmichaels-offline-blog-posts-v1` is a user-controlled Cache Storage namespace containing versioned JSON snapshots for posts the reader explicitly saves. It is not an Angular worker asset group, so Angular version cleanup cannot mistake user-selected articles for an obsolete application version.
 
 Audio and video extensions are intentionally absent. The repository contains large media files that require user-visible, quota-aware download controls before they should be retained for offline use.
 
@@ -122,6 +123,7 @@ Every PWA change should validate:
 
 - `npm run build`
 - `npm run lint`
+- `npm run test:service-worker-cache`
 - focused PWA unit tests
 - `ngsw.json`, `ngsw-worker.js`, and the linked manifest in production output
 - `pwa-worker.js` imports Angular's worker before registering badge listeners

@@ -1,12 +1,12 @@
 import {TestBed} from '@angular/core/testing';
 import {firstValueFrom, of} from 'rxjs';
 
-import {BlogPost} from '../../blog/models/blog-post.model';
+import {BlogPost, BlogPostSummary} from '../../blog/models/blog-post.model';
 import {BlogRepositoryService} from '../../blog/services/blog-repository.service';
 import {TopicHubRepositoryService} from '../../topics/services/topic-hub-repository.service';
 import {searchSiteItems, SiteSearchService} from './site-search.service';
 
-function createMarkdownPost(): BlogPost {
+function createMarkdownPost(): BlogPost & BlogPostSummary {
   return {
     id: 'markdown-search-post',
     slug: 'markdown-search-post',
@@ -39,6 +39,8 @@ function createMarkdownPost(): BlogPost {
         },
       },
     ],
+    searchBodyText: 'setup use typed blocks and read the guide',
+    previewImages: [{url: '/assets/images/blog/interior.webp', alt: 'Interior article preview'}],
     createdAt: '2026-07-10T12:00:00.000Z',
     updatedAt: '2026-07-10T12:00:00.000Z',
     publishedAt: '2026-07-10T12:00:00.000Z',
@@ -55,7 +57,7 @@ describe('SiteSearchService', () => {
           useValue: {
             loading$: of(false),
             error$: of(null),
-            getPublishedFullPosts$: () => of([createMarkdownPost()]),
+            getPublishedPosts$: () => of([createMarkdownPost()]),
           },
         },
         {
@@ -69,7 +71,7 @@ describe('SiteSearchService', () => {
     const items = await firstValueFrom(service.getSearchItems$());
     const markdownItem = items.find(item => item.id === 'markdown-search-post');
 
-    expect(markdownItem?.bodyText).toBe('setup use typed blocks and read the guide.');
+    expect(markdownItem?.bodyText).toBe('setup use typed blocks and read the guide');
     expect(markdownItem?.bodyText).not.toContain('**');
     expect(markdownItem?.bodyText).not.toContain('example.com');
     expect(markdownItem?.previewImages).toEqual([{

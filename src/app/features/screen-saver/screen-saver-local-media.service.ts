@@ -1,7 +1,11 @@
 import {DOCUMENT} from '@angular/common';
 import {DestroyRef, Injectable, inject, signal} from '@angular/core';
 
-import {ScreenSaverLocalImage} from './screen-saver.model';
+import {
+  ScreenSaverActiveLocalImage,
+  ScreenSaverLocalImage,
+  getScreenSaverActiveWindowIndexes,
+} from './screen-saver.model';
 
 export const SCREEN_SAVER_LOCAL_MEDIA_DATABASE = 'colinmichaels-screen-saver-v1';
 const SCREEN_SAVER_LOCAL_MEDIA_STORE = 'images';
@@ -23,22 +27,25 @@ export class ScreenSaverLocalMediaService {
   private readonly indexedDb = this.browserWindow?.indexedDB;
   private readonly destroyRef = inject(DestroyRef);
   private readonly imagesState = signal<readonly ScreenSaverLocalImage[]>([]);
+  private readonly activeImagesState = signal<readonly ScreenSaverActiveLocalImage[]>([]);
   private readonly readyState = signal(false);
   private readonly busyState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private databasePromise: Promise<IDBDatabase> | undefined;
-  private objectUrls: string[] = [];
+  private readonly objectUrlsById = new Map<string, string>();
+  private activeWindowGeneration = 0;
   private readonly initialization: Promise<void>;
 
   readonly supported = signal(Boolean(this.indexedDb)).asReadonly();
   readonly images = this.imagesState.asReadonly();
+  readonly activeImages = this.activeImagesState.asReadonly();
   readonly ready = this.readyState.asReadonly();
   readonly busy = this.busyState.asReadonly();
   readonly error = this.errorState.asReadonly();
 
   constructor() {
     this.initialization = this.refresh();
-    this.destroyRef.onDestroy(() => this.releaseObjectUrls());
+    this.destroyRef.onDestroy(() => this.releaseActiveImages());
   }
 
   whenReady(): Promise<void> {
@@ -103,6 +110,8 @@ export class ScreenSaverLocalMediaService {
     await this.initialization;
 
     if (!this.indexedDb) {
+      this.releaseActiveImages();
+      this.imagesState.set([]);
       return;
     }
 
@@ -110,7 +119,62 @@ export class ScreenSaverLocalMediaService {
     const transaction = database.transaction(SCREEN_SAVER_LOCAL_MEDIA_STORE, 'readwrite');
     transaction.objectStore(SCREEN_SAVER_LOCAL_MEDIA_STORE).clear();
     await waitForTransaction(transaction);
+    this.releaseActiveImages();
     await this.refresh();
+  }
+
+  async setActiveWindow(activeIndex: number): Promise<void> {
+    await this.initialization;
+
+    if (!this.indexedDb || !this.browserWindow || this.imagesState().length === 0) {
+      this.releaseActiveImages();
+      return;
+    }
+
+    const images = this.imagesState();
+    const desiredImages = getScreenSaverActiveWindowIndexes(activeIndex, images.length)
+      .map(sourceIndex => ({metadata: images[sourceIndex], sourceIndex}));
+    const desiredIds = new Set(desiredImages.map(image => image.metadata.id));
+    const generation = ++this.activeWindowGeneration;
+
+    for (const id of this.objectUrlsById.keys()) {
+      if (!desiredIds.has(id)) {
+        this.releaseObjectUrl(id);
+      }
+    }
+    this.publishActiveImages(desiredImages);
+
+    try {
+      const missingImages = desiredImages.filter(image => !this.objectUrlsById.has(image.metadata.id));
+      const records = await Promise.all(missingImages.map(image => this.readRecord(image.metadata.id)));
+
+      if (generation !== this.activeWindowGeneration) {
+        return;
+      }
+
+      records.forEach(record => {
+        if (!record || this.objectUrlsById.has(record.id)) {
+          return;
+        }
+
+        this.objectUrlsById.set(record.id, this.browserWindow!.URL.createObjectURL(record.blob));
+      });
+      this.publishActiveImages(desiredImages);
+      this.errorState.set(null);
+    } catch {
+      if (generation === this.activeWindowGeneration) {
+        this.errorState.set('Your saved screen saver images are unavailable.');
+      }
+    }
+  }
+
+  releaseActiveImages(): void {
+    this.activeWindowGeneration += 1;
+
+    for (const id of [...this.objectUrlsById.keys()]) {
+      this.releaseObjectUrl(id);
+    }
+    this.activeImagesState.set([]);
   }
 
   private async refresh(): Promise<void> {
@@ -122,28 +186,15 @@ export class ScreenSaverLocalMediaService {
     try {
       const database = await this.openDatabase();
       const transaction = database.transaction(SCREEN_SAVER_LOCAL_MEDIA_STORE, 'readonly');
-      const records = await readAllRecords(transaction.objectStore(SCREEN_SAVER_LOCAL_MEDIA_STORE));
+      const images = await readAllMetadata(transaction.objectStore(SCREEN_SAVER_LOCAL_MEDIA_STORE));
       await waitForTransaction(transaction);
 
-      this.releaseObjectUrls();
-      const images = records
-        .sort((left, right) => left.addedAt.localeCompare(right.addedAt) || left.name.localeCompare(right.name))
-        .map(record => {
-          const imageUrl = this.browserWindow!.URL.createObjectURL(record.blob);
-          this.objectUrls.push(imageUrl);
-
-          return {
-            id: record.id,
-            name: record.name,
-            addedAt: record.addedAt,
-            size: record.size,
-            imageUrl,
-          } satisfies ScreenSaverLocalImage;
-        });
-
-      this.imagesState.set(images);
+      this.imagesState.set(images.sort((left, right) => (
+        left.addedAt.localeCompare(right.addedAt) || left.name.localeCompare(right.name)
+      )));
       this.errorState.set(null);
     } catch {
+      this.releaseActiveImages();
       this.imagesState.set([]);
       this.errorState.set('Your saved screen saver images are unavailable.');
     } finally {
@@ -169,7 +220,10 @@ export class ScreenSaverLocalMediaService {
           database.createObjectStore(SCREEN_SAVER_LOCAL_MEDIA_STORE, {keyPath: 'id'});
         }
       };
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        request.result.onversionchange = () => request.result.close();
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error ?? new Error('Unable to open the local image database.'));
     });
 
@@ -181,21 +235,63 @@ export class ScreenSaverLocalMediaService {
       ?? `screen-saver-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  private releaseObjectUrls(): void {
-    if (!this.browserWindow) {
+  private async readRecord(id: string): Promise<ScreenSaverLocalImageRecord | undefined> {
+    const database = await this.openDatabase();
+    const transaction = database.transaction(SCREEN_SAVER_LOCAL_MEDIA_STORE, 'readonly');
+    const record = await readRecord(transaction.objectStore(SCREEN_SAVER_LOCAL_MEDIA_STORE), id);
+    await waitForTransaction(transaction);
+    return record;
+  }
+
+  private publishActiveImages(
+    desiredImages: readonly { metadata: ScreenSaverLocalImage; sourceIndex: number }[]
+  ): void {
+    this.activeImagesState.set(desiredImages.flatMap(({metadata, sourceIndex}) => {
+      const imageUrl = this.objectUrlsById.get(metadata.id);
+      return imageUrl ? [{...metadata, imageUrl, sourceIndex}] : [];
+    }));
+  }
+
+  private releaseObjectUrl(id: string): void {
+    const imageUrl = this.objectUrlsById.get(id);
+
+    if (!imageUrl) {
       return;
     }
 
-    this.objectUrls.forEach(url => this.browserWindow!.URL.revokeObjectURL(url));
-    this.objectUrls = [];
+    this.browserWindow?.URL.revokeObjectURL(imageUrl);
+    this.objectUrlsById.delete(id);
   }
 }
 
-function readAllRecords(store: IDBObjectStore): Promise<ScreenSaverLocalImageRecord[]> {
+function readAllMetadata(store: IDBObjectStore): Promise<ScreenSaverLocalImage[]> {
   return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result as ScreenSaverLocalImageRecord[]);
+    const images: ScreenSaverLocalImage[] = [];
+    const request = store.openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+
+      if (!cursor) {
+        resolve(images);
+        return;
+      }
+
+      const {id, name, addedAt, size} = cursor.value as ScreenSaverLocalImageRecord;
+      images.push({id, name, addedAt, size});
+      cursor.continue();
+    };
     request.onerror = () => reject(request.error ?? new Error('Unable to read local images.'));
+  });
+}
+
+function readRecord(
+  store: IDBObjectStore,
+  id: string
+): Promise<ScreenSaverLocalImageRecord | undefined> {
+  return new Promise((resolve, reject) => {
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result as ScreenSaverLocalImageRecord | undefined);
+    request.onerror = () => reject(request.error ?? new Error('Unable to read a local image.'));
   });
 }
 
