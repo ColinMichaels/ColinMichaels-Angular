@@ -2,30 +2,28 @@
   "version": 1,
   "source": "colinmichaels-cms",
   "collection": "posts",
-  "exportedAt": "2026-08-15T02:20:00.000Z",
+  "exportedAt": "2026-08-27T12:38:10.799Z",
   "totalPosts": 1,
   "posts": [
     {
       "id": "post-041c74e0-31f7-460a-8e85-4be3d62d9622",
-      "revision": 0,
       "slug": "they-bought-a-full-size-temu-mega-drone",
       "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
       "excerpt": "Goonzquad bought a full-size Temu drone, assembled it from crates, and flew it. Here is what arrived, what went wrong, and what the flight actually proved.",
       "coverImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fcover%2F1783732242450-45938d58-ef28-4234-b6f5-122c795f518c.webp?alt=media&token=ab4439ce-037b-43e7-8997-72fe339f4041",
-      "featured": true,
-      "authorId": "colin-michaels",
       "author": {
         "name": "Colin Michaels",
-        "title": "Applications Developer",
-        "slug": "colin-michaels",
-        "profileUrl": "https://colinmichaels.com/authors/colin-michaels"
+        "title": "Application developer, creative problem solver, FPV drone pilot, and photographer",
+        "bio": "Colin Michaels is an application developer, creative problem solver, FPV drone pilot, photographer, and builder sharing software, creative projects, and personal lessons.",
+        "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fmedia-library%2Flibrary%2F1781710307542-26de032d-9418-4c44-8953-d5f4efdadeec.webp?alt=media&token=03c80fbe-8339-48cb-a150-0dbcf9cadff6",
+        "profileUrl": "/authors/colin-michaels",
+        "slug": "colin-michaels"
       },
       "categories": [
         "Drones & FPV",
         "Creative Technology",
         "Opinion"
       ],
-      "subcategories": [],
       "tags": [
         "Temu Drone",
         "Mega Drone",
@@ -39,15 +37,6 @@
         "Human-Carrying Drone"
       ],
       "status": "published",
-      "editorial": {
-        "evidenceBasis": "researched",
-        "evidenceSummary": "Research-based commentary using Goonzquad's original public video as primary evidence and the current eCFR Part 103 text for the rules boundary. Colin did not buy, inspect, assemble, or fly the aircraft.",
-        "sourceReviewedAt": "2026-08-14",
-        "relationshipDisclosure": "No ownership or hands-on relationship is claimed; the article comments on Goonzquad's published video.",
-        "aiAssistanceDisclosure": "AI assistance was used to audit, structure, and draft this refresh. Colin must verify the source video, legal references, and every material change before import.",
-        "syntheticMediaDisclosure": "The two new inline visuals are AI-generated editorial illustrations, not photographs of the shipment, aircraft, damaged parts, flight, or an official airspace chart.",
-        "updateNote": "Expanded the evidence boundary, disclosure, Part 103 context, imagery, internal discovery, and search packaging without changing the original publication date."
-      },
       "seo": {
         "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
         "description": "Goonzquad bought a full-size Temu drone, assembled it from crates, and flew it. See what arrived, what went wrong, and what the flight actually proved.",
@@ -55,14 +44,6 @@
         "openGraphImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
         "openGraphImageWidth": 1200,
         "openGraphImageHeight": 630
-      },
-      "og": {
-        "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
-        "description": "The crates, damaged propeller, translated controls, low flight, and the limits of what one viral test can prove.",
-        "image": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
-        "imageAlt": "Colin reacts beside a blue single-seat multicopter on a pallet and the words Full-Size Mega Drone",
-        "imageWidth": 1200,
-        "imageHeight": 630
       },
       "contentFormat": "editorjs",
       "blocks": [
@@ -639,8 +620,33 @@
         }
       ],
       "createdAt": "2026-07-11T01:10:09.398Z",
-      "updatedAt": "2026-08-15T02:20:00.000Z",
-      "publishedAt": "2026-07-11T01:11:53.159Z"
+      "updatedAt": "2026-08-20T22:23:14.285Z",
+      "publishedAt": "2026-07-11T01:11:00.000Z",
+      "revision": 1,
+      "featured": true,
+      "authorId": "colin-michaels",
+      "subcategories": [],
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based commentary using Goonzquad's original public video as primary evidence and the current eCFR Part 103 text for the rules boundary. Colin did not buy, inspect, assemble, or fly the aircraft.",
+        "sourceReviewedAt": "2026-08-14",
+        "relationshipDisclosure": "No ownership or hands-on relationship is claimed; the article comments on Goonzquad's published video.",
+        "aiAssistanceDisclosure": "AI assistance was used to audit, structure, and draft this refresh. Colin must verify the source video, legal references, and every material change before import.",
+        "syntheticMediaDisclosure": "The two new inline visuals are AI-generated editorial illustrations, not photographs of the shipment, aircraft, damaged parts, flight, or an official airspace chart.",
+        "updateNote": "Expanded the evidence boundary, disclosure, Part 103 context, imagery, internal discovery, and search packaging without changing the original publication date."
+      },
+      "catCorner": {
+        "enabled": false,
+        "discoveryPost": false
+      },
+      "og": {
+        "title": "Temu Full-Size Drone: Goonzquad Bought It—and It Flew",
+        "description": "The crates, damaged propeller, translated controls, low flight, and the limits of what one viral test can prove.",
+        "image": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
+        "imageAlt": "Colin reacts beside a blue single-seat multicopter on a pallet and the words Full-Size Mega Drone",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      }
     }
   ]
 }
