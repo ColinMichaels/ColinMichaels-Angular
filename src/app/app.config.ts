@@ -1,5 +1,12 @@
 import {ViewportScroller} from '@angular/common';
-import {ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  isDevMode,
+  provideAppInitializer,
+  provideExperimentalWebMcpTools,
+  provideZoneChangeDetection,
+} from '@angular/core';
 import {provideRouter, withInMemoryScrolling, withViewTransitions} from '@angular/router';
 import {provideServiceWorker} from '@angular/service-worker';
 
@@ -10,7 +17,12 @@ import {
   SOUND_SERVICE_CONFIG,
   SoundServiceConfig
 } from './providers/sound/sound.module';
-import {provideFirebaseServices} from './services/firebase/firebase.tokens';
+import {
+  FirebaseAppCheckConfig,
+  FIREBASE_APP_CHECK,
+  provideFirebaseServices,
+} from './services/firebase/firebase.tokens';
+import {PUBLIC_CONTENT_WEB_MCP_TOOLS} from './features/search/webmcp-public-content.tools';
 
 export const defaultSoundConfig: SoundServiceConfig = {
   debounceInterval: 60,
@@ -18,6 +30,10 @@ export const defaultSoundConfig: SoundServiceConfig = {
   defaultVolume: 1.0,
   basePath: 'assets/audio/efx/'
 };
+
+const firebaseAppCheckConfig = (
+  environment as typeof environment & { firebaseAppCheck?: FirebaseAppCheckConfig }
+).firebaseAppCheck;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -34,7 +50,10 @@ export const appConfig: ApplicationConfig = {
     ),
     provideAppInitializer(() => {
       inject(ViewportScroller).setOffset([0, 80]);
+      // Initialize before feature services can create Storage/Firestore clients.
+      inject(FIREBASE_APP_CHECK);
     }),
+    provideExperimentalWebMcpTools(PUBLIC_CONTENT_WEB_MCP_TOOLS),
     provideServiceWorker('pwa-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
@@ -44,7 +63,11 @@ export const appConfig: ApplicationConfig = {
       provide: SOUND_SERVICE_CONFIG,
       useValue: defaultSoundConfig
     },
-    provideFirebaseServices(environment.firebaseConfig, environment.firebaseEmulators)
+    provideFirebaseServices(
+      environment.firebaseConfig,
+      environment.firebaseEmulators,
+      firebaseAppCheckConfig,
+    )
 
   ]
 };

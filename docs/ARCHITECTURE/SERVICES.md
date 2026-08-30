@@ -47,6 +47,19 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Security boundary:
   browser clients cannot write summaries. Trusted canonical mutations update them transactionally.
 
+## Public WebMCP content tools
+
+- Responsibility:
+  Three experimental, browser-only WebMCP tools expose a small, read-only public-content contract: `search_public_content`, `get_public_article`, and `get_public_topic_guide`. They are registered from `app.config.ts` through Angular's experimental WebMCP provider and invoke `getPublicAgentContent` rather than accessing CMS records from tool code.
+- Content boundary:
+  The callable returns only published article citation metadata (title, excerpt, canonical URL, byline, taxonomy, and dates) and canonical code-defined topic-guide metadata. It never returns drafts, post bodies, Editor.js blocks, private CMS records, rate-limit identifiers, or write capabilities.
+- Rate limit and privacy:
+  The Firebase callable applies an opaque actor/IP-derived Firestore transaction limit of 20 requests per minute. The raw IP address is not stored; its short-lived rate-limit record contains only a SHA-256 identity, count, UTC minute window, and TTL candidate timestamp. Browser-side registration alone is not treated as an abuse control.
+- Future service boundary:
+  This is not a paid API, a scraping entitlement, or a content license. Any commercial API/MCP plan must retain the compact response contract, introduce server-side API-key authentication and durable plan metering, publish explicit content-license terms, and keep public browsing separate from protected paid data.
+- Compatibility and rollback:
+  WebMCP is experimental. Browsers without `modelContext.registerTool` leave the public site unchanged. Roll back by removing the provider/tool declarations and callable; the additive rate-limit collection can expire naturally and no post, route, or CMS migration is required.
+
 ## `features/blog/services/blog-article-library.service.ts`
 
 - Responsibility:
@@ -137,7 +150,16 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Current risks:
   the callable is public for anonymous homepage visitors, so quota protection depends on short response size, server-side API-key storage, and backend caching. Any future channel-identity change still requires a coordinated code, runtime-parameter, schema, content-package, and rollback review because Angular and Functions compile separately.
 - Planned cleanup:
-  add Firebase App Check enforcement when App Check is configured for the public site.
+  apply Firebase App Check enforcement to its callable only after verified browser traffic has been observed in monitoring mode.
+
+## Firebase App Check startup
+
+- Responsibility:
+  `firebase.tokens.ts` initializes the Firebase App Check web SDK once during the Angular app initializer, before feature services can create Storage, Firestore, or Functions clients.
+- Provider and configuration:
+  The production provider is reCAPTCHA Enterprise using the public `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` build variable. The App Check provider stays inert if that key is absent in a local configuration; CI rejects a hosted build that lacks it. A local debug token is supported only through ignored `environment.local.ts` configuration and must be registered in Firebase Console.
+- Enforcement boundary:
+  This source change only starts token emission. It does not turn on Firebase Storage or Functions enforcement, alter Storage Rules, or provide an authorization bypass. Operators must deploy, exercise public reads and CMS uploads, verify App Check metrics, and then enable enforcement in Firebase Console as a separate reversible rollout step.
 
 ## `site-preloader.service.ts`
 

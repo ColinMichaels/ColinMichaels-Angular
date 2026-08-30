@@ -6,17 +6,18 @@ This project builds Angular environment files during CI from GitHub Actions sett
 
 Add these under `Settings -> Secrets and variables -> Actions -> Variables` for repository-wide access, or add them to each GitHub Environment used by the workflows.
 
-| Name | Description | Example Value |
-| --- | --- | --- |
-| `APP_TITLE` | App title shown in the UI. | `Colin Michaels - Production` |
-| `FIREBASE_API_KEY` | Firebase Web API key from Firebase project settings. | `example_firebase_web_api_key` |
-| `FIREBASE_AUTH_DOMAIN` | Firebase Auth domain for the project. | `your-project.firebaseapp.com` |
-| `FIREBASE_DATABASE_URL` | Firebase Realtime Database URL. | `https://your-project-default-rtdb.firebaseio.com/` |
-| `FIREBASE_PROJECT_ID` | Firebase project id used by SDK and deploy. | `your-project` |
-| `FIREBASE_STORAGE_BUCKET` | Firebase storage bucket host. | `your-project.firebasestorage.app` |
-| `FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender id. | `123456789012` |
-| `FIREBASE_APP_ID` | Firebase web app id. | `1:123456789012:web:abcdef1234567890` |
-| `FIREBASE_MEASUREMENT_ID` | GA4 measurement id for Firebase Analytics. | `G-ABCDEFGH12` |
+| Name                                               | Description                                                                                                                                                     | Example Value                                       |
+|----------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|
+| `APP_TITLE`                                        | App title shown in the UI.                                                                                                                                      | `Colin Michaels - Production`                       |
+| `FIREBASE_API_KEY`                                 | Firebase Web API key from Firebase project settings.                                                                                                            | `example_firebase_web_api_key`                      |
+| `FIREBASE_AUTH_DOMAIN`                             | Firebase Auth domain for the project.                                                                                                                           | `your-project.firebaseapp.com`                      |
+| `FIREBASE_DATABASE_URL`                            | Firebase Realtime Database URL.                                                                                                                                 | `https://your-project-default-rtdb.firebaseio.com/` |
+| `FIREBASE_PROJECT_ID`                              | Firebase project id used by SDK and deploy.                                                                                                                     | `your-project`                                      |
+| `FIREBASE_STORAGE_BUCKET`                          | Firebase storage bucket host.                                                                                                                                   | `your-project.firebasestorage.app`                  |
+| `FIREBASE_MESSAGING_SENDER_ID`                     | Firebase messaging sender id.                                                                                                                                   | `123456789012`                                      |
+| `FIREBASE_APP_ID`                                  | Firebase web app id.                                                                                                                                            | `1:123456789012:web:abcdef1234567890`               |
+| `FIREBASE_MEASUREMENT_ID`                          | GA4 measurement id for Firebase Analytics.                                                                                                                      | `G-ABCDEFGH12`                                      |
+| `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` | Public reCAPTCHA Enterprise score-based site key registered for this Firebase web app's App Check provider. It is bundled into the browser and is not a secret. | `example_recaptcha_enterprise_site_key`             |
 
 ## Required GitHub Secrets
 
@@ -70,6 +71,23 @@ This script writes:
 - `src/environments/environment.prod.ts`
 
 Both are generated from CI environment values before `npm run build`.
+
+## Firebase App Check rollout
+
+The browser initializes Firebase App Check before it can create Firestore, Storage, or Functions clients. The App Check provider is intentionally inactive only when `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` is absent in a local development configuration; CI requires the variable so a deploy cannot silently ship without it.
+
+Before deploying this code, register the production web app in **Firebase Console → App Check** with a reCAPTCHA Enterprise score-based provider. Add only the deployed Hosting/custom domains to its reCAPTCHA configuration; do not add `localhost` to the production key. Set the generated site key as the public GitHub Actions variable `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` in both the `preview` and `production` environments (or at repository level if appropriate).
+
+For local development, add the same public site key plus an App Check debug token only to ignored `src/environments/environment.local.ts`:
+
+```ts
+firebaseAppCheck: {
+  recaptchaEnterpriseSiteKey: '<public-enterprise-site-key>',
+  debugToken: true,
+},
+```
+
+On the first local run, Firebase logs a generated debug token in the browser console. Register that generated token in Firebase Console → App Check before testing. Never put a debug token in a committed environment file or GitHub Actions variable. To use an already registered token from another local browser or machine, replace `true` with that token string in the ignored local file. Deploy and verify Storage traffic in monitoring mode first; enable Storage enforcement only after the console reports legitimate current app traffic as verified.
 
 Vendor API URLs and secrets are not Angular build inputs. The archived terminal AI and Weather prototypes now respond from local deterministic data and do not request location or vendor APIs. Remove obsolete `apiUrl`, `openAiApiKey`, and `openWeatherMapApiKey` fields from ignored local environment files; rotate any credential that was previously stored directly in one of those files. Active CMS AI credentials remain server-side in Firebase Secret Manager and must not be added to `src/environments/.env.example` or GitHub Actions build environments.
 

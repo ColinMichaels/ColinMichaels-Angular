@@ -155,6 +155,7 @@ import {
   publishDueScheduledPosts,
 } from './blog-publishing';
 import {storePublicSubmission} from './public-submissions';
+import {getPublicAgentContent as getPublicAgentContentResponse} from './public-agent-content';
 import {
   PublicSubmissionSmtpConfig,
   createPublicSubmissionAlertEmail,
@@ -1623,6 +1624,29 @@ export const submitPublicSubmission = onCall(
     invoker: 'public',
   },
   async request => await storePublicSubmission(
+    getFirestore(),
+    request.data,
+    {
+      actorUid: request.auth?.uid ?? null,
+      ipAddress: request.rawRequest.ip ?? 'unknown',
+    }
+  )
+);
+
+/**
+ * Delivers a deliberately small, read-only public-content projection to the
+ * browser WebMCP tools. The Function, not the browser, owns the rate limit so
+ * this boundary can later gain API-key plans without widening public CMS reads.
+ */
+export const getPublicAgentContent = onCall(
+  {
+    region: FUNCTION_REGION,
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS,
+    invoker: 'public',
+  },
+  async request => await getPublicAgentContentResponse(
     getFirestore(),
     request.data,
     {

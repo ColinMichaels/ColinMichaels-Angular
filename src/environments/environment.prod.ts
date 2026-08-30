@@ -12,5 +12,8 @@ export const environment = {
     appId: "<FIREBASE_APP_ID>",
     measurementId: "<FIREBASE_MEASUREMENT_ID>"
   },
+  firebaseAppCheck: {
+    recaptchaEnterpriseSiteKey: '',
+  },
   firebaseEmulators: undefined
 };
