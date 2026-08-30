@@ -50,15 +50,17 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 ## Public WebMCP content tools
 
 - Responsibility:
-  Three experimental, browser-only WebMCP tools expose a small, read-only public-content contract: `search_public_content`, `get_public_article`, and `get_public_topic_guide`. They are registered from `app.config.ts` through Angular's experimental WebMCP provider and invoke `getPublicAgentContent` rather than accessing CMS records from tool code.
+  Three experimental, browser-only WebMCP tools expose a small, read-only public-content contract: `search_public_content`, `get_public_article`, and `get_public_topic_guide`. They are registered from `app.config.ts` through the direct browser WebMCP bridge provider and invoke `getPublicAgentContent` rather than accessing CMS records from tool code. The small provider intentionally captures Angular dependencies before registration, avoiding the current experimental Angular wrapper behavior that Chromium serializes as an unresolved Zone-managed promise.
 - Content boundary:
-  The callable returns only published article citation metadata (title, excerpt, canonical URL, byline, taxonomy, and dates) and canonical code-defined topic-guide metadata. It never returns drafts, post bodies, Editor.js blocks, private CMS records, rate-limit identifiers, or write capabilities.
+  The callable returns only published article citation metadata (title, excerpt, canonical URL, byline, taxonomy, and dates) and canonical code-defined topic-guide metadata. It never returns drafts, post bodies, Editor.js blocks, private CMS records, rate-limit identifiers, or write capabilities. Every descriptor publishes the formal WebMCP `readOnlyHint` and `untrustedContentHint`, so agents can treat these calls as non-mutating while still handling returned web content cautiously.
 - Rate limit and privacy:
-  The Firebase callable applies an opaque actor/IP-derived Firestore transaction limit of 20 requests per minute. The raw IP address is not stored; its short-lived rate-limit record contains only a SHA-256 identity, count, UTC minute window, and TTL candidate timestamp. Browser-side registration alone is not treated as an abuse control.
+  The Firebase callable applies an opaque actor/IP-derived Firestore transaction limit of 20 requests per minute. The raw IP address is not stored; its short-lived rate-limit record contains only a SHA-256 identity, count, UTC minute window, and `expiresAtTimestamp`. Browser-side registration alone is not treated as an abuse control. Enable the Firestore TTL policy for collection group `publicAgentContentRateLimits` on `expiresAtTimestamp` as operational cleanup; TTL deletion is not required for the rate-limit decision because the same opaque document is reused across minute windows.
+- Browser bridge transport:
+  WebMCP calls use the callable's public HTTP envelope through browser `fetch`, including the supplied abort signal, instead of the Firebase callable client. This keeps the experimental browser-native tool bridge from waiting on Firebase credential-context initialization. The callable is already an anonymous public boundary with server-owned rate limiting and published-only output; this does not grant CMS access, bypass Firestore or Storage Rules, or turn on Function App Check enforcement. A later Function App Check rollout must add explicit verified-token handling to this transport before enforcing that product.
 - Future service boundary:
   This is not a paid API, a scraping entitlement, or a content license. Any commercial API/MCP plan must retain the compact response contract, introduce server-side API-key authentication and durable plan metering, publish explicit content-license terms, and keep public browsing separate from protected paid data.
-- Compatibility and rollback:
-  WebMCP is experimental. Browsers without `modelContext.registerTool` leave the public site unchanged. Roll back by removing the provider/tool declarations and callable; the additive rate-limit collection can expire naturally and no post, route, or CMS migration is required.
+- Compatibility, preview, and rollback:
+  WebMCP is experimental. Browsers without `modelContext.registerTool` leave the public site unchanged. Local development, the production site, and this repository's `pr-<number>` Firebase Hosting preview URLs are allowed to call the public Function; no other `web.app` origin is trusted. Before releasing a tool change, test registration and one bounded public request in a compatible browser, then monitor callable `resource-exhausted` responses, unexpected origin failures, and rate-limit record growth. Roll back by removing the provider/tool declarations and callable; no post, route, or CMS migration is required.
 
 ## `features/blog/services/blog-article-library.service.ts`
 
@@ -159,7 +161,7 @@ This section focuses on the key game/runtime services prioritized in the cleanup
 - Provider and configuration:
   The production provider is reCAPTCHA Enterprise using the public `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` build variable. The App Check provider stays inert if that key is absent in a local configuration; CI rejects a hosted build that lacks it. A local debug token is supported only through ignored `environment.local.ts` configuration and must be registered in Firebase Console.
 - Enforcement boundary:
-  This source change only starts token emission. It does not turn on Firebase Storage or Functions enforcement, alter Storage Rules, or provide an authorization bypass. Operators must deploy, exercise public reads and CMS uploads, verify App Check metrics, and then enable enforcement in Firebase Console as a separate reversible rollout step.
+  This source change starts token emission; it does not alter Storage Rules or provide an authorization bypass. Storage App Check enforcement is now enabled after deployed public-media and CMS-upload verification. Function enforcement remains a separate rollout: monitor the callable traffic first, then enable it only after its legitimate browser clients have verified-token coverage and a rollback owner is named.
 
 ## `site-preloader.service.ts`
 
