@@ -10,7 +10,7 @@ Audit date: August 14, 2026
 
 The anonymous production route still resolves to the expected slug and self-canonical and preserves the original publication time and media objects. Its public article remains the older version: the search title is **They Bought a Full-Size Temu Mega Drone—and Flew It**, the article H1 is **They Bought a Full-Size Temu Mega Drone. Of Course They Flew It.**, the visible article reports 1,426 words and seven minutes, and it does not yet contain the new evidence disclosure, 2026 reality check, eCFR source, topic/buyer-guide continuations, or two inline illustrations.
 
-At 1280 × 720 and 390 × 844, the anonymous hydrated route remained self-canonical, scrollable, horizontally contained, and free of dialogs after the settle window. The mobile Contents control expanded successfully. A separate read-only public Firestore request then verified the exact document ID, legacy missing-revision state, effective revision `0`, dates, featured state, media, taxonomy, all 61 production blocks, and a complete SHA-256 document fingerprint. The staged package retains every original block ID, intentionally edits four, adds ten, and removes none.
+At 1280 × 720 and 390 × 844, the anonymous hydrated route remained self-canonical, scrollable, horizontally contained, and free of dialogs after the settle window. The mobile Contents control expanded successfully. A separate read-only public Firestore request then verified the exact document ID, legacy missing-revision state, effective revision `0`, dates, featured state, media, taxonomy, all 61 production blocks, and a complete SHA-256 document fingerprint. The staged package retains every original block ID, intentionally edits four, adds ten, and removes none. This is historical evidence; the current record was rebased below.
 
 The record-identity blocker is resolved, but the package is still **not safe to import** until Colin approves the editorial and featured-state changes and the exact record passes authenticated Production Preview. The machine-readable baseline, local validator, and live drift verifier fail closed on any production change:
 
@@ -18,13 +18,26 @@ The record-identity blocker is resolved, but the package is still **not safe to 
 - `/scripts/validate-temu-production-preflight.mjs`
 - `/scripts/verify-temu-production-live.mjs`
 
+## Production Rebase — August 27
+
+A second read-only public Firestore verification found that the same published record now has an explicit `revision: 1`, a new `updatedAt` value, and a new SHA-256 fingerprint. The local package has been rebased to that exact record without writing to Firestore: it preserves the current live values and all unchanged live blocks, retains only the four previously reviewed edits and ten approved additions, and remains unsafe to import.
+
+The checked-in baseline records the precise revision, fingerprint, timestamps, taxonomy, media objects, and block comparison. The guarded local command supports a dry run by default and writes only the local package and baseline with `--apply`:
+
+```text
+npm run rebase:temu-production
+npm run rebase:temu-production -- --apply
+```
+
+The rebase command is intentionally pinned to this post ID and fails if the target identity, unchanged production blocks, approved edit IDs, or approved addition IDs drift. It does not call the CMS, publish, deploy, or alter the live post. Immediately before any eventual import, run `npm run verify:temu-production` again and stop if the live fingerprint or revision has changed.
+
 ## Why This Page Is First
 
 The current Search Console baseline for July 17 through August 13 shows `105` impressions, `1` click, `0.95%` click-through rate, and average position `9.9`. The page is already close enough to page one to earn attention, but its search packaging and article depth are not converting that visibility well.
 
 A live GA4 recheck on August 15 strengthened that decision. For July 18 through August 14, the article led the visible page table with `159` views, `142` active users, `544` events, and a `56.6%` bounce rate. The homepage recorded `138` views and `57` active users in the same report. Page views still do not prove that every visit was a completed human read, but the raw-count lead is strong enough to make this the evidence-backed homepage feature candidate while the refresh is evaluated.
 
-This refresh preserves the verified working URL, canonical, stable document ID, original creation/publication dates, every original block ID, media objects, taxonomy, and primary Goonzquad video. Immediately before import, `npm run verify:temu-production` must reconfirm the fingerprint and effective revision `0`. The package improves the promise, disclosure, evidence boundary, internal discovery, imagery, and crawler rendering without turning the story into a different article.
+This refresh preserves the verified working URL, canonical, stable document ID, original creation/publication dates, every original block ID, media objects, taxonomy, and primary Goonzquad video. Immediately before import, `npm run verify:temu-production` must reconfirm the current fingerprint and effective revision `1`. The package improves the promise, disclosure, evidence boundary, internal discovery, imagery, and crawler rendering without turning the story into a different article.
 
 ## Page Scorecard Before Refresh
 

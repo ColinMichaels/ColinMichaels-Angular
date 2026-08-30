@@ -13,6 +13,7 @@ const firebaseStorageBucket = readEnv('FIREBASE_STORAGE_BUCKET');
 const firebaseMessagingSenderId = readEnv('FIREBASE_MESSAGING_SENDER_ID');
 const firebaseAppId = readEnv('FIREBASE_APP_ID');
 const firebaseMeasurementId = readEnv('FIREBASE_MEASUREMENT_ID');
+const firebaseAppCheckRecaptchaEnterpriseSiteKey = readEnv('FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY');
 
 const missing = [];
 if (!appTitle) missing.push('APP_TITLE');
@@ -24,6 +25,9 @@ if (!firebaseStorageBucket) missing.push('FIREBASE_STORAGE_BUCKET');
 if (!firebaseMessagingSenderId) missing.push('FIREBASE_MESSAGING_SENDER_ID');
 if (!firebaseAppId) missing.push('FIREBASE_APP_ID');
 if (!firebaseMeasurementId) missing.push('FIREBASE_MEASUREMENT_ID');
+if (!firebaseAppCheckRecaptchaEnterpriseSiteKey) {
+  missing.push('FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY');
+}
 
 if (missing.length > 0) {
   console.error('Missing required environment variables:');
@@ -44,6 +48,9 @@ const environmentConfig = {
     messagingSenderId: firebaseMessagingSenderId,
     appId: firebaseAppId,
     measurementId: firebaseMeasurementId
+  },
+  firebaseAppCheck: {
+    recaptchaEnterpriseSiteKey: firebaseAppCheckRecaptchaEnterpriseSiteKey
   }
 };
 

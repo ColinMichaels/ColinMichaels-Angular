@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "status": "production-record-verified-editorial-gates-open",
-  "capturedAt": "2026-08-15T22:09:16Z",
+  "capturedAt": "2026-08-27T12:38:10.799Z",
   "route": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
-  "captureScope": "Anonymous public page plus one read-only public Firestore document request. No CMS import, Firestore write, deployment, or YouTube mutation was performed.",
+  "captureScope": "Read-only public Firestore document request used to rebase the local staged package. No CMS import, Firestore write, deployment, or YouTube mutation was performed.",
   "publicIdentity": {
     "slug": "they-bought-a-full-size-temu-mega-drone",
     "documentTitle": "They Bought a Full-Size Temu Mega Drone—and Flew It",
     "articleHeading": "They Bought a Full-Size Temu Mega Drone. Of Course They Flew It.",
-    "description": "Goonzquad ordered a full-size human-carrying mega drone through Temu, assembled it from crates, translated the controls, and actually flew it.",
+    "description": "Goonzquad bought a full-size human-carrying drone through Temu, assembled it from crates, translated the controls, and then did the only logical thing: they flew it.",
     "canonical": "https://colinmichaels.com/blog/they-bought-a-full-size-temu-mega-drone",
     "robots": "index,follow",
-    "publishedAt": "2026-07-11T01:11:53.159Z",
-    "modifiedAt": "2026-07-11T01:11:53.159Z",
+    "publishedAt": "2026-07-11T01:11:00.000Z",
+    "modifiedAt": "2026-08-20T22:23:14.285Z",
     "displayedDate": "Jul 10, 2026",
     "displayedWordCount": 1426,
     "displayedReadingMinutes": 7,
@@ -64,17 +64,17 @@
   },
   "productionRecord": {
     "id": "post-041c74e0-31f7-460a-8e85-4be3d62d9622",
-    "revision": 0,
-    "revisionFieldPresent": false,
+    "revision": 1,
+    "revisionFieldPresent": true,
     "createdAt": "2026-07-11T01:10:09.398Z",
-    "updatedAt": "2026-07-11T01:11:53.159Z",
+    "updatedAt": "2026-08-20T22:23:14.285Z",
     "featured": false,
     "thumbnail": null,
     "blockCount": 61,
-    "fingerprintSha256": "0639d07c41b4ef0f4e764d81827eaf778de2c8a0274c0b75b6510bb9f84e001f",
-    "readAt": "2026-08-15T22:21:47Z",
+    "fingerprintSha256": "86e83d8895cc97181814f72fa6eebf1e7bc10aa81cc7003e00f3eb8fd9fa06c0",
+    "readAt": "2026-08-27T12:38:10.799Z",
     "verificationSurface": "public-firestore-rest-read",
-    "note": "The published document has no stored revision field. The trusted publishing contract normalizes that legacy state to effective revision 0, matching the staged package. The fingerprint covers the complete decoded public document and must be rechecked immediately before import."
+    "note": "The package was rebased against effective production revision 1. Preserve this fingerprinted document as the rollback authority and recheck it immediately before any CMS import."
   },
   "packageComparison": {
     "preserved": [
@@ -137,18 +137,18 @@
       "authenticated Production Preview rendering",
       "CMS role authorization and trusted Function acceptance",
       "Colin's final source, rights, voice, title, featured-state, and editorial approval",
-      "immediate pre-import production fingerprint recheck"
+      "immediate pre-import production fingerprint recheck at effective revision 1"
     ]
   },
   "readiness": {
-    "state": "blocked_editorial_approval_and_authenticated_preview",
+    "state": "rebased_pending_editorial_approval_and_authenticated_preview",
     "safeToImport": false,
     "requiredGates": [
       "Run npm run verify:temu-production immediately before import and stop on any fingerprint drift.",
       "Recheck all volatile sources and third-party media immediately before import.",
       "Obtain Colin's final approval for voice, title, disclosures, rights, new illustrations, poll, and featured-state change.",
       "Load the exact record through the authenticated CMS and inspect Production Preview at desktop and mobile widths.",
-      "Confirm the trusted publishing workflow accepts effective revision 0 and will commit revision 1.",
+      "Confirm the trusted publishing workflow accepts effective revision 1 and will commit revision 2.",
       "Preserve the fingerprinted production record as the rollback authority.",
       "After approval, re-run all package, live-record, build, lint, and responsive public verification gates."
     ]

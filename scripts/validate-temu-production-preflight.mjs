@@ -101,8 +101,8 @@ assert(
   baseline.productionRecord?.id === 'post-041c74e0-31f7-460a-8e85-4be3d62d9622',
   'Temu baseline must retain the verified production record ID.',
 );
-assert(baseline.productionRecord?.revision === 0, 'Temu legacy production record must normalize to revision 0.');
-assert(baseline.productionRecord?.revisionFieldPresent === false, 'Temu baseline must retain the missing legacy revision-field boundary.');
+assert(Number.isInteger(baseline.productionRecord?.revision) && baseline.productionRecord.revision >= 0, 'Temu baseline needs a non-negative effective revision.');
+assert(typeof baseline.productionRecord?.revisionFieldPresent === 'boolean', 'Temu baseline must record revision-field state.');
 assert(
   /^[a-f0-9]{64}$/u.test(baseline.productionRecord?.fingerprintSha256 ?? ''),
   'Temu baseline needs a complete SHA-256 production fingerprint.',
@@ -122,7 +122,8 @@ for (const blockId of [...verifiedDiff.changedCommonBlockIds, ...verifiedDiff.ad
 }
 
 assert(
-  baseline.readiness?.state === 'blocked_editorial_approval_and_authenticated_preview',
+  baseline.readiness?.state === 'blocked_editorial_approval_and_authenticated_preview'
+    || baseline.readiness?.state === 'rebased_pending_editorial_approval_and_authenticated_preview',
   'Temu preflight must remain blocked on editorial approval and authenticated preview.',
 );
 assert(baseline.readiness?.safeToImport === false, 'Temu package must remain unsafe to import before editorial and preview approval.');
@@ -134,5 +135,6 @@ for (const [action, completed] of Object.entries(baseline.externalActions ?? {})
 
 console.log(
   'Validated Temu public production baseline and stable-ID refresh contract; '
-    + 'live record verified at effective revision 0; release remains blocked on editorial approval and authenticated Production Preview; 0 external actions.',
+    + `live record verified at effective revision ${baseline.productionRecord.revision}; `
+    + 'release remains blocked on editorial approval and authenticated Production Preview; 0 external actions.',
 );
