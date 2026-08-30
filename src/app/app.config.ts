@@ -4,7 +4,6 @@ import {
   inject,
   isDevMode,
   provideAppInitializer,
-  provideExperimentalWebMcpTools,
   provideZoneChangeDetection,
 } from '@angular/core';
 import {provideRouter, withInMemoryScrolling, withViewTransitions} from '@angular/router';
@@ -22,7 +21,7 @@ import {
   FIREBASE_APP_CHECK,
   provideFirebaseServices,
 } from './services/firebase/firebase.tokens';
-import {PUBLIC_CONTENT_WEB_MCP_TOOLS} from './features/search/webmcp-public-content.tools';
+import {providePublicContentWebMcpTools} from './features/search/provide-public-content-webmcp-tools';
 
 export const defaultSoundConfig: SoundServiceConfig = {
   debounceInterval: 60,
@@ -53,7 +52,7 @@ export const appConfig: ApplicationConfig = {
       // Initialize before feature services can create Storage/Firestore clients.
       inject(FIREBASE_APP_CHECK);
     }),
-    provideExperimentalWebMcpTools(PUBLIC_CONTENT_WEB_MCP_TOOLS),
+    providePublicContentWebMcpTools(),
     provideServiceWorker('pwa-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
