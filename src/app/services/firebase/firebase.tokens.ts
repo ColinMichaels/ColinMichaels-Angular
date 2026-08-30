@@ -11,6 +11,7 @@ export const FIREBASE_APP = new InjectionToken<FirebaseApp>('Firebase app');
 export const FIREBASE_APP_CHECK = new InjectionToken<AppCheck | null>('Firebase App Check');
 export const FIREBASE_AUTH = new InjectionToken<Auth>('Firebase auth');
 export const FIREBASE_DATABASE = new InjectionToken<Database>('Firebase realtime database');
+export const FIREBASE_EMULATORS = new InjectionToken<FirebaseServiceEmulatorConfig | undefined>('Firebase emulator configuration');
 export const FIREBASE_FIRESTORE = new InjectionToken<Firestore>('Firebase firestore');
 export const FIREBASE_FUNCTIONS = new InjectionToken<Functions>('Firebase functions');
 export const FIREBASE_STORAGE = new InjectionToken<FirebaseStorage>('Firebase storage');
@@ -57,6 +58,10 @@ export function provideFirebaseServices(
     {
       provide: FIREBASE_APP,
       useFactory: () => getApps().length > 0 ? getApp() : initializeApp(options),
+    },
+    {
+      provide: FIREBASE_EMULATORS,
+      useValue: emulators,
     },
     {
       provide: FIREBASE_APP_CHECK,

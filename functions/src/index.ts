@@ -452,6 +452,10 @@ const SITE_CALLABLE_CORS_ORIGINS = [
   'https://www.colinmichaels.com',
   'https://colinmichaels.firebaseapp.com',
   'https://colinmichaels.web.app',
+  // Firebase Hosting preview channels in this repository are named `pr-<number>`.
+  // Keep this limited to this project's generated preview hosts rather than
+  // allowing arbitrary `web.app` origins.
+  /^https:\/\/colinmichaels--pr-\d+(?:-[a-z0-9]+)?\.web\.app$/,
   /^http:\/\/localhost:\d+$/,
   /^http:\/\/127\.0\.0\.1:\d+$/,
 ];

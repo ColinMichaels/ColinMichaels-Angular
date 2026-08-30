@@ -1,7 +1,9 @@
 import {inject, Injectable} from '@angular/core';
-import {Functions, httpsCallable} from 'firebase/functions';
 
-import {FIREBASE_FUNCTIONS} from '../../../services/firebase/firebase.tokens';
+import {
+  FIREBASE_APP,
+  FIREBASE_EMULATORS,
+} from '../../../services/firebase/firebase.tokens';
 
 export type PublicAgentContentOperation = 'search' | 'getArticle' | 'getTopic';
 
@@ -57,35 +59,77 @@ type PublicAgentContentRequest =
 
 @Injectable({providedIn: 'root'})
 export class PublicAgentContentService {
-  private readonly functions = inject(FIREBASE_FUNCTIONS, {optional: true});
+  private readonly app = inject(FIREBASE_APP);
+  private readonly emulators = inject(FIREBASE_EMULATORS, {optional: true});
 
-  search(query: string): Promise<PublicAgentContentResponse> {
-    return this.request({operation: 'search', query});
+  search(query: string, signal?: AbortSignal): Promise<PublicAgentContentResponse> {
+    return this.request({operation: 'search', query}, signal);
   }
 
-  getArticle(canonicalUrl: string): Promise<PublicAgentContentResponse> {
-    return this.request({operation: 'getArticle', canonicalUrl});
+  getArticle(canonicalUrl: string, signal?: AbortSignal): Promise<PublicAgentContentResponse> {
+    return this.request({operation: 'getArticle', canonicalUrl}, signal);
   }
 
-  getTopic(topicSlug: string): Promise<PublicAgentContentResponse> {
-    return this.request({operation: 'getTopic', topicSlug});
+  getTopic(topicSlug: string, signal?: AbortSignal): Promise<PublicAgentContentResponse> {
+    return this.request({operation: 'getTopic', topicSlug}, signal);
   }
 
-  private async request(request: PublicAgentContentRequest): Promise<PublicAgentContentResponse> {
-    const callable = httpsCallable<PublicAgentContentRequest, PublicAgentContentResponse>(
-      this.getFunctions(),
-      'getPublicAgentContent',
-      {timeout: 15_000},
-    );
-    const result = await callable(request);
-    return result.data;
-  }
+  private async request(
+    request: PublicAgentContentRequest,
+    signal?: AbortSignal,
+  ): Promise<PublicAgentContentResponse> {
+    const response = await fetch(this.getCallableUrl(), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({data: request}),
+      signal,
+    });
+    const body = await response.json().catch(() => null) as unknown;
 
-  private getFunctions(): Functions {
-    if (!this.functions) {
-      throw new Error('Firebase Functions is not initialized.');
+    if (!response.ok) {
+      throw new Error(getCallableErrorMessage(body, response.status));
     }
 
-    return this.functions;
+    const result = getCallableResult(body);
+    if (!result) {
+      throw new Error('The public content service returned an invalid response.');
+    }
+
+    return result as PublicAgentContentResponse;
   }
+
+  private getCallableUrl(): string {
+    const projectId = this.app.options.projectId?.trim();
+    if (!projectId) {
+      throw new Error('Firebase project configuration is missing.');
+    }
+
+    const emulator = this.emulators?.functions;
+    if (emulator) {
+      return `http://${emulator.host}:${emulator.port}/${projectId}/us-east1/getPublicAgentContent`;
+    }
+
+    return `https://us-east1-${projectId}.cloudfunctions.net/getPublicAgentContent`;
+  }
+}
+
+function getCallableResult(value: unknown): PublicAgentContentResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const result = value['result'] ?? value['data'];
+  return isRecord(result) ? result as unknown as PublicAgentContentResponse : null;
+}
+
+function getCallableErrorMessage(value: unknown, status: number): string {
+  if (isRecord(value) && isRecord(value['error']) && typeof value['error']['message'] === 'string') {
+    return value['error']['message'];
+  }
+
+  return `The public content service request failed (${status}).`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
