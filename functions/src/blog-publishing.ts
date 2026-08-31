@@ -1374,14 +1374,14 @@ function countSearchWords(value: string): number {
 }
 
 function createSummaryPreviewImages(post: Record<string, unknown>): readonly Record<string, unknown>[] {
-  const coverImage = getTrimmedString(post['coverImage']);
+  const coverImage = normalizeSummaryImageUrl(getTrimmedString(post['coverImage']));
   const seenUrls = new Set<string>(coverImage ? [coverImage] : []);
   const images: Record<string, unknown>[] = [];
   const appendImage = (value: unknown): void => {
     if (images.length >= 5 || !isRecord(value)) {
       return;
     }
-    const url = getTrimmedString(value['url']);
+    const url = normalizeSummaryImageUrl(getTrimmedString(value['url']));
     if (!url || seenUrls.has(url)) {
       return;
     }
@@ -1413,6 +1413,14 @@ function createSummaryPreviewImages(post: Record<string, unknown>): readonly Rec
   }
 
   return images;
+}
+
+function normalizeSummaryImageUrl(value: string): string {
+  return value
+    .trim()
+    .replace(/&amp;/gi, '&')
+    .replace(/&#0*38;/gi, '&')
+    .replace(/&#x0*26;/gi, '&');
 }
 
 function isAllowedMediaUrl(value: string): boolean {

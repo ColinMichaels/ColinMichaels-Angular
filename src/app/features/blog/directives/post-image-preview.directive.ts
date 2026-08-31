@@ -32,6 +32,7 @@ export class PostImagePreviewDirective implements OnChanges {
   private readonly previewActive = signal(false);
   private readonly previewIndex = signal(0);
   private readonly previewSettledUrls = signal<ReadonlySet<string>>(new Set<string>());
+  private readonly previewFailedUrls = signal<ReadonlySet<string>>(new Set<string>());
   private openTimer: number | undefined;
   private closeTimer: number | undefined;
   private pendingIndex = 0;
@@ -39,6 +40,7 @@ export class PostImagePreviewDirective implements OnChanges {
   readonly active = this.previewActive.asReadonly();
   readonly activeIndex = this.previewIndex.asReadonly();
   readonly settledUrls = this.previewSettledUrls.asReadonly();
+  readonly failedUrls = this.previewFailedUrls.asReadonly();
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -149,6 +151,28 @@ export class PostImagePreviewDirective implements OnChanges {
     }
 
     this.previewSettledUrls.set(new Set([...settledUrls, url]));
+
+    if (this.previewFailedUrls().has(url)) {
+      const failedUrls = new Set(this.previewFailedUrls());
+      failedUrls.delete(url);
+      this.previewFailedUrls.set(failedUrls);
+    }
+  }
+
+  fail(url: string): void {
+    const failedUrls = this.previewFailedUrls();
+
+    if (!this.previewActive() || failedUrls.has(url)) {
+      return;
+    }
+
+    this.previewFailedUrls.set(new Set([...failedUrls, url]));
+
+    if (this.previewSettledUrls().has(url)) {
+      const settledUrls = new Set(this.previewSettledUrls());
+      settledUrls.delete(url);
+      this.previewSettledUrls.set(settledUrls);
+    }
   }
 
   statusId(): string {
@@ -156,13 +180,26 @@ export class PostImagePreviewDirective implements OnChanges {
   }
 
   buffering(): boolean {
+    const image = this.postImagePreviewImages[this.previewIndex()];
+
     return this.previewActive()
-      && this.previewSettledUrls().size < this.postImagePreviewImages.length;
+      && Boolean(image)
+      && !this.previewSettledUrls().has(image.url)
+      && !this.previewFailedUrls().has(image.url);
+  }
+
+  activeFrameSettled(): boolean {
+    const image = this.postImagePreviewImages[this.previewIndex()];
+    return Boolean(image) && this.previewSettledUrls().has(image.url);
   }
 
   status(): string {
     const image = this.postImagePreviewImages[this.previewIndex()];
     const imageDescription = image?.alt.trim() || `${this.postImagePreviewTitle} interior image`;
+
+    if (image && this.previewFailedUrls().has(image.url)) {
+      return `Preview unavailable; showing the cover image for ${this.postImagePreviewTitle}.`;
+    }
 
     return `Preview ${this.previewIndex() + 1} of ${this.postImagePreviewImages.length}: ${imageDescription}`;
   }
@@ -205,6 +242,7 @@ export class PostImagePreviewDirective implements OnChanges {
 
     this.previewIndex.set(Math.min(imageCount - 1, Math.max(0, imageIndex)));
     this.previewSettledUrls.set(new Set<string>());
+    this.previewFailedUrls.set(new Set<string>());
     this.previewActive.set(true);
   }
 
@@ -212,6 +250,7 @@ export class PostImagePreviewDirective implements OnChanges {
     this.previewActive.set(false);
     this.previewIndex.set(0);
     this.previewSettledUrls.set(new Set<string>());
+    this.previewFailedUrls.set(new Set<string>());
   }
 
   private clearTimer(timer: 'open' | 'close'): void {

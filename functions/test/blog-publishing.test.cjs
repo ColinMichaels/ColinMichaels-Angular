@@ -91,6 +91,24 @@ test('creates a compact searchable summary without retaining canonical blocks', 
   assert.ok(summary.readingMinutes > 0);
 });
 
+test('repairs HTML-escaped Firebase query parameters in compact preview summaries', () => {
+  const summary = createBlogPostSummaryDocument(createPost({
+    blocks: [{
+      id: 'encoded-image',
+      type: 'image',
+      data: {
+        url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&amp;token=public-token',
+        alt: 'Encoded Firebase preview',
+      },
+    }],
+  }));
+
+  assert.deepEqual(summary.previewImages, [{
+    url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&token=public-token',
+    alt: 'Encoded Firebase preview',
+  }]);
+});
+
 test('bounds compact summary search text without truncating reading statistics', () => {
   const repeatedText = 'searchable '.repeat(4_000);
   const summary = createBlogPostSummaryDocument(createPost({

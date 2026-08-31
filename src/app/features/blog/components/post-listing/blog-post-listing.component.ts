@@ -127,7 +127,7 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                     }
                     <img
                       class="post-listing__image h-full w-full object-cover transition-[filter,transform] duration-300 motion-reduce:transition-none"
-                      [class.post-image-scrubber-cover--active]="imagePreview.active()"
+                      [class.post-image-scrubber-cover--active]="imagePreview.activeFrameSettled()"
                       [class.post-image-scrubber-cover--buffering]="imagePreview.buffering()"
                       [src]="postImage(post)"
                       [alt]="post.title + ' cover image'"
@@ -139,8 +139,10 @@ export type BlogPostListingAppearanceByPostId = Readonly<
                         [images]="previewImages(post)"
                         [activeIndex]="imagePreview.activeIndex()"
                         [settledUrls]="imagePreview.settledUrls()"
+                        [failedUrls]="imagePreview.failedUrls()"
                         [buffering]="imagePreview.buffering()"
                         (imageSettled)="imagePreview.settle($event)"
+                        (imageFailed)="imagePreview.fail($event)"
                       ></app-post-image-scrubber>
                     }
                   </span>

@@ -95,6 +95,23 @@ describe('BlogStorageService background serialization', () => {
     expect('blocks' in indexEntry).toBeFalse();
   });
 
+  it('repairs HTML-escaped Firebase preview URLs from existing summary records', () => {
+    const post = {...createPost(), status: 'published' as const, publishedAt: '2026-07-12T12:00:00.000Z'};
+    const summary = {
+      ...serializer.toPostIndexEntry(post),
+      storageVersion: 1,
+      previewImages: [{
+        url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&amp;token=public-token',
+        alt: 'Existing preview',
+      }],
+    };
+
+    expect(serializer.fromFirestorePostIndex(summary)?.previewImages).toEqual([{
+      url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&token=public-token',
+      alt: 'Existing preview',
+    }]);
+  });
+
   it('bounds the retained search projection for exceptionally large posts', () => {
     const post = createPost();
     post.blocks = [{
