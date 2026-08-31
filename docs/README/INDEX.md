@@ -18,6 +18,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Development Setup](./DEVELOPMENT.md)
 - [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
+- [Public WebMCP Operations Runbook](./WEBMCP_OPERATIONS.md)
 
 ## Architecture
 

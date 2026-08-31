@@ -1,6 +1,6 @@
 # Roadmap
 
-Updated August 22, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
+Updated August 31, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
 
 Local implementation, a saved Firebase version, a preview, and production deployment are separate states. Nothing in this roadmap should be read as production-live without exact-commit deployment and public verification.
 
@@ -37,6 +37,14 @@ Local implementation, a saved Firebase version, a preview, and production deploy
 - Add only supportable article-specific evidence, source dates, relationships, AI assistance, and synthetic-media disclosures.
 - Use **Save evidence only** for disclosure-only legacy work; keep **Save Post** for an intentionally reviewed complete-document change.
 - Preserve honest **Not yet classified** states for legacy personal stories or project journals when classification would add false certainty.
+
+### 3. Close the public WebMCP operations loop
+
+- Deploy the privacy-safe structured callable telemetry and matching Hosting bridge from one exact tested release.
+- Enable and verify the Firestore TTL policy for `publicAgentContentRateLimits.expiresAtTimestamp`; TTL is cleanup, not an authorization control.
+- Run the three-tool production browser smoke test and the opt-in 20/21/reset rate-limit verifier, recording exact timestamps and results.
+- Create Cloud Monitoring alerts with a named owner and notification channel for handler failures, sustained HTTP `429` responses, unexpected HTTP `403` responses, latency, and abnormal rate-limit document growth.
+- Keep Function App Check enforcement off for `getPublicAgentContent` until the direct browser transport has explicit verified-token coverage and a rollback owner.
 
 ## Next: One To Two Sprints
 
