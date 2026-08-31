@@ -155,7 +155,11 @@ import {
   publishDueScheduledPosts,
 } from './blog-publishing';
 import {storePublicSubmission} from './public-submissions';
-import {getPublicAgentContent as getPublicAgentContentResponse} from './public-agent-content';
+import {
+  createPublicAgentContentTelemetryRecord,
+  getPublicAgentContent as getPublicAgentContentResponse,
+  getPublicAgentContentTelemetryErrorCode,
+} from './public-agent-content';
 import {
   PublicSubmissionSmtpConfig,
   createPublicSubmissionAlertEmail,
@@ -1650,14 +1654,42 @@ export const getPublicAgentContent = onCall(
     cors: SITE_CALLABLE_CORS_ORIGINS,
     invoker: 'public',
   },
-  async request => await getPublicAgentContentResponse(
-    getFirestore(),
-    request.data,
-    {
+  async request => {
+    const startedAt = Date.now();
+    const context = {
       actorUid: request.auth?.uid ?? null,
       ipAddress: request.rawRequest.ip ?? 'unknown',
+    };
+
+    try {
+      const response = await getPublicAgentContentResponse(getFirestore(), request.data, context);
+      logger.info('Completed public WebMCP content request.', createPublicAgentContentTelemetryRecord(
+        request.data,
+        {
+          authenticated: context.actorUid !== null,
+          durationMs: Date.now() - startedAt,
+          response,
+        },
+      ));
+      return response;
+    } catch (error) {
+      const telemetry = createPublicAgentContentTelemetryRecord(request.data, {
+        authenticated: context.actorUid !== null,
+        durationMs: Date.now() - startedAt,
+        errorCode: getPublicAgentContentTelemetryErrorCode(error),
+      });
+
+      // Platform request logs already expose every HTTP 429. Avoid adding one
+      // application log per abusive retry after a client reaches the limit.
+      if (telemetry.outcome === 'rejected') {
+        logger.warn('Rejected public WebMCP content request.', telemetry);
+      } else if (telemetry.outcome === 'failed') {
+        logger.error('Failed public WebMCP content request.', telemetry);
+      }
+
+      throw error;
     }
-  )
+  }
 );
 
 export const notifyPublicSubmissionCreated = onDocumentCreated(

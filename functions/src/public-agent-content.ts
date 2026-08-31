@@ -72,6 +72,68 @@ export interface PublicAgentContentResponse {
   };
 }
 
+export type PublicAgentContentTelemetryOperation = PublicAgentContentOperation | 'unknown';
+export type PublicAgentContentTelemetryOutcome = 'success' | 'rate-limited' | 'rejected' | 'failed';
+
+export interface PublicAgentContentTelemetryRecord {
+  event: 'public_agent_content_request';
+  operation: PublicAgentContentTelemetryOperation;
+  outcome: PublicAgentContentTelemetryOutcome;
+  authenticated: boolean;
+  durationMs: number;
+  itemCount?: number;
+  errorCode?: string;
+}
+
+interface PublicAgentContentTelemetryOptions {
+  authenticated: boolean;
+  durationMs: number;
+  response?: PublicAgentContentResponse;
+  errorCode?: string;
+}
+
+/**
+ * Produces a deliberately content-free operational event. Search terms,
+ * canonical URLs, topic slugs, user IDs, and IP addresses never enter logs.
+ */
+export function createPublicAgentContentTelemetryRecord(
+  value: unknown,
+  options: PublicAgentContentTelemetryOptions,
+): PublicAgentContentTelemetryRecord {
+  const operation = isRecord(value)
+  && (value['operation'] === 'search' || value['operation'] === 'getArticle' || value['operation'] === 'getTopic')
+    ? value['operation']
+    : 'unknown';
+  const errorCode = normalizeTelemetryErrorCode(options.errorCode);
+  const outcome = errorCode === null
+    ? 'success'
+    : errorCode === 'resource-exhausted'
+      ? 'rate-limited'
+      : errorCode === 'invalid-argument' || errorCode === 'permission-denied' || errorCode === 'unauthenticated'
+        ? 'rejected'
+        : 'failed';
+  const record: PublicAgentContentTelemetryRecord = {
+    event: 'public_agent_content_request',
+    operation,
+    outcome,
+    authenticated: options.authenticated,
+    durationMs: Math.max(0, Math.min(300_000, Math.round(options.durationMs))),
+  };
+
+  if (options.response) {
+    record.itemCount = options.response.items.length;
+  }
+  if (errorCode !== null) {
+    record.errorCode = errorCode;
+  }
+
+  return record;
+}
+
+export function getPublicAgentContentTelemetryErrorCode(error: unknown): string {
+  return error instanceof HttpsError ? error.code : 'internal';
+}
+
 export function parsePublicAgentContentRequest(value: unknown): PublicAgentContentRequest {
   if (!isRecord(value)) {
     invalid('A public-agent content request is required.');
@@ -342,6 +404,11 @@ function normalizeText(value: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeTelemetryErrorCode(value: string | undefined): string | null {
+  const normalized = value?.trim().toLowerCase();
+  return normalized && /^[a-z-]{1,40}$/.test(normalized) ? normalized : null;
 }
 
 function invalid(message: string): never {

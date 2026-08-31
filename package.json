@@ -17,6 +17,8 @@
     "pretest:release": "node scripts/verify-supported-node.mjs",
     "test:release": "npm run lint && npm run build && npm run test:service-worker-cache && npm run test:docs && npm test -- --watch=false && npm run test:content-packages && npm --prefix functions run test:all",
     "verify:temu-production": "node scripts/verify-temu-production-live.mjs",
+    "verify:webmcp-production": "PLAYWRIGHT_BASE_URL=https://colinmichaels.com WEBMCP_PRODUCTION_SMOKE=1 playwright test e2e/webmcp-production.spec.ts --project=chromium --workers=1",
+    "verify:webmcp-rate-limit": "node scripts/verify-webmcp-rate-limit-production.mjs",
     "rebase:temu-production": "node scripts/rebase-temu-production-package.mjs",
     "verify:ace-pro-production": "node scripts/verify-ace-pro-production-live.mjs",
     "test:outreach-prospects": "node scripts/validate-outreach-prospects.mjs",
