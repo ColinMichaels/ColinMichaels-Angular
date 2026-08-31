@@ -30,7 +30,11 @@ import {
   normalizeBlogAuthor,
 } from '../models/blog-post.model';
 import {normalizeBlogPostRevision} from '../models/blog-post-revision.model';
-import {normalizeBlogImageFields, resolveBlogPostPreviewImages} from '../utils/blog-image-url.util';
+import {
+  normalizeBlogImageFields,
+  normalizeBlogImageUrl,
+  resolveBlogPostPreviewImages,
+} from '../utils/blog-image-url.util';
 import {createBlogReadingStats} from '../utils/blog-reading.util';
 import {createBlogPostSearchBodyText} from '../utils/blog-search-text.util';
 import {isBlogPost, isRecord} from '../utils/blog-validation.util';
@@ -120,7 +124,7 @@ function readBlogGalleryImages(value: unknown): readonly BlogGalleryImage[] {
     .filter(item => isRecord(item) && typeof item['url'] === 'string' && typeof item['alt'] === 'string')
     .slice(0, 5)
     .map(item => ({
-      url: item['url'] as string,
+      url: normalizeBlogImageUrl(item['url'] as string),
       alt: item['alt'] as string,
       ...(typeof item['caption'] === 'string' ? {caption: item['caption']} : {}),
       ...(isPositiveInteger(item['width']) ? {width: item['width']} : {}),

@@ -12,6 +12,19 @@ export interface BlogImageFields {
   thumbnailImage?: string;
 }
 
+/**
+ * Repairs image URLs that were HTML-escaped before being stored as data.
+ * Angular binds these values as DOM properties, so a literal `&amp;` would
+ * otherwise become an invalid Firebase query parameter such as `amp;token`.
+ */
+export function normalizeBlogImageUrl(value: string): string {
+  return value
+    .trim()
+    .replace(/&amp;/gi, '&')
+    .replace(/&#0*38;/gi, '&')
+    .replace(/&#x0*26;/gi, '&');
+}
+
 export function isLocalAssetImageUrl(value: string): boolean {
   const trimmedValue = value.trim();
 
@@ -35,8 +48,10 @@ export function isRemoteImageUrl(value: string): boolean {
 }
 
 export function normalizeBlogImageFields(fields: BlogImageFields): BlogImageFields {
-  const coverImage = fields.coverImage.trim();
-  const thumbnailImage = fields.thumbnailImage?.trim() ?? '';
+  const coverImage = normalizeBlogImageUrl(fields.coverImage);
+  const thumbnailImage = fields.thumbnailImage
+    ? normalizeBlogImageUrl(fields.thumbnailImage)
+    : '';
 
   if (!thumbnailImage || (isLocalAssetImageUrl(thumbnailImage) && isRemoteImageUrl(coverImage))) {
     return {coverImage};
@@ -73,15 +88,15 @@ export function resolveBlogPostPreviewImages(
   }
 
   const primaryUrls = new Set([
-    post.coverImage.trim(),
-    post.thumbnailImage?.trim() ?? '',
-    resolveBlogPostImage(post).trim(),
+    normalizeBlogImageUrl(post.coverImage),
+    post.thumbnailImage ? normalizeBlogImageUrl(post.thumbnailImage) : '',
+    normalizeBlogImageUrl(resolveBlogPostImage(post)),
   ].filter(Boolean));
   const seenUrls = new Set(primaryUrls);
   const previewImages: BlogGalleryImage[] = [];
 
   const appendImage = (image: Partial<BlogGalleryImage> & { url?: string }): void => {
-    const url = image.url?.trim() ?? '';
+    const url = image.url ? normalizeBlogImageUrl(image.url) : '';
 
     if (!url || seenUrls.has(url) || previewImages.length >= boundedLimit) {
       return;

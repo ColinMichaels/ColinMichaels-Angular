@@ -91,6 +91,25 @@ describe('blog-image-url util', () => {
     ]);
   });
 
+  it('repairs HTML-escaped Firebase query parameters in preview image URLs', () => {
+    const images = resolveBlogPostPreviewImages({
+      coverImage: '/cover.webp',
+      blocks: [{
+        id: 'encoded-image',
+        type: 'image',
+        data: {
+          url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&amp;token=public-token',
+          alt: 'Encoded Firebase image',
+        },
+      }],
+    });
+
+    expect(images).toEqual([{
+      url: 'https://firebasestorage.googleapis.com/example.webp?alt=media&token=public-token',
+      alt: 'Encoded Firebase image',
+    }]);
+  });
+
   it('does not expose preview images when the bounded limit is zero', () => {
     expect(resolveBlogPostPreviewImages({
       coverImage: '/cover.webp',

@@ -212,7 +212,7 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
                 [src]="result.image"
                 [alt]="result.title + ' preview image'"
                 class="blog-post-image-fill post-listing__image"
-                [class.post-image-scrubber-cover--active]="imagePreview.active()"
+                [class.post-image-scrubber-cover--active]="imagePreview.activeFrameSettled()"
                 [class.post-image-scrubber-cover--buffering]="imagePreview.buffering()"
                 loading="lazy"
               >
@@ -221,8 +221,10 @@ const DEFAULT_SORT: SiteSearchSortMode = 'relevance';
                   [images]="result.previewImages ?? emptyPreviewImages"
                   [activeIndex]="imagePreview.activeIndex()"
                   [settledUrls]="imagePreview.settledUrls()"
+                  [failedUrls]="imagePreview.failedUrls()"
                   [buffering]="imagePreview.buffering()"
                   (imageSettled)="imagePreview.settle($event)"
+                  (imageFailed)="imagePreview.fail($event)"
                 ></app-post-image-scrubber>
               }
             </span>

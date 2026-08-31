@@ -24,13 +24,14 @@ import {BlogGalleryImage} from '../../models/blog-post.model';
         class="post-image-scrubber__frame"
         [class.post-image-scrubber__frame--active]="imageIndex === activeIndex"
         [class.post-image-scrubber__frame--settled]="settledUrls.has(image.url)"
+        [class.post-image-scrubber__frame--failed]="failedUrls.has(image.url)"
         [src]="image.url"
         alt=""
         loading="eager"
         decoding="async"
         fetchpriority="low"
         (load)="imageSettled.emit(image.url)"
-        (error)="imageSettled.emit(image.url)"
+        (error)="imageFailed.emit(image.url)"
       >
     }
 
@@ -107,6 +108,10 @@ import {BlogGalleryImage} from '../../models/blog-post.model';
       transform: scale(1);
     }
 
+    .post-image-scrubber__frame--failed {
+      visibility: hidden;
+    }
+
     .post-image-scrubber__buffer {
       position: absolute;
       z-index: 3;
@@ -150,7 +155,9 @@ export class PostImageScrubberComponent {
   @Input({required: true}) images: readonly BlogGalleryImage[] = [];
   @Input({required: true}) activeIndex = 0;
   @Input({required: true}) settledUrls: ReadonlySet<string> = new Set<string>();
+  @Input({required: true}) failedUrls: ReadonlySet<string> = new Set<string>();
   @Input() buffering = false;
 
   readonly imageSettled = output<string>();
+  readonly imageFailed = output<string>();
 }

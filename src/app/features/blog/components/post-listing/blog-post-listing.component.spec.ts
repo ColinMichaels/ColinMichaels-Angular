@@ -333,6 +333,44 @@ describe('BlogPostListingComponent', () => {
       .not.toContain('post-image-scrubber-cover--active');
   }));
 
+  it('keeps the cover visible when a deferred hover preview fails', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.returnValue({matches: true} as MediaQueryList);
+    fixture.componentRef.setInput('enableImagePreview', true);
+    fixture.componentRef.setInput('posts', [createPost({
+      previewImages: [{url: '/assets/images/blog/missing-preview.webp', alt: 'Missing preview'}],
+    })]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const media = element.querySelector<HTMLElement>('.post-listing__media');
+    spyOn(media!, 'getBoundingClientRect').and.returnValue({
+      left: 0,
+      width: 100,
+    } as DOMRect);
+
+    media?.dispatchEvent(new PointerEvent('pointerenter', {clientX: 50}));
+    tick(120);
+    fixture.detectChanges();
+
+    const frame = element.querySelector<HTMLImageElement>('.post-image-scrubber__frame');
+    expect(frame).not.toBeNull();
+    expect(element.querySelector('.post-listing__image')?.classList)
+      .toContain('post-image-scrubber-cover--buffering');
+
+    frame?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(frame?.classList).toContain('post-image-scrubber__frame--failed');
+    expect(frame?.classList).not.toContain('post-image-scrubber__frame--settled');
+    expect(element.querySelector('.post-image-scrubber__buffer')).toBeNull();
+    expect(element.querySelector('.post-listing__image')?.classList)
+      .not.toContain('post-image-scrubber-cover--active');
+    expect(element.querySelector('.post-listing__image')?.classList)
+      .not.toContain('post-image-scrubber-cover--buffering');
+    expect(element.querySelector('.sr-only[role="status"]')?.textContent)
+      .toContain('Preview unavailable; showing the cover image');
+  }));
+
   it('derives the shared scrubber images from full posts used by homepage feeds', () => {
     spyOn(window, 'matchMedia').and.returnValue({matches: true} as MediaQueryList);
     const fullPost = {
