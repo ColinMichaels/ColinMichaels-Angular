@@ -663,8 +663,10 @@ function createNextPost(
   const nowIso = now.toISOString();
 
   if (request.operation === 'save') {
-    const requestedPost = normalizeUnsupportedBlogBlocksForStorage(
-      request.post as Record<string, unknown>
+    const requestedPost = normalizeBlogImageBlocksForStorage(
+      normalizeUnsupportedBlogBlocksForStorage(
+        request.post as Record<string, unknown>
+      )
     );
     const status = requestedPost['status'];
     const previousPreview = getPreview(currentPost);
@@ -759,6 +761,67 @@ export function normalizeUnsupportedBlogBlocksForStorage(
         },
       },
     };
+  });
+
+  return changed ? {...post, blocks: normalizedBlocks} : post;
+}
+
+/**
+ * Repairs legacy HTML entity encoding without rewriting unrelated Editor.js
+ * data. Only canonical image and gallery URL fields are normalized so opaque
+ * unsupported compatibility envelopes remain lossless.
+ */
+export function normalizeBlogImageBlocksForStorage(
+  post: Record<string, unknown>
+): Record<string, unknown> {
+  const blocks = post['blocks'];
+
+  if (!Array.isArray(blocks)) {
+    return post;
+  }
+
+  let changed = false;
+  const normalizedBlocks = blocks.map(block => {
+    if (!isRecord(block) || !isRecord(block['data'])) {
+      return block;
+    }
+
+    const data = block['data'];
+    if (block['type'] === 'image' && typeof data['url'] === 'string') {
+      const url = normalizeSummaryImageUrl(data['url']);
+      if (url === data['url']) {
+        return block;
+      }
+
+      changed = true;
+      return {...block, data: {...data, url}};
+    }
+
+    if (block['type'] !== 'gallery' || !Array.isArray(data['galleryImages'])) {
+      return block;
+    }
+
+    let galleryChanged = false;
+    const galleryImages = data['galleryImages'].map(image => {
+      if (!isRecord(image) || typeof image['url'] !== 'string') {
+        return image;
+      }
+
+      const url = normalizeSummaryImageUrl(image['url']);
+      if (url === image['url']) {
+        return image;
+      }
+
+      galleryChanged = true;
+      return {...image, url};
+    });
+
+    if (!galleryChanged) {
+      return block;
+    }
+
+    changed = true;
+    return {...block, data: {...data, galleryImages}};
   });
 
   return changed ? {...post, blocks: normalizedBlocks} : post;

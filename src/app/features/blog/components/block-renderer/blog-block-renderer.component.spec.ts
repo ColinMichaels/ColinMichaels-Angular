@@ -940,6 +940,44 @@ describe('BlogBlockRendererComponent', () => {
     expect(element.querySelector<HTMLElement>('#blog-lightbox-title')?.textContent).toContain('1 / 2');
   });
 
+  it('repairs HTML-escaped Firebase tokens for body images, galleries, and lightboxes', () => {
+    const encodedBodyUrl =
+      'https://firebasestorage.googleapis.com/body.webp?alt=media&amp;token=body-token';
+    const encodedGalleryUrl =
+      'https://firebasestorage.googleapis.com/gallery.webp?alt=media&amp;token=gallery-token';
+
+    fixture.componentRef.setInput('blocks', [
+      {
+        id: 'encoded-body-image',
+        type: 'image',
+        data: {url: encodedBodyUrl, alt: 'Encoded body image'},
+      },
+      {
+        id: 'encoded-gallery',
+        type: 'gallery',
+        data: {
+          galleryImages: [{url: encodedGalleryUrl, alt: 'Encoded gallery image'}],
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const bodyImage = element.querySelector<HTMLImageElement>('figure img');
+    const galleryImage = element.querySelector<HTMLImageElement>('[data-testid="blog-gallery-image-button"] img');
+
+    expect(bodyImage?.getAttribute('src'))
+      .toBe('https://firebasestorage.googleapis.com/body.webp?alt=media&token=body-token');
+    expect(galleryImage?.getAttribute('src'))
+      .toBe('https://firebasestorage.googleapis.com/gallery.webp?alt=media&token=gallery-token');
+
+    element.querySelector<HTMLButtonElement>('figure button')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLImageElement>('[data-testid="blog-lightbox-image"]')?.getAttribute('src'))
+      .toBe('https://firebasestorage.googleapis.com/body.webp?alt=media&token=body-token');
+  });
+
   it('opens post body images in a lightbox with a download action', () => {
     fixture.componentRef.setInput('fallbackAlt', 'Fallback post title');
     fixture.componentRef.setInput('blocks', [
