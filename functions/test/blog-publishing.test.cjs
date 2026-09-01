@@ -5,6 +5,7 @@ const {
   collectTrustedBlogMediaIds,
   createBlogPostSummaryDocument,
   createEditorialUpdatePlan,
+  normalizeBlogImageBlocksForStorage,
   normalizeUnsupportedBlogBlocksForStorage,
   parseBlogMutationRequest,
   validateTrustedBlogPost,
@@ -288,6 +289,50 @@ test('encodes nested-array compatibility data before Firestore storage without l
   assert.deepEqual(JSON.parse(envelope.originalTunesJson), {alignmentTune: {alignment: 'center'}});
   assert.equal(envelope.originalData, undefined);
   assert.doesNotThrow(() => validateTrustedBlogPost(normalized));
+});
+
+test('repairs canonical image URLs before storage without rewriting opaque block data', () => {
+  const bodyUrl =
+    'https://firebasestorage.googleapis.com/body.webp?alt=media&amp;token=body-token';
+  const galleryUrl =
+    'https://firebasestorage.googleapis.com/gallery.webp?alt=media&amp;token=gallery-token';
+  const opaqueText = 'Keep https://example.com/?first=1&amp;token=opaque unchanged.';
+  const post = createPost({
+    blocks: [
+      {id: 'image-1', type: 'image', data: {url: bodyUrl, alt: 'Body image'}},
+      {
+        id: 'gallery-1',
+        type: 'gallery',
+        data: {galleryImages: [{url: galleryUrl, alt: 'Gallery image'}]},
+      },
+      {id: 'paragraph-1', type: 'paragraph', data: {text: opaqueText}},
+      {
+        id: 'unsupported-1',
+        type: 'unsupported',
+        data: {
+          unsupportedBlock: {
+            originalType: 'future-media',
+            originalData: {url: bodyUrl},
+          },
+        },
+      },
+    ],
+  });
+
+  const normalized = normalizeBlogImageBlocksForStorage(post);
+
+  assert.equal(
+    normalized.blocks[0].data.url,
+    'https://firebasestorage.googleapis.com/body.webp?alt=media&token=body-token'
+  );
+  assert.equal(
+    normalized.blocks[1].data.galleryImages[0].url,
+    'https://firebasestorage.googleapis.com/gallery.webp?alt=media&token=gallery-token'
+  );
+  assert.equal(normalized.blocks[2].data.text, opaqueText);
+  assert.equal(normalized.blocks[3].data.unsupportedBlock.originalData.url, bodyUrl);
+  assert.equal(post.blocks[0].data.url, bodyUrl);
+  assert.equal(post.blocks[1].data.galleryImages[0].url, galleryUrl);
 });
 
 test('rejects malformed encoded compatibility data at the trusted boundary', () => {

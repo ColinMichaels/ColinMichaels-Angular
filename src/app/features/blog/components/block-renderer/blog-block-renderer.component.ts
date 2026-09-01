@@ -47,6 +47,7 @@ import {
   isBlogQuickSummaryHeading,
 } from '../../utils/blog-reading.util';
 import {htmlToPlainText} from '../../utils/blog-html.util';
+import {normalizeBlogImageUrl} from '../../utils/blog-image-url.util';
 import {
   getTrustedBlogAppEmbedUrl,
   HEAR_THE_HOOK_EMBED_URL,
@@ -80,6 +81,7 @@ interface RenderableBlogBlock {
   listCounterType: BlogListCounterType;
   stats: readonly RenderableBlogStat[];
   imageAlt: string;
+  imageUrl: string;
   galleryIndex: number | null;
   galleryImages: readonly BlogGalleryImage[];
   galleryLayout: BlogGalleryLayout;
@@ -454,7 +456,7 @@ interface LightboxBodyStyleState {
             }
           }
           @case ('image') {
-            @if (row.block.data.url) {
+            @if (row.imageUrl) {
               <figure
                 [class]="imageFigureClass(row)"
                 [attr.data-image-layout]="imageLayout(row)"
@@ -478,7 +480,7 @@ interface LightboxBodyStyleState {
                     (click)="openImageLightbox(row.galleryIndex)"
                   >
                     <img
-                      [src]="row.block.data.url"
+                      [src]="row.imageUrl"
                       [alt]="row.imageAlt"
                       [attr.width]="positiveImageDimension(row.block.data.width)"
                       [attr.height]="positiveImageDimension(row.block.data.height)"
@@ -1335,16 +1337,23 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
       const listStyle = this.createListStyle(block.data);
       let galleryIndex: number | null = null;
       let galleryStartIndex: number | null = null;
-      const galleryImages = block.type === 'gallery' ? block.data.galleryImages ?? [] : [];
+      const imageUrl = block.type === 'image' && block.data.url
+        ? normalizeBlogImageUrl(block.data.url)
+        : '';
+      const galleryImages = block.type === 'gallery'
+        ? (block.data.galleryImages ?? [])
+          .map(image => ({...image, url: normalizeBlogImageUrl(image.url)}))
+          .filter(image => image.url.length > 0)
+        : [];
 
-      if (block.type === 'image' && block.data.url) {
+      if (imageUrl) {
         galleryIndex = imageGallery.length;
         imageGallery.push({
-          url: block.data.url,
+          url: imageUrl,
           alt: imageAlt,
           captionHtml,
           captionText: this.createPlainText(block.data.caption),
-          downloadName: this.createDownloadFileName(block.data.url, imageAlt, block.id),
+          downloadName: this.createDownloadFileName(imageUrl, imageAlt, block.id),
           loadFailed: false,
         });
       }
@@ -1389,6 +1398,7 @@ export class BlogBlockRendererComponent implements OnChanges, OnDestroy {
         listCounterType: this.createListCounterType(block.data.listMeta?.['counterType']),
         stats: this.createStats(block.data.stats),
         imageAlt,
+        imageUrl,
         galleryIndex,
         galleryImages,
         galleryLayout: block.data.galleryLayout ?? 'grid',
