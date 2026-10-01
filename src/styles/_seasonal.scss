@@ -128,11 +128,11 @@
 .seasonal-button--outline:hover { background: rgb(161 126 193 / .12); }
 .seasonal-music-link { text-decoration: none; color: var(--seasonal-secondary, #d5b2fa); padding-inline: 0; background: transparent; border-bottom-color: #9c73bc; border-radius: 0; }
 .seasonal-button:focus-visible, .seasonal-music-link:focus-visible, .seasonal-collectible:focus-visible,
-.seasonal-lantern-dialog :is(button,a,audio):focus-visible, .seasonal-lantern-toggle:focus-visible,
+.seasonal-lantern-dialog :is(button,a):focus-visible, .seasonal-lantern-toggle:focus-visible,
 .seasonal-restore-toggle:focus-visible { outline: 3px solid var(--seasonal-secondary, #c59cef); outline-offset: 4px; }
 
 .seasonal-collectible-placement { display: flex; justify-content: flex-end; max-width: 80rem; margin-inline: auto; padding-inline: 2rem; }
-.seasonal-collectible-placement--banner { position: absolute; bottom: 1rem; right: 2rem; padding: 0; }
+.seasonal-collectible-placement--banner { min-height: 3.5rem; padding-block: .5rem; }
 .seasonal-collectible-placement--trail { min-height: 3.5rem; padding-top: 1rem; }
 .seasonal-collectible-placement--footer { padding-block: .25rem; }
 .seasonal-collectible {
@@ -188,12 +188,7 @@
 .seasonal-clue-list a:hover { background: rgb(163 127 199 / .08); border-color: #8b729e; }
 .seasonal-clue--found { color: #b8bcab; }
 .seasonal-clue--found small { color: #b4d2a4; font-size: .72rem; }
-.seasonal-soundtrack { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid #383040; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
-.seasonal-soundtrack > div { flex: 1 1 10rem; }
-.seasonal-soundtrack h3 { font-size: .95rem; color: #e6d8f4; font-family: var(--font-heading); font-weight: 600; }
-.seasonal-soundtrack p { margin-top: .25rem; font-size: .8rem; color: #c0b8c9; }
-.seasonal-soundtrack audio { width: 100%; min-height: 3rem; color-scheme: dark; }
-.seasonal-listening-link { flex-basis: 100%; color: var(--seasonal-secondary, #c8a8ed); font-size: .8rem; text-decoration: underline; text-underline-offset: .2em; min-height: 2.25rem; padding-top: .25rem; }
+.seasonal-listening-link { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: 1rem; color: var(--seasonal-secondary, #c8a8ed); font-size: .85rem; text-decoration: underline; text-underline-offset: .2em; }
 .seasonal-lantern-settings { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .7rem; margin-top: .6rem; }
 .seasonal-lantern-settings button { padding: .65rem 0; min-height: 2.75rem; font-size: .8rem; color: #bcb3c6; text-decoration: underline; text-underline-offset: .2rem; }
 .seasonal-reset-confirmation { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
@@ -210,7 +205,6 @@
   .seasonal-banner-copy p { font-size: 1rem; max-width: 25rem; }
   .seasonal-banner-actions { margin-top: 1.25rem; gap: .5rem 1.1rem; }
   .seasonal-music-link { font-size: .88rem; }
-  .seasonal-collectible-placement--banner { right: 1.25rem; bottom: 1rem; }
   .seasonal-lantern-toggle { min-width: 6rem; gap: .4rem; min-height: 3.5rem; }
   .seasonal-lantern-toggle img { height: 3rem; }
   .seasonal-shell-bat { width: 1.75rem; left: .5rem; }

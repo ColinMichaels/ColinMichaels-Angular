@@ -1,8 +1,8 @@
 import {DOCUMENT} from '@angular/common';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 import {
-  afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, EnvironmentInjector,
-  HostListener, inject, Injector, signal, ViewChild,
+  afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, EnvironmentInjector,
+  HostListener, inject, signal,
 } from '@angular/core';
 import {RouterLink} from '@angular/router';
 
@@ -142,21 +142,8 @@ import {SeasonalService} from '../seasonal.service';
         }
 
         @if (hunt.edition(); as edition) {
-          @if (!optionsOpen() && (edition.musicSrc || edition.musicHref)) {
-            <div class="seasonal-soundtrack">
-              <div><h3>{{ edition.musicHeading }}</h3>@if (edition.musicTitle) { <p>{{ edition.musicTitle }}</p> }</div>
-              @if (edition.musicSrc && !musicRequested()) {
-                <button type="button" class="seasonal-button seasonal-button--outline" (click)="playMusic()">{{ edition.musicAction }}</button>
-              }
-              @if (musicRequested()) {
-                <audio #soundtrack controls tabindex="0" preload="none" [src]="edition.musicSrc" data-testid="seasonal-soundtrack"
-                  [attr.aria-label]="edition.musicTitle" (error)="musicError.set(true)">Your browser cannot play this audio.</audio>
-                @if (musicError()) { <p class="seasonal-storage-note">The track could not load. Try again using the player controls.</p> }
-              }
-              @if (edition.musicHref) {
-                <a class="seasonal-listening-link" [href]="edition.musicHref" target="_blank" rel="noopener noreferrer">More from the Dreadnauts</a>
-              }
-            </div>
+          @if (!optionsOpen() && edition.musicHref) {
+            <a class="seasonal-listening-link" [href]="edition.musicHref" target="_blank" rel="noopener noreferrer">Listen to the Dreadnauts ↗</a>
           }
           @if (showHunt()) {
             <div class="seasonal-lantern-settings">
@@ -178,12 +165,6 @@ import {SeasonalService} from '../seasonal.service';
   `,
 })
 export class SeasonalLanternComponent {
-  private audio?: HTMLAudioElement;
-  @ViewChild('soundtrack') private set soundtrackRef(value: ElementRef<HTMLAudioElement> | undefined) {
-    if (!value) { this.audio?.pause(); }
-    this.audio = value?.nativeElement;
-  }
-  private readonly injector = inject(Injector);
   private readonly focusInjector = inject(EnvironmentInjector);
   private readonly document = inject(DOCUMENT);
   private toastTimeout?: ReturnType<typeof setTimeout>;
@@ -193,8 +174,6 @@ export class SeasonalLanternComponent {
   protected readonly toast = signal('');
   protected readonly showClues = signal(false);
   protected readonly confirmReset = signal(false);
-  protected readonly musicRequested = signal(false);
-  protected readonly musicError = signal(false);
   protected readonly nextItem = computed(() => this.hunt.items().find(item => !this.hunt.isCollected(item.id)));
   protected readonly archiveUrl = computed(() => '/archive/seasons/' + this.hunt.edition()?.id);
   protected readonly showHunt = computed(() => this.hunt.enabled() && !this.optionsOpen() && this.hunt.edition()?.interaction !== 'reflect');
@@ -220,7 +199,6 @@ export class SeasonalLanternComponent {
       const editionId = this.hunt.edition()?.id ?? null;
       const changedEdition = this.previousEditionId !== null && editionId !== this.previousEditionId;
       if (changedEdition || !this.hunt.enabled() || !this.hunt.panelOpen()) {
-        this.pauseMusic();
         this.confirmReset.set(false);
       }
       if (changedEdition) {
@@ -232,7 +210,6 @@ export class SeasonalLanternComponent {
     inject(DestroyRef).onDestroy(() => {
       if (this.optionsOpen() && !this.hunt.canCustomize()) this.focusAfterRender('main-content');
       clearTimeout(this.toastTimeout);
-      this.audio?.pause();
       this.hunt.closeLantern();
     });
   }
@@ -242,7 +219,6 @@ export class SeasonalLanternComponent {
   }
 
   protected close(): void {
-    this.pauseMusic();
     this.hunt.closeLantern();
     this.optionsOpen.set(false);
     this.confirmReset.set(false);
@@ -250,7 +226,6 @@ export class SeasonalLanternComponent {
 
   protected openOptions(): void {
     if (!this.hunt.canCustomize()) return;
-    this.pauseMusic();
     this.hunt.closeLantern();
     this.optionsOpen.set(true);
   }
@@ -272,26 +247,8 @@ export class SeasonalLanternComponent {
     this.focusAfterRender('seasonal-keep-exploring');
   }
 
-  private pauseMusic(): void {
-    this.audio?.pause();
-    this.musicRequested.set(false);
-    this.musicError.set(false);
-  }
-
   private focusAfterRender(id: string): void {
     // Restoring the default can destroy this control before the next render.
     afterNextRender(() => this.document.getElementById(id)?.focus({preventScroll: true}), {injector: this.focusInjector});
-  }
-
-  protected playMusic(): void {
-    if (!this.hunt.edition()?.musicSrc) { return; }
-    this.musicRequested.set(true);
-    this.musicError.set(false);
-    afterNextRender(() => {
-      this.audio?.focus();
-      void this.audio?.play().catch(() => {
-        // Native controls remain available when policy requires another gesture.
-      });
-    }, {injector: this.injector});
   }
 }

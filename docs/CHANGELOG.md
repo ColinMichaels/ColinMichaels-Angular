@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Preserve the original homepage layout and retain the seasonal colors while keeping the homepage hero and primary CTAs first by removing automatic holiday banners and reflection panels from the public shell. Decorative lights, bats, candy hunts, date/owner activation, and account-only bypass remain. The first homepage collectible now appears after the featured hero with the same saved ID. Seasonal pages and the lantern link to Dreadnauts music instead of embedding Spooky audio; archive artwork and original source assets remain preserved. No data migration is required.
+
 ### Changed
 
 - Restrict Holiday options and personal design bypass/restoration to signed-in registered accounts. Anonymous and initializing/unavailable sessions follow the owner-selected presentation, ignoring saved opt-outs without deleting preferences or progress. Keep hunts, archived editions, music, and holiday information public; close options on sign-out with safe keyboard focus and retain the independent Early Reader permissions. Build/lint/cache/docs, 35 focused units, five overlapping final component checks, and 24 desktop/mobile browser checks passed, including real ordinary-account emulator sign-in/sign-out. Local fixtures were cleaned; no production account grant, content mutation, calendar activation, or deployment is introduced.

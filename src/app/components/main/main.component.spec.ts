@@ -179,7 +179,8 @@ describe('MainComponent', () => {
     const authService = {
       isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(of(false)),
       user$: of(null),
-    } satisfies Pick<AuthService, 'isAuthenticated' | 'user$'>;
+      authState$: of({status: 'unauthenticated' as const, user: null}),
+    } satisfies Pick<AuthService, 'isAuthenticated' | 'user$' | 'authState$'>;
     const dailyDiscoveryService = {
       getChallenge: jasmine.createSpy('getChallenge').and.resolveTo({
         id: 'family-ai-voice-safe-word',

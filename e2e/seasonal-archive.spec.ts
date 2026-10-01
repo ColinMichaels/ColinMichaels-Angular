@@ -336,41 +336,25 @@ test.describe('Seasonal archive', () => {
     expect(await storedIds(page, thanksgiving)).toEqual(['thanksgiving-1']);
   });
 
-  test('plays the real Halloween archive soundtrack only after a click and pauses it when clues close the drawer', async ({page}) => {
-    test.setTimeout(45_000);
+  test('keeps Halloween art in its archive and sends listeners to Dreadnauts without a player', async ({page}) => {
     const musicRequests: string[] = [];
     page.on('request', request => {
-      if (halloween.musicSrc && request.url().includes(halloween.musicSrc)) {
-        musicRequests.push(request.url());
-      }
+      if (request.url().includes('spooky-remix-new-lyrics.mp3')) musicRequests.push(request.url());
     });
     await visitArchive(page, halloween);
+    await expect(page.locator('.seasonal-banner-art')).toBeVisible();
+    await expect(page.getByRole('link', {name: 'Listen to the Dreadnauts', exact: true}))
+      .toHaveAttribute('href', halloween.musicHref!);
     const dialog = await openLantern(page, halloween, 0);
-    await expect(page.getByTestId('seasonal-soundtrack')).toHaveCount(0);
-    expect(musicRequests).toEqual([]);
-    await dialog.getByRole('button', {name: halloween.musicAction, exact: true}).click();
-    const audio = dialog.getByTestId('seasonal-soundtrack');
-    await expect(audio).toHaveAttribute('preload', 'none');
-    await expect(audio).toHaveJSProperty('autoplay', false);
-    await expect(audio).toHaveJSProperty('controls', true);
-    await expect(audio).toBeFocused();
-    await expect.poll(() => audio.evaluate(element => (element as HTMLAudioElement).duration), {
-      timeout: 15_000,
-    }).toBeCloseTo(186, 0);
-    await expect.poll(() => audio.evaluate(element => (element as HTMLAudioElement).currentTime), {
-      timeout: 15_000,
-    }).toBeGreaterThan(0.25);
-    const activeAudio = await audio.elementHandle();
-    expect(activeAudio).not.toBeNull();
+    await expect(dialog.getByRole('link', {name: 'Listen to the Dreadnauts ↗', exact: true}))
+      .toHaveAttribute('href', halloween.musicHref!);
+    await expect(page.locator('audio')).toHaveCount(0);
+    await expect(dialog.getByRole('button', {name: halloween.musicAction, exact: true})).toHaveCount(0);
     await dialog.getByRole('button', {name: 'Show clues', exact: true}).click();
     await dialog.locator(`a[href="${archiveUrl(halloween)}#seasonal-item-ember-toffee"]`).click();
     await expect(page).toHaveURL(new RegExp(`${archiveUrl(halloween)}#seasonal-item-ember-toffee$`));
     await expect(dialog).toBeHidden();
-    expect(await activeAudio!.evaluate(element => (element as HTMLAudioElement).paused)).toBe(true);
-    await activeAudio!.dispose();
-    await visitArchive(page, thanksgiving);
-    await expect(page.getByTestId('seasonal-soundtrack')).toHaveCount(0);
-    await expect(page.getByRole('dialog', {name: 'Your lantern', exact: true})).toHaveCount(0);
+    expect(musicRequests).toEqual([]);
   });
 
   test('registered accounts retain global bypass through route changes and reload, then restore their collection', async ({page}) => {

@@ -68,7 +68,7 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
   test('uses optional clue links to explore and complete the eight-candy lantern', async ({page}) => {
     test.setTimeout(90_000);
     await visitPublicRoute(page, '/');
-    await page.getByRole('button', {name: 'Start the candy hunt', exact: true}).click();
+    await lanternLauncher(page, 0).click();
     const dialog = page.getByRole('dialog', {name: 'Your lantern', exact: true});
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('a[href="/topics/gadgets-toys"]')).toHaveCount(0);
@@ -157,8 +157,7 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
     await expect(launcher).toBeFocused();
   });
 
-  test('creates the native soundtrack controls only after a listener chooses the song', async ({page}) => {
-    test.setTimeout(45_000);
+  test('keeps the homepage CTA first and links to Dreadnauts without loading seasonal audio', async ({page}) => {
     const soundtrackRequests: string[] = [];
     page.on('request', request => {
       if (SCARY_CHRISTMAS_CONFIG.musicSrc && request.url().includes(SCARY_CHRISTMAS_CONFIG.musicSrc)) {
@@ -166,32 +165,26 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       }
     });
     await visitPublicRoute(page, '/');
+    await expect(page.locator('app-seasonal-banner')).toHaveCount(0);
+    await expect(page.locator('.seasonal-garland')).toBeVisible();
+    const hero = page.locator('#home-article-hero');
+    await expect(hero.getByRole('heading', {level: 1})).toBeVisible();
+    await expect(hero.getByRole('link', {name: 'Gadgets & finds', exact: true})).toBeInViewport();
+    const headerBox = await page.locator('app-site-header').boundingBox();
+    const heroBox = await hero.boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(heroBox).not.toBeNull();
+    expect(heroBox!.y - (headerBox!.y + headerBox!.height)).toBeLessThanOrEqual(2);
+    const candyBox = await page.getByTestId('collectible-ember-toffee').boundingBox();
+    expect(candyBox!.y).toBeGreaterThanOrEqual(heroBox!.y + heroBox!.height);
     const dialog = await openLantern(page, 0);
-    await expect(page.getByTestId('seasonal-soundtrack')).toHaveCount(0);
+    const link = dialog.getByRole('link', {name: 'Listen to the Dreadnauts ↗', exact: true});
+    await expect(link).toHaveAttribute('href', SCARY_CHRISTMAS_CONFIG.musicHref);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(page.locator('audio')).toHaveCount(0);
+    await expect(dialog.getByRole('button', {name: 'Play Spooky', exact: true})).toHaveCount(0);
     expect(soundtrackRequests).toEqual([]);
-
-    await dialog.getByRole('button', {name: 'Play Spooky', exact: true}).click();
-    const audio = dialog.getByTestId('seasonal-soundtrack');
-    await expect(audio).toBeVisible();
-    await expect(audio).toHaveAttribute('preload', 'none');
-    await expect(audio).toHaveJSProperty('controls', true);
-    await expect(audio).toHaveJSProperty('autoplay', false);
-    await expect(audio).toBeFocused();
-    await expect.poll(() => audio.evaluate(element => (element as HTMLAudioElement).duration), {
-      timeout: 15_000,
-    }).toBeCloseTo(186, 0);
-    const firstTime = await audio.evaluate(element => (element as HTMLAudioElement).currentTime);
-    await expect.poll(() => audio.evaluate(element => (element as HTMLAudioElement).currentTime), {
-      timeout: 15_000,
-    }).toBeGreaterThan(firstTime + 0.25);
-
-    const activeAudio = await audio.elementHandle();
-    expect(activeAudio).not.toBeNull();
-    await dialog.getByRole('button', {name: 'Close your lantern', exact: true}).click();
-    await expect(dialog).toBeHidden();
-    await expect(page.getByTestId('seasonal-soundtrack')).toHaveCount(0);
-    expect(await activeAudio!.evaluate(element => (element as HTMLAudioElement).paused)).toBe(true);
-    await activeAudio!.dispose();
   });
 
   test('fits 390- and 320-pixel screens with 44-pixel targets and no dialog overflow', async ({page}) => {
@@ -252,7 +245,7 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       }, mode);
       await visitPublicRoute(page, '/');
       await expect(page.locator('html')).toHaveClass(new RegExp(`\\b${mode}\\b`));
-      await expect(page.getByRole('button', {name: 'Start the candy hunt', exact: true})).toBeVisible();
+      await expect(lanternLauncher(page, 0)).toBeVisible();
       await expect(page.getByTestId('collectible-ember-toffee')).toBeVisible();
       const background = await page.locator('.app-route-frame').evaluate(element => {
         const color = getComputedStyle(element).backgroundColor;
@@ -291,7 +284,7 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       await expect(candy).toHaveCSS('animation-name', 'none');
       // Shared reader styles preserve end-state events with a one-microsecond
       // transition. Enforce no perceptible animation rather than an exact zero.
-      for (const control of [candy, page.getByRole('button', {name: 'Start the candy hunt', exact: true})]) {
+      for (const control of [candy, lanternLauncher(page, 0)]) {
         const duration = await control.evaluate(element => getComputedStyle(element).transitionDuration);
         const seconds = duration.split(',').map(value => (
           parseFloat(value) * (value.trim().endsWith('ms') ? 0.001 : 1)

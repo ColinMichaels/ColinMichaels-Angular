@@ -5,7 +5,7 @@ import {SEASONAL_PLANS, SeasonalPlan} from './seasonal.plans';
 const COLLECTOR_SRC = '/assets/seasonal/scary-christmas/collection-lantern.webp';
 const HIDING_PLACES = SCARY_CHRISTMAS_CANDIES.map(({route, placement, variant}) => ({route, placement, variant}));
 const LOCATION_CLUES = [
-  'A seasonal welcome is a good place to begin.', 'Follow the homepage all the way down.',
+  'Look just beyond the homepage’s featured story.', 'Follow the homepage all the way down.',
   'A curious reader knows where the stories begin.', 'Look beyond the last story on the blog page.',
   'Find a little wonder among the gadgets.', 'Look where the flyers gather.',
   'Experiments leave a little room for discovery.', 'Every good story has a storyteller.',
@@ -78,7 +78,7 @@ const ILLUSTRATED_EDITIONS: readonly SeasonalEdition[] = Object.freeze([
     collectorSrc: COLLECTOR_SRC, collectorName: 'lantern', collectibleLabel: 'candies', collectAction: 'Collect',
     completionHeading: 'A lantern full of little wonders.',
     completionMessage: 'You found every sweet. Stay curious, stay strange, and enjoy the spooky season.',
-    musicSrc: SCARY_CHRISTMAS_CONFIG.musicSrc,
+    musicSrc: null,
     musicTitle: SCARY_CHRISTMAS_CONFIG.musicTitle,
     musicAction: 'Play Spooky', musicHref: SCARY_CHRISTMAS_CONFIG.musicHref, musicHeading: 'Dreadnauts after dark',
     items: SCARY_CHRISTMAS_CANDIES,

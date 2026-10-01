@@ -6,6 +6,10 @@ The October 1 release uses `codex/publish-seasonal-experience`. Calendar mode is
 
 The [architecture and compatibility contract](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md) describes selection, storage, components, archive routes, and rollback. [The original Halloween record](../ARCHITECTURE/SCARY_CHRISTMAS.md) contains its source media and historical QA.
 
+## CTA Preservation Cleanup
+
+The local `codex/seasonal-cta-cleanup` revision removes automatic holiday banners from the main site so the normal homepage hero leads. Decorations and the lantern remain, and the first candy appears just after the featured hero. Explicit archive edition pages retain their illustrations. Seasonal music now uses a **Listen to the Dreadnauts** external link; there is no embedded Spooky player. Source media and saved collections remain preserved. The existing homepage structure is preserved and seasonal colors remain by Colin’s clarification. This presentation-only change has no data migration or new calendar approvals. The production workflow updates Hosting and its matching Functions SEO shell together. See the [cleanup compatibility notes](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#october-1-cta-preservation-cleanup).
+
 ## Actual Dates And Editorial Windows
 
 Display dates are inclusive `America/New_York` calendar dates. They are editorial choices for Colin's site, distinct from actual observance dates and times. Primary references were checked September 30, 2026.

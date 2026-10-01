@@ -15,10 +15,11 @@ describe('seasonal catalog and selection', () => {
     return {...edition, approvedForCalendar: true, priority: priority ?? edition.priority};
   }
 
-  it('preserves the exact Halloween registry, storage key and audio with only Halloween approved for the release calendar', () => {
+  it('preserves the Halloween registry and storage key with external listening and only Halloween approved for the release calendar', () => {
     const halloween = getSeasonalEdition('scary-christmas-2026')!;
     expect(halloween.items).toBe(SCARY_CHRISTMAS_CANDIES);
-    expect(halloween.musicSrc).toBe(SCARY_CHRISTMAS_CONFIG.musicSrc);
+    expect(halloween.musicSrc).toBeNull();
+    expect(halloween.musicHref).toBe(SCARY_CHRISTMAS_CONFIG.musicHref);
     expect(seasonalStorageKey(halloween.id)).toBe('cm.scary-christmas-2026.v1');
     expect(SEASONAL_CONFIG.mode).toBe('calendar');
     expect(chooseEdition('/', new Date('2026-09-30T12:00:00Z'))).toBeNull();

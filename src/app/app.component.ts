@@ -28,7 +28,6 @@ import {
 } from './features/daily-discovery/components/daily-discovery-play-overlay.component';
 import {DailyDiscoveryPlayService} from './features/daily-discovery/services/daily-discovery-play.service';
 import {SiteAnalyticsService} from './shared/analytics/site-analytics.service';
-import {SeasonalBannerComponent} from './features/seasonal/components/seasonal-banner.component';
 import {SeasonalCollectiblesComponent} from './features/seasonal/components/seasonal-collectibles.component';
 import {SeasonalLanternComponent} from './features/seasonal/components/seasonal-lantern.component';
 import {isSeasonalReadingRoute, SEASONAL_CONFIG, seasonalPath} from './features/seasonal/seasonal.config';
@@ -114,7 +113,6 @@ export function isBlogArticleRoute(url: string): boolean {
     BlogMembershipCampaignComponent,
     SiteSearchHighlightDirective,
     DailyDiscoveryPlayOverlayComponent,
-    SeasonalBannerComponent,
     SeasonalCollectiblesComponent,
     SeasonalLanternComponent,
   ],
@@ -176,8 +174,6 @@ export class AppComponent {
     || (this.seasonal.visitorDisabled() && (seasonalPath(this.currentUrl()) === '/archive/seasons'
       || (SEASONAL_CONFIG.enabled && SEASONAL_CONFIG.mode !== 'off' && isSeasonalReadingRoute(this.currentUrl())))));
   protected readonly showSeasonal = this.seasonal.enabled;
-  protected readonly showSeasonalBanner = computed(() => this.showSeasonal() && !this.seasonal.archiveMode()
-    && seasonalPath(this.currentUrl()) === '/');
   protected readonly showSeasonalHidingPlaces = computed(() => this.showSeasonal() && !this.seasonal.archiveMode());
   protected readonly seasonalLights = Array.from({length: 22}, (_, index) => index);
 

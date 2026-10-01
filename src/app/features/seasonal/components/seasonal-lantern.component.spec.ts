@@ -109,24 +109,23 @@ describe('SeasonalLanternComponent account controls', () => {
     expect(root().querySelector('[role="dialog"]')).toBeNull();
   });
 
-  it('pauses public music and closes the lantern on account loss without losing collected candy', () => {
-    const pause = spyOn(HTMLMediaElement.prototype, 'pause');
-    spyOn(HTMLMediaElement.prototype, 'play').and.returnValue(Promise.resolve());
+  it('links to Dreadnauts without an audio player and closes on account loss while preserving candy', () => {
     service.collect('ember-toffee');
     service.openLantern();
     fixture.detectChanges();
-    click('Play Spooky');
-    expect(root().querySelector('audio')).not.toBeNull();
-    pause.calls.reset();
+    const link = root().querySelector<HTMLAnchorElement>('.seasonal-listening-link');
+    expect(link?.href).toBe('https://dreadnauts.uk/music');
+    expect(link?.target).toBe('_blank');
+    expect(link?.rel).toBe('noopener noreferrer');
+    expect(button('Play Spooky')).toBeUndefined();
+    expect(root().querySelector('audio')).toBeNull();
     authState.next({status: 'unauthenticated', user: null});
     fixture.detectChanges();
     expect(root().querySelector('[role="dialog"]')).toBeNull();
-    expect(root().querySelector('audio')).toBeNull();
-    expect(pause).toHaveBeenCalled();
     expect(service.collectedIds()).toEqual(['ember-toffee']);
     service.openLantern();
     fixture.detectChanges();
-    expect(button('Play Spooky')).toBeDefined();
+    expect(root().querySelector('.seasonal-listening-link')).not.toBeNull();
     expect(root().querySelector('.seasonal-theme-settings')).toBeNull();
   });
 

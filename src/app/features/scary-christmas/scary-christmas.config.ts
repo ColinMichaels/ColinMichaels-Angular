@@ -26,7 +26,7 @@ export const SCARY_CHRISTMAS_CANDIES: readonly ScaryChristmasCandy[] = Object.fr
   {
     id: 'ember-toffee',
     name: 'Ember toffee',
-    clue: 'A warm welcome hides a sweet in the seasonal invitation.',
+    clue: 'A sweet waits just beyond the homepage’s featured story.',
     route: '/',
     placement: 'banner',
     variant: 'amber',

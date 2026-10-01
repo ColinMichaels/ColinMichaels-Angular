@@ -1,11 +1,9 @@
 import {ChangeDetectionStrategy, Component, inject, input} from '@angular/core';
 
 import {SeasonalService} from '../seasonal.service';
-import {SeasonalCollectiblesComponent} from './seasonal-collectibles.component';
 
 @Component({
   selector: 'app-seasonal-banner',
-  imports: [SeasonalCollectiblesComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (hunt.edition(); as edition) {
@@ -36,22 +34,14 @@ import {SeasonalCollectiblesComponent} from './seasonal-collectibles.component';
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
                 </button>
               }
-              @if (edition.musicSrc) {
-                <button type="button" class="seasonal-music-link" (click)="hunt.openLantern()">
-                  {{ edition.musicHeading }}
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
-                </button>
-              } @else if (edition.musicHref) {
+              @if (edition.musicHref) {
                 <a class="seasonal-music-link" [href]="edition.musicHref" target="_blank" rel="noopener noreferrer">
-                  {{ edition.musicHeading || 'Dreadnauts listening' }}
+                  Listen to the Dreadnauts
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
                 </a>
               }
             </div>
           </div>
-          @if (!hunt.archiveMode() && edition.interaction !== 'reflect') {
-            <app-seasonal-collectibles url="/" placement="banner"/>
-          }
         </div>
       </section>
     }

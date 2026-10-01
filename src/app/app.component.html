@@ -33,18 +33,6 @@
       }
     </div>
   }
-  @if (showSeasonalBanner()) {
-    @defer (when showSeasonalBanner()) { <app-seasonal-banner/> }
-  }
-  @if (showSeasonalBanner() && seasonal.edition()?.interaction === 'reflect') {
-    <section id="seasonal-context" class="site-section py-8">
-      <p class="site-meta">{{ seasonal.edition()?.dateLabel }}</p>
-      <p class="text-body mt-3">{{ seasonal.edition()?.observanceNote }}</p>
-      @if (seasonal.edition()?.learnMoreUrl; as learnMoreUrl) {
-        <a class="site-inline-link inline-block mt-3" [href]="learnMoreUrl" target="_blank" rel="noopener noreferrer">About this day ↗</a>
-      }
-    </section>
-  }
   @if (showSeasonalHidingPlaces()) {
     @defer (when showSeasonalHidingPlaces()) { <app-seasonal-collectibles [url]="currentUrl()" placement="trail"/> }
   }
