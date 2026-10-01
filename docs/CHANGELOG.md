@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Prevent archive collection previews from awarding lantern finds. Keep read-only artwork, clues, Found status, and existing progress; require the item’s real public hiding route while its edition is active. Remove the archive-only collectible override and reject archive/wrong-route requests before storage writes. No migration or retrospective score reset is required.
+
 - Generate local seasonal account-test credentials with cryptographic UUIDs; keep fixture creation and cleanup confined to Firebase emulators.
 
 - Preserve the original homepage layout and retain the seasonal colors while keeping the homepage hero and primary CTAs first by removing automatic holiday banners and reflection panels from the public shell. Decorative lights, bats, candy hunts, date/owner activation, and account-only bypass remain. The first homepage collectible now appears after the featured hero with the same saved ID. Seasonal pages and the lantern link to Dreadnauts music instead of embedding Spooky audio; archive artwork and original source assets remain preserved. No data migration is required.

@@ -25,7 +25,8 @@
 .seasonal-trail-stop h3 { font-size: 1.2rem; font-weight: 650; color: var(--site-heading); }
 .seasonal-trail-stop p { margin-top: .4rem; }
 .seasonal-trail-found { color: var(--site-accent); font-size: .8rem; }
-.seasonal-trail-stop ::ng-deep .seasonal-collectible-placement { justify-content: center; padding: 0; }
+.seasonal-trail-preview { display: grid; justify-items: center; gap: .35rem; color: var(--site-muted); font-size: .75rem; text-align: center; }
+.seasonal-trail-preview img { width: 3.5rem; height: 3.5rem; object-fit: contain; }
 @media (max-width: 800px) {
   .seasonal-archive-row { grid-template-columns: 9rem minmax(0, 1fr); gap: 1.1rem; }
   .seasonal-archive-action { grid-column: 2; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }

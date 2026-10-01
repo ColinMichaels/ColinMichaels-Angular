@@ -110,6 +110,7 @@ describe('SeasonalLanternComponent account controls', () => {
   });
 
   it('links to Dreadnauts without an audio player and closes on account loss while preserving candy', () => {
+    service.setContext('/');
     service.collect('ember-toffee');
     service.openLantern();
     fixture.detectChanges();

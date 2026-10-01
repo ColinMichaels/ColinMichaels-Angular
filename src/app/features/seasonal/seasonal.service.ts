@@ -4,7 +4,7 @@ import {computed, DestroyRef, inject, Injectable, InjectionToken, signal} from '
 import {AuthService} from '../../services/auth.service';
 import {getSeasonalEdition, SEASONAL_EDITIONS} from './seasonal.catalog';
 import {
-  chooseEdition, getSeasonalArchiveEdition, isSeasonalArchiveRoute, isSeasonalReadingRoute,
+  chooseEdition, isSeasonalArchiveRoute, isSeasonalReadingRoute,
   SEASONAL_CONFIG, SEASONAL_PREFERENCE_STORAGE_KEY, seasonalPath, seasonalStorageKey,
 } from './seasonal.config';
 import {SeasonalCollectible, SeasonalConfig, SeasonalEdition, SeasonalPlacement, SeasonalVisitorPreference} from './seasonal.models';
@@ -143,7 +143,9 @@ export class SeasonalService {
   collect(id: string): boolean {
     const edition = this.edition();
     const item = this.items().find(candidate => candidate.id === id);
-    if (!edition || !this.enabled() || !item || this.isCollected(id)) {
+    // Archive artwork is a guide, never a shortcut to earning the collection.
+    if (!edition || !this.enabled() || this.archiveMode() || !item
+      || item.route !== seasonalPath(this.currentUrl) || this.isCollected(id)) {
       return false;
     }
     this.updateState({...this.currentState(), collectedIds: Object.freeze([...this.collectedIds(), id])});
@@ -165,12 +167,8 @@ export class SeasonalService {
   }
 
   itemsFor(url: string, placement: SeasonalPlacement): readonly SeasonalCollectible[] {
-    if (!this.enabled()) {
+    if (!this.enabled() || this.archiveMode()) {
       return EMPTY_ITEMS;
-    }
-    if (this.archiveMode()) {
-      return getSeasonalArchiveEdition(url)?.id === this.edition()?.id
-        ? this.items().filter(item => !this.isCollected(item.id)) : EMPTY_ITEMS;
     }
     if (!isSeasonalReadingRoute(url)) {
       return EMPTY_ITEMS;

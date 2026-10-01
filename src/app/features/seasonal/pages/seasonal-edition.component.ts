@@ -5,13 +5,12 @@ import {ActivatedRoute, RouterLink} from '@angular/router';
 import {SeoService} from '../../../shared/seo/seo.service';
 import {createSiteTitle, NOT_FOUND_SEO_METADATA} from '../../../shared/seo/seo.metadata';
 import {SeasonalBannerComponent} from '../components/seasonal-banner.component';
-import {SeasonalCollectiblesComponent} from '../components/seasonal-collectibles.component';
 import {getSeasonalEdition} from '../seasonal.catalog';
 import {SeasonalService} from '../seasonal.service';
 
 @Component({
   selector: 'app-seasonal-edition',
-  imports: [RouterLink, SeasonalBannerComponent, SeasonalCollectiblesComponent],
+  imports: [RouterLink, SeasonalBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './seasonal-archive.scss',
   template: `
@@ -42,8 +41,8 @@ import {SeasonalService} from '../seasonal.service';
       @if (hunt.enabled() && edition.interaction !== 'reflect') {
         <section class="site-section seasonal-edition-trail" aria-labelledby="seasonal-trail-title">
           <div class="seasonal-trail-intro">
-            <h2 id="seasonal-trail-title" class="heading-section">Follow the small lights</h2>
-            <p class="text-body">Explore this edition. Collect what catches your eye, then open your lantern to see what you found.</p>
+            <h2 id="seasonal-trail-title" class="heading-section">Your collection guide</h2>
+            <p class="text-body">These are previews, not hidden finds. Explore the site to collect them while this season is active; your saved finds appear here.</p>
           </div>
           @for (item of edition.items; track item.id; let index = $index) {
             <article class="seasonal-trail-stop" [id]="'seasonal-item-' + item.id">
@@ -52,11 +51,12 @@ import {SeasonalService} from '../seasonal.service';
                 <h3>{{ item.name }}</h3>
                 <p class="text-body">{{ item.clue }}</p>
               </div>
-              @if (hunt.isCollected(item.id)) {
-                <span class="seasonal-trail-found">Found <span aria-hidden="true">✓</span></span>
-              } @else {
-                <app-seasonal-collectibles [url]="archiveUrl()" placement="trail" [itemId]="item.id"/>
-              }
+              <div class="seasonal-trail-preview">
+                <img [src]="edition.collectibleSrc" width="64" height="64" alt="" draggable="false">
+                <span [class.seasonal-trail-found]="hunt.isCollected(item.id)">
+                  {{ hunt.isCollected(item.id) ? 'Found ✓' : 'Not yet found' }}
+                </span>
+              </div>
             </article>
           }
         </section>
@@ -76,7 +76,6 @@ export class SeasonalEditionComponent {
   private readonly params = toSignal(this.route.paramMap, {initialValue: this.route.snapshot.paramMap});
   protected readonly hunt = inject(SeasonalService);
   protected readonly edition = computed(() => getSeasonalEdition(this.params().get('id') ?? ''));
-  protected readonly archiveUrl = computed(() => '/archive/seasons/' + this.edition()?.id);
 
   constructor() {
     effect(() => {

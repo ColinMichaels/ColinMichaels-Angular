@@ -139,7 +139,7 @@ describe('SeasonalService', () => {
 
   it('closes the lantern on account loss, restores the public design, and retains device-local account bypass', () => {
     const service = createService();
-    service.setContext('/archive/seasons/scary-christmas-2026');
+    service.setContext('/');
     service.collect('ember-toffee');
     service.openLantern();
     authState.next({status: 'unauthenticated', user: null});
@@ -181,7 +181,7 @@ describe('SeasonalService', () => {
   it('re-evaluates activation on minute ticks and visible return, and releases its timer and listeners', () => {
     const ownerConfig = {...manualConfig};
     const service = createService(ownerConfig);
-    service.setContext('/blog');
+    service.setContext('/');
     service.collect('ember-toffee');
     service.openLantern();
     const tick = setInterval.calls.mostRecent().args[0] as () => void;
@@ -213,6 +213,7 @@ describe('SeasonalService', () => {
     expect(service.count()).toBe(2);
     expect(service.total()).toBe(8);
     expect(service.archiveMode()).toBeFalse();
+    service.setContext('/blog');
     service.collect('paper-phantom');
     expect(JSON.parse(values.get(halloweenKey)!)).toEqual({
       version: 1, enabled: true, collectedIds: ['ember-toffee', 'moonlit-mint', 'paper-phantom'],
@@ -230,7 +231,8 @@ describe('SeasonalService', () => {
     expect(service.announcement()).toBe('');
     expect(service.count()).toBe(0);
     expect(service.collect('ember-toffee')).toBeFalse();
-    expect(service.collect(harvestId)).toBeTrue();
+    expect(service.collect(harvestId)).toBeFalse();
+    remoteUpdate(harvestKey, JSON.stringify({version: 1, enabled: true, collectedIds: [harvestId]}));
     service.setContext('/archive/seasons/scary-christmas-2026');
     expect(service.count()).toBe(1);
     expect(service.isCollected('ember-toffee')).toBeTrue();
@@ -238,15 +240,18 @@ describe('SeasonalService', () => {
     service.setContext('/blog');
     expect(service.count()).toBe(1);
     expect(service.archiveMode()).toBeFalse();
-    expect(JSON.parse(values.get(harvestKey)!).collectedIds).toEqual([harvestId]);
+    expect(service.count()).toBe(1);
+    service.setContext('/archive/seasons/thanksgiving-2026');
+    expect(service.collectedIds()).toEqual([harvestId]);
   });
 
   it('collects only unique known active items and never persists routes, content, or account data', () => {
-    const service = createService();
-    service.setContext('/archive/seasons/kwanzaa-2026');
+    const service = createService({...manualConfig, manualEditionId: 'kwanzaa-2026'});
+    service.setContext('/');
     expect(service.total()).toBe(7);
     expect(service.collect('unknown')).toBeFalse();
     for (const item of service.items()) {
+      service.setContext(item.route);
       expect(service.collect(item.id)).toBeTrue();
       expect(service.collect(item.id)).toBeFalse();
     }
@@ -258,11 +263,13 @@ describe('SeasonalService', () => {
   });
 
   it('isolates recurring yearly collections even when principle item identifiers are reused', () => {
-    const service = createService();
-    service.setContext('/archive/seasons/kwanzaa-2026');
+    const config = {...manualConfig, manualEditionId: 'kwanzaa-2026'};
+    const service = createService(config);
+    service.setContext('/');
     const oldItem = service.items()[0].id;
     expect(service.collect(oldItem)).toBeTrue();
-    service.setContext('/archive/seasons/kwanzaa-2027');
+    config.manualEditionId = 'kwanzaa-2027';
+    service.setContext('/');
     expect(service.count()).toBe(0);
     expect(service.collect(service.items()[0].id)).toBeTrue();
     service.resetHunt();
@@ -285,7 +292,8 @@ describe('SeasonalService', () => {
       service.setContext('/archive/seasons/thanksgiving-2026');
       expect(service.archiveMode()).toBeTrue();
       expect(service.enabled()).toBeTrue();
-      expect(service.collect(harvestId)).toBeTrue();
+      expect(service.collect(harvestId)).toBeFalse();
+      expect(service.count()).toBe(0);
       values.clear();
     }
   });
@@ -304,14 +312,16 @@ describe('SeasonalService', () => {
     expect(service.enabled()).toBeFalse();
     expect(service.visitorDisabled()).toBeTrue();
     service.setEnabled(true);
-    expect(service.collect(harvestId)).toBeTrue();
+    expect(service.collect(harvestId)).toBeFalse();
+    remoteUpdate(harvestKey, JSON.stringify({version: 1, enabled: true, collectedIds: [harvestId]}));
     service.setEnabled(false);
     service.setContext('/archive/seasons/scary-christmas-2026');
     expect(service.enabled()).toBeFalse();
     expect(service.count()).toBe(1);
     service.setEnabled(true);
     expect(service.enabled()).toBeTrue();
-    expect(JSON.parse(values.get(harvestKey)!).collectedIds).toEqual([harvestId]);
+    service.setContext('/archive/seasons/thanksgiving-2026');
+    expect(service.collectedIds()).toEqual([harvestId]);
     expect(JSON.parse(values.get(halloweenKey)!).enabled).toBeTrue();
     expect(JSON.parse(values.get(SEASONAL_PREFERENCE_STORAGE_KEY)!)).toEqual({version: 1, editionId: null, disabled: false});
   });
@@ -444,11 +454,13 @@ describe('SeasonalService', () => {
   it('keeps archive progress and global bypass usable in memory when persistence is denied', () => {
     spyOn(storage, 'getItem').and.throwError('Read denied');
     spyOn(storage, 'setItem').and.throwError('Write denied');
-    const service = createService();
+    const config = {...manualConfig};
+    const service = createService(config);
     service.setContext('/');
     service.collect('ember-toffee');
-    service.setContext('/archive/seasons/thanksgiving-2026');
-    service.collect(harvestId);
+    config.manualEditionId = 'thanksgiving-2026';
+    service.setContext('/');
+    expect(service.collect(harvestId)).toBeTrue();
     service.setEnabled(false);
     service.setContext('/archive/seasons/scary-christmas-2026');
     expect(service.count()).toBe(1);
@@ -482,7 +494,8 @@ describe('SeasonalService', () => {
     expect(service.edition()?.id).toBe('scary-christmas-2026');
     expect(service.count()).toBe(1);
     service.setContext('/archive/seasons/thanksgiving-2026');
-    service.collect(harvestId);
+    remoteUpdate(harvestKey, JSON.stringify({version: 1, enabled: true, collectedIds: [harvestId]}));
+    expect(service.count()).toBe(1);
     service.openLantern();
     values.clear();
     remoteUpdate(null, null);
@@ -492,7 +505,7 @@ describe('SeasonalService', () => {
     expect(service.panelOpen()).toBeFalse();
   });
 
-  it('offers exact public placements and all archive items only within the matching edition page', () => {
+  it('offers exact public placements and no collectible actions on archive pages', () => {
     const service = createService();
     service.setContext('/');
     expect(service.itemsFor('/?campaign=october#top', 'banner').map(item => item.id)).toEqual(['ember-toffee']);
@@ -500,12 +513,36 @@ describe('SeasonalService', () => {
     expect(service.itemsFor('/admin', 'footer')).toEqual([]);
     expect(service.itemsFor('/blog/preview/token', 'trail')).toEqual([]);
     service.setContext('/archive/seasons/thanksgiving-2026');
-    expect(service.itemsFor('/archive/seasons/thanksgiving-2026/#find-thanksgiving-1', 'trail').length).toBe(8);
-    expect(service.itemsFor('/archive/seasons/thanksgiving-2026', 'banner').length).toBe(8);
+    expect(service.itemsFor('/archive/seasons/thanksgiving-2026/#find-thanksgiving-1', 'trail')).toEqual([]);
+    expect(service.itemsFor('/archive/seasons/thanksgiving-2026', 'banner')).toEqual([]);
     expect(service.itemsFor('/archive/seasons/christmas-2026', 'trail')).toEqual([]);
     expect(service.itemsFor('/', 'banner')).toEqual([]);
-    service.collect(harvestId);
-    expect(service.itemsFor('/archive/seasons/thanksgiving-2026', 'footer').length).toBe(7);
+    expect(service.collect(harvestId)).toBeFalse();
+    expect(service.itemsFor('/archive/seasons/thanksgiving-2026', 'footer')).toEqual([]);
+  });
+
+  it('rejects archive and wrong-route collection requests without writing progress or announcements', () => {
+    const service = createService();
+    const write = spyOn(storage, 'setItem').and.callThrough();
+    service.setContext('/');
+    expect(service.collect('paper-phantom')).toBeFalse();
+    expect(service.count()).toBe(0);
+    expect(service.announcement()).toBe('');
+    expect(write).not.toHaveBeenCalled();
+    expect(service.collect('ember-toffee')).toBeTrue();
+    const stored = values.get(halloweenKey);
+    write.calls.reset();
+    for (const url of ['/archive/seasons/scary-christmas-2026', '/archive/seasons/scary-christmas-2026/?from=footer#seasonal-item-moonlit-mint']) {
+      service.setContext(url);
+      for (const item of service.items()) expect(service.collect(item.id)).toBeFalse();
+      expect(service.count()).toBe(1);
+      expect(service.announcement()).toBe('');
+      expect(values.get(halloweenKey)).toBe(stored);
+    }
+    expect(write).not.toHaveBeenCalled();
+    service.setContext('/blog');
+    expect(service.collect('paper-phantom')).toBeTrue();
+    expect(service.collectedIds()).toEqual(['ember-toffee', 'paper-phantom']);
   });
 
   it('never selects a fallback or writes a key on index, unknown archive, or private routes', () => {
@@ -527,7 +564,7 @@ describe('SeasonalService', () => {
     service.setContext('/');
     service.collect('ember-toffee');
     service.setContext('/archive/seasons/thanksgiving-2026');
-    service.collect(harvestId);
+    remoteUpdate(harvestKey, JSON.stringify({version: 1, enabled: true, collectedIds: [harvestId]}));
     service.setEnabled(false);
     service.resetHunt();
     expect(service.count()).toBe(0);
@@ -568,11 +605,14 @@ describe('SeasonalService', () => {
 
   it('keeps all edition progress in memory when the storage getter is denied', () => {
     Object.defineProperty(browserWindow, 'localStorage', {get: () => { throw new Error('Denied'); }});
-    const service = createService();
+    const config = {...manualConfig};
+    const service = createService(config);
     service.setContext('/');
     service.collect('ember-toffee');
-    service.setContext('/archive/seasons/thanksgiving-2026');
+    config.manualEditionId = 'thanksgiving-2026';
+    service.setContext('/');
     service.collect(harvestId);
+    config.manualEditionId = 'scary-christmas-2026';
     service.setContext('/');
     expect(service.count()).toBe(1);
     expect(service.persistenceAvailable()).toBeFalse();
@@ -591,7 +631,8 @@ describe('SeasonalService', () => {
     TestBed.resetTestingModule();
     const serverService = createService(SEASONAL_CONFIG, null);
     serverService.setContext('/archive/seasons/new-year-2027');
-    expect(serverService.collect(serverService.items()[0].id)).toBeTrue();
+    expect(serverService.collect(serverService.items()[0].id)).toBeFalse();
+    expect(serverService.count()).toBe(0);
     expect(serverService.persistenceAvailable()).toBeFalse();
   });
 

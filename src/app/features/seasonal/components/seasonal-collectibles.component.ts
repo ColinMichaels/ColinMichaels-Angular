@@ -30,14 +30,9 @@ import {SeasonalService} from '../seasonal.service';
 export class SeasonalCollectiblesComponent {
   readonly url = input.required<string>();
   readonly placement = input.required<SeasonalPlacement>();
-  readonly itemId = input<string | undefined>(undefined);
   protected readonly hunt = inject(SeasonalService);
   private readonly document = inject(DOCUMENT);
-  protected readonly available = computed(() => {
-    const available = this.hunt.itemsFor(this.url(), this.placement());
-    const itemId = this.itemId();
-    return itemId ? available.filter(item => item.id === itemId) : available;
-  });
+  protected readonly available = computed(() => this.hunt.itemsFor(this.url(), this.placement()));
 
   protected collect(id: string): void {
     if (this.hunt.collect(id)) {

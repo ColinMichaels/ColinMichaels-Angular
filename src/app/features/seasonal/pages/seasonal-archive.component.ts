@@ -47,7 +47,7 @@ import {SEASONAL_EDITIONS} from '../seasonal.catalog';
         }
       </div>
       @if (!visibleEditions().length) { <p class="text-body py-8">No seasons found. Try a holiday name or year.</p> }
-      <p class="seasonal-archive-footnote text-body">Choose a season and take your lantern along. Each collection stays with its own edition.</p>
+      <p class="seasonal-archive-footnote text-body">Revisit a season and its collection guide. Finds are earned by exploring the site while that season is active; each edition keeps its own progress.</p>
     </section>
   `,
 })

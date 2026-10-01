@@ -108,7 +108,13 @@ import {SeasonalService} from '../seasonal.service';
               </div>
             } @else {
               <p class="seasonal-next-clue">{{ nextItem()?.clue }}</p>
-              <p class="seasonal-hunt-description">{{ hunt.total() }} little {{ edition.collectibleLabel }} are hiding {{ hunt.archiveMode() ? 'in this edition' : 'across the site' }}. Tap one when you spot it.</p>
+              <p class="seasonal-hunt-description">
+                @if (hunt.archiveMode()) {
+                  This archive is a collection guide. Finds are earned across the site while this season is active.
+                } @else {
+                  {{ hunt.total() }} little {{ edition.collectibleLabel }} are hiding across the site. Tap one when you spot it.
+                }
+              </p>
             }
             @if (!hunt.persistenceAvailable()) {
               <p class="seasonal-storage-note">Your browser is keeping this collection for this visit only.</p>

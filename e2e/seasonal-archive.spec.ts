@@ -103,6 +103,16 @@ async function storedIds(page: Page, edition: SeasonalEdition): Promise<string[]
   }, seasonalStorageKey(edition.id));
 }
 
+/** Restore historical progress as test data; archive clicks must never earn it. */
+async function restoreSavedProgress(page: Page, edition: SeasonalEdition, ids: readonly string[]): Promise<void> {
+  await page.evaluate(({key, ids}) => {
+    const oldValue = localStorage.getItem(key);
+    const newValue = JSON.stringify({version: 1, enabled: true, collectedIds: ids});
+    localStorage.setItem(key, newValue);
+    window.dispatchEvent(new StorageEvent('storage', {key, oldValue, newValue, storageArea: localStorage}));
+  }, {key: seasonalStorageKey(edition.id), ids});
+}
+
 async function expectImageLoaded(image: Locator, src: string): Promise<void> {
   await expect(image).toHaveAttribute('src', src);
   await expect.poll(() => image.evaluate(element => {
@@ -144,6 +154,29 @@ test.describe('Seasonal archive', () => {
     await expect(launcher(page, thanksgiving, 0)).toBeFocused();
   });
 
+  test('archive checklist previews cannot award finds and the live hunt still earns progress at real hiding places', async ({page}) => {
+    await page.clock.setFixedTime(new Date('2026-10-15T12:00:00Z'));
+    await visitArchive(page, halloween);
+    await expect(page.getByRole('button', {name: /^Collect /})).toHaveCount(0);
+    const storedBefore = await page.evaluate(key => localStorage.getItem(key), seasonalStorageKey(halloween.id));
+    for (const item of halloween.items) {
+      await page.locator(`#seasonal-item-${item.id} img`).click();
+      await expect(launcher(page, halloween, 0)).toBeVisible();
+    }
+    expect(await page.evaluate(key => localStorage.getItem(key), seasonalStorageKey(halloween.id))).toBe(storedBefore);
+    await page.goto('/', {waitUntil: 'domcontentloaded'});
+    await page.getByTestId('collectible-ember-toffee').click();
+    await expect(launcher(page, halloween, 1)).toBeFocused();
+    await page.getByTestId('collectible-moonlit-mint').click();
+    await expect(launcher(page, halloween, 2)).toBeVisible();
+    await visitArchive(page, halloween);
+    await expect(launcher(page, halloween, 2)).toBeVisible();
+    await expect(page.getByRole('button', {name: /^Collect /})).toHaveCount(0);
+    await expect(page.locator('#seasonal-item-ember-toffee .seasonal-trail-found')).toHaveText(/Found/);
+    await page.reload({waitUntil: 'domcontentloaded'});
+    expect(await storedIds(page, halloween)).toEqual(['ember-toffee', 'moonlit-mint']);
+  });
+
   test('filters the archive by a holiday name, explains empty results, and restores the complete list', async ({page}) => {
     await page.goto('/archive/seasons', {waitUntil: 'domcontentloaded'});
     const search = page.getByLabel('Find a celebration', {exact: true});
@@ -160,17 +193,18 @@ test.describe('Seasonal archive', () => {
   });
 
   for (const edition of originalEditions) {
-    test(`${edition.holidayLabel} loads its art and collection, and keeps clue navigation inside the edition`, async ({page}) => {
+    test(`${edition.holidayLabel} loads read-only collection art and keeps clue navigation inside the edition`, async ({page}) => {
       await visitArchive(page, edition);
       await expect(page.getByRole('heading', {
         name: `${edition.titleLine1} ${edition.titleLine2}`, exact: true,
       })).toBeVisible();
       await expect(launcher(page, edition, 0)).toBeVisible();
-      await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(edition.items.length);
+      await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(0);
+      await expect(page.locator('.seasonal-trail-preview img')).toHaveCount(edition.items.length);
       await expectImageLoaded(page.locator('.seasonal-banner-art'), edition.heroSrc);
       const first = edition.items[0];
-      const collectible = page.getByTestId(`collectible-${first.id}`);
-      await expectImageLoaded(collectible.locator('img'), edition.collectibleSrc);
+      const preview = page.locator(`#seasonal-item-${first.id} .seasonal-trail-preview`);
+      await expectImageLoaded(preview.locator('img'), edition.collectibleSrc);
       await expectImageLoaded(launcher(page, edition, 0).locator('img'), edition.collectorSrc);
 
       const dialog = await openLantern(page, edition, 0);
@@ -188,11 +222,10 @@ test.describe('Seasonal archive', () => {
       await expect(page).toHaveURL(new RegExp(`${archiveUrl(edition)}#seasonal-item-${first.id}$`));
       await expect(dialog).toBeHidden();
       await expect(page.locator(`#seasonal-item-${first.id}`)).toBeInViewport();
-      await collectible.click();
-      await expect(launcher(page, edition, 1)).toBeVisible();
-      await expect(launcher(page, edition, 1)).toBeFocused();
-      await expect(collectible).toHaveCount(0);
-      expect(await storedIds(page, edition)).toEqual([first.id]);
+      await preview.locator('img').click();
+      await expect(launcher(page, edition, 0)).toBeVisible();
+      await expect(preview).toBeVisible();
+      expect(await storedIds(page, edition)).toEqual([]);
     });
   }
 
@@ -214,7 +247,8 @@ test.describe('Seasonal archive', () => {
         await expect(page).toHaveTitle(`${edition.titleLine1} ${edition.titleLine2} | ColinMichaels.com`);
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
         await expectImageLoaded(page.locator('.seasonal-banner-art'), edition.heroSrc);
-        await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(edition.items.length);
+        await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(0);
+        await expect(page.locator('.seasonal-trail-preview img')).toHaveCount(edition.items.length);
         expect(edition.approvedForCalendar).toBe(edition.id === halloween.id);
         await expect(page.getByTestId('seasonal-soundtrack')).toHaveCount(0);
         await expect(page.getByLabel('Season', {exact: true})).toHaveCount(0);
@@ -284,11 +318,11 @@ test.describe('Seasonal archive', () => {
     await visitArchive(page, halloween);
     await expect(launcher(page, halloween, 1)).toBeVisible();
     await expect(page.getByTestId('collectible-ember-toffee')).toHaveCount(0);
-    await page.getByTestId('collectible-moonlit-mint').click();
+    await restoreSavedProgress(page, halloween, ['ember-toffee', 'moonlit-mint']);
 
     await switchArchive(page, thanksgiving);
     await expect(launcher(page, thanksgiving, 0)).toBeVisible();
-    await page.getByTestId('collectible-thanksgiving-1').click();
+    await restoreSavedProgress(page, thanksgiving, ['thanksgiving-1']);
     const dialog = await openLantern(page, thanksgiving, 1);
     await dialog.getByRole('button', {name: 'Keep exploring', exact: true}).click();
     await page.reload({waitUntil: 'domcontentloaded'});
@@ -310,17 +344,16 @@ test.describe('Seasonal archive', () => {
     await expect(launcher(page, halloween, 2)).toBeVisible();
   });
 
-  test('completes exactly seven Kwanzaa principles and resets only this edition after confirmation', async ({page}) => {
+  test('restores a completed seven-principle collection and resets only this edition after confirmation', async ({page}) => {
     await visitArchive(page, thanksgiving);
-    await page.getByTestId('collectible-thanksgiving-1').click();
+    await restoreSavedProgress(page, thanksgiving, ['thanksgiving-1']);
     await visitArchive(page, kwanzaa);
-    let count = 0;
+    await restoreSavedProgress(page, kwanzaa, kwanzaa.items.map(item => item.id));
     for (const item of kwanzaa.items) {
       await expect(page.getByRole('heading', {name: item.name, exact: true})).toBeVisible();
-      await page.getByTestId(`collectible-${item.id}`).click();
-      count += 1;
-      await expect(launcher(page, kwanzaa, count)).toBeVisible();
+      await expect(page.locator(`#seasonal-item-${item.id} .seasonal-trail-found`)).toHaveText(/Found/);
     }
+    await expect(launcher(page, kwanzaa, 7)).toBeVisible();
     await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(0);
     const dialog = await openLantern(page, kwanzaa, 7);
     await expect(dialog.getByRole('heading', {name: kwanzaa.completionHeading, exact: true})).toBeVisible();
@@ -332,7 +365,8 @@ test.describe('Seasonal archive', () => {
     await expect(dialog.getByRole('button', {name: 'Keep exploring', exact: true})).toBeFocused();
     await dialog.getByRole('button', {name: 'Keep exploring', exact: true}).click();
     await expect(launcher(page, kwanzaa, 0)).toBeVisible();
-    await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(7);
+    await expect(page.locator('[data-testid^="collectible-"]')).toHaveCount(0);
+    await expect(page.locator('.seasonal-trail-preview img')).toHaveCount(7);
     expect(await storedIds(page, kwanzaa)).toEqual([]);
     expect(await storedIds(page, thanksgiving)).toEqual(['thanksgiving-1']);
   });
@@ -361,7 +395,7 @@ test.describe('Seasonal archive', () => {
   test('registered accounts retain global bypass through route changes and reload, then restore their collection', async ({page}) => {
     await withLocalRegisteredAccount(page, async () => {
     await visitArchive(page, thanksgiving);
-    await page.getByTestId('collectible-thanksgiving-1').click();
+    await restoreSavedProgress(page, thanksgiving, ['thanksgiving-1']);
     const dialog = await openLantern(page, thanksgiving, 1);
     await dialog.getByRole('button', {name: 'Use the normal design', exact: true}).click();
     const restore = page.getByRole('button', {name: 'Bring back Thanksgiving', exact: true});
@@ -393,7 +427,7 @@ test.describe('Seasonal archive', () => {
     });
   });
 
-  test('anonymous archives ignore stored account bypass and fake local identity while keeping public collecting and clues', async ({page}) => {
+  test('anonymous archives ignore stored account bypass and fake local identity while retaining saved finds and clues', async ({page}) => {
     await page.addInitScript(({preferenceKey, progressKey}) => {
       if (!localStorage.getItem(preferenceKey)) {
         localStorage.setItem(preferenceKey, JSON.stringify({version: 1, editionId: null, disabled: true}));
@@ -404,7 +438,7 @@ test.describe('Seasonal archive', () => {
     await visitArchive(page, halloween);
     await expect(launcher(page, halloween, 1)).toBeVisible();
     await expect(page.getByRole('button', {name: /Holiday options|Bring back /})).toHaveCount(0);
-    await page.getByTestId('collectible-moonlit-mint').click();
+    await restoreSavedProgress(page, halloween, ['ember-toffee', 'moonlit-mint']);
     const dialog = await openLantern(page, halloween, 2);
     await expect(dialog.locator('.seasonal-theme-settings')).toHaveCount(0);
     await dialog.getByRole('button', {name: 'Show clues', exact: true}).click();
@@ -433,7 +467,7 @@ test.describe('Seasonal archive', () => {
 
   test('real local account sign-out closes options and restores anonymous design without erasing bypass or progress', async ({page, context}) => {
     await withLocalRegisteredAccount(page, async () => {
-      await page.getByTestId('collectible-thanksgiving-1').click();
+      await restoreSavedProgress(page, thanksgiving, ['thanksgiving-1']);
       let options = await openThemeOptions(page);
       await options.getByRole('button', {name: 'Use the normal design', exact: true}).click();
       await expect(page.locator('app-root')).not.toHaveClass(/seasonal-theme/);
@@ -478,7 +512,7 @@ test.describe('Seasonal archive', () => {
       await visitArchive(page, kwanzaa);
       await expect(page.locator('html')).toHaveClass(new RegExp(`\\b${theme}\\b`));
       await expect(page.getByRole('button', {name: 'Holiday options', exact: true})).toHaveCount(0);
-      for (const target of [launcher(page, kwanzaa, 0), page.getByTestId('collectible-kwanzaa-1')]) {
+      for (const target of [launcher(page, kwanzaa, 0)]) {
         const box = await target.boundingBox();
         expect(box).not.toBeNull();
         expect(box!.width).toBeGreaterThanOrEqual(44);
