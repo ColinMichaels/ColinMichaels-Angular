@@ -65,9 +65,31 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
     expect(await collectedIds(page)).toEqual(['ember-toffee', 'moonlit-mint', 'midnight-caramel']);
   });
 
-  test('uses optional clue links to explore and complete the eight-candy lantern', async ({page}) => {
+  test('uses optional clue links to explore and complete the eight-candy lantern', async ({page}, testInfo) => {
     test.setTimeout(90_000);
+    const browserErrors: string[] = [];
+    const knownPreviewResourceErrors: string[] = [];
+    page.on('pageerror', error => browserErrors.push(error.message));
+    page.on('console', message => {
+      if (message.type() !== 'error') return;
+      const url = message.location().url;
+      const localPreview = page.url().startsWith('http://127.0.0.1:');
+      // These local provider failures predate the hunt. Keep them in evidence,
+      // while failing on any unexpected resource or application error.
+      const appCheckDebugDenied = url.startsWith('https://content-firebaseappcheck.googleapis.com/')
+        && url.includes(':exchangeDebugToken?') && message.text().includes('status of 403');
+      const youtubeEmulatorUnavailable = url === 'http://127.0.0.1:5001/colinmichaels/us-east1/getLatestYouTubeVideos'
+        && message.text().includes('status of 500');
+      if (localPreview && (appCheckDebugDenied || youtubeEmulatorUnavailable)) {
+        knownPreviewResourceErrors.push(`${url.split('?')[0]}: ${message.text()}`);
+      } else {
+        browserErrors.push(`${url.split('?')[0]}: ${message.text()}`);
+      }
+    });
+    await page.emulateMedia({reducedMotion: 'no-preference'});
     await visitPublicRoute(page, '/');
+    const confetti = page.locator('body > canvas[style*="z-index: 250"]');
+    await expect(confetti).toHaveCount(0);
     await lanternLauncher(page, 0).click();
     const dialog = page.getByRole('dialog', {name: 'Your lantern', exact: true});
     await expect(dialog).toBeVisible();
@@ -93,7 +115,16 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       await page.getByTestId(`collectible-${candy.id}`).click();
       count += 1;
       await expect(lanternLauncher(page, count)).toBeVisible();
+      if (count < 8) await expect(confetti).toHaveCount(0);
     }
+
+    await expect(confetti).toBeVisible();
+    await expect(confetti).toHaveCSS('pointer-events', 'none');
+    await expect(lanternLauncher(page, 8)).toBeFocused();
+    const screenshot = testInfo.outputPath('lantern-completion-confetti.png');
+    await page.screenshot({path: screenshot});
+    await testInfo.attach('Lantern completion with shared confetti', {path: screenshot, contentType: 'image/png'});
+    await expect(confetti).toHaveCount(0, {timeout: 10_000});
 
     expect(await collectedIds(page)).toHaveLength(8);
     expect(new Set(await collectedIds(page)).size).toBe(8);
@@ -103,7 +134,34 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       .toBeVisible();
     await page.reload({waitUntil: 'domcontentloaded'});
     await expect(lanternLauncher(page, 8)).toBeVisible();
+    await expect(confetti).toHaveCount(0);
+    await testInfo.attach('Known local provider failures', {
+      body: JSON.stringify(knownPreviewResourceErrors, null, 2), contentType: 'application/json',
+    });
+    expect(browserErrors).toEqual([]);
   });
+
+  for (const preference of ['system', 'reader'] as const) {
+    test(`completes accessibly without confetti when ${preference} reduced motion is enabled`, async ({page}) => {
+      await page.emulateMedia({reducedMotion: preference === 'system' ? 'reduce' : 'no-preference'});
+      const last = SCARY_CHRISTMAS_CANDIES.at(-1)!;
+      await page.addInitScript(({key, ids, readerMotion}) => {
+        // Restore prior session progress in this isolated test context.
+        localStorage.setItem(key, JSON.stringify({version: 1, enabled: true, collectedIds: ids}));
+        if (readerMotion) localStorage.setItem('colinmichaels-reader-preferences-v1',
+          JSON.stringify({fontScale: 100, spacing: 'normal', highContrast: false, reduceMotion: true}));
+      }, {key: SCARY_CHRISTMAS_STORAGE_KEY, ids: SCARY_CHRISTMAS_CANDIES.slice(0, -1).map(item => item.id),
+        readerMotion: preference === 'reader'});
+      await visitPublicRoute(page, last.route);
+      await expect(lanternLauncher(page, 7)).toBeVisible();
+      await page.getByTestId(`collectible-${last.id}`).click();
+      await expect(lanternLauncher(page, 8)).toBeVisible();
+      await expect(lanternLauncher(page, 8)).toBeFocused();
+      const dialog = await openLantern(page, 8);
+      await expect(dialog.getByRole('heading', {name: 'A lantern full of little wonders.', exact: true})).toBeVisible();
+      await expect(page.locator('body > canvas[style*="z-index: 250"]')).toHaveCount(0);
+    });
+  }
 
   test('keeps anonymous visitors on the owner design despite stored account bypass while retaining progress', async ({page}) => {
     await page.addInitScript(({preferenceKey, progressKey}) => {

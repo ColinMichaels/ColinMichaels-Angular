@@ -14,6 +14,10 @@ The published `f9ab543` cleanup removes automatic holiday banners from the main 
 
 Archive pages display item artwork, clues, and your saved Found status. The previews never award finds. Collect items at their hiding places across the site while that edition is active; future/unapproved and retired editions remain viewable without turning on their main-site hunt. Existing progress is retained, including previously saved finds, since storage cannot identify their original source. No data migration or new calendar approval is required. See the [collection eligibility correction](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#archive-collection-eligibility-correction).
 
+## Completion Celebration
+
+Finding the final item at its real hiding place triggers the existing shared confetti animation once. It respects both the reader’s reduced-motion option and the system setting; the normal completion message and keyboard focus remain available. Loading a full collection, changing routes, archive previews, and updates from another tab do not replay the animation. A confirmed reset followed by a fresh completed hunt can celebrate again. Collection storage and site layout are unchanged. See the [completion contract](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#shared-completion-celebration).
+
 ## Actual Dates And Editorial Windows
 
 Display dates are inclusive `America/New_York` calendar dates. They are editorial choices for Colin's site, distinct from actual observance dates and times. Primary references were checked September 30, 2026.

@@ -4,6 +4,7 @@ import {User} from 'firebase/auth';
 import {BehaviorSubject} from 'rxjs';
 
 import {AuthService, AuthState} from '../../services/auth.service';
+import {CelebrationService} from '../../shared/celebration/celebration.service';
 
 import {getSeasonalEdition} from './seasonal.catalog';
 import {SEASONAL_CONFIG, SEASONAL_PREFERENCE_STORAGE_KEY, seasonalStorageKey} from './seasonal.config';
@@ -22,6 +23,7 @@ describe('SeasonalService', () => {
   let documentRemoveListener: jasmine.Spy;
   let visibilityState: DocumentVisibilityState;
   let authState: BehaviorSubject<AuthState>;
+  let celebrateCompletion: jasmine.Spy;
   const registeredUser = {uid: 'registered-reader', isAnonymous: false} as User;
   const manualConfig: Readonly<SeasonalConfig> = {...SEASONAL_CONFIG, mode: 'manual'};
   const halloweenKey = 'cm.scary-christmas-2026.v1';
@@ -29,6 +31,7 @@ describe('SeasonalService', () => {
   const harvestId = getSeasonalEdition('thanksgiving-2026')!.items[0].id;
 
   beforeEach(() => {
+    celebrateCompletion = jasmine.createSpy('celebrateCompletion');
     values = new Map();
     storage = {
       get length() { return values.size; },
@@ -56,6 +59,7 @@ describe('SeasonalService', () => {
       {provide: DOCUMENT, useValue: {defaultView: view, get visibilityState() { return visibilityState; },
         addEventListener: documentAddListener, removeEventListener: documentRemoveListener}},
       {provide: SEASONAL_CONFIGURATION, useValue: config},
+      {provide: CelebrationService, useValue: {celebrateCompletion}},
       {provide: AuthService, useValue: {authState$: authState.asObservable()}},
     ]});
     return TestBed.inject(SeasonalService);
@@ -260,6 +264,54 @@ describe('SeasonalService', () => {
     expect(service.announcement()).toContain('All 7 tokens found');
     expect(Object.isFrozen(service.collectedIds())).toBeTrue();
     expect(Object.keys(JSON.parse(values.get('cm.kwanzaa-2026.v1')!)).sort()).toEqual(['collectedIds', 'enabled', 'version']);
+  });
+
+  it('celebrates only the final valid find once, and can celebrate a genuinely completed replay', () => {
+    const service = createService({...manualConfig, manualEditionId: 'kwanzaa-2026'});
+    service.setContext('/');
+    const items = service.items();
+    for (const item of items.slice(0, -1)) {
+      service.setContext(item.route);
+      expect(service.collect(item.id)).toBeTrue();
+      expect(celebrateCompletion).not.toHaveBeenCalled();
+    }
+    const last = items.at(-1)!;
+    service.setContext('/archive/seasons/kwanzaa-2026');
+    expect(service.collect(last.id)).toBeFalse();
+    service.setContext('/privacy');
+    expect(service.collect(last.id)).toBeFalse();
+    expect(celebrateCompletion).not.toHaveBeenCalled();
+    service.setContext(last.route);
+    expect(service.collect(last.id)).toBeTrue();
+    expect(celebrateCompletion).toHaveBeenCalledTimes(1);
+    expect(service.collect(last.id)).toBeFalse();
+    service.openLantern();
+    service.setContext('/archive/seasons/kwanzaa-2026');
+    expect(celebrateCompletion).toHaveBeenCalledTimes(1);
+    service.resetHunt();
+    for (const item of items) {
+      service.setContext(item.route);
+      expect(service.collect(item.id)).toBeTrue();
+    }
+    expect(celebrateCompletion).toHaveBeenCalledTimes(2);
+  });
+
+  it('never replays a completion celebration from restored or cross-tab progress', () => {
+    const ids = getSeasonalEdition('scary-christmas-2026')!.items.map(item => item.id);
+    const saved = JSON.stringify({version: 1, enabled: true, collectedIds: ids});
+    values.set(halloweenKey, saved);
+    const service = createService();
+    service.setContext('/');
+    expect(service.complete()).toBeTrue();
+    service.openLantern();
+    service.setContext('/archive/seasons/scary-christmas-2026');
+    expect(celebrateCompletion).not.toHaveBeenCalled();
+    service.resetHunt();
+    service.setContext('/');
+    remoteUpdate(halloweenKey, saved);
+    expect(service.complete()).toBeTrue();
+    expect(service.collect(ids[0])).toBeFalse();
+    expect(celebrateCompletion).not.toHaveBeenCalled();
   });
 
   it('isolates recurring yearly collections even when principle item identifiers are reused', () => {

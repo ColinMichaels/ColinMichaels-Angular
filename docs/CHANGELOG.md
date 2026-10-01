@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+- Celebrate a newly completed seasonal hunt with the site’s shared confetti burst. Respect system and reader reduced-motion settings; archive previews, duplicate clicks, reloads, restored progress, and cross-tab updates never replay the animation. Keep collection progress and the original site layout unchanged.
+
 - Prevent archive collection previews from awarding lantern finds. Keep read-only artwork, clues, Found status, and existing progress; require the item’s real public hiding route while its edition is active. Remove the archive-only collectible override and reject archive/wrong-route requests before storage writes. No migration or retrospective score reset is required.
 
 - Generate local seasonal account-test credentials with cryptographic UUIDs; keep fixture creation and cleanup confined to Firebase emulators.

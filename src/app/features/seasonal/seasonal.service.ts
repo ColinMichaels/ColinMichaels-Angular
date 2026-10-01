@@ -2,6 +2,7 @@ import {DOCUMENT} from '@angular/common';
 import {computed, DestroyRef, inject, Injectable, InjectionToken, signal} from '@angular/core';
 
 import {AuthService} from '../../services/auth.service';
+import {CelebrationService} from '../../shared/celebration/celebration.service';
 import {getSeasonalEdition, SEASONAL_EDITIONS} from './seasonal.catalog';
 import {
   chooseEdition, isSeasonalArchiveRoute, isSeasonalReadingRoute,
@@ -28,6 +29,7 @@ const DEFAULT_PREFERENCE: SeasonalVisitorPreference = Object.freeze({version: 1,
 
 @Injectable({providedIn: 'root'})
 export class SeasonalService {
+  private readonly celebration = inject(CelebrationService);
   private readonly document = inject(DOCUMENT);
   private readonly browserWindow = this.document.defaultView;
   private readonly config = inject(SEASONAL_CONFIGURATION);
@@ -152,6 +154,9 @@ export class SeasonalService {
     this.liveAnnouncement.set(this.complete()
       ? `Your ${edition.collectorName} is full. All ${this.total()} ${edition.collectibleLabel} found.`
       : `${item.name} found. ${this.count()} of ${this.total()} ${edition.collectibleLabel} in your ${edition.collectorName}.`);
+    if (this.complete()) {
+      this.celebration.celebrateCompletion();
+    }
     return true;
   }
 

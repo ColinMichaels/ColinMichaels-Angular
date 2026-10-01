@@ -21,8 +21,9 @@ export const CELEBRATION_CONFETTI = new InjectionToken<CelebrationLauncher>('Cel
 });
 
 /**
- * A single, accessible celebration boundary for reader rewards. Call this
- * only after the server has confirmed the interaction or point award.
+ * A single, accessible celebration boundary for validated interactions.
+ * Point awards require server confirmation; local completions require a newly
+ * successful action from the owning feature.
  */
 @Injectable({providedIn: 'root'})
 export class CelebrationService {
@@ -32,6 +33,10 @@ export class CelebrationService {
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   celebrateCorrectAnswer(): void {
+    this.celebrateCompletion();
+  }
+
+  celebrateCompletion(): void {
     this.launch({
       particleCount: 48,
       spread: 64,
