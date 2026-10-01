@@ -1,0 +1,382 @@
+/* This opt-in seasonal scope never modifies Core OS or the saved site theme. */
+.seasonal-theme {
+  --site-accent: var(--seasonal-accent, #f5b763);
+  --site-accent-strong: var(--seasonal-accent, #ffd398);
+  --site-accent-rgb: var(--seasonal-accent-rgb, 245 183 99);
+  --site-accent-soft: rgb(var(--seasonal-accent-rgb, 245 183 99) / .12);
+  --site-bg: var(--seasonal-bg, #0b0e18);
+  --site-panel: #141724;
+  --site-panel-soft: rgb(20 23 36 / .86);
+  --site-section: #111422;
+  --site-border: rgb(var(--seasonal-accent-rgb, 245 183 99) / .17);
+  --site-heading: #faf5ed;
+  --site-text: #e7e1d9;
+  --site-muted: #aaa9b7;
+  --seasonal-ink: #faf5ed;
+  --seasonal-muted: #c0b8c9;
+
+}
+
+.light .seasonal-theme {
+  --site-bg: #fbf7f1;
+  --site-panel: #fffdfa;
+  --site-panel-soft: rgb(255 253 250 / .88);
+  --site-section: #f3ede5;
+  --site-accent: var(--seasonal-accent-light, #a95413);
+  --site-accent-strong: var(--seasonal-accent-light, #85430f);
+  --site-accent-rgb: var(--seasonal-accent-light-rgb, 169 84 19);
+  --site-accent-soft: rgb(var(--seasonal-accent-light-rgb, 169 84 19) / .1);
+  --site-border: rgb(80 41 17 / .18);
+  --site-heading: #25202e;
+  --site-text: #37313c;
+  --site-muted: #6b5d6a;
+}
+
+.dark .seasonal-theme app-site-header header {
+  background: var(--seasonal-bg, #0b0e18);
+  border-color: rgb(var(--seasonal-accent-rgb, 245 183 99) / .25);
+}
+
+.light .seasonal-theme app-site-header header {
+  background: #fffaf1;
+  border-color: rgb(var(--seasonal-accent-light-rgb, 169 84 19) / .25);
+}
+
+.seasonal-theme .app-route-frame { background: var(--site-bg); }
+.seasonal-theme ::selection { background: var(--seasonal-accent, #ffc477); color: #211426; }
+
+.seasonal-garland {
+  display: flex;
+  justify-content: space-around;
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  height: 2rem;
+  pointer-events: none;
+  overflow: hidden;
+  border-top: 1px solid rgb(175 111 54 / .28);
+}
+
+.seasonal-garland span {
+  position: relative;
+  width: .38rem;
+  height: .65rem;
+  margin-top: .75rem;
+  border-radius: 50%;
+  background: var(--seasonal-accent, #ffc477);
+  box-shadow: 0 0 .65rem .15rem rgb(var(--seasonal-accent-rgb, 255 171 57) / .36);
+}
+.seasonal-garland span::before {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: .8rem;
+  bottom: 100%;
+  left: 50%;
+  background: #806448;
+}
+.seasonal-garland span:nth-child(3n) { background: var(--seasonal-secondary, #c69ff7); box-shadow: 0 0 .6rem .12rem rgb(151 92 215 / .3); }
+.seasonal-garland span:nth-child(2n) { margin-top: .35rem; }
+
+.seasonal-shell-decor { position: relative; height: 0; pointer-events: none; }
+.seasonal-shell-bat {
+  position: absolute;
+  top: 2.2rem;
+  left: 1.1rem;
+  width: 3rem;
+  color: #5a475d;
+  opacity: .48;
+  transform: rotate(-18deg);
+  z-index: 2;
+}
+.seasonal-shell-bat--right { left: auto; right: 1rem; top: 5.6rem; width: 1.7rem; transform: rotate(15deg); }
+
+.seasonal-banner {
+  position: relative;
+  isolation: isolate;
+  min-height: 25rem;
+  overflow: hidden;
+  background: var(--seasonal-bg, #0b0e18);
+  border-bottom: 1px solid rgb(var(--seasonal-accent-rgb, 245 183 99) / .2);
+  color: #faf5ed;
+}
+.seasonal-banner-art { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; object-position: center 68%; }
+.seasonal-banner-inner { position: relative; max-width: 80rem; margin: 0 auto; padding: 4.75rem 3rem 3.25rem; }
+.seasonal-banner-copy { position: relative; z-index: 1; max-width: 39rem; }
+.seasonal-banner-copy :is(h1, h2) {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(3.6rem, 6vw, 5.75rem);
+  line-height: .98;
+  font-weight: 700;
+  letter-spacing: -.055em;
+  color: #faf5ed;
+}
+.seasonal-banner-copy :is(h1, h2) span { display: block; color: var(--seasonal-accent, #ffc477); }
+.seasonal-banner-copy p { margin: 1.2rem 0 0; max-width: 36rem; color: #eee5d9; font-size: 1.14rem; line-height: 1.55; }
+.seasonal-banner-actions { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; margin-top: 1.65rem; }
+.seasonal-button, .seasonal-music-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: .65rem;
+  min-height: 2.75rem; padding: .7rem 1.15rem; border: 1px solid transparent;
+  border-radius: .65rem; font-family: var(--font-body); font-size: .94rem;
+  font-weight: 600; line-height: 1.35; cursor: pointer; transition: background .18s, transform .18s;
+}
+.seasonal-button svg, .seasonal-music-link svg, .seasonal-clue-list svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.seasonal-button--primary { background: var(--seasonal-accent, #ffc477); color: #211426; }
+.seasonal-button--primary:hover { filter: brightness(1.08); }
+.seasonal-button--outline { background: transparent; color: var(--seasonal-secondary, #e7d6fa); border-color: var(--seasonal-secondary, #88709f); }
+.seasonal-button--outline:hover { background: rgb(161 126 193 / .12); }
+.seasonal-music-link { text-decoration: none; color: var(--seasonal-secondary, #d5b2fa); padding-inline: 0; background: transparent; border-bottom-color: #9c73bc; border-radius: 0; }
+.seasonal-button:focus-visible, .seasonal-music-link:focus-visible, .seasonal-collectible:focus-visible,
+.seasonal-lantern-dialog :is(button,a,audio):focus-visible, .seasonal-lantern-toggle:focus-visible,
+.seasonal-restore-toggle:focus-visible { outline: 3px solid var(--seasonal-secondary, #c59cef); outline-offset: 4px; }
+
+.seasonal-collectible-placement { display: flex; justify-content: flex-end; max-width: 80rem; margin-inline: auto; padding-inline: 2rem; }
+.seasonal-collectible-placement--banner { position: absolute; bottom: 1rem; right: 2rem; padding: 0; }
+.seasonal-collectible-placement--trail { min-height: 3.5rem; padding-top: 1rem; }
+.seasonal-collectible-placement--footer { padding-block: .25rem; }
+.seasonal-collectible {
+  display: inline-flex; justify-content: center; align-items: center; width: 4rem; height: 3.5rem;
+  background: none; border: 0; border-radius: .75rem; cursor: pointer;
+  transition: transform .2s, filter .2s; transform: rotate(-12deg);
+}
+.seasonal-collectible img { width: 4rem; height: 4rem; object-fit: contain; pointer-events: none; }
+.seasonal-collectible--violet { filter: hue-rotate(250deg); transform: rotate(14deg); }
+.seasonal-collectible--mint { filter: hue-rotate(85deg); transform: rotate(-6deg); }
+.seasonal-collectible:hover { transform: translateY(-3px) rotate(0); filter: drop-shadow(0 0 .5rem rgb(255 186 93 / .4)); }
+
+.seasonal-lantern-toggle {
+  position: fixed; z-index: 65; left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom)); display: flex; align-items: center;
+  gap: .7rem; min-width: 7rem; min-height: 4rem; padding: .3rem .85rem .3rem .4rem;
+  border: 1px solid #a77c47; border-radius: 1rem; background: #111520; color: #faf5ed;
+  box-shadow: 0 .4rem 1.5rem rgb(0 0 0 / .25); font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.seasonal-lantern-toggle img { height: 3.5rem; width: 2.3rem; object-fit: contain; }
+.seasonal-lantern-toggle span span { color: #9e91a8; }
+.seasonal-lantern-toggle--full { border-color: var(--seasonal-accent, #ffc477); box-shadow: 0 0 1.5rem rgb(var(--seasonal-accent-rgb, 245 183 99) / .15); }
+.seasonal-restore-toggle { position: fixed; z-index: 65; bottom: 1rem; left: 1rem; min-height: 2.75rem; padding: .5rem .8rem; border-radius: .75rem; background: var(--site-panel); color: var(--site-text); border: 1px solid var(--site-border); font-size: .8rem; cursor: pointer; }
+.seasonal-collection-announcement { position: fixed; z-index: 65; left: 1rem; bottom: 6rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .65rem .85rem; border-radius: .65rem; background: #111520; color: #faf5ed; border: 1px solid rgb(255 196 119 / .3); font-size: .82rem; pointer-events: none; }
+.seasonal-collection-announcement:empty { display: none; }
+
+.seasonal-lantern-backdrop { position: fixed; inset: 0; z-index: 99; background: rgb(5 6 12 / .56); }
+.seasonal-lantern-dialog {
+  position: fixed; z-index: 100; left: 1rem; bottom: 1rem; width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain;
+  padding: 1.6rem; border: 1px solid #ad844f; border-radius: 1.2rem;
+  background: #111520; color: #faf5ed; box-shadow: 0 1.5rem 5rem rgb(0 0 0 / .5);
+}
+.seasonal-close-button { position: absolute; top: .4rem; right: .4rem; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: .5rem; color: #eee5d9; background: transparent; cursor: pointer; }
+.seasonal-close-button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.seasonal-lantern-summary { display: flex; align-items: center; gap: 1.25rem; padding-right: 1.3rem; }
+.seasonal-lantern-portrait { object-fit: contain; width: 4.3rem; height: 7rem; flex-shrink: 0; }
+.seasonal-lantern-dialog h2 { margin: 0; font-family: var(--font-heading); font-size: 1.65rem; font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: #faf5ed; }
+.seasonal-lantern-count { margin-top: .6rem; color: #eee5d9; font-size: .95rem; font-weight: 600; }
+.seasonal-collection-slots { display: grid; grid-template-columns: repeat(8, 1.45rem); gap: .25rem; margin-top: .65rem; }
+.seasonal-collection-slots span { display: grid; place-items: center; height: 1.45rem; width: 1.45rem; border: 1px dashed #655b73; border-radius: 50%; }
+.seasonal-collection-slots .seasonal-slot--collected { border-style: solid; border-color: #d3a161; background: rgb(255 196 119 / .07); }
+.seasonal-collection-slots img { width: 1.55rem; height: 1.55rem; object-fit: contain; }
+.seasonal-next-clue { color: #f4d6ad; margin-top: 1.2rem; font-size: .97rem; line-height: 1.6; }
+.seasonal-hunt-description, .seasonal-storage-note { color: #bcb3c6; font-size: .85rem; margin-top: .45rem; line-height: 1.55; }
+.seasonal-dialog-actions { display: flex; gap: .7rem; margin-top: 1.15rem; }
+.seasonal-completion { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #564335; }
+.seasonal-completion h3 { font-family: var(--font-heading); font-size: 1.1rem; color: #ffd398; }
+.seasonal-completion p { color: #c0b8c9; font-size: .95rem; margin-top: .6rem; line-height: 1.6; }
+.seasonal-clue-list { display: grid; gap: .45rem; list-style: none; margin-top: 1.25rem; padding: 0; }
+.seasonal-clue-list a, .seasonal-clue-list li > span { display: flex; align-items: center; justify-content: space-between; gap: .65rem; min-height: 2.75rem; padding: .65rem .75rem; border: 1px solid #3c3448; border-radius: .6rem; font-size: .83rem; line-height: 1.45; }
+.seasonal-clue-list a { color: var(--seasonal-secondary, #dfc7f6); text-decoration: none; }
+.seasonal-clue-list a:hover { background: rgb(163 127 199 / .08); border-color: #8b729e; }
+.seasonal-clue--found { color: #b8bcab; }
+.seasonal-clue--found small { color: #b4d2a4; font-size: .72rem; }
+.seasonal-soundtrack { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid #383040; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.seasonal-soundtrack > div { flex: 1 1 10rem; }
+.seasonal-soundtrack h3 { font-size: .95rem; color: #e6d8f4; font-family: var(--font-heading); font-weight: 600; }
+.seasonal-soundtrack p { margin-top: .25rem; font-size: .8rem; color: #c0b8c9; }
+.seasonal-soundtrack audio { width: 100%; min-height: 3rem; color-scheme: dark; }
+.seasonal-listening-link { flex-basis: 100%; color: var(--seasonal-secondary, #c8a8ed); font-size: .8rem; text-decoration: underline; text-underline-offset: .2em; min-height: 2.25rem; padding-top: .25rem; }
+.seasonal-lantern-settings { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .7rem; margin-top: .6rem; }
+.seasonal-lantern-settings button { padding: .65rem 0; min-height: 2.75rem; font-size: .8rem; color: #bcb3c6; text-decoration: underline; text-underline-offset: .2rem; }
+.seasonal-reset-confirmation { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.seasonal-reset-confirmation p { flex-basis: 100%; color: #eee5d9; font-size: .9rem; margin-bottom: .5rem; }
+
+@media (min-width: 1700px) { .seasonal-banner-art { object-fit: cover; object-position: right 65%; } }
+@media (max-width: 800px) {
+  .seasonal-banner { min-height: 32rem; }
+  .seasonal-banner-inner { padding: 3.5rem 1.5rem 16rem; }
+  .seasonal-banner-art { top: auto; bottom: 0; height: 18rem; width: 100%; object-fit: cover; object-position: 80% bottom; }
+  .seasonal-banner-copy { max-width: 30rem; }
+  .seasonal-banner-copy :is(h1, h2) { font-size: clamp(2.4rem, 8vw, 4.5rem); }
+  .seasonal-banner--scary-christmas .seasonal-banner-copy :is(h1, h2) { font-size: clamp(3.15rem, 9vw, 4.5rem); }
+  .seasonal-banner-copy p { font-size: 1rem; max-width: 25rem; }
+  .seasonal-banner-actions { margin-top: 1.25rem; gap: .5rem 1.1rem; }
+  .seasonal-music-link { font-size: .88rem; }
+  .seasonal-collectible-placement--banner { right: 1.25rem; bottom: 1rem; }
+  .seasonal-lantern-toggle { min-width: 6rem; gap: .4rem; min-height: 3.5rem; }
+  .seasonal-lantern-toggle img { height: 3rem; }
+  .seasonal-shell-bat { width: 1.75rem; left: .5rem; }
+  .seasonal-shell-bat--right { right: .75rem; left: auto; width: 1.3rem; }
+}
+@media (max-width: 380px) {
+  .seasonal-banner-inner { padding-inline: 1.1rem; }
+  .seasonal-lantern-dialog { padding: 1.15rem; }
+  .seasonal-lantern-summary { gap: .7rem; }
+  .seasonal-lantern-dialog h2 { font-size: 1.35rem; }
+  .seasonal-collection-slots { grid-template-columns: repeat(4, 1.3rem); gap: .25rem; }
+  .seasonal-collection-slots span { width: 1.3rem; height: 1.3rem; }
+  .seasonal-dialog-actions { gap: .45rem; }
+  .seasonal-dialog-actions .seasonal-button { font-size: .87rem; padding-inline: .8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.seasonal-button, .seasonal-music-link, .seasonal-collectible) { transition: none; }
+  .seasonal-collectible:hover { transform: rotate(0); }
+}
+.reader-motion-reduce :is(.seasonal-button, .seasonal-music-link, .seasonal-collectible) { transition: none; }
+.reader-contrast-high .seasonal-theme { --site-heading: #fff; --site-text: #fff; --site-muted: #e0dfe5; }
+.light.reader-contrast-high .seasonal-theme { --site-heading: #141018; --site-text: #141018; --site-muted: #37313c; }
+
+/* Editions share the lantern, but keep their own art and accent color. */
+.seasonal-banner-kicker { display: block; margin-bottom: .75rem; color: var(--seasonal-secondary, #c8a8ed); font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.seasonal-banner-links { color: var(--seasonal-secondary, #c8a8ed); text-decoration: underline; text-underline-offset: .2rem; min-height: 2.75rem; display: inline-flex; align-items: center; font-size: .9rem; }
+.seasonal-banner--no-art { background: radial-gradient(ellipse at 85% 70%, rgb(var(--seasonal-accent-rgb, 245 183 99) / .13), transparent 45%), #0b0e18; }
+.seasonal-banner--no-art .seasonal-banner-inner { padding-bottom: 4rem; }
+.seasonal-lantern-summary > div { min-width: 0; }
+.seasonal-collection-slots { width: fit-content; max-width: 100%; }
+.seasonal-listening-link { min-height: 2.75rem; display: inline-flex; align-items: center; }
+.seasonal-clue-list small { flex-shrink: 0; }
+.seasonal-dialog-actions { flex-wrap: wrap; }
+.seasonal-restore-toggle { max-width: calc(100vw - 2rem); }
+@media (max-width: 800px) {
+  .seasonal-banner--no-art { min-height: 0; }
+  .seasonal-banner--no-art .seasonal-banner-inner { padding-bottom: 3rem; }
+}
+
+/* A palette belongs to its edition, not to the visitor's saved light/dark choice. */
+.seasonal-theme[data-seasonal-theme='halloween'] { --seasonal-accent: #ffc477; --seasonal-secondary: #c8a8ed; --seasonal-accent-rgb: 255 196 119; --seasonal-bg: #0b0e18; }
+.seasonal-theme[data-seasonal-theme='harvest'] { --seasonal-accent: #f7bb73; --seasonal-secondary: #df9380; --seasonal-accent-rgb: 247 187 115; --seasonal-accent-light: #98510d; --seasonal-accent-light-rgb: 152 81 13; --seasonal-bg: #141016; }
+.seasonal-theme[data-seasonal-theme='hanukkah'] { --seasonal-accent: #acd6ff; --seasonal-secondary: #ffd69d; --seasonal-accent-rgb: 172 214 255; --seasonal-accent-light: #245b8f; --seasonal-accent-light-rgb: 36 91 143; --seasonal-bg: #071322; }
+.seasonal-theme[data-seasonal-theme='solstice'] { --seasonal-accent: #a5e5dc; --seasonal-secondary: #c8dbfc; --seasonal-accent-rgb: 165 229 220; --seasonal-accent-light: #226b61; --seasonal-accent-light-rgb: 34 107 97; --seasonal-bg: #071819; }
+.seasonal-theme[data-seasonal-theme='christmas'] { --seasonal-accent: #efd8a0; --seasonal-secondary: #9ed8b8; --seasonal-accent-rgb: 239 216 160; --seasonal-accent-light: #806020; --seasonal-accent-light-rgb: 128 96 32; --seasonal-bg: #091b16; }
+.seasonal-theme[data-seasonal-theme='kwanzaa'] { --seasonal-accent: #f6c976; --seasonal-secondary: #acd6a6; --seasonal-accent-rgb: 246 201 118; --seasonal-accent-light: #8c5a09; --seasonal-accent-light-rgb: 140 90 9; --seasonal-bg: #141617; }
+.seasonal-theme[data-seasonal-theme='new-year'] { --seasonal-accent: #f1d39b; --seasonal-secondary: #cfb7f0; --seasonal-accent-rgb: 241 211 155; --seasonal-accent-light: #8a5c0c; --seasonal-accent-light-rgb: 138 92 12; --seasonal-bg: #171127; }
+/* Pale celebration colors remain readable when a collectible sits on paper. */
+.light .seasonal-theme .seasonal-collectible:focus-visible { outline-color: var(--site-accent-strong); }
+.seasonal-restore-toggle:focus-visible { outline-color: var(--site-accent-strong, #795193); }
+
+/* Visitor theme options remain available after a local decoration opt-out. */
+.seasonal-controls {
+  position: fixed; z-index: 65; left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom)); display: flex; align-items: flex-end;
+  gap: .5rem; max-width: calc(100vw - 2rem); pointer-events: none;
+}
+.seasonal-controls > button { position: static; pointer-events: auto; }
+.seasonal-controls .seasonal-restore-toggle { max-width: min(15rem, calc(100vw - 7rem)); }
+.seasonal-theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--site-border, #5c5368);
+  border-radius: .7rem; background: var(--site-panel, #111520); color: var(--site-text, #faf5ed);
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+}
+.seasonal-theme-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--site-accent-strong, #c8a8ed); }
+.seasonal-reflection-symbol { color: var(--seasonal-accent, #ffc477); font-size: 1.3rem; line-height: 1; }
+.seasonal-options-edition { margin-top: .5rem; font-size: .88rem; color: #c0b8c9; }
+.seasonal-theme-settings { display: grid; gap: .45rem; margin-top: 1.25rem; }
+.seasonal-theme-settings label { color: #e7e1d9; font-size: .85rem; font-weight: 600; }
+.seasonal-theme-settings select {
+  width: 100%; min-height: 2.75rem; padding: .55rem .65rem;
+  border: 1px solid #877391; border-radius: .6rem; color: #faf5ed; background: #1a1925;
+  color-scheme: dark; font-size: .95rem; cursor: pointer;
+}
+.seasonal-normal-button {
+  display: inline-flex; width: fit-content; min-height: 2.75rem; align-items: center;
+  margin-top: .15rem; padding: .6rem 0; color: #e7e1d9; font-size: .88rem;
+  text-decoration: underline; text-underline-offset: .2rem; cursor: pointer;
+}
+.seasonal-normal-button:disabled { color: #bcb3c6; text-decoration: none; cursor: default; }
+.seasonal-reflection-note { margin-top: 1.1rem; color: #e7e1d9; font-size: .94rem; line-height: 1.6; }
+.seasonal-reflection-note a { display: inline-flex; min-height: 2.75rem; align-items: center; margin-top: .55rem; color: var(--seasonal-secondary, #c8a8ed); text-decoration: underline; text-underline-offset: .2rem; }
+.seasonal-lantern-dialog select:focus-visible { outline-color: var(--seasonal-secondary, #c8a8ed); }
+/* The dialog is intentionally dark, even above the visitor's paper theme. */
+.light .site-theme-scope .seasonal-lantern-dialog select { background-color: #1a1925 !important; color: #faf5ed !important; border-color: #877391 !important; }
+
+/* Carry the chosen season through the existing public design tokens. */
+.seasonal-theme { --blog-heading-rule: rgb(var(--site-accent-rgb) / .28); --seasonal-reading-accent: var(--site-accent-strong); }
+.seasonal-theme :is(.heading-section, .heading-subsection) { text-decoration-color: var(--seasonal-reading-accent); }
+.seasonal-theme .site-section-header { border-bottom-color: rgb(var(--site-accent-rgb) / .28); }
+.seasonal-theme .site-section-rule { border-top: 1px solid var(--seasonal-reading-accent); }
+.seasonal-theme :is(.btn-primary, .btn-secondary, .blog-action-primary) { border-color: var(--seasonal-reading-accent); color: var(--seasonal-reading-accent); background: transparent; }
+.seasonal-theme :is(.btn-primary, .btn-secondary, .blog-action-primary):hover { background: var(--seasonal-reading-accent); color: var(--site-bg); }
+.seasonal-theme :is(.btn-link, .site-inline-link) { color: var(--seasonal-reading-accent); }
+.seasonal-theme .btn-ghost:hover { border-color: var(--seasonal-reading-accent); color: var(--seasonal-reading-accent); }
+.seasonal-theme .blog-action-icon:hover { border-color: var(--seasonal-reading-accent); color: var(--seasonal-reading-accent); background: var(--site-accent-soft); }
+.seasonal-theme app-blog-share-actions :is([data-share-provider], [data-share-trigger]) { border-color: rgb(var(--site-accent-rgb) / .35); background: var(--site-panel); color: var(--site-text); }
+.seasonal-theme app-blog-share-actions :is([data-share-provider], [data-share-trigger]):hover { border-color: var(--seasonal-reading-accent); background: var(--site-accent-soft); color: var(--seasonal-reading-accent); }
+.seasonal-theme app-site-footer footer { border-top: 1px solid rgb(var(--site-accent-rgb) / .4); background: radial-gradient(ellipse at 50% 0, rgb(var(--site-accent-rgb) / .07), transparent 65%), var(--site-bg); }
+.seasonal-theme app-site-footer #site-footer-title { color: var(--seasonal-reading-accent); }
+.seasonal-theme app-site-header header { box-shadow: 0 1px 0 rgb(var(--site-accent-rgb) / .2); }
+.seasonal-theme .seasonal-banner { border-bottom-color: rgb(var(--seasonal-accent-rgb) / .35); }
+.seasonal-theme .seasonal-slot--collected { border-color: var(--seasonal-accent); background: rgb(var(--seasonal-accent-rgb) / .07); }
+@media (max-width: 380px) {
+  .seasonal-controls { left: .75rem; bottom: .75rem; gap: .35rem; max-width: calc(100vw - 1.5rem); }
+  .seasonal-theme-toggle { padding-inline: .6rem; }
+  .seasonal-lantern-toggle { min-width: 0; }
+}
+
+.seasonal-lantern-dialog :is(button, a, select, audio):focus-visible { outline: 3px solid var(--seasonal-secondary, #c8a8ed) !important; outline-offset: 4px; }
+
+/* Prepared editions reuse artwork while keeping a recognisable color direction. */
+.seasonal-theme[data-seasonal-edition^='valentines-day-'] {
+  --seasonal-accent: #f5acc2; --seasonal-secondary: #d6b0f5; --seasonal-accent-rgb: 245 172 194;
+  --seasonal-accent-light: #9f3157; --seasonal-accent-light-rgb: 159 49 87; --seasonal-bg: #211020;
+}
+.seasonal-theme[data-seasonal-edition^='lunar-new-year-'] {
+  --seasonal-accent: #ffd08c; --seasonal-secondary: #f5a6a6; --seasonal-accent-rgb: 255 208 140;
+  --seasonal-accent-light: #a04913; --seasonal-accent-light-rgb: 160 73 19; --seasonal-bg: #201019;
+}
+.seasonal-theme[data-seasonal-edition^='mardi-gras-'] {
+  --seasonal-accent: #ddbbff; --seasonal-secondary: #efd287; --seasonal-accent-rgb: 221 187 255;
+  --seasonal-accent-light: #724894; --seasonal-accent-light-rgb: 114 72 148; --seasonal-bg: #191024;
+}
+.seasonal-theme[data-seasonal-edition^='holi-'] {
+  --seasonal-accent: #f3acd9; --seasonal-secondary: #9be3d4; --seasonal-accent-rgb: 243 172 217;
+  --seasonal-accent-light: #a0357d; --seasonal-accent-light-rgb: 160 53 125; --seasonal-bg: #1d1223;
+}
+.seasonal-theme:is([data-seasonal-edition^='ramadan-'], [data-seasonal-edition^='eid-al-fitr-'], [data-seasonal-edition^='eid-al-adha-']) {
+  --seasonal-accent: #a7dcca; --seasonal-secondary: #f2d198; --seasonal-accent-rgb: 167 220 202;
+  --seasonal-accent-light: #226f5b; --seasonal-accent-light-rgb: 34 111 91; --seasonal-bg: #091c1b;
+}
+.seasonal-theme[data-seasonal-edition^='easter-'] {
+  --seasonal-accent: #c4d9ff; --seasonal-secondary: #b8e0be; --seasonal-accent-rgb: 196 217 255;
+  --seasonal-accent-light: #466697; --seasonal-accent-light-rgb: 70 102 151; --seasonal-bg: #0d1920;
+}
+.seasonal-theme[data-seasonal-edition^='earth-day-'] {
+  --seasonal-accent: #b3ddad; --seasonal-secondary: #9dcee9; --seasonal-accent-rgb: 179 221 173;
+  --seasonal-accent-light: #326b38; --seasonal-accent-light-rgb: 50 107 56; --seasonal-bg: #0c1916;
+}
+.seasonal-theme[data-seasonal-edition^='pride-month-'] {
+  --seasonal-accent: #eec4e1; --seasonal-secondary: #b8dce4; --seasonal-accent-rgb: 238 196 225;
+  --seasonal-accent-light: #854a77; --seasonal-accent-light-rgb: 133 74 119; --seasonal-bg: #181523;
+}
+.seasonal-theme[data-seasonal-edition^='pride-month-'] :is(app-site-header header, app-site-footer footer) {
+  border-image: linear-gradient(90deg, #e6a0a0, #e6cf98, #acd0ad, #a8c9e3, #c2a9df) 1;
+}
+.seasonal-theme[data-seasonal-edition^='independence-day-'] {
+  --seasonal-accent: #c3dcff; --seasonal-secondary: #edaaaa; --seasonal-accent-rgb: 195 220 255;
+  --seasonal-accent-light: #355f94; --seasonal-accent-light-rgb: 53 95 148; --seasonal-bg: #11192b;
+}
+.seasonal-theme[data-seasonal-edition^='dia-de-los-muertos-'] {
+  --seasonal-accent: #ffcd79; --seasonal-secondary: #e9a6cf; --seasonal-accent-rgb: 255 205 121;
+  --seasonal-accent-light: #9a5717; --seasonal-accent-light-rgb: 154 87 23; --seasonal-bg: #211329;
+}
+
+/* Archive previews inherit the reading surface even when no campaign is active. */
+.site-theme-scope .seasonal-archive-frame { background: var(--site-bg); color: var(--site-text); }
+
+/* Keep complete candle arrangements visible in wide seasonal heroes. */
+@media (min-width: 801px) {
+  .seasonal-theme:is([data-seasonal-theme='hanukkah'], [data-seasonal-theme='kwanzaa']) .seasonal-banner-art {
+    object-fit: contain;
+    object-position: right center;
+    mask-image: linear-gradient(to right, transparent 50%, #000 70%);
+  }
+}

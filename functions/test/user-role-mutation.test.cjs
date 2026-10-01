@@ -61,3 +61,15 @@ test('user deletion confirmation accepts only the exact uid or case-insensitive 
   assert.equal(matchesUserDeletionConfirmation('reader-uid', 'Reader@Example.com', 'reader'), false);
   assert.equal(matchesUserDeletionConfirmation('reader-uid', null, 'reader@example.com'), false);
 });
+
+
+test('admin removal clears a mirrored early-reader grant while preserving unrelated custom claims', () => {
+  const existing = {tenant: 'public-site', earlyReader: true, customFeature: true,
+    roles: {earlyReader: true, trustedCommenter: true}};
+  assert.deepEqual(replaceManagedUserRoleClaims(existing, ['trustedCommenter']), {
+    tenant: 'public-site', customFeature: true, roles: {trustedCommenter: true},
+  });
+  assert.deepEqual(replaceManagedUserRoleClaims({tenant: 'public-site'}, ['earlyReader']), {
+    tenant: 'public-site', earlyReader: true, roles: {earlyReader: true},
+  });
+});

@@ -53,6 +53,7 @@ describe('SiteFooterComponent', () => {
     expect(footerText).toContain(`© ${new Date().getFullYear()} Colin Michaels. All rights reserved.`);
     expect(footerText).toContain('Home');
     expect(footerText).toContain('Blog');
+    expect(footer.querySelector('a[href="/schedule"]')?.textContent?.trim()).toBe('Posting schedule');
     expect(footer.querySelector('a[href="/authors"]')?.textContent?.trim()).toBe('Authors');
     expect(footer.querySelector('a[href="/write-for-us"]')?.textContent?.trim()).toBe('Write for Us');
     expect(footerText).toContain('Topics');

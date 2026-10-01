@@ -56,6 +56,13 @@ describe('BlogStorageService background serialization', () => {
     serializer = TestBed.inject(BlogStorageService) as unknown as BlogStorageSerializer;
   });
 
+  it('serializes reader announcements and clears removed settings with a delete sentinel', () => {
+    const readerRelease = {announceInSchedule: true, earlyAccessAt: null};
+    expect(serializer.toFirestorePost({...createPost(), readerRelease})['readerRelease']).toEqual(readerRelease);
+    expect((serializer.toFirestorePost(createPost())['readerRelease'] as {_methodName: string})._methodName).toBe('deleteField');
+    expect(Object.keys(serializer.toPostIndexEntry({...createPost(), readerRelease}))).not.toContain('readerRelease');
+  });
+
   it('writes a trimmed post background URL', () => {
     const document = serializer.toFirestorePost(createPost('  /assets/images/backgrounds/day.webp  '));
 

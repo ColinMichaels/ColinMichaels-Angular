@@ -19,9 +19,35 @@
   id="main-content"
   tabindex="-1"
   class="app-route-frame min-h-[100dvh] bg-zinc-800/70"
-  [class.public-reader-scope]="showReaderTools()"
+  [class.seasonal-archive-frame]="currentUrl().startsWith('/archive/seasons')"
+  [class.public-schedule-frame]="showPublishingScheduleSurface()"
+  [class.public-reader-scope]="showReaderTools() || currentUrl().startsWith('/archive/seasons') || showPublishingScheduleSurface()"
   [class.pb-28]="activeUserView()"
 >
+  @if (showSeasonalHidingPlaces()) {
+    <div class="seasonal-shell-decor" aria-hidden="true">
+      <div class="seasonal-garland">@for (light of seasonalLights; track light) { <span></span> }</div>
+      @if (seasonal.edition()?.theme === 'halloween') {
+      <svg class="seasonal-shell-bat" viewBox="0 0 80 36"><path fill="currentColor" d="M40 20 36 12 30 16C21 8 10 6 0 7l8 10 7-1 5 10 9-3 7 7 4-5 4 5 7-7 9 3 5-10 7 1 8-10C70 6 59 8 50 16l-6-4Z"/></svg>
+      <svg class="seasonal-shell-bat seasonal-shell-bat--right" viewBox="0 0 80 36"><path fill="currentColor" d="M40 20 36 12 30 16C21 8 10 6 0 7l8 10 7-1 5 10 9-3 7 7 4-5 4 5 7-7 9 3 5-10 7 1 8-10C70 6 59 8 50 16l-6-4Z"/></svg>
+      }
+    </div>
+  }
+  @if (showSeasonalBanner()) {
+    @defer (when showSeasonalBanner()) { <app-seasonal-banner/> }
+  }
+  @if (showSeasonalBanner() && seasonal.edition()?.interaction === 'reflect') {
+    <section id="seasonal-context" class="site-section py-8">
+      <p class="site-meta">{{ seasonal.edition()?.dateLabel }}</p>
+      <p class="text-body mt-3">{{ seasonal.edition()?.observanceNote }}</p>
+      @if (seasonal.edition()?.learnMoreUrl; as learnMoreUrl) {
+        <a class="site-inline-link inline-block mt-3" [href]="learnMoreUrl" target="_blank" rel="noopener noreferrer">About this day ↗</a>
+      }
+    </section>
+  }
+  @if (showSeasonalHidingPlaces()) {
+    @defer (when showSeasonalHidingPlaces()) { <app-seasonal-collectibles [url]="currentUrl()" placement="trail"/> }
+  }
   <router-outlet></router-outlet>
   @if (showReaderTools()) {
     @defer (when showReaderTools()) {
@@ -29,6 +55,12 @@
     }
   }
 </div>
+@if (showSeasonalHidingPlaces()) {
+  @defer (when showSeasonalHidingPlaces()) { <app-seasonal-collectibles [url]="currentUrl()" placement="footer"/> }
+}
+@if (showSeasonalRoute()) {
+  @defer (when showSeasonalRoute()) { <app-seasonal-lantern/> }
+}
 @if (showSiteHeader()) {
   <app-site-footer/>
 }

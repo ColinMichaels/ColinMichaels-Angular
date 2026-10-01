@@ -2,6 +2,7 @@ import {createHash, randomBytes} from 'node:crypto';
 
 import {FieldValue, Firestore, Timestamp, Transaction} from 'firebase-admin/firestore';
 import {HttpsError} from 'firebase-functions/v2/https';
+import {parseReleaseTimestamp, validateReaderRelease} from './public-publishing-schedule';
 
 const POSTS_COLLECTION = 'posts';
 const POST_SUMMARIES_COLLECTION = 'postSummaries';
@@ -231,9 +232,13 @@ export function validateTrustedBlogPost(value: unknown, now = new Date(), allowD
       invalid('Scheduled posts require a future publication time.');
     }
   }
-  if (status === 'published' && typeof publishedAt !== 'string') {
-    invalid('Published posts require a publication timestamp.');
+  if (status === 'published' && parseReleaseTimestamp(publishedAt) === null) {
+    invalid('Published posts require a valid timezone-qualified ISO publication timestamp.');
   }
+  if (status === 'published' && new Date(publishedAt as string).getTime() > now.getTime()) {
+    invalid('Future posts must remain scheduled until their publication time.');
+  }
+  validateReaderRelease(value['readerRelease'], publishedAt);
 
   const serializedBytes = Buffer.byteLength(JSON.stringify(value), 'utf8');
   if (serializedBytes > MAX_POST_BYTES) {
