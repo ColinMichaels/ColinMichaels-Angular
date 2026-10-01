@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import {expect, Locator, Page, test} from '@playwright/test';
 
 import {SEASONAL_EDITIONS, getSeasonalEdition} from '../src/app/features/seasonal/seasonal.catalog';
@@ -57,8 +58,8 @@ async function withLocalRegisteredAccount(page: Page, run: () => Promise<void>):
   test.setTimeout(90_000);
   const emulator = 'http://127.0.0.1:9099';
   const endpoint = `${emulator}/identitytoolkit.googleapis.com/v1/accounts`;
-  const email = `seasonal-options-${Date.now()}-${Math.random().toString(36).slice(2)}@example.invalid`;
-  const password = `Local-seasonal-${Math.random().toString(36).slice(2)}!`;
+  const email = `seasonal-options-${randomUUID()}@example.invalid`;
+  const password = `Local-seasonal-${randomUUID()}!`;
   const created = await page.request.post(`${endpoint}:signUp?key=local-seasonal-e2e`, {
     data: {email, password, returnSecureToken: true},
   });

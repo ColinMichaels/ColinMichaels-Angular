@@ -319,3 +319,10 @@ Colin approved the cleanup on October 1 and clarified that seasonal colors shoul
 The final Node 24.15.0 release build and whole-app lint pass; initial transfer remains 328.33 kB. Full Angular tests pass 1,418/1,418, and the unchanged Functions release tests pass 240 checks across ten suites. The documented 70 unique browser cases remain passing across the broad run and corrected focused reruns. Documentation validates all 112 tracked Markdown files; whitespace and offline-cache policy checks pass. The original `home-article-hero.component.ts` is byte-identical to `origin/dev`.
 
 The approved source uses `codex/seasonal-cta-cleanup`, retaining seasonal colors and decorations. Publishing uses the existing `firebase-production.yml` workflow with Hosting and matching Functions enabled together, and rules, Storage CORS, and force deployment disabled. `d62300a` is the prior published source rollback reference. The draft PR includes the already-live release from PR #357 because it has not yet merged into `dev`; the additional cleanup remains isolated in its own commit. This publication changes no CMS posts, account grants, or holiday approvals. Live completion is reported only after the workflow succeeds and the canonical public site is inspected.
+
+
+### Local Account Fixture Randomness
+
+GitHub CodeQL identified insecure `Math.random()` password generation in the inherited emulator-only seasonal account fixture. Its email nonce and password now use Node `crypto.randomUUID()`. Production Auth calls remain blocked by the fixture, and its exact created account/profile remain the only cleanup targets. This test-helper/documentation update does not change shipped web assets or server logic; no data migration or production account change applies.
+
+The secure-credential fixture rerun passes 4/4 account bypass/sign-out checks across desktop Chromium and Pixel 7. Build, lint, all 112 Markdown documentation checks, and whitespace checks also pass. These four overlap prior browser coverage and do not increase the unique 70-case total.
