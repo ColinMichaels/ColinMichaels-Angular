@@ -19,6 +19,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
 - [Public WebMCP Operations Runbook](./WEBMCP_OPERATIONS.md)
+- [Seasonal Campaign Preparation and Operations](./SEASONAL_CAMPAIGNS.md)
 
 ## Architecture
 
@@ -50,6 +51,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Public Contact and Author Submissions](../ARCHITECTURE/PUBLIC_SUBMISSIONS.md)
 - [Public Site Preloader](../ARCHITECTURE/PUBLIC_SITE_PRELOADER.md)
 - [Publishing Calendar](../ARCHITECTURE/PUBLISHING_CALENDAR.md)
+- [Public Publishing Schedule and Early Reader Access](../ARCHITECTURE/PUBLIC_PUBLISHING_SCHEDULE.md)
 - [Screen Saver](../ARCHITECTURE/SCREEN_SAVER.md)
 - [Social Preview and Share Attribution](../ARCHITECTURE/SOCIAL_PREVIEW_AND_SHARE_ATTRIBUTION.md)
 - [Mobile PWA Foundation](../ARCHITECTURE/MOBILE_PWA.md)
@@ -58,6 +60,8 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Topic Pages and Reusable Post Listing](../ARCHITECTURE/TOPIC_PAGES_AND_POST_LISTING.md)
 - [Authors and Bylines](../ARCHITECTURE/AUTHORS_AND_BYLINES.md)
 - [Cat Corner](../ARCHITECTURE/CAT_CORNER.md)
+- [Scary Christmas Seasonal Theme and Candy Hunt](../ARCHITECTURE/SCARY_CHRISTMAS.md)
+- [Seasonal Campaign Engine and Playable Archive](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md)
 
 ## Campaigns
 

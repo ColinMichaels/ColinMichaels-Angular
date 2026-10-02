@@ -507,6 +507,7 @@ export class BlogStorageService {
       catCorner: post.catCorner ?? deleteField(),
       preview: post.preview ?? deleteField(),
       socialPromotion: post.socialPromotion ?? deleteField(),
+      readerRelease: post.readerRelease ?? deleteField(),
       syncedAt: serverTimestamp(),
       storageVersion: 1,
     };

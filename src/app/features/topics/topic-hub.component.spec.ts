@@ -1,3 +1,4 @@
+import {SeasonalService} from '../seasonal/seasonal.service';
 import {convertToParamMap, ActivatedRoute} from '@angular/router';
 import {provideRouter} from '@angular/router';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
@@ -51,6 +52,7 @@ describe('TopicHubComponent', () => {
     await TestBed.configureTestingModule({
       imports: [TopicHubComponent],
       providers: [
+        {provide: SeasonalService, useValue: {edition: () => null, itemsAtHideout: () => []}},
         provideRouter([]),
         {
           provide: ActivatedRoute,

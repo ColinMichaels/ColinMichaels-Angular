@@ -58,6 +58,10 @@ import {
   renderSeoFallbackLinkList,
   renderSeoStaticFallbackHtml,
 } from './seo-fallback-pages';
+import {
+  createSeasonalArchiveSitemapPaths, getSeasonalArchivePage,
+  SEASONAL_ARCHIVE_EDITIONS, SEASONAL_ARCHIVE_INDEX, SeasonalArchivePage,
+} from './seasonal-archive-identity';
 import {renderSeoImageMarkup} from './seo-image-markup';
 import {createBlogFeedItemUrl} from './blog-feed-url';
 import {getLargestJpegVariantUrl, getManagedMediaIdFromWebpUrl} from './open-graph-image';
@@ -134,6 +138,11 @@ import {
   planAdminUserPointAdjustment,
 } from './admin-user-points';
 import {reconcileSocialAnnouncementStatus} from './social-delivery';
+import {
+  getPublicPublishingSchedule as loadPublicPublishingSchedule,
+  getScheduledPostForReader as loadScheduledPostForReader,
+  resolveCurrentReaderPermission,
+} from './public-publishing-schedule';
 import {
   createPostPollResults,
   normalizePostPollCounts,
@@ -1689,6 +1698,32 @@ export const getPublicAgentContent = onCall(
 
       throw error;
     }
+  }
+);
+
+/** Public teasers never include Editor.js blocks or unannounced CMS records. */
+export const getPublicPublishingSchedule = onCall(
+  {
+    region: FUNCTION_REGION, timeoutSeconds: 30, memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS, invoker: 'public',
+  },
+  async request => {
+    request.rawRequest.res?.setHeader('Cache-Control', 'private, no-store');
+    const permission = await resolveCurrentReaderPermission(getAuth(), request.auth);
+    return await loadPublicPublishingSchedule(getFirestore(), request.data, permission);
+  }
+);
+
+/** Current server-side entitlements are checked again for every early read. */
+export const getScheduledPostForReader = onCall(
+  {
+    region: FUNCTION_REGION, timeoutSeconds: 30, memory: '256MiB',
+    cors: SITE_CALLABLE_CORS_ORIGINS, invoker: 'public',
+  },
+  async request => {
+    request.rawRequest.res?.setHeader('Cache-Control', 'private, no-store');
+    const permission = await resolveCurrentReaderPermission(getAuth(), request.auth);
+    return await loadScheduledPostForReader(getFirestore(), request.data, permission);
   }
 );
 
@@ -3634,6 +3669,39 @@ function getHttpStatusCode(error: unknown): number {
 
 async function createSeoMetadataForPath(path: string): Promise<SeoMetadata> {
   const normalizedPath = normalizeSeoPath(path);
+  const seasonalArchive = getSeasonalArchivePage(path);
+
+  if (seasonalArchive) {
+    return createSeasonalArchiveSeoMetadata(seasonalArchive);
+  }
+
+  if (normalizedPath === '/schedule') {
+    return createPublicStaticSeoMetadata({
+      title: createSiteTitle('Upcoming stories and seasons'),
+      heading: 'Upcoming stories and seasons',
+      description: 'A look ahead at upcoming celebrations and announced writing. Articles open after publication, with permission-based early reading where offered.',
+      path: '/schedule', imageAlt: createPreviewImageAlt('publishing schedule'),
+      eyebrow: 'Coming up',
+      sections: [{heading: 'Publication comes first', paragraphs: [
+        'Announced stories appear in the schedule without revealing their full contents. Open the browser view to see current publication dates and reading availability.',
+      ]}],
+    });
+  }
+
+  if (/^\/schedule\/read\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedPath)) {
+    return {
+      ...createPublicStaticSeoMetadata({
+        title: createSiteTitle('Scheduled article'), heading: 'Scheduled article',
+        description: 'Article availability is checked securely when you open the reader.',
+        path: normalizedPath, imageAlt: createPreviewImageAlt('publishing schedule'),
+        eyebrow: 'Reader access',
+        sections: [{heading: 'Reading availability', paragraphs: [
+          'Published articles are available to everyone. Early reading requires a granted permission and an open early-access window.',
+        ]}],
+      }),
+      robots: 'noindex,nofollow', cacheControl: 'private, no-store',
+    };
+  }
 
   if (normalizedPath === '/') {
     return await createHomeSeoMetadata();
@@ -4062,6 +4130,7 @@ function createStaticSitemapUrls(blogLastmod?: string, authorsLastmod?: string):
     {
       path: '/background',
     },
+    ...createSeasonalArchiveSitemapPaths().map(path => ({path} satisfies SitemapUrl)),
     ...createPublicTopicSitemapPaths().map(path => ({
       path,
       lastmod: blogLastmod,
@@ -4672,6 +4741,40 @@ function createPublicStaticSeoMetadata(options: {
       sections: options.sections,
     }),
   };
+}
+
+function createSeasonalArchiveSeoMetadata(page: SeasonalArchivePage): SeoMetadata {
+  const editionLinks = SEASONAL_ARCHIVE_EDITIONS.map(edition => ({
+    href: createAbsoluteUrl(`${SEASONAL_ARCHIVE_INDEX.path}/${edition.id}`),
+    label: `${edition.holidayLabel} ${edition.year}`,
+    description: edition.archiveDescription,
+  }));
+  const edition = page.edition;
+  const metadata = createPublicStaticSeoMetadata({
+    title: createSiteTitle(edition ? `${edition.holidayLabel} ${edition.year}` : page.heading),
+    heading: page.heading,
+    description: page.description,
+    path: page.path,
+    imageAlt: createPreviewImageAlt(edition ? `${edition.holidayLabel} seasonal collection` : 'seasonal archive'),
+    eyebrow: edition ? `${edition.holidayLabel} ${edition.year}` : 'Seasonal experiences',
+    sections: [
+      {
+        heading: edition?.interaction === 'reflect' ? 'A moment for reflection' : edition ? 'Explore this edition' : 'Revisit a season',
+        paragraphs: edition?.interaction === 'reflect' ? [
+          'A seasonal reflection invites a quieter moment for context and learning. Read about this observance in the browser, or explore other seasonal experiences through the archive.',
+        ] : [
+          'Seasonal illustrations and small collections invite a little curiosity. The interactive hunt requires a browser with JavaScript.',
+          'Collection progress stays on your device. You can reset a collection or return to the usual site design without an account.',
+        ],
+        links: edition ? [{
+          href: createAbsoluteUrl(SEASONAL_ARCHIVE_INDEX.path),
+          label: 'Explore the seasonal archive',
+        }] : editionLinks,
+      },
+      ...(edition && edition.interaction !== 'reflect' ? [{heading: 'More seasonal experiences', links: editionLinks.filter(link => link.href !== createAbsoluteUrl(page.path))}] : []),
+    ],
+  });
+  return {...metadata, robots: page.publishApproved ? 'index,follow' : 'noindex,follow'};
 }
 
 function createTopicHubSeoMetadata(
@@ -7306,7 +7409,7 @@ function getClaimRoles(claims: Record<string, unknown>): string[] {
     }
   }
 
-  for (const mirroredRole of ['admin', 'cmsAdmin']) {
+  for (const mirroredRole of ['admin', 'cmsAdmin', 'earlyReader']) {
     if (claims[mirroredRole] === true) {
       roleNames.add(mirroredRole);
     }

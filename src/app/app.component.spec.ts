@@ -1,3 +1,6 @@
+import {signal} from '@angular/core';
+import {SeasonalService} from './features/seasonal/seasonal.service';
+import {SiteAnalyticsService} from './shared/analytics/site-analytics.service';
 import { TestBed } from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {
@@ -31,6 +34,19 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.classList).toContain('site-theme-scope');
     expect(fixture.nativeElement.classList).not.toContain('core-os-scope');
     expect(fixture.nativeElement.querySelector('app-site-footer')).not.toBeNull();
+  });
+
+  it('does not record extra page views when the season changes on the same route', () => {
+    const seasonalRevision = signal(0);
+    const seasonal = TestBed.inject(SeasonalService);
+    spyOn(seasonal, 'setContext').and.callFake(() => { seasonalRevision(); });
+    const track = spyOn(TestBed.inject(SiteAnalyticsService), 'trackPageView');
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    expect(track).toHaveBeenCalledTimes(1);
+    seasonalRevision.set(1);
+    fixture.detectChanges();
+    expect(track).toHaveBeenCalledTimes(1);
   });
 
   it('uses the dedicated shell for admin routes without enabling OS notifications', () => {

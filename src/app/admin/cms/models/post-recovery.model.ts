@@ -22,6 +22,8 @@ export interface CmsPostRecoveryFormData {
   catCornerDiscoveryPost: boolean;
   status: BlogPostStatus;
   publishedAt: string;
+  announceInSchedule?: boolean;
+  earlyAccessAt?: string;
   categories: string;
   tags: string;
   seoTitle: string;
@@ -75,6 +77,7 @@ const RECOVERY_FORM_STRING_FIELDS: readonly (keyof CmsPostRecoveryFormData)[] = 
 ];
 
 const RECOVERY_FORM_OPTIONAL_STRING_FIELDS: readonly (keyof CmsPostRecoveryFormData)[] = [
+  'earlyAccessAt',
   'evidenceSummary',
   'relationshipDisclosure',
   'aiAssistanceDisclosure',
@@ -93,6 +96,7 @@ function isRecoveryFormData(value: unknown): value is CmsPostRecoveryFormData {
     && typeof value['featured'] === 'boolean'
     && typeof value['catCornerEnabled'] === 'boolean'
     && typeof value['catCornerDiscoveryPost'] === 'boolean'
+    && (value['announceInSchedule'] === undefined || typeof value['announceInSchedule'] === 'boolean')
     && isBlogPostStatus(value['status']);
 }
 

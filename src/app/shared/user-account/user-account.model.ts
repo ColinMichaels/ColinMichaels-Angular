@@ -12,6 +12,7 @@ export type UserRole =
   | 'mediaManager'
   | 'viewer'
   | 'trustedCommenter'
+  | 'earlyReader'
   | 'catCornerAddict';
 
 export type UserCommentTrustStatus = 'new' | 'trusted' | 'blocked';
@@ -102,6 +103,7 @@ export interface UserAccountProfile {
 
 export const BASE_USER_ROLE: UserRole = 'user';
 export const CAT_CORNER_ADDICT_ROLE = 'catCornerAddict' as const;
+export const EARLY_READER_ROLE = 'earlyReader' as const;
 
 export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
   {
@@ -140,6 +142,11 @@ export const USER_ROLE_DEFINITIONS: readonly UserRoleDefinition[] = [
     description: 'Can publish blog comments without first-time moderation.',
   },
   {
+    id: EARLY_READER_ROLE,
+    label: 'Early Reader',
+    description: 'Can read announced articles during an approved early-access window; granted separately by an admin.',
+  },
+  {
     id: CAT_CORNER_ADDICT_ROLE,
     label: 'Cat Corner Addict',
     description: 'Found Gretchen and can enter her members-only Cat Corner.',
@@ -151,6 +158,7 @@ export const CMS_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'cont
 export const MEDIA_LIBRARY_ACCESS_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'mediaManager'];
 export const USER_MANAGEMENT_ACCESS_ROLES: readonly UserRole[] = ['admin'];
 export const TRUSTED_COMMENT_ROLES: readonly UserRole[] = ['admin', 'cmsAdmin', 'contentEditor', 'trustedCommenter'];
+export const EARLY_READER_ACCESS_ROLES: readonly UserRole[] = [EARLY_READER_ROLE];
 export const CAT_CORNER_ACCESS_ROLES: readonly UserRole[] = [CAT_CORNER_ADDICT_ROLE];
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

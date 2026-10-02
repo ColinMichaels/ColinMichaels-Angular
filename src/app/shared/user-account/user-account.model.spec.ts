@@ -2,6 +2,10 @@ import {
   BASE_USER_ROLE,
   CAT_CORNER_ACCESS_ROLES,
   CAT_CORNER_ADDICT_ROLE,
+  EARLY_READER_ACCESS_ROLES,
+  EARLY_READER_ROLE,
+  ADMIN_CONSOLE_ROLES,
+  CMS_ACCESS_ROLES,
   getClaimRoles,
   hasAnyRoleClaim,
   normalizeCommunicationPreferences,
@@ -37,6 +41,14 @@ describe('user account model', () => {
     expect(CAT_CORNER_ACCESS_ROLES).toEqual([CAT_CORNER_ADDICT_ROLE]);
     expect(getClaimRoles(claims)).toContain(CAT_CORNER_ADDICT_ROLE);
     expect(hasAnyRoleClaim(claims, CAT_CORNER_ACCESS_ROLES)).toBeTrue();
+  });
+
+  it('defines separately granted early reading without CMS or admin permissions', () => {
+    expect(USER_ROLE_DEFINITIONS.find(role => role.id === EARLY_READER_ROLE)?.label).toBe('Early Reader');
+    expect(hasAnyRoleClaim({roles: {earlyReader: true}}, EARLY_READER_ACCESS_ROLES)).toBeTrue();
+    expect(hasAnyRoleClaim({roles: {catCornerAddict: true}}, EARLY_READER_ACCESS_ROLES)).toBeFalse();
+    expect(ADMIN_CONSOLE_ROLES).not.toContain(EARLY_READER_ROLE);
+    expect(CMS_ACCESS_ROLES).not.toContain(EARLY_READER_ROLE);
   });
 
   it('normalizes valid communication preferences and rejects incomplete consent data', () => {

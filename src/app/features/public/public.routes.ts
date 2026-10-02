@@ -14,6 +14,8 @@ import {catCornerRoutes} from '../cat-corner/cat-corner.routes';
 import {topicRoutes} from '../topics/topic.routes';
 import {authorRoutes} from '../authors/author.routes';
 import {submissionRoutes} from '../submissions/submission.routes';
+import {seasonalRoutes} from '../seasonal/seasonal.routes';
+import {publishingScheduleRoutes} from '../publishing-schedule/publishing-schedule.routes';
 
 export const publicRoutes: Routes = [
   {
@@ -49,6 +51,8 @@ export const publicRoutes: Routes = [
     loadComponent: () => import('./pages/personal-aircraft-buyer-verification.component')
       .then(m => m.PersonalAircraftBuyerVerificationComponent),
   },
+  ...seasonalRoutes,
+  ...publishingScheduleRoutes,
   ...submissionRoutes,
   ...catCornerRoutes,
   ...authorRoutes,

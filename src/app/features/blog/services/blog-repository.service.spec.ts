@@ -528,6 +528,15 @@ describe('BlogRepositoryService', () => {
     expect(savedPost.revision).toBe(1);
   });
 
+  it('round-trips optional reader release settings through saves and exported packages', async () => {
+    const readerRelease = {announceInSchedule: true, earlyAccessAt: '2027-01-01T08:00:00-04:00'};
+    const post = {...service.createNewPostTemplate(), slug: 'reader-release-post', readerRelease,
+      publishedAt: '2027-01-02T12:00:00.000Z'};
+    const saved = await service.savePost(post);
+    expect(saved.readerRelease).toEqual({announceInSchedule: true, earlyAccessAt: '2027-01-01T12:00:00.000Z'});
+    expect(service.createExportDocument([saved]).posts[0].readerRelease).toEqual(saved.readerRelease);
+  });
+
   it('updates editorial metadata without replacing article blocks or other post fields', async () => {
     const originalBlocks = draftPost.blocks;
     const savedPost = await service.updatePostEditorial(draftPost, {

@@ -24,6 +24,7 @@ import {
 } from '../utils/blog-image-url.util';
 import {createBlogReadingStats} from '../utils/blog-reading.util';
 import {createBlogPostSearchBodyText} from '../utils/blog-search-text.util';
+import {normalizeBlogReaderRelease} from '../utils/blog-reader-release.util';
 
 export interface BlogPostPreviewResult {
   post: BlogPost;
@@ -323,6 +324,7 @@ export class BlogRepositoryService {
       backgroundImage: post.backgroundImage?.trim() || undefined,
       thumbnailImage: imageFields.thumbnailImage,
       catCorner: normalizeBlogCatCornerSettings(post.catCorner),
+      readerRelease: normalizeBlogReaderRelease(post.readerRelease),
       ...(post.status === 'draft' && isActivePreview(post) ? {preview: post.preview} : {preview: undefined}),
       seo: {
         ...post.seo,

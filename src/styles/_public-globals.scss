@@ -622,3 +622,6 @@ app-blog-post-listing .post-listing--editorial .post-listing__image {
   position: relative;
   z-index: 1;
 }
+
+/* Public schedules and protected reader shells share the site's reading colors. */
+.site-theme-scope .public-schedule-frame { background: var(--site-bg); color: var(--site-text); }

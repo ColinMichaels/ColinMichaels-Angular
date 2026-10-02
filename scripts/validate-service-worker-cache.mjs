@@ -37,6 +37,13 @@ assert.ok(
 );
 
 const generatedManifest = readJson(generatedManifestPath);
+for (const readerPath of ['/schedule/read/announced-post', '/schedule/read/not-yet-released']) {
+  assert.ok(
+    generatedManifest.navigationUrls?.some(rule => !rule.positive && new RegExp(rule.regex).test(readerPath)),
+    'Early-reader routes must reach the server instead of the offline navigation fallback.'
+  );
+}
+assert.deepEqual(generatedManifest.dataGroups ?? [], [], 'Private reader callables must not enter a runtime data cache.');
 const criticalGenerated = requireGroup(generatedManifest.assetGroups, 'app-shell-critical', generatedManifestPath);
 const lazyGenerated = requireGroup(generatedManifest.assetGroups, 'lazy-code-and-fonts', generatedManifestPath);
 const prefetchedLazyChunks = criticalGenerated.urls.filter(url => /^\/chunk-.*\.js$/.test(url));
