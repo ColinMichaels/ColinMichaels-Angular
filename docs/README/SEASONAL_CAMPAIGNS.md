@@ -8,7 +8,13 @@ The [architecture and compatibility contract](../ARCHITECTURE/SEASONAL_CAMPAIGNS
 
 ## CTA Preservation Cleanup
 
-The published `f9ab543` cleanup removes automatic holiday banners from the main site so the normal homepage hero leads. Decorations and the lantern remain, and the first candy appears just after the featured hero. Explicit archive edition pages retain their illustrations. Seasonal music now uses a **Listen to the Dreadnauts** external link; there is no embedded Spooky player. Source media and saved collections remain preserved. The existing homepage structure is preserved and seasonal colors remain by Colin’s clarification. This presentation-only change has no data migration or new calendar approvals. The production workflow updates Hosting and its matching Functions SEO shell together. See the [cleanup compatibility notes](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#october-1-cta-preservation-cleanup).
+The published `f9ab543` cleanup removes automatic holiday banners from the main site so the normal homepage hero leads. Decorations and the lantern remain, and that release placed the first candy just after the featured hero (superseded by the content hiding places below). Explicit archive edition pages retain their illustrations. Seasonal music now uses a **Listen to the Dreadnauts** external link; there is no embedded Spooky player. Source media and saved collections remain preserved. The existing homepage structure is preserved and seasonal colors remain by Colin’s clarification. This presentation-only change has no data migration or new calendar approvals. The production workflow updates Hosting and its matching Functions SEO shell together. See the [cleanup compatibility notes](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#october-1-cta-preservation-cleanup).
+
+## Finding objects in the content
+
+Objects now blend into several existing content areas instead of taking up a row at the top or bottom. Look around stories, topic guides, video/discovery sections, and the author directory. Clues still lead to the correct route. The 28px artwork has a 44px keyboard/touch target and a visible focus treatment. Each find stays still during a visit, then rotates to another candidate area when you leave and return; a fresh reload starts a new random arrangement and can occasionally reuse an area.
+
+Finding one item leaves any other find on that page in its assigned area. Collection progress, account bypass, archive preview rules, and final-find confetti continue to work as before. No collection reset is required. The owner off switch still removes the holiday immediately, and rollback to `365036c` restores the previous rows without changing stored progress. See the [content hiding-place contract](../ARCHITECTURE/SEASONAL_CAMPAIGNS.md#content-hiding-places).
 
 ## Read-Only Archive Collection Guides
 

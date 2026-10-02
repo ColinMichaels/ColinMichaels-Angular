@@ -2,100 +2,103 @@
   <main class="pb-32 sm:pb-28 lg:pb-24">
     <app-home-article-hero/>
 
-    @if (seasonal.enabled()) {
-      @defer (when seasonal.enabled()) {
-        <app-seasonal-collectibles url="/" placement="banner"/>
-      }
-    }
-
-    @defer (on viewport) {
-      <app-home-latest-writing-section
-        heading="More to read"
-        [excludePostId]="heroPostId()"
-        [maxPosts]="3"
-        [featuredFirst]="false"
-      />
-    } @placeholder {
-      <section id="blog" class="site-section">
-        <div class="site-section-header">
-          <div>
-            <h2 class="mt-3 heading-section">More to read</h2>
-          </div>
-          <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
-            View all posts
-          </a>
-        </div>
-        <div class="site-card-grid" aria-hidden="true">
-          @for (i of [1, 2, 3]; track i) {
-            <article class="site-skeleton-card">
-              <div class="site-skeleton-block aspect-[16/9] w-full"></div>
-              <div class="flex flex-1 flex-col gap-3 p-5">
-                <div class="site-skeleton-block h-3 w-24"></div>
-                <div class="site-skeleton-block h-6 w-3/4"></div>
-                <div class="space-y-2">
-                  <div class="site-skeleton-block h-3 w-full"></div>
-                  <div class="site-skeleton-block h-3 w-4/5"></div>
-                </div>
-              </div>
-            </article>
-          }
-        </div>
-      </section>
-    }
-
-    @defer (on viewport) {
-      <app-home-topics-section/>
-    } @placeholder {
-      <section id="topic-guides" class="site-section-band-dark" aria-labelledby="topic-guides-placeholder-heading">
-        <div class="site-section-inner">
+    <div class="seasonal-hideout">
+      <app-seasonal-collectibles url="/" hideout="reading"/>
+      @defer (on viewport) {
+        <app-home-latest-writing-section
+          heading="More to read"
+          [excludePostId]="heroPostId()"
+          [maxPosts]="3"
+          [featuredFirst]="false"
+        />
+      } @placeholder {
+        <section id="blog" class="site-section">
           <div class="site-section-header">
             <div>
-              <h2 id="topic-guides-placeholder-heading" class="mt-3 heading-section">Topics</h2>
+              <h2 class="mt-3 heading-section">More to read</h2>
             </div>
+            <a [routerLink]="['/', pathNames.BLOG]" class="btn-link">
+              View all posts
+            </a>
           </div>
-          <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-hidden="true">
-            @for (i of [1, 2, 3, 4, 5]; track i) {
-              <article class="site-skeleton-card p-5">
-                <div class="site-skeleton-block h-12 w-12 rounded-full"></div>
-                <div class="mt-5 site-skeleton-block h-3 w-20"></div>
-                <div class="mt-3 site-skeleton-block h-5 w-3/4"></div>
+          <div class="site-card-grid" aria-hidden="true">
+            @for (i of [1, 2, 3]; track i) {
+              <article class="site-skeleton-card">
+                <div class="site-skeleton-block aspect-[16/9] w-full"></div>
+                <div class="flex flex-1 flex-col gap-3 p-5">
+                  <div class="site-skeleton-block h-3 w-24"></div>
+                  <div class="site-skeleton-block h-6 w-3/4"></div>
+                  <div class="space-y-2">
+                    <div class="site-skeleton-block h-3 w-full"></div>
+                    <div class="site-skeleton-block h-3 w-4/5"></div>
+                  </div>
+                </div>
               </article>
             }
           </div>
-        </div>
-      </section>
-    }
+        </section>
+      }
+    </div>
 
-    @defer (on viewport) {
-      <app-youtube-latest-videos channel="colin-michaels" [maxResults]="3"></app-youtube-latest-videos>
-    } @placeholder {
-      <section id="youtube" class="site-section-band-dark">
-        <div class="site-section-inner">
-          <div class="site-section-header">
-            <div class="max-w-2xl">
-              <p class="eyebrow eyebrow-red">Colin Michaels on YouTube</p>
-              <h2 class="mt-3 heading-section">What I’m testing, building, and sharing now.</h2>
-              <p class="site-section-copy">
-                Watch the newest videos, then subscribe for the next useful find, build, story, or experiment.
-              </p>
+    <div class="seasonal-hideout">
+      <app-seasonal-collectibles url="/" hideout="guide"/>
+      @defer (on viewport) {
+        <app-home-topics-section/>
+      } @placeholder {
+        <section id="topic-guides" class="site-section-band-dark" aria-labelledby="topic-guides-placeholder-heading">
+          <div class="site-section-inner">
+            <div class="site-section-header">
+              <div>
+                <h2 id="topic-guides-placeholder-heading" class="mt-3 heading-section">Topics</h2>
+              </div>
+            </div>
+            <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-hidden="true">
+              @for (i of [1, 2, 3, 4, 5]; track i) {
+                <article class="site-skeleton-card p-5">
+                  <div class="site-skeleton-block h-12 w-12 rounded-full"></div>
+                  <div class="mt-5 site-skeleton-block h-3 w-20"></div>
+                  <div class="mt-3 site-skeleton-block h-5 w-3/4"></div>
+                </article>
+              }
             </div>
           </div>
-          <div class="site-card-grid" aria-hidden="true">
-            @for (item of [1, 2, 3]; track item) {
-              <div class="site-skeleton-card animate-pulse">
-                <div class="aspect-video bg-zinc-200 dark:bg-zinc-800"></div>
-                <div class="space-y-3 p-5">
-                  <div class="site-skeleton-block h-3 w-28"></div>
-                  <div class="site-skeleton-block h-5 w-4/5"></div>
-                  <div class="site-skeleton-block h-3 w-full"></div>
-                  <div class="site-skeleton-block h-3 w-2/3"></div>
-                </div>
+        </section>
+      }
+    </div>
+
+    <div class="seasonal-hideout">
+      <app-seasonal-collectibles url="/" hideout="discovery"/>
+      @defer (on viewport) {
+        <app-youtube-latest-videos channel="colin-michaels" [maxResults]="3"></app-youtube-latest-videos>
+      } @placeholder {
+        <section id="youtube" class="site-section-band-dark">
+          <div class="site-section-inner">
+            <div class="site-section-header">
+              <div class="max-w-2xl">
+                <p class="eyebrow eyebrow-red">Colin Michaels on YouTube</p>
+                <h2 class="mt-3 heading-section">What I’m testing, building, and sharing now.</h2>
+                <p class="site-section-copy">
+                  Watch the newest videos, then subscribe for the next useful find, build, story, or experiment.
+                </p>
               </div>
-            }
+            </div>
+            <div class="site-card-grid" aria-hidden="true">
+              @for (item of [1, 2, 3]; track item) {
+                <div class="site-skeleton-card animate-pulse">
+                  <div class="aspect-video bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div class="space-y-3 p-5">
+                    <div class="site-skeleton-block h-3 w-28"></div>
+                    <div class="site-skeleton-block h-5 w-4/5"></div>
+                    <div class="site-skeleton-block h-3 w-full"></div>
+                    <div class="site-skeleton-block h-3 w-2/3"></div>
+                  </div>
+                </div>
+              }
+            </div>
           </div>
-        </div>
-      </section>
-    }
+        </section>
+      }
+    </div>
 
     @defer (on viewport) {
       <app-home-recovery-blog-sections/>

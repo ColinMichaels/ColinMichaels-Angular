@@ -3,6 +3,7 @@ import {toSignal} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {map} from 'rxjs';
 
+import {SeasonalCollectiblesComponent} from '../../../seasonal/components/seasonal-collectibles.component';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {BlogArticleLibraryService} from '../../services/blog-article-library.service';
 import {ContinueReadingShelfComponent} from '../../components/continue-reading-shelf.component';
@@ -55,6 +56,7 @@ const MAX_POPULAR_TAGS = 10;
 @Component({
   selector: 'app-blog-index',
   imports: [
+    SeasonalCollectiblesComponent,
     RouterLink,
     ContinueReadingShelfComponent,
     BlogNextReadComponent,
@@ -72,7 +74,8 @@ const MAX_POPULAR_TAGS = 10;
   template: `
     <main class="blog-page">
       <h1 class="sr-only">Blog</h1>
-      <section class="site-layout site-layout-wide blog-index-shell">
+      <section class="seasonal-hideout site-layout site-layout-wide blog-index-shell">
+        <app-seasonal-collectibles url="/blog" hideout="discovery"/>
         <section class="blog-index-controls" aria-label="Browse posts">
           <div class="blog-topic-filters" aria-label="Popular topic filters">
             <p class="blog-topic-filters__label">Most popular topics</p>
@@ -156,7 +159,8 @@ const MAX_POPULAR_TAGS = 10;
         </section>
 
         <div class="blog-index-content">
-          <section id="blog-post-list" class="blog-index-main-column">
+          <section id="blog-post-list" class="seasonal-hideout blog-index-main-column">
+            <app-seasonal-collectibles url="/blog" hideout="reading"/>
             @if (!isLoading() && !loadError() && activeTopic(); as topic) {
               <p class="blog-section-rule blog-results-summary">
                 Showing {{ posts().length }} published post{{ posts().length === 1 ? '' : 's' }}
@@ -195,7 +199,10 @@ const MAX_POPULAR_TAGS = 10;
               <app-blog-next-read [post]="nextReadPost" [compact]="true"></app-blog-next-read>
             }
 
-            <app-daily-discovery-rail [compact]="true"></app-daily-discovery-rail>
+            <div class="seasonal-hideout">
+              <app-daily-discovery-rail [compact]="true"></app-daily-discovery-rail>
+              <app-seasonal-collectibles url="/blog" hideout="guide"/>
+            </div>
 
             <app-article-library-control surface="menu"></app-article-library-control>
 

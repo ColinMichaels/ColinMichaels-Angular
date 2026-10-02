@@ -6,6 +6,7 @@ import {map} from 'rxjs';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {SeoService} from '../../shared/seo/seo.service';
+import {SeasonalCollectiblesComponent} from '../seasonal/components/seasonal-collectibles.component';
 import {BlogPostListingComponent} from '../blog/components/post-listing/blog-post-listing.component';
 import {BlogRepositoryService} from '../blog/services/blog-repository.service';
 import {YouTubeLatestVideosComponent} from '../youtube/components/latest-videos/youtube-latest-videos.component';
@@ -28,6 +29,7 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
 @Component({
   selector: 'app-topic-hub',
   imports: [
+    SeasonalCollectiblesComponent,
     NgStyle,
     RouterLink,
     BlogPostListingComponent,
@@ -47,7 +49,8 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
       <div class="topic-hub-grid" aria-hidden="true"></div>
 
       <section class="topic-hub-shell">
-        <section id="topic-posts" class="topic-hub-section topic-hub-featured" aria-labelledby="topic-featured-heading">
+        <section id="topic-posts" class="seasonal-hideout topic-hub-section topic-hub-featured" aria-labelledby="topic-featured-heading">
+          <app-seasonal-collectibles [url]="'/topics/' + hub().slug" hideout="reading"/>
           <header class="topic-hub-section-heading topic-hub-section-heading-row">
             <div>
               <h2 id="topic-featured-heading">{{ pageCopy().featuredHeading }}</h2>
@@ -114,11 +117,13 @@ import {postMatchesTopicHub} from './utils/topic-post-matching.util';
           ></app-youtube-latest-videos>
         }
 
-        <section id="topic-guide" class="topic-hub-section topic-hub-guide-section" aria-label="About this topic">
+        <section id="topic-guide" class="seasonal-hideout topic-hub-section topic-hub-guide-section" aria-label="About this topic">
+          <app-seasonal-collectibles [url]="'/topics/' + hub().slug" hideout="guide"/>
           <app-topic-guide [hub]="hub()"></app-topic-guide>
         </section>
 
-        <section class="topic-hub-section topic-hub-related" aria-labelledby="topic-related-heading">
+        <section class="seasonal-hideout topic-hub-section topic-hub-related" aria-labelledby="topic-related-heading">
+          <app-seasonal-collectibles [url]="'/topics/' + hub().slug" hideout="discovery"/>
           <header class="topic-hub-section-heading topic-hub-section-heading-row">
             <div>
               <h2 id="topic-related-heading">Keep exploring</h2>

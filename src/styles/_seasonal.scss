@@ -131,19 +131,22 @@
 .seasonal-lantern-dialog :is(button,a):focus-visible, .seasonal-lantern-toggle:focus-visible,
 .seasonal-restore-toggle:focus-visible { outline: 3px solid var(--seasonal-secondary, #c59cef); outline-offset: 4px; }
 
-.seasonal-collectible-placement { display: flex; justify-content: flex-end; max-width: 80rem; margin-inline: auto; padding-inline: 2rem; }
-.seasonal-collectible-placement--banner { min-height: 3.5rem; padding-block: .5rem; }
-.seasonal-collectible-placement--trail { min-height: 3.5rem; padding-top: 1rem; }
-.seasonal-collectible-placement--footer { padding-block: .25rem; }
-.seasonal-collectible {
-  display: inline-flex; justify-content: center; align-items: center; width: 4rem; height: 3.5rem;
-  background: none; border: 0; border-radius: .75rem; cursor: pointer;
-  transition: transform .2s, filter .2s; transform: rotate(-12deg);
+.seasonal-hideout { position: relative; }
+.seasonal-hideout-target {
+  position: absolute; z-index: 5; inset-inline-end: .65rem; bottom: -1.35rem;
+  width: 2.75rem; height: 2.75rem; pointer-events: none;
 }
-.seasonal-collectible img { width: 4rem; height: 4rem; object-fit: contain; pointer-events: none; }
+.seasonal-hideout-target[data-seasonal-hideout='guide'] { inset-inline-end: auto; inset-inline-start: .65rem; }
+.seasonal-hideout-target[data-seasonal-hideout='discovery'] { inset-inline-end: 16%; }
+.seasonal-collectible {
+  display: inline-flex; justify-content: center; align-items: center; width: 2.75rem; height: 2.75rem;
+  background: none; border: 0; border-radius: .5rem; cursor: pointer; pointer-events: auto;
+  transition: transform .2s, filter .2s, opacity .2s; transform: rotate(-12deg); opacity: .76;
+}
+.seasonal-collectible img { width: 1.75rem; height: 1.75rem; object-fit: contain; pointer-events: none; }
 .seasonal-collectible--violet { filter: hue-rotate(250deg); transform: rotate(14deg); }
 .seasonal-collectible--mint { filter: hue-rotate(85deg); transform: rotate(-6deg); }
-.seasonal-collectible:hover { transform: translateY(-3px) rotate(0); filter: drop-shadow(0 0 .5rem rgb(255 186 93 / .4)); }
+.seasonal-collectible:is(:hover, :focus-visible) { opacity: 1; transform: rotate(0); filter: drop-shadow(0 0 .3rem rgb(255 186 93 / .35)); }
 
 .seasonal-lantern-toggle {
   position: fixed; z-index: 65; left: max(1rem, env(safe-area-inset-left));

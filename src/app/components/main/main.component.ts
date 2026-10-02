@@ -6,7 +6,6 @@ import {RouterLink} from '@angular/router';
 
 import {PATH_NAMES} from '../../app-route-paths';
 import {SeasonalCollectiblesComponent} from '../../features/seasonal/components/seasonal-collectibles.component';
-import {SeasonalService} from '../../features/seasonal/seasonal.service';
 import {
   BlogPostCardSkeletonComponent
 } from '../../features/blog/components/post-card/blog-post-card-skeleton.component';
@@ -46,7 +45,6 @@ import {HomeBlogPostFeedService} from './home-blog-post-feed.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainComponent {
-  protected readonly seasonal = inject(SeasonalService);
   private readonly blogPostFeed = inject(HomeBlogPostFeedService);
   private readonly homepageHeroRepository = inject(HomepageHeroRepositoryService);
   private readonly homepageSocialPreview = inject(HomepageSocialPreviewService);

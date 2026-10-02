@@ -4,6 +4,7 @@ import {computed, DestroyRef, inject, Injectable, InjectionToken, signal} from '
 import {AuthService} from '../../services/auth.service';
 import {CelebrationService} from '../../shared/celebration/celebration.service';
 import {getSeasonalEdition, SEASONAL_EDITIONS} from './seasonal.catalog';
+import {SEASONAL_HIDING_SEED, SeasonalHideout, seasonalHideoutFor, seasonalHideoutsFor} from './seasonal-hideouts';
 import {
   chooseEdition, isSeasonalArchiveRoute, isSeasonalReadingRoute,
   SEASONAL_CONFIG, SEASONAL_PREFERENCE_STORAGE_KEY, seasonalPath, seasonalStorageKey,
@@ -45,6 +46,10 @@ export class SeasonalService {
   private readonly states = new Map<string, StoredSeasonalState>();
   private storage: Storage | null = null;
   private currentUrl = '';
+  private readonly currentPath = signal<string | null>(null);
+  private readonly hidingSeed = inject(SEASONAL_HIDING_SEED);
+  private readonly hideoutVisit = signal(0);
+  private readonly routeVisits = new Map<string, number>();
 
   readonly edition = this.currentEdition.asReadonly();
   readonly items = computed(() => this.edition()?.items ?? EMPTY_ITEMS);
@@ -104,7 +109,14 @@ export class SeasonalService {
   }
 
   setContext(url: string): void {
+    const path = seasonalPath(url);
+    if (path && seasonalHideoutsFor(path).length && path !== this.currentPath()) {
+      const visit = this.routeVisits.get(path) ?? 0;
+      this.routeVisits.set(path, visit + 1);
+      this.hideoutVisit.set(visit);
+    }
     this.currentUrl = url;
+    this.currentPath.set(path);
     this.selectContext();
   }
 
@@ -180,6 +192,17 @@ export class SeasonalService {
     }
     const path = seasonalPath(url);
     return this.items().filter(item => item.route === path && item.placement === placement && !this.isCollected(item.id));
+  }
+
+  itemsAtHideout(url: string, hideout: SeasonalHideout): readonly SeasonalCollectible[] {
+    const edition = this.edition();
+    const path = seasonalPath(url);
+    if (!path || !edition || !this.enabled() || this.archiveMode()
+      || path !== this.currentPath()) return EMPTY_ITEMS;
+    // Assign before filtering found IDs so collecting one cannot relocate another.
+    return this.items().filter(item => item.route === path).filter((item, ordinal) =>
+      !this.isCollected(item.id)
+      && seasonalHideoutFor(edition.id, path, ordinal, this.hidingSeed, this.hideoutVisit()) === hideout);
   }
 
   private readState(edition: SeasonalEdition): StoredSeasonalState {

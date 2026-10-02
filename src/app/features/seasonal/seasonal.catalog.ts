@@ -5,8 +5,8 @@ import {SEASONAL_PLANS, SeasonalPlan} from './seasonal.plans';
 const COLLECTOR_SRC = '/assets/seasonal/scary-christmas/collection-lantern.webp';
 const HIDING_PLACES = SCARY_CHRISTMAS_CANDIES.map(({route, placement, variant}) => ({route, placement, variant}));
 const LOCATION_CLUES = [
-  'Look just beyond the homepage’s featured story.', 'Follow the homepage all the way down.',
-  'A curious reader knows where the stories begin.', 'Look beyond the last story on the blog page.',
+  'Look among the homepage’s stories, topics, and video discoveries.', 'The homepage has another little surprise tucked into its content.',
+  'A curious reader knows where the stories begin.', 'Explore the blog’s reading suggestions as well as its stories.',
   'Find a little wonder among the gadgets.', 'Look where the flyers gather.',
   'Experiments leave a little room for discovery.', 'Every good story has a storyteller.',
 ];

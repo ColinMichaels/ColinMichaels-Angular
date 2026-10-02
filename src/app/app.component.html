@@ -33,9 +33,6 @@
       }
     </div>
   }
-  @if (showSeasonalHidingPlaces()) {
-    @defer (when showSeasonalHidingPlaces()) { <app-seasonal-collectibles [url]="currentUrl()" placement="trail"/> }
-  }
   <router-outlet></router-outlet>
   @if (showReaderTools()) {
     @defer (when showReaderTools()) {
@@ -43,9 +40,6 @@
     }
   }
 </div>
-@if (showSeasonalHidingPlaces()) {
-  @defer (when showSeasonalHidingPlaces()) { <app-seasonal-collectibles [url]="currentUrl()" placement="footer"/> }
-}
 @if (showSeasonalRoute()) {
   @defer (when showSeasonalRoute()) { <app-seasonal-lantern/> }
 }

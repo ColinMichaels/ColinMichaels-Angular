@@ -26,7 +26,7 @@ export const SCARY_CHRISTMAS_CANDIES: readonly ScaryChristmasCandy[] = Object.fr
   {
     id: 'ember-toffee',
     name: 'Ember toffee',
-    clue: 'A sweet waits just beyond the homepage’s featured story.',
+    clue: 'Look among the homepage’s stories, topic guides, and video discoveries.',
     route: '/',
     placement: 'banner',
     variant: 'amber',
@@ -34,7 +34,7 @@ export const SCARY_CHRISTMAS_CANDIES: readonly ScaryChristmasCandy[] = Object.fr
   {
     id: 'moonlit-mint',
     name: 'Moonlit mint',
-    clue: 'Follow the homepage all the way down.',
+    clue: 'The homepage has another little surprise tucked into its content.',
     route: '/',
     placement: 'footer',
     variant: 'mint',
@@ -50,7 +50,7 @@ export const SCARY_CHRISTMAS_CANDIES: readonly ScaryChristmasCandy[] = Object.fr
   {
     id: 'midnight-caramel',
     name: 'Midnight caramel',
-    clue: 'Even the last line leaves a little treat.',
+    clue: 'Explore the blog’s reading suggestions as well as its stories.',
     route: '/blog',
     placement: 'footer',
     variant: 'amber',

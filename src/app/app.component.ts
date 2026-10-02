@@ -28,7 +28,6 @@ import {
 } from './features/daily-discovery/components/daily-discovery-play-overlay.component';
 import {DailyDiscoveryPlayService} from './features/daily-discovery/services/daily-discovery-play.service';
 import {SiteAnalyticsService} from './shared/analytics/site-analytics.service';
-import {SeasonalCollectiblesComponent} from './features/seasonal/components/seasonal-collectibles.component';
 import {SeasonalLanternComponent} from './features/seasonal/components/seasonal-lantern.component';
 import {isSeasonalReadingRoute, SEASONAL_CONFIG, seasonalPath} from './features/seasonal/seasonal.config';
 import {SeasonalService} from './features/seasonal/seasonal.service';
@@ -113,7 +112,6 @@ export function isBlogArticleRoute(url: string): boolean {
     BlogMembershipCampaignComponent,
     SiteSearchHighlightDirective,
     DailyDiscoveryPlayOverlayComponent,
-    SeasonalCollectiblesComponent,
     SeasonalLanternComponent,
   ],
   templateUrl: './app.component.html',

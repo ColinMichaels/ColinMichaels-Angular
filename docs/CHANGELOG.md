@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-02
+
+- Tuck smaller seasonal finds into varied story, topic-guide, discovery, and author-directory areas without adding collection rows or pushing content down. Rotate hiding areas on return to a page while keeping each find stable during the visit and after another item is collected. Preserve 44px touch/keyboard targets, clue destinations, archive eligibility, saved progress, owner/account bypass, and shared completion confetti; document the slot registry and rollback.
+
 ## 2026-10-01
 
 - Release the date-selected Scary Christmas theme with public candy collecting, lantern clues, optional Dreadnauts playback, and archived editions. Only registered signed-in accounts can bypass the site's chosen decorations.

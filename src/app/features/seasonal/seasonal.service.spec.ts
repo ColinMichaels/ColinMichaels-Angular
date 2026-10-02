@@ -1,4 +1,5 @@
 import {DOCUMENT} from '@angular/common';
+import {computed} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {User} from 'firebase/auth';
 import {BehaviorSubject} from 'rxjs';
@@ -9,6 +10,7 @@ import {CelebrationService} from '../../shared/celebration/celebration.service';
 import {getSeasonalEdition} from './seasonal.catalog';
 import {SEASONAL_CONFIG, SEASONAL_PREFERENCE_STORAGE_KEY, seasonalStorageKey} from './seasonal.config';
 import {SeasonalConfig} from './seasonal.models';
+import {SEASONAL_HIDING_SEED, SeasonalHideout, seasonalHideoutsFor} from './seasonal-hideouts';
 import {SEASONAL_CONFIGURATION, SeasonalService} from './seasonal.service';
 
 describe('SeasonalService', () => {
@@ -59,6 +61,7 @@ describe('SeasonalService', () => {
       {provide: DOCUMENT, useValue: {defaultView: view, get visibilityState() { return visibilityState; },
         addEventListener: documentAddListener, removeEventListener: documentRemoveListener}},
       {provide: SEASONAL_CONFIGURATION, useValue: config},
+      {provide: SEASONAL_HIDING_SEED, useValue: 14},
       {provide: CelebrationService, useValue: {celebrateCompletion}},
       {provide: AuthService, useValue: {authState$: authState.asObservable()}},
     ]});
@@ -555,6 +558,69 @@ describe('SeasonalService', () => {
     expect(service.visitorDisabled()).toBeFalse();
     expect(service.count()).toBe(0);
     expect(service.panelOpen()).toBeFalse();
+  });
+
+  function hidingPlace(service: SeasonalService, route: string, id: string): SeasonalHideout | undefined {
+    return seasonalHideoutsFor(route).find(slot => service.itemsAtHideout(route, slot).some(item => item.id === id));
+  }
+
+  it('offers each route item once in a distinct content area and keeps the remaining item still after collection', () => {
+    const service = createService();
+    service.setContext('/');
+    const first = hidingPlace(service, '/', 'ember-toffee');
+    const second = hidingPlace(service, '/', 'moonlit-mint');
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(first).not.toBe(second);
+    expect(seasonalHideoutsFor('/').flatMap(slot => service.itemsAtHideout('/', slot)).length).toBe(2);
+    expect(service.collect('ember-toffee')).toBeTrue();
+    expect(hidingPlace(service, '/', 'ember-toffee')).toBeUndefined();
+    expect(hidingPlace(service, '/', 'moonlit-mint')).toBe(second);
+    service.resetHunt();
+    expect(hidingPlace(service, '/', 'ember-toffee')).toBe(first);
+    expect(hidingPlace(service, '/', 'moonlit-mint')).toBe(second);
+  });
+
+  it('rotates on return to a page but retains its place through query, fragment, and same-context updates', () => {
+    const service = createService();
+    service.setContext('/topics/gadgets-toys');
+    const first = hidingPlace(service, '/topics/gadgets-toys', 'witchy-wonder');
+    service.setContext('/topics/gadgets-toys/?sort=new#topic-guide');
+    expect(hidingPlace(service, '/topics/gadgets-toys', 'witchy-wonder')).toBe(first);
+    service.setContext('/topics/drones-fpv');
+    service.setContext('/topics/gadgets-toys');
+    expect(hidingPlace(service, '/topics/gadgets-toys', 'witchy-wonder')).toBeDefined();
+    expect(hidingPlace(service, '/topics/gadgets-toys', 'witchy-wonder')).not.toBe(first);
+    expect(service.count()).toBe(0);
+    expect(values.size).toBe(0);
+  });
+
+  it('reactively exposes the current route even when the edition and visit ordinal are unchanged', () => {
+    const service = createService();
+    service.setContext('/');
+    const visible = computed(() => seasonalHideoutsFor('/blog').flatMap(slot => service.itemsAtHideout('/blog', slot)));
+    expect(visible()).toEqual([]);
+    service.setContext('/blog');
+    expect(visible().map(item => item.id).sort()).toEqual(['midnight-caramel', 'paper-phantom']);
+    service.setContext('/topics/drones-fpv');
+    expect(visible()).toEqual([]);
+  });
+
+  it('keeps hidden targets absent for archives, account bypass, owner shutdown, and unsupported routes', () => {
+    const service = createService();
+    service.setContext('/');
+    service.setEnabled(false);
+    expect(seasonalHideoutsFor('/').flatMap(slot => service.itemsAtHideout('/', slot))).toEqual([]);
+    service.setEnabled(true);
+    for (const route of ['/archive/seasons/scary-christmas-2026', '/admin', 'https://other.example/']) {
+      service.setContext(route);
+      expect(service.itemsAtHideout(route, 'reading')).toEqual([]);
+      expect(service.itemsAtHideout('/', 'reading')).toEqual([]);
+    }
+    TestBed.resetTestingModule();
+    const off = createService({...manualConfig, mode: 'off'});
+    off.setContext('/');
+    expect(off.itemsAtHideout('/', 'reading')).toEqual([]);
   });
 
   it('offers exact public placements and no collectible actions on archive pages', () => {

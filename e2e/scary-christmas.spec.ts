@@ -76,8 +76,9 @@ test.describe('Scary Christmas date-activated main-site hunt', () => {
       const localPreview = page.url().startsWith('http://127.0.0.1:');
       // These local provider failures predate the hunt. Keep them in evidence,
       // while failing on any unexpected resource or application error.
+      // Repeated isolated preview loads can also rate-limit the denied debug-token exchange.
       const appCheckDebugDenied = url.startsWith('https://content-firebaseappcheck.googleapis.com/')
-        && url.includes(':exchangeDebugToken?') && message.text().includes('status of 403');
+        && url.includes(':exchangeDebugToken?') && /status of (403|429)/.test(message.text());
       const youtubeEmulatorUnavailable = url === 'http://127.0.0.1:5001/colinmichaels/us-east1/getLatestYouTubeVideos'
         && message.text().includes('status of 500');
       if (localPreview && (appCheckDebugDenied || youtubeEmulatorUnavailable)) {
