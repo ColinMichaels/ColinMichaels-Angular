@@ -3,6 +3,12 @@ import {DEFAULT_AUTHOR_ID, DEFAULT_AUTHOR_SLUG} from '../../authors/authors.cons
 
 export type BlogPostStatus = 'draft' | 'scheduled' | 'published' | 'archived';
 
+/** Optional reader announcement. Early reading still requires a server-approved membership. */
+export interface BlogReaderRelease {
+  announceInSchedule: boolean;
+  earlyAccessAt: string | null;
+}
+
 export type BlogContentFormat = 'editorjs';
 
 export const BLOG_EVIDENCE_BASES = [
@@ -342,6 +348,7 @@ export interface BlogPost {
   seo: BlogSeoMetadata;
   og?: BlogOpenGraphMetadata;
   editorial?: BlogEditorialMetadata;
+  readerRelease?: BlogReaderRelease;
   contentFormat: BlogContentFormat;
   blocks: readonly BlogContentBlock[];
   socialPromotion?: BlogSocialPromotion;

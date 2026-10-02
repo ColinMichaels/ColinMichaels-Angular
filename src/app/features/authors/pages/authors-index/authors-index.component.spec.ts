@@ -1,3 +1,4 @@
+import {SeasonalService} from '../../../seasonal/seasonal.service';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
@@ -32,6 +33,7 @@ describe('AuthorsIndexComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AuthorsIndexComponent],
       providers: [
+        {provide: SeasonalService, useValue: {edition: () => null, itemsAtHideout: () => []}},
         provideRouter([]),
         {
           provide: AuthorRepositoryService,

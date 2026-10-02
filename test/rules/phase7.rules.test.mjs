@@ -51,6 +51,16 @@ beforeEach(async () => {
       status: 'published',
       revision: 2,
     });
+    await setDoc(doc(context.firestore(), 'posts', 'scheduled-post'), {
+      id: 'scheduled-post', slug: 'scheduled-post', status: 'scheduled',
+      publishedAt: '2099-12-25T12:00:00.000Z',
+      readerRelease: {announceInSchedule: true, earlyAccessAt: '2020-01-01T12:00:00.000Z'},
+      blocks: [{id: 'private', type: 'paragraph', data: {text: 'Private early content.'}}],
+    });
+    await setDoc(doc(context.firestore(), 'postSummaries', 'scheduled-post'), {
+      id: 'scheduled-post', slug: 'scheduled-post', status: 'scheduled',
+      searchBodyText: 'Private early content.',
+    });
     await setDoc(doc(context.firestore(), 'posts', 'draft-post'), {
       id: 'draft-post',
       slug: 'draft-post',
@@ -125,6 +135,14 @@ test('public readers can read only published canonical posts', async () => {
     ['__manifest', 'published-post']
   );
   await assertFails(getDocs(collection(publicDb, 'postSummaries')));
+});
+
+test('earlyReader grants no direct scheduled canonical, summary, or collection access', async () => {
+  const earlyDb = testEnvironment.authenticatedContext('early-user', {roles: {earlyReader: true}}).firestore();
+  for (const collectionName of ['posts', 'postSummaries']) {
+    await assertFails(getDoc(doc(earlyDb, collectionName, 'scheduled-post')));
+    await assertFails(getDocs(query(collection(earlyDb, collectionName), where('status', '==', 'scheduled'))));
+  }
 });
 
 test('CMS roles can read drafts but every canonical write is backend-only', async () => {

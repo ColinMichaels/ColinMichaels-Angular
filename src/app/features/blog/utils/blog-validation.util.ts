@@ -33,6 +33,7 @@ import {isSocialPostFormatAllowed} from './blog-social-promotion.util';
 import {isBlogEditorialSourceDate} from './blog-editorial-metadata.util';
 import {decodeBlogUnsupportedBlockEnvelope} from './blog-unsupported-block.util';
 import {isVideoUploadDate} from './blog-youtube-journey.util';
+import {isBlogReaderRelease} from './blog-reader-release.util';
 import {
   hasDisallowedInlineUrlProtocol,
   isBlogHttpUrl,
@@ -450,6 +451,7 @@ export function isBlogPost(value: unknown): value is BlogPost {
     && isBlogSeo(value['seo'])
     && isBlogOpenGraphMetadata(value['og'])
     && isBlogEditorialMetadata(value['editorial'])
+    && isBlogReaderRelease(value['readerRelease'])
     && value['contentFormat'] === 'editorjs'
     && Array.isArray(value['blocks'])
     && value['blocks'].every(isBlogContentBlock)

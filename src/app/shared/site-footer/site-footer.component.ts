@@ -44,6 +44,8 @@ import {HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE, SITE_URL} from '../seo/seo.metadat
                 <a [routerLink]="['/', pathNames.WRITE_FOR_US]" class="site-inline-link">Write for Us</a>
                 <a routerLink="/" fragment="topic-guides" class="site-inline-link">Topics</a>
                 <a routerLink="/" fragment="about" class="site-inline-link">About</a>
+                <a routerLink="/archive/seasons" class="site-inline-link">Seasonal archive</a>
+                <a routerLink="/schedule" class="site-inline-link">Posting schedule</a>
                 <a [routerLink]="['/', pathNames.OS_MAIN]" class="site-inline-link">Open OS</a>
               </div>
             </div>

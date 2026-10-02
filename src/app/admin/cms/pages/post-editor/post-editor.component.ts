@@ -26,6 +26,7 @@ import {
   BlogEvidenceBasis,
   BlogPost,
   BlogPostStatus,
+  BlogReaderRelease,
 } from '../../../../features/blog/models/blog-post.model';
 import {BlogPostRevisionConflictError, normalizeBlogPostRevision} from '../../../../features/blog/models/blog-post-revision.model';
 import {
@@ -34,6 +35,7 @@ import {
   BlogSocialPromotion,
 } from '../../../../features/blog/models/blog-social-promotion.model';
 import {BlogRepositoryService, createBlogSlug} from '../../../../features/blog/services/blog-repository.service';
+import {getReaderReleaseDateError, isBlogReaderRelease, normalizeBlogReaderRelease} from '../../../../features/blog/utils/blog-reader-release.util';
 import {DEFAULT_COVER_IMAGE} from '../../../../features/blog/blog.constants';
 import {
   BLOG_POST_STATUSES,
@@ -132,6 +134,8 @@ interface PostEditorForm {
   catCornerDiscoveryPost: FormControl<boolean>;
   status: FormControl<BlogPostStatus>;
   publishedAt: FormControl<string>;
+  announceInSchedule: FormControl<boolean>;
+  earlyAccessAt: FormControl<string>;
   categories: FormControl<string>;
   tags: FormControl<string>;
   seoTitle: FormControl<string>;
@@ -237,6 +241,12 @@ function fromDateTimeLocalValue(value: string): string | null {
 
   const date = new Date(trimmedValue);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function createReaderReleaseFromForm(value: {announceInSchedule: boolean; earlyAccessAt: string}): BlogReaderRelease | undefined {
+  const earlyAccessAt = fromDateTimeLocalValue(value.earlyAccessAt);
+  if (!value.announceInSchedule && !earlyAccessAt) return undefined;
+  return {announceInSchedule: value.announceInSchedule, earlyAccessAt};
 }
 
 function isBlogPostStatus(value: unknown): value is BlogPostStatus {
@@ -366,6 +376,7 @@ function normalizeImportedPostBlocks(blocks: readonly BlogContentBlock[]): reado
 }
 
 function createLooseImportedPost(value: Record<string, unknown>, currentPost: BlogPost): BlogPost | null {
+  if (!isBlogReaderRelease(value['readerRelease'])) return null;
   const title = getTrimmedString(value['title']);
   const slug = getTrimmedString(value['slug']);
   const content = getTrimmedString(value['content']) || getTrimmedString(value['markdown']);
@@ -417,6 +428,7 @@ function createLooseImportedPost(value: Record<string, unknown>, currentPost: Bl
     featured,
     ...(catCorner ? {catCorner} : {}),
     ...(hasImportedEditorial ? {editorial} : {}),
+    ...(Object.prototype.hasOwnProperty.call(value, 'readerRelease') ? {readerRelease: normalizeBlogReaderRelease(value['readerRelease'])} : {}),
     author: createImportedAuthor(value['author'], currentPost.author),
     categories: categories.length > 0 ? categories : currentPost.categories,
     subcategories: subcategories.length > 0 ? subcategories : currentPost.subcategories,
@@ -669,6 +681,15 @@ function isFirstSaveCommitConflict(
                         (input)="scheduleCalendarOpen.set(true)"
                       >
                       <span class="block text-xs leading-5 text-zinc-600">Scheduled posts require a future time.</span>
+                    </label>
+                    <label class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 md:col-span-2">
+                      <span><span class="block text-xs font-medium text-zinc-300">Show in posting schedule</span><span class="mt-0.5 block text-xs text-zinc-500">Announce the title, artwork, excerpt, and public release date on the site.</span></span>
+                      <input type="checkbox" formControlName="announceInSchedule" class="h-4 w-4 accent-cyan-400">
+                    </label>
+                    <label class="space-y-1.5 md:col-span-2">
+                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Member early access starts</span>
+                      <input type="datetime-local" formControlName="earlyAccessAt" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
+                      <span class="block text-xs leading-5 text-zinc-500">Optional. Announce the post above and choose a time before publication. Only members explicitly granted early access can read it early; leave blank to keep it locked.</span>
                     </label>
                     @if (scheduleCalendarOpen()) {
                       <div class="md:col-span-2">
@@ -2773,6 +2794,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return false;
     }
 
+    const readerReleaseDateError = getReaderReleaseDateError(formValue.earlyAccessAt, formValue.publishedAt);
+    if (readerReleaseDateError) {
+      this.publishingSettingsOpen.set(true);
+      this.toast.error(readerReleaseDateError);
+      return false;
+    }
+
     const coverImage = requiredText(formValue.coverImage, DEFAULT_COVER_IMAGE);
     const openGraphImage = normalizeOpenGraphImage(formValue.openGraphImage, coverImage);
     const savedSlug = this.blogRepository.createUniqueSlug(formValue.slug || formValue.title, this.currentPost.id);
@@ -2799,6 +2827,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
           openGraphImage,
         },
         editorial: createEditorialMetadataFromForm(formValue),
+        readerRelease: createReaderReleaseFromForm(formValue),
         blocks: createBlogBlocksFromEditorDocument(saved.data),
         socialPromotion: this.socialPromotionDraft.announcements.length > 0
           ? this.socialPromotionDraft
@@ -3305,6 +3334,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         openGraphImage: normalizeOpenGraphImage(form.openGraphImage, coverImage),
       },
       editorial: createEditorialMetadataFromForm(form),
+      readerRelease: createReaderReleaseFromForm(form),
       publishedAt: fromDateTimeLocalValue(form.publishedAt),
       socialPromotion: this.socialPromotionDraft,
     };
@@ -3365,6 +3395,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         openGraphImage,
       },
       editorial: createEditorialMetadataFromForm(formValue),
+      readerRelease: createReaderReleaseFromForm(formValue),
       blocks: createBlogBlocksFromEditorDocument(document),
       socialPromotion: this.socialPromotionDraft.announcements.length > 0
         ? this.socialPromotionDraft
@@ -3466,6 +3497,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
       ),
       status: new FormControl(post.status, {nonNullable: true, validators: [Validators.required]}),
       publishedAt: new FormControl(toDateTimeLocalValue(post.publishedAt), {nonNullable: true}),
+      announceInSchedule: new FormControl(post.readerRelease?.announceInSchedule ?? false, {nonNullable: true}),
+      earlyAccessAt: new FormControl(toDateTimeLocalValue(post.readerRelease?.earlyAccessAt ?? null), {nonNullable: true}),
       categories: new FormControl(toCsv(post.categories), {nonNullable: true}),
       tags: new FormControl(toCsv(post.tags), {nonNullable: true}),
       seoTitle: new FormControl(post.seo.title, {nonNullable: true}),
@@ -3509,6 +3542,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
       catCornerDiscoveryPost: catCorner.discoveryPost,
       status: post.status,
       publishedAt: toDateTimeLocalValue(post.publishedAt),
+      announceInSchedule: post.readerRelease?.announceInSchedule ?? false,
+      earlyAccessAt: toDateTimeLocalValue(post.readerRelease?.earlyAccessAt ?? null),
       categories: toCsv(post.categories),
       tags: toCsv(post.tags),
       seoTitle: post.seo.title,

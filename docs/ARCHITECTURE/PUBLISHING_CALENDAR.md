@@ -14,6 +14,10 @@ The first implementation deliberately separates planning and queueing from third
 
 This outbox boundary prevents provider availability, access-token expiry, rate limits, or retries from delaying the public article launch.
 
+## Public Schedule And Early Reader Boundary
+
+The public `/schedule` view is a separate, sanitized reader projection; the protected calendar remains the authoring/timing authority. Optional `BlogPost.readerRelease` settings explicitly announce a scheduled/published article and define an early-reader window. A planned date does not publish a post, and an ordinary account does not grant early access. Named Early Reader grants and existing CMS-role qualification are checked from current Auth state for scheduled early bodies; announced published/due bodies remain anonymously public. Editor/recovery/import/export retain the optional settings, and scheduler promotion preserves them canonically while public index summaries omit them. New future releases use `scheduled`; future-dated `published` writes are rejected. The [public schedule architecture](./PUBLIC_PUBLISHING_SCHEDULE.md) records current-role authorization, private-body/cache separation, and the unchanged legacy status-only public read boundary. Existing social plan/outbox behavior remains separate.
+
 ## Data Model
 
 `BlogPost.socialPromotion` is optional for backward compatibility. Existing Firestore documents remain valid without migration.

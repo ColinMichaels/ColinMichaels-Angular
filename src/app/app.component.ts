@@ -1,4 +1,4 @@
-import {Component, ChangeDetectionStrategy, computed, effect, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, computed, effect, inject, untracked} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {filter, map, startWith} from 'rxjs/operators';
@@ -28,6 +28,9 @@ import {
 } from './features/daily-discovery/components/daily-discovery-play-overlay.component';
 import {DailyDiscoveryPlayService} from './features/daily-discovery/services/daily-discovery-play.service';
 import {SiteAnalyticsService} from './shared/analytics/site-analytics.service';
+import {SeasonalLanternComponent} from './features/seasonal/components/seasonal-lantern.component';
+import {isSeasonalReadingRoute, SEASONAL_CONFIG, seasonalPath} from './features/seasonal/seasonal.config';
+import {SeasonalService} from './features/seasonal/seasonal.service';
 
 const OS_ROUTES: readonly string[] = [
   `/${PATH_NAMES.OS_MAIN}`,
@@ -109,18 +112,23 @@ export function isBlogArticleRoute(url: string): boolean {
     BlogMembershipCampaignComponent,
     SiteSearchHighlightDirective,
     DailyDiscoveryPlayOverlayComponent,
+    SeasonalLanternComponent,
   ],
   templateUrl: './app.component.html',
   styles: [],
   host: {
     '[class.site-theme-scope]': 'showSiteHeader()',
     '[class.core-os-scope]': 'useCoreOsTheme()',
+    '[class.seasonal-theme]': 'showSeasonal()',
+    '[attr.data-seasonal-theme]': 'showSeasonal() ? seasonal.edition()?.theme : null',
+    '[attr.data-seasonal-edition]': 'showSeasonal() ? seasonal.edition()?.id : null',
   },
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
   private readonly router = inject(Router);
+  protected readonly seasonal = inject(SeasonalService);
   private readonly readerPreferences = inject(ReaderPreferencesService);
   private readonly seo = inject(SeoService);
   private readonly sitePreloader = inject(SitePreloaderService);
@@ -150,12 +158,23 @@ export class AppComponent {
   protected readonly showReaderTools = computed(() => {
     return shouldShowReaderTools(this.currentUrl());
   });
+  protected readonly showPublishingScheduleSurface = computed(() => {
+    const path = seasonalPath(this.currentUrl());
+    return path === '/schedule' || !!path?.match(/^\/schedule\/read\/[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  });
   protected readonly showBlogMembershipCampaign = computed(() => {
     return shouldShowBlogMembershipCampaign(this.currentUrl(), this.dailyDiscoveryPlay.isPlaying());
   });
   protected readonly showDailyDiscoveryOverlay = computed(() => {
     return this.showSiteHeader() && this.dailyDiscoveryPlay.isPlaying();
   });
+  protected readonly showSeasonalRoute = computed(() => !!this.seasonal.edition()
+    || (this.seasonal.visitorDisabled() && (seasonalPath(this.currentUrl()) === '/archive/seasons'
+      || (SEASONAL_CONFIG.enabled && SEASONAL_CONFIG.mode !== 'off' && isSeasonalReadingRoute(this.currentUrl())))));
+  protected readonly showSeasonal = this.seasonal.enabled;
+  protected readonly showSeasonalHidingPlaces = computed(() => this.showSeasonal() && !this.seasonal.archiveMode());
+  protected readonly seasonalLights = Array.from({length: 22}, (_, index) => index);
+
   protected readonly activeUserView = toSignal(this.authService.userView$, {initialValue: null});
   protected readonly activeSearchQuery = this.siteSearch.query;
   protected readonly scrollToFirstSearchMatch = computed(() => isBlogArticleRoute(this.currentUrl()));
@@ -164,6 +183,7 @@ export class AppComponent {
     this.seo.initializeRouteTracking();
     effect(() => {
       const currentUrl = this.currentUrl();
+      untracked(() => this.seasonal.setContext(currentUrl));
       this.siteSearch.setQuery(getSiteSearchQuery(currentUrl));
       this.analytics.trackPageView(currentUrl);
     });

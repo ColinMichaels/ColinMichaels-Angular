@@ -1,0 +1,236 @@
+/* This opt-in seasonal scope never modifies Core OS or the saved site theme. */
+.scary-christmas-theme {
+  --site-accent: #f5b763;
+  --site-accent-strong: #ffd398;
+  --site-accent-rgb: 245 183 99;
+  --site-accent-soft: rgb(245 183 99 / .12);
+  --site-bg: #0b0e18;
+  --site-panel: #141724;
+  --site-panel-soft: rgb(20 23 36 / .86);
+  --site-section: #111422;
+  --site-border: rgb(245 183 99 / .17);
+  --site-heading: #faf5ed;
+  --site-text: #e7e1d9;
+  --site-muted: #aaa9b7;
+  --scary-ink: #faf5ed;
+  --scary-muted: #c0b8c9;
+  --scary-amber: #ffc477;
+  --scary-violet: #c8a8ed;
+}
+
+.light .scary-christmas-theme {
+  --site-bg: #fbf7f1;
+  --site-panel: #fffdfa;
+  --site-panel-soft: rgb(255 253 250 / .88);
+  --site-section: #f3ede5;
+  --site-accent: #a95413;
+  --site-accent-strong: #85430f;
+  --site-accent-rgb: 169 84 19;
+  --site-accent-soft: rgb(169 84 19 / .1);
+  --site-border: rgb(80 41 17 / .18);
+  --site-heading: #25202e;
+  --site-text: #37313c;
+  --site-muted: #6b5d6a;
+}
+
+.dark .scary-christmas-theme app-site-header header {
+  background: #0b0e18;
+  border-color: rgb(245 183 99 / .25);
+}
+
+.light .scary-christmas-theme app-site-header header {
+  background: #fffaf1;
+  border-color: rgb(169 84 19 / .25);
+}
+
+.scary-christmas-theme .app-route-frame { background: var(--site-bg); }
+.scary-christmas-theme ::selection { background: #ffc477; color: #211426; }
+
+.scary-garland {
+  display: flex;
+  justify-content: space-around;
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  height: 2rem;
+  pointer-events: none;
+  overflow: hidden;
+  border-top: 1px solid rgb(175 111 54 / .28);
+}
+
+.scary-garland span {
+  position: relative;
+  width: .38rem;
+  height: .65rem;
+  margin-top: .75rem;
+  border-radius: 50%;
+  background: #ffc477;
+  box-shadow: 0 0 .65rem .15rem rgb(255 171 57 / .36);
+}
+.scary-garland span::before {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: .8rem;
+  bottom: 100%;
+  left: 50%;
+  background: #806448;
+}
+.scary-garland span:nth-child(3n) { background: #c69ff7; box-shadow: 0 0 .6rem .12rem rgb(151 92 215 / .3); }
+.scary-garland span:nth-child(2n) { margin-top: .35rem; }
+
+.scary-shell-decor { position: relative; height: 0; pointer-events: none; }
+.scary-shell-bat {
+  position: absolute;
+  top: 2.2rem;
+  left: 1.1rem;
+  width: 3rem;
+  color: #5a475d;
+  opacity: .48;
+  transform: rotate(-18deg);
+  z-index: 2;
+}
+.scary-shell-bat--right { left: auto; right: 1rem; top: 5.6rem; width: 1.7rem; transform: rotate(15deg); }
+
+.scary-banner {
+  position: relative;
+  isolation: isolate;
+  min-height: 25rem;
+  overflow: hidden;
+  background: #0b0e18;
+  border-bottom: 1px solid rgb(245 183 99 / .2);
+  color: #faf5ed;
+}
+.scary-banner-art { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; object-position: center 68%; }
+.scary-banner-inner { position: relative; max-width: 80rem; margin: 0 auto; padding: 4.75rem 3rem 3.25rem; }
+.scary-banner-copy { position: relative; z-index: 1; max-width: 39rem; }
+.scary-banner-copy h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(3.6rem, 6vw, 5.75rem);
+  line-height: .98;
+  font-weight: 700;
+  letter-spacing: -.055em;
+  color: #faf5ed;
+}
+.scary-banner-copy h2 span { display: block; color: #ffc477; }
+.scary-banner-copy p { margin: 1.2rem 0 0; max-width: 36rem; color: #eee5d9; font-size: 1.14rem; line-height: 1.55; }
+.scary-banner-actions { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; margin-top: 1.65rem; }
+.scary-button, .scary-music-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: .65rem;
+  min-height: 2.75rem; padding: .7rem 1.15rem; border: 1px solid transparent;
+  border-radius: .65rem; font-family: var(--font-body); font-size: .94rem;
+  font-weight: 600; line-height: 1.35; cursor: pointer; transition: background .18s, transform .18s;
+}
+.scary-button svg, .scary-music-link svg, .scary-clue-list svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.scary-button--primary { background: #ffc477; color: #211426; }
+.scary-button--primary:hover { background: #ffd49d; }
+.scary-button--outline { background: transparent; color: #e7d6fa; border-color: #88709f; }
+.scary-button--outline:hover { background: rgb(161 126 193 / .12); }
+.scary-music-link { color: #d5b2fa; padding-inline: 0; background: transparent; border-bottom-color: #9c73bc; border-radius: 0; }
+.scary-button:focus-visible, .scary-music-link:focus-visible, .scary-candy:focus-visible,
+.scary-lantern-dialog :is(button,a,audio):focus-visible, .scary-lantern-toggle:focus-visible,
+.scary-restore-toggle:focus-visible { outline: 3px solid #c59cef; outline-offset: 4px; }
+
+.scary-candy-placement { display: flex; justify-content: flex-end; max-width: 80rem; margin-inline: auto; padding-inline: 2rem; }
+.scary-candy-placement--banner { position: absolute; bottom: 1rem; right: 2rem; padding: 0; }
+.scary-candy-placement--trail { min-height: 3.5rem; padding-top: 1rem; }
+.scary-candy-placement--footer { padding-block: .25rem; }
+.scary-candy {
+  display: inline-flex; justify-content: center; align-items: center; width: 4rem; height: 3.5rem;
+  background: none; border: 0; border-radius: .75rem; cursor: pointer;
+  transition: transform .2s, filter .2s; transform: rotate(-12deg);
+}
+.scary-candy img { width: 4rem; height: 4rem; object-fit: contain; pointer-events: none; }
+.scary-candy--violet { filter: hue-rotate(250deg); transform: rotate(14deg); }
+.scary-candy--mint { filter: hue-rotate(85deg); transform: rotate(-6deg); }
+.scary-candy:hover { transform: translateY(-3px) rotate(0); filter: drop-shadow(0 0 .5rem rgb(255 186 93 / .4)); }
+
+.scary-lantern-toggle {
+  position: fixed; z-index: 65; left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom)); display: flex; align-items: center;
+  gap: .7rem; min-width: 7rem; min-height: 4rem; padding: .3rem .85rem .3rem .4rem;
+  border: 1px solid #a77c47; border-radius: 1rem; background: #111520; color: #faf5ed;
+  box-shadow: 0 .4rem 1.5rem rgb(0 0 0 / .25); font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.scary-lantern-toggle img { height: 3.5rem; width: 2.3rem; object-fit: contain; }
+.scary-lantern-toggle span span { color: #9e91a8; }
+.scary-lantern-toggle--full { border-color: #ffc477; box-shadow: 0 0 1.5rem rgb(245 183 99 / .15); }
+.scary-restore-toggle { position: fixed; z-index: 65; bottom: 1rem; left: 1rem; min-height: 2.75rem; padding: .5rem .8rem; border-radius: .75rem; background: var(--site-panel); color: var(--site-text); border: 1px solid var(--site-border); font-size: .8rem; cursor: pointer; }
+.scary-collection-announcement { position: fixed; z-index: 65; left: 1rem; bottom: 6rem; max-width: min(22rem, calc(100vw - 2rem)); padding: .65rem .85rem; border-radius: .65rem; background: #111520; color: #faf5ed; border: 1px solid rgb(255 196 119 / .3); font-size: .82rem; pointer-events: none; }
+.scary-collection-announcement:empty { display: none; }
+
+.scary-lantern-backdrop { position: fixed; inset: 0; z-index: 99; background: rgb(5 6 12 / .56); }
+.scary-lantern-dialog {
+  position: fixed; z-index: 100; left: 1rem; bottom: 1rem; width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain;
+  padding: 1.6rem; border: 1px solid #ad844f; border-radius: 1.2rem;
+  background: #111520; color: #faf5ed; box-shadow: 0 1.5rem 5rem rgb(0 0 0 / .5);
+}
+.scary-close-button { position: absolute; top: .4rem; right: .4rem; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: .5rem; color: #eee5d9; background: transparent; cursor: pointer; }
+.scary-close-button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.scary-lantern-summary { display: flex; align-items: center; gap: 1.25rem; padding-right: 1.3rem; }
+.scary-lantern-portrait { object-fit: contain; width: 4.3rem; height: 7rem; flex-shrink: 0; }
+.scary-lantern-dialog h2 { margin: 0; font-family: var(--font-heading); font-size: 1.65rem; font-weight: 600; letter-spacing: -.025em; line-height: 1.2; color: #faf5ed; }
+.scary-lantern-count { margin-top: .6rem; color: #eee5d9; font-size: .95rem; font-weight: 600; }
+.scary-collection-slots { display: grid; grid-template-columns: repeat(8, 1fr); gap: .25rem; margin-top: .65rem; }
+.scary-collection-slots span { display: grid; place-items: center; height: 1.45rem; width: 1.45rem; border: 1px dashed #655b73; border-radius: 50%; }
+.scary-collection-slots .scary-slot--collected { border-style: solid; border-color: #d3a161; background: rgb(255 196 119 / .07); }
+.scary-collection-slots img { width: 1.55rem; height: 1.55rem; object-fit: contain; }
+.scary-next-clue { color: #f4d6ad; margin-top: 1.2rem; font-size: .97rem; line-height: 1.6; }
+.scary-hunt-description, .scary-storage-note { color: #bcb3c6; font-size: .85rem; margin-top: .45rem; line-height: 1.55; }
+.scary-dialog-actions { display: flex; gap: .7rem; margin-top: 1.15rem; }
+.scary-completion { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #564335; }
+.scary-completion h3 { font-family: var(--font-heading); font-size: 1.1rem; color: #ffd398; }
+.scary-completion p { color: #c0b8c9; font-size: .95rem; margin-top: .6rem; line-height: 1.6; }
+.scary-clue-list { display: grid; gap: .45rem; list-style: none; margin-top: 1.25rem; padding: 0; }
+.scary-clue-list a, .scary-clue-list li > span { display: flex; align-items: center; justify-content: space-between; gap: .65rem; min-height: 2.75rem; padding: .65rem .75rem; border: 1px solid #3c3448; border-radius: .6rem; font-size: .83rem; line-height: 1.45; }
+.scary-clue-list a { color: #dfc7f6; text-decoration: none; }
+.scary-clue-list a:hover { background: rgb(163 127 199 / .08); border-color: #8b729e; }
+.scary-clue--found { color: #b8bcab; }
+.scary-clue--found small { color: #b4d2a4; font-size: .72rem; }
+.scary-soundtrack { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid #383040; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.scary-soundtrack > div { flex: 1 1 10rem; }
+.scary-soundtrack h3 { font-size: .95rem; color: #e6d8f4; font-family: var(--font-heading); font-weight: 600; }
+.scary-soundtrack p { margin-top: .25rem; font-size: .8rem; color: #c0b8c9; }
+.scary-soundtrack audio { width: 100%; min-height: 3rem; color-scheme: dark; }
+.scary-listening-link { flex-basis: 100%; color: #c8a8ed; font-size: .8rem; text-decoration: underline; text-underline-offset: .2em; min-height: 2.25rem; padding-top: .25rem; }
+.scary-lantern-settings { display: flex; justify-content: space-between; gap: .7rem; margin-top: .6rem; }
+.scary-lantern-settings button { padding: .65rem 0; min-height: 2.75rem; font-size: .8rem; color: #bcb3c6; text-decoration: underline; text-underline-offset: .2rem; }
+.scary-reset-confirmation { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.scary-reset-confirmation p { flex-basis: 100%; color: #eee5d9; font-size: .9rem; margin-bottom: .5rem; }
+
+@media (min-width: 1700px) { .scary-banner-art { object-fit: cover; object-position: right 65%; } }
+@media (max-width: 800px) {
+  .scary-banner { min-height: 32rem; }
+  .scary-banner-inner { padding: 3.5rem 1.5rem 16rem; }
+  .scary-banner-art { top: auto; bottom: 0; height: 18rem; width: 100%; object-fit: cover; object-position: 80% bottom; }
+  .scary-banner-copy { max-width: 30rem; }
+  .scary-banner-copy h2 { font-size: clamp(3.15rem, 9vw, 4.5rem); }
+  .scary-banner-copy p { font-size: 1rem; max-width: 25rem; }
+  .scary-banner-actions { margin-top: 1.25rem; gap: .5rem 1.1rem; }
+  .scary-music-link { font-size: .88rem; }
+  .scary-candy-placement--banner { right: 1.25rem; bottom: 1rem; }
+  .scary-lantern-toggle { min-width: 6rem; gap: .4rem; min-height: 3.5rem; }
+  .scary-lantern-toggle img { height: 3rem; }
+  .scary-shell-bat { width: 1.75rem; left: .5rem; }
+  .scary-shell-bat--right { right: .75rem; left: auto; width: 1.3rem; }
+}
+@media (max-width: 380px) {
+  .scary-banner-inner { padding-inline: 1.1rem; }
+  .scary-lantern-dialog { padding: 1.15rem; }
+  .scary-lantern-summary { gap: .7rem; }
+  .scary-lantern-dialog h2 { font-size: 1.35rem; }
+  .scary-collection-slots { grid-template-columns: repeat(4, 1.3rem); gap: .25rem; }
+  .scary-collection-slots span { width: 1.3rem; height: 1.3rem; }
+  .scary-dialog-actions { gap: .45rem; }
+  .scary-dialog-actions .scary-button { font-size: .87rem; padding-inline: .8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.scary-button, .scary-music-link, .scary-candy) { transition: none; }
+  .scary-candy:hover { transform: rotate(0); }
+}
+.reader-motion-reduce :is(.scary-button, .scary-music-link, .scary-candy) { transition: none; }
+.reader-contrast-high .scary-christmas-theme { --site-heading: #fff; --site-text: #fff; --site-muted: #e0dfe5; }
+.light.reader-contrast-high .scary-christmas-theme { --site-heading: #141018; --site-text: #141018; --site-muted: #37313c; }

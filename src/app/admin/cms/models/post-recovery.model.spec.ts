@@ -44,6 +44,14 @@ function createRecovery(overrides: Partial<CmsPostRecoverySnapshot> = {}): CmsPo
 }
 
 describe('CMS post recovery model', () => {
+  it('round-trips optional schedule settings while accepting older recovery drafts', () => {
+    const recovery = createRecovery();
+    expect(isCmsPostRecoverySnapshot(recovery)).toBeTrue();
+    expect(isCmsPostRecoverySnapshot({...recovery, form: {...recovery.form,
+      announceInSchedule: true, earlyAccessAt: '2026-10-01T08:00'}})).toBeTrue();
+    expect(isCmsPostRecoverySnapshot({...recovery, form: {...recovery.form, announceInSchedule: 'yes'}})).toBeFalse();
+    expect(isCmsPostRecoverySnapshot({...recovery, form: {...recovery.form, earlyAccessAt: 123}})).toBeFalse();
+  });
   it('accepts invalid editor JSON as recoverable source without treating it as canonical content', () => {
     expect(isCmsPostRecoverySnapshot(createRecovery())).toBeTrue();
   });

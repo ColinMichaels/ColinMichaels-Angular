@@ -1,3 +1,4 @@
+import {SeasonalService} from '../../../seasonal/seasonal.service';
 import {signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ActivatedRoute, convertToParamMap, provideRouter} from '@angular/router';
@@ -128,6 +129,7 @@ describe('BlogIndexComponent', () => {
     await TestBed.configureTestingModule({
       imports: [BlogIndexComponent],
       providers: [
+        {provide: SeasonalService, useValue: {edition: () => null, itemsAtHideout: () => []}},
         provideRouter([]),
         {
           provide: ActivatedRoute,

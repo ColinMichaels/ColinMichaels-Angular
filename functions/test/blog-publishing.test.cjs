@@ -447,3 +447,37 @@ test('extracts only trusted Phase 7 media identities from storage paths and prov
     external: `https://cdn.example.com/${storagePath}`,
   }), []);
 });
+
+
+test('rejects future published writes but permits publication at the server boundary', () => {
+  const now = new Date('2026-08-03T12:00:00.000Z');
+  assert.throws(() => validateTrustedBlogPost(createPost({
+    status: 'published', publishedAt: '2026-08-03T12:00:00.001Z',
+  }), now), /must remain scheduled/);
+  assert.doesNotThrow(() => validateTrustedBlogPost(createPost({
+    status: 'published', publishedAt: now.toISOString(),
+  }), now));
+});
+
+test('validates optional reader release strictly and keeps it out of public search summaries', () => {
+  const post = createPost({status: 'scheduled', publishedAt: '2026-08-04T12:00:00.000Z',
+    readerRelease: {announceInSchedule: true, earlyAccessAt: '2026-08-03T12:00:00.000Z'}});
+  assert.doesNotThrow(() => validateTrustedBlogPost(post, new Date('2026-08-03T12:00:00.000Z')));
+  for (const readerRelease of [null, {}, {announceInSchedule: 1, earlyAccessAt: null},
+    {announceInSchedule: true, earlyAccessAt: '2026-08-04T12:00:00.000Z'},
+    {announceInSchedule: true, earlyAccessAt: '2026-08-05T12:00:00.000Z'},
+    {announceInSchedule: true, earlyAccessAt: '2026-02-30T12:00:00.000Z'},
+    {announceInSchedule: true, earlyAccessAt: null, preview: 'private'},
+  ]) {
+    assert.throws(() => validateTrustedBlogPost({...post, readerRelease}, new Date('2026-08-03T12:00:00.000Z')));
+  }
+  assert.equal(createBlogPostSummaryDocument(post).readerRelease, undefined);
+});
+
+
+test('published release timestamps reject overflowing dates and ambiguous local times', () => {
+  for (const publishedAt of ['2026-02-30T12:00:00Z', '2026-08-03', '2026-08-03T12:00:00', '8/3/2026']) {
+    assert.throws(() => validateTrustedBlogPost(createPost({status: 'published', publishedAt}),
+      new Date('2026-08-04T12:00:00Z')), /timezone-qualified ISO/);
+  }
+});

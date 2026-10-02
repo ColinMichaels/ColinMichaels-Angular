@@ -15,7 +15,7 @@ export function replaceManagedUserRoleClaims(
     delete nextClaims['roles'];
   }
 
-  for (const mirroredRole of ['admin', 'cmsAdmin']) {
+  for (const mirroredRole of ['admin', 'cmsAdmin', 'earlyReader']) {
     if (roles.includes(mirroredRole)) {
       nextClaims[mirroredRole] = true;
     } else {

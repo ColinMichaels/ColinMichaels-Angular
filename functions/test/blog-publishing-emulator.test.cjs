@@ -183,9 +183,12 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
     postId: firstPost.id,
     expectedRevision: 3,
     requestId: '019fc788-730b-7982-91c8-055dcdb1a8c4',
-    post: {...revoked.post, status: 'scheduled', publishedAt: scheduledAt},
+    post: {...revoked.post, status: 'scheduled', publishedAt: scheduledAt,
+      readerRelease: {announceInSchedule: true, earlyAccessAt: '2026-08-03T13:30:00.000Z'}},
   }, actorUid, new Date('2026-08-03T13:10:00.000Z'));
   assert.equal(scheduled.post.status, 'scheduled');
+  assert.deepEqual(scheduled.post.readerRelease, {announceInSchedule: true, earlyAccessAt: '2026-08-03T13:30:00.000Z'});
+  assert.equal((await firestore.doc(`postSummaries/${firstPost.id}`).get()).get('readerRelease'), undefined);
 
   const publication = await publishDueScheduledPosts(firestore, new Date('2026-08-03T14:01:00.000Z'));
   assert.deepEqual(publication.publishedPostIds, [firstPost.id], JSON.stringify(publication));
@@ -193,9 +196,11 @@ test('trusted publishing transactions are revisioned, idempotent, slug-safe, pre
   assert.equal(published.status, 'published');
   assert.equal(published.revision, 5);
   assert.equal(published.publishedAt, scheduledAt);
+  assert.deepEqual(published.readerRelease, scheduled.post.readerRelease);
   const publishedSummary = (await firestore.doc(`postSummaries/${firstPost.id}`).get()).data();
   assert.equal(publishedSummary.status, 'published');
   assert.equal(publishedSummary.revision, 5);
+  assert.equal(publishedSummary.readerRelease, undefined);
 
   const deleted = await mutateBlogPost(firestore, {
     operation: 'delete',

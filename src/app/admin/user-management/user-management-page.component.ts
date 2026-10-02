@@ -21,6 +21,7 @@ const suggestedRoles = [
   'mediaManager',
   'viewer',
   'trustedCommenter',
+  'earlyReader',
   CAT_CORNER_ADDICT_ROLE,
 ] as const;
 const roleNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;

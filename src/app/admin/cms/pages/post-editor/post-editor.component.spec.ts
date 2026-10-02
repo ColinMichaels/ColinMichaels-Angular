@@ -98,7 +98,12 @@ interface TestablePostEditor {
     restoreRecoverySnapshot(snapshot: unknown): Promise<void>;
   };
   currentPost?: BlogPost;
-  postForm: { controls: { title: { value: string; setValue(value: string): void } } };
+  postForm: { controls: {
+    title: { value: string; setValue(value: string): void };
+    announceInSchedule: { value: boolean; setValue(value: boolean): void };
+    earlyAccessAt: { value: string; setValue(value: string): void };
+    publishedAt: { value: string; setValue(value: string): void };
+  } };
 }
 
 describe('CmsPostEditorComponent package import lifecycle', () => {
@@ -218,6 +223,43 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     if (!fixture.componentRef.hostView.destroyed) {
       fixture.destroy();
     }
+  });
+
+  it('keeps legacy announcement settings off and saves explicit early reader settings', async () => {
+    fixture.detectChanges();
+    expect(editor.postForm.controls.announceInSchedule.value).toBeFalse();
+    expect(editor.postForm.controls.earlyAccessAt.value).toBe('');
+    editor.postForm.controls.announceInSchedule.setValue(true);
+    editor.postForm.controls.earlyAccessAt.setValue('2027-01-01T08:00');
+    editor.postForm.controls.publishedAt.setValue('2027-01-02T08:00');
+    savePost.and.callFake(async (post: BlogPost) => post);
+    expect(await editor.onSaved({data: {blocks: []}, savedAt: '2026-10-01T00:00:00.000Z', blockCount: 0})).toBeTrue();
+    expect(savePost.calls.mostRecent().args[0].readerRelease).toEqual({announceInSchedule: true,
+      earlyAccessAt: new Date('2027-01-01T08:00').toISOString()});
+  });
+
+  it('rejects early reader times at or after public publication before saving', async () => {
+    fixture.detectChanges();
+    editor.postForm.controls.announceInSchedule.setValue(true);
+    editor.postForm.controls.earlyAccessAt.setValue('2027-01-02T08:00');
+    editor.postForm.controls.publishedAt.setValue('2027-01-02T08:00');
+    expect(await editor.onSaved({data: {blocks: []}, savedAt: '2026-10-01T00:00:00.000Z', blockCount: 0})).toBeFalse();
+    expect(savePost).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('Member early access must begin before the public publish date.');
+  });
+
+  it('preserves imported schedule settings in the unsaved editor and exported backup', async () => {
+    fixture.detectChanges();
+    const post = {...createPost('/assets/images/backgrounds/night.webp'), readerRelease: {
+      announceInSchedule: true, earlyAccessAt: '2027-01-01T12:00:00.000Z'}, publishedAt: '2027-01-02T12:00:00.000Z'};
+    editor.editorComponent = {renderDocument: jasmine.createSpy('renderDocument').and.resolveTo(undefined),
+      restoreRecoverySnapshot: jasmine.createSpy('restoreRecoverySnapshot').and.resolveTo(undefined)};
+    await editor.importPostJson(createFileEvent([new File([JSON.stringify(post)], 'scheduled.json', {type: 'application/json'})]));
+    expect(editor.postForm.controls.announceInSchedule.value).toBeTrue();
+    editor.editorComponent = undefined;
+    const backup = await editor.createCurrentBackupPost();
+    expect(backup.readerRelease).toEqual(post.readerRelease);
+    expect(savePost).not.toHaveBeenCalled();
   });
 
   it('locks save and navigation while transfer and finalization are active, then loads an unsaved draft', async () => {

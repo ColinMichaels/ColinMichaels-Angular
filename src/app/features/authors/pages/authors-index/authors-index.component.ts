@@ -2,6 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, effect, inject} from '@ang
 import {toSignal} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 
+import {SeasonalCollectiblesComponent} from '../../../seasonal/components/seasonal-collectibles.component';
 import {PATH_NAMES} from '../../../../app-route-paths';
 import {
   AUTHORS_INDEX_SEO_METADATA,
@@ -13,11 +14,12 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
 
 @Component({
   selector: 'app-authors-index',
-  imports: [RouterLink],
+  imports: [RouterLink, SeasonalCollectiblesComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="authors-index-page">
-      <section class="authors-index-shell">
+      <section class="authors-index-shell seasonal-hideout">
+        <app-seasonal-collectibles url="/authors" hideout="discovery"/>
         <nav class="authors-index-breadcrumb" aria-label="Authors navigation">
           <a routerLink="/">Home</a>
           <span aria-hidden="true">/</span>
@@ -37,62 +39,65 @@ import {AuthorRepositoryService} from '../../services/author-repository.service'
           }
         </header>
 
-        @if (isLoading() && authors().length === 0) {
-          <section class="authors-index-state" role="status" aria-live="polite">
-            <span class="authors-index-state__mark" aria-hidden="true"></span>
-            <h2>Loading authors</h2>
-            <p>The contributor directory is on its way.</p>
-          </section>
-        } @else if (authors().length > 0) {
-          <nav class="authors-directory" aria-label="Published authors" [attr.aria-busy]="isLoading()">
-            <ul>
-              @for (author of authors(); track author.id) {
-                <li>
-                  <a [routerLink]="['/', pathNames.AUTHORS, author.slug]" class="author-directory-card">
-                    <span class="author-directory-card__portrait">
-                      @if (author.avatarUrl) {
-                        <img
-                          [src]="author.avatarUrl"
-                          [alt]="author.imageAlt"
-                          width="320"
-                          height="320"
-                          loading="lazy"
-                        >
-                      } @else {
-                        <span aria-hidden="true">{{ authorInitials(author.name) }}</span>
-                      }
-                    </span>
-
-                    <span class="author-directory-card__content">
-                      <span class="author-directory-card__identity">
-                        <strong>{{ author.name }}</strong>
-                        @if (author.location) {
-                          <span>{{ author.location }}</span>
+        <div class="seasonal-hideout">
+          <app-seasonal-collectibles url="/authors" hideout="reading"/>
+          @if (isLoading() && authors().length === 0) {
+            <section class="authors-index-state" role="status" aria-live="polite">
+              <span class="authors-index-state__mark" aria-hidden="true"></span>
+              <h2>Loading authors</h2>
+              <p>The contributor directory is on its way.</p>
+            </section>
+          } @else if (authors().length > 0) {
+            <nav class="authors-directory" aria-label="Published authors" [attr.aria-busy]="isLoading()">
+              <ul>
+                @for (author of authors(); track author.id) {
+                  <li>
+                    <a [routerLink]="['/', pathNames.AUTHORS, author.slug]" class="author-directory-card">
+                      <span class="author-directory-card__portrait">
+                        @if (author.avatarUrl) {
+                          <img
+                            [src]="author.avatarUrl"
+                            [alt]="author.imageAlt"
+                            width="320"
+                            height="320"
+                            loading="lazy"
+                          >
+                        } @else {
+                          <span aria-hidden="true">{{ authorInitials(author.name) }}</span>
                         }
                       </span>
-                      <span class="author-directory-card__title">{{ author.title }}</span>
-                      <span class="author-directory-card__bio">{{ author.shortBio }}</span>
-                      <span class="author-directory-card__action">
-                        View author profile
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path d="M5 12h14"></path>
-                          <path d="m14 6 6 6-6 6"></path>
-                        </svg>
+
+                      <span class="author-directory-card__content">
+                        <span class="author-directory-card__identity">
+                          <strong>{{ author.name }}</strong>
+                          @if (author.location) {
+                            <span>{{ author.location }}</span>
+                          }
+                        </span>
+                        <span class="author-directory-card__title">{{ author.title }}</span>
+                        <span class="author-directory-card__bio">{{ author.shortBio }}</span>
+                        <span class="author-directory-card__action">
+                          View author profile
+                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M5 12h14"></path>
+                            <path d="m14 6 6 6-6 6"></path>
+                          </svg>
+                        </span>
                       </span>
-                    </span>
-                  </a>
-                </li>
-              }
-            </ul>
-          </nav>
-        } @else {
-          <section class="authors-index-state" [attr.role]="loadError() ? 'alert' : 'status'">
-            <span class="authors-index-state__mark" aria-hidden="true"></span>
-            <h2>No published authors yet</h2>
-            <p>{{ loadError() || 'Published author profiles will appear here.' }}</p>
-            <a [routerLink]="['/', pathNames.BLOG]">Browse the blog</a>
-          </section>
-        }
+                    </a>
+                  </li>
+                }
+              </ul>
+            </nav>
+          } @else {
+            <section class="authors-index-state" [attr.role]="loadError() ? 'alert' : 'status'">
+              <span class="authors-index-state__mark" aria-hidden="true"></span>
+              <h2>No published authors yet</h2>
+              <p>{{ loadError() || 'Published author profiles will appear here.' }}</p>
+              <a [routerLink]="['/', pathNames.BLOG]">Browse the blog</a>
+            </section>
+          }
+        </div>
       </section>
     </main>
   `,
