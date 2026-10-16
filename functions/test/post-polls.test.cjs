@@ -91,3 +91,10 @@ test('does not expose result counts when visibility is denied', () => {
     options: [],
   });
 });
+
+test('private reflections and unknown modes cannot become community votes', () => {
+  for (const pollMode of ['reflection', 'unknown']) {
+    assert.equal(parsePostPollDefinition({blocks: [{...definitionBlock,
+      data: {...definitionBlock.data, pollMode, reflectionExplanation: 'Consider the evidence.'}}]}, 'poll-1'), null);
+  }
+});

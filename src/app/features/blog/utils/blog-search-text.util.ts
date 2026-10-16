@@ -27,6 +27,7 @@ export function createBlogPostSearchBodyText(post: BlogPost): string {
     append(block.data.title);
     append(block.data.text);
     append(block.data.caption);
+    append(block.data.reflectionExplanation);
     append(block.data.attribution);
     append(block.data.code);
     append(block.data.html);

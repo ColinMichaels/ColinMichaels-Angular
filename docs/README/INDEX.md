@@ -7,6 +7,7 @@ This folder is the entry point for project documentation.
 - [Active Product Roadmap](../FUTURE_FEATURES/ROADMAP.md)
 - [August 2026 Creator Discovery and Trust Action Plan](../SEO/AUDITS/2026-08-15/ACTION-PLAN.md)
 - [Content Release Runway](../CONTENT_PACKAGES/RELEASE_RUNWAY.md)
+- [Private Reader Reflection Example — Draft](../CONTENT_PACKAGES/temu-drone-reader-reflection/temu-drone-what-a-flight-proves-post-package.md)
 - [Tech Debt Completion Log](../TODOS/TECH_DEBT.md)
 - [Changelog](../CHANGELOG.md)
 

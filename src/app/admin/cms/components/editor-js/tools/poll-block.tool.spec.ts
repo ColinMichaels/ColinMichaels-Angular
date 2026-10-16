@@ -68,4 +68,17 @@ describe('PollBlockTool', () => {
     expect([...element.querySelectorAll<HTMLButtonElement>('button')].every(button => button.disabled)).toBeTrue();
     expect([...element.querySelectorAll<HTMLSelectElement>('select')].every(select => select.disabled)).toBeTrue();
   });
+  it('authors a private reflection with bounded evidence without changing community defaults', () => {
+    const reflection: PollBlockData = {...data, placement: 'content', pollMode: 'reflection',
+      reflectionExplanation: 'One clip does not establish repeatability.'};
+    const tool = createTool(reflection); const element = tool.render();
+    expect(tool.save(element)).toEqual(reflection);
+    expect(tool.validate(reflection)).toBeTrue();
+    expect(tool.validate({...reflection, reflectionExplanation: ''})).toBeFalse();
+    expect(tool.validate({...reflection, reflectionExplanation: 'x'.repeat(5001)})).toBeFalse();
+    expect(element.textContent).toContain('Choices stay in page memory');
+    expect(element.querySelector('[data-poll-results-visibility]')!.parentElement!.style.display).toBe('none');
+    expect(element.querySelector('[data-reflection-explanation]')!.parentElement!.style.display).toBe('grid');
+  });
+
 });

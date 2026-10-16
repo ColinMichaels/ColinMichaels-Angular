@@ -90,6 +90,7 @@ export function createBlogReadingStats(post: BlogPost): BlogReadingStats {
       block.data.accessibilitySummary,
       block.data.question,
       block.data.description,
+      block.data.reflectionExplanation,
       ...(block.data.pollOptions ?? []).map(option => option.label),
       ...(block.data.galleryImages ?? []).flatMap(image => [image.alt, image.caption]),
     ]),

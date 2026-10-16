@@ -14,6 +14,8 @@ export interface PollBlockData {
   description?: string;
   pollOptions?: readonly BlogPollOption[];
   pollResultsVisibility?: BlogPollResultsVisibility;
+  pollMode?: 'vote' | 'reflection';
+  reflectionExplanation?: string;
 }
 
 const MIN_POLL_OPTIONS = 2;
@@ -46,6 +48,8 @@ export class PollBlockTool implements BlockTool {
       description: textFieldSanitizer,
       pollOptions: textFieldSanitizer,
       pollResultsVisibility: textFieldSanitizer,
+      pollMode: textFieldSanitizer,
+      reflectionExplanation: textFieldSanitizer,
     };
   }
 
@@ -140,11 +144,51 @@ export class PollBlockTool implements BlockTool {
 
     placementLabel.append(placement);
 
+    const modeLabel = document.createElement('label');
+    modeLabel.textContent = 'Interaction';
+    modeLabel.style.cssText = placementLabel.style.cssText;
+    const mode = document.createElement('select');
+    mode.dataset['pollMode'] = 'true';
+    mode.style.cssText = placement.style.cssText;
+    mode.disabled = this.readOnly;
+    for (const [value, label] of [['vote', 'Community poll'], ['reflection', 'Private reflection']]) {
+      const option = document.createElement('option');
+      option.value = value; option.textContent = label; option.selected = value === this.data.pollMode;
+      mode.append(option);
+    }
+    modeLabel.append(mode);
+    const explanationLabel = document.createElement('label');
+    explanationLabel.textContent = 'Evidence to reveal';
+    explanationLabel.style.cssText = placementLabel.style.cssText;
+    const explanation = document.createElement('textarea');
+    explanation.dataset['reflectionExplanation'] = 'true';
+    explanation.rows = 5;
+    explanation.maxLength = 5000;
+    explanation.value = this.data.reflectionExplanation;
+    explanation.readOnly = this.readOnly;
+    explanation.style.cssText = placement.style.cssText;
+    explanationLabel.append(explanation);
+
     const note = document.createElement('p');
     note.textContent = 'Readers must sign in to vote. Each account has one answer and may update it later. After voting begins, edit answer labels only for typo fixes; remove and add an answer to create a new choice.';
     note.style.cssText = 'margin:12px 0 0;font-size:12px;line-height:1.5;color:#71717a';
 
-    wrapper.append(heading, question, description, list, addButton, visibilityLabel, placementLabel, note);
+    const updateMode = (): void => {
+      const isReflection = mode.value === 'reflection';
+      explanationLabel.hidden = !isReflection;
+      explanationLabel.style.display = isReflection ? 'grid' : 'none';
+      visibilityLabel.hidden = isReflection;
+      visibilityLabel.style.display = isReflection ? 'none' : 'grid';
+      note.textContent = isReflection
+        ? 'Private reflection: readers choose, reveal your evidence, and reconsider without sign-in. Choices stay in page memory; no vote, public totals, points, or saved response. Put the evidence in the article too; readers may skip choosing.'
+        : 'Readers must sign in to vote. Each account has one answer and may update it later. After voting begins, edit answer labels only for typo fixes; remove and add an answer to create a new choice.';
+    };
+    mode.addEventListener('change', () => {
+      if (mode.value === 'reflection') placement.value = 'content';
+      updateMode();
+    });
+    updateMode();
+    wrapper.append(heading, modeLabel, question, description, list, addButton, explanationLabel, visibilityLabel, placementLabel, note);
     return wrapper;
   }
 
@@ -164,6 +208,10 @@ export class PollBlockTool implements BlockTool {
       question: getInputValue(block, '[data-poll-question]'),
       description: getInputValue(block, '[data-poll-description]'),
       pollOptions,
+      ...(block.querySelector<HTMLSelectElement>('[data-poll-mode]')?.value === 'reflection' ? {
+        pollMode: 'reflection' as const,
+        reflectionExplanation: block.querySelector<HTMLTextAreaElement>('[data-reflection-explanation]')?.value.trim() ?? '',
+      } : {}),
       pollResultsVisibility: normalizeResultsVisibility(
         block.querySelector<HTMLSelectElement>('[data-poll-results-visibility]')?.value
       ),
@@ -173,7 +221,8 @@ export class PollBlockTool implements BlockTool {
   validate(data: PollBlockData): boolean {
     const normalized = normalizePollData(data);
     const normalizedLabels = normalized.pollOptions.map(option => option.label.toLocaleLowerCase());
-    return normalized.question.length > 0
+    return (normalized.pollMode !== 'reflection' || (normalized.reflectionExplanation.length > 0 && normalized.reflectionExplanation.length <= 5000))
+      && normalized.question.length > 0
       && normalized.pollOptions.length >= MIN_POLL_OPTIONS
       && normalized.pollOptions.every(option => option.label.length > 0)
       && new Set(normalized.pollOptions.map(option => option.id)).size === normalized.pollOptions.length
@@ -211,7 +260,7 @@ function createInput(
   datasetKey: string
 ): HTMLLabelElement {
   const wrapper = document.createElement('label');
-  wrapper.style.cssText = 'display:grid;gap:5px;font-size:12px;font-weight:700;color:#3f3f46';
+  wrapper.style.cssText = 'display:grid;min-width:0;gap:5px;font-size:12px;font-weight:700;color:#3f3f46';
   wrapper.textContent = label;
 
   const input = document.createElement('input');
@@ -220,7 +269,7 @@ function createInput(
   input.placeholder = placeholder;
   input.readOnly = readOnly;
   input.dataset[datasetKey] = 'true';
-  input.style.cssText = 'border:1px solid #a1a1aa;background:#fff;padding:9px 10px;font:inherit;font-size:13px;color:#18181b;outline:none';
+  input.style.cssText = 'min-width:0;width:100%;box-sizing:border-box;border:1px solid #a1a1aa;background:#fff;padding:9px 10px;font:inherit;font-size:13px;color:#18181b;outline:none';
   wrapper.append(input);
   return wrapper;
 }
@@ -244,6 +293,8 @@ function normalizePollData(data: PollBlockData | undefined): Required<PollBlockD
     question: data?.question?.trim() ?? '',
     description: data?.description?.trim() ?? '',
     pollOptions,
+    pollMode: data?.pollMode === 'reflection' ? 'reflection' : 'vote',
+    reflectionExplanation: data?.reflectionExplanation?.trim() ?? '',
     pollResultsVisibility: normalizeResultsVisibility(data?.pollResultsVisibility),
   };
 }

@@ -1097,6 +1097,8 @@ interface BlogBlockData {
   attribution?: string;
   question?: string;
   description?: string;
+  pollMode?: 'vote' | 'reflection';
+  reflectionExplanation?: string;
   galleryLayout?: 'slideshow' | 'grid' | 'mosaic';
   galleryImages?: readonly BlogGalleryImage[];
   pollOptions?: readonly {
@@ -6160,10 +6162,12 @@ function renderBlogContentBlockFallbackHtml(block: BlogContentBlock, fallbackIma
       }
 
       return [
-        '<section aria-label="Poll">',
+        data.pollMode === 'reflection' ? '<section aria-label="Private reflection">' : '<section aria-label="Poll">',
         `  <h3>${escapeHtml(question)}</h3>`,
         description ? `  <p>${escapeHtml(description)}</p>` : '',
         `  <ul>\n${options}\n  </ul>`,
+        data.pollMode === 'reflection' && data.reflectionExplanation
+          ? `  <p>${escapeHtml(stripHtml(data.reflectionExplanation))}</p>` : '',
         '</section>',
       ].filter(Boolean).join('\n');
     }

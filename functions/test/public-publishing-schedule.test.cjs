@@ -234,3 +234,12 @@ test('callable handlers recheck current privileges and mark every response priva
     firestoreModule.getFirestore = originalFirestore;
   }
 });
+
+test('early-reader projection retains authored reflection evidence', () => {
+  const data = {pollMode: 'reflection', question: 'What convinces you?', reflectionExplanation: 'Compare repeated evidence.',
+    pollOptions: [{id: 'one', label: 'One example'}, {id: 'many', label: 'Many examples'}], secretNote: 'private'};
+  const projected = sanitizeReaderBlogPost(post({blocks: [{id: 'reflection', type: 'poll', data}]}));
+  assert.equal(projected.blocks[0].data.pollMode, 'reflection');
+  assert.equal(projected.blocks[0].data.reflectionExplanation, 'Compare repeated evidence.');
+  assert.equal(projected.blocks[0].data.secretNote, undefined);
+});

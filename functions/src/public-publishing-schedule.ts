@@ -237,7 +237,7 @@ const BLOCK_DATA_FIELDS = [
   'imageSize', 'galleryLayout', 'galleryImages', 'variant', 'attribution', 'stats', 'chartType',
   'chartPoints', 'labels', 'datasets', 'unit', 'xAxisTitle', 'yAxisTitle', 'yMax', 'valueSuffix',
   'decimals', 'showLegend', 'sourceLabel', 'sourceUrl', 'accessibilitySummary', 'question',
-  'description', 'pollOptions', 'pollResultsVisibility', 'html', 'unsupportedBlock',
+  'description', 'pollOptions', 'pollResultsVisibility', 'pollMode', 'reflectionExplanation', 'html', 'unsupportedBlock',
 ] as const;
 
 async function hasPublicAuthor(
