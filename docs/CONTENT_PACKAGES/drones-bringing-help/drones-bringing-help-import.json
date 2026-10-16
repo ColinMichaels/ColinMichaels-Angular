@@ -1,0 +1,430 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-09-09T02:07:49Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "post-drones-bringing-help",
+      "revision": 0,
+      "slug": "drones-bringing-help",
+      "title": "The Drone You’re Worried About Might Be Bringing Help",
+      "excerpt": "Drones can deliver urgent medical supplies, help find missing hikers, and keep inspectors out of dangerous places. Here is the evidence—and what responsible use still has to earn.",
+      "coverImage": "media://images/drones-bringing-help-cover.webp",
+      "thumbnailImage": "media://images/drones-bringing-help-thumbnail.webp",
+      "featured": false,
+      "authorId": "colin-michaels",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Applications Developer",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Creative Technology",
+        "Opinion"
+      ],
+      "subcategories": [],
+      "tags": [
+        "Drones",
+        "FPV",
+        "Medical Delivery",
+        "Search and Rescue",
+        "Drone Safety",
+        "Infrastructure Inspections",
+        "Wildfire Response",
+        "Privacy"
+      ],
+      "status": "draft",
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based public-interest feature using original medical-delivery studies and official rescue, bridge-inspection, and wildfire guidance. Colin has not operated or tested the emergency and inspection systems described; his FPV perspective is commentary, not professional rescue experience.",
+        "sourceReviewedAt": "2026-09-08",
+        "relationshipDisclosure": "No affiliate links are included. Sponsorship, payment, equipment access, and organizational relationships were not supplied for this draft and must be confirmed by Colin before publication.",
+        "aiAssistanceDisclosure": "AI assisted with source research, drafting, and package assembly. This draft requires Colin’s editorial review before publication.",
+        "syntheticMediaDisclosure": "Cover, thumbnail, social image, and both inline images are AI-generated editorial illustrations. They do not depict the named studies, rescue, real devices, or Colin."
+      },
+      "seo": {
+        "title": "How Drones Help: Rescues, Medical Deliveries and Safer Work",
+        "description": "Drones can deliver urgent medical supplies, help find missing hikers, and keep inspectors out of dangerous places. Here is the evidence—and what responsible use still has to earn.",
+        "canonical": "https://colinmichaels.com/blog/drones-bringing-help",
+        "openGraphImage": "media://images/drones-bringing-help-og.jpg",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "og": {
+        "title": "The Drone You’re Worried About Might Be Bringing Help",
+        "description": "Drones can deliver urgent medical supplies, help find missing hikers, and keep inspectors out of dangerous places. Here is the evidence—and what responsible use still has to earn.",
+        "image": "media://images/drones-bringing-help-og.jpg",
+        "imageAlt": "Editorial illustration of a medical-delivery drone approaching a rural clinic above a winding road.",
+        "imageWidth": 1200,
+        "imageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "lead",
+          "type": "typography",
+          "data": {
+            "variant": "lead",
+            "text": "A drone can carry a camera into someone’s private space. It can also carry a defibrillator to someone who needs help. What we ask it to do matters.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "opening",
+          "type": "paragraph",
+          "data": {
+            "text": "I fly FPV, so I’m already inclined to see possibility when I hear a set of propellers. I also understand why somebody else hears the same sound and thinks about surveillance, reckless flying, or a machine falling out of the sky. Those concerns deserve answers."
+          }
+        },
+        {
+          "id": "premise",
+          "type": "paragraph",
+          "data": {
+            "text": "But I want more room in that conversation for the useful flights: equipment getting to a patient, a search team finding someone in the dark, an inspector getting a closer look without having to climb into the same position as the camera. I researched the programs below; I have not operated their emergency or inspection systems."
+          }
+        },
+        {
+          "id": "promise",
+          "type": "paragraph",
+          "data": {
+            "text": "The benefits become much more interesting when we stop at a real example long enough to ask what improved, who still had to do the work, and where the machine reached its limits."
+          }
+        },
+        {
+          "id": "quick-read",
+          "type": "list",
+          "data": {
+            "items": [
+              "Medical-delivery studies have measured earlier arrivals and better supply logistics in specific settings.",
+              "A recent Australian search shows how a drone can help a ground team find missing people.",
+              "Bridge inspections and coordinated fire operations give cameras useful jobs in difficult places.",
+              "Useful missions still need accountable operators, privacy limits, and a plan for conditions in which the aircraft cannot fly."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "aed-heading",
+          "type": "header",
+          "data": {
+            "text": "Getting a defibrillator there sooner",
+            "level": 2
+          }
+        },
+        {
+          "id": "aed-study",
+          "type": "paragraph",
+          "data": {
+            "text": "A Swedish observational study published in 2023 compared drone-delivered automated external defibrillators, or AEDs, with ambulance arrival. Across 211 suspected cardiac-arrest alerts, drones were deployed 72 times and completed 58 deliveries. Both arrival times were available in 55 cases. In 37 of those, the AED arrived first. <a href=\"https://pubmed.ncbi.nlm.nih.gov/38000871/\">Read the original study.</a>"
+          }
+        },
+        {
+          "id": "aed-stats",
+          "type": "stats",
+          "data": {
+            "title": "The arrival-time result",
+            "caption": "Swedish study, April 2021–May 2022. These are delivery comparisons, not survival rates.",
+            "stats": [
+              {
+                "label": "Earlier AED arrival",
+                "value": "37 of 55",
+                "caption": "Cases with both arrival times available"
+              },
+              {
+                "label": "Median lead",
+                "value": "3 min 14 sec",
+                "caption": "Among deliveries that beat ambulance arrival"
+              }
+            ]
+          }
+        },
+        {
+          "id": "aed-limit",
+          "type": "paragraph",
+          "data": {
+            "text": "The 67% result applies to that comparison group, not every emergency call. Weather and operating exclusions limited deployment. Earlier delivery also needs to become actual use: among 18 confirmed arrests in the drone-first group, six patients had the delivered AED attached before the ambulance arrived. <a href=\"https://www.vgregion.se/contentassets/74ed4a24d73c4f648bcc87aa22721539/schierbeck-et-al-the-lancet-dh-aed-drones-231123.pdf\">The full paper explains the results and exclusions.</a>"
+          }
+        },
+        {
+          "id": "aed-perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "That is a promising delivery result, not proof of a population-wide survival improvement. The part that holds my attention is the possibility of making a useful piece of equipment available while professional help is still on its way. The aircraft remains one link in a response that depends on dispatchers, people at the scene, and medical crews."
+          }
+        },
+        {
+          "id": "aed-handoff-image",
+          "type": "image",
+          "data": {
+            "url": "media://images/drones-bringing-help-inline-01.webp",
+            "alt": "A bystander retrieves an orange equipment case from a driveway while a delivery drone remains in the distance.",
+            "caption": "AI-generated editorial illustration. Delivery is only one step; someone still has to retrieve and use the equipment. This does not depict the Swedish study or its aircraft.",
+            "width": 1600,
+            "height": 900,
+            "imageLayout": "contained",
+            "imageSize": "large",
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false
+          }
+        },
+        {
+          "id": "blood-heading",
+          "type": "header",
+          "data": {
+            "text": "Moving blood supplies around a difficult road network",
+            "level": 2
+          }
+        },
+        {
+          "id": "blood-study",
+          "type": "paragraph",
+          "data": {
+            "text": "A 2022 study examined blood deliveries to 20 health facilities in Rwanda. It covered 12,733 drone-delivered orders from 2017 through 2019, including 5,517 emergency orders. Average drone delivery took 49.6 minutes—79 minutes less than one estimate of road delivery time and 98 minutes less than a Google Maps estimate. <a href=\"https://pubmed.ncbi.nlm.nih.gov/35303465/\">The research is published in The Lancet Global Health.</a>"
+          }
+        },
+        {
+          "id": "blood-limit",
+          "type": "paragraph",
+          "data": {
+            "text": "Those road journeys were estimated, not a fleet of vans racing drones on the same trips. The retrospective analysis also found a reduction in blood-unit expirations after drone delivery began. That is evidence of a useful logistics system in that setting; it does not establish that every drone delivery service is cheaper, greener, or better for patients everywhere."
+          }
+        },
+        {
+          "id": "blood-perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "What I like about this example is how ordinary the problem is: something needed in one place is sitting somewhere else. The achievement is getting supplies through a difficult delivery network. Nobody waiting for them needs the flight to look impressive."
+          }
+        },
+        {
+          "id": "rescue-heading",
+          "type": "header",
+          "data": {
+            "text": "Helping a search team find the people it is looking for",
+            "level": 2
+          }
+        },
+        {
+          "id": "rescue-event",
+          "type": "paragraph",
+          "data": {
+            "text": "In June 2026, Fire and Rescue NSW reported that its drone crew helped locate two overdue hikers in the Snowy Mountains. According to the agency, software flagged the pair, thermal imaging helped confirm the location, and the hikers also signaled with a red phone light. The operator used a spotlight to guide the ground team. <a href=\"https://www.fire.nsw.gov.au/media/news/2026/20260625-fire-and-rescue-nsw-drone-team-locates-missing-hikers-using-ai-technology\">Read the rescue agency’s account and its linked footage.</a>"
+          }
+        },
+        {
+          "id": "rescue-limits",
+          "type": "paragraph",
+          "data": {
+            "text": "This is one agency-reported rescue, not an accuracy score for every thermal camera or AI detector. It is also a good reminder to give the people credit: police and rescue crews organized the search, an operator interpreted the information, the hikers signaled, and a ground team brought them to safety."
+          }
+        },
+        {
+          "id": "rescue-perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "A camera becomes a very different proposition when it is helping a team locate someone they have been asked to find. That purpose should be specific and limited. A successful rescue does not settle every question about routine aerial surveillance."
+          }
+        },
+        {
+          "id": "inspection-heading",
+          "type": "header",
+          "data": {
+            "text": "Putting the camera under the bridge",
+            "level": 2
+          }
+        },
+        {
+          "id": "bridge-evidence",
+          "type": "paragraph",
+          "data": {
+            "text": "The Federal Highway Administration says drones can supplement bridge inspections and may reduce time spent using access equipment or working beside live traffic. It is equally clear that imagery cannot cover every inspection task: an inspector may still need to touch, sound, or hammer a bridge member to assess it. <a href=\"https://www.fhwa.dot.gov/bridge/nbis2022/qanda/08.cfm\">See FHWA’s bridge-inspection guidance, question Q313-2.</a>"
+          }
+        },
+        {
+          "id": "bridge-perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "This is the kind of benefit I would happily put on a very boring brochure. Get a useful view, help the expert decide where to investigate, and reduce some of the difficult access work. An aircraft does not need to replace a job to make part of that job safer or easier."
+          }
+        },
+        {
+          "id": "bridge-inspection-image",
+          "type": "image",
+          "data": {
+            "url": "media://images/drones-bringing-help-inline-02.webp",
+            "alt": "An inspector operates a camera drone beneath a bridge while standing on a fenced riverside path.",
+            "caption": "AI-generated editorial illustration. A drone can help reach a viewing angle while the inspector stays on the ground; required hands-on checks still matter.",
+            "width": 1600,
+            "height": 900,
+            "imageLayout": "contained",
+            "imageSize": "large",
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false
+          }
+        },
+        {
+          "id": "fire-heading",
+          "type": "header",
+          "data": {
+            "text": "Giving fire crews useful information",
+            "level": 2
+          }
+        },
+        {
+          "id": "fire-use",
+          "type": "paragraph",
+          "data": {
+            "text": "The U.S. interagency UAS program describes drones supporting incident decisions with imagery and data. Its mission guidance includes mapping and situational awareness, with trained personnel coordinating flights with incident aviation. <a href=\"https://uas.nifc.gov/\">The interagency program</a> and <a href=\"https://uas.nifc.gov/sites/default/files/sites/default/files/inline-files/UAS%20Info%20for%20Flight%20Crews.pdf\">its flight-crew briefing</a> describe that organized role."
+          }
+        },
+        {
+          "id": "fire-warning",
+          "type": "paragraph",
+          "data": {
+            "text": "That coordination is essential. An unauthorized drone near a wildfire can force firefighting aircraft to stop operating. The Department of the Interior repeated that warning in May 2026. If we want drones to help emergency crews, giving those crews clear airspace is part of the deal. <a href=\"https://www.doi.gov/wildlandfireservice/no-drone-zone-near-wildfires\">Read the public wildfire warning.</a>"
+          }
+        },
+        {
+          "id": "fire-perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "Owning a flying camera does not automatically make me part of a response team. The useful mission belongs inside a trained operation with permission, communication, and a defined job."
+          }
+        },
+        {
+          "id": "creative-heading",
+          "type": "header",
+          "data": {
+            "text": "There is value in the quieter flights, too",
+            "level": 2
+          }
+        },
+        {
+          "id": "creative-value",
+          "type": "paragraph",
+          "data": {
+            "text": "As an FPV pilot, I care about the creative side: learning a skill, making a film, and seeing a familiar place from a new angle. Those are worthwhile reasons to fly responsibly. A drone does not have to be delivering emergency equipment to justify its existence."
+          }
+        },
+        {
+          "id": "creative-responsibility",
+          "type": "paragraph",
+          "data": {
+            "text": "I do not get a free pass because I enjoy it, either. Somebody else’s privacy, peace, or safety cannot become the hidden cost of my interesting shot. Enthusiasm should make me more interested in good flying, not less interested in the people underneath it."
+          }
+        },
+        {
+          "id": "questions-heading",
+          "type": "header",
+          "data": {
+            "text": "The questions I would ask before welcoming a drone service",
+            "level": 2
+          }
+        },
+        {
+          "id": "risks",
+          "type": "paragraph",
+          "data": {
+            "text": "Weaponization, intrusive recording, noise, crashes, and disrupted airspace are not imaginary concerns. A list of positive uses does not erase them. For me, the evidence above makes a case for evaluating the actual mission carefully instead of assuming the sound of propellers tells us everything."
+          }
+        },
+        {
+          "id": "community-checklist",
+          "type": "list",
+          "data": {
+            "items": [
+              "<b>What specific job is it doing?</b> Name the problem and the people meant to benefit.",
+              "<b>What improves compared with the practical alternative?</b> Ask for measured delivery times, useful findings, or reduced exposure—not just a demonstration video.",
+              "<b>What does it record, who can see it, and when is it deleted?</b> A helpful purpose should not become unlimited permission to keep watching.",
+              "<b>When does it stay on the ground?</b> Ask about weather, flight limits, other aircraft, and the backup when it cannot complete the mission.",
+              "<b>Who answers for mistakes and disruption?</b> A community needs a responsible operator and a way to raise concerns."
+            ],
+            "ordered": false,
+            "listStyle": "unordered",
+            "listPresentation": "standard"
+          }
+        },
+        {
+          "id": "rules-link",
+          "type": "paragraph",
+          "data": {
+            "text": "These are questions for evaluating a service, not a flight checklist or permission to launch. In the United States, <a href=\"https://www.faa.gov/uas\">the FAA’s drone guidance</a> is the starting point for the rules that apply to a particular operation."
+          }
+        },
+        {
+          "id": "verdict-heading",
+          "type": "header",
+          "data": {
+            "text": "Give useful flights a chance to earn trust",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict",
+          "type": "paragraph",
+          "data": {
+            "text": "I want drones judged by the work they do and how responsibly they do it. The medical studies, rescue account, and inspection guidance give me concrete reasons to be hopeful. They also show how much the result depends on the people, procedures, and limits around the aircraft."
+          }
+        },
+        {
+          "id": "takeaway",
+          "type": "typography",
+          "data": {
+            "variant": "keyTakeaway",
+            "text": "The strongest case for a drone is a useful job, a measurable benefit, and somebody accountable for the flight.",
+            "attribution": ""
+          }
+        },
+        {
+          "id": "closing",
+          "type": "paragraph",
+          "data": {
+            "text": "I can enjoy the flying and still expect those standards. I would like the public conversation to leave room for that combination: curiosity about what can help, and enough scrutiny to make the help worth trusting."
+          }
+        },
+        {
+          "id": "community-priority",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "question": "Which drone service would you most want your community to evaluate?",
+            "description": "Choose one. Signed-in readers can vote; this asks about community priorities, not personal medical information.",
+            "pollOptions": [
+              {
+                "id": "medical-delivery",
+                "label": "Urgent medical deliveries"
+              },
+              {
+                "id": "search-rescue",
+                "label": "Search and rescue support"
+              },
+              {
+                "id": "inspection",
+                "label": "Bridge and infrastructure inspections"
+              },
+              {
+                "id": "fire-mapping",
+                "label": "Coordinated wildfire mapping"
+              },
+              {
+                "id": "safeguards-first",
+                "label": "I would need clearer safeguards first"
+              }
+            ],
+            "pollResultsVisibility": "afterVote"
+          }
+        }
+      ],
+      "createdAt": "2026-09-09T02:07:49Z",
+      "updatedAt": "2026-09-09T02:07:49Z",
+      "publishedAt": null
+    }
+  ]
+}

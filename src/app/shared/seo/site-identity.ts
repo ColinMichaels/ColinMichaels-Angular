@@ -7,10 +7,10 @@ export const DEFAULT_LOCALE = 'en_US';
 export const PERSON_NAME = 'Colin Michaels';
 export const PERSON_JOB_TITLE = 'Applications Developer';
 export const PERSON_PROFILE_DESCRIPTION = 'Florida creator, applications developer, recording and mixing engineer, FPV pilot, and writer exploring unusual gadgets, useful technology, creative projects, and patient-perspective recovery.';
-export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-og.jpg';
+export const HOMEPAGE_OG_IMAGE = '/assets/social/colin-michaels-discoveries-v3.jpg';
 export const HOMEPAGE_TITLE = `Cool Gadgets, Useful Tech & Internet Finds | ${PERSON_NAME}`;
 export const HOMEPAGE_DESCRIPTION = `Discover unusual gadgets, useful tech, practical AI, FPV drone videos, and internet finds with ${PERSON_NAME}—plus honest recovery stories and creator projects.`;
-export const HOMEPAGE_IMAGE_ALT = `${PERSON_NAME} personal site preview card`;
+export const HOMEPAGE_IMAGE_ALT = `${PERSON_NAME} — Interesting tech. Unexpected discoveries. Mountain landscape and creative workspace.`;
 export type YouTubeChannelKey = 'colin-michaels' | 'captain-colin';
 
 export interface YouTubeChannelIdentity {
