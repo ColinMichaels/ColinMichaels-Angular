@@ -1,5 +1,5 @@
 import {BlogPostSummary} from '../../blog/models/blog-post.model';
-import {HOMEPAGE_OG_IMAGE} from '../../../shared/seo/seo.metadata';
+import {HOMEPAGE_IMAGE_ALT, HOMEPAGE_OG_IMAGE} from '../../../shared/seo/seo.metadata';
 import {DEFAULT_HOMEPAGE_HERO_SETTINGS} from '../homepage-hero.defaults';
 import {HomepageHeroSettings} from '../models/homepage-hero.model';
 import {selectHomepageHeroPost} from './homepage-post-selection.util';
@@ -34,7 +34,7 @@ export function createHomepageSocialPreviewSelection(
   if (!post) {
     return {
       image: HOMEPAGE_OG_IMAGE,
-      imageAlt: 'Colin Michaels personal site preview card',
+      imageAlt: HOMEPAGE_IMAGE_ALT,
       post: null,
       versionSeed: `${HOMEPAGE_SOCIAL_IMAGE_TEMPLATE_VERSION}:brand`,
     };

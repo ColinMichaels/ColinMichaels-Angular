@@ -1,11 +1,12 @@
 # Roadmap
 
-Updated August 31, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
+Updated September 2, 2026. This is the canonical list of active and deliberately deferred product work. Completed refactor history belongs in the [Tech Debt Completion Log](../TODOS/TECH_DEBT.md), dated audits remain evidence snapshots, and implementation history remains in the [Changelog](../CHANGELOG.md).
 
 Local implementation, a saved Firebase version, a preview, and production deployment are separate states. Nothing in this roadmap should be read as production-live without exact-commit deployment and public verification.
 
 ## Delivered Recently
 
+- The experimental public WebMCP pilot is production-deployed and immediately verified: the browser exposes exactly three bounded read-only tools, structured telemetry remains privacy-safe, Firestore TTL is active, the controlled 20/21/reset limit passed, and four measurable Cloud Monitoring policies route to the named owner channel. The first seven-day traffic baseline and the evidence-derived rate-limit-document growth alert remain open below; Function App Check remains intentionally off for the direct callable transport.
 - The Profile page has a two-column account layout and a device-local Reading library for favorites, read-later, progress, and offline articles. The library shows the 10 most recently modified records per page with explicit Previous/Next pagination.
 - Public topic pages use reusable cinematic image heroes while preserving canonical topic identity and Firestore ownership boundaries.
 - Post summaries can project a bounded, deduplicated set of in-body images for interaction-triggered preview galleries without changing post documents.
@@ -38,12 +39,11 @@ Local implementation, a saved Firebase version, a preview, and production deploy
 - Use **Save evidence only** for disclosure-only legacy work; keep **Save Post** for an intentionally reviewed complete-document change.
 - Preserve honest **Not yet classified** states for legacy personal stories or project journals when classification would add false certainty.
 
-### 3. Close the public WebMCP operations loop
+### 3. Review the WebMCP seven-day production baseline
 
-- Deploy the privacy-safe structured callable telemetry and matching Hosting bridge from one exact tested release.
-- Enable and verify the Firestore TTL policy for `publicAgentContentRateLimits.expiresAtTimestamp`; TTL is cleanup, not an authorization control.
-- Run the three-tool production browser smoke test and the opt-in 20/21/reset rate-limit verifier, recording exact timestamps and results.
-- Create Cloud Monitoring alerts with a named owner and notification channel for handler failures, sustained HTTP `429` responses, unexpected HTTP `403` responses, latency, and abnormal rate-limit document growth.
+- On 2026-09-07, review the first complete production window for operation/outcome counts, HTTP `429` and `403` pressure, p95 latency, alert incidents, and TTL state without exporting opaque visitor identifiers.
+- Record the privacy-safe unique rate-limit-document count as the initial baseline, then create a named-owner growth alert only if the available Monitoring metric can represent that signal without treating identifiers as analytics.
+- Tune the four active policy thresholds only when the seven-day evidence supports a change; do not raise the public request limit automatically.
 - Keep Function App Check enforcement off for `getPublicAgentContent` until the direct browser transport has explicit verified-token coverage and a rollback owner.
 
 ## Next: One To Two Sprints
