@@ -14,6 +14,7 @@
 ## Unreleased
 
 - Clear stale CMS import errors when either import picker opens or a new JSON/package attempt starts. Add an accessible **Dismiss** action to completed, stopped, and canceled package results; active checking/upload/processing remains visible. Dismiss only the import's error toast, including when leaving the editor, while preserving unrelated notifications, draft content, and finalized media. The production workflow deploys Hosting and the matching Functions SEO shell; no data migration is required.
+- Lead video articles with a wide, click-to-play YouTube viewer and the full post below. Prefer the editor-selected companion or first valid YouTube embed, retain its caption, and preserve all other article blocks and cover-led posts. Keep the same player running in a compact reading view with opt-out, return, and close controls; preserve dark/light modes, existing reading systems, content records, and social metadata. Document the concept, component inventory, no-migration Hosting rollout, and reversible fallback in `docs/design/video-first-blog.md` and `docs/ARCHITECTURE/BLOG_READING_RAILS.md`.
 
 - Celebrate a newly completed seasonal hunt with the site’s shared confetti burst. Respect system and reader reduced-motion settings; archive previews, duplicate clicks, reloads, restored progress, and cross-tab updates never replay the animation. Keep collection progress and the original site layout unchanged.
 
