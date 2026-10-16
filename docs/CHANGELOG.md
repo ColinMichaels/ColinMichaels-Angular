@@ -13,6 +13,8 @@
 
 ## Unreleased
 
+- Clear stale CMS import errors when either import picker opens or a new JSON/package attempt starts. Add an accessible **Dismiss** action to completed, stopped, and canceled package results; active checking/upload/processing remains visible. Dismiss only the import's error toast, including when leaving the editor, while preserving unrelated notifications, draft content, and finalized media. The production workflow deploys Hosting and the matching Functions SEO shell; no data migration is required.
+
 - Celebrate a newly completed seasonal hunt with the site’s shared confetti burst. Respect system and reader reduced-motion settings; archive previews, duplicate clicks, reloads, restored progress, and cross-tab updates never replay the animation. Keep collection progress and the original site layout unchanged.
 
 - Prevent archive collection previews from awarding lantern finds. Keep read-only artwork, clues, Found status, and existing progress; require the item’s real public hiding route while its edition is active. Remove the archive-only collectible override and reject archive/wrong-route requests before storage writes. No migration or retrospective score reset is required.

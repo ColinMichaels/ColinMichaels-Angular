@@ -48,6 +48,10 @@ interface TestablePostEditor {
 
   importPostPackage(event: Event): Promise<void>;
 
+  dismissPostImportFeedback(): void;
+  openPostJsonPicker(input: HTMLInputElement): void;
+  openPostPackagePicker(input: HTMLInputElement): void;
+
   isJsonImportInProgress: WritableSignal<boolean>;
   isPackageImportInProgress: WritableSignal<boolean>;
   isPostImportInProgress: () => boolean;
@@ -117,7 +121,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
   let router: jasmine.SpyObj<Pick<Router, 'navigate'>>;
   let savePost: jasmine.Spy;
   let saveRecovery: jasmine.Spy<(write: CmsPostRecoveryWrite) => Promise<CmsPostRecoverySnapshot>>;
-  let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success'>>;
+  let toast: jasmine.SpyObj<Pick<CmsToastService, 'error' | 'success' | 'dismiss'>>;
 
   beforeEach(async () => {
     uploadImage = jasmine.createSpy('uploadImage');
@@ -133,7 +137,8 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     ));
     router = jasmine.createSpyObj('Router', ['navigate']);
     router.navigate.and.resolveTo(true);
-    toast = jasmine.createSpyObj('CmsToastService', ['error', 'success']);
+    toast = jasmine.createSpyObj('CmsToastService', ['error', 'success', 'dismiss']);
+    toast.error.and.returnValue(17);
 
     const blogRepository = {
       loading$: of(false),
@@ -210,6 +215,12 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
         <p role="status" aria-live="polite" data-testid="post-import-announcement">
           {{ postImportAnnouncement() }}
         </p>
+        @if (packageImportProgress(); as progress) {
+          <app-post-package-import-progress
+            [progress]="progress"
+            (dismissed)="dismissPostImportFeedback()"
+          ></app-post-package-import-progress>
+        }
       `
         }
       })
@@ -908,6 +919,103 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
       totalImages: 0,
     }));
   });
+
+  it('dismisses a stopped package result without changing or saving the draft', async () => {
+    await editor.importPostPackage(createDuplicatePostPackageEvent());
+    fixture.detectChanges();
+    expect(query('[data-stage="error"]')?.textContent).toContain('Found 3:');
+    const currentPost = editor.currentPost;
+    const title = editor.postForm.controls.title.value;
+
+    const dismissButton = query('[aria-label="Dismiss package import status"]');
+    expect(dismissButton).not.toBeNull();
+    dismissButton?.click();
+    fixture.detectChanges();
+
+    expect(query('[data-testid="post-package-import-progress"]')).toBeNull();
+    expect(editor.postImportAnnouncement()).toBe('');
+    expect(toast.dismiss).toHaveBeenCalledTimes(1);
+    expect(toast.dismiss).toHaveBeenCalledWith(17);
+    expect(editor.currentPost).toBe(currentPost);
+    expect(editor.postForm.controls.title.value).toBe(title);
+    expect(savePost).not.toHaveBeenCalled();
+    expect(uploadImage).not.toHaveBeenCalled();
+  });
+
+  for (const picker of ['openPostJsonPicker', 'openPostPackagePicker'] as const) {
+    it(`clears the previous failure when ${picker} opens, even if selection is canceled`, async () => {
+      await editor.importPostPackage(createDuplicatePostPackageEvent());
+      const input = document.createElement('input');
+      const openPicker = spyOn(input, 'click');
+
+      editor[picker](input);
+      await editor.importPostJson(createFileEvent([]));
+      fixture.detectChanges();
+
+      expect(openPicker).toHaveBeenCalled();
+      expect(editor.packageImportProgress()).toBeNull();
+      expect(query('[data-stage="error"]')).toBeNull();
+      expect(toast.dismiss).toHaveBeenCalledTimes(1);
+      expect(uploadImage).not.toHaveBeenCalled();
+    });
+  }
+
+  it('clears a package failure as a direct JSON import starts and keeps it cleared after success', async () => {
+    await editor.importPostPackage(createDuplicatePostPackageEvent());
+    let resolveJson!: (text: string) => void;
+    const jsonFile = {
+      name: 'replacement.json',
+      text: () => new Promise<string>(resolve => { resolveJson = resolve; }),
+    } as File;
+
+    const importPromise = editor.importPostJson(createFileEvent([jsonFile]));
+    fixture.detectChanges();
+    expect(editor.isJsonImportInProgress()).toBeTrue();
+    expect(query('[data-stage="error"]')).toBeNull();
+    expect(editor.packageImportProgress()).toBeNull();
+    expect(toast.dismiss).toHaveBeenCalledTimes(1);
+
+    resolveJson(JSON.stringify(createPost('https://images.example/replacement.webp')));
+    await importPromise;
+    fixture.detectChanges();
+
+    expect(editor.packageImportProgress()).toBeNull();
+    expect(query('[data-stage="error"]')).toBeNull();
+    expect(toast.success).toHaveBeenCalledWith(jasmine.stringMatching(/replacement.json/));
+    expect(savePost).not.toHaveBeenCalled();
+  });
+
+  it('replaces a failed package with active progress and a successful result on retry', async () => {
+    await editor.importPostPackage(createDuplicatePostPackageEvent());
+    const upload = new Subject<BlogMediaUploadProgress>();
+    uploadImage.and.returnValue(upload);
+
+    const retry = editor.importPostPackage(createPackageEvent());
+    await waitForSpy(uploadImage);
+    fixture.detectChanges();
+    expect(query('[data-stage="error"]')).toBeNull();
+    expect(query('[data-stage="uploading"]')).not.toBeNull();
+    expect(toast.dismiss).toHaveBeenCalledTimes(1);
+    expect(query('[aria-label="Dismiss package import status"]')).toBeNull();
+
+    editor.dismissPostImportFeedback();
+    expect(editor.packageImportProgress()?.stage).toBe('uploading');
+    expect(editor.isPackageImportInProgress()).toBeTrue();
+
+    upload.next(createUploadProgress(100, 'https://images.example/retry-cover.webp'));
+    upload.complete();
+    await retry;
+    fixture.detectChanges();
+    expect(query('[data-stage="error"]')).toBeNull();
+    expect(query('[data-stage="complete"]')?.textContent).toContain('Package import complete');
+    expect(savePost).not.toHaveBeenCalled();
+  });
+
+  function createDuplicatePostPackageEvent(): Event {
+    return createFileEvent(['metadata.json', 'post-import.json', 'cms-import/post-import.json'].map(name => (
+      createPackageFile(name, JSON.stringify(createPost('media://images/cover.webp')), 'application/json')
+    )));
+  }
 
   function query(selector: string): HTMLElement | null {
     return (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(selector);
