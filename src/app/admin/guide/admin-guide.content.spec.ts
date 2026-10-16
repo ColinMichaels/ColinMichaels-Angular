@@ -5,6 +5,18 @@ import {
 } from './admin-guide.content';
 
 describe('admin guide content', () => {
+  it('finds the import-first writing flow only for CMS roles', () => {
+    for (const query of ['import first', 'focus writing', 'post settings', 'review and publish']) {
+      for (const role of ['admin', 'contentEditor'] as const) {
+        expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, [role], query).map(entry => entry.id))
+          .toContain('create-and-publish-a-post');
+      }
+      for (const role of ['viewer', 'mediaManager'] as const) {
+        expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, [role], query).map(entry => entry.id))
+          .not.toContain('create-and-publish-a-post');
+      }
+    }
+  });
   it('shows only entries allowed by the current role', () => {
     const viewerEntries = searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['viewer'], '');
     const editorEntries = searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, ['contentEditor'], '');

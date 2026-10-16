@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Import-first blog editor
+
+- Document the original-to-new control locations, source parity (25 form controls, 11 child component types, 23 click handlers), exact 14-file rollback scope, baseline revision, source checkpoint, safe reversal steps, and release/rollback smoke checks. Distinguish local validation from untested live integrations and retain the no-data-migration boundary.
+
+- Open new posts with package, JSON, or blank-start choices; keep existing posts in Edit. Reorganize the mounted editor around writing, six named settings panels, optional focus mode, and an unsaved Review & publish flow. Preserve all status, media, evidence-only save, SEO, social, recovery, AI, and trusted publishing operations. Make native dropdowns and Editor.js menus readable in their respective dark and light surfaces; update the role-aware Admin Guide and architecture inventory. No data migration, production content change, or deployment is included.
+
 ## 2026-10-02
 
 - Tuck smaller seasonal finds into varied story, topic-guide, discovery, and author-directory areas without adding collection rows or pushing content down. Rotate hiding areas on return to a page while keeping each find stable during the visit and after another item is collected. Preserve 44px touch/keyboard targets, clue destinations, archive eligibility, saved progress, owner/account bypass, and shared completion confetti; document the slot registry and rollback.

@@ -32,6 +32,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Analytics and Measurement](../ARCHITECTURE/ANALYTICS_AND_MEASUREMENT.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)
+- [Import-First Blog Editor](../ARCHITECTURE/ADMIN_IMPORT_FIRST_EDITOR.md)
 - [Admin Console Reorganization](../ARCHITECTURE/ADMIN_CONSOLE_REORGANIZATION_PLAN.md)
 - [Role-Aware Admin Guide](../ARCHITECTURE/ADMIN_GUIDE.md)
 - [Admin User Management and View](../ARCHITECTURE/ADMIN_USER_VIEW.md)
