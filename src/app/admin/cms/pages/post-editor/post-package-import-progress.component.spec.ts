@@ -118,6 +118,28 @@ describe('PostPackageImportProgressComponent', () => {
     expect(query('[role="status"]')).toBeNull();
   });
 
+  for (const stage of ['complete', 'error', 'cancelled'] as const) {
+    it(`lets the editor dismiss the ${stage} result`, () => {
+      const dismiss = jasmine.createSpy('dismiss');
+      fixture.componentInstance.dismissed.subscribe(dismiss);
+      render({stage, message: 'Finished import attempt', progress: null, completedImages: 0, totalImages: 0});
+
+      const button = query('[aria-label="Dismiss package import status"]');
+      expect(button?.getAttribute('type')).toBe('button');
+      button?.click();
+
+      expect(dismiss).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  for (const stage of ['checking', 'uploading', 'processing', 'applying'] as const) {
+    it(`keeps ${stage} progress visible without a dismiss control`, () => {
+      render({stage, message: 'Active import attempt', progress: null, completedImages: 0, totalImages: 0});
+
+      expect(query('[aria-label="Dismiss package import status"]')).toBeNull();
+    });
+  }
+
   function render(progress: PostPackageImportProgress): void {
     fixture.componentRef.setInput('progress', progress);
     fixture.detectChanges();

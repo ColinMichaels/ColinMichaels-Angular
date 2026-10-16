@@ -560,7 +560,10 @@ function isFirstSaveCommitConflict(
           </p>
 
           @if (packageImportProgress(); as importProgress) {
-            <app-post-package-import-progress [progress]="importProgress"></app-post-package-import-progress>
+            <app-post-package-import-progress
+              [progress]="importProgress"
+              (dismissed)="dismissPostImportFeedback()"
+            ></app-post-package-import-progress>
           }
 
           <nav
@@ -1469,6 +1472,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
   ));
   protected readonly postImportAnnouncement = signal('');
   protected readonly packageImportProgress = signal<PostPackageImportProgress | null>(null);
+  private postImportErrorToastId: number | null = null;
   protected assistantResult: BlogAssistantResult | null = null;
   protected assistantMessage = '';
   protected assistantError = '';
@@ -1523,6 +1527,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.destroyRef.onDestroy(() => {
       this.isDestroyed = true;
       this.postImportOperationId += 1;
+      this.dismissPostImportErrorToast();
     });
 
     this.postForm.valueChanges
@@ -2045,12 +2050,29 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected openPostJsonPicker(input: HTMLInputElement): void {
     if (this.rejectWhilePostOperation('choosing another import')) return;
+    this.dismissPostImportFeedback();
     input.click();
   }
 
   protected openPostPackagePicker(input: HTMLInputElement): void {
     if (this.rejectWhilePostOperation('choosing another import')) return;
+    this.dismissPostImportFeedback();
     input.click();
+  }
+
+  protected dismissPostImportFeedback(): void {
+    if (this.isPostImportInProgress()) return;
+
+    this.packageImportProgress.set(null);
+    this.postImportAnnouncement.set('');
+    this.dismissPostImportErrorToast();
+  }
+
+  private dismissPostImportErrorToast(): void {
+    if (this.postImportErrorToastId === null) return;
+
+    this.toast.dismiss(this.postImportErrorToastId);
+    this.postImportErrorToastId = null;
   }
 
   protected async importPostJson(event: Event): Promise<void> {
@@ -2067,6 +2089,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
     if (this.rejectWhilePostOperation('importing another document')) return;
 
+    this.dismissPostImportFeedback();
     const operationId = ++this.postImportOperationId;
     this.isJsonImportInProgress.set(true);
     this.postImportAnnouncement.set('Importing the selected JSON document.');
@@ -2084,7 +2107,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       if (!this.isActiveJsonImport(operationId)) return;
 
       this.postImportAnnouncement.set('');
-      this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
+      this.postImportErrorToastId = this.toast.error(`Unable to import JSON: ${getErrorMessage(error)}`);
     } finally {
       if (!this.isDestroyed && this.postImportOperationId === operationId) {
         this.isJsonImportInProgress.set(false);
@@ -2116,6 +2139,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       return;
     }
 
+    this.dismissPostImportFeedback();
     const operationId = ++this.postImportOperationId;
     let hasAnnouncedProcessing = false;
     this.isPackageImportInProgress.set(true);
@@ -2354,7 +2378,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
         currentFile: currentProgress?.currentFile,
       });
       this.postImportAnnouncement.set('');
-      this.toast.error(`Unable to import post package: ${errorMessage}${uploadedMediaNotice}`);
+      this.postImportErrorToastId = this.toast.error(`Unable to import post package: ${errorMessage}${uploadedMediaNotice}`);
     } finally {
       if (!this.isDestroyed && this.postImportOperationId === operationId) {
         this.isPackageImportInProgress.set(false);
