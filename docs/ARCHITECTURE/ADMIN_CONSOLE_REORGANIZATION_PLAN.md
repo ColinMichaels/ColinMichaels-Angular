@@ -1,5 +1,7 @@
 # Admin Console Reorganization Plan
 
+The local import-first blog editor implementation is documented in [Import-first blog editor](ADMIN_IMPORT_FIRST_EDITOR.md). That record supersedes the earlier post-editor accordion arrangement while retaining the route, permissions, content, and trusted publishing contracts described here.
+
 ## Outcome
 
 Turn the current collection of protected admin pages into one calm, consistent working environment without rewriting feature logic or changing established URLs.

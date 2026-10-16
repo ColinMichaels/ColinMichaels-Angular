@@ -47,7 +47,7 @@ const ADMIN_NAVIGATION_COLLAPSED_STORAGE_KEY = 'admin.navigation.collapsed';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="min-h-screen bg-zinc-950 text-zinc-100"
+      class="admin-controls min-h-screen bg-zinc-950 text-zinc-100"
       [style.--admin-sidebar-width]="desktopNavigationCollapsed() ? '4.5rem' : '14rem'"
     >
       <aside

@@ -1,8 +1,10 @@
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
   ViewChild,
   computed,
@@ -67,6 +69,7 @@ import {CmsPostRecoverySnapshot, CmsPostRecoveryWrite} from '../../models/post-r
 import {BlogAiAssistantService} from '../../services/blog-ai-assistant.service';
 import {BlogAiFunctionsService} from '../../services/blog-ai-functions.service';
 import {BlogMediaUploadResult, BlogMediaUploadService} from '../../services/blog-media-upload.service';
+import {CmsProductionPreviewComponent} from '../../components/production-preview/cms-production-preview.component';
 import {CmsToastContainerComponent} from '../../components/toast/cms-toast.component';
 import {CmsToastService} from '../../services/cms-toast.service';
 import {CmsPostRecoveryService} from '../../services/post-recovery.service';
@@ -98,7 +101,8 @@ import {
   replaceBlogPostMediaPackageReferences,
 } from '../../utils/blog-post-media-package.util';
 
-type PostEditorWorkspace = 'post' | 'social' | 'preview';
+type PostEditorWorkspace = 'import' | 'post' | 'social' | 'preview';
+type PostEditorSettings = 'details' | 'media' | 'evidence' | 'search' | 'publish' | 'tools';
 
 interface PostEditorWorkspaceTab {
   id: PostEditorWorkspace;
@@ -107,13 +111,13 @@ interface PostEditorWorkspaceTab {
 }
 
 const POST_EDITOR_WORKSPACES: readonly PostEditorWorkspaceTab[] = [
-  {id: 'post', label: 'Post', description: 'Write and publish the article'},
+  {id: 'post', label: 'Edit', description: 'Write and organize the article'},
   {id: 'social', label: 'Social shares', description: 'Compose native platform posts'},
-  {id: 'preview', label: 'Preview & SEO', description: 'Review the reader and search experience'},
+  {id: 'preview', label: 'Review & publish', description: 'Check the reader experience and release'},
 ];
 
 function isPostEditorWorkspace(value: string | null): value is PostEditorWorkspace {
-  return POST_EDITOR_WORKSPACES.some(workspace => workspace.id === value);
+  return value === 'import' || POST_EDITOR_WORKSPACES.some(workspace => workspace.id === value);
 }
 
 function isComposableSocialChannel(value: string | null): value is BlogSocialChannel {
@@ -483,6 +487,7 @@ function isFirstSaveCommitConflict(
     CmsDraftPreviewPanelComponent,
     CmsSeoChecklistComponent,
     CmsToastContainerComponent,
+    CmsProductionPreviewComponent,
     AdminControlModuleComponent,
     CmsAuthorFormComponent,
     PostPackageImportProgressComponent,
@@ -490,898 +495,12 @@ function isFirstSaveCommitConflict(
     SocialPromotionEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <main class="min-h-screen bg-zinc-950 px-5 pb-20 pt-6 text-zinc-100 sm:px-8 sm:pb-28 lg:px-10">
-      <section class="mx-auto max-w-7xl space-y-4">
-        @if (currentPost; as post) {
-          <header class="grid gap-3 border-b border-zinc-800 pb-5 md:grid-cols-[1fr_auto] md:items-end">
-            <div class="space-y-1.5">
-              <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">{{ isNewPost ? 'New Post' : 'CMS Editor' }}</p>
-              <h1 class="text-3xl font-semibold tracking-tight text-zinc-50">{{ editorTitle }}</h1>
-              <p class="line-clamp-2 max-w-3xl text-sm leading-5 text-zinc-500">{{ editorExcerpt || 'Set the essentials, write the article, then finish publishing metadata when it is ready.' }}</p>
-            </div>
-            <div class="flex flex-wrap gap-2 md:justify-end">
-              <input
-                #postJsonImportInput
-                type="file"
-                class="hidden"
-                accept=".json,application/json"
-                [disabled]="isImportLauncherUnavailable()"
-                (change)="importPostJson($event)"
-              >
-              <input
-                #postPackageImportInput
-                type="file"
-                class="hidden"
-                accept=".json,application/json,image/jpeg,image/png,image/webp,image/avif,image/gif"
-                multiple
-                webkitdirectory
-                [disabled]="isImportLauncherUnavailable()"
-                (change)="importPostPackage($event)"
-              >
-              @if (isNewPost) {
-                <button
-                  type="button"
-                  class="inline-flex h-9 items-center justify-center border border-cyan-500/70 px-3 text-xs font-medium text-cyan-200 hover:bg-cyan-500 hover:text-zinc-950 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-700 aria-disabled:text-zinc-500 aria-disabled:hover:bg-transparent aria-disabled:hover:text-zinc-500"
-                  [attr.aria-disabled]="isImportLauncherUnavailable()"
-                  title="Choose a folder containing the post JSON, image manifest, and generated images"
-                  (click)="openPostPackagePicker(postPackageImportInput)"
-                >
-                  {{ isPackageImportInProgress() ? 'Importing package...' : 'Import post package' }}
-                </button>
-              }
-              <button
-                type="button"
-                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:text-zinc-500 aria-disabled:hover:bg-transparent"
-                [attr.aria-disabled]="isImportLauncherUnavailable()"
-                (click)="openPostJsonPicker(postJsonImportInput)"
-              >
-                {{ isJsonImportInProgress() ? 'Importing JSON...' : 'Import JSON' }}
-              </button>
-              <button
-                type="button"
-                class="inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 aria-disabled:cursor-not-allowed aria-disabled:border-zinc-800 aria-disabled:text-zinc-600 aria-disabled:hover:bg-transparent"
-                [attr.aria-disabled]="isPostImportInProgress() || isJsonExportInProgress || isPreviewGenerationInProgress"
-                (click)="exportPostJson()"
-              >
-                {{ isJsonExportInProgress ? 'Exporting JSON...' : 'Export JSON' }}
-              </button>
-            </div>
-          </header>
-
-          <p
-            class="sr-only"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            data-testid="post-import-announcement"
-          >
-            {{ postImportAnnouncement() }}
-          </p>
-
-          @if (packageImportProgress(); as importProgress) {
-            <app-post-package-import-progress
-              [progress]="importProgress"
-              (dismissed)="dismissPostImportFeedback()"
-            ></app-post-package-import-progress>
-          }
-
-          <nav
-            class="overflow-x-auto border border-zinc-800 bg-zinc-900/40"
-            aria-label="Post workspace"
-            [attr.inert]="isPostImportInProgress() ? '' : null"
-            [attr.aria-disabled]="isPostImportInProgress()"
-          >
-            <div class="flex min-w-max">
-              @for (workspace of workspaces; track workspace.id) {
-                <button
-                  type="button"
-                  [class]="workspaceTabClass(workspace.id)"
-                  [attr.aria-current]="activeWorkspace() === workspace.id ? 'page' : null"
-                  (click)="setWorkspace(workspace.id)"
-                >
-                  <span class="block text-sm font-semibold">{{ workspace.label }}</span>
-                  <span class="mt-0.5 hidden text-[11px] font-normal sm:block">{{ workspace.description }}</span>
-                </button>
-              }
-            </div>
-          </nav>
-
-          <section
-            class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"
-            [hidden]="activeWorkspace() !== 'post'"
-            [style.display]="activeWorkspace() === 'post' ? null : 'none'"
-            [attr.inert]="isPostImportInProgress() ? '' : null"
-            [attr.aria-busy]="isPostImportInProgress()"
-            aria-label="Post editor workspace"
-          >
-            <section class="space-y-3">
-              <form [formGroup]="postForm" class="space-y-2">
-                <app-admin-control-module
-                  title="Post Details"
-                  [summary]="editorTitle"
-                  description="The title and excerpt readers see across the site."
-                  [expanded]="postDetailsOpen()"
-                  (expandedChange)="postDetailsOpen.set($event)"
-                >
-                  <div class="grid gap-3 md:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] md:items-start">
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Title</span>
-                      <input
-                        type="text"
-                        formControlName="title"
-                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                        (input)="syncSlugFromTitle()"
-                      >
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Excerpt</span>
-                      <textarea
-                        formControlName="excerpt"
-                        rows="2"
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <div class="space-y-1.5 md:col-span-2">
-                      <span class="flex items-center justify-between gap-3">
-                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Author</span>
-                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="startAddingAuthor()">Add author</button>
-                      </span>
-                      <select formControlName="authorId" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                        @for (author of authors(); track author.id) {
-                          <option [value]="author.id">{{ author.name }}{{ author.status === 'draft' ? ' (draft)' : '' }}</option>
-                        }
-                      </select>
-                      @if (selectedAuthor(); as author) {
-                        <p class="text-xs text-zinc-500">{{ author.title || 'Contributor' }} · /authors/{{ author.slug }}</p>
-                      }
-                    </div>
-                    @if (newAuthor(); as author) {
-                      <section class="border border-cyan-400/30 bg-zinc-900/70 p-4 md:col-span-2" aria-label="Add author">
-                        <app-cms-author-form [author]="author" (authorSaved)="onAuthorCreated($event)" (cancelled)="newAuthor.set(null)"></app-cms-author-form>
-                      </section>
-                    }
-                  </div>
-                </app-admin-control-module>
-
-                <app-admin-control-module
-                  title="Publishing"
-                  [summary]="postForm.controls.status.value + ' · ' + postedOnPreview"
-                  description="Set the URL, schedule, taxonomy, and homepage priority. These values usually change once per post."
-                  [expanded]="publishingSettingsOpen()"
-                  (expandedChange)="publishingSettingsOpen.set($event)"
-                >
-                  <div class="grid gap-3 md:grid-cols-2">
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Slug</span>
-                      <input
-                        type="text"
-                        formControlName="slug"
-                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                        (blur)="normalizeSlug()"
-                      >
-                    </label>
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="flex items-center justify-between gap-3">
-                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Publish Date</span>
-                        <span class="flex items-center gap-3">
-                          <button
-                            type="button"
-                            class="text-xs font-medium text-cyan-300 hover:text-cyan-100"
-                            (click)="scheduleCalendarOpen.set(!scheduleCalendarOpen())"
-                          >
-                            {{ scheduleCalendarOpen() ? 'Hide calendar' : 'View calendar' }}
-                          </button>
-                          <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100"
-                                  (click)="setPublishedAtNow()">Use current time</button>
-                        </span>
-                      </span>
-                      <input
-                        type="datetime-local"
-                        formControlName="publishedAt"
-                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                        (focus)="scheduleCalendarOpen.set(true)"
-                        (input)="scheduleCalendarOpen.set(true)"
-                      >
-                      <span class="block text-xs leading-5 text-zinc-600">Scheduled posts require a future time.</span>
-                    </label>
-                    <label class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 md:col-span-2">
-                      <span><span class="block text-xs font-medium text-zinc-300">Show in posting schedule</span><span class="mt-0.5 block text-xs text-zinc-500">Announce the title, artwork, excerpt, and public release date on the site.</span></span>
-                      <input type="checkbox" formControlName="announceInSchedule" class="h-4 w-4 accent-cyan-400">
-                    </label>
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Member early access starts</span>
-                      <input type="datetime-local" formControlName="earlyAccessAt" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                      <span class="block text-xs leading-5 text-zinc-500">Optional. Announce the post above and choose a time before publication. Only members explicitly granted early access can read it early; leave blank to keep it locked.</span>
-                    </label>
-                    @if (scheduleCalendarOpen()) {
-                      <div class="md:col-span-2">
-                        <app-post-schedule-calendar
-                          [posts]="calendarPosts()"
-                          [currentPostId]="post.id"
-                          [value]="postForm.controls.publishedAt.value"
-                          (valueChange)="applyScheduleCalendarValue($event)"
-                        ></app-post-schedule-calendar>
-                      </div>
-                    }
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Categories</span>
-                      <input type="text" formControlName="categories" placeholder="CMS, Angular" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Tags</span>
-                      <input type="text" formControlName="tags" placeholder="Editor.js, Drafts" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                    </label>
-                    <label class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2 md:col-span-2">
-                      <span>
-                        <span class="block text-xs font-medium text-zinc-300">Featured post</span>
-                        <span class="mt-0.5 block text-xs text-zinc-600">
-                          The newest published featured post owns the homepage hero; older featured posts can remain marked.
-                        </span>
-                      </span>
-                      <input type="checkbox" formControlName="featured" class="border-zinc-600 bg-zinc-950 text-cyan-500 focus:ring-cyan-300">
-                    </label>
-                    <label class="flex items-center justify-between gap-3 border border-amber-500/30 bg-amber-950/15 px-3 py-3 md:col-span-2">
-                      <span>
-                        <span class="block text-xs font-medium text-amber-100">Cat Corner post</span>
-                        <span class="mt-0.5 block text-xs leading-5 text-zinc-500">
-                          Adds this post to Gretchen's Cat Corner. Non-discovery Cat Corner posts stay out of public blog listings but still work at their direct published URL.
-                        </span>
-                      </span>
-                      <input
-                        type="checkbox"
-                        formControlName="catCornerEnabled"
-                        class="border-zinc-600 bg-zinc-950 text-amber-500 focus:ring-amber-300"
-                        (change)="onCatCornerEnabledChanged($event)"
-                      >
-                    </label>
-                    <label
-                      class="flex items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-3 md:col-span-2"
-                      [class.opacity-50]="!postForm.controls.catCornerEnabled.value"
-                    >
-                      <span>
-                        <span class="block text-xs font-medium text-zinc-300">Discovery post</span>
-                        <span class="mt-0.5 block text-xs leading-5 text-zinc-600">
-                          Keeps this Cat Corner post visible in normal blog feeds so readers can find an embedded Gretchen unlock block.
-                        </span>
-                      </span>
-                      <input
-                        type="checkbox"
-                        formControlName="catCornerDiscoveryPost"
-                        class="border-zinc-600 bg-zinc-950 text-amber-500 focus:ring-amber-300"
-                      >
-                    </label>
-                    @if (postForm.controls.catCornerEnabled.value && !postForm.controls.catCornerDiscoveryPost.value) {
-                      <p class="border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100 md:col-span-2" role="status">
-                        Hidden listing mode: this post will appear in Cat Corner for members, but not in the public blog, home feed, categories, or search. Anyone with its direct URL can still read it.
-                      </p>
-                    }
-                  </div>
-                </app-admin-control-module>
-
-                <app-admin-control-module
-                  title="Post Images"
-                  [summary]="mediaModuleSummary"
-                  description="Choose the required cover image and an optional wide, text-free editorial image for featured reading surfaces."
-                  [expanded]="mediaSettingsOpen()"
-                  (expandedChange)="mediaSettingsOpen.set($event)"
-                >
-                  <div class="grid gap-3">
-                    <app-blog-media-uploader
-                      formControlName="coverImage"
-                      label="Cover Image"
-                      buttonLabel="Choose Cover"
-                      previewAlt="Cover image preview"
-                      assetRole="cover"
-                      [postSlug]="mediaUploadSlug"
-                      [required]="true"
-                      [disabled]="isCoverMediaWriterUnavailable()"
-                      (uploadStateChange)="setMediaUploadInProgress('cover', $event)"
-                      (mediaUploaded)="onCoverImageUploaded($event)"
-                    ></app-blog-media-uploader>
-
-                    <app-blog-media-uploader
-                      formControlName="backgroundImage"
-                      label="Editorial Feature / Post Background"
-                      description="Optional. Used behind the article and as the full-bleed homepage backdrop when this post owns the hero. The normal post image remains visible in the homepage panel. Use a clean landscape image without baked-in headlines; at least 1920px wide works best."
-                      buttonLabel="Choose Editorial Image"
-                      placeholder="Optional editorial image URL"
-                      previewAlt="Editorial feature image preview"
-                      assetRole="post-background"
-                      [postSlug]="mediaUploadSlug"
-                      [optimizationMaxWidth]="2560"
-                      [optimizationMaxHeight]="1600"
-                      [optimizationQuality]="0.84"
-                      [disabled]="isPostImportInProgress()"
-                      (uploadStateChange)="setMediaUploadInProgress('background', $event)"
-                      (mediaUploaded)="onBackgroundImageUploaded($event)"
-                    ></app-blog-media-uploader>
-
-                    @if (postForm.controls.backgroundImage.value.trim()) {
-                      <div
-                        class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
-                        <p class="text-xs text-zinc-500">The editorial image remains separate from the required cover
-                          image and supplies the article and homepage backdrops.</p>
-                        <button
-                          type="button"
-                          class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
-                          (click)="clearBackgroundImage()"
-                        >
-                          Remove editorial image from post
-                        </button>
-                      </div>
-                    }
-                  </div>
-                </app-admin-control-module>
-
-                <app-admin-control-module
-                  title="Evidence & Disclosures"
-                  [summary]="postForm.controls.evidenceBasis.value ? 'Classified · ' + postForm.controls.evidenceBasis.value : 'Unclassified · legacy notice shown'"
-                  description="Tell readers what was personally experienced, researched, supplied, assisted, or materially corrected. Blank disclosure fields make no claim."
-                  [expanded]="editorialSettingsOpen()"
-                  (expandedChange)="editorialSettingsOpen.set($event)"
-                >
-                  <div class="grid gap-3 md:grid-cols-2">
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Primary evidence basis</span>
-                      <select
-                        formControlName="evidenceBasis"
-                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      >
-                        <option value="">Not classified yet</option>
-                        @for (option of evidenceBasisOptions; track option.value) {
-                          <option [value]="option.value">{{ option.label }}</option>
-                        }
-                      </select>
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Sources checked</span>
-                      <input
-                        type="date"
-                        formControlName="sourceReviewedAt"
-                        class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      >
-                    </label>
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Evidence summary</span>
-                      <textarea
-                        formControlName="evidenceSummary"
-                        rows="3"
-                        maxlength="1200"
-                        placeholder="Example: I flew the aircraft for three batteries; range and waterproofing specifications remain manufacturer claims."
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Relationship disclosure</span>
-                      <textarea
-                        formControlName="relationshipDisclosure"
-                        rows="2"
-                        maxlength="1200"
-                        placeholder="State sponsorship, affiliate links, free products, loans, travel, early access, or other relevant relationships."
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">AI assistance disclosure</span>
-                      <textarea
-                        formControlName="aiAssistanceDisclosure"
-                        rows="3"
-                        maxlength="1200"
-                        placeholder="Describe material AI help with research organization, transcription, drafting, code, or visual ideation."
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Synthetic media disclosure</span>
-                      <textarea
-                        formControlName="syntheticMediaDisclosure"
-                        rows="3"
-                        maxlength="1200"
-                        placeholder="Identify editorial illustrations or synthetic media that could be mistaken for documentary evidence."
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <label class="space-y-1.5 md:col-span-2">
-                      <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Latest substantive update or correction</span>
-                      <textarea
-                        formControlName="updateNote"
-                        rows="2"
-                        maxlength="1000"
-                        placeholder="Explain what materially changed and why. Leave blank for routine copy edits."
-                        class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"
-                      ></textarea>
-                    </label>
-                    <p class="border border-cyan-400/25 bg-cyan-400/5 px-3 py-2 text-xs leading-5 text-zinc-400 md:col-span-2">
-                      Unclassified articles remain publishable for migration safety, but readers see that their evidence details have not yet been reviewed under the current editorial standard.
-                    </p>
-                    <div
-                      class="flex flex-col gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between md:col-span-2">
-                      <div class="space-y-1">
-                        <p class="text-xs font-medium text-zinc-200">Legacy-safe evidence update</p>
-                        @if (isNewPost) {
-                          <p class="text-xs leading-5 text-zinc-500">Save the new post once before using the
-                            evidence-only update.</p>
-                        } @else {
-                          <p class="text-xs leading-5 text-zinc-500">Updates only Evidence & Disclosures. Article blocks
-                            and every other unsaved field stay untouched.</p>
-                        }
-                      </div>
-                      <button
-                        type="button"
-                        class="h-9 shrink-0 border border-cyan-400/70 px-3 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent"
-                        [disabled]="isNewPost || !hasUnsavedEditorialChanges || isEditorialSaveInProgress || isSaveInProgress || isDeleteInProgress"
-                        (click)="saveEditorialOnly()"
-                      >
-                        {{ isEditorialSaveInProgress ? 'Saving evidence' : 'Save evidence only' }}
-                      </button>
-                    </div>
-                  </div>
-                </app-admin-control-module>
-
-                <app-admin-control-module
-                  title="Search & Sharing"
-                  [summary]="seoModuleSummary"
-                  description="Review search metadata, canonical URL, and the optional social-share image during the final publishing pass."
-                  [expanded]="seoSettingsOpen()"
-                  (expandedChange)="seoSettingsOpen.set($event)"
-                >
-                  <div class="grid gap-3">
-                    <label class="space-y-1.5">
-                      <span class="flex items-center justify-between gap-3">
-                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">SEO Title</span>
-                        <span class="text-xs tabular-nums text-zinc-500">{{ postForm.controls.seoTitle.value.length }} / 60</span>
-                      </span>
-                      <input type="text" formControlName="seoTitle" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="flex items-center justify-between gap-3">
-                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">SEO Description</span>
-                        <span class="text-xs tabular-nums text-zinc-500">{{ postForm.controls.seoDescription.value.length }} / 160</span>
-                      </span>
-                      <textarea formControlName="seoDescription" rows="2" class="w-full border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-cyan-300"></textarea>
-                    </label>
-                    <label class="space-y-1.5">
-                      <span class="flex items-center justify-between gap-3">
-                        <span class="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-zinc-500">Canonical URL</span>
-                        <button type="button" class="text-xs font-medium text-cyan-300 hover:text-cyan-100" (click)="useGeneratedCanonicalUrl()">Use generated</button>
-                      </span>
-                      <input type="url" formControlName="canonical" [placeholder]="generatedCanonicalUrl" class="h-9 w-full border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-cyan-300">
-                      <span class="block break-all text-xs leading-5 text-zinc-600">{{ canonicalUrlMode }}</span>
-                    </label>
-                    <app-blog-media-uploader
-                      formControlName="openGraphImage"
-                      label="Open Graph / Social Share Image"
-                      description="Optional JPEG override. Leave blank to use the cover image."
-                      buttonLabel="Choose OG Image"
-                      placeholder="Optional custom social image URL"
-                      previewAlt="Open Graph image preview"
-                      assetRole="open-graph"
-                      optimizationOutputType="image/jpeg"
-                      [forceOptimizationOutputType]="true"
-                      [postSlug]="mediaUploadSlug"
-                      [disabled]="isPostImportInProgress()"
-                      (uploadStateChange)="setMediaUploadInProgress('open-graph', $event)"
-                      (mediaUploaded)="onOpenGraphImageUploaded($event)"
-                    ></app-blog-media-uploader>
-                    <div class="flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950/70 px-3 py-2">
-                      <p class="text-xs text-zinc-500">{{ openGraphImageMode }}</p>
-                      @if (postForm.controls.openGraphImage.value.trim()) {
-                        <button type="button" class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800" (click)="clearOpenGraphImage()">Clear custom image</button>
-                      }
-                    </div>
-                  </div>
-                </app-admin-control-module>
-              </form>
-
-              <app-editor-js
-                title="Article Content"
-                [saveLabel]="'Save Post'"
-                [showSaveAction]="false"
-                [initialData]="initialData"
-                [imageUploader]="uploadEditorImage"
-                [previewTitle]="editorTitle"
-                [previewExcerpt]="editorExcerpt"
-                [previewCoverImage]="postForm.controls.coverImage.value"
-                [previewPostId]="post.id"
-                [previewPostSlug]="postForm.controls.slug.value"
-                (saved)="onSaved($event)"
-                (contentChanged)="onEditorContentChanged()"
-              ></app-editor-js>
-            </section>
-
-            <aside class="space-y-2 border-t border-zinc-800 pt-4 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-10rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-t-0 xl:pl-4 xl:pr-1 xl:pt-0">
-              <app-admin-control-module
-                title="Post State"
-                [summary]="postForm.controls.status.value + ' · ' + postedOnPreview"
-              >
-                <dl class="space-y-2 text-xs">
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Status</dt>
-                    <dd
-                      [class]="statusColorClass(postForm.controls.status.value)">{{ postForm.controls.status.value }}
-                    </dd>
-                  </div>
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Slug</dt>
-                    <dd class="text-right text-zinc-200">{{ postForm.controls.slug.value }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500">Publish date</dt>
-                    <dd class="text-right text-zinc-200">{{ postedOnPreview }}</dd>
-                  </div>
-                </dl>
-              </app-admin-control-module>
-
-              <app-admin-control-module
-                title="Distribution"
-                [summary]="distributionSummary"
-                description="Compose channel-specific native posts while the article is still taking shape."
-              >
-                <p class="text-xs leading-5 text-zinc-500">
-                  Social drafts save with this post. Scheduling remains available from Calendar after the article launch time is set.
-                </p>
-                <button
-                  type="button"
-                  class="mt-3 inline-flex h-9 items-center justify-center border border-cyan-400 px-3 text-xs font-semibold text-cyan-200 hover:bg-cyan-400 hover:text-zinc-950"
-                  (click)="setWorkspace('social')"
-                >
-                  Compose social shares
-                </button>
-                @if (canOpenDistributionCalendar) {
-                  <button
-                    type="button"
-                    class="mt-3 inline-flex h-9 items-center justify-center border border-zinc-700 px-3 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
-                    (click)="openDistributionCalendar()"
-                  >
-                    Open Calendar
-                  </button>
-                }
-              </app-admin-control-module>
-
-              <app-admin-control-module
-                title="Recovery & Conflicts"
-                [summary]="recoverySummary"
-                [(expanded)]="recoveryPanelExpanded"
-                description="Recovery copies are private to your account and never publish or replace the canonical post automatically."
-              >
-                <div class="space-y-3 text-xs">
-                  <p class="text-zinc-500">{{ recoveryRevisionSummary }}</p>
-
-                  @if (recoveryStatus() === 'error') {
-                    <p class="border border-red-500/50 bg-red-950/30 px-3 py-2 leading-5 text-red-200" role="alert">
-                      {{ recoveryError() }}
-                    </p>
-                  }
-
-                  @if (saveConflict(); as conflict) {
-                    <div class="space-y-2 border border-amber-500/60 bg-amber-950/20 p-3" role="alert">
-                      <p class="font-semibold text-amber-200">
-                        {{ isCommittedFirstSaveConflict(conflict) ? 'First save completed' : 'Canonical save conflict' }}
-                      </p>
-                      <p class="leading-5 text-amber-100/80">
-                        @if (isCommittedFirstSaveConflict(conflict)) {
-                          Revision 1 already exists. Automatic adoption paused because the latest local recovery copy could not be stored. Retry Use saved draft; create a separate draft only when you intentionally need both versions.
-                        } @else {
-                          {{ conflict.message }}
-                        }
-                      </p>
-                      <div class="flex flex-wrap gap-2">
-                        @if (conflict.remotePost) {
-                          <button type="button" class="border border-amber-500/70 px-2.5 py-1.5 font-medium text-amber-100 hover:bg-amber-900/50" (click)="reloadRemotePost()">
-                            {{ isCommittedFirstSaveConflict(conflict) ? 'Use saved draft' : 'Reload remote' }}
-                          </button>
-                        }
-                        <button type="button" class="border border-zinc-600 px-2.5 py-1.5 font-medium text-zinc-200 hover:bg-zinc-800" (click)="saveConflictAsCopy()">
-                          Create separate recovery draft
-                        </button>
-                      </div>
-                    </div>
-                  }
-
-                  @if (recoveryDraft(); as recovery) {
-                    <div class="space-y-2 border border-zinc-700 bg-zinc-950/70 p-3">
-                      <p class="font-medium text-zinc-200">Recovery available from {{ formatRecoveryDate(recovery.savedAt) }}</p>
-                      <p class="break-all text-zinc-600">{{ recovery.contentHash }}</p>
-                      <div class="flex flex-wrap gap-2">
-                        <button type="button" class="border border-cyan-500/70 px-2.5 py-1.5 font-medium text-cyan-100 hover:bg-cyan-900/40" (click)="restoreRecoveryDraft()">
-                          Restore recovery
-                        </button>
-                        <button type="button" class="border border-zinc-600 px-2.5 py-1.5 font-medium text-zinc-200 hover:bg-zinc-800" (click)="showRecoveryComparison.set(!showRecoveryComparison())">
-                          {{ showRecoveryComparison() ? 'Hide compare' : 'Compare' }}
-                        </button>
-                        <button type="button" class="border border-red-500/60 px-2.5 py-1.5 font-medium text-red-200 hover:bg-red-950/40" (click)="discardRecoveryDraft()">
-                          Discard
-                        </button>
-                      </div>
-                      @if (showRecoveryComparison()) {
-                        <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 border-t border-zinc-800 pt-2 text-zinc-400">
-                          <dt>Title</dt><dd class="truncate text-zinc-200">{{ recovery.form.title }}</dd>
-                          <dt>Status</dt><dd class="text-zinc-200">{{ recovery.form.status }}</dd>
-                          <dt>Blocks</dt><dd class="text-zinc-200">{{ recoveryEditorBlockCount(recovery) }}</dd>
-                          <dt>Base</dt><dd class="text-zinc-200">r{{ recovery.baseRevision }} · {{ formatRecoveryDate(recovery.baseUpdatedAt) }}</dd>
-                        </dl>
-                      }
-                    </div>
-                  }
-                </div>
-              </app-admin-control-module>
-
-              <app-cms-assistant-panel
-                [result]="assistantResult"
-                [isLoading]="isAssistantLoading"
-                [message]="assistantMessage"
-                [error]="assistantError"
-                [sourceLabel]="assistantSourceLabel"
-                [isThumbnailLoading]="isThumbnailLoading"
-                [isThumbnailWriterUnavailable]="isThumbnailWriterUnavailable()"
-                [thumbnailError]="thumbnailError"
-                [lastGeneratedThumbnail]="lastGeneratedThumbnail"
-                (generateRequested)="generateAssistantSuggestions()"
-                (applyAll)="applySuggestion($event)"
-                (applyTitle)="applyTitleSuggestion($event)"
-                (applyDescription)="applyDescriptionSuggestion($event)"
-                (applyTaxonomy)="applyTaxonomySuggestion($event)"
-                (generateThumbnail)="generateAndStoreThumbnail($event)"
-              ></app-cms-assistant-panel>
-
-              <app-admin-control-module
-                title="Last Saved"
-                [summary]="lastSavedSummary"
-                [expanded]="lastSavedPanelExpanded()"
-                (expandedChange)="setLastSavedPanelExpanded($event)"
-              >
-                @if (lastSaved; as saved) {
-                  <div class="space-y-3">
-                    <p class="text-sm text-zinc-400">{{ saved.blockCount }} blocks at {{ saved.savedAt }}</p>
-                    <div class="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
-                        (click)="copyLastSavedJson()"
-                      >
-                        Copy JSON
-                      </button>
-                      <button
-                        type="button"
-                        class="border border-zinc-700 px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-200 hover:bg-zinc-800"
-                        (click)="downloadLastSavedJson()"
-                      >
-                        Download JSON
-                      </button>
-                    </div>
-                    @if (lastSavedBackupJson) {
-                      <pre
-                        class="max-h-[420px] overflow-auto bg-black p-4 text-xs leading-5 text-cyan-100">{{ lastSavedBackupJson }}</pre>
-                    }
-                  </div>
-                } @else {
-                  <p class="text-sm text-zinc-500">
-                    Saved post JSON will appear here after the first save.
-                  </p>
-                }
-              </app-admin-control-module>
-            </aside>
-          </section>
-
-          <section
-            class="space-y-4"
-            [hidden]="activeWorkspace() !== 'social'"
-            [style.display]="activeWorkspace() === 'social' ? null : 'none'"
-            [attr.inert]="isPostImportInProgress() ? '' : null"
-            [attr.aria-busy]="isPostImportInProgress()"
-            aria-label="Social shares workspace"
-          >
-            <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Article campaign</p>
-                  <h2 class="mt-1 text-xl font-semibold text-zinc-50">Build the social story alongside the article</h2>
-                  <p class="mt-1 max-w-3xl text-sm leading-6 text-zinc-500">
-                    Draft native text, images, videos, reels, stories, threads, and Community posts here. Save them with the article, then use Calendar when a delivery time is ready.
-                  </p>
-                </div>
-                <span class="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400">
-                  {{ distributionSummary }}
-                </span>
-              </div>
-            </header>
-
-            <app-social-promotion-editor
-              [post]="socialWorkspacePost"
-              mode="compose"
-              [initialChannel]="initialSocialChannel"
-              [initialAnnouncementId]="initialSocialAnnouncementId"
-              [saving]="isSaveInProgress"
-              [assistantContextProvider]="socialAssistantContextProvider"
-              (promotionChange)="onSocialPromotionChange($event)"
-              (saveRequested)="saveSocialPromotion($event)"
-              (openCalendarRequested)="openDistributionCalendar()"
-            ></app-social-promotion-editor>
-          </section>
-
-          <section
-            class="space-y-4"
-            [hidden]="activeWorkspace() !== 'preview'"
-            [style.display]="activeWorkspace() === 'preview' ? null : 'none'"
-            [attr.inert]="isPostImportInProgress() ? '' : null"
-            [attr.aria-busy]="isPostImportInProgress()"
-            aria-label="Preview and SEO workspace"
-          >
-            <header class="border border-zinc-800 bg-zinc-900/50 px-4 py-4 sm:px-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Final review</p>
-              <h2 class="mt-1 text-xl font-semibold text-zinc-50">See the article the way readers and search engines will</h2>
-              <p class="mt-1 max-w-3xl text-sm leading-6 text-zinc-500">
-                Generate a temporary reader preview, then resolve the SEO and share-card checks before publishing.
-              </p>
-            </header>
-
-            @if (hasOpenedPreviewWorkspace()) {
-              <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <app-cms-draft-preview-panel
-                  #draftPreviewPanel
-                  [post]="currentPost"
-                  [status]="postForm.controls.status.value"
-                  [isSaving]="isSaveInProgress || isPreviewGenerationInProgress"
-                  [isDeleting]="isDeleteInProgress"
-                  (generateRequested)="generatePreviewLink()"
-                  (postChanged)="onPreviewPostChanged($event)"
-                ></app-cms-draft-preview-panel>
-
-                <div class="space-y-3">
-                  <app-cms-seo-checklist
-                    [checklistInput]="createSeoChecklistInput()"
-                  ></app-cms-seo-checklist>
-                  <button
-                    type="button"
-                    class="inline-flex h-10 w-full items-center justify-center border border-zinc-700 px-4 text-sm font-semibold text-zinc-200 hover:border-cyan-400 hover:text-cyan-200"
-                    (click)="openSeoFields()"
-                  >
-                    Edit SEO &amp; share-card fields
-                  </button>
-                </div>
-              </div>
-            }
-          </section>
-
-          <section
-            class="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-5 py-2 shadow-2xl shadow-black/40 backdrop-blur transition-[left] duration-200 sm:px-8 lg:left-[var(--admin-sidebar-width)] lg:px-12"
-            [attr.inert]="isPostImportInProgress() ? '' : null"
-            [attr.aria-busy]="isPostImportInProgress()"
-            aria-label="Post actions"
-          >
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-2">
-              <div class="flex min-w-0 items-center gap-3">
-                <label class="shrink-0 sm:min-w-44">
-                  <span class="sr-only">Status</span>
-                  <select
-                    [formControl]="postForm.controls.status"
-                    class="h-9 w-28 border border-zinc-700 bg-zinc-950 px-3 text-sm font-medium text-zinc-100 outline-none focus:border-cyan-300 sm:w-full"
-                  >
-                    @for (status of statuses; track status) {
-                      <option [value]="status">{{ status }}</option>
-                    }
-                  </select>
-                </label>
-
-                <div class="hidden min-w-0 text-sm text-zinc-400 md:block">
-                  <p class="font-medium text-zinc-200">{{ editorTitle }}</p>
-                  <p class="truncate text-xs text-zinc-500">/{{ postForm.controls.slug.value }}</p>
-                </div>
-              </div>
-
-              <div class="flex min-w-0 items-center gap-2">
-                @if (hasUnsavedChanges) {
-                  <span class="hidden text-xs text-amber-300/80 lg:inline">● Unsaved changes</span>
-                }
-                <div class="flex items-center justify-end gap-2">
-                  @if (!isNewPost || post.status === 'published' || hasActiveDraftPreview) {
-                    <details class="group relative sm:hidden">
-                      <summary class="flex h-9 cursor-pointer list-none items-center border border-zinc-700 px-3 text-xs font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:border-cyan-400 focus-visible:outline-none">
-                        More
-                      </summary>
-                      <div class="absolute bottom-full right-0 mb-2 grid min-w-40 gap-1 border border-zinc-700 bg-zinc-950 p-1.5 shadow-2xl shadow-black/60">
-                        @if (post.status === 'published') {
-                          <a
-                            [routerLink]="['/blog', post.slug]"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="flex h-9 items-center px-3 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
-                          >
-                            View Post
-                          </a>
-                        } @else if (hasActiveDraftPreview) {
-                          <a
-                            [href]="draftPreviewUrl"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="flex h-9 items-center px-3 text-xs font-medium text-amber-200 hover:bg-amber-950/30"
-                          >
-                            View Preview
-                          </a>
-                        }
-                        @if (!isNewPost) {
-                          <button
-                            type="button"
-                            class="h-9 px-3 text-left text-xs font-medium text-red-200 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:text-zinc-600"
-                            [disabled]="isDeleteInProgress || isSaveInProgress || isPostImportInProgress()"
-                            (click)="deleteCurrentPost()"
-                          >
-                            {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
-                          </button>
-                        }
-                      </div>
-                    </details>
-                  }
-
-                  @if (post.status === 'published') {
-                    <a
-                      [routerLink]="['/blog', post.slug]"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="hidden h-9 items-center justify-center border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 sm:inline-flex"
-                    >
-                      View Post
-                    </a>
-                  } @else if (hasActiveDraftPreview) {
-                    <a
-                      [href]="draftPreviewUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="hidden h-9 items-center justify-center border border-amber-500/60 px-3 text-sm font-medium text-amber-200 transition hover:bg-amber-950/30 sm:inline-flex"
-                    >
-                      View Preview
-                    </a>
-                  } @else {
-                    <button
-                      type="button"
-                      class="hidden h-9 border border-zinc-800 px-3 text-sm font-medium text-zinc-600 sm:inline-block"
-                      disabled
-                    >
-                      View Post
-                    </button>
-                  }
-
-                  <button
-                    type="button"
-                    class="hidden h-9 border border-red-500/60 px-3 text-sm font-medium text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600 disabled:hover:bg-transparent sm:inline-block"
-                    [disabled]="isNewPost || isDeleteInProgress || isSaveInProgress || isEditorialSaveInProgress || isPostImportInProgress()"
-                    (click)="deleteCurrentPost()"
-                  >
-                    {{ isDeleteInProgress ? 'Deleting' : 'Delete Post' }}
-                  </button>
-
-                  <button
-                    type="button"
-                    class="h-9 border border-cyan-400 bg-cyan-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-600"
-                    [disabled]="isSaveInProgress || isDeleteInProgress || isEditorialSaveInProgress || isPostImportInProgress()"
-                    (click)="savePost()"
-                  >
-                    {{ isSaveInProgress ? 'Saving' : 'Save Post' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        } @else if (isPostLoading()) {
-          <section class="border border-zinc-800 bg-zinc-900 p-6">
-            <h1 class="text-2xl font-semibold text-zinc-50">Loading post</h1>
-            <p class="mt-2 text-zinc-400">Fetching the latest CMS post data from Firestore.</p>
-          </section>
-        } @else {
-          <section class="border border-zinc-800 bg-zinc-900 p-6">
-            <h1 class="text-2xl font-semibold text-zinc-50">Post not found</h1>
-            <p class="mt-2 text-zinc-400">This post is unavailable in the CMS repository.</p>
-            <a routerLink="/admin/cms" class="mt-5 inline-block text-cyan-300 hover:text-cyan-200">Back to posts</a>
-          </section>
-        }
-      </section>
-    </main>
-    <app-cms-toast-container></app-cms-toast-container>
-  `,
+  templateUrl: './post-editor.component.html',
+  styleUrl: './post-editor.component.scss',
 })
 export class CmsPostEditorComponent implements AfterViewInit {
   @ViewChild(EditorJsComponent) private editorComponent?: EditorJsComponent;
+  @ViewChild('settingsInspector') private settingsInspector?: ElementRef<HTMLElement>;
   @ViewChild(CmsDraftPreviewPanelComponent) private draftPreviewPanel?: CmsDraftPreviewPanelComponent;
 
   private readonly route = inject(ActivatedRoute);
@@ -1394,6 +513,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
   private readonly toast = inject(CmsToastService);
   private readonly recoveryService = inject(CmsPostRecoveryService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly slug = this.route.snapshot.paramMap.get('slug');
   private readonly firestorePost = this.slug
     ? toSignal(this.blogRepository.getAdminPostBySlug$(this.slug), {initialValue: undefined})
@@ -1416,12 +537,23 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected readonly isNewPost = !this.slug;
   protected readonly statuses = statusOptions;
+  protected readonly activeSettings = signal<PostEditorSettings>('details');
+  protected readonly focusWriting = signal(false);
+  protected readonly reviewBlocks = signal<readonly BlogContentBlock[] | null>(null);
+  protected readonly importReceipt = signal<{source: string; kind: string} | null>(null);
+  protected readonly editorTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  protected readonly settings: readonly {id: PostEditorSettings; label: string}[] = [
+    {id: 'details', label: 'Details'}, {id: 'media', label: 'Media'},
+    {id: 'evidence', label: 'Evidence'}, {id: 'search', label: 'Search'},
+    {id: 'publish', label: 'Publish'}, {id: 'tools', label: 'Tools & recovery'},
+  ];
+
   protected readonly evidenceBasisOptions = evidenceBasisOptions;
   protected readonly workspaces = POST_EDITOR_WORKSPACES;
   protected readonly activeWorkspace = signal<PostEditorWorkspace>(
-    isPostEditorWorkspace(this.route.snapshot.queryParamMap.get('tab'))
+    isPostEditorWorkspace(this.route.snapshot.queryParamMap.get('tab')) && (this.isNewPost || this.route.snapshot.queryParamMap.get('tab') !== 'import')
       ? this.route.snapshot.queryParamMap.get('tab') as PostEditorWorkspace
-      : 'post'
+      : this.isNewPost ? 'import' : 'post'
   );
   protected readonly hasOpenedPreviewWorkspace = signal(this.activeWorkspace() === 'preview');
   protected readonly initialSocialChannel = isComposableSocialChannel(this.route.snapshot.queryParamMap.get('channel'))
@@ -1524,7 +656,20 @@ export class CmsPostEditorComponent implements AfterViewInit {
   };
 
   constructor() {
+    // Editor.js listens on document capture and can move its stale caret when
+    // an external native select receives arrow keys. Keep those keys native;
+    // do not preventDefault, so option selection and change events still work.
+    const isolateNativeSelect = (event: KeyboardEvent): void => {
+      if (event.target instanceof HTMLSelectElement
+        && this.hostElement.nativeElement.contains(event.target)
+        && !event.target.closest('.cms-editor-surface')
+        && !['Tab', 'Escape'].includes(event.key)) {
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener('keydown', isolateNativeSelect, true);
     this.destroyRef.onDestroy(() => {
+      window.removeEventListener('keydown', isolateNativeSelect, true);
       this.isDestroyed = true;
       this.postImportOperationId += 1;
       this.dismissPostImportErrorToast();
@@ -1736,21 +881,35 @@ export class CmsPostEditorComponent implements AfterViewInit {
   }
 
   protected workspaceTabClass(workspace: PostEditorWorkspace): string {
-    const base = 'min-w-36 border-r border-zinc-800 px-4 py-3 text-left transition last:border-r-0 sm:min-w-52';
+    const base = 'min-w-0 flex-1 border-r border-zinc-800 px-4 py-3 text-left text-sm font-medium transition last:border-r-0';
     return this.activeWorkspace() === workspace
       ? `${base} bg-cyan-400 text-zinc-950`
       : `${base} text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100`;
   }
 
-  protected setWorkspace(workspace: PostEditorWorkspace): void {
-    if (this.rejectWhileImporting('changing editor workspaces')) return;
+  protected async setWorkspace(workspace: PostEditorWorkspace): Promise<void> {
+    if (this.rejectWhileImporting('changing editor workspaces') || this.isPreviewGenerationInProgress) return;
+    if (workspace === 'import' && !this.isNewPost) return;
 
     if (workspace === 'social') {
       this.socialWorkspacePost = this.createSocialWorkspacePost();
     }
 
     if (workspace === 'preview') {
-      this.hasOpenedPreviewWorkspace.set(true);
+      this.isPreviewGenerationInProgress = true;
+      try {
+        if (!this.editorComponent) throw new Error('The article editor is still loading. Try review again in a moment.');
+        const document = await this.editorComponent.getDocument();
+        if (this.isDestroyed) return;
+        this.reviewBlocks.set(createBlogBlocksFromEditorDocument(document));
+        this.invalidateSeoChecklistInput();
+        this.hasOpenedPreviewWorkspace.set(true);
+      } catch (error) {
+        this.toast.error(getErrorMessage(error));
+        return;
+      } finally {
+        this.isPreviewGenerationInProgress = false;
+      }
     }
 
     this.activeWorkspace.set(workspace);
@@ -1764,7 +923,37 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
   protected openSeoFields(): void {
     this.seoSettingsOpen.set(true);
-    this.setWorkspace('post');
+    this.openSettings('search');
+  }
+
+  protected openSettings(setting: PostEditorSettings): void {
+    if (this.isPostImportInProgress() || this.isPreviewGenerationInProgress) return;
+    this.activeSettings.set(setting);
+    this.focusWriting.set(false);
+    void this.setWorkspace('post');
+    if (window.matchMedia('(max-width: 1279px)').matches) {
+      requestAnimationFrame(() => {
+        if (this.isDestroyed) return;
+        this.settingsInspector?.nativeElement.focus({preventScroll: true});
+        this.settingsInspector?.nativeElement.scrollIntoView({block: 'start'});
+      });
+    }
+  }
+
+  protected openRecoveryTools(): void {
+    this.openSettings('tools');
+    this.recoveryPanelExpanded.set(true);
+  }
+
+  protected statusDescription(status: BlogPostStatus): string {
+    return {draft: 'Keep private until ready.', scheduled: 'Release at a future time.',
+      published: 'Make saved changes public.', archived: 'Retain as an archived post.'}[status];
+  }
+
+  protected get saveActionLabel(): string {
+    const status = this.postForm.controls.status.value;
+    if (status === 'published') return this.currentPost?.status === 'published' ? 'Save published changes' : 'Publish post';
+    return {draft: 'Save draft', scheduled: 'Save scheduled post', archived: 'Save archived post'}[status];
   }
 
   protected onSocialPromotionChange(promotion: BlogSocialPromotion): void {
@@ -2098,7 +1287,13 @@ export class CmsPostEditorComponent implements AfterViewInit {
       if (!this.isActiveJsonImport(operationId)) return;
 
       const importedDocument = this.createImportedPostDocument(parsedJson);
+      if (!this.isNewPost && !window.confirm(
+        `Stage JSON in "${this.editorTitle}"? The imported status is ${importedDocument.post.status}`
+        + ` and the publish date is ${importedDocument.post.publishedAt || 'not set'}.`
+        + ' This replaces the current editor contents, including unsaved edits. Review before saving; the stored post is not changed by this import.'
+      )) return;
       await this.applyImportedPost(importedDocument.post);
+      if (this.isActiveJsonImport(operationId)) this.importReceipt.set({source: file.name, kind: 'JSON staged'});
       if (!this.isActiveJsonImport(operationId)) return;
 
       this.postImportAnnouncement.set('');
@@ -2348,6 +1543,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
       if (!this.isActivePackageImport(operationId)) return;
       await this.applyImportedPost(resolvedPost);
+      if (this.isActivePackageImport(operationId)) this.importReceipt.set({source: postCandidate.file.name, kind: `${manifest.images.length} package images resolved`});
       if (!this.isActivePackageImport(operationId)) return;
 
       this.packageImportProgress.set({
@@ -2785,12 +1981,15 @@ export class CmsPostEditorComponent implements AfterViewInit {
     if (this.postForm.invalid) {
       if (this.postForm.controls.title.invalid || this.postForm.controls.excerpt.invalid) {
         this.postDetailsOpen.set(true);
+        this.openSettings('details');
       }
       if (this.postForm.controls.slug.invalid) {
         this.publishingSettingsOpen.set(true);
+        this.openSettings(this.postForm.controls.slug.invalid ? 'details' : 'publish');
       }
       if (this.postForm.controls.coverImage.invalid) {
         this.mediaSettingsOpen.set(true);
+        this.openSettings('media');
       }
       this.toast.error('Title, slug, excerpt, and cover image are required before saving.');
       return false;
@@ -2801,12 +2000,14 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
     if (!selectedAuthor) {
       this.postDetailsOpen.set(true);
+      this.openSettings('details');
       this.toast.error('Select a valid author before saving.');
       return false;
     }
 
     if (formValue.status === 'published' && selectedAuthor.status !== 'published') {
       this.postDetailsOpen.set(true);
+      this.openSettings('details');
       this.toast.error('Publish the author profile before publishing this post.');
       return false;
     }
@@ -2814,6 +2015,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
 
     if (scheduledPublishDateError) {
       this.publishingSettingsOpen.set(true);
+      this.openSettings('publish');
       this.toast.error(scheduledPublishDateError);
       return false;
     }
@@ -2821,6 +2023,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
     const readerReleaseDateError = getReaderReleaseDateError(formValue.earlyAccessAt, formValue.publishedAt);
     if (readerReleaseDateError) {
       this.publishingSettingsOpen.set(true);
+      this.openSettings('publish');
       this.toast.error(readerReleaseDateError);
       return false;
     }
@@ -3041,6 +2244,11 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.saveConflict.set(null);
     this.invalidateSeoChecklistInput();
 
+    // Hydration runs through an async queue. On a cold edit route the mounted
+    // template may still be the empty/loading state and no form view exists to
+    // notify OnPush when these plain fields change.
+    this.changeDetector.markForCheck();
+
     await this.editorComponent?.renderDocument(this.initialData);
     await this.loadRecoveryDraft();
   }
@@ -3050,6 +2258,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.hasHydratedFirestorePost = true;
     this.saveConflict.set(null);
     this.invalidateSeoChecklistInput();
+    this.changeDetector.markForCheck();
     void this.loadRecoveryDraft();
   }
 
@@ -3183,6 +2392,8 @@ export class CmsPostEditorComponent implements AfterViewInit {
     this.lastSavedBackupJson = '';
     this.invalidateSeoChecklistInput();
     await this.editorComponent?.renderDocument(createEditorDocument(nextPost));
+    this.activeWorkspace.set('post');
+    this.focusWriting.set(false);
     this.requestRecoverySave();
   }
 
@@ -3627,7 +2838,7 @@ export class CmsPostEditorComponent implements AfterViewInit {
       canonical: formValue.canonical,
       generatedCanonicalUrl: this.generatedCanonicalUrl,
       openGraphImage: formValue.openGraphImage,
-      blocks: this.getLatestKnownBlocks(),
+      blocks: this.activeWorkspace() === 'preview' && this.reviewBlocks() ? this.reviewBlocks()! : this.getLatestKnownBlocks(),
       editorial: createEditorialMetadataFromForm(formValue),
     };
 
