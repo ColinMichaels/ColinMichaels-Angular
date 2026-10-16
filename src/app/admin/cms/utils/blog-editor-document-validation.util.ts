@@ -658,7 +658,9 @@ function validatePollData(data: BlogJsonObject): string | null {
       && (option['id'] === undefined || typeof option['id'] === 'string')
       && typeof (option['label'] ?? option['text']) === 'string');
 
-  return validateFields(data, {
+  const fieldsError = validateFields(data, {
+    pollMode: value => value === 'vote' || value === 'reflection',
+    reflectionExplanation: value => typeof value === 'string' && value.length <= 5000,
     question: isString,
     description: isString,
     pollOptions: optionsValidator,
@@ -667,6 +669,17 @@ function validatePollData(data: BlogJsonObject): string | null {
     pollResultsVisibility: value => typeof value === 'string'
       && (BLOG_POLL_RESULTS_VISIBILITIES as readonly string[]).includes(value),
   });
+  if (fieldsError) return fieldsError;
+  if (data['pollMode'] === 'reflection') {
+    if (typeof data['reflectionExplanation'] !== 'string' || !data['reflectionExplanation'].trim()) {
+      return 'Private reflections require Evidence to reveal.';
+    }
+    const options = data['pollOptions'] ?? data['options'] ?? data['answers'];
+    if (!Array.isArray(options) || options.length < 2 || options.length > 8) return 'Reflections require 2–8 choices.';
+    const labels = options.map(option => isJsonObject(option) ? String(option['label'] ?? option['text'] ?? '').trim().toLowerCase() : '');
+    if (labels.some(label => !label) || new Set(labels).size !== labels.length) return 'Reflection choices must be distinct.';
+  }
+  return null;
 }
 
 function validateUnsupportedBlockData(data: BlogJsonObject): string | null {

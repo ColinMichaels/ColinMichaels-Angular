@@ -304,6 +304,15 @@ describe('blog-editorjs-adapter', () => {
     });
   });
 
+  it('round-trips private reflection evidence without response state', () => {
+    const reflection = {id: 'reflection', type: 'poll' as const, data: {placement: 'content' as const,
+      question: 'What convinces you?', description: '', pollMode: 'reflection' as const,
+      reflectionExplanation: 'Compare the evidence.', pollResultsVisibility: 'afterVote' as const,
+      pollOptions: [{id: 'one', label: 'One clip'}, {id: 'many', label: 'Repeated tests'}]}};
+    const document = createEditorDocument(createPost({blocks: [reflection]}));
+    expect(createBlogBlocksFromEditorDocument(document)).toEqual([reflection]);
+  });
+
   it('normalizes custom stats, chart, and HTML editor blocks', () => {
     const blocks = createBlogBlocksFromEditorDocument({
       blocks: [

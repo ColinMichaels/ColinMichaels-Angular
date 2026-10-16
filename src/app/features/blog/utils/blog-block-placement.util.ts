@@ -17,7 +17,7 @@ export function createBlogPostLayoutBlocks(
 
   for (const block of blocks) {
     const belongsInRail = block.data.placement === 'rail'
-      || (block.type === 'poll' && block.data.placement !== 'content');
+      || (block.type === 'poll' && block.data.pollMode !== 'reflection' && block.data.placement !== 'content');
 
     (belongsInRail ? rail : content).push(block);
   }

@@ -27,4 +27,13 @@ describe('blog block placement utilities', () => {
     expect(result.content.map(block => block.id)).toEqual(['inline-poll', 'body']);
     expect(result.rail.map(block => block.id)).toEqual(['rail-stat']);
   });
+  it('keeps a reflection inline by default while preserving explicit placement', () => {
+    const blocks: readonly BlogContentBlock[] = [
+      {id: 'reflection', type: 'poll', data: {pollMode: 'reflection'}},
+      {id: 'rail-reflection', type: 'poll', data: {pollMode: 'reflection', placement: 'rail'}},
+    ];
+    expect(createBlogPostLayoutBlocks(blocks).content.map(block => block.id)).toEqual(['reflection']);
+    expect(createBlogPostLayoutBlocks(blocks).rail.map(block => block.id)).toEqual(['rail-reflection']);
+  });
+
 });

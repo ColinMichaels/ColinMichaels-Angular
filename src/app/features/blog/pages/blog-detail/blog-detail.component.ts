@@ -64,14 +64,9 @@ import {rankContextualRelatedBlogPosts} from '../../utils/blog-related-posts.uti
 import {TopicHubRepositoryService} from '../../../topics/services/topic-hub-repository.service';
 import {selectPrimaryTopicHubForPost} from '../../../topics/utils/topic-post-matching.util';
 import {YouTubeLatestVideosComponent} from '../../../youtube/components/latest-videos/youtube-latest-videos.component';
-import {
-  YouTubeCompanionVideoComponent
-} from '../../../youtube/components/companion-video/youtube-companion-video.component';
-import {
-  selectBlogCompanionVideo,
-  selectBlogCompanionVideoChannel,
-  shouldShowDroneYouTubeJourney,
-} from '../../utils/blog-youtube-journey.util';
+import {BlogVideoViewerComponent} from '../../components/video-viewer/blog-video-viewer.component';
+import {selectBlogLeadVideo} from '../../utils/blog-lead-video.util';
+import {shouldShowDroneYouTubeJourney} from '../../utils/blog-youtube-journey.util';
 
 const HEALTH_CONTENT_TERMS = [
   'cardiac',
@@ -115,7 +110,7 @@ function normalizeHealthTerm(value: string): string {
     BlogTableOfContentsComponent,
     BlogTagListComponent,
     AuthorBioComponent,
-    YouTubeCompanionVideoComponent,
+    BlogVideoViewerComponent,
     YouTubeLatestVideosComponent,
     RouterLink,
   ],
@@ -135,8 +130,12 @@ function normalizeHealthTerm(value: string): string {
       <article
         class="mx-auto max-w-[96rem]"
         [class.blog-detail-content-surface]="hasBackgroundImage()"
+        [class.blog-detail-video-article]="leadVideo()"
       >
         @if (post(); as currentPost) {
+          @if (leadVideo(); as video) {
+            <app-blog-video-viewer [video]="video" [articleTitle]="currentPost.title"></app-blog-video-viewer>
+          }
           <div
             class="blog-detail-reading-grid mx-auto grid max-w-4xl gap-6 xl:max-w-[90rem] xl:items-start"
             [attr.data-article-grid-layout]="articleGridLayout()"
@@ -200,17 +199,19 @@ function normalizeHealthTerm(value: string): string {
                     Edit post
                   </a>
                 }
-                <img
-                  [src]="currentPost.coverImage"
-                  [alt]="currentPost.title + ' cover image'"
-                  class="blog-post-cover-image blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
-                  decoding="async"
-                  [attr.fetchpriority]="hasBackgroundImage() ? 'auto' : 'high'"
-                  [attr.data-site-preload-image]="hasBackgroundImage() ? null : ''"
-                  loading="eager"
-                  width="1200"
-                  height="675"
-                >
+                @if (!leadVideo()) {
+                  <img
+                    [src]="currentPost.coverImage"
+                    [alt]="currentPost.title + ' cover image'"
+                    class="blog-post-cover-image blog-media-frame aspect-[16/9] max-h-[70vh] w-full object-contain shadow-xl dark:shadow-black/25"
+                    decoding="async"
+                    [attr.fetchpriority]="hasBackgroundImage() ? 'auto' : 'high'"
+                    [attr.data-site-preload-image]="hasBackgroundImage() ? null : ''"
+                    loading="eager"
+                    width="1200"
+                    height="675"
+                  >
+                }
                 <div class="blog-post-taxonomy flex flex-wrap gap-2 text-cyan-800 dark:text-cyan-200">
                   @for (category of canonicalCategories(currentPost); track category) {
                     <span class="blog-category-badge">
@@ -296,23 +297,7 @@ function normalizeHealthTerm(value: string): string {
                   [signedIn]="isSignedIn()"
                 ></app-article-reaction>
 
-                @if (companionVideo(); as video) {
-                  @defer (on viewport) {
-                    <app-youtube-companion-video
-                      class="mt-12 block"
-                      [videoId]="video.videoId"
-                      [videoUrl]="video.videoUrl"
-                      [thumbnailUrl]="video.thumbnailUrl"
-                      [articleTitle]="currentPost.title"
-                      [channel]="companionVideoChannel()"
-                    ></app-youtube-companion-video>
-                  } @placeholder {
-                    <section
-                      class="site-skeleton-card mt-12 h-64"
-                      aria-label="Loading the companion YouTube video"
-                    ></section>
-                  }
-                } @else if (showDroneYouTubeJourney()) {
+                @if (showDroneYouTubeJourney()) {
                   @defer (on viewport) {
                     <app-youtube-latest-videos
                       class="mt-12 block overflow-hidden rounded-2xl"
@@ -531,6 +516,15 @@ function normalizeHealthTerm(value: string): string {
       background: transparent;
     }
 
+    .blog-detail-video-article .blog-article-title {
+      font-size: clamp(
+        calc(2rem * var(--reader-font-scale, 1)),
+        calc(4vw * var(--reader-font-scale, 1)),
+        calc(2.75rem * var(--reader-font-scale, 1))
+      ) !important;
+      line-height: 1.15 !important;
+    }
+
     .blog-detail-page > article,
     .blog-detail-page > footer {
       position: relative;
@@ -624,6 +618,18 @@ function normalizeHealthTerm(value: string): string {
 })
 export class BlogDetailComponent {
   @ViewChild('readingContent') private readingContentElement?: ElementRef<HTMLElement>;
+  @ViewChild(BlogVideoViewerComponent) private videoViewer?: BlogVideoViewerComponent;
+
+  @HostListener('click', ['$event'])
+  protected onLeadVideoReturn(event: MouseEvent): void {
+    if (!this.leadVideo() || !(event.target instanceof Element)
+      || !event.target.closest('a[href="#blog-article-video"]')) return;
+
+    // Bare fragments resolve against Angular's base href; keep this local
+    // return action on the current article and its existing player session.
+    event.preventDefault();
+    this.videoViewer?.returnToVideo();
+  }
 
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
@@ -735,16 +741,7 @@ export class BlogDetailComponent {
 
     return post ? selectPrimaryTopicHubForPost(post, this.topicHubs()) : undefined;
   });
-  protected readonly companionVideo = computed(() => (
-    selectBlogCompanionVideo(this.post()?.blocks ?? [])
-  ));
-  protected readonly companionVideoChannel = computed(() => {
-    const post = this.post();
-
-    return post
-      ? selectBlogCompanionVideoChannel(post, this.primaryTopicHub()?.slug)
-      : 'colin-michaels';
-  });
+  protected readonly leadVideo = computed(() => selectBlogLeadVideo(this.post()?.blocks ?? []));
   protected readonly showDroneYouTubeJourney = computed(() => {
     const post = this.post();
 
@@ -752,7 +749,7 @@ export class BlogDetailComponent {
       post
       && !this.isPreviewRoute()
       && !this.isOfflineCopy()
-      && !this.companionVideo()
+      && !this.leadVideo()
       && shouldShowDroneYouTubeJourney(post, this.primaryTopicHub()?.slug)
     );
   });
@@ -829,7 +826,15 @@ export class BlogDetailComponent {
   protected readonly layoutBlocks = computed(() => {
     const post = this.post();
 
-    return createBlogPostLayoutBlocks(post?.blocks ?? []);
+    const leadBlockId = this.leadVideo()?.blockId;
+    return createBlogPostLayoutBlocks((post?.blocks ?? []).map(block => block.id === leadBlockId ? {
+      ...block,
+      type: 'paragraph' as const,
+      data: {
+        text: '<a href="#blog-article-video">Watch this video in the main viewer.</a>',
+        ...(block.data.placement ? {placement: block.data.placement} : {}),
+      },
+    } : block));
   });
   protected readonly contentBlocks = computed(() => this.layoutBlocks().content);
   protected readonly railBlocks = computed(() => this.layoutBlocks().rail);

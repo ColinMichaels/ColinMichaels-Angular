@@ -85,4 +85,21 @@ describe('AdminGuidePageComponent', () => {
     expect(text).toContain('Showing guidance for Admin access.');
     expect(text).not.toContain('Cat Corner Addict access.');
   });
+  it('renders reflection authoring search for an editor and excludes it for a viewer', async () => {
+    const editor = await createFixture(['contentEditor']);
+    let element = editor.nativeElement as HTMLElement;
+    let search = element.querySelector<HTMLInputElement>('#admin-guide-search')!;
+    search.value = 'private reflection'; search.dispatchEvent(new Event('input')); editor.detectChanges();
+    expect(element.textContent).toContain('Evidence to reveal');
+    expect(element.textContent).toContain('1 guide found');
+    expect(element.querySelector('a[href="/admin/cms/new"]')).not.toBeNull();
+    editor.destroy(); TestBed.resetTestingModule();
+    const viewer = await createFixture(['viewer']);
+    element = viewer.nativeElement as HTMLElement;
+    search = element.querySelector<HTMLInputElement>('#admin-guide-search')!;
+    search.value = 'private reflection'; search.dispatchEvent(new Event('input')); viewer.detectChanges();
+    expect(element.textContent).not.toContain('Evidence to reveal');
+    expect(element.textContent).not.toContain('Create and publish a post');
+  });
+
 });

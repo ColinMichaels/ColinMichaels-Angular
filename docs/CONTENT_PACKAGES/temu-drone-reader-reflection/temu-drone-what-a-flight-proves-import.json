@@ -1,0 +1,288 @@
+{
+  "version": 1,
+  "source": "colinmichaels-cms",
+  "collection": "posts",
+  "exportedAt": "2026-10-16T04:30:04.587Z",
+  "totalPosts": 1,
+  "posts": [
+    {
+      "id": "draft-temu-drone-reader-reflection-20261016",
+      "slug": "temu-drone-what-a-flight-proves",
+      "title": "That Temu drone flew. What did the video actually prove?",
+      "excerpt": "A successful flight makes compelling footage. Choose what earns your confidence, then weigh what the video establishes and what it leaves open.",
+      "coverImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fcover%2F1783732242450-45938d58-ef28-4234-b6f5-122c795f518c.webp?alt=media&token=ab4439ce-037b-43e7-8997-72fe339f4041",
+      "author": {
+        "name": "Colin Michaels",
+        "title": "Application developer, creative problem solver, FPV drone pilot, and photographer",
+        "bio": "Colin Michaels is an application developer, creative problem solver, FPV drone pilot, photographer, and builder sharing software, creative projects, and personal lessons.",
+        "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fmedia-library%2Flibrary%2F1781710307542-26de032d-9418-4c44-8953-d5f4efdadeec.webp?alt=media&token=03c80fbe-8339-48cb-a150-0dbcf9cadff6",
+        "profileUrl": "/authors/colin-michaels",
+        "slug": "colin-michaels"
+      },
+      "categories": [
+        "Drones & FPV",
+        "Opinion"
+      ],
+      "tags": [
+        "Drones",
+        "Goonzquad",
+        "Evidence",
+        "Gadget Videos",
+        "Critical Thinking"
+      ],
+      "status": "draft",
+      "seo": {
+        "title": "That Temu drone flew. What did the video actually prove?",
+        "description": "Watch the source video, choose what earns your confidence, and weigh the difference between a demonstration, repeatability, and understanding failure.",
+        "canonical": "https://colinmichaels.com/blog/temu-drone-what-a-flight-proves",
+        "openGraphImage": "https://firebasestorage.googleapis.com/v0/b/colinmichaels.firebasestorage.app/o/cms%2Fblog-media%2Fthey-bought-a-full-size-temu-mega-drone%2Fopen-graph%2F1783732257570-61776f62-61ec-4a9c-9a3b-52223ce9690c.jpg?alt=media&token=afff62a8-e59e-42f9-919f-42bbfcb6267b",
+        "openGraphImageWidth": 1200,
+        "openGraphImageHeight": 630
+      },
+      "contentFormat": "editorjs",
+      "blocks": [
+        {
+          "id": "opening",
+          "type": "paragraph",
+          "data": {
+            "text": "A flying machine leaving the ground is a powerful argument. It is also a very short one. The interesting part of Goonzquad’s full-size Temu drone story is how quickly “it moved” can turn into “I would trust it.” Those are different conclusions, and the gap between them is where I want to spend a little time."
+          }
+        },
+        {
+          "id": "source",
+          "type": "paragraph",
+          "data": {
+            "text": "This is commentary on <a href=\"https://www.youtube.com/watch?v=bUkvDe0x47A\">Goonzquad’s original video, We Bought Temu’s Craziest Product!!!</a>. I did not buy, inspect, assemble, or fly their aircraft. Watch the source for the sequence of events; the questions below are about how we judge a demonstration, not instructions for operating an aircraft."
+          }
+        },
+        {
+          "id": "source-video",
+          "type": "embed",
+          "data": {
+            "provider": "youtube",
+            "url": "https://www.youtube.com/watch?v=bUkvDe0x47A",
+            "embedUrl": "https://www.youtube.com/embed/bUkvDe0x47A",
+            "caption": "Goonzquad’s original unboxing, assembly, and low-flight test provides the primary evidence discussed in this article."
+          }
+        },
+        {
+          "id": "first-take",
+          "type": "header",
+          "data": {
+            "text": "What makes a demonstration convincing?",
+            "level": 2
+          }
+        },
+        {
+          "id": "first-take-intro",
+          "type": "paragraph",
+          "data": {
+            "text": "Think of a gadget video you have watched recently. It does the impressive thing, the creator looks delighted, and for a moment the purchase feels almost sensible. What did you actually learn in that moment? Pick the evidence that would matter most to you. You can read the reasoning without choosing, and the article continues either way."
+          }
+        },
+        {
+          "id": "confidence-reflection",
+          "type": "poll",
+          "data": {
+            "placement": "content",
+            "pollMode": "reflection",
+            "question": "Which part would do the most to earn your confidence?",
+            "description": "Choose a first take, then compare it with the evidence. This is a reflection, not a test.",
+            "pollOptions": [
+              {
+                "id": "demonstration",
+                "label": "Seeing it complete the impressive demonstration"
+              },
+              {
+                "id": "repeatability",
+                "label": "Seeing the same result across repeated tests"
+              },
+              {
+                "id": "failure",
+                "label": "Understanding what happens when something goes wrong"
+              }
+            ],
+            "pollResultsVisibility": "hidden",
+            "reflectionExplanation": "A demonstration can establish that a particular event happened under the conditions shown. Repeated tests address a different question: how consistently the result occurs. Evidence about failures addresses another: what happens outside the successful example. These are different kinds of evidence, not a scorecard for the reader. A changed answer is useful if you can explain what changed it."
+          }
+        },
+        {
+          "id": "separate-questions",
+          "type": "header",
+          "data": {
+            "text": "Three questions hiding inside “it works”",
+            "level": 2
+          }
+        },
+        {
+          "id": "event",
+          "type": "paragraph",
+          "data": {
+            "text": "The first question is whether something can happen at all. That is where a convincing demonstration earns its place. A real result should make us update our expectations. Dismissing every surprising machine as impossible would be just as lazy as accepting every successful clip as a complete product review."
+          }
+        },
+        {
+          "id": "repeatability",
+          "type": "paragraph",
+          "data": {
+            "text": "The second question is whether the result is repeatable. How many attempts are represented? What conditions were held steady? What changed between attempts? Those questions do not erase a successful demonstration. They tell me how far I can carry the conclusion beyond that demonstration."
+          }
+        },
+        {
+          "id": "variability-source",
+          "type": "paragraph",
+          "data": {
+            "text": "Even measurements can behave differently over minutes and across days. <a href=\"https://www.itl.nist.gov/div898/handbook/mpc/section1/mpc114.htm\">NIST’s guide to variability</a> separates short-term precision from longer-term changes in conditions. That is one reason I would want to know whether an impressive result survives beyond a carefully selected moment."
+          }
+        },
+        {
+          "id": "inspection-illustration",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/temu-mega-drone-evidence-check.webp",
+            "alt": "Inspection light, checklist, and tools beside a chipped generic multicopter propeller in a workshop",
+            "caption": "AI-generated editorial illustration of a damaged-parts inspection. It is not a photograph of the Goonzquad aircraft, its shipment, or the propeller shown in the video.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "failure",
+          "type": "paragraph",
+          "data": {
+            "text": "The third question is what the successful example leaves out. I want to know where the limits are, what the operator had to understand, and what evidence exists about things going wrong. Missing information is not proof of a defect. It is a reason to keep a conclusion narrower than my enthusiasm."
+          }
+        },
+        {
+          "id": "change-mind",
+          "type": "header",
+          "data": {
+            "text": "Curiosity and confidence can move at different speeds",
+            "level": 2
+          }
+        },
+        {
+          "id": "perspective",
+          "type": "paragraph",
+          "data": {
+            "text": "I like strange machines. The possibility that something awkward and oversized might become useful is part of the appeal. I do not want to sand that curiosity out of the story. I do want to notice when excitement starts doing the work that evidence should be doing."
+          }
+        },
+        {
+          "id": "readiness-source",
+          "type": "paragraph",
+          "data": {
+            "text": "<a href=\"https://www.nasa.gov/aeronautics/technology-readiness-levels-demystified/\">NASA’s explanation of technology readiness</a> separates research, prototyping, integration, and real-world testing. I am not assigning this aircraft a rating. The useful idea is that completing one stage does not make every later stage complete."
+          }
+        },
+        {
+          "id": "enthusiasm",
+          "type": "paragraph",
+          "data": {
+            "text": "My curiosity can go up after one clip while my confidence in everyday use barely moves. There is no contradiction there. “I want to see what happens next” is a perfectly good response. It does not need to become “I know enough to make the same decision.”"
+          }
+        },
+        {
+          "id": "fairness",
+          "type": "paragraph",
+          "data": {
+            "text": "The same habit is useful when a product disappoints. One failure is an event too. It deserves attention, but it does not automatically establish how every unit behaves. The useful question is what the example helps us understand and what additional evidence would change that understanding."
+          }
+        },
+        {
+          "id": "planning-illustration",
+          "type": "image",
+          "data": {
+            "url": "/assets/images/blog/drones/temu-mega-drone-part-103.webp",
+            "alt": "Generic single-seat multicopter parked beside a flight-planning table at an open rural field",
+            "caption": "AI-generated editorial illustration of planning beside a generic multicopter. It is not the Goonzquad aircraft, a documented test, or an assessment of its safety or legal status.",
+            "width": 1500,
+            "height": 1000,
+            "withBorder": false,
+            "withBackground": false,
+            "stretched": false,
+            "imageLayout": "contained",
+            "imageSize": "large"
+          }
+        },
+        {
+          "id": "checklist",
+          "type": "header",
+          "data": {
+            "text": "A small checklist for the next impressive video",
+            "level": 2
+          }
+        },
+        {
+          "id": "evidence-checklist",
+          "type": "list",
+          "data": {
+            "listStyle": "unordered",
+            "ordered": false,
+            "listPresentation": "standard",
+            "items": [
+              "Name the exact event the footage establishes.",
+              "Separate what is visible from what the creator says or you infer.",
+              "Ask which conditions and unsuccessful attempts are missing.",
+              "Decide what additional evidence would change your view.",
+              "Keep the conclusion as narrow as the evidence."
+            ]
+          }
+        },
+        {
+          "id": "checklist-context",
+          "type": "paragraph",
+          "data": {
+            "text": "This is a way to read a video more carefully. It is not a substitute for qualified inspection, testing, training, or other decisions a real aircraft would require. A checklist about evidence should not pretend to become an aircraft checklist merely because a drone is in the picture."
+          }
+        },
+        {
+          "id": "verdict",
+          "type": "header",
+          "data": {
+            "text": "My take",
+            "level": 2
+          }
+        },
+        {
+          "id": "verdict-copy",
+          "type": "paragraph",
+          "data": {
+            "text": "Keep the excitement. Make the conclusion earn its size. A surprising demonstration can be worth sharing without becoming a recommendation, and a question can remain open without making the story less interesting. That is the distinction I would want a reader to carry into the next gadget video."
+          }
+        },
+        {
+          "id": "closing",
+          "type": "paragraph",
+          "data": {
+            "text": "Return to your first choice above. Would you still choose it? If your answer changed, name the detail that changed it. If it did not, decide what evidence would. Either way, you have done something more useful than simply agreeing that the clip was wild."
+          }
+        }
+      ],
+      "createdAt": "2026-10-16T04:30:04.587Z",
+      "updatedAt": "2026-10-16T04:30:04.587Z",
+      "publishedAt": null,
+      "revision": 0,
+      "featured": false,
+      "authorId": "colin-michaels",
+      "subcategories": [],
+      "editorial": {
+        "evidenceBasis": "researched",
+        "evidenceSummary": "Research-based commentary using Goonzquad’s original video, NASA’s technology-readiness explanation, and NIST’s variability guide. Colin did not buy, inspect, assemble, or fly the aircraft. The framework references do not classify, certify, or measure the aircraft.",
+        "sourceReviewedAt": "2026-10-16",
+        "relationshipDisclosure": "Colin did not buy, inspect, assemble, or fly the aircraft. No hands-on relationship is claimed.",
+        "aiAssistanceDisclosure": "AI assisted with the writing and reader interaction. The conclusions are editorial commentary, not aircraft testing.",
+        "syntheticMediaDisclosure": "Both inline images reuse disclosed AI-generated editorial illustrations already in the repository. They are not photographs of the aircraft, shipment, or tests."
+      },
+      "catCorner": {
+        "enabled": false,
+        "discoveryPost": false
+      }
+    }
+  ]
+}

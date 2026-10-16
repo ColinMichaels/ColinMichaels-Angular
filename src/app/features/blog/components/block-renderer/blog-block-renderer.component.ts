@@ -58,6 +58,7 @@ import {BlogChartComponent} from '../chart/blog-chart.component';
 import {BlogGalleryComponent} from '../gallery/blog-gallery.component';
 import {BlogRichTextComponent} from '../rich-text/blog-rich-text.component';
 import {BlogPollComponent} from '../poll/blog-poll.component';
+import {BlogReaderReflectionComponent} from '../reader-reflection/blog-reader-reflection.component';
 
 interface RenderableBlogBlock {
   block: BlogContentBlock;
@@ -129,6 +130,7 @@ interface LightboxBodyStyleState {
     BlogChartComponent,
     BlogGalleryComponent,
     BlogPollComponent,
+    BlogReaderReflectionComponent,
     BlogRichTextComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -397,6 +399,9 @@ interface LightboxBodyStyleState {
             <app-blog-chart [block]="row.block"></app-blog-chart>
           }
           @case ('poll') {
+            @if (row.block.data.pollMode === 'reflection') {
+              <app-blog-reader-reflection [block]="row.block"></app-blog-reader-reflection>
+            } @else {
             <app-blog-poll
               [block]="row.block"
               [postId]="postId"
@@ -404,6 +409,7 @@ interface LightboxBodyStyleState {
               [compact]="displayMode === 'rail'"
               [readOnly]="previewMode"
             ></app-blog-poll>
+            }
           }
           @case ('html') {
             @if (row.block.data.html) {

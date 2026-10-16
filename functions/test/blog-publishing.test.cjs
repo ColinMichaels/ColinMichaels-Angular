@@ -481,3 +481,22 @@ test('published release timestamps reject overflowing dates and ambiguous local 
       new Date('2026-08-04T12:00:00Z')), /timezone-qualified ISO/);
   }
 });
+
+test('publishes bounded reflection content and rejects malformed reflection contracts', () => {
+  const reflection = {id: 'reflection', type: 'poll', data: {question: 'What convinces you?',
+    pollOptions: [{id: 'one', label: 'One example'}, {id: 'many', label: 'Repeated examples'}],
+    pollMode: 'reflection', reflectionExplanation: 'A demonstration leaves questions.'}};
+  assert.doesNotThrow(() => validateTrustedBlogPost(createPost({blocks: [reflection]})));
+  assert.match(createBlogPostSummaryDocument(createPost({blocks: [reflection]})).searchBodyText, /demonstration leaves questions/);
+  for (const data of [
+    {...reflection.data, pollMode: 'unrecognized'},
+    {...reflection.data, pollOptions: []},
+    {...reflection.data, pollOptions: [{id: 'one', label: 'One'}]},
+    {...reflection.data, pollOptions: [{id: 'one', label: 'Same'}, {id: 'two', label: 'same'}]},
+    {...reflection.data, reflectionExplanation: ''},
+    {...reflection.data, reflectionExplanation: 'x'.repeat(5001)},
+  ]) {
+    assert.throws(() => validateTrustedBlogPost(createPost({blocks: [{...reflection, data}]})));
+  }
+  assert.throws(() => validateTrustedBlogPost(createPost({blocks: [{...reflection, type: 'paragraph'}]})));
+});

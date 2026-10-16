@@ -117,6 +117,22 @@ It waits for a clean UTC minute, verifies requests 1-20, requires request 21 to 
 
 ## Release evidence record
 
+### 2026-09-01 production release
+
+- Tested source commit: `5a58a2f4009e03ab075515d056ca67d010303a9c` on `dev`.
+- Production merge commit: `8a7646cc6825c1ae15f9990926ae363a06e40f88` on `master`; its source tree matches the tested `dev` commit.
+- Deployment: [Deploy Firebase Production run 33529452360](https://github.com/ColinMichaels/ColinMichaels-Angular/actions/runs/33529452360) completed successfully from `2026-09-01T16:02:44Z` through `2026-09-01T16:07:12Z`. The workflow is the release identifier for the matching Functions and Hosting deployment.
+- Production tool smoke test: passed on 2026-09-02. The deployed browser registered exactly the three expected read-only tools, all three callbacks returned bounded public responses, private/body fields were absent, and the browser console remained clear.
+- Controlled rate-limit verification: passed at `2026-08-31T16:07:05Z`. Requests 1-20 succeeded, request 21 returned HTTP `429 RESOURCE_EXHAUSTED`, and request 22 succeeded in the next UTC-minute window.
+- Firestore TTL: `publicAgentContentRateLimits.expiresAtTimestamp` reports `ACTIVE` in project `colinmichaels`.
+- Monitoring: handler failure, sustained HTTP `429`, unexpected HTTP `403`, and p95 latency policies are enabled and route to notification channel `projects/colinmichaels/notificationChannels/16435264730553611161`, owned by `colin@colinmichaels.com`. The unique-document growth policy remains deferred until the first complete seven-day baseline exists.
+- Initial post-deploy window (`2026-09-01T16:02:44Z` through the 2026-09-02 closeout): three successful application events, one per operation; zero failed events; zero HTTP `429`; zero HTTP `403`; and 1,666 ms p95 handler duration. This is a low-volume health check, not a durable traffic baseline.
+- Rendered regression check: all four body images on `back-in-order-rehab-porch-website-update` loaded at natural resolution, all four opened through the lightbox, no image-unavailable fallback appeared, and the browser produced no warning or error logs.
+- Rollback decision: no rollback. The deployed release is healthy under the verified paths.
+- Deferred follow-up: review the first seven days on 2026-09-07, establish the privacy-safe unique-document baseline, and create the document-growth alert only from that evidence. Function App Check remains off for `getPublicAgentContent` until direct browser transport has verified-token coverage and an explicit rollback owner.
+
+This record closes release deployment and immediate verification. It does not claim a seven-day reliability baseline or commercial readiness.
+
 For each WebMCP release, record:
 
 - exact deployed commit;

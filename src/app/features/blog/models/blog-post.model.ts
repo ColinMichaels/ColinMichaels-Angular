@@ -294,6 +294,9 @@ export interface BlogBlockData {
   description?: string;
   pollOptions?: readonly BlogPollOption[];
   pollResultsVisibility?: BlogPollResultsVisibility;
+  /** Private, page-local reflection; never a community vote. */
+  pollMode?: 'vote' | 'reflection';
+  reflectionExplanation?: string;
   html?: string;
   unsupportedBlock?: BlogUnsupportedBlockEnvelope;
 }
