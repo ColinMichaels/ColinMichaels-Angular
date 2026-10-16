@@ -435,3 +435,8 @@ Service and migration notes:
 - Media Delete remains a reversible `status: deleted` transition. Restore returns the retained record to `ready`; archived records remain separate. No collection, Storage object, route, role, or callable migration is introduced by this organizer safety pass.
 - Resize requests go through `MediaProcessingService`, which calls callable Firebase Functions named `resizeMedia` or `batchResizeMedia` when those existing functions are deployed.
 - If production media metadata already uses different collection names, change the service constants instead of component logic.
+
+
+### Private reflections in article content
+
+The Poll tool's **Interaction** control can choose **Private reflection**. Supply **Evidence to reveal**, keep the prompt non-sensitive, and preview choose/reveal/reconsider or read-without-choosing. Reflection choices stay in page memory without sign-in, votes, stored responses, totals, or points. Community polls retain their existing write rules and remain read-only in Production Preview. See `docs/ARCHITECTURE/EDITORJS_POLLS.md` and the role-filtered **Create and publish a post** guide entry.

@@ -119,6 +119,19 @@ function isBlogBlockData(type: BlogBlockType, value: unknown): boolean {
     return false;
   }
 
+  if ((value['pollMode'] !== undefined || value['reflectionExplanation'] !== undefined) && type !== 'poll') return false;
+  if (type === 'poll' && value['pollMode'] === 'reflection') {
+    const options = value['pollOptions'];
+    if (typeof value['question'] !== 'string' || !value['question'].trim()
+      || typeof value['reflectionExplanation'] !== 'string' || !value['reflectionExplanation'].trim()
+      || value['reflectionExplanation'].length > 5000 || !Array.isArray(options)
+      || options.length < 2 || options.length > 8 || !isBlogPollOptions(options)) return false;
+    const ids = options.map(option => option.id.trim());
+    const labels = options.map(option => option.label.trim().toLowerCase());
+    if (ids.some(id => !id) || labels.some(label => !label)
+      || new Set(ids).size !== ids.length || new Set(labels).size !== labels.length) return false;
+  }
+
   if (type === 'list') {
     return (value['items'] === undefined || isStringArray(value['items']))
       && (value['listItems'] === undefined || (
@@ -154,7 +167,7 @@ function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
     'title', 'text', 'url', 'alt', 'caption', 'provider', 'embedUrl', 'language', 'code', 'markdown',
     'attribution', 'unit', 'xAxisTitle', 'yAxisTitle', 'valueSuffix', 'sourceLabel', 'sourceUrl',
     'accessibilitySummary', 'question', 'description', 'html', 'videoTitle', 'videoDescription',
-    'videoUploadDate',
+    'videoUploadDate', 'reflectionExplanation',
   ];
   const numberFields = ['width', 'height', 'yMax', 'decimals', 'videoDurationSeconds'];
   const booleanFields = [
@@ -191,6 +204,7 @@ function isBlogBlockDataShape(value: Record<string, unknown>): boolean {
     && (value['listMeta'] === undefined || isBlogJsonObject(value['listMeta']))
     && (value['variant'] === undefined || (BLOG_TYPOGRAPHY_VARIANTS as readonly unknown[]).includes(value['variant']))
     && (value['chartType'] === undefined || (BLOG_CHART_TYPES as readonly unknown[]).includes(value['chartType']))
+    && (value['pollMode'] === undefined || value['pollMode'] === 'vote' || value['pollMode'] === 'reflection')
     && (value['pollResultsVisibility'] === undefined
       || (BLOG_POLL_RESULTS_VISIBILITIES as readonly unknown[]).includes(value['pollResultsVisibility']))
     && (value['stats'] === undefined || isBlogStats(value['stats']))

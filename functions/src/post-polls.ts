@@ -44,6 +44,8 @@ export function parsePostPollDefinition(post: unknown, pollId: string): PostPoll
   }
 
   const data = block['data'];
+  // Reflection choices are never accepted as authenticated community votes.
+  if (data['pollMode'] !== undefined && data['pollMode'] !== 'vote') return null;
   const question = getTrimmedString(data['question']);
   const description = getTrimmedString(data['description']);
   const options = parsePollOptions(data['pollOptions']);

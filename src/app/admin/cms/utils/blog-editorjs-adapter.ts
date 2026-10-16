@@ -822,6 +822,8 @@ function createBlockData(type: BlogBlockType, data: Record<string, unknown>): Bl
         description: getString(data, 'description') ?? '',
         pollOptions: extractPollOptions(extractArrayByAlias(data, ['pollOptions', 'options', 'answers'])),
         pollResultsVisibility: toPollResultsVisibility(data['pollResultsVisibility']),
+        ...(data['pollMode'] === 'reflection' ? {pollMode: 'reflection' as const,
+          reflectionExplanation: getString(data, 'reflectionExplanation') ?? ''} : {}),
       };
     case 'catCornerUnlock':
       return {};

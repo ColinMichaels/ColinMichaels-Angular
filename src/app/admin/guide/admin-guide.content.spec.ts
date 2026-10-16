@@ -199,4 +199,14 @@ describe('admin guide content', () => {
     expect(canViewAdminGuideEntry(articleEvidence!, ['contentEditor'])).toBeTrue();
     expect(canViewAdminGuideEntry(articleEvidence!, ['viewer'])).toBeFalse();
   });
+  it('limits reflection authoring instructions to CMS roles', () => {
+    for (const role of ['admin', 'cmsAdmin', 'contentEditor'] as const) {
+      expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, [role], 'private reflection').map(entry => entry.id))
+        .toEqual(['create-and-publish-a-post']);
+    }
+    for (const role of ['viewer', 'mediaManager', 'trustedCommenter'] as const) {
+      expect(searchAdminGuideEntries(ADMIN_GUIDE_ENTRIES, [role], 'private reflection')).toEqual([]);
+    }
+  });
+
 });

@@ -13,6 +13,8 @@
 
 ## Unreleased
 
+- Add an optional private-reflection mode to the existing Poll editor and public renderer: choose, reveal authored evidence, reconsider, skip, or reset without sign-in, saved responses, public totals, or points. Preserve community polling defaults and reject private reflections at the server vote/results boundary. Carry the bounded definition through preview, import/export, trusted validation, early reading, crawler fallback, and reading/search projections; update the role-filtered Admin Guide. Include a separate unsaved Temu example using original video and two existing disclosed illustrations, with a new draft identity and no CMS or publication changes. Deploy the matching Hosting/Functions feature before saving reflection content; see `docs/ARCHITECTURE/EDITORJS_POLLS.md` for rollback.
+
 - Clear stale CMS import errors when either import picker opens or a new JSON/package attempt starts. Add an accessible **Dismiss** action to completed, stopped, and canceled package results; active checking/upload/processing remains visible. Dismiss only the import's error toast, including when leaving the editor, while preserving unrelated notifications, draft content, and finalized media. The production workflow deploys Hosting and the matching Functions SEO shell; no data migration is required.
 
 - Celebrate a newly completed seasonal hunt with the site’s shared confetti burst. Respect system and reader reduced-motion settings; archive previews, duplicate clicks, reloads, restored progress, and cross-tab updates never replay the animation. Keep collection progress and the original site layout unchanged.

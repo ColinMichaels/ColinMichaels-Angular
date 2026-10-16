@@ -948,6 +948,25 @@ function validateBlock(value: unknown, blockIds: Set<string>): void {
     invalid('Known blocks cannot contain an unsupported compatibility envelope.');
   }
 
+  if ((data['pollMode'] !== undefined || data['reflectionExplanation'] !== undefined) && type !== 'poll') {
+    invalid('Reflection fields belong only to poll blocks.');
+  }
+  if (type === 'poll' && data['pollMode'] === 'reflection') {
+    const options = data['pollOptions'];
+    if (typeof data['question'] !== 'string' || !data['question'].trim()
+      || typeof data['reflectionExplanation'] !== 'string' || !data['reflectionExplanation'].trim()
+      || data['reflectionExplanation'].length > 5000 || !Array.isArray(options)
+      || options.length < 2 || options.length > 8 || !isPollOptions(options)) {
+      invalid('Private reflections require a question, 2–8 choices, and bounded evidence.');
+    }
+    const ids = (options as Record<string, unknown>[]).map(option => String(option['id']).trim());
+    const labels = (options as Record<string, unknown>[]).map(option => String(option['label']).trim().toLowerCase());
+    if (ids.some(id => !id) || labels.some(label => !label)
+      || new Set(ids).size !== ids.length || new Set(labels).size !== labels.length) {
+      invalid('Reflection choices must be nonempty and distinct.');
+    }
+  }
+
   rejectUnsafeInlineProtocols(data);
 }
 
@@ -956,7 +975,7 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
     'title', 'text', 'url', 'alt', 'caption', 'provider', 'embedUrl', 'language', 'code', 'markdown',
     'attribution', 'unit', 'xAxisTitle', 'yAxisTitle', 'valueSuffix', 'sourceLabel', 'sourceUrl',
     'accessibilitySummary', 'question', 'description', 'html', 'videoTitle', 'videoDescription',
-    'videoUploadDate',
+    'videoUploadDate', 'reflectionExplanation',
   ];
   const numberFields = ['width', 'height', 'yMax', 'decimals', 'videoDurationSeconds'];
   const booleanFields = [
@@ -976,6 +995,7 @@ function validateBlockDataShape(value: Record<string, unknown>): void {
     || (value['level'] !== undefined && value['level'] !== 2 && value['level'] !== 3)
     || (value['variant'] !== undefined && !TYPOGRAPHY_VARIANTS.has(String(value['variant'])))
     || (value['chartType'] !== undefined && !CHART_TYPES.has(String(value['chartType'])))
+    || (value['pollMode'] !== undefined && value['pollMode'] !== 'vote' && value['pollMode'] !== 'reflection')
     || (value['pollResultsVisibility'] !== undefined
       && !POLL_RESULTS_VISIBILITIES.has(String(value['pollResultsVisibility'])))
     || (value['listMeta'] !== undefined && !isJsonObject(value['listMeta']))
@@ -1358,7 +1378,7 @@ const SUMMARY_SEARCH_TEXT_KEYS = new Set([
   'label',
   'markdown',
   'note',
-  'question',
+  'reflectionExplanation', 'question',
   'relationshipDisclosure',
   'sourceLabel',
   'syntheticMediaDisclosure',
