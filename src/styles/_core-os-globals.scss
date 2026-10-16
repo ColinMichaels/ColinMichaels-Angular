@@ -12,18 +12,16 @@
 }
 
 @layer base {
-  .core-os-scope input:-webkit-autofill,
-  .core-os-scope input:-webkit-autofill:hover,
-  .core-os-scope input:-webkit-autofill:focus {
-    -webkit-text-fill-color: theme('colors.gray.900');
-    -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.50');
-  }
-
-  .dark .core-os-scope input:-webkit-autofill,
-  .dark .core-os-scope input:-webkit-autofill:hover,
-  .dark .core-os-scope input:-webkit-autofill:focus {
+  .core-os-scope input:is(:autofill, :-webkit-autofill) {
+    // OS surfaces stay dark regardless of the public site's selected theme.
+    // Keep autofill paint inside the field; an outer spread covers the page.
     -webkit-text-fill-color: theme('colors.gray.100');
-    -webkit-box-shadow: 0 0 0 1000px theme('colors.gray.800');
+    caret-color: theme('colors.gray.100');
+    --tw-shadow: inset 0 0 0 1000px theme('colors.gray.800');
+    box-shadow:
+      var(--tw-ring-offset-shadow, 0 0 #0000),
+      var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
   }
 }
 

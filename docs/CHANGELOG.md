@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Import-first blog editor
+
+- Document the original-to-new control locations, source parity (25 form controls, 11 child component types, 23 click handlers), exact 14-file rollback scope, baseline revision, source checkpoint, safe reversal steps, and release/rollback smoke checks. Distinguish local validation from untested live integrations and retain the no-data-migration boundary.
+
+- Open new posts with package, JSON, or blank-start choices; keep existing posts in Edit. Reorganize the mounted editor around writing, six named settings panels, optional focus mode, and an unsaved Review & publish flow. Preserve all status, media, evidence-only save, SEO, social, recovery, AI, and trusted publishing operations. Make native dropdowns and Editor.js menus readable in their respective dark and light surfaces; update the role-aware Admin Guide and architecture inventory. No data migration, production content change, or deployment is included.
+
 ## 2026-10-02
 
 - Tuck smaller seasonal finds into varied story, topic-guide, discovery, and author-directory areas without adding collection rows or pushing content down. Rotate hiding areas on return to a page while keeping each find stable during the visit and after another item is collected. Preserve 44px touch/keyboard targets, clue destinations, archive eligibility, saved progress, owner/account bypass, and shared completion confetti; document the slot registry and rollback.
@@ -12,6 +18,8 @@
 - Avoid background seasonal polling, duplicate pending schedule reads, and extra page views on season changes while preserving immediate authentication revocation and route transitions.
 
 ## Unreleased
+
+- Keep Mac-style login and registration readable when the browser autofills credentials. Contain the Core OS autofill background inside each field, preserve focus rings, and use light text on the always-dark OS surface in either public-site theme. Preserve Google/Facebook sign-in, password reset, registration, and existing login behavior. Add desktop/mobile browser regression coverage for all six fields in both themes. Hosting-only change; no data/configuration migration. Rollback restores the previous stylesheet.
 
 - Add an optional private-reflection mode to the existing Poll editor and public renderer: choose, reveal authored evidence, reconsider, skip, or reset without sign-in, saved responses, public totals, or points. Preserve community polling defaults and reject private reflections at the server vote/results boundary. Carry the bounded definition through preview, import/export, trusted validation, early reading, crawler fallback, and reading/search projections; update the role-filtered Admin Guide. Include a separate unsaved Temu example using original video and two existing disclosed illustrations, with a new draft identity and no CMS or publication changes. Deploy the matching Hosting/Functions feature before saving reflection content; see `docs/ARCHITECTURE/EDITORJS_POLLS.md` for rollback.
 

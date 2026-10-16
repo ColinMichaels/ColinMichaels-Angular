@@ -1,0 +1,70 @@
+/* Admin is an explicit dark control surface, independent of the reader theme. */
+.admin-controls {
+  --admin-canvas: #0e1216;
+  --admin-panel: #171d23;
+  --admin-field: #202830;
+  --admin-text: #edf3f6;
+  --admin-muted: #b0bfc9;
+  --admin-border: #627582;
+  --admin-accent: #71d6e6;
+  --admin-accent-surface: #16313b;
+  color-scheme: dark;
+}
+
+.admin-controls :is(select, input[type='date'], input[type='datetime-local']) {
+  color-scheme: dark;
+  color: var(--admin-text);
+  background-color: var(--admin-field);
+  border-color: var(--admin-border);
+  min-height: 42px;
+  font-size: 16px;
+  border-radius: 5px;
+}
+.admin-controls select option, .admin-controls select optgroup { background-color: var(--admin-field); color: var(--admin-text); }
+.admin-controls select:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
+
+.cms-post-workspace :is(.article-essentials, .post-inspector) :is(input:not([type='checkbox']):not([type='radio']), textarea) {
+  min-height: 42px;
+  font-size: 16px;
+  background-color: var(--admin-field);
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  border-radius: 5px;
+}
+.cms-post-workspace :is(.article-essentials, .post-inspector) :is(input, textarea):focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
+.cms-post-workspace :is(.text-zinc-500, .text-zinc-600) { color: var(--admin-muted); }
+.cms-post-workspace .post-inspector :is(.md\:grid-cols-2, .grid-cols-2) { grid-template-columns: minmax(0, 1fr); }
+.cms-post-workspace .post-inspector .md\:col-span-2 { grid-column: auto; }
+
+/* Notifications must leave the fixed save/status bar operable. */
+.cms-post-workspace + app-cms-toast-container > [aria-label='Notifications'] {
+  bottom: 96px;
+  max-width: calc(100vw - 32px);
+}
+@media (max-width: 639px) {
+  .cms-post-workspace + app-cms-toast-container > [aria-label='Notifications'] { bottom: 156px; right: 16px; }
+}
+
+/* Editor.js draws a light paper surface inside the dark workspace. Keep its
+ * native controls and all nested toolbox/inline menus in that same palette. */
+.admin-controls .cms-editor-surface {
+  color-scheme: light;
+  background: #fff;
+}
+.admin-controls .cms-editor-surface :is(select, input, textarea) { color-scheme: light; color: #18252c; background-color: #fff; }
+.admin-controls .cms-editor-surface :is(option, optgroup) { color: #18252c; background-color: #fff; }
+.admin-controls .cms-editor-surface :is(.ce-popover, .ce-inline-toolbar) {
+  --color-background: #fff;
+  --color-text-primary: #18252c;
+  --color-text-secondary: #4d616c;
+  --color-border: #8b9ba5;
+  --color-background-item-hover: #e1f2f5;
+  --color-background-item-focus: #e1f2f5;
+  --color-background-item-active: #d1ecf1;
+  color: #18252c;
+  background: #fff;
+  border-color: #8b9ba5;
+}
+.admin-controls .cms-editor-surface :is(.ce-popover-item__title, .ce-popover-item__icon, .ce-popover-item__secondary-title, .ce-inline-tool) { color: #18252c; }
+.admin-controls .cms-editor-surface .ce-popover-item__title { font-size: 14px; }
+.admin-controls .cms-editor-surface :is(.ce-popover-item:hover, .ce-inline-tool:hover) { background-color: #e1f2f5; }

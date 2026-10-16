@@ -26,6 +26,13 @@ import {PostPackageImportProgress} from './post-package-import-progress.componen
 import {CmsPostEditorComponent} from './post-editor.component';
 
 interface TestablePostEditor {
+  activeWorkspace: WritableSignal<'import' | 'post' | 'social' | 'preview'>;
+  activeSettings: WritableSignal<'details' | 'media' | 'evidence' | 'search' | 'publish' | 'tools'>;
+  focusWriting: WritableSignal<boolean>;
+  reviewBlocks: WritableSignal<readonly unknown[] | null>;
+  importReceipt: WritableSignal<{source: string; kind: string} | null>;
+  setWorkspace(workspace: 'import' | 'post' | 'social' | 'preview'): Promise<void>;
+  openSettings(setting: 'details' | 'media' | 'evidence' | 'search' | 'publish' | 'tools'): void;
   applyFirestorePost(post: BlogPost): Promise<void>;
 
   canDeactivate(): boolean;
@@ -97,6 +104,7 @@ interface TestablePostEditor {
   uploadEditorImage(file: File): Promise<unknown>;
 
   editorComponent?: {
+    getDocument?(): Promise<{blocks: {id: string; type: string; data: {text: string}}[]}>;
     getRecoverySnapshot?(): Promise<CmsPostRecoveryWrite['editor']>;
     renderDocument(document: unknown): Promise<void>;
     restoreRecoverySnapshot(snapshot: unknown): Promise<void>;
@@ -215,6 +223,7 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
         <p role="status" aria-live="polite" data-testid="post-import-announcement">
           {{ postImportAnnouncement() }}
         </p>
+        <p data-testid="hydrated-title">{{ currentPost?.title }}</p>
         @if (packageImportProgress(); as progress) {
           <app-post-package-import-progress
             [progress]="progress"
@@ -234,6 +243,90 @@ describe('CmsPostEditorComponent package import lifecycle', () => {
     if (!fixture.componentRef.hostView.destroyed) {
       fixture.destroy();
     }
+  });
+
+  it('starts a new post at import and preserves the mounted document while switching settings', async () => {
+    fixture.detectChanges();
+    expect(editor.activeWorkspace()).toBe('import');
+    editor.postForm.controls.title.setValue('Unsaved article title');
+    await editor.setWorkspace('post');
+    editor.focusWriting.set(true);
+    editor.openSettings('evidence');
+    expect(editor.activeWorkspace()).toBe('post');
+    expect(editor.activeSettings()).toBe('evidence');
+    expect(editor.focusWriting()).toBeFalse();
+    expect(editor.postForm.controls.title.value).toBe('Unsaved article title');
+    expect(savePost).not.toHaveBeenCalled();
+  });
+
+  it('renders queued Firestore hydration without requiring a user interaction', async () => {
+    fixture.autoDetectChanges();
+    const post = {...createPost('https://images.example/cover.webp'), title: 'Hydrated title'};
+    await editor.applyFirestorePost(post);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('[data-testid="hydrated-title"]').textContent)
+      .toContain('Hydrated title');
+  });
+
+  it('keeps native select keys away from Editor.js document capture without cancelling selection or Tab', () => {
+    const select = document.createElement('select');
+    fixture.nativeElement.appendChild(select);
+    const documentKey = jasmine.createSpy('Editor.js document keydown');
+    document.addEventListener('keydown', documentKey, true);
+    try {
+      const arrow = new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true, cancelable: true});
+      select.dispatchEvent(arrow);
+      expect(documentKey).not.toHaveBeenCalled();
+      expect(arrow.defaultPrevented).toBeFalse();
+      select.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}));
+      expect(documentKey).toHaveBeenCalledTimes(1);
+      fixture.destroy();
+      document.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}));
+      expect(documentKey).toHaveBeenCalledTimes(2);
+    } finally {
+      document.removeEventListener('keydown', documentKey, true);
+    }
+  });
+
+  it('reviews current unsaved blocks without creating a public preview or saving', async () => {
+    fixture.detectChanges();
+    editor.editorComponent = {
+      getDocument: async () => ({blocks: [{id: 'unsaved', type: 'paragraph', data: {text: 'Current unsaved article'}}]}),
+      renderDocument: async () => undefined,
+      restoreRecoverySnapshot: async () => undefined,
+    };
+    await editor.setWorkspace('preview');
+    expect(editor.activeWorkspace()).toBe('preview');
+    expect(JSON.stringify(editor.reviewBlocks())).toContain('Current unsaved article');
+    expect(JSON.stringify(editor.createSeoChecklistInput())).toContain('Current unsaved article');
+    expect(savePost).not.toHaveBeenCalled();
+    expect(createPreviewForPost).not.toHaveBeenCalled();
+    expect(editor.isPreviewGenerationInProgress).toBeFalse();
+  });
+
+  it('keeps invalid JSON in the editing workspace when review validation fails', async () => {
+    fixture.detectChanges();
+    await editor.setWorkspace('post');
+    editor.editorComponent = {
+      getDocument: async () => { throw new Error('Invalid JSON document'); },
+      renderDocument: async () => undefined,
+      restoreRecoverySnapshot: async () => undefined,
+    };
+    await editor.setWorkspace('preview');
+    expect(editor.activeWorkspace()).toBe('post');
+    expect(editor.reviewBlocks()).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('Invalid JSON document');
+    expect(editor.isPreviewGenerationInProgress).toBeFalse();
+  });
+
+  it('does not switch settings or start review during a package import', async () => {
+    fixture.detectChanges();
+    editor.isPackageImportInProgress.set(true);
+    editor.openSettings('publish');
+    await editor.setWorkspace('preview');
+    expect(editor.activeWorkspace()).toBe('import');
+    expect(editor.activeSettings()).toBe('details');
+    expect(editor.reviewBlocks()).toBeNull();
   });
 
   it('keeps legacy announcement settings off and saves explicit early reader settings', async () => {
