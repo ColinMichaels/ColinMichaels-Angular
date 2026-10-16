@@ -18,9 +18,10 @@ export class CmsToastService {
     setTimeout(() => this.dismiss(id), durationMs);
   }
 
-  error(message: string): void {
+  error(message: string): number {
     const id = this.nextId++;
     this.toasts.update(list => [...list, {id, type: 'error', message}]);
+    return id;
   }
 
   dismiss(id: number): void {

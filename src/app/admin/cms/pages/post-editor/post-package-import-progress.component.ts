@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
 
 export type PostPackageImportStage =
   | 'checking'
@@ -47,15 +47,25 @@ export interface PostPackageImportProgress {
           >
             {{ stageLabel }}
           </p>
-          <p class="text-sm font-medium leading-5 text-zinc-100">{{ progress.message }}</p>
+          <p class="text-sm font-medium leading-5 text-zinc-100 [overflow-wrap:anywhere]">{{ progress.message }}</p>
           @if (progress.detail) {
             <p class="text-xs leading-5 text-zinc-400" data-testid="post-package-import-detail">{{ progress.detail }}</p>
           }
         </div>
 
-        @if (progress.progress !== null) {
-          <span class="shrink-0 font-mono text-sm text-zinc-300">{{ roundedProgress }}%</span>
-        }
+        <div class="flex shrink-0 items-center gap-3">
+          @if (progress.progress !== null) {
+            <span class="font-mono text-sm text-zinc-300">{{ roundedProgress }}%</span>
+          }
+          @if (!isActive) {
+            <button
+              type="button"
+              class="inline-flex min-h-11 items-center border border-zinc-600 px-3 text-xs font-medium text-zinc-200 hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              aria-label="Dismiss package import status"
+              (click)="dismissed.emit()"
+            >Dismiss</button>
+          }
+        </div>
       </div>
 
       <div class="space-y-2">
@@ -125,6 +135,7 @@ export interface PostPackageImportProgress {
 })
 export class PostPackageImportProgressComponent {
   @Input({required: true}) progress!: PostPackageImportProgress;
+  @Output() readonly dismissed = new EventEmitter<void>();
 
   protected get isActive(): boolean {
     return ['checking', 'uploading', 'processing', 'applying'].includes(this.progress.stage);
