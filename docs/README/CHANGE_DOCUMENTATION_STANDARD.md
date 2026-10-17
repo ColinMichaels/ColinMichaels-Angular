@@ -61,6 +61,8 @@ Normal feature and fix work should use these defaults unless the task explicitly
 
 Use `master` only for an explicitly authorized production/release PR. Do not silently retarget an active PR.
 
+For dependency integration PRs, follow the coordinated update and clean-install checks in [Development](./DEVELOPMENT.md#dependency-updates). Record any superseded bot PRs, current audit findings, and the matching manifest/lockfile rollback scope. A skipped bot Firebase preview is expected; the credential-free dependency checks establish build/test compatibility separately from deployment proof.
+
 Pushing another commit to an open PR whose base is `dev` produces a `synchronize` event. The Firebase preview workflow evaluates the entire PR diff and deploys the scopes detected by `.github/scripts/detect-firebase-deploy-scope.sh`.
 
 ## Required PR Information

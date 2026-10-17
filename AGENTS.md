@@ -83,6 +83,12 @@ Do not remove experimental systems unless explicitly instructed.
 
 ---
 
+## Dependency Updates
+
+- Update the coordinated Angular runtime/compiler/build packages together and prove the lockfile with a fresh `npm ci`; never bypass peer conflicts with `--force` or `--legacy-peer-deps`.
+- Keep Dependabot validation credential-free. Use the dependency validation workflow for bot PRs and retain the separate human-authored Firebase preview path; never expose deployment secrets through `pull_request_target` to make bot checks pass.
+- Follow `docs/README/DEVELOPMENT.md` for dependency grouping, validation, existing-PR reconciliation, and rollback of matching manifests and lockfiles.
+
 ## Refactor Priority
 
 Prefer:
