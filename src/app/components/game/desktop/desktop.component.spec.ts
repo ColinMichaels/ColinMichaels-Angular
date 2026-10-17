@@ -104,9 +104,9 @@ describe('DesktopComponent', () => {
     expect(fixture.debugElement.injector.get(FINDER_FILE_OPENER)).toBe(appManagerServiceMock);
   });
 
-  it('should call onBeginInvestigation when view initializes', () => {
+  it('opens the terminal during initialization so the first desktop render includes its window', () => {
     spyOn(component, 'onBeginInvestigation');
-    component.ngAfterViewInit();
+    component.ngOnInit();
 
     expect(component.onBeginInvestigation).toHaveBeenCalled();
   });
@@ -243,16 +243,28 @@ describe('DesktopComponent', () => {
     expect(contextMenuServiceMock.close).toHaveBeenCalledTimes(1);
   });
 
+  it('opens Terminal without starting the old level game or overlay', () => {
+    appManagerServiceMock.openApplication.calls.reset();
+    notificationServiceMock.show.calls.reset();
+    overlayServiceMock.showOverlay.calls.reset();
+    typewriterServiceMock.enqueueLine.calls.reset();
+    component.onBeginInvestigation();
+    expect(appManagerServiceMock.openApplication).toHaveBeenCalledWith('cli');
+    expect(notificationServiceMock.show).not.toHaveBeenCalled();
+    expect(overlayServiceMock.showOverlay).not.toHaveBeenCalled();
+    expect(typewriterServiceMock.enqueueLine).not.toHaveBeenCalled();
+  });
+
   it('should call showNotificationUpdates in onBeginInvestigation', () => {
     notificationServiceMock.show.calls.reset();
-    component.onBeginInvestigation();
+    component.onBeginLegacyInvestigation();
 
     expect(notificationServiceMock.show).toHaveBeenCalledTimes(4);
   });
 
   it('should enqueue a line in onBeginInvestigation if user has no name', () => {
     userServiceMock.user.name = '';
-    component.onBeginInvestigation();
+    component.onBeginLegacyInvestigation();
 
     expect(soundServiceMock.play).toHaveBeenCalledWith('glitch-1.mp3', {
       volume: 0.3,
@@ -268,7 +280,7 @@ describe('DesktopComponent', () => {
   it('should enqueue welcome lines if user has a name', () => {
     userServiceMock.user.name = 'John';
 
-    component.onBeginInvestigation();
+    component.onBeginLegacyInvestigation();
 
     expect(typewriterServiceMock.enqueueLine).toHaveBeenCalledWith({
       text: `Welcome back JOHN`,
@@ -285,7 +297,7 @@ describe('DesktopComponent', () => {
   });
 
   it('should call overlayService.showOverlay with correct properties', () => {
-    component.onBeginInvestigation();
+    component.onBeginLegacyInvestigation();
 
     expect(overlayServiceMock.showOverlay).toHaveBeenCalledWith({
       imagePath: component.overlayImagePath,

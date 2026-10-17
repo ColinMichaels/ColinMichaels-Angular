@@ -1,8 +1,11 @@
 import {HttpClient} from '@angular/common/http';
+import {Injector} from '@angular/core';
 import {BehaviorSubject, of, Subject} from 'rxjs';
 import {StorageService} from '@core-os/storage';
 import {StorageStrategy} from '@core-os/storage/storage.service';
 import {AuthService} from '../../services/auth.service';
+import {LostSignalAdventure, lostSignalFolder} from '../../labs/terminal-adventure/lost-signal';
+import {TerminalSession} from '../terminal/terminal-session';
 import {
   CORE_OS_FILE_SYSTEM_STORAGE_KEY,
   coreOsFileSystemStorageKeyForUser,
@@ -173,6 +176,260 @@ function folderLikeEntry(id: string, name: string, path: string): FileEntry {
 }
 
 describe('FileSystemService', () => {
+  it('shares created and edited text with terminal reads, content search, undo and persisted reload', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    const folder = await service.createFolder('root', 'Investigation');
+    const note = await service.createTextFile(folder.id, 'clue.txt', 'The beacon is blue.\n');
+    const terminal = new TerminalSession(service);
+    terminal.execute('cd Investigation');
+    expect(terminal.execute('cat clue.txt').output).toContain('blue');
+    expect(service.search('beacon', folder.id)).toEqual([]);
+    expect(service.search('beacon', folder.id, true).map(file => file.id)).toEqual([note.id]);
+    await service.writeTextFile(note.id, 'The beacon is green. 🌍\n');
+    expect(terminal.execute('grep green clue.txt').output).toContain('green');
+    expect(service.getEntryById(note.id)?.size).toBe(new TextEncoder().encode('The beacon is green. 🌍\n').length);
+    await service.undoLastMutation();
+    expect(terminal.execute('cat clue.txt').output).toContain('blue');
+    await service.redoLastMutation();
+    const restored = createService(strategy).service;
+    await restored.whenReady();
+    expect(restored.getEntry('/Investigation/clue.txt')?.textContent).toContain('green');
+  });
+
+  it('keeps a terminal working folder attached to its ID through Finder rename and move', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const folder = await service.createFolder('root', 'Case A');
+    await service.createTextFile(folder.id, 'note.txt', 'Found it');
+    const terminal = new TerminalSession(service);
+    terminal.execute('cd "Case A"');
+    await service.renameEntry(folder.id, 'Case B');
+    expect(terminal.path).toBe('/Case B');
+    await service.moveEntry(folder.id, service.getDirectory('/Documents')!.id);
+    expect(terminal.execute('pwd').output).toBe('/Documents/Case B');
+    expect(terminal.execute('cat note.txt').output).toBe('Found it');
+    await service.moveToTrash(folder.id);
+    expect(terminal.path).toBe('/');
+    expect(terminal.execute('find . -name note.txt').output).toBe('');
+  });
+
+  it('rejects text collisions, unsupported files, oversized edits and failed saves without changing readable content', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    const note = await service.createTextFile('root', 'note.txt', 'Keep this');
+    await expectAsync(service.createTextFile('root', 'note.txt', 'overwrite')).toBeRejectedWithError(/already exists/);
+    await expectAsync(service.writeTextFile(note.id, 'x'.repeat(16_385))).toBeRejected();
+    await expectAsync(service.writeTextFile('root', 'folder text')).toBeRejected();
+    strategy.failWrites = true;
+    await expectAsync(service.writeTextFile(note.id, 'lost write')).toBeRejected();
+    expect(service.getEntryById(note.id)?.textContent).toBe('Keep this');
+  });
+
+  it('preserves another window’s text when an older editor tries to save', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const note = await service.createTextFile('root', 'notes.txt', 'Original');
+    await service.writeTextFile(note.id, 'Other window saved', 'Original');
+    await expectAsync(service.writeTextFile(note.id, 'Stale draft', 'Original')).toBeRejectedWithError(/changed elsewhere/);
+    expect(service.getEntryById(note.id)?.textContent).toBe('Other window saved');
+  });
+
+  it('does not create a pending text file in a newly signed-in account', async () => {
+    const users = new BehaviorSubject<{uid: string} | null>({uid: 'first'});
+    const {service} = createService(new MemoryStorageStrategy(), users);
+    await service.whenReady();
+    const pending = service.createTextFile('root', 'private-note.txt', 'First account draft');
+    users.next({uid: 'second'});
+    await expectAsync(pending).toBeRejected();
+    await service.whenReady();
+    expect(service.getEntry('/private-note.txt')).toBeUndefined();
+  });
+
+  it('adds the clue trail atomically to an existing Finder snapshot and persists readable text', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    await service.createFolder('root', 'Keep My Work');
+    await service.installFolder('/Documents', lostSignalFolder());
+    const restored = createService(strategy).service;
+    await restored.whenReady();
+    expect(restored.getDirectory('/Keep My Work')).toBeDefined();
+    expect(restored.getEntry('/Documents/Lost Signal/README.txt')?.textContent).toContain('logs/system.log');
+    expect(restored.getEntry('/Documents/Lost Signal/station-7/.relay/message.txt')?.textContent).toContain('SIGNAL RECOVERED');
+  });
+
+  it('resumes relocated adventure files without duplicating them or resetting their names', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const folder = await service.installFolder('/Documents', lostSignalFolder());
+    await service.renameEntry(folder.id, 'My Investigation');
+    await service.moveEntry(folder.id, 'root');
+    expect((await service.installFolder('/Documents', lostSignalFolder())).path).toBe('/My Investigation');
+    expect(service.getEntry('/Documents/Lost Signal')).toBeUndefined();
+  });
+
+  it('adds searchable logs to an earlier saved trail while preserving its existing clues', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const earlier = lostSignalFolder();
+    earlier.children = earlier.children!.filter(child => child.name !== 'logs');
+    earlier.children[0].textContent = 'Keep this earlier saved note.';
+    await service.installFolder('/Documents', earlier);
+    const injector = Injector.create({providers: [
+      {provide: FileSystemService, useValue: service}, LostSignalAdventure,
+    ]});
+    const adventure = injector.get(LostSignalAdventure);
+    await adventure.start();
+    await adventure.start();
+    expect(service.getEntry('/Documents/Lost Signal/README.txt')?.textContent).toBe('Keep this earlier saved note.');
+    expect(service.getEntry('/Documents/Lost Signal/logs/system.log')?.textContent).toContain('contact lost');
+    expect(service.getDirectory('/Documents/Lost Signal')?.children?.filter(file => file.name === 'logs').length).toBe(1);
+    injector.destroy();
+  });
+
+  it('does not overwrite a name collision or resurrect a trashed adventure', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const documents = service.getDirectory('/Documents')!;
+    const collision = await service.createFolder(documents.id, 'Lost Signal');
+    await expectAsync(service.installFolder('/Documents', lostSignalFolder())).toBeRejectedWithError(/already exists/);
+    expect(service.getDirectory('/Documents/Lost Signal')?.id).toBe(collision.id);
+    await service.renameEntry(collision.id, 'Existing Work');
+    const installed = await service.installFolder('/Documents', lostSignalFolder());
+    await service.moveToTrash(installed.id);
+    await expectAsync(service.installFolder('/Documents', lostSignalFolder())).toBeRejectedWithError(/Trash/);
+    expect(service.getEntry(installed.path)).toBeUndefined();
+  });
+
+  it('rejects oversized text and rolls back a failed adventure save', async () => {
+    const {service, strategy} = createService();
+    await service.whenReady();
+    const oversized = lostSignalFolder();
+    oversized.children![0].textContent = 'x'.repeat(16_385);
+    await expectAsync(service.installFolder('/Documents', oversized)).toBeRejected();
+    expect(service.getDirectory('/Documents/Lost Signal')).toBeUndefined();
+    strategy.failWrites = true;
+    await expectAsync(service.installFolder('/Documents', lostSignalFolder())).toBeRejected();
+    expect(service.getDirectory('/Documents/Lost Signal')).toBeUndefined();
+  });
+
+  it('solves Lost Signal through the same paths Finder exposes with hidden files and quoted spaces', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    await service.installFolder('/Documents', lostSignalFolder());
+    const terminal = new TerminalSession(service);
+    expect(terminal.execute('cd "Documents/Lost Signal"').output).toBe('');
+    expect(terminal.prompt).toBe('colin@Macintosh Lost Signal %');
+    expect(terminal.execute('cat README.txt').output).toContain('logs/system.log');
+    expect(terminal.execute('open .').finderPath).toBe('/Documents/Lost Signal');
+    terminal.execute('cd station-7');
+    expect(terminal.execute('cat route.txt').output).toContain('ls -a');
+    expect(terminal.execute('ls').output).not.toContain('.relay');
+    expect(terminal.execute('ls -a').output).toContain('.relay/');
+    terminal.execute('cd .relay');
+    const message = service.getEntry('/Documents/Lost Signal/station-7/.relay/message.txt')!;
+    expect(terminal.execute('cat message.txt').output).toBe(message.textContent!);
+    expect(terminal.execute('cat message.txt').output).toContain('Lost Signal complete');
+    terminal.execute('cd ../../..');
+    expect(terminal.path).toBe('/Documents');
+  });
+
+  it('keeps terminal windows independent and rejects bad paths and input without executing a real shell', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const first = new TerminalSession(service);
+    const second = new TerminalSession(service);
+    first.execute('cd Documents');
+    expect(second.path).toBe('/');
+    expect(first.execute('cd missing').output).toContain('no such directory');
+    expect(first.path).toBe('/Documents');
+    expect(first.execute('cat "unclosed').output).toContain('unmatched quote');
+    expect(first.execute('rm -rf /').output).toContain('command not found');
+    expect(first.execute('cat .').output).toContain('Is a directory');
+    first.execute('cd /../../');
+    expect(first.path).toBe('/');
+  });
+
+  it('supports long listings, scoped filename searches, hidden trees and previous-directory navigation', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    await service.installFolder('/Documents', lostSignalFolder());
+    const terminal = new TerminalSession(service);
+    terminal.execute('cd "Documents/Lost Signal"');
+    expect(terminal.execute('ls -lah').output).toContain('dr-xr-xr-x');
+    expect(terminal.execute('ls -l README.txt').output).toContain('README.txt');
+    expect(terminal.execute('find logs -name "*.log" -type f').output.split('\n').length).toBe(2);
+    expect(terminal.execute('find logs -name "*.txt"').output).toBe('');
+    expect(terminal.execute('find . -iname "README.TXT"').output).toContain('/README.txt');
+    expect(terminal.execute('tree').output).not.toContain('.relay');
+    expect(terminal.execute('tree -a').output).toContain('message.txt');
+    terminal.execute('cd logs');
+    expect(terminal.execute('cd -').output).toBe('/Documents/Lost Signal');
+  });
+
+  it('searches file contents recursively and passes text through grep/head/tail/wc pipelines', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    await service.installFolder('/Documents', lostSignalFolder());
+    const terminal = new TerminalSession(service);
+    terminal.execute('cd "Documents/Lost Signal"');
+    expect(terminal.execute('grep -rin "contact lost" logs').output).toContain('system.log:4:00:00:04 WARN');
+    expect(terminal.execute('cat logs/system.log | grep -i RELAY | tail -n 1').output)
+      .toBe('00:00:04 WARN relay station-7: contact lost during restart\n');
+    expect(terminal.execute('head -n 1 logs/system.log').output).toContain('filesystem mounted');
+    expect(terminal.execute('tail -n 0 logs/system.log').output).toBe('');
+    expect(terminal.execute('cat logs/system.log | wc -l').output).toBe('5\n');
+    expect(terminal.execute('echo "one | two" | wc -w').output).toBe('3\n');
+    expect(terminal.execute('grep absent logs/system.log').output).toBe('');
+    expect(terminal.execute('grep relay logs').output).toContain('use -r');
+  });
+
+  it('completes quoted and escaped paths, limits hidden suggestions and filters cd to folders', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    await service.installFolder('/Documents', lostSignalFolder());
+    const terminal = new TerminalSession(service);
+    const completed = terminal.complete('cd "Documents/Lo');
+    expect(completed.input).toBe('cd Documents/Lost\\ Signal/');
+    terminal.execute(completed.input);
+    expect(terminal.path).toBe('/Documents/Lost Signal');
+    expect(terminal.complete('cd R').matches).toEqual([]);
+    expect(terminal.complete('cat logs/sys').input).toBe('cat logs/system.log');
+    terminal.execute('cd station-7');
+    expect(terminal.complete('cat ').matches).not.toContain('.relay/');
+    expect(terminal.complete('cd .r').input).toBe('cd .relay/');
+    expect(terminal.complete('gre').input).toBe('grep');
+  });
+
+  it('rejects unsupported pipeline side effects and malformed options without changing folders', async () => {
+    const {service} = createService();
+    await service.whenReady();
+    const terminal = new TerminalSession(service);
+    expect(terminal.execute('cd Documents | pwd').output).toContain('file-reading');
+    expect(terminal.path).toBe('/');
+    expect(terminal.execute('pwd |').output).toContain('empty pipeline');
+    expect(terminal.execute('ls > notes.txt').output).toContain('not supported');
+    expect(terminal.execute('head -n -1 missing').output).toContain('nonnegative');
+    expect(terminal.execute('ls -z').output).toContain('unsupported option');
+    expect(terminal.execute('find missing-folder').output).toContain('No such file or directory');
+    expect(terminal.execute('echo "literal > and ;"').output).toBe('literal > and ;\n');
+  });
+
+  it('clears access to text files and terminal paths when the signed-in account changes', async () => {
+    const users = new BehaviorSubject<{uid: string} | null>({uid: 'first'});
+    const {service} = createService(new MemoryStorageStrategy(), users);
+    await service.whenReady();
+    await service.installFolder('/Documents', lostSignalFolder());
+    const terminal = new TerminalSession(service);
+    terminal.execute('cd "Documents/Lost Signal"');
+    users.next({uid: 'second'});
+    expect(service.getEntry('/Documents/Lost Signal/README.txt')).toBeUndefined();
+    await service.whenReady();
+    expect(terminal.execute('cat README.txt').output).toContain('No such file');
+    expect(terminal.path).toBe('/');
+    expect(service.getDirectory('/Documents/Lost Signal')).toBeUndefined();
+  });
+
   it('imports the seed tree with stable IDs and deterministic favorite content', async () => {
     const first = createService();
     await first.service.whenReady();

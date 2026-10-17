@@ -1,0 +1,15 @@
+<section class="terminal" aria-label="Terminal">
+  <div class="session-bar"><span>⌘  Macintosh</span><span>zsh · virtual session</span></div>
+  <div #scrollback class="scrollback" tabindex="0" aria-label="Terminal scrollback">
+    @for (line of lines; track $index) {
+      @if (line.prompt) {<div class="command"><span>{{ line.prompt }}</span> {{ line.command }}</div>}
+      @if (line.output) {<pre>{{ line.output }}</pre>}
+    }
+    <form (ngSubmit)="submit()" class="input-line" [attr.aria-busy]="busy">
+      <span class="prompt" aria-hidden="true">{{ session.prompt }}</span>
+      <input #commandInput name="command" aria-label="Terminal command" autocomplete="off" autocapitalize="off"
+             spellcheck="false" maxlength="4096" [(ngModel)]="userInput" (keydown)="onKeydown($event)" [readOnly]="busy">
+    </form>
+  </div>
+  <div class="session-footer" role="status">{{ busy ? 'Working…' : 'Tab complete · ↑ ↓ history · ⌘K clear · help' }}</div>
+</section>

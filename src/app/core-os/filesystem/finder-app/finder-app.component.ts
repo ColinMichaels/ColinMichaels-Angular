@@ -1,5 +1,7 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  inject,
   Component,
   DestroyRef,
   ElementRef,
@@ -33,8 +35,9 @@ import {BehaviorSubject} from 'rxjs';
 import {FinderWindowComponent} from '../finder-window/finder-window.component';
 import {FileEntry, FileSystemService, VIEW_MODES} from '../file-system.service';
 import {FINDER_FILE_OPENER, FinderFileOpener} from '../file-opener';
+import {FOLDER_TERMINAL_OPENER} from '../folder-terminal-opener';
 
-type FinderDialogMode = 'new-folder' | 'rename' | 'move' | 'tags' | 'delete' | 'empty-trash' | 'reset';
+type FinderDialogMode = 'new-folder' | 'rename' | 'move' | 'tags' | 'delete' | 'empty-trash' | 'reset' | 'new-text' | 'edit-text';
 
 interface FinderParams {
   path?: string;
@@ -86,9 +89,18 @@ export class FinderAppComponent {
 
   @ViewChild('finderRoot') private finderRoot?: ElementRef<HTMLElement>;
   @ViewChild('dialogPanel') private dialogPanel?: ElementRef<HTMLFormElement>;
-  @ViewChild('dialogInput') private dialogInput?: ElementRef<HTMLInputElement | HTMLSelectElement>;
+  @ViewChild('dialogInput') private dialogInput?: ElementRef<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
   @ViewChild('dialogCancel') private dialogCancel?: ElementRef<HTMLButtonElement>;
   @ViewChild('recoveryReset') private recoveryReset?: ElementRef<HTMLButtonElement>;
+
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  readonly terminalOpener = inject(FOLDER_TERMINAL_OPENER, {optional: true});
+  @ViewChild('pathInput') private pathInput?: ElementRef<HTMLInputElement>;
+  pathInputValue = '/';
+  showHidden = false;
+  searchContents = false;
+  dialogText = '';
+  private dialogOriginalText?: string;
 
   currentPath = '/';
   navHistory: string[] = ['/'];
@@ -98,6 +110,7 @@ export class FinderAppComponent {
   viewMode = VIEW_MODES.list;
   searchTerm = '';
   selectedFile?: FileEntry;
+  textPreview?: FileEntry;
   ready = false;
   loading = true;
   busy = false;
@@ -149,6 +162,8 @@ export class FinderAppComponent {
 
   get dialogTitle(): string {
     switch (this.dialogMode) {
+      case 'new-text': return 'New Text File';
+      case 'edit-text': return 'Edit Text File';
       case 'new-folder': return 'New Folder';
       case 'rename': return 'Rename Item';
       case 'move': return 'Move Item';
@@ -162,6 +177,8 @@ export class FinderAppComponent {
 
   get dialogSubmitLabel(): string {
     switch (this.dialogMode) {
+      case 'new-text': return 'Create';
+      case 'edit-text': return 'Save';
       case 'new-folder': return 'Create';
       case 'rename': return 'Rename';
       case 'move': return 'Move';
@@ -210,11 +227,12 @@ export class FinderAppComponent {
       .subscribe(() => {
         if (this.ready) {
           this.refreshDirectory();
+          this.changeDetector.markForCheck();
         }
       });
     this.fileSystemService.viewMode$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((mode) => this.viewMode = mode);
+      .subscribe((mode) => { this.viewMode = mode; this.changeDetector.markForCheck(); });
     this.fileSystemService.ready$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((ready) => {
@@ -251,6 +269,58 @@ export class FinderAppComponent {
       .subscribe((available) => this.recoveryAvailable = available);
   }
 
+  goUp(): void {
+    if (this.isTrashView || this.currentPath === '/') return;
+    this.navigate(this.currentPath.slice(0, this.currentPath.lastIndexOf('/')) || '/');
+  }
+
+  goToPath(): void {
+    const value = this.pathInputValue.trim();
+    const absolute = value === '~' ? '/' : value.startsWith('~/') ? value.slice(1)
+      : value.startsWith('/') ? value : `${this.isTrashView ? '/' : this.currentPath}/${value}`;
+    const parts: string[] = [];
+    for (const part of absolute.split('/')) {
+      if (part === '..') parts.pop();
+      else if (part && part !== '.') parts.push(part);
+    }
+    this.navigate(`/${parts.join('/')}`);
+  }
+
+  toggleHidden(): void {
+    this.showHidden = !this.showHidden;
+    this.updateSearch(this.searchTerm);
+    this.refreshDirectory();
+    this.announceStatus(this.showHidden ? 'Hidden files shown.' : 'Hidden files hidden.');
+  }
+
+  openTerminalHere(): void {
+    if (!this.ready || this.isTrashView) return;
+    const opened = this.terminalOpener?.openFolder(this.currentPath);
+    this.announceStatus(opened ? 'Opened this folder in Terminal.' : 'Terminal could not open this folder.');
+  }
+
+  revealSelected(): void {
+    const file = this.selectedFile;
+    if (!file || this.isTrashView) return;
+    this.navigate(file.path.slice(0, file.path.lastIndexOf('/')) || '/');
+    if (file.name.startsWith('.')) this.showHidden = true;
+    this.selectedFile = file;
+    requestAnimationFrame(() => this.focusEntry(file.id));
+  }
+
+  openNewTextDialog(): void {
+    if (!this.ready || this.isTrashView || this.busy) return;
+    this.dialogText = '';
+    this.openDialog('new-text', 'Untitled.txt');
+  }
+
+  openTextEditor(): void {
+    if (!this.selectedFile || this.selectedFile.textContent === undefined || this.isTrashView || this.busy) return;
+    this.dialogText = this.selectedFile.textContent;
+    this.dialogOriginalText = this.selectedFile.textContent;
+    this.openDialog('edit-text');
+  }
+
   goBack(): void {
     if (this.navIndex <= 0) {
       return;
@@ -275,7 +345,11 @@ export class FinderAppComponent {
     }
     this.currentDirectorySubject.next(target);
     this.currentPath = target.path;
+    this.pathInputValue = target.path;
+    this.errorMessage = null;
     this.selectedFile = undefined;
+    this.textPreview = undefined;
+    this.searchTerm = '';
     if (this.navHistory[this.navIndex] === target.path) {
       return;
     }
@@ -304,8 +378,12 @@ export class FinderAppComponent {
     if (this.searchTerm.trim()) {
       entries = this.isTrashView
         ? entries.filter((entry) => this.matchesSearch(entry, this.searchTerm))
-        : this.fileSystemService.search(this.searchTerm, directory.id);
+        : this.fileSystemService.search(this.searchTerm, directory.id, this.searchContents);
     }
+    if (!this.showHidden) entries = entries.filter(entry => {
+      const relative = this.isTrashView ? entry.name : entry.path.slice(directory.path === '/' ? 1 : directory.path.length + 1);
+      return !relative.split('/').some(part => part.startsWith('.'));
+    });
     return this.fileSystemService.sortFiles(entries, this.sortOrder, this.sortBy);
   }
 
@@ -315,6 +393,7 @@ export class FinderAppComponent {
     if (this.selectedFile && !entries.some((entry) => entry.id === this.selectedFile?.id)) {
       this.selectedFile = undefined;
     }
+    if (this.textPreview && !entries.some(entry => entry.id === this.textPreview?.id)) this.textPreview = undefined;
     const count = entries.length;
     if (!value.trim()) {
       this.announceStatus(`Search cleared. ${this.describeItemCount(count)} in this folder.`);
@@ -347,6 +426,16 @@ export class FinderAppComponent {
       }
       return;
     }
+    if (this.isTrashView) {
+      this.announceStatus(`${entry.name} must be put back before it can be opened.`);
+      return;
+    }
+    if (entry.textContent !== undefined) {
+      this.textPreview = entry;
+      this.announceStatus(`Reading ${entry.name}.`);
+      return;
+    }
+    this.textPreview = undefined;
     const result = this.fileOpener?.open({
       file: {
         id: entry.id,
@@ -372,6 +461,12 @@ export class FinderAppComponent {
         this.announceStatus(`No installed application can open ${entry.name}.`);
         break;
     }
+  }
+
+  closeTextPreview(): void {
+    const id = this.textPreview?.id;
+    this.textPreview = undefined;
+    if (id) requestAnimationFrame(() => this.focusEntry(id));
   }
 
   openNewFolderDialog(): void {
@@ -440,6 +535,7 @@ export class FinderAppComponent {
       this.errorMessage = this.describeError(error);
     } finally {
       this.busy = false;
+      this.changeDetector.markForCheck();
       requestAnimationFrame(() => (
         this.recoveryReset?.nativeElement ?? this.finderRoot?.nativeElement
       )?.focus());
@@ -463,6 +559,12 @@ export class FinderAppComponent {
     try {
       let result: FileEntry | undefined;
       switch (mode) {
+        case 'new-text':
+          result = await this.fileSystemService.createTextFile(this.requireDialogParentId(), this.dialogValue, this.dialogText);
+          break;
+        case 'edit-text':
+          result = await this.fileSystemService.writeTextFile(this.requireDialogTargetId(), this.dialogText, this.dialogOriginalText);
+          break;
         case 'new-folder':
           result = await this.fileSystemService.createFolder(
             this.requireDialogParentId(),
@@ -491,13 +593,16 @@ export class FinderAppComponent {
           await this.fileSystemService.resetToSeed();
           break;
       }
+      if (result?.name.startsWith('.')) this.showHidden = true;
       this.refreshDirectory(result?.id);
+      if (result && (mode === 'new-text' || mode === 'edit-text')) this.textPreview = result;
       this.announceStatus(`${this.dialogSubmitLabel} completed.`);
       this.dismissDialog();
     } catch (error) {
       this.errorMessage = this.describeError(error);
     } finally {
       this.busy = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -554,6 +659,19 @@ export class FinderAppComponent {
   }
 
   handleKeydown(event: KeyboardEvent): void {
+    if (!this.dialogMode && (event.metaKey || event.ctrlKey) && event.shiftKey) {
+      if (event.key.toLowerCase() === 'g') {
+        event.preventDefault(); this.pathInput?.nativeElement.focus(); this.pathInput?.nativeElement.select(); return;
+      }
+      if (event.key === '.' || event.code === 'Period') {
+        event.preventDefault(); this.toggleHidden(); return;
+      }
+    }
+    if (!this.dialogMode && this.textPreview && event.key === 'Escape') {
+      event.preventDefault();
+      this.closeTextPreview();
+      return;
+    }
     if (this.dialogMode) {
       if (event.key === 'Escape' && !this.busy) {
         event.preventDefault();
@@ -678,7 +796,10 @@ export class FinderAppComponent {
     }
     this.currentDirectorySubject.next(target);
     this.currentPath = target.path;
+    this.pathInputValue = target.path;
+    this.errorMessage = null;
     this.selectedFile = undefined;
+    this.textPreview = undefined;
     this.searchTerm = '';
     this.announceStatus(`Opened ${this.locationLabel(target.path)}.`);
   }
@@ -689,10 +810,10 @@ export class FinderAppComponent {
       : this.finderRoot?.nativeElement;
     this.dialogMode = mode;
     this.dialogValue = value;
-    this.dialogParentId = mode === 'new-folder'
+    this.dialogParentId = mode === 'new-folder' || mode === 'new-text'
       ? this.currentDirectorySubject.value.id
       : undefined;
-    this.dialogTargetId = mode === 'rename' || mode === 'move' || mode === 'tags' || mode === 'delete'
+    this.dialogTargetId = mode === 'rename' || mode === 'move' || mode === 'tags' || mode === 'delete' || mode === 'edit-text'
       ? this.selectedFile?.id
       : undefined;
     this.dialogTargetName = this.selectedFile?.name ?? '';
@@ -710,6 +831,8 @@ export class FinderAppComponent {
     const restoreTarget = this.dialogRestoreTarget;
     this.dialogMode = null;
     this.dialogValue = '';
+    this.dialogText = '';
+    this.dialogOriginalText = undefined;
     this.dialogRestoreTarget = undefined;
     this.dialogTargetId = undefined;
     this.dialogTargetName = '';
@@ -787,6 +910,7 @@ export class FinderAppComponent {
       return undefined;
     } finally {
       this.busy = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -823,12 +947,21 @@ export class FinderAppComponent {
       ? previousEntries.findIndex((entry) => entry.id === focusedEntryId)
       : -1;
     const requestedPath = this.currentPath;
-    const directory = this.fileSystemService.getDirectory(requestedPath)
+    const current = this.currentDirectorySubject.value;
+    const stable = current.path === requestedPath && !this.isTrashView
+      ? this.fileSystemService.getEntryById(current.id) : undefined;
+    const directory = (stable?.isDir ? stable : undefined)
+      ?? this.fileSystemService.getDirectory(requestedPath)
       ?? this.fileSystemService.getDirectory('/')
       ?? this.fileSystemService.getCurrentDirectory();
     this.currentDirectorySubject.next(directory);
     this.currentPath = directory.path;
-    if (requestedPath !== directory.path) {
+    if (requestedPath !== directory.path && document.activeElement !== this.pathInput?.nativeElement) {
+      this.pathInputValue = directory.path;
+    }
+    if (current.id === directory.id && requestedPath !== directory.path) {
+      this.navHistory[this.navIndex] = directory.path;
+    } else if (requestedPath !== directory.path) {
       this.navHistory = [directory.path];
       this.navIndex = 0;
       this.searchTerm = '';
@@ -836,6 +969,7 @@ export class FinderAppComponent {
     }
     const selectedId = preferredSelectionId ?? this.selectedFile?.id;
     const entries = this.visibleEntries(directory);
+    if (this.textPreview) this.textPreview = entries.find(entry => entry.id === this.textPreview?.id);
     this.selectedFile = selectedId
       ? entries.find((entry) => entry.id === selectedId)
       : undefined;
@@ -863,18 +997,24 @@ export class FinderAppComponent {
   }
 
   private resetWindowStateForUnavailableFileSystem(): void {
+    this.textPreview = undefined;
     const root = this.finderRoot?.nativeElement;
     const ownedFocus = root?.contains(document.activeElement) ?? false;
     const directory = this.fileSystemService.getDirectory('/')
       ?? this.fileSystemService.getCurrentDirectory();
     this.currentDirectorySubject.next(directory);
     this.currentPath = '/';
+    this.pathInputValue = '/';
+    this.showHidden = false;
+    this.searchContents = false;
     this.navHistory = ['/'];
     this.navIndex = 0;
     this.searchTerm = '';
     this.selectedFile = undefined;
     this.dialogMode = null;
     this.dialogValue = '';
+    this.dialogText = '';
+    this.dialogOriginalText = undefined;
     this.dialogRestoreTarget = undefined;
     this.dialogTargetId = undefined;
     this.dialogTargetName = '';
@@ -893,6 +1033,7 @@ export class FinderAppComponent {
   private announceStatus(message: string): void {
     this.statusAnnouncementSequence++;
     this.statusMessage = message;
+    this.changeDetector.markForCheck();
   }
 
   private matchesSearch(entry: FileEntry, query: string): boolean {

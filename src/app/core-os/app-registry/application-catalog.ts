@@ -18,7 +18,7 @@ import {
 import {ChatBotComponent} from '../../modules/chat/chat.component';
 import {AboutAppComponent} from '../../components/game/apps/about-app/about-app.component';
 import {ActivityMonitorComponent} from '../../components/game/apps/activity-monitor/activity-monitor.component';
-import {CliGameComponent} from '../../components/game/apps/cli-game/cli-game.component';
+import {TerminalComponent} from '@core-os/terminal/terminal.component';
 import {IconPlaygroundComponent} from '../../components/game/apps/icon-playground/icon-playground.component';
 import {MarkdownReaderComponent} from '../../components/game/apps/markdown-reader/markdown-reader.component';
 import {MessagesComponent} from '../../components/game/apps/messages/messages.component';
@@ -283,8 +283,8 @@ export function getDefaultApplicationCatalog(): AppEntry[] {
     },
     {
       id: APP_ID.cli,
-      title: 'cli Console',
-      component: CliGameComponent,
+      title: 'Terminal',
+      component: TerminalComponent,
       installed: true,
       icon: {
         class: 'bg-zinc-900 text-green-500 rounded p-1 shadow-lg border-2 border-zinc-500 text-base',

@@ -9,14 +9,12 @@
        (keydown)="onDesktopKeyDown($event)"
        (dblclick)="onDoubleClicked($event)">
     <app-system-tray/>
-    <app-level-loader
-      (loaded)="onLevelLoaded()"
-      (failed)="onLevelLoadFailed($event)"
-    ></app-level-loader>
     <ng-container *ngFor="let applicationInstance of appManager.openApplications; trackBy: trackApplicationInstance">
       <app-window
         [id]="applicationInstance.id"
         [title]="applicationInstance.title"
+        [defaultWidth]="applicationInstance.parent?.id === 'finder' ? 'w-[800px]' : 'w-[640px]'"
+        [defaultHeight]="applicationInstance.parent?.id === 'cli' ? 'h-[420px]' : applicationInstance.parent?.id === 'finder' ? 'h-[min(540px,calc(100dvh-120px))]' : 'h-auto'"
         [embeddedComponent]="applicationInstance.component"
         [autoFit]="applicationInstance.autofit"
         [minWidth]="WINDOW_WIDTH_MIN"

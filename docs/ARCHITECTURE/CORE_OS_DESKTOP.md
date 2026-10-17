@@ -1,5 +1,8 @@
 # Core OS Desktop And Finder
 
+Current follow-up: [Shared Finder and Terminal filesystem](./FINDER_TERMINAL_FILESYSTEM.md) adds virtual text creation/editing, path navigation, hidden-file and content-search controls, stable folder identities, and a two-way folder handoff. The [Terminal and Lost Signal adventure](./TERMINAL_ADVENTURE.md) uses the same stored text. Metadata-only behavior below remains applicable to files without attached virtual text; real OS folders and external binary content remain separate phases.
+
+
 ## Product boundary
 
 Core OS remains in this repository while it shares authentication, application components, and release infrastructure with ColinMichaels.com. The desktop components are lazy-loaded on `/os` and `/os/:app`; those two routes require both device capability and authentication guards. Login, boot, sleep, external redirect, and device-support routes are intentionally public support surfaces with their own lazy components. The `.core-os-scope` style boundary and `src/app/core-os` package surface keep OS implementation separate. Public website and blog routes must not import the desktop shell, application catalog, Finder, Dock, or window runtime.
