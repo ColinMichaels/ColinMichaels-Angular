@@ -4,6 +4,11 @@
 
 - Replace three independent npm update queues with one weekly minor/patch batch across all four package roots, capped at one open routine PR, with a seven-day release cooldown. Keep security fixes enabled and separately grouped; omit the explicit target branch so security options apply on default `dev`. Handle major upgrades as deliberate maintenance. Document superseded PR reconciliation, deferred Node/Remotion updates, activation on merge, validation and reversible policy rollback. No application dependency, deployment, secret or data change is included.
 
+## 2026-10-17 — Major dependency compatibility
+
+- Repair the failing Firebase, native TypeScript 7, ESLint 10 and Tailwind 4 updates on a fresh branch after all nine approved routine PRs were merged. Pair Firebase Web 13/Rules Testing 6 on Node 24.15.0, and Admin 14/Functions SDK 7 on the retained Node 22 runtime. Keep TypeScript 6's compiler API beside an explicit native TypeScript 7 compiler alias; preserve Remotion lint rules through supported parser and compatibility adapters.
+- Migrate Tailwind to the supported PostCSS/CSS entry while retaining existing Sass, v3 palette/geometry, dark mode, Core OS boundaries and optional preview classes. Share Patch Editor button base styling and preserve its transition behavior within the existing CSS budget. Include matching Hosting/SEO scope detection, seven scope regression checks, component inventory, validation limits and whole-set rollback to baseline `69abfb1`. No data/configuration migration or production release is included.
+
 ## 2026-10-17 — Routine dependency merge resolution
 
 - Preserve Faker `10.6.0` and the coordinated Angular tooling updates while resolving the adjacent manifest/lockfile conflict in the approved `@eslint/json` `2.1.1` update. No runtime API, configuration, or data migration is required; roll back this update by restoring its manifest and lockfile together while retaining the other approved dependencies.

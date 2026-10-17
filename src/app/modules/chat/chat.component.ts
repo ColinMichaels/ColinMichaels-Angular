@@ -166,7 +166,7 @@ export interface User {
 
                 <!-- Avatar for non-own messages -->
                 <div *ngIf="!message.isOwn"
-                     class="w-8 h-8 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                     class="w-8 h-8 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {{ message.senderName.charAt(0).toUpperCase() }}
                 </div>
 
@@ -237,7 +237,7 @@ export interface User {
             <!-- Image upload -->
             <button
               (click)="fileInput.click()"
-              class="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
+              class="p-2 rounded-full hover:bg-gray-100 transition-colors shrink-0">
               <fa-icon [icon]="faImage" class="text-gray-600"></fa-icon>
             </button>
             <input #fileInput type="file" accept="image/*" (change)="onImageSelect($event)" class="hidden">
@@ -275,7 +275,7 @@ export interface User {
             <button
               (click)="sendMessage()"
               [disabled]="!newMessage.trim()"
-              class="p-2 rounded-full transition-colors flex-shrink-0"
+              class="p-2 rounded-full transition-colors shrink-0"
               [ngClass]="{
                 'bg-blue-500 hover:bg-blue-600 text-white': newMessage.trim(),
                 'bg-gray-200 text-gray-400 cursor-not-allowed': !newMessage.trim()
@@ -300,7 +300,7 @@ export interface User {
 
     <!-- New Chat Modal -->
     <div *ngIf="showNewChatModal"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
          role="button"
          tabindex="0"
          aria-label="Close new chat dialog"
@@ -355,7 +355,7 @@ export interface User {
 
     <!-- Image Modal -->
     <div *ngIf="selectedImage"
-         class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+         class="fixed inset-0 bg-black/75 flex items-center justify-center z-50"
          role="button"
          tabindex="0"
          aria-label="Close image preview"
@@ -373,7 +373,7 @@ export interface User {
 
     <!-- Group Info Modal -->
     <div *ngIf="showGroupInfo"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
          role="button"
          tabindex="0"
          aria-label="Close group info dialog"

@@ -9,6 +9,13 @@ on:
       - '.github/dependabot.yml'
       - '.github/workflows/dependency-validation.yml'
       - '.github/workflows/firebase-hosting-pull-request.yml'
+      - '.github/workflows/firebase-production.yml'
+      - '.github/scripts/detect-firebase-deploy-scope.sh'
+      - '.postcssrc.json'
+      - 'tailwind.config.js'
+      - 'scripts/generate-tailwind-entry.mjs'
+      - 'scripts/firebase-deploy-scope.test.mjs'
+      - 'src/styles/tailwind.css'
 
 permissions:
   contents: read
@@ -26,7 +33,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.22.3
+          node-version: 24.15.0
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -47,6 +54,7 @@ jobs:
       - run: npm test -- --watch=false --browsers=ChromeHeadless
       - run: npm run test:service-worker-cache
       - run: npm run test:docs
+      - run: npm run test:deploy-scope
 
   functions:
     runs-on: ubuntu-latest

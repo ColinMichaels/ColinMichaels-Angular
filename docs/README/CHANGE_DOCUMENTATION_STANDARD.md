@@ -65,6 +65,8 @@ For dependency integration PRs, follow the coordinated update and clean-install 
 
 Dependabot policy PRs must state the cross-directory routine PR cap, schedule/cooldown, how security updates remain enabled, which existing PRs are superseded versus deferred, and when the configuration takes effect. Keep the single weekly batch intact; major upgrades require a deliberate compatibility review.
 
+Major toolchain PRs must also identify separate build/runtime versions, compiler/API dependencies, generated inputs, visual compatibility evidence and the last compatible source baseline. Use the [dependency compatibility record](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md) for the current matrix; rollback must restore the whole compatible set.
+
 Pushing another commit to an open PR whose base is `dev` produces a `synchronize` event. The Firebase preview workflow evaluates the entire PR diff and deploys the scopes detected by `.github/scripts/detect-firebase-deploy-scope.sh`.
 
 ## Required PR Information

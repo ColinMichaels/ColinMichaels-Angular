@@ -20,7 +20,8 @@ const BUNDLED_DOCUMENTS = new Set([
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styles: [
-    `.markdown-body {
+    `
+    @reference "../../../../../styles/tailwind.css";.markdown-body {
       @apply prose text-xs leading-5  mx-auto ;
     }`,
   ],

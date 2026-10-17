@@ -1,5 +1,9 @@
 # Architecture Overview
 
+## Dependency and styling boundaries
+
+See [Dependency Compatibility and Major Upgrade Recovery](./DEPENDENCY_COMPATIBILITY.md) for the coordinated Firebase SDKs, Node 24 frontend/Node 22 Functions split, native TypeScript compiler versus API tooling, and Tailwind 4 CSS/Sass boundary. Existing public/Core OS component ownership and data contracts are preserved; the record includes stylesheet/component inventory, migration and rollback steps.
+
 ## Physical Homepage SEO Shell
 
 Firebase Hosting serves the built physical `index.html` for `/` before the Functions catch-all can render route-specific fallback content. The source index therefore carries the canonical homepage title/description, connected Person/WebSite/ProfilePage graph, and a compact semantic creator-promise fallback inside `<app-root>`. Angular replaces that fallback during bootstrap. With JavaScript disabled, a `noscript` rule hides the fixed initial loader so the fallback remains readable.

@@ -64,3 +64,5 @@ src/environments/.env.*
 .seo-cache/
 /colinmichaels-com-audit-20260703-150233/
 /hero_images/
+# Generated CSS entry retains the opt-in Tailwind preview safelist.
+src/styles/tailwind.generated.css

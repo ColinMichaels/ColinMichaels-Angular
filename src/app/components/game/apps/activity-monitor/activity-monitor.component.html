@@ -2,7 +2,7 @@
 <div class="w-full h-full flex flex-col bg-zinc-900 text-white text-sm rounded-lg overflow-hidden">
 
   <!-- Tabs -->
-  <div class="flex-shrink-0 border-b border-white/10 bg-zinc-800">
+  <div class="shrink-0 border-b border-white/10 bg-zinc-800">
     <div class="flex">
       <button *ngFor="let tab of tabs"
               (click)="setTab(tab)"
@@ -86,7 +86,7 @@
   </div>
 
   <!-- Summary Footer -->
-  <div class="flex-shrink-0 bg-zinc-800 border-t border-white/50 p-2 text-[10px] items-center">
+  <div class="shrink-0 bg-zinc-800 border-t border-white/50 p-2 text-[10px] items-center">
     <div class="flex justify-around items-center border border-white/70 rounded-lg">
       <div class="flex-auto flex flex-col items-center px-2 space-y-1   border-r border-white/70">
         <div class="activity-monitor-stats-row">

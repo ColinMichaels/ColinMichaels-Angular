@@ -28,6 +28,7 @@ export interface TooltipExampleSet  {
   templateUrl: './tooltip-examples.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../../styles/tailwind.css";
     :host ::ng-deep .tooltip-content p {
       margin: 0;
       font-size: 0.875rem;
