@@ -1,3 +1,5 @@
+@reference "../../../../../../styles/tailwind.css";
+
 :host {
   display: block;
   min-width: 0;
@@ -15,7 +17,7 @@
   @apply flex min-w-0 items-center gap-3;
 
   fa-icon {
-    @apply grid h-9 w-9 flex-shrink-0 place-items-center border border-cyan-200/60 bg-cyan-200/10 text-cyan-100;
+    @apply grid h-9 w-9 shrink-0 place-items-center border border-cyan-200/60 bg-cyan-200/10 text-cyan-100;
   }
 
   p {

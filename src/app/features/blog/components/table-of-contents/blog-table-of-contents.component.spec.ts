@@ -85,6 +85,9 @@ describe('BlogTableOfContentsComponent', () => {
   });
 
   it('scrolls to the natural heading position when a sticky heading link is clicked', () => {
+    // Other browser tests can leave a real document scroll offset behind.
+    // A nonzero fixed offset verifies viewport-to-document conversion directly.
+    spyOnProperty(window, 'scrollY', 'get').and.returnValue(120);
     const heading = document.createElement('h2');
     heading.id = 'smooth-heading';
     heading.style.position = 'sticky';
@@ -130,7 +133,7 @@ describe('BlogTableOfContentsComponent', () => {
     expect(clickEvent.defaultPrevented).toBeTrue();
     expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(scrollTo.calls.mostRecent().args[0] as unknown as ScrollToOptions)
-      .toEqual({top: 480, behavior: 'smooth'});
+      .toEqual({top: 600, behavior: 'smooth'});
     expect(headingSelected).toHaveBeenCalledOnceWith('smooth-heading');
     expect(heading.style.position).toBe('sticky');
 

@@ -49,6 +49,12 @@ Detailed feature inventories belong in architecture documentation and the PR des
 
 Normal feature and fix work should use these defaults unless the task explicitly requires another target:
 
+Before each new feature, fix, documentation, or release batch, run `git fetch origin --prune` and create a new `codex/<descriptive-work-slug>` branch from the refreshed `origin/dev`. When starting through local `dev`, first run `git pull --ff-only origin dev` on that branch. Do not reuse an unrelated feature branch or implement directly on `dev`. Preserve uncommitted work before switching; never reset or discard it to refresh the base.
+
+The maintainer has authorized the normal completion workflow for requested repository changes: validate, commit the change and its documentation together, push the dedicated branch, and create a draft PR against `dev`. Honor an explicit local-only instruction. Include the starting base revision and concrete rollback steps in the PR so the change has a documented recovery point. This standing instruction does not authorize merging or deployment.
+
+Existing branches need no migration. Apply this workflow to each new change batch; to reverse this process update, revert its documentation commit. Application and data rollback remain specific to each PR.
+
 | Parameter | Default | Reason |
 | --- | --- | --- |
 | Repository | `ColinMichaels/ColinMichaels-Angular` | Canonical GitHub repository |
@@ -61,7 +67,15 @@ Normal feature and fix work should use these defaults unless the task explicitly
 
 Use `master` only for an explicitly authorized production/release PR. Do not silently retarget an active PR.
 
+For dependency integration PRs, follow the coordinated update and clean-install checks in [Development](./DEVELOPMENT.md#dependency-updates). Record any superseded bot PRs, current audit findings, and the matching manifest/lockfile rollback scope. A skipped bot Firebase preview is expected; the credential-free dependency checks establish build/test compatibility separately from deployment proof.
+
+Dependabot policy PRs must state the cross-directory routine PR cap, schedule/cooldown, how security updates remain enabled, which existing PRs are superseded versus deferred, and when the configuration takes effect. Keep the single weekly batch intact; major upgrades require a deliberate compatibility review.
+
+Major toolchain PRs must also identify separate build/runtime versions, compiler/API dependencies, generated inputs, visual compatibility evidence and the last compatible source baseline. Use the [dependency compatibility record](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md) for the current matrix; rollback must restore the whole compatible set.
+
 Pushing another commit to an open PR whose base is `dev` produces a `synchronize` event. The Firebase preview workflow evaluates the entire PR diff and deploys the scopes detected by `.github/scripts/detect-firebase-deploy-scope.sh`.
+
+Preview infrastructure PRs must separate Hosting asset/shell verification, Firebase domain authorization and real browser feature proof. Record any exact-hostname cloud change and its narrow rollback; use the [preview runbook](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md).
 
 ## Required PR Information
 

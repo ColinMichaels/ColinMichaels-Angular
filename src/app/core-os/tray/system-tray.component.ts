@@ -26,6 +26,7 @@ import {AuthService} from '../../services/auth.service';
     SoundPlayerComponent
   ],
   styles: `
+    @reference "../../../styles/tailwind.css";
     /* system-tray.component.scss */
     :host {
       display: block;

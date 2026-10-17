@@ -17,12 +17,18 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 
 - [Project Overview](./PROJECT_OVERVIEW.md)
 - [Development Setup](./DEVELOPMENT.md)
+- [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md) — remote refresh, fresh branches from `origin/dev`, validated commits, draft PRs, and rollback records for every change batch.
+- [Development Setup](./DEVELOPMENT.md) — local tools, coordinated dependency updates, validation, and dependency rollback.
 - [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
 - [Public WebMCP Operations Runbook](./WEBMCP_OPERATIONS.md)
 - [Seasonal Campaign Preparation and Operations](./SEASONAL_CAMPAIGNS.md)
 
 ## Architecture
+
+- [Firebase Preview Routing and Access](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md)
+
+- [Dependency Compatibility and Major Upgrade Recovery](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md)
 
 - [Architecture Overview](../ARCHITECTURE/OVERVIEW.md)
 - [Architecture Audit and Refactor Plan](../ARCHITECTURE/AUDIT_REFACTOR_PLAN.md)
@@ -110,3 +116,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [August 2026 Video Schema Review](../SEO/AUDITS/2026-08-15/VIDEO-SCHEMA-REPORT.md)
 - [Site Identity SEO Review](../SEO/SITE_IDENTITY_REVIEW.md)
 - [Focused AI Search and llms.txt Analysis](../SEO/GEO-ANALYSIS.md)
+
+### Dependency maintenance policy
+
+- [Weekly batching, security updates, PR reconciliation and policy rollback](./DEVELOPMENT.md#dependency-updates)

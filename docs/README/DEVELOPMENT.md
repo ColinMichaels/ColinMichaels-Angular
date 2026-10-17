@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js `24.15.0` via `.nvmrc` (the package also accepts `^22.22.3` or `>=26.0.0`)
+- Node.js `24.15.0` via `.nvmrc` for the frontend (the root also accepts `>=26.0.0`); Node `22.22.3` separately for Functions runtime checks
 - npm 10+
 - Chrome/Chromium for Karma tests
 
@@ -47,6 +47,34 @@ npm run lint
 ## Commits and Pull Requests
 
 Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATION_STANDARD.md). New pull requests automatically start from `.github/pull_request_template.md`; feature PRs normally target `dev` as drafts so the Firebase preview workflow can run.
+
+## Dependency Updates
+
+Update the Angular runtime packages, compiler, compiler CLI, build package, CLI, and devkit together. Their coordinated `22.2.3` baseline is pinned exactly in `package.json`; CDK and other integrations retain their independent compatible versions. Never use `--force` or `--legacy-peer-deps` to hide a peer conflict. Regenerate the lockfile and prove it with `npm ci` before relying on a locally installed build.
+
+`.github/dependabot.yml` uses one npm update entry across the root app, Functions and both Remotion labs. Routine minor/patch updates share one `routine-maintenance` PR, checked Mondays at 09:00 America/New_York, with at most one open routine PR across all four packages. A seven-day release cooldown lets routine releases settle before the next batch. Keeping all packages in the same entry prevents separate per-directory PR limits from multiplying the queue; Angular and Firebase families remain together in the batch.
+
+Major version updates are deliberate maintenance work on a fresh `codex/` branch, not automatically generated routine PRs. The `allow.update-types` restriction applies to version updates only. Security updates remain enabled and use their own `security-maintenance` group; the routine schedule, cooldown and one-PR cap do not delay or cap security fixes. GitHub can still open separate security PRs when a grouped fix cannot resolve. Never silence an advisory merely to reduce notifications.
+
+Dependabot reads its configuration from the repository's default branch, verified as `dev` on October 17, 2026. `target-branch` is intentionally omitted so the same configuration governs security updates on that default branch. The policy activates only when this configuration PR is merged into `dev`. If the default branch changes, recheck this assumption before merging any dependency batch.
+
+Existing PRs are not retroactively combined just by editing YAML. Repair PR #408 was explicitly approved and squash-merged as `7226c3161274a70ca1c2f48338fe6d3417bdb61a`. Its nine superseded standalone updates (#389, #391, #393, #395, #398, #400, #401, #405 and #406) are closed with their replacement recorded here. Node 26 types (#392) were closed as incompatible with the Functions Node 22 runtime and deferred to a deliberate runtime upgrade. Remotion/React (#399) was closed and deferred to the next grouped maintenance review with rendering checks. Neither deferred version was installed by this cleanup.
+
+For each weekly batch: refresh remote `dev`, inspect the combined diff and exact lockfiles, run the credential-free dependency CI and applicable emulator/rendering checks, then merge only the tested head. No dependency auto-merge is introduced. If the batch fails, repair that same coherent batch or replace it with one documented integration PR; do not repeatedly request rebases across every old bot PR.
+
+For policy rollback, create a fresh branch from refreshed `origin/dev` and revert the policy commit through a PR. Restore the YAML and matching contributor documentation together, then validate YAML, build, lint and documentation. The former configuration permits multiple standalone updates again. Closed bot PRs are not reopened by reverting the YAML; reopen only the specific update needed after checking the current installed versions. No application deployment, manifest/lockfile change or data migration is required for this policy.
+
+Dependency PRs run the credential-free [dependency validation workflow](../../.github/workflows/dependency-validation.yml). See [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md) for the intentionally skipped bot preview path. Firebase Web 13 and Rules Testing 6 use Node `24.15.0`; test Functions using Node `22.22.3`, matching the retained Firebase runtime and Node types. Firebase Web/Rules Testing, Admin/Functions, and Tailwind families update together.
+
+Functions and labs compile with native TypeScript 7 through the explicit `typescript-native` alias. Their `typescript` package stays at API-compatible 6.0.3 for lint and catalog drift checks. Labs retain Remotion rules through a scoped typescript-eslint update and ESLint compatibility adapter. Do not replace the API dependency with the native compiler package or bypass peers. See the [compatibility matrix and complete rollback](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md).
+
+Tailwind 4 runs through `.postcssrc.json`; existing Sass uses explicit CSS references. Canonical build/start/test/watch scripts generate the ignored CSS entry first. Run `npm run generate:styles` before direct Angular CLI invocation. The opt-in `TAILWIND_INCLUDE_GENERATED_PREVIEW_CLASSES=true` preview palette remains supported.
+
+The October 17 integration baseline includes Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving previously merged Dependabot updates. It supersedes the dependency changes proposed in PRs #353, #377, and #386; those PRs should be reconciled after the integration is merged. No Firebase configuration, route, content, storage, or data migration is required. For rollback, revert the integration commit through a fresh branch/PR and restore matching manifests and lockfiles together, then run `npm ci` in each affected package. The prior `dev` Angular graph was already inconsistent, so reverting the whole batch restores that known install failure; preserve or reapply the coordinated Angular repair when rolling back only a patch or CI policy change.
+
+## Dev Preview Validation
+
+Use the [preview routing/access runbook](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md) before release sign-off. The preview serves its own matching SPA shell; production retains server-rendered SEO. Verify the generated head/asset manifest, register only the exact preview hostname for App Check with the existing maintainer login, then test real browser content and controls. Run `npm run test:preview-config` and `npm run test:deploy-scope` for changes to this pipeline. Passing HTTP asset checks does not establish authenticated/provider behavior or candidate Functions deployment.
 
 ## Quality Gate Reporting
 

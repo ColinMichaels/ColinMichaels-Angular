@@ -2,8 +2,7 @@ const [major = 0, minor = 0] = process.versions.node
   .split('.')
   .map(segment => Number.parseInt(segment, 10));
 
-const isSupported = (major === 22 && minor >= 22)
-  || (major === 24 && minor >= 15)
+const isSupported = (major === 24 && minor >= 15)
   || major >= 26;
 
 if (!isSupported) {

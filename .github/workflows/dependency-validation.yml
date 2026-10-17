@@ -1,0 +1,101 @@
+name: Validate dependency integration
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '.github/dependabot.yml'
+      - '.github/workflows/dependency-validation.yml'
+      - '.github/workflows/firebase-hosting-pull-request.yml'
+      - '.github/workflows/firebase-production.yml'
+      - '.github/scripts/detect-firebase-deploy-scope.sh'
+      - '.postcssrc.json'
+      - 'tailwind.config.js'
+      - 'scripts/generate-tailwind-entry.mjs'
+      - 'scripts/firebase-deploy-scope.test.mjs'
+      - '.github/scripts/create-firebase-preview-config.mjs'
+      - 'scripts/firebase-preview-config.test.mjs'
+      - 'scripts/firebase-preview-verification.test.mjs'
+      - 'scripts/verify-firebase-preview.mjs'
+      - 'scripts/preview-firebase-domain.mjs'
+      - 'scripts/preview-firebase-domain.test.mjs'
+      - 'src/styles/tailwind.css'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  angular:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - name: Generate build-only environment
+        run: npm run generate:env
+        env:
+          APP_TITLE: Dependency validation
+          FIREBASE_API_KEY: ci-placeholder
+          FIREBASE_AUTH_DOMAIN: dependency-validation.invalid
+          FIREBASE_DATABASE_URL: https://dependency-validation.invalid
+          FIREBASE_PROJECT_ID: demo-dependency-validation
+          FIREBASE_STORAGE_BUCKET: dependency-validation.invalid
+          FIREBASE_MESSAGING_SENDER_ID: '123456789012'
+          FIREBASE_APP_ID: '1:123456789012:web:dependency-validation'
+          FIREBASE_MEASUREMENT_ID: G-CIPLACEHOLDER
+          FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY: ci-placeholder
+      - run: npm run build
+      - run: npm test -- --watch=false --browsers=ChromeHeadless
+      - run: npm run test:service-worker-cache
+      - run: npm run test:docs
+      - run: npm run test:deploy-scope
+      - run: npm run test:preview-config
+
+  functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm --prefix functions ci
+      - run: npm --prefix functions run test:all
+
+  labs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - labs/reader-membership-campaign
+          - labs/higgsfield-promotion-campaign/motion-kit
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - run: npm ci
+      - run: npm run lint

@@ -14,6 +14,4 @@
 @use 'styles/seasonal';
 @use 'styles/admin-controls';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@reference "./styles/tailwind.css";

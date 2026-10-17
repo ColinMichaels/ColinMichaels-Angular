@@ -75,13 +75,27 @@ Do not remove experimental systems unless explicitly instructed.
 
 ## Branch And PR Workflow
 
-- Create a new dedicated `codex/<descriptive-work-slug>` branch from the latest verified `origin/dev` before starting each feature, fix, or release batch.
+- Refresh remote refs with `git fetch origin --prune` before every new change batch. If using local `dev` as the starting point, update it with `git pull --ff-only origin dev`; never merge an unrelated feature branch into it to prepare new work.
+- Create a new dedicated `codex/<descriptive-work-slug>` branch from the freshly verified `origin/dev` before starting each feature, fix, documentation, or release batch.
 - Never implement directly on `dev` or continue unrelated work on a reused feature branch.
 - If relevant uncommitted work already exists while `HEAD` still matches `origin/dev`, preserve it by creating the dedicated branch immediately; never reset or discard it to change branches.
-- Keep each branch scoped to one coherent change, then open its pull request against `dev` as a draft unless the maintainer requests another target.
-- Treat commit, push, pull-request creation, and deployment as separate actions. Do not infer permission for one from permission for another.
+- Keep each branch scoped to one coherent change. After validation, commit the change with its documentation, push the branch, and open a draft pull request against `dev` unless the maintainer requests another target or explicitly asks to keep work local.
+- The maintainer's standing instruction authorizes commit, push, and PR creation for requested repository changes so each batch has review documentation and a reversible commit. Record the base revision and rollback steps in the PR. Merge and deployment still require their own authorization.
 
 ---
+
+## Dependency Updates
+
+- Update the coordinated Angular runtime/compiler/build packages together and prove the lockfile with a fresh `npm ci`; never bypass peer conflicts with `--force` or `--legacy-peer-deps`.
+- Keep Dependabot validation credential-free. Use the dependency validation workflow for bot PRs and retain the separate human-authored Firebase preview path; never expose deployment secrets through `pull_request_target` to make bot checks pass.
+- Follow `docs/README/DEVELOPMENT.md` for dependency grouping, validation, existing-PR reconciliation, and rollback of matching manifests and lockfiles.
+- Keep one weekly cross-directory routine Dependabot batch with a one-PR limit; review major upgrades manually and preserve separate grouped security updates. Close superseded bot PRs with their replacement recorded; do not recreate a per-package PR/rebase flood.
+- Use Node 24.15.0 for frontend dependencies and retain Node 22 for Functions runtime checks. Preserve the explicit native TypeScript compiler alias and API-compatible `typescript` package; do not replace one with the other during routine updates. Keep Tailwind CSS generation/references and matching Hosting/SEO deploy-scope detection together.
+
+## Dev Preview Validation
+
+- Use the generated Hosting-only preview config and matching SPA shell for PR app routes; preserve production SEO rewrites and explicit backend endpoints.
+- Follow `docs/ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md` for exact-hostname App Check setup and browser validation. Never solve preview access by disabling App Check/domain verification or deploying a debug token. Keep current CI permissions unchanged.
 
 ## Refactor Priority
 

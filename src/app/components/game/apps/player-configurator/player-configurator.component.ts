@@ -26,7 +26,8 @@ export class Player extends OsUser {
   ],
   templateUrl: './player-configurator.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: `.input-field {
+  styles: `
+    @reference "../../../../../styles/tailwind.css";.input-field {
     @apply w-full px-2 py-1 text-xs mt-2 border border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white/90;
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500;
   }`

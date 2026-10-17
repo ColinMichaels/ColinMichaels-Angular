@@ -93,6 +93,7 @@ import {NotificationService} from '../../services/notification.service';
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../../styles/tailwind.css";
   .form-field{
     @apply w-full text-xs;
       select{ @apply w-full text-xs; }

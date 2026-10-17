@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # One queue across all npm roots; dev is the repository's default branch.
+  # Omit target-branch so security-update options apply on the default branch too.
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /functions
+      - /labs/reader-membership-campaign
+      - /labs/higgsfield-promotion-campaign/motion-kit
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    cooldown:
+      default-days: 7
+    # Restrict routine updates only. Security fixes can still propose a major.
+    allow:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-minor'
+          - 'version-update:semver-patch'
+    groups:
+      routine-maintenance:
+        applies-to: version-updates
+        patterns: ['*']
+      security-maintenance:
+        applies-to: security-updates
+        patterns: ['*']
