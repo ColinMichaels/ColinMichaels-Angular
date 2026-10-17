@@ -3,6 +3,7 @@
 ## 2026-10-17 — Routine dependency merge resolution
 
 - Preserve Faker `10.6.0` and the coordinated Angular tooling updates while resolving the adjacent manifest/lockfile conflict in the approved `@eslint/json` `2.1.1` update. No runtime API, configuration, or data migration is required; roll back this update by restoring its manifest and lockfile together while retaining the other approved dependencies.
+- Make the sticky-heading scroll regression test independent of scroll position left by other browser tests. Use a fixed nonzero scroll offset and assert the document-coordinate destination; application scrolling behavior remains unchanged.
 
 ## 2026-10-17 — Dependency integration repair
 
