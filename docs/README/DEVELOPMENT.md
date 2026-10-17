@@ -72,6 +72,10 @@ Tailwind 4 runs through `.postcssrc.json`; existing Sass uses explicit CSS refer
 
 The October 17 integration baseline includes Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving previously merged Dependabot updates. It supersedes the dependency changes proposed in PRs #353, #377, and #386; those PRs should be reconciled after the integration is merged. No Firebase configuration, route, content, storage, or data migration is required. For rollback, revert the integration commit through a fresh branch/PR and restore matching manifests and lockfiles together, then run `npm ci` in each affected package. The prior `dev` Angular graph was already inconsistent, so reverting the whole batch restores that known install failure; preserve or reapply the coordinated Angular repair when rolling back only a patch or CI policy change.
 
+## Dev Preview Validation
+
+Use the [preview routing/access runbook](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md) before release sign-off. The preview serves its own matching SPA shell; production retains server-rendered SEO. Verify the generated head/asset manifest, register only the exact preview hostname for App Check with the existing maintainer login, then test real browser content and controls. Run `npm run test:preview-config` and `npm run test:deploy-scope` for changes to this pipeline. Passing HTTP asset checks does not establish authenticated/provider behavior or candidate Functions deployment.
+
 ## Quality Gate Reporting
 
 `npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 — Reliable dev preview shell and Firebase access
+
+- Stage a Hosting-only preview with its matching SPA index for app deep links, preserving explicit API/feed rewrites and production SEO configuration. Record source identity, validate entry assets before staging and verify seven deployed routes plus JavaScript/CSS responses after deployment. Trigger previews for pipeline-only changes without widening production deployment scope. Add tested exact-hostname App Check registration/removal under the existing maintainer login, with domain verification preserved, rollback receipts and documented per-preview setup. No application/data migration, IAM expansion or production release is included.
+
 ## 2026-10-17 — Consolidated dependency maintenance
 
 - Replace three independent npm update queues with one weekly minor/patch batch across all four package roots, capped at one open routine PR, with a seven-day release cooldown. Keep security fixes enabled and separately grouped; omit the explicit target branch so security options apply on default `dev`. Handle major upgrades as deliberate maintenance. Document superseded PR reconciliation, deferred Node/Remotion updates, activation on merge, validation and reversible policy rollback. No application dependency, deployment, secret or data change is included.

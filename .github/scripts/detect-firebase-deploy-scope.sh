@@ -15,11 +15,15 @@ functions_changed=false
 seo_template_changed=false
 rules_changed=false
 storage_cors_changed=false
+preview_pipeline_changed=false
 
 while IFS= read -r file; do
   [ -z "$file" ] && continue
 
   case "$file" in
+    .github/workflows/firebase-hosting-pull-request.yml|.github/scripts/create-firebase-preview-config.mjs|scripts/verify-firebase-preview.mjs)
+      preview_pipeline_changed=true
+      ;;
     firebase.json|.firebaserc)
       hosting_changed=true
       functions_changed=true
@@ -82,6 +86,7 @@ fi
   echo "functions_deploy_needed=$functions_deploy_needed"
   echo "rules_changed=$rules_changed"
   echo "storage_cors_changed=$storage_cors_changed"
+  echo "preview_pipeline_changed=$preview_pipeline_changed"
   echo "changed_files<<EOF"
   printf '%s\n' "$changed_files"
   echo "EOF"

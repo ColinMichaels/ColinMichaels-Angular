@@ -82,6 +82,8 @@ The browser initializes Firebase App Check before it can create Firestore, Stora
 
 Before deploying this code, register the production web app in **Firebase Console → App Check** with a reCAPTCHA Enterprise score-based provider. Add only the deployed Hosting/custom domains to its reCAPTCHA configuration; do not add `localhost` to the production key. Set the generated site key as the public GitHub Actions variable `FIREBASE_APP_CHECK_RECAPTCHA_ENTERPRISE_SITE_KEY` in both the `preview` and `production` environments (or at repository level if appropriate).
 
+Temporary PR Hosting hostnames also need an exact registration on the score-based reCAPTCHA key. Firebase Auth domain registration does not configure App Check. Use the maintainer [preview access procedure](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md#exact-hostname-firebase-setup); do not use wildcard `web.app`, disable verification, add a deployed debug token or grant new CI roles to bypass the prerequisite.
+
 For local development, add the same public site key plus an App Check debug token only to ignored `src/environments/environment.local.ts`:
 
 ```ts

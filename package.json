@@ -43,7 +43,8 @@
     "import:daily-discovery:local": "npm run build:functions && FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=colinmichaels node functions/scripts/import-daily-discovery-questions.mjs",
     "serve:emulators": "npm run build:functions && firebase emulators:start --only auth,functions,firestore,database,storage",
     "generate:styles": "node scripts/generate-tailwind-entry.mjs",
-    "test:deploy-scope": "node --test scripts/firebase-deploy-scope.test.mjs"
+    "test:deploy-scope": "node --test scripts/firebase-deploy-scope.test.mjs",
+    "test:preview-config": "node --test scripts/firebase-preview-config.test.mjs scripts/firebase-preview-verification.test.mjs scripts/preview-firebase-domain.test.mjs"
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0"
