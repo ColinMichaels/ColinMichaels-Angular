@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/nodemailer": "^7.0.12",
+    "@types/nodemailer": "^8.0.2",
     "@types/web-push": "^3.6.4",
     "typescript": "6.0.3",
     "typescript-native": "npm:typescript@7.0.2"
