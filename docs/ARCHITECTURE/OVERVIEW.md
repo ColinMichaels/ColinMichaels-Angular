@@ -1,5 +1,11 @@
 # Architecture Overview
 
+## Dependency and styling boundaries
+
+See [Dependency Compatibility and Major Upgrade Recovery](./DEPENDENCY_COMPATIBILITY.md) for the coordinated Firebase SDKs, Node 24 frontend/Node 22 Functions split, native TypeScript compiler versus API tooling, and Tailwind 4 CSS/Sass boundary. Existing public/Core OS component ownership and data contracts are preserved; the record includes stylesheet/component inventory, migration and rollback steps.
+
+See [Firebase Preview Routing and Access](./FIREBASE_PREVIEW_VALIDATION.md) for the preview-only SPA shell, exact-hostname App Check prerequisite, deployed asset checks and rollback. Production SEO routing remains independent.
+
 ## Physical Homepage SEO Shell
 
 Firebase Hosting serves the built physical `index.html` for `/` before the Functions catch-all can render route-specific fallback content. The source index therefore carries the canonical homepage title/description, connected Person/WebSite/ProfilePage graph, and a compact semantic creator-promise fallback inside `<app-root>`. Angular replaces that fallback during bootstrap. With JavaScript disabled, a `noscript` rule hides the fixed initial loader so the fallback remains readable.
@@ -122,3 +128,7 @@ graph TD
 - This codebase favors behavior in services over local component state.
 - The primary maintainability pressure points are large services with mixed responsibilities and untyped dynamic data flows.
 - Behavior stability depends heavily on preserving service public APIs while tightening internals.
+
+## Dependency maintenance
+
+The [dependency maintenance policy](../README/DEVELOPMENT.md#dependency-updates) keeps all four npm roots in one bounded routine queue and preserves a separate security-update path. This changes repository operations only; application/component ownership and deployment scope remain unchanged.

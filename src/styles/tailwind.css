@@ -1,0 +1,26 @@
+/* Tailwind runs on CSS after Angular compiles the retained Sass sources. */
+@import "tailwindcss" source(none);
+@config "../../tailwind.config.js";
+@source "../app";
+@source "./";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Keep the existing palette, control defaults and utility names during v4 adoption. */
+@layer base {
+  *, ::before, ::after, ::backdrop, ::file-selector-button {
+    border-color: theme(colors.gray.200, currentColor);
+  }
+  ::placeholder { color: theme(colors.gray.400); }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+}
+
+@utility outline-none { @apply outline-hidden; }
+@utility shadow-inner { @apply inset-shadow-sm; }
+@utility bg-gradient-to-r { @apply bg-linear-to-r; }
+@utility bg-gradient-to-l { @apply bg-linear-to-l; }
+@utility bg-gradient-to-t { @apply bg-linear-to-t; }
+@utility bg-gradient-to-b { @apply bg-linear-to-b; }
+@utility bg-gradient-to-tl { @apply bg-linear-to-tl; }
+@utility bg-gradient-to-tr { @apply bg-linear-to-tr; }
+@utility bg-gradient-to-bl { @apply bg-linear-to-bl; }
+@utility bg-gradient-to-br { @apply bg-linear-to-br; }

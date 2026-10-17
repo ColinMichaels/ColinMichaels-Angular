@@ -54,6 +54,7 @@ interface Process {
   templateUrl: './activity-monitor.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../../styles/tailwind.css";
   .activity-monitor-stats-row{
     @apply flex w-full justify-between border-b border-white/70 border-spacing-y-2;
   }

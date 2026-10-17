@@ -3,6 +3,24 @@
 ## 2026-10-17 — Repository workflow
 
 - Require a remote refresh and a new scoped branch from current `origin/dev` for every change batch, including documentation. Record standing authorization to validate, commit, push, and open a draft PR with the base revision and rollback steps, while preserving local-only requests and separate merge/deployment authorization. Existing branches and application data need no migration; revert the documentation commit to roll back this process update.
+## 2026-10-17 — Reliable dev preview shell and Firebase access
+
+- Stage a Hosting-only preview with its matching SPA index for app deep links, preserving explicit API/feed rewrites and production SEO configuration. Record source identity, validate entry assets before staging and verify seven deployed routes plus JavaScript/CSS responses after deployment. Trigger previews for pipeline-only changes without widening production deployment scope. Add tested exact-hostname App Check registration/removal under the existing maintainer login, with domain verification preserved, rollback receipts and documented per-preview setup. No application/data migration, IAM expansion or production release is included.
+
+## 2026-10-17 — Consolidated dependency maintenance
+
+- Replace three independent npm update queues with one weekly minor/patch batch across all four package roots, capped at one open routine PR, with a seven-day release cooldown. Keep security fixes enabled and separately grouped; omit the explicit target branch so security options apply on default `dev`. Handle major upgrades as deliberate maintenance. Document superseded PR reconciliation, deferred Node/Remotion updates, activation on merge, validation and reversible policy rollback. No application dependency, deployment, secret or data change is included.
+
+## 2026-10-17 — Major dependency compatibility
+
+- Repair the failing Firebase, native TypeScript 7, ESLint 10 and Tailwind 4 updates on a fresh branch after all nine approved routine PRs were merged. Pair Firebase Web 13/Rules Testing 6 on Node 24.15.0, and Admin 14/Functions SDK 7 on the retained Node 22 runtime. Keep TypeScript 6's compiler API beside an explicit native TypeScript 7 compiler alias; preserve Remotion lint rules through supported parser and compatibility adapters.
+- Migrate Tailwind to the supported PostCSS/CSS entry while retaining existing Sass, v3 palette/geometry, dark mode, Core OS boundaries and optional preview classes. Share Patch Editor button base styling and preserve its transition behavior within the existing CSS budget. Include matching Hosting/SEO scope detection, seven scope regression checks, component inventory, validation limits and whole-set rollback to baseline `69abfb1`. No data/configuration migration or production release is included.
+
+## 2026-10-17 — Routine dependency merge resolution
+
+- Preserve Faker `10.6.0` and the coordinated Angular tooling updates while resolving the adjacent manifest/lockfile conflict in the approved `@eslint/json` `2.1.1` update. No runtime API, configuration, or data migration is required; roll back this update by restoring its manifest and lockfile together while retaining the other approved dependencies.
+- Make the sticky-heading scroll regression test independent of scroll position left by other browser tests. Use a fixed nonzero scroll offset and assert the document-coordinate destination; application scrolling behavior remains unchanged.
+
 ## 2026-10-17 — Dependency integration repair
 
 - Repair the incompatible Angular versions left by individually merged dependency PRs: pin the coordinated runtime/compiler/build set to `22.2.3` and regenerate the lockfile without peer-dependency bypasses. Include Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving the other merged updates. Add grouped weekly Dependabot version updates targeting `dev` and credential-free dependency CI; skip Firebase preview jobs for Dependabot-authored/triggered runs. Document default-branch configuration activation, existing-PR reconciliation, no data migration, and rollback of matching manifests/locks. Reverting the entire repair restores the prior broken Angular install graph; partial rollback must retain a compatible Angular set.

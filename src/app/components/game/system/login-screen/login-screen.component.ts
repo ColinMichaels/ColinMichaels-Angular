@@ -46,6 +46,7 @@ import {
   templateUrl: './login-screen.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../../styles/tailwind.css";
     .login-input {
       @apply text-center bg-white/10 text-white rounded-full px-2 py-1 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500;
       font-size: 1rem;

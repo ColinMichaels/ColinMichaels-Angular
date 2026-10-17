@@ -1,3 +1,5 @@
+@reference "../../../../../../styles/tailwind.css";
+
 :host {
   display: block;
   height: 100%;
@@ -11,7 +13,7 @@
 }
 
 .sequencer-hero {
-  @apply flex flex-shrink-0 flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between;
+  @apply flex shrink-0 flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between;
   background: linear-gradient(180deg, rgba(18, 18, 22, 0.98), rgba(8, 8, 10, 0.98));
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36), inset 0 -1px rgba(255, 255, 255, 0.04);
 

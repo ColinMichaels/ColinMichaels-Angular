@@ -9,6 +9,7 @@ import {NgForOf} from '@angular/common';
     NgForOf
   ],
   styles: `
+    @reference "../../../../../styles/tailwind.css";
     .toggle-container {
       @apply relative flex items-center  rounded-full bg-white text-black overflow-hidden border border-white/40;
     }

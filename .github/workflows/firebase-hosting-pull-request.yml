@@ -20,7 +20,7 @@ jobs:
     if: ${{ github.base_ref == 'dev' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     outputs:
-      hosting_changed: ${{ steps.scope.outputs.hosting_changed }}
+      hosting_changed: ${{ steps.scope.outputs.hosting_changed == 'true' || steps.scope.outputs.preview_pipeline_changed == 'true' }}
       functions_changed: ${{ steps.scope.outputs.functions_changed }}
       seo_template_changed: ${{ steps.scope.outputs.seo_template_changed }}
       functions_deploy_needed: ${{ steps.scope.outputs.functions_deploy_needed }}
@@ -126,7 +126,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.22.3
+          node-version: 24.15.0
           cache: npm
 
       - name: Install dependencies
@@ -185,12 +185,24 @@ jobs:
           name: firebase-hosting-preview
           path: dist/colin-michaels-firebase/browser
 
+      - name: Set up Angular build Node.js runtime
+        if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
       - name: Build Angular app for SEO template
         if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
         run: |
           npm ci
           npm run generate:env
           npm run build
+
+      - name: Restore Functions Node.js runtime
+        if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
 
       - name: Prepare SEO HTML template for Functions
         run: npm run prepare:functions-seo
@@ -211,6 +223,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up preview validation runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
       - name: Download Hosting build artifact
         uses: actions/download-artifact@v4
         with:
@@ -218,25 +235,12 @@ jobs:
           path: dist/colin-michaels-firebase/browser
 
       - name: Create Firebase Hosting deploy config
-        run: |
-          mkdir -p "$RUNNER_TEMP/firebase-hosting-preview"
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = require('node:path');
-          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
-          if (config.hosting) {
-            delete config.hosting.predeploy;
-          }
-          if (config.functions) {
-            delete config.functions.predeploy;
-          }
-          const outputRoot = path.join(process.env.RUNNER_TEMP, 'firebase-hosting-preview');
-          fs.writeFileSync(path.join(outputRoot, 'firebase.json'), `${JSON.stringify(config, null, 2)}\n`);
-          NODE
-          mkdir -p "$RUNNER_TEMP/firebase-hosting-preview/dist/colin-michaels-firebase"
-          cp -R dist/colin-michaels-firebase/browser "$RUNNER_TEMP/firebase-hosting-preview/dist/colin-michaels-firebase/browser"
+        env:
+          PREVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/create-firebase-preview-config.mjs dist/colin-michaels-firebase/browser "$RUNNER_TEMP/firebase-hosting-preview"
 
       - name: Deploy Firebase Hosting preview
+        id: deploy
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -245,3 +249,9 @@ jobs:
           projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID || 'colinmichaels' }}
           entryPoint: ${{ runner.temp }}/firebase-hosting-preview
           firebaseToolsVersion: 14.27.0
+
+      - name: Verify deployed preview shell and assets
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.details_url }}
+          PREVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/verify-firebase-preview.mjs
