@@ -24,6 +24,8 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 
 ## Architecture
 
+- [Dependency Compatibility and Major Upgrade Recovery](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md)
+
 - [Architecture Overview](../ARCHITECTURE/OVERVIEW.md)
 - [Architecture Audit and Refactor Plan](../ARCHITECTURE/AUDIT_REFACTOR_PLAN.md)
 - [Core Services](../ARCHITECTURE/SERVICES.md)

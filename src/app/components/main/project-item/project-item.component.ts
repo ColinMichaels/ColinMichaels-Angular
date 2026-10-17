@@ -18,6 +18,7 @@ import {CommonModule} from '@angular/common';
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
+    @reference "../../../../styles/tailwind.css";
     .project-section {
       @apply grid min-w-0 grid-cols-1 gap-5 border border-white/20 bg-teal-950/30 p-4 shadow-2xl sm:p-6;
       .project-section-header {

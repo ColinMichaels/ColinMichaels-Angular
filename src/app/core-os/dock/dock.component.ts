@@ -33,6 +33,7 @@ import {APP_ID, AppEntry, AppType} from '@core-os/app-registry/application-manag
   templateUrl: './dock.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../styles/tailwind.css";
     :host {
       display: block;
       height: 100%;

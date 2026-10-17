@@ -88,6 +88,7 @@ Do not remove experimental systems unless explicitly instructed.
 - Update the coordinated Angular runtime/compiler/build packages together and prove the lockfile with a fresh `npm ci`; never bypass peer conflicts with `--force` or `--legacy-peer-deps`.
 - Keep Dependabot validation credential-free. Use the dependency validation workflow for bot PRs and retain the separate human-authored Firebase preview path; never expose deployment secrets through `pull_request_target` to make bot checks pass.
 - Follow `docs/README/DEVELOPMENT.md` for dependency grouping, validation, existing-PR reconciliation, and rollback of matching manifests and lockfiles.
+- Use Node 24.15.0 for frontend dependencies and retain Node 22 for Functions runtime checks. Preserve the explicit native TypeScript compiler alias and API-compatible `typescript` package; do not replace one with the other during routine updates. Keep Tailwind CSS generation/references and matching Hosting/SEO deploy-scope detection together.
 
 ## Refactor Priority
 

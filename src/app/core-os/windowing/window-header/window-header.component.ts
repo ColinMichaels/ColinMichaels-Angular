@@ -12,6 +12,7 @@ import {faCircle, faMinus, faTimes, faUpRightAndDownLeftFromCenter} from '@forta
   templateUrl: './window-header.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../styles/tailwind.css";
     .app-window-header {
       @apply rounded-t-lg bg-black/30 backdrop-blur-md backdrop-saturate-150;
     }

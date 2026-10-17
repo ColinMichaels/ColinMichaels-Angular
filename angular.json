@@ -35,6 +35,7 @@
               }
             ],
             "styles": [
+              "src/styles/tailwind.generated.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -151,6 +152,7 @@
               }
             ],
             "styles": [
+              "src/styles/tailwind.generated.css",
               "src/styles.scss"
             ],
             "scripts": []

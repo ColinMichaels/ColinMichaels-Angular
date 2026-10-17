@@ -100,6 +100,7 @@ import {RouterLink} from '@angular/router';
     <app-socials></app-socials>
   `,
   styles: [`
+    @reference "../../../../../styles/tailwind.css";
     .content-container {
       position: relative;
       width: 100%;

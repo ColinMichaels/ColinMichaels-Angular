@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js `24.15.0` via `.nvmrc` (the package also accepts `^22.22.3` or `>=26.0.0`)
+- Node.js `24.15.0` via `.nvmrc` for the frontend (the root also accepts `>=26.0.0`); Node `22.22.3` separately for Functions runtime checks
 - npm 10+
 - Chrome/Chromium for Karma tests
 
@@ -54,7 +54,11 @@ Update the Angular runtime packages, compiler, compiler CLI, build package, CLI,
 
 `.github/dependabot.yml` schedules weekly updates for the root app, Functions, and both Remotion labs, targeting `dev`. Angular tooling and runtime version updates are grouped, with a matching group for Angular security updates; Remotion and React version updates are grouped within the lab configuration. Dependabot reads its configuration from the repository's default branch, verified as `dev` on October 17, 2026, so the configuration activates when merged there. If the default branch changes, review the configuration again: groups targeting a non-default branch do not configure security updates on the default branch. Existing security alerts still require review.
 
-Dependency PRs run the credential-free [dependency validation workflow](../../.github/workflows/dependency-validation.yml). See [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md) for the intentionally skipped bot preview path. Test Functions using Node `22.22.3`, matching the declared Firebase runtime and CI; the Angular app also supports the pinned local Node `24.15.0`.
+Dependency PRs run the credential-free [dependency validation workflow](../../.github/workflows/dependency-validation.yml). See [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md) for the intentionally skipped bot preview path. Firebase Web 13 and Rules Testing 6 use Node `24.15.0`; test Functions using Node `22.22.3`, matching the retained Firebase runtime and Node types. Firebase Web/Rules Testing, Admin/Functions, and Tailwind families update together.
+
+Functions and labs compile with native TypeScript 7 through the explicit `typescript-native` alias. Their `typescript` package stays at API-compatible 6.0.3 for lint and catalog drift checks. Labs retain Remotion rules through a scoped typescript-eslint update and ESLint compatibility adapter. Do not replace the API dependency with the native compiler package or bypass peers. See the [compatibility matrix and complete rollback](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md).
+
+Tailwind 4 runs through `.postcssrc.json`; existing Sass uses explicit CSS references. Canonical build/start/test/watch scripts generate the ignored CSS entry first. Run `npm run generate:styles` before direct Angular CLI invocation. The opt-in `TAILWIND_INCLUDE_GENERATED_PREVIEW_CLASSES=true` preview palette remains supported.
 
 The October 17 integration baseline includes Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving previously merged Dependabot updates. It supersedes the dependency changes proposed in PRs #353, #377, and #386; those PRs should be reconciled after the integration is merged. No Firebase configuration, route, content, storage, or data migration is required. For rollback, revert the integration commit through a fresh branch/PR and restore matching manifests and lockfiles together, then run `npm ci` in each affected package. The prior `dev` Angular graph was already inconsistent, so reverting the whole batch restores that known install failure; preserve or reapply the coordinated Angular repair when rolling back only a patch or CI policy change.
 
