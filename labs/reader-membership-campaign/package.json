@@ -15,9 +15,9 @@
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.499",
     "@types/react": "19.2.7",
-    "@types/web": "0.0.166",
+    "@types/web": "0.0.358",
     "eslint": "9.19.0",
-    "prettier": "3.8.1",
+    "prettier": "3.9.10",
     "typescript": "5.9.3"
   },
   "scripts": {
