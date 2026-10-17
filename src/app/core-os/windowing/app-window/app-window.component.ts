@@ -46,6 +46,7 @@ const isParamsAwareComponent = (instance: unknown): instance is ParamsAwareCompo
   templateUrl: './app-window.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
+    @reference "../../../../styles/tailwind.css";
     /* app-window.component.scss */
     .window-unfocused {
       @apply opacity-80 transition-opacity duration-500 ease-in-out;

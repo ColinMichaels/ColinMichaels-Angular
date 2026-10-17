@@ -39,7 +39,7 @@ while IFS= read -r file; do
       functions_changed=true
       seo_template_changed=true
       ;;
-    scripts/generate-environment.mjs|angular.json|package.json|package-lock.json|tsconfig*.json|tailwind.config.*|postcss.config.*)
+    scripts/generate-environment.mjs|scripts/generate-tailwind-entry.mjs|angular.json|package.json|package-lock.json|tsconfig*.json|tailwind.config.*|postcss.config.*|.postcssrc.json)
       hosting_changed=true
       seo_template_changed=true
       ;;

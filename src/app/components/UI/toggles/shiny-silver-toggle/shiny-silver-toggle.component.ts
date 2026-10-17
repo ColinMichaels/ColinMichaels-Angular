@@ -14,6 +14,7 @@ import {FormControl, FormsModule} from '@angular/forms';
       </label>
     </div>`,
   styles: `
+    @reference "../../../../../styles/tailwind.css";
 
     #inputElement {
       @apply hidden;

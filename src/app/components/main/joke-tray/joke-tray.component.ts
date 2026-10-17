@@ -20,6 +20,7 @@ import {TooltipDirective} from '@core-os/tooltip';
     TooltipDirective
   ],
   styles: `
+    @reference "../../../../styles/tailwind.css";
     .side-button {
       @apply
       transition duration-500 ease-out

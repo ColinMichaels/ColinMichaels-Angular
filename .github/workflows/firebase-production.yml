@@ -93,7 +93,7 @@ jobs:
         if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
         uses: actions/setup-node@v4
         with:
-          node-version: 22.22.3
+          node-version: 24.15.0
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -140,6 +140,12 @@ jobs:
       - name: Build Angular app
         if: ${{ needs.plan_deploy.outputs.deploy_site_build == 'true' }}
         run: npm run build
+
+      - name: Set up Functions Node.js runtime
+        if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
 
       - name: Install Functions dependencies
         if: ${{ needs.plan_deploy.outputs.deploy_functions == 'true' }}

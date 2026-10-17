@@ -9,21 +9,21 @@
     </div>
 
     <div class="transport-bar" aria-label="Patch actions">
-      <button type="button" class="primary-action" (click)="playPreview()">
+      <button type="button" class="patch-control primary-action" (click)="playPreview()">
         <fa-icon [icon]="faPlay"></fa-icon>
         Preview
       </button>
-      <button type="button" class="secondary-action" [disabled]="storageBusy" (click)="savePatch()">
+      <button type="button" class="patch-control secondary-action" [disabled]="storageBusy" (click)="savePatch()">
         <fa-icon [icon]="faFloppyDisk"></fa-icon>
         Save
       </button>
-      <button type="button" class="secondary-action" (click)="randomizePatch()">
+      <button type="button" class="patch-control secondary-action" (click)="randomizePatch()">
         <fa-icon [icon]="faShuffle"></fa-icon>
         Generate
       </button>
       <button
         type="button"
-        class="secondary-action"
+        class="patch-control secondary-action"
         [class.active-action]="showKeyboard"
         (click)="showKeyboard = !showKeyboard"
       >
@@ -81,12 +81,12 @@
 
       <div class="library-stack">
         <div class="library-actions">
-          <button type="button" class="tool-button" (click)="newPatch()">New</button>
-          <button type="button" class="tool-button" (click)="duplicatePatch()">
+          <button type="button" class="patch-control tool-button" (click)="newPatch()">New</button>
+          <button type="button" class="patch-control tool-button" (click)="duplicatePatch()">
             <fa-icon [icon]="faCopy"></fa-icon>
             Copy
           </button>
-          <button type="button" class="tool-button danger" [disabled]="storageBusy" (click)="deletePatch()">
+          <button type="button" class="patch-control tool-button danger" [disabled]="storageBusy" (click)="deletePatch()">
             <fa-icon [icon]="faTrash"></fa-icon>
             Delete
           </button>
@@ -164,6 +164,7 @@
         <button
           *ngFor="let mode of previewModes"
           type="button"
+          class="patch-control"
           [class.active]="previewMode === mode.id"
           (click)="previewMode = mode.id"
         >
@@ -227,7 +228,7 @@
             <span>{{ master.volume | number: '1.2-2' }}</span>
           </div>
 
-          <button type="button" class="tool-button mt-4" (click)="resetPatch()">
+          <button type="button" class="patch-control tool-button mt-4" (click)="resetPatch()">
             <fa-icon [icon]="faRotateLeft"></fa-icon>
             Reset controls
           </button>
@@ -328,7 +329,7 @@
             <p class="patch-eyebrow">Sources</p>
             <h3>Oscillators</h3>
           </div>
-          <button type="button" class="secondary-action" (click)="addOscillator()">
+          <button type="button" class="patch-control secondary-action" (click)="addOscillator()">
             <fa-icon [icon]="faPlus"></fa-icon>
             Add oscillator
           </button>
@@ -339,7 +340,7 @@
                    class="oscillator-panel">
             <div class="panel-heading">
               <span>Osc {{ i + 1 }}</span>
-              <button type="button" class="icon-button danger" [attr.aria-label]="'Remove oscillator ' + (i + 1)"
+              <button type="button" class="patch-control icon-button danger" [attr.aria-label]="'Remove oscillator ' + (i + 1)"
                       (click)="removeOscillator(i)">
                 <fa-icon [icon]="faTrash"></fa-icon>
               </button>
@@ -349,7 +350,7 @@
               <button
                 *ngFor="let type of OSCILLATOR_TYPES"
                 type="button"
-                class="wave-button"
+                class="patch-control wave-button"
                 [class.active]="osc.type === type"
                 [attr.aria-label]="'Use ' + type + ' wave'"
                 [appTooltip]="type"

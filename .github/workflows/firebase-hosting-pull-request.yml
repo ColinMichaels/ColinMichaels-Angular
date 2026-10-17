@@ -126,7 +126,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.22.3
+          node-version: 24.15.0
           cache: npm
 
       - name: Install dependencies
@@ -185,12 +185,24 @@ jobs:
           name: firebase-hosting-preview
           path: dist/colin-michaels-firebase/browser
 
+      - name: Set up Angular build Node.js runtime
+        if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+
       - name: Build Angular app for SEO template
         if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
         run: |
           npm ci
           npm run generate:env
           npm run build
+
+      - name: Restore Functions Node.js runtime
+        if: ${{ needs.detect_changes.outputs.hosting_changed != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
 
       - name: Prepare SEO HTML template for Functions
         run: npm run prepare:functions-seo

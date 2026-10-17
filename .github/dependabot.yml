@@ -5,7 +5,15 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    ignore:
+      # Angular and compiler-API tooling still require the TypeScript 6 API.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
+      firebase-web:
+        patterns: [firebase, '@firebase/rules-unit-testing']
+      tailwind:
+        patterns: [tailwindcss, '@tailwindcss/*']
       angular:
         patterns:
           - '@angular/*'
@@ -24,6 +32,14 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    groups:
+      firebase-server:
+        patterns: [firebase-admin, firebase-functions]
   - package-ecosystem: npm
     directories:
       - /labs/reader-membership-campaign
@@ -31,6 +47,9 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       remotion:
         patterns:
