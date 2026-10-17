@@ -1,6 +1,7 @@
-import {AfterViewInit, Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
+import {Component, DestroyRef, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgForOf} from "@angular/common";
-import {LevelLoaderComponent} from '../utils/level-loader/level-loader.component';
+import {TERMINAL_ADVENTURE} from '@core-os/terminal/terminal-adventure';
+import {LostSignalAdventure} from '../../../labs/terminal-adventure/lost-signal';
 import {AppWindowComponent} from '@core-os/windowing/app-window/app-window.component';
 import {GameLevel} from '../services/game-config.service';
 import {TypewriterService} from '@core-os/terminal/typewriter.service';
@@ -29,6 +30,7 @@ import {ContextMenuBuilder, ContextMenuService} from '@core-os/context-menu/cont
 import {TooltipDirective} from '@core-os/tooltip';
 import {LogService} from '../services/log.service';
 import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
+import {FOLDER_TERMINAL_OPENER} from '@core-os/filesystem/folder-terminal-opener';
 
 @Component({
   selector: 'app-desktop',
@@ -36,7 +38,6 @@ import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
   preserveWhitespaces: true,
   imports: [
     AppWindowComponent,
-    LevelLoaderComponent,
     NgForOf,
     SystemTrayComponent,
     DockComponent,
@@ -47,10 +48,18 @@ import {FINDER_FILE_OPENER} from '@core-os/filesystem/file-opener';
   ],
   templateUrl: './desktop.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  providers: [{provide: FINDER_FILE_OPENER, useExisting: ApplicationManagerService}],
+  providers: [
+    {provide: FINDER_FILE_OPENER, useExisting: ApplicationManagerService},
+    {provide: TERMINAL_ADVENTURE, useClass: LostSignalAdventure},
+    {
+      provide: FOLDER_TERMINAL_OPENER,
+      useFactory: (apps: ApplicationManagerService) => ({openFolder: (path: string) => apps.openApplication('cli', {path})}),
+      deps: [ApplicationManagerService],
+    },
+  ],
   styles: ``
 })
-export class DesktopComponent implements OnInit, AfterViewInit {
+export class DesktopComponent implements OnInit {
   showIntro = false;
   overlayImagePath = 'assets/images/overlays/cracked_corner.webp';
   backgroundImage = 'assets/images/backgrounds/night.webp';
@@ -76,10 +85,7 @@ export class DesktopComponent implements OnInit, AfterViewInit {
         if (app) {
           this.openApp(app);
         }
-      })
-  }
-
-  ngAfterViewInit() {
+      });
     this.onBeginInvestigation();
   }
 
@@ -149,6 +155,11 @@ export class DesktopComponent implements OnInit, AfterViewInit {
   }
 
   onBeginInvestigation() {
+    this.appManager.openApplication('cli');
+  }
+
+  // Preserve the original prototype's intro for a separately resumed legacy game.
+  onBeginLegacyInvestigation() {
     this.showIntro = false;
     this.appManager.openApplication('cli');
     this.showNotificationUpdates();

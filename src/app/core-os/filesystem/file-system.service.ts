@@ -16,6 +16,7 @@ export interface FileEntry {
   tags: string[];
   size?: number;
   mimeType?: string;
+  textContent?: string;
   children?: FileEntry[];
 }
 
@@ -282,6 +283,41 @@ export class FileSystemService {
     return directory?.isDir ? this.cloneEntry(directory) : undefined;
   }
 
+  getEntry(path: string): FileEntry | undefined {
+    if (!this.isReady()) return undefined;
+    const entry = this.findByPath(this.normalizePath(path), this.snapshot.root);
+    return entry ? this.cloneEntry(entry) : undefined;
+  }
+
+  getEntryById(id: string): FileEntry | undefined {
+    if (!this.isReady()) return undefined;
+    const entry = this.findById(id, this.snapshot.root);
+    return entry ? this.cloneEntry(entry) : undefined;
+  }
+
+  // Add an opt-in bundled folder atomically; never overwrite or resurrect user files.
+  async installFolder(parentPath: string, folder: FileEntry): Promise<FileEntry> {
+    const identityRevision = this.identityRevision;
+    await this.commit('Add adventure files', (next) => {
+      if (identityRevision !== this.identityRevision) throw new Error('The account changed. Start the adventure again.');
+      if (this.findById(folder.id, next.root)) return false;
+      if (next.trash.some(record => this.findById(folder.id, record.entry))) {
+        throw new Error('Adventure files are in Trash. Put them back in Finder to continue.');
+      }
+      const parent = this.findByPath(this.normalizePath(parentPath), next.root);
+      if (!parent?.isDir) throw new Error('The adventure destination folder is unavailable.');
+      this.assertUniqueName(parent, folder.name);
+      const imported = this.cloneEntry(folder);
+      imported.parentId = parent.id;
+      this.rebuildPaths(imported, parent.path);
+      parent.children = [...(parent.children ?? []), imported];
+      return true;
+    });
+    const installed = this.findById(folder.id, this.snapshot.root);
+    if (!installed) throw new Error('The account changed. Start the adventure again.');
+    return this.cloneEntry(installed);
+  }
+
   getFavoriteDirs(): readonly FavoriteDirectory[] {
     return this.favoriteDirs.map((favorite) => ({...favorite}));
   }
@@ -360,7 +396,7 @@ export class FileSystemService {
     });
   }
 
-  search(query: string, withinId?: string): FileEntry[] {
+  search(query: string, withinId?: string, includeText = false): FileEntry[] {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     if (!normalizedQuery) {
       return [];
@@ -376,7 +412,7 @@ export class FileSystemService {
       if (entry.id === root.id) {
         return;
       }
-      const searchable = `${entry.name} ${entry.tags.join(' ')}`.toLocaleLowerCase();
+      const searchable = `${entry.name} ${entry.tags.join(' ')} ${includeText ? entry.textContent ?? '' : ''}`.toLocaleLowerCase();
       if (searchable.includes(normalizedQuery)) {
         matches.push(entry);
       }
@@ -426,6 +462,44 @@ export class FileSystemService {
       createdId = entry.id;
     });
     return this.cloneEntry(this.requireEntry(createdId, this.snapshot.root));
+  }
+
+  async createTextFile(parentId: string, name: string, textContent = ''): Promise<FileEntry> {
+    const identityRevision = this.identityRevision;
+    let createdId = '';
+    await this.commit('New Text File', (next) => {
+      if (identityRevision !== this.identityRevision) throw new Error('The signed-in account changed before this text file could be created.');
+      const parent = this.requireDirectory(parentId, next.root);
+      const normalizedName = this.validateName(name);
+      this.assertUniqueName(parent, normalizedName);
+      const timestamp = new Date().toISOString();
+      createdId = this.createId();
+      const entry: FileEntry = {
+        id: createdId, name: normalizedName, path: this.joinPath(parent.path, normalizedName),
+        parentId: parent.id, type: FileTypes.document, isDir: false, tags: [],
+        created: timestamp, modified: timestamp, mimeType: 'text/plain', textContent,
+        size: new TextEncoder().encode(textContent).length,
+      };
+      parent.children = [...(parent.children ?? []), entry];
+      parent.modified = timestamp;
+    });
+    return this.cloneEntry(this.requireEntry(createdId, this.snapshot.root));
+  }
+
+  async writeTextFile(id: string, textContent: string, expectedTextContent?: string): Promise<FileEntry> {
+    const identityRevision = this.identityRevision;
+    await this.commit('Edit Text File', (next) => {
+      if (identityRevision !== this.identityRevision) throw new Error('The signed-in account changed before this text file could be saved.');
+      const entry = this.requireMutableEntry(id, next.root);
+      if (entry.isDir || entry.textContent === undefined) throw new Error('Only virtual text files can be edited.');
+      if (expectedTextContent !== undefined && entry.textContent !== expectedTextContent) {
+        throw new Error('This file changed elsewhere. Copy your draft, then reopen the editor to see the latest text.');
+      }
+      entry.textContent = textContent;
+      entry.size = new TextEncoder().encode(textContent).length;
+      entry.modified = new Date().toISOString();
+    });
+    return this.cloneEntry(this.requireEntry(id, this.snapshot.root));
   }
 
   async renameEntry(id: string, name: string): Promise<FileEntry> {
@@ -919,6 +993,9 @@ export class FileSystemService {
     if (entry.mimeType !== undefined) {
       imported.mimeType = entry.mimeType;
     }
+    if (entry.textContent !== undefined) {
+      imported.textContent = entry.textContent;
+    }
     if (entry.isDir) {
       imported.children = (entry.children ?? []).map((child) => this.importEntry(child, imported.id));
     }
@@ -1382,6 +1459,8 @@ export class FileSystemService {
           && (!Number.isFinite(entry.size) || entry.size < 0 || !Number.isInteger(entry.size)))
         || (entry.mimeType !== undefined
           && (typeof entry.mimeType !== 'string' || !entry.mimeType || entry.mimeType.length > MAX_MIME_TYPE_LENGTH))
+        || (entry.textContent !== undefined
+          && (entry.isDir || typeof entry.textContent !== 'string' || entry.textContent.length > 16_384))
         || entry.parentId !== expectedParentId
         || entry.path !== expectedPath
         || ids.has(entry.id)) {
@@ -1510,7 +1589,7 @@ export class FileSystemService {
     };
     const entryKeys = new Set([
       'id', 'name', 'path', 'type', 'isDir', 'created', 'modified', 'parentId', 'tags',
-      'size', 'mimeType', 'children',
+      'size', 'mimeType', 'textContent', 'children',
     ]);
     const measureEntry = (candidate: unknown, depth: number): void => {
       if (++entryCount > MAX_ENTRY_COUNT || depth > MAX_TREE_DEPTH) {
@@ -1552,6 +1631,9 @@ export class FileSystemService {
           MAX_MIME_TYPE_LENGTH,
           'Finder virtual filesystem contains an invalid entry.',
         );
+      }
+      if (Object.prototype.hasOwnProperty.call(entry, 'textContent')) {
+        measureString(entry['textContent'], 16_384, 'Finder text file exceeds its safe size limit.');
       }
       if (Object.prototype.hasOwnProperty.call(entry, 'children')) {
         const children = requireDenseArray(

@@ -2,6 +2,7 @@ import {ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick} from '@angu
 import {BehaviorSubject} from 'rxjs';
 import {FileEntry, FileSystemService, VIEW_MODES} from '../file-system.service';
 import {FINDER_FILE_OPENER} from '../file-opener';
+import {FOLDER_TERMINAL_OPENER} from '../folder-terminal-opener';
 import {FinderAppComponent} from './finder-app.component';
 
 function folder(id: string, name: string, path: string, parentId?: string): FileEntry {
@@ -40,6 +41,20 @@ class FileSystemStub {
     this.currentDir$.next(this.currentDir$.value);
     return created;
   });
+  readonly createTextFile = jasmine.createSpy('createTextFile').and.callFake(async (parentId: string, name: string, textContent: string) => {
+    const parent = this.requireEntry(parentId);
+    const created: FileEntry = {...folder('created-text', name, `${parent.path}/${name}`.replace('//', '/'), parent.id),
+      isDir: false, type: 'document', children: undefined, textContent};
+    parent.children = [...(parent.children ?? []), created];
+    this.currentDir$.next(this.currentDir$.value);
+    return created;
+  });
+  readonly writeTextFile = jasmine.createSpy('writeTextFile').and.callFake(async (id: string, textContent: string) => {
+    const entry = this.requireEntry(id);
+    entry.textContent = textContent;
+    this.currentDir$.next(this.currentDir$.value);
+    return entry;
+  });
   readonly renameEntry = jasmine.createSpy('renameEntry').and.callFake(async (id: string, name: string) => ({
     ...this.requireEntry(id),
     name,
@@ -58,6 +73,10 @@ class FileSystemStub {
 
   constructor() {
     this.root.children = [this.projects];
+  }
+
+  getEntryById(id: string): FileEntry | undefined {
+    try { return this.requireEntry(id); } catch { return undefined; }
   }
 
   getFavoriteDirs() {
@@ -132,10 +151,11 @@ class FileSystemStub {
     ));
   }
 
-  search(query?: string, withinId?: string): FileEntry[] {
-    void query;
-    void withinId;
-    return [];
+  search(query = '', withinId = 'root', includeText = false): FileEntry[] {
+    const root = this.requireEntry(withinId);
+    const all = (entry: FileEntry): FileEntry[] => [entry, ...(entry.children ?? []).flatMap(all)];
+    return all(root).filter(entry => entry.id !== root.id &&
+      `${entry.name} ${entry.tags.join(' ')} ${includeText ? entry.textContent ?? '' : ''}`.toLowerCase().includes(query.toLowerCase()));
   }
 
   getFolderOptions(): FileEntry[] {
@@ -172,15 +192,18 @@ describe('FinderAppComponent', () => {
   let fixture: ComponentFixture<FinderAppComponent>;
   let fileSystem: FileSystemStub;
   let fileOpener: FileOpenerStub;
+  let terminalOpener: {openFolder: jasmine.Spy};
 
   beforeEach(async () => {
     fileSystem = new FileSystemStub();
     fileOpener = new FileOpenerStub();
+    terminalOpener = {openFolder: jasmine.createSpy('openFolder').and.returnValue(true)};
     await TestBed.configureTestingModule({
       imports: [FinderAppComponent],
       providers: [
         {provide: FileSystemService, useValue: fileSystem},
         {provide: FINDER_FILE_OPENER, useValue: fileOpener},
+        {provide: FOLDER_TERMINAL_OPENER, useValue: terminalOpener},
       ],
     }).compileComponents();
 
@@ -222,6 +245,108 @@ describe('FinderAppComponent', () => {
     entry?.dispatchEvent(new MouseEvent('dblclick', {bubbles: true}));
     fixture.detectChanges();
     expect(component.currentPath).toBe('/Projects');
+  });
+
+  it('navigates typed relative paths, goes up, and preserves location on an invalid path', () => {
+    component.pathInputValue = '~/Projects';
+    component.goToPath();
+    expect(component.currentPath).toBe('/Projects');
+    component.pathInputValue = '../missing';
+    component.goToPath();
+    expect(component.currentPath).toBe('/Projects');
+    expect(component.errorMessage).toContain('no longer available');
+    component.goUp();
+    expect(component.pathInputValue).toBe('/');
+    expect(component.errorMessage).toBeNull();
+    component.openTerminalHere();
+    expect(terminalOpener.openFolder).toHaveBeenCalledWith('/');
+  });
+
+  it('preserves an unsubmitted path draft when another file operation refreshes the current folder', () => {
+    component.pathInputValue = '/Projects';
+    fileSystem.currentDir$.next(fileSystem.root);
+    expect(component.pathInputValue).toBe('/Projects');
+  });
+
+  it('hides dotfiles and descendants until requested and supports scoped text-content searches', () => {
+    const hidden = folder('hidden', '.relay', '/Projects/.relay', 'projects');
+    const note: FileEntry = {...folder('note', 'message.txt', '/Projects/.relay/message.txt', 'hidden'),
+      isDir: false, type: 'document', children: undefined, textContent: 'blue beacon'};
+    hidden.children = [note];
+    fileSystem.projects.children = [hidden];
+    component.navigate('/Projects');
+    expect(component.visibleEntries(fileSystem.projects)).toEqual([]);
+    component.searchContents = true;
+    component.updateSearch('beacon');
+    expect(component.visibleEntries(fileSystem.projects)).toEqual([]);
+    component.toggleHidden();
+    expect(component.visibleEntries(fileSystem.projects).map(file => file.id)).toEqual(['note']);
+    component.selectEntry(note);
+    component.revealSelected();
+    expect(component.currentPath).toBe('/Projects/.relay');
+    expect(component.selectedFile?.id).toBe('note');
+  });
+
+  it('creates and edits a text file and discards a cancelled edit', async () => {
+    component.navigate('/Projects');
+    component.openNewTextDialog();
+    component.dialogValue = 'notes.txt';
+    component.dialogText = 'First clue';
+    await component.submitDialog();
+    expect(fileSystem.createTextFile).toHaveBeenCalledWith('projects', 'notes.txt', 'First clue');
+    expect(component.textPreview?.textContent).toBe('First clue');
+    component.openTextEditor();
+    component.dialogText = 'Updated clue';
+    await component.submitDialog();
+    expect(fileSystem.writeTextFile).toHaveBeenCalledWith('created-text', 'Updated clue', 'First clue');
+    expect(component.textPreview?.textContent).toBe('Updated clue');
+    component.openTextEditor();
+    component.dialogText = 'Unsaved';
+    component.closeDialog();
+    expect(component.dialogText).toBe('');
+    expect(component.textPreview?.textContent).toBe('Updated clue');
+  });
+
+  it('follows its current folder by stable ID when another window renames it', () => {
+    component.navigate('/Projects');
+    // The real store publishes immutable snapshots, leaving the window's prior copy intact.
+    fileSystem.root.children = [{...fileSystem.projects, name: 'Investigation', path: '/Investigation'}];
+    fileSystem.currentDir$.next(fileSystem.root);
+    expect(component.currentPath).toBe('/Investigation');
+    expect(component.navHistory.at(-1)).toBe('/Investigation');
+    expect(component.pathInputValue).toBe('/Investigation');
+  });
+
+  it('reads virtual text safely in Finder and clears it on navigation and account teardown', () => {
+    const note: FileEntry = {
+      ...folder('clue', 'clue.txt', '/clue.txt', 'root'),
+      isDir: false, type: 'document', children: undefined,
+      textContent: 'Read <img src=x onerror=alert(1)> as plain text.',
+    };
+    component.activateEntry(note);
+    fixture.detectChanges();
+    const preview = fixture.nativeElement.querySelector('[aria-label="File preview"]');
+    expect(preview.textContent).toContain(note.textContent);
+    expect(preview.querySelector('img')).toBeNull();
+    expect(fileOpener.open).not.toHaveBeenCalled();
+    component.navigate('/Projects');
+    expect(component.textPreview).toBeUndefined();
+    component.activateEntry(note);
+    component.goBack();
+    expect(component.textPreview).toBeUndefined();
+    component.activateEntry(note);
+    fileSystem.ready$.next(false);
+    expect(component.textPreview).toBeUndefined();
+  });
+
+  it('does not read text files from Trash', () => {
+    component.currentPath = 'trash';
+    component.activateEntry({
+      ...folder('clue', 'clue.txt', '/clue.txt', 'root'),
+      isDir: false, type: 'document', children: undefined, textContent: 'clue',
+    });
+    expect(component.textPreview).toBeUndefined();
+    expect(component.statusMessage).toContain('must be put back');
   });
 
   it('opens supported files through the registered application and reports unsupported files', () => {

@@ -35,6 +35,8 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Core Services](../ARCHITECTURE/SERVICES.md)
 - [Performance and Cache Budgets](../ARCHITECTURE/PERFORMANCE_AND_CACHE_BUDGETS.md)
 - [Core OS Desktop and Finder](../ARCHITECTURE/CORE_OS_DESKTOP.md)
+- [Shared Finder and Terminal Filesystem](../ARCHITECTURE/FINDER_TERMINAL_FILESYSTEM.md)
+- [Terminal and Lost Signal Adventure](../ARCHITECTURE/TERMINAL_ADVENTURE.md)
 - [Analytics and Measurement](../ARCHITECTURE/ANALYTICS_AND_MEASUREMENT.md)
 - [State and Event Flow](../ARCHITECTURE/STATE_EVENTS.md)
 - [Security Notes](../ARCHITECTURE/SECURITY.md)

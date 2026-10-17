@@ -1,11 +1,22 @@
 # Changelog
 
+## 2026-10-17 — Shared Finder and Terminal filesystem
+
+- Add direct Finder path navigation, parent navigation, hidden-file controls, scoped name/content search and result locations, and an Open Terminal Here handoff. Keep both apps on the same account-local virtual files and follow the current folder by stable ID through renames and moves.
+- Create and edit bounded plain-text files from Finder with explicit Save/Cancel, stale-editor conflict detection, UTF-8 sizes, shared undo/redo and existing persistence/Trash behavior. Preserve earlier terminal work and the original CLI game prototype. See `docs/ARCHITECTURE/FINDER_TERMINAL_FILESYSTEM.md` for inventory, validation, migration, base revision and rollback.
+
 ## 2026-10-17 — Repository workflow
 
 - Require a remote refresh and a new scoped branch from current `origin/dev` for every change batch, including documentation. Record standing authorization to validate, commit, push, and open a draft PR with the base revision and rollback steps, while preserving local-only requests and separate merge/deployment authorization. Existing branches and application data need no migration; revert the documentation commit to roll back this process update.
 ## 2026-10-17 — Reliable dev preview shell and Firebase access
 
 - Stage a Hosting-only preview with its matching SPA index for app deep links, preserving explicit API/feed rewrites and production SEO configuration. Record source identity, validate entry assets before staging and verify seven deployed routes plus JavaScript/CSS responses after deployment. Trigger previews for pipeline-only changes without widening production deployment scope. Add tested exact-hostname App Check registration/removal under the existing maintainer login, with domain verification preserved, rollback receipts and documented per-preview setup. No application/data migration, IAM expansion or production release is included.
+
+## 2026-10-17 — Terminal and first OS adventure
+
+- Give the existing `cli` desktop app a Mac-inspired Terminal with a familiar prompt, readable neutral text, quoted paths, command history, hidden-file listings, and `open` handoff to Finder. Start its window during desktop initialization.
+- Extend functional shell browsing with long listings, previous-directory navigation, tree views, scoped filename searches, recursive literal text search, head/tail, word/line/byte counts, read-only pipelines, history, and Tab path completion. Add searchable fictional system/access logs while retaining earlier saved clues.
+- Add the opt-in Lost Signal clue trail using the same account-local virtual files in Terminal and Finder. Finder reads bounded plain text; adventure installation is atomic, preserves existing work, and resumes moved/renamed files. Retain the original level-game prototype without automatically starting it. See `docs/ARCHITECTURE/TERMINAL_ADVENTURE.md` for scope, validation, migration and rollback.
 
 ## 2026-10-17 — Consolidated dependency maintenance
 
