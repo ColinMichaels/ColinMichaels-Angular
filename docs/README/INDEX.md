@@ -16,7 +16,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 ## Read First
 
 - [Project Overview](./PROJECT_OVERVIEW.md)
-- [Development Setup](./DEVELOPMENT.md)
+- [Development Setup](./DEVELOPMENT.md) — local tools, coordinated dependency updates, validation, and dependency rollback.
 - [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
 - [Public WebMCP Operations Runbook](./WEBMCP_OPERATIONS.md)

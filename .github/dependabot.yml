@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - angular-eslint
+          - ng-packagr
+      angular-security:
+        applies-to: security-updates
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - angular-eslint
+          - ng-packagr
+  - package-ecosystem: npm
+    directory: /functions
+    target-branch: dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directories:
+      - /labs/reader-membership-campaign
+      - /labs/higgsfield-promotion-campaign/motion-kit
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      remotion:
+        patterns:
+          - '@remotion/*'
+          - remotion
+          - react
+          - react-dom
