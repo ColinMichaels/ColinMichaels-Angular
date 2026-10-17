@@ -69,6 +69,8 @@ Major toolchain PRs must also identify separate build/runtime versions, compiler
 
 Pushing another commit to an open PR whose base is `dev` produces a `synchronize` event. The Firebase preview workflow evaluates the entire PR diff and deploys the scopes detected by `.github/scripts/detect-firebase-deploy-scope.sh`.
 
+Preview infrastructure PRs must separate Hosting asset/shell verification, Firebase domain authorization and real browser feature proof. Record any exact-hostname cloud change and its narrow rollback; use the [preview runbook](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md).
+
 ## Required PR Information
 
 Use `.github/pull_request_template.md` and preserve every applicable section:

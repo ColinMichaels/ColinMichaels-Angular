@@ -8,7 +8,7 @@ import test from 'node:test';
 
 const script = fileURLToPath(new URL('../.github/scripts/detect-firebase-deploy-scope.sh', import.meta.url));
 
-for (const [file, hosting, functions] of [
+for (const [file, hosting, functions, preview = false] of [
   ['.postcssrc.json', true, true],
   ['scripts/generate-tailwind-entry.mjs', true, true],
   ['src/styles/tailwind.css', true, true],
@@ -16,6 +16,9 @@ for (const [file, hosting, functions] of [
   ['package-lock.json', true, true],
   ['functions/package-lock.json', false, true],
   ['docs/CHANGELOG.md', false, false],
+  ['.github/workflows/firebase-hosting-pull-request.yml', false, false, true],
+  ['.github/scripts/create-firebase-preview-config.mjs', false, false, true],
+  ['scripts/verify-firebase-preview.mjs', false, false, true],
 ]) {
   test(`${file} selects the matching Firebase build scope`, () => {
     const directory = mkdtempSync(join(tmpdir(), 'firebase-scope-'));
@@ -41,6 +44,7 @@ for (const [file, hosting, functions] of [
       assert.ok(result.includes(`functions_deploy_needed=${functions}\n`));
       assert.ok(result.includes('rules_changed=false\n'));
       assert.ok(result.includes('storage_cors_changed=false\n'));
+      assert.ok(result.includes(`preview_pipeline_changed=${preview}\n`));
     } finally {
       rmSync(directory, {recursive: true, force: true});
     }

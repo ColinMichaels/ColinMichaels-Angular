@@ -24,6 +24,8 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 
 ## Architecture
 
+- [Firebase Preview Routing and Access](../ARCHITECTURE/FIREBASE_PREVIEW_VALIDATION.md)
+
 - [Dependency Compatibility and Major Upgrade Recovery](../ARCHITECTURE/DEPENDENCY_COMPATIBILITY.md)
 
 - [Architecture Overview](../ARCHITECTURE/OVERVIEW.md)
