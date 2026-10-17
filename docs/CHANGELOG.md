@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-17 — Repository workflow
+
+- Require a remote refresh and a new scoped branch from current `origin/dev` for every change batch, including documentation. Record standing authorization to validate, commit, push, and open a draft PR with the base revision and rollback steps, while preserving local-only requests and separate merge/deployment authorization. Existing branches and application data need no migration; revert the documentation commit to roll back this process update.
 ## 2026-10-17 — Reliable dev preview shell and Firebase access
 
 - Stage a Hosting-only preview with its matching SPA index for app deep links, preserving explicit API/feed rewrites and production SEO configuration. Record source identity, validate entry assets before staging and verify seven deployed routes plus JavaScript/CSS responses after deployment. Trigger previews for pipeline-only changes without widening production deployment scope. Add tested exact-hostname App Check registration/removal under the existing maintainer login, with domain verification preserved, rollback receipts and documented per-preview setup. No application/data migration, IAM expansion or production release is included.
