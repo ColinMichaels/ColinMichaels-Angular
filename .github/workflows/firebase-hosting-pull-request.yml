@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   detect_changes:
-    if: ${{ github.base_ref == 'dev' && github.event.pull_request.head.repo.full_name == github.repository }}
+    # Dependabot PRs run the credential-free dependency workflow instead.
+    if: ${{ github.base_ref == 'dev' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     outputs:
       hosting_changed: ${{ steps.scope.outputs.hosting_changed }}

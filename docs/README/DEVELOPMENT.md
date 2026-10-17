@@ -48,6 +48,16 @@ npm run lint
 
 Follow the [Change Documentation and Pull Request Standard](./CHANGE_DOCUMENTATION_STANDARD.md). New pull requests automatically start from `.github/pull_request_template.md`; feature PRs normally target `dev` as drafts so the Firebase preview workflow can run.
 
+## Dependency Updates
+
+Update the Angular runtime packages, compiler, compiler CLI, build package, CLI, and devkit together. Their coordinated `22.2.3` baseline is pinned exactly in `package.json`; CDK and other integrations retain their independent compatible versions. Never use `--force` or `--legacy-peer-deps` to hide a peer conflict. Regenerate the lockfile and prove it with `npm ci` before relying on a locally installed build.
+
+`.github/dependabot.yml` schedules weekly updates for the root app, Functions, and both Remotion labs, targeting `dev`. Angular tooling and runtime version updates are grouped, with a matching group for Angular security updates; Remotion and React version updates are grouped within the lab configuration. Dependabot reads its configuration from the repository's default branch, verified as `dev` on October 17, 2026, so the configuration activates when merged there. If the default branch changes, review the configuration again: groups targeting a non-default branch do not configure security updates on the default branch. Existing security alerts still require review.
+
+Dependency PRs run the credential-free [dependency validation workflow](../../.github/workflows/dependency-validation.yml). See [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md) for the intentionally skipped bot preview path. Test Functions using Node `22.22.3`, matching the declared Firebase runtime and CI; the Angular app also supports the pinned local Node `24.15.0`.
+
+The October 17 integration baseline includes Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving previously merged Dependabot updates. It supersedes the dependency changes proposed in PRs #353, #377, and #386; those PRs should be reconciled after the integration is merged. No Firebase configuration, route, content, storage, or data migration is required. For rollback, revert the integration commit through a fresh branch/PR and restore matching manifests and lockfiles together, then run `npm ci` in each affected package. The prior `dev` Angular graph was already inconsistent, so reverting the whole batch restores that known install failure; preserve or reapply the coordinated Angular repair when rolling back only a patch or CI policy change.
+
 ## Quality Gate Reporting
 
 `npm run build` and `npm run lint` are the required repository checks. Run both under the pinned Node version and report the exact current result; do not reuse lint counts or build warnings from an older audit as a present-day baseline. Add focused tests, route checks, and rendered checks proportional to the change.

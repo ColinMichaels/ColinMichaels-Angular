@@ -3,6 +3,9 @@
 ## 2026-10-17 — Repository workflow
 
 - Require a remote refresh and a new scoped branch from current `origin/dev` for every change batch, including documentation. Record standing authorization to validate, commit, push, and open a draft PR with the base revision and rollback steps, while preserving local-only requests and separate merge/deployment authorization. Existing branches and application data need no migration; revert the documentation commit to roll back this process update.
+## 2026-10-17 — Dependency integration repair
+
+- Repair the incompatible Angular versions left by individually merged dependency PRs: pin the coordinated runtime/compiler/build set to `22.2.3` and regenerate the lockfile without peer-dependency bypasses. Include Sharp `0.35.5` and reader-campaign `fast-uri` `3.1.8`, preserving the other merged updates. Add grouped weekly Dependabot version updates targeting `dev` and credential-free dependency CI; skip Firebase preview jobs for Dependabot-authored/triggered runs. Document default-branch configuration activation, existing-PR reconciliation, no data migration, and rollback of matching manifests/locks. Reverting the entire repair restores the prior broken Angular install graph; partial rollback must retain a compatible Angular set.
 
 ## Unreleased — Import-first blog editor
 

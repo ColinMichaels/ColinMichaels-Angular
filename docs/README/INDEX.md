@@ -18,6 +18,8 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [Project Overview](./PROJECT_OVERVIEW.md)
 - [Development Setup](./DEVELOPMENT.md)
 - [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md) — remote refresh, fresh branches from `origin/dev`, validated commits, draft PRs, and rollback records for every change batch.
+- [Development Setup](./DEVELOPMENT.md) — local tools, coordinated dependency updates, validation, and dependency rollback.
+- [Change Documentation and PR Standard](./CHANGE_DOCUMENTATION_STANDARD.md)
 - [Environment and Secrets Setup](./ENVIRONMENT_SECRETS.md)
 - [Public WebMCP Operations Runbook](./WEBMCP_OPERATIONS.md)
 - [Seasonal Campaign Preparation and Operations](./SEASONAL_CAMPAIGNS.md)
