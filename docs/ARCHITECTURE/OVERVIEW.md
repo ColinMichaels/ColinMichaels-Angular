@@ -122,3 +122,7 @@ graph TD
 - This codebase favors behavior in services over local component state.
 - The primary maintainability pressure points are large services with mixed responsibilities and untyped dynamic data flows.
 - Behavior stability depends heavily on preserving service public APIs while tightening internals.
+
+## Dependency maintenance
+
+The [dependency maintenance policy](../README/DEVELOPMENT.md#dependency-updates) keeps all four npm roots in one bounded routine queue and preserves a separate security-update path. This changes repository operations only; application/component ownership and deployment scope remain unchanged.

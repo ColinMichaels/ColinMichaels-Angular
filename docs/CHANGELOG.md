@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 — Consolidated dependency maintenance
+
+- Replace three independent npm update queues with one weekly minor/patch batch across all four package roots, capped at one open routine PR, with a seven-day release cooldown. Keep security fixes enabled and separately grouped; omit the explicit target branch so security options apply on default `dev`. Handle major upgrades as deliberate maintenance. Document superseded PR reconciliation, deferred Node/Remotion updates, activation on merge, validation and reversible policy rollback. No application dependency, deployment, secret or data change is included.
+
 ## 2026-10-17 — Routine dependency merge resolution
 
 - Preserve Faker `10.6.0` and the coordinated Angular tooling updates while resolving the adjacent manifest/lockfile conflict in the approved `@eslint/json` `2.1.1` update. No runtime API, configuration, or data migration is required; roll back this update by restoring its manifest and lockfile together while retaining the other approved dependencies.
