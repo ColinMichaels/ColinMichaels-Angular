@@ -49,6 +49,12 @@ Detailed feature inventories belong in architecture documentation and the PR des
 
 Normal feature and fix work should use these defaults unless the task explicitly requires another target:
 
+Before each new feature, fix, documentation, or release batch, run `git fetch origin --prune` and create a new `codex/<descriptive-work-slug>` branch from the refreshed `origin/dev`. When starting through local `dev`, first run `git pull --ff-only origin dev` on that branch. Do not reuse an unrelated feature branch or implement directly on `dev`. Preserve uncommitted work before switching; never reset or discard it to refresh the base.
+
+The maintainer has authorized the normal completion workflow for requested repository changes: validate, commit the change and its documentation together, push the dedicated branch, and create a draft PR against `dev`. Honor an explicit local-only instruction. Include the starting base revision and concrete rollback steps in the PR so the change has a documented recovery point. This standing instruction does not authorize merging or deployment.
+
+Existing branches need no migration. Apply this workflow to each new change batch; to reverse this process update, revert its documentation commit. Application and data rollback remain specific to each PR.
+
 | Parameter | Default | Reason |
 | --- | --- | --- |
 | Repository | `ColinMichaels/ColinMichaels-Angular` | Canonical GitHub repository |

@@ -75,11 +75,12 @@ Do not remove experimental systems unless explicitly instructed.
 
 ## Branch And PR Workflow
 
-- Create a new dedicated `codex/<descriptive-work-slug>` branch from the latest verified `origin/dev` before starting each feature, fix, or release batch.
+- Refresh remote refs with `git fetch origin --prune` before every new change batch. If using local `dev` as the starting point, update it with `git pull --ff-only origin dev`; never merge an unrelated feature branch into it to prepare new work.
+- Create a new dedicated `codex/<descriptive-work-slug>` branch from the freshly verified `origin/dev` before starting each feature, fix, documentation, or release batch.
 - Never implement directly on `dev` or continue unrelated work on a reused feature branch.
 - If relevant uncommitted work already exists while `HEAD` still matches `origin/dev`, preserve it by creating the dedicated branch immediately; never reset or discard it to change branches.
-- Keep each branch scoped to one coherent change, then open its pull request against `dev` as a draft unless the maintainer requests another target.
-- Treat commit, push, pull-request creation, and deployment as separate actions. Do not infer permission for one from permission for another.
+- Keep each branch scoped to one coherent change. After validation, commit the change with its documentation, push the branch, and open a draft pull request against `dev` unless the maintainer requests another target or explicitly asks to keep work local.
+- The maintainer's standing instruction authorizes commit, push, and PR creation for requested repository changes so each batch has review documentation and a reversible commit. Record the base revision and rollback steps in the PR. Merge and deployment still require their own authorization.
 
 ---
 

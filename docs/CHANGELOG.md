@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 — Repository workflow
+
+- Require a remote refresh and a new scoped branch from current `origin/dev` for every change batch, including documentation. Record standing authorization to validate, commit, push, and open a draft PR with the base revision and rollback steps, while preserving local-only requests and separate merge/deployment authorization. Existing branches and application data need no migration; revert the documentation commit to roll back this process update.
+
 ## Unreleased — Import-first blog editor
 
 - Document the original-to-new control locations, source parity (25 form controls, 11 child component types, 23 click handlers), exact 14-file rollback scope, baseline revision, source checkpoint, safe reversal steps, and release/rollback smoke checks. Distinguish local validation from untested live integrations and retain the no-data-migration boundary.
