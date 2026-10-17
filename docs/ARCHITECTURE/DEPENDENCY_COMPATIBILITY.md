@@ -4,7 +4,7 @@
 
 This batch starts from `69abfb1082c6864e9aef5574d54b7fcd392918da`, after the authorized routine PRs #388, #390, #394, #396, #397, #402, #403, #404, and #407 were merged into `dev`. Those nine updates are the rollback baseline, not part of this repair's revert scope. PR #397 also includes a deterministic sticky-heading scroll test: it fixes the browser scroll offset at 120px and asserts a 600px document destination instead of assuming other tests left the window at zero.
 
-The repair addresses failed PRs #389, #391, #395, #398, #400, #401, #405, and #406. It incorporates the compatible Functions SDK 7 update proposed by #393 because Admin 14 cannot install alongside SDK 6. It does not adopt the Node 26 types from #392 or the Remotion/React runtime update from #399. Reconcile the superseded bot PRs after this repair is merged; merging their original manifest-only updates afterward would replace the compatibility decisions below.
+The repair addresses failed PRs #389, #391, #395, #398, #400, #401, #405, and #406. It incorporates the compatible Functions SDK 7 update proposed by #393 because Admin 14 cannot install alongside SDK 6. It does not adopt the Node 26 types from #392 or the Remotion/React runtime update from #399. PR #408 was approved and squash-merged as `7226c31`; all nine superseded bot PRs and both deferred proposals are now closed. Do not reopen them without checking installed versions; merging their original manifest-only updates afterward would replace the compatibility decisions below.
 
 ## Supported matrix
 
@@ -51,7 +51,7 @@ Angular jobs install and build on Node 24.15.0. Functions jobs install, compile 
 
 Both the new PostCSS config and style generator select Hosting plus the matching Functions SEO shell in the shared deploy-scope detector. Seven isolated Git-fixture tests cover these inputs, source CSS, ordinary dependency locks and documentation-only changes. Production planning reuses that detector.
 
-Dependabot groups Firebase Web/Rules Testing, Admin/Functions, and Tailwind packages. Major updates to the API-facing `typescript` package are excluded; the native compiler alias remains independently updateable. Functions Node types remain on the runtime's major. These version boundaries prevent recurrence of the incompatible standalone updates.
+The [maintenance policy](../README/DEVELOPMENT.md#dependency-updates) consolidates routine minor/patch updates across all four package roots into one weekly PR, with a separate security group. Major upgrades require deliberate compatibility review, including the API-facing `typescript` package, native compiler alias and Functions runtime/Node types. Firebase Web/Rules Testing, Admin/Functions and Tailwind families remain together inside the shared batch. The compiler/API pair and runtime boundary must remain intact even when a security update needs a major release.
 
 ## Validation and limits
 

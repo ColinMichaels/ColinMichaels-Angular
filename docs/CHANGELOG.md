@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 — Consolidated dependency maintenance
+
+- Replace three independent npm update queues with one weekly minor/patch batch across all four package roots, capped at one open routine PR, with a seven-day release cooldown. Keep security fixes enabled and separately grouped; omit the explicit target branch so security options apply on default `dev`. Handle major upgrades as deliberate maintenance. Document superseded PR reconciliation, deferred Node/Remotion updates, activation on merge, validation and reversible policy rollback. No application dependency, deployment, secret or data change is included.
+
 ## 2026-10-17 — Major dependency compatibility
 
 - Repair the failing Firebase, native TypeScript 7, ESLint 10 and Tailwind 4 updates on a fresh branch after all nine approved routine PRs were merged. Pair Firebase Web 13/Rules Testing 6 on Node 24.15.0, and Admin 14/Functions SDK 7 on the retained Node 22 runtime. Keep TypeScript 6's compiler API beside an explicit native TypeScript 7 compiler alias; preserve Remotion lint rules through supported parser and compatibility adapters.

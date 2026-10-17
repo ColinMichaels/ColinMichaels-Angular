@@ -112,3 +112,7 @@ The root `ACTION-PLAN.md` and `FULL-AUDIT-REPORT.md` document the July 2026 audi
 - [August 2026 Video Schema Review](../SEO/AUDITS/2026-08-15/VIDEO-SCHEMA-REPORT.md)
 - [Site Identity SEO Review](../SEO/SITE_IDENTITY_REVIEW.md)
 - [Focused AI Search and llms.txt Analysis](../SEO/GEO-ANALYSIS.md)
+
+### Dependency maintenance policy
+
+- [Weekly batching, security updates, PR reconciliation and policy rollback](./DEVELOPMENT.md#dependency-updates)
